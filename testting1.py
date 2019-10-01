@@ -1,13 +1,12 @@
 import os
-path_ant = os.getcwd()
 from adm import directories
 os.chdir(directories.path_impress)
 from impress.preprocessor0 import M
-os.chdir(path_ant)
+os.chdir(directories.path_ant)
 M.data.init_datas()
+M.data.init_dicts()
 
 
-import pdb; pdb.set_trace()
 
 # import pickle
 #
