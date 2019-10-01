@@ -5,6 +5,12 @@ from impress.preprocessor0 import M
 os.chdir(directories.path_ant)
 M.data.init_datas()
 M.data.init_dicts()
+from adm.preprocess.prep0 import Preprocess0
+Preprocess0(M)
+import pdb; pdb.set_trace()
+M.data.update_variables()
+
+import pdb; pdb.set_trace()
 
 
 
