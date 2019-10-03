@@ -65,6 +65,7 @@ class Preprocess0:
         nodes_faces = M.faces.bridge_adjacencies(faces, 2, 0)
         coord_nodes = M.nodes.center(M.nodes.all)
         areas = []
+        hs = []
         for i in range(3):
             area = get_area(i, normals, nodes_faces, coord_nodes)
             areas.append(area)
@@ -125,5 +126,11 @@ class Preprocess0:
         internal_faces = M.data.entities_lv0[direc_impress.entities_lv0_0[0]]
         centroids_volumes = M.data.centroids[direc.entities_lv0[3]]
         ks = M.data.variables[direc.variables_impress['permeability']]
+        areas = M.data.variables[direc.variables_impress['area']]
+
+
+
 
         # TODO: terminar essa funcao
+
+    def set_dist_centroid_hex_structured(self, M):

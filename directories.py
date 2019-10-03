@@ -13,7 +13,7 @@ names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
 types_region_data_loaded = ['all', 'box']
 
 variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
-                     'area': 'area'}
+                     'area': 'area', 'dist_cent': 'dist_cent'}
 
 impress = 'impress'
 tcc = 'tcc'
