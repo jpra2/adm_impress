@@ -4,6 +4,7 @@ from impress.preprocessor import directories as direc_impress
 
 # entities_lv0 = ['nodes', 'edges', 'faces', 'volumes']
 entities_lv0 = direc_impress.entities_lv0
+entities_lv0_0 = direc_impress.entities_lv0_0
 
 names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeability']
 
@@ -11,7 +12,8 @@ names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
 
 types_region_data_loaded = ['all', 'box']
 
-variables_impress = {'permeability': 'permeability', 'poro': 'poro'}
+variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
+                     'area': 'area'}
 
 impress = 'impress'
 tcc = 'tcc'

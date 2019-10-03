@@ -36,6 +36,44 @@ class Preprocess0:
 
     def __init__(self, M):
         self.set_permeability_and_phi(M)
+        self.set_area_hex_structured(M)
+
+    def set_area_hex_structured(self, M):
+
+        def get_area(ind, normals, nodes_faces, coord_nodes):
+            indice = np.where(normals[:,ind] == 1)[0][0]
+            nos = nodes_faces[indice]
+            normas = []
+            maior = 0
+            ind_maior = 0
+            for i in range(3):
+                v = coord_nodes[nos[0]] - coord_nodes[nos[i+1]]
+                normas.append(np.linalg.norm(v))
+                if normas[i] > maior:
+                    maior = normas[i]
+                    ind_maior = i
+
+            del normas[ind_maior]
+
+            area = normas[0] * normas[1]
+
+            return area
+
+        faces = M.faces.all
+        n_faces = len(faces)
+        normals = np.absolute(M.faces.normal[:])
+        nodes_faces = M.faces.bridge_adjacencies(faces, 2, 0)
+        coord_nodes = M.nodes.center(M.nodes.all)
+        areas = []
+        for i in range(3):
+            area = get_area(i, normals, nodes_faces, coord_nodes)
+            areas.append(area)
+
+        areas = np.array(areas)
+
+        all_areas = np.dot(normals, areas)
+
+        M.data.variables[direc.variables_impress['area']] = all_areas
 
     def set_permeability_and_phi(self, M):
         data_loaded = direc.data_loaded
@@ -88,6 +126,4 @@ class Preprocess0:
         centroids_volumes = M.data.centroids[direc.entities_lv0[3]]
         ks = M.data.variables[direc.variables_impress['permeability']]
 
-
-        for i in internal_faces:
-            vols_viz = 
+        # TODO: terminar essa funcao
