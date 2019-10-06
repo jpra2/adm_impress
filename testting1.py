@@ -8,6 +8,9 @@ M.data.init_dicts()
 os.chdir(directories.path_ant)
 from preprocess.prep0 import Preprocess0
 Preprocess0(M)
+import pdb; pdb.set_trace()
+M.core.print(text='flying/output')
+
 
 
 

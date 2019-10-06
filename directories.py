@@ -13,13 +13,16 @@ names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
 types_region_data_loaded = ['all', 'box']
 
 variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
-                     'area': 'area', 'dist_cent': 'dist_cent'}
+                     'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
 
 impress = 'impress'
 tcc = 'tcc'
 flying = 'flying'
 adm = 'adm'
 input_file_0 = 'inputs0.yml'
+ext_h5m = '.h5m'
+name_out_file = 'file_mesh_'
+states = ['0', '1', '2']
 
 parent_dir = os.path.dirname(os.path.abspath(__file__)) # adm_impress_dir
 adm_impress_dir = parent_dir
@@ -27,6 +30,12 @@ path_ant = os.getcwd()
 
 path_adm = os.path.join(adm_impress_dir, adm)
 path_impress = direc_impress.impress_path
+
+path_local_variables = direc_impress.path_local_variables
+path_local_info_data = direc_impress.path_local_info_data
+
+
+
 
 ### usar durante a simulacao tcc path
 path_flying_geral = os.path.join(adm_impress_dir, flying)
