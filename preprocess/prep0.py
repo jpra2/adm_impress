@@ -3,6 +3,7 @@ import directories as direc
 from impress.preprocessor import directories as direc_impress
 from utils.utils_old import get_box
 import numpy as np
+import pickle
 
 def set_permeability_and_phi_spe10(M):
     ks = np.load(direc.data_loaded['file_name_permeability'])['perms']
@@ -41,7 +42,15 @@ class Preprocess0:
         self.set_permeability_and_phi(M)
         self.set_area_hex_structured(M)
         self.set_k_harm_and_pretransmissibility_hex_structured(M)
+        self.set_transmissibility_monofasic(M)
         M.state = 0
+        M.data.update_variables_to_mesh()
+        M.data.save_info_data()
+        M.data.export_variables_to_npz(direc.names_outfiles_variables_steps[0])
+        M.core.print(text=direc.output_file+str(M.state))
+        np.save(direc.state_path, np.array([M.state]))
+        np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[0]]))
+
 
     def set_area_hex_structured(self, M):
 
@@ -189,3 +198,9 @@ class Preprocess0:
             k_harm = k00
             k_harm_faces[f] = k_harm
             pretransmissibility_faces[f] = (area*k_harm)/(dist)
+
+    def set_transmissibility_monofasic(self, M):
+        mi_monofasic = 1.0
+        k_harm_faces = M.data.variables[direc.variables_impress['k_harm']]
+        transmissibility = M.data.variables[M.data.variables_impress['transmissibility']]
+        transmissibility /= mi_monofasic

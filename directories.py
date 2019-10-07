@@ -21,12 +21,13 @@ flying = 'flying'
 adm = 'adm'
 input_file_0 = 'inputs0.yml'
 ext_h5m = '.h5m'
-name_out_file = 'file_mesh_'
+name_out_file = 'output'
 states = ['0', '1', '2']
+state_file = 'state.npy'
 
 parent_dir = os.path.dirname(os.path.abspath(__file__)) # adm_impress_dir
 adm_impress_dir = parent_dir
-path_ant = os.getcwd()
+# path_ant = os.getcwd()
 
 path_adm = os.path.join(adm_impress_dir, adm)
 path_impress = direc_impress.impress_path
@@ -34,11 +35,16 @@ path_impress = direc_impress.impress_path
 path_local_variables = direc_impress.path_local_variables
 path_local_info_data = direc_impress.path_local_info_data
 
-
-
-
-### usar durante a simulacao tcc path
 path_flying_geral = os.path.join(adm_impress_dir, flying)
+output_file = os.path.join(flying, name_out_file)
+state_path = os.path.join(flying, state_file)
+last_file_name = 'last_file_name.npy'
+path_local_last_file_name = os.path.join(flying, last_file_name)
+
+names_outfiles_steps = [output_file+'0-all.h5m', output_file+'1-all.h5m']
+
+names_outfiles_variables_steps = [os.path.join(flying, 'variables0.npz'),
+                                  os.path.join(flying, 'variables1.npz')]
 
 with open(input_file_0, 'r') as f:
     data_loaded = yaml.safe_load(f)

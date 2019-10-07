@@ -1,15 +1,8 @@
-import os
-import directories
-os.chdir(directories.path_impress)
-from impress.preprocessor0 import M
-M.data.init_datas()
-M.data.init_dicts()
-# from .impress.preprocessor0 import M
-os.chdir(directories.path_ant)
-from preprocess.prep0 import Preprocess0
-Preprocess0(M)
-import pdb; pdb.set_trace()
-M.core.print(text='flying/output')
+from running.run_simulation import RunSimulation as rodar
+rodar(state=1)
+
+
+
 
 
 
