@@ -34,6 +34,10 @@ def set_permeability_and_phi_spe10(M):
     M.data.variables[direc.variables_impress['poro']] = phis  #porosidade
 
 class Preprocess0:
+    '''
+    objetivo: setar k_harmonico, pretransmissibilidade, transmissibilidade, area, dist_centroid, u_normal nas faces
+    permeabilidade, volume, centroide, porosidade nos volumes
+    '''
 
     def __init__(self, M):
 
@@ -50,7 +54,6 @@ class Preprocess0:
         M.core.print(text=direc.output_file+str(M.state))
         np.save(direc.state_path, np.array([M.state]))
         np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[0]]))
-
 
     def set_area_hex_structured(self, M):
 
@@ -103,9 +106,12 @@ class Preprocess0:
         areas = np.array(areas)
         all_areas = np.dot(normals, areas)
         dist_cent = np.dot(normals, hs)
+        volume = hs[0]*hs[1]*hs[2]
+        n_volumes = M.data.len_entities[direc.entities_lv0[3]]
 
         M.data.variables[direc.variables_impress['area']] = all_areas
         M.data.variables[direc.variables_impress['dist_cent']] = dist_cent
+        M.data.variables[M.data.variables_impress['volume']] = np.repeat(volume, n_volumes)
 
     def set_permeability_and_phi(self, M):
         data_loaded = direc.data_loaded
