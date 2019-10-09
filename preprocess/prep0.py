@@ -112,6 +112,7 @@ class Preprocess0:
         M.data.variables[direc.variables_impress['area']] = all_areas
         M.data.variables[direc.variables_impress['dist_cent']] = dist_cent
         M.data.variables[M.data.variables_impress['volume']] = np.repeat(volume, n_volumes)
+        M.data.variables[M.data.variables_impress['NODES']] = coord_nodes
 
     def set_permeability_and_phi(self, M):
         data_loaded = direc.data_loaded
