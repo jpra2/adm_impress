@@ -1,5 +1,5 @@
 from running.run_simulation import RunSimulation as rodar
-rodar(state=1)
+rodar(state=0)
 
 
 

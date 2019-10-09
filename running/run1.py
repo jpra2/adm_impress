@@ -5,7 +5,6 @@ import numpy as np
 
 __all__ = []
 
-import pdb; pdb.set_trace()
 path_ant = os.getcwd()
 from impress.preprocessor_load import init_mesh
 last_file_name = direc.names_outfiles_steps[0]
