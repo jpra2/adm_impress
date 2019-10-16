@@ -49,3 +49,10 @@ def getting_tag(mb, name, n, t1, t2, create, entitie, tipo, tags, tags_to_infos)
     tag_to_infos = dict(zip(['entitie', 'type', 'n'], [entitie, tipo, n]))
     tags[name] = tag
     tags_to_infos[name] = tag_to_infos
+
+def Min_Max(e, M1):
+    verts = M1.mb.get_connectivity(int(e))
+    coords = M1.mb.get_coords(verts).reshape(len(verts), 3)
+    xmax, ymax, zmax = coords.max(axis=0)
+    xmin, ymin, zmin = coords.min(axis=0)
+    return([xmin,xmax,ymin,ymax,zmin,zmax])
