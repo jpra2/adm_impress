@@ -12,7 +12,7 @@ class DualPrimalMesh1:
         self.tags = dict()
         self.tags_to_infos = dict()
         self.coarse_volumes = dict()
-        self._internals = dict()
+        self._interns = dict()
         self._faces = dict()
         self._edges = dict()
         self._vertex = dict()
@@ -329,18 +329,18 @@ class DualPrimalMesh1:
                                 self.mesh.mb.add_parent_child(l2_meshset,l1_meshset)
         #-------------------------------------------------------------------------------
 
-    def internals():
-        doc = "The internals property."
+    def interns():
+        doc = "The interns property."
         def fget(self, level):
-            return self._internals[level]
+            return self._interns[level]
         def fset(self, level, value):
             assert  not self._loaded, 'nao pode alterar internals'
-            self._internals[level] = value
+            self._interns[level] = value
         def fdel(self):
             return 1
             # del self._internals
         return locals()
-    internals = property(**internals())
+    interns = property(**interns())
 
     def faces():
         doc = "The internals property."
