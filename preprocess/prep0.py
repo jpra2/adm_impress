@@ -113,10 +113,15 @@ class Preprocess0:
         volume = hs[0]*hs[1]*hs[2]
         n_volumes = M.data.len_entities[direc.entities_lv0[3]]
 
+        dd = np.zeros([n_volumes, 3])
+        for i in range(3):
+            dd[:, i] = np.repeat(hs[i], n_volumes)
+
         M.data.variables[direc.variables_impress['area']] = all_areas
         M.data.variables[direc.variables_impress['dist_cent']] = dist_cent
         M.data.variables[M.data.variables_impress['volume']] = np.repeat(volume, n_volumes)
         M.data.variables[M.data.variables_impress['NODES']] = coord_nodes
+        M.data.variables[M.data.variables_impress['hs']] = dd
 
     def set_permeability_and_phi(self, M):
         data_loaded = direc.data_loaded
@@ -174,11 +179,13 @@ class Preprocess0:
         dist_cent = M.data.variables[direc.variables_impress['dist_cent']]
         areas = M.data.variables[direc.variables_impress['area']]
         k_harm_faces = M.data.variables[direc.variables_impress['k_harm']]
+        hs = M.data.variables[M.data.variables_impress['hs']]
         pretransmissibility_faces = M.data.variables[M.data.variables_impress['pretransmissibility']]
 
         vols_viz_internal_faces = M.data.elements_lv0[direc.entities_lv0_0[2]]
         vols_viz_boundary_faces = M.data.elements_lv0[direc.entities_lv0_0[3]]
         shape_ks_0 = [vols_viz_internal_faces.shape[0], vols_viz_internal_faces.shape[1], 9]
+        vols_viz_faces = M.data.elements_lv0[direc.entities_lv0_0[1]]
 
         ks_vols_viz_internal_faces = np.zeros(shape_ks_0)
         ks_vols_viz_internal_faces[:,0] = ks[vols_viz_internal_faces[:,0]]
@@ -187,12 +194,18 @@ class Preprocess0:
         for i, f in enumerate(internal_faces):
             k0 = ks_vols_viz_internal_faces[i,0].reshape([3,3])
             k1 = ks_vols_viz_internal_faces[i,1].reshape([3,3])
+            h0 = hs[vols_viz_internal_faces[i, 0]]
+            h1 = hs[vols_viz_internal_faces[i, 1]]
+            u_normal = normals[f]
+            h0 = np.dot(h0, u_normal)
+            h1 = np.dot(h1, u_normal)
             area = areas[f]
             dist = dist_cent[f]
             normal = normals[f]
             k00 = np.dot(np.dot(k0, normal), normal)
             k11 = np.dot(np.dot(k1, normal), normal)
-            k_harm = (2*k00*k11)/(k00+k11)
+            # k_harm = (2*k00*k11)/(k00+k11)
+            k_harm = (h0+h1)/(h0/k00 + h1/k11)
             k_harm_faces[f] = k_harm
             pretransmissibility_faces[f] = (area*k_harm)/(dist)
 
