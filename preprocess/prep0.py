@@ -47,6 +47,10 @@ class Preprocess0:
         self.set_area_hex_structured(M)
         self.set_k_harm_and_pretransmissibility_hex_structured(M)
         self.set_transmissibility_monofasic(M)
+        ###
+        ##deletar
+        # self.conectivity_volumes(M)
+        ###
         M.state = 0
         M.data.update_variables_to_mesh()
         M.data.save_info_data()
@@ -211,3 +215,23 @@ class Preprocess0:
         k_harm_faces = M.data.variables[direc.variables_impress['k_harm']]
         transmissibility = M.data.variables[M.data.variables_impress['transmissibility']]
         transmissibility /= mi_monofasic
+
+    def conectivity_volumes(self, M):
+
+
+        import networkx as nx
+
+        vols_viz_faces = M.data.elements_lv0[direc.entities_lv0_0[3]]
+        internal_faces = M.elements_lv0[direc.entities_lv0_0[0]]
+
+        import pdb; pdb.set_trace()
+
+        g = nx.Graph()
+        for vols in vols_viz_faces:
+            g.add_node(vols[0])
+            g.add_node(vols[1])
+            g.add_edge(vols[0], vols[1])
+
+        M.graph_volumes = g
+
+        return 0
