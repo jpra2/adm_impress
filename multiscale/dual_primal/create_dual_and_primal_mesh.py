@@ -1,5 +1,6 @@
 import directories as direc
 from utils.utils_old import getting_tag
+from utils.utils_old import get_box
 # from pymoab import core, types, rng, topo_util
 from pymoab import types, rng
 import numpy as np
@@ -60,6 +61,7 @@ class DualPrimalMesh1:
         return 0
 
     def loaded(self):
+        assert not self._loaded
         self._loaded = True
 
     def run(self, M):
@@ -68,7 +70,8 @@ class DualPrimalMesh1:
 
         M.dualprimal = self
         self.create_tags(M)
-        self.set_primal_level_l_meshsets(M)
+        # self.set_primal_level_l_meshsets(M)
+        self.generate_dual_and_primal(M)
         self.loaded()
 
     def set_primal_level_l_meshsets(self, M):
@@ -100,27 +103,47 @@ class DualPrimalMesh1:
         return 0
 
     def generate_dual_and_primal(self, M):
+        assert not self._loaded
+
+        def get_hs(M, coord_nodes):
+            unis = np.array([np.array([1,0,0]), np.array([0,1,0]), np.array([0,0,1])])
+            nos0 = M.volumes.bridge_adjacencies(0, 2, 0)[0]
+            n0 = coord_nodes[nos0[0]]
+            hs = np.zeros(3)
+
+            for i in range(1, len(nos0)):
+                n1 = coord_nodes[nos0[i]]
+                v = n0 - n1
+                norma = np.linalg.norm(v)
+                uni = v/norma
+                if np.allclose(uni, unis[0]):
+                    hs[0] = norma
+                elif np.allclose(uni, unis[1]):
+                    hs[1] = norma
+                elif np.allclose(uni, unis[2]):
+                    hs[2] = norma
+
+            return hs
 
         cr1 = direc.data_loaded['Crs']['Cr1']
         cr2 = direc.data_loaded['Crs']['Cr2']
 
         coord_nodes = M.data.centroids[direc.entities_lv0[0]]
-        centroids = M.data.centroids[direc.entities_lv0[3]]
 
-        nx = self.data_loaded['nx']
-        ny = self.data_loaded['ny']
-        nz = self.data_loaded['nz']
+        mb = M.core.mb
 
-        lx = self.data_loaded['lx']
-        ly = self.data_loaded['ly']
-        lz = self.data_loaded['lz']
+        Lx, Ly, Lz = coord_nodes.max(axis = 0)
+        xmin, ymin, zmin = coord_nodes.min(axis = 0)
+        xmax, ymax, zmax = Lx, Ly, Lz
+
+        lx, ly, lz = get_hs(M, coord_nodes)
         dx0 = lx
         dy0 = ly
         dz0 = lz
 
-        Lx, Ly, Lz = self.mesh.datas['NODES'].max(axis = 0)
-        xmin, ymin, zmin = self.mesh.datas['NODES'].min(axis = 0)
-        xmax, ymax, zmax = Lx, Ly, Lz
+        nx = int(Lx/lx)
+        ny = int(Ly/ly)
+        nz = int(Lz/lz)
 
         l1 = [cr1[0]*lx,cr1[1]*ly,cr1[2]*lz]
         l2 = [cr2[0]*lx,cr2[1]*ly,cr2[2]*lz]
@@ -130,7 +153,7 @@ class DualPrimalMesh1:
         z1=nz*lz
 
         L2_meshset = self.mesh.mb.create_meshset()
-        self.mesh.mb.tag_set_data(self.mesh.tags['L2_MESHSET'], 0, L2_meshset)
+        mb.tag_set_data(self.tags['L2_MESHSET'], 0, L2_meshset)
 
         lx2, ly2, lz2 = [], [], []
         # O valor 0.01 é adicionado para corrigir erros de ponto flutuante
@@ -170,7 +193,7 @@ class DualPrimalMesh1:
             lzd1.append(l1[2]/2+(i+1)*l1[2])
         lzd1.append(xmin+Lz-dz0/100)
 
-        print("definiu planos do nível 1")
+        # print("definiu planos do nível 1")
         lxd2=[lxd1[0]]
         for i in range(1,int(len(lxd1)*l1[0]/l2[0])-1):
             lxd2.append(lxd1[int(i*l2[0]/l1[0]+0.0001)+1])
@@ -186,17 +209,17 @@ class DualPrimalMesh1:
             lzd2.append(lzd1[int(i*l2[2]/l1[2]+0.00001)+1])
         lzd2.append(lzd1[-1])
 
-        print("definiu planos do nível 2")
+        # print("definiu planos do nível 2")
 
-        centroids = self.mesh.datas['CENT_VOLS']
-        volumes = self.mesh.entities['volumes']
+        centroids = M.data.centroids[direc.entities_lv0[3]]
+        all_volumes = np.array(M.core.all_volumes)
 
-        D1_tag = self.mesh.tags['D1']
-        D2_tag = self.mesh.tags['D2']
-        primal_id_tag1 = self.mesh.tags['PRIMAL_ID_1']
-        primal_id_tag2 = self.mesh.tags['PRIMAL_ID_2']
-        fine_to_primal1_classic_tag = self.mesh.tags['FINE_TO_PRIMAL_CLASSIC_1']
-        fine_to_primal2_classic_tag = self.mesh.tags['FINE_TO_PRIMAL_CLASSIC_2']
+        D1_tag = self.tags['D1']
+        D2_tag = self.tags['D2']
+        primal_id_tag1 = self.tags['PRIMAL_ID_1']
+        primal_id_tag2 = self.tags['PRIMAL_ID_2']
+        fine_to_primal1_classic_tag = self.tags['FINE_TO_PRIMAL_CLASSIC_1']
+        fine_to_primal2_classic_tag = self.tags['FINE_TO_PRIMAL_CLASSIC_2']
 
         nc1=0
         nc2=0
@@ -204,7 +227,7 @@ class DualPrimalMesh1:
         # add_parent_child(self, parent_meshset, child_meshset, exceptions = ()):
         ##-----------------------------------------------------------------
         for i in range(len(lx2)-1):
-            t1=time.time()
+            # t1=time.time()
             if i==len(lx2)-2:
                 sx=D_x
             sy=0
@@ -213,8 +236,10 @@ class DualPrimalMesh1:
             x0=lx2[i]
             x1=lx2[i+1]
             box_x=np.array([[x0-0.01,ymin,zmin],[x1+0.01,ymax,zmax]])
-            vols_x=get_box(volumes, centroids, box_x, False)
-            x_centroids=np.array([self.mesh.mtu.get_average_position([v]) for v in vols_x])
+            inds_vols_x=get_box(centroids, box_x)
+            vols_x = all_volumes[inds_vols_x]
+            x_centroids=centroids[vols_x]
+            map_x_centroids = dict(zip(range(len(x_centroids)), x_centroids))
             ######################################
 
             for j in range(len(ly2)-1):
@@ -225,8 +250,10 @@ class DualPrimalMesh1:
                 y0=ly2[j]
                 y1=ly2[j+1]
                 box_y=np.array([[x0-0.01,y0-0.01,zmin],[x1+0.01,y1+0.01,zmax]])
-                vols_y=get_box(vols_x, x_centroids, box_y, False)
-                y_centroids=np.array([self.mesh.mtu.get_average_position([v]) for v in vols_y])
+                inds_vols_y=get_box(x_centroids, box_y)
+                vols_y = vols_x[inds_vols_y]
+                y_centroids=np.array([map_x_centroids[k] for k in inds_vols_y])
+                map_y_centroids = dict(zip(range(len(y_centroids)), y_centroids))
                 ###############
                 for k in range(len(lz2)-1):
                     if k==len(lz2)-2:
@@ -234,14 +261,16 @@ class DualPrimalMesh1:
                     ########################################
                     z0=lz2[k]
                     z1=lz2[k+1]
-                    tb=time.time()
+                    # tb=time.time()
                     box_dual_1=np.array([[x0-0.01,y0-0.01,z0-0.01],[x1+0.01,y1+0.01,z1+0.01]])
-                    vols=get_box(vols_y, y_centroids, box_dual_1, False)
+                    inds_vols=get_box(y_centroids, box_dual_1)
+                    vols = vols_y[inds_vols]
                     ####################
-                    l2_meshset=self.mesh.mb.create_meshset()
+                    l2_meshset=mb.create_meshset()
                     cont=0
                     elem_por_L2=vols
-                    self.mesh.mb.add_entities(l2_meshset,elem_por_L2)
+                    mb.add_entities(l2_meshset,elem_por_L2)
+                    ## alterar
                     centroid_p2=np.array([self.mesh.mtu.get_average_position([np.uint64(v)]) for v in elem_por_L2])
                     cx,cy,cz=centroid_p2[:,0],centroid_p2[:,1],centroid_p2[:,2]
                     posx=np.where(abs(cx-lxd2[i])<=l1[0]/1.9)[0]
