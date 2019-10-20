@@ -6,7 +6,7 @@ import numpy as np
 
 class DualPrimalMesh1:
 
-    def __init__(self):
+    def __init__(self, M, carregar=False):
         self._loaded = False
         self.tags = dict()
         self.tags_to_infos = dict()
@@ -19,6 +19,8 @@ class DualPrimalMesh1:
         self._fine_primal_id = dict()
         self._fine_dual_id = dict()
         self.mvs = dict()
+        self._carregar = carregar
+        M.dualprimal = self
 
     def create_tags(self, M):
         assert not self._loaded
@@ -52,7 +54,7 @@ class DualPrimalMesh1:
             t2 = types.MB_TAG_SPARSE
             getting_tag(mb, name, n, t1, t2, True, entitie, tipo, self.tags, self.tags_to_infos)
 
-        l = ['L2_MESHSET']
+        l = ['L2_MESHSET', 'MV_1', 'MV_2']
         for name in l:
             n = 1
             tipo = 'handle'
@@ -63,6 +65,23 @@ class DualPrimalMesh1:
 
         return 0
 
+    def load_tags(self, M):
+        assert not self._loaded
+
+        tags0 = ['D', 'FINE_TO_PRIMAL_CLASSIC_', 'PRIMAL_ID_', 'MV_']
+        tags1 = ['L2_MESHSET']
+
+        mb = M.core.mb
+
+        for name in tags0:
+            for i in range(2):
+                j = i+1
+                name2 = name+str(j)
+                tag = mb.tag_get_handle(name2)
+                self.tags[name2] = tag
+
+        self.tags[tags1[0]] = mb.tag_get_handle(tags1[0])
+
     def loaded(self):
         assert not self._loaded
         self._loaded = True
@@ -71,40 +90,13 @@ class DualPrimalMesh1:
 
         assert not self._loaded
 
-        M.dualprimal = self
         self.create_tags(M)
         # self.set_primal_level_l_meshsets(M)
         self.generate_dual_and_primal(M)
         self.get_elements(M)
-        self.loaded()
 
-    def set_primal_level_l_meshsets(self, M):
-        assert not self._loaded
-
-        mb = M.core.mb
-        l2_meshset = mb.create_meshset()
-        mb.tag_set_data(self.tags['L2_MESHSET'], 0, l2_meshset)
-
-        coarse_elements = M.coarse.elements
-        all_volumes = np.array(M.core.all_volumes)
-
-
-
-        import pdb; pdb.set_trace()
-
-        for cvol in coarse_elements:
-            volumes = all_volumes[cvol.volumes.global_id[:]]
-
-
-
-
-
-        import pdb; pdb.set_trace()
-
-
-
-
-        return 0
+        if not self._carregar:
+            self.save_mesh(M)
 
     def generate_dual_and_primal(self, M):
         assert not self._loaded
@@ -340,10 +332,12 @@ class DualPrimalMesh1:
         #-------------------------------------------------------------------------------
 
     def get_elements(self, M):
+        assert not self._loaded
 
         mb = M.core.mb
         tags_fine = ['D', 'FINE_TO_PRIMAL_CLASSIC_']
         tags_coarse = ['PRIMAL_ID_']
+        tag_mv = ['MV_']
         all_volumes = M.core.all_volumes
         dict_volumes = M.data.dict_elements[direc.entities_lv0[3]]
 
@@ -377,22 +371,38 @@ class DualPrimalMesh1:
 
             coarse_volumes = []
             coarse_primal_ids = []
-            for i, vert in enumerate(vertex):
-
-                primal_id = mb.tag_get_data(self.tags[primal_fine_name], vert, flat=True)[0]
-                coarse_volume = mb.get_entities_by_type_and_tag(0, types.MBENTITYSET, np.array([self.tags[name_tag_c]]), np.array([primal_id]))[0]
-                elements = mb.get_entities_by_handle(coarse_volume)
-                ne = len(elements)
-                mb.tag_set_data(self.tags[primal_fine_name], elements, np.repeat(i, ne))
-                mb.tag_set_data(self.tags[name_tag_c], coarse_volume, i)
-                coarse_volumes.append(coarse_volume)
-                coarse_primal_ids.append(i)
+            if not self._carregar:
+                for i, vert in enumerate(vertex):
+                    primal_id = mb.tag_get_data(self.tags[primal_fine_name], vert, flat=True)[0]
+                    coarse_volume = mb.get_entities_by_type_and_tag(0, types.MBENTITYSET, np.array([self.tags[name_tag_c]]), np.array([primal_id]))[0]
+                    elements = mb.get_entities_by_handle(coarse_volume)
+                    ne = len(elements)
+                    mb.tag_set_data(self.tags[primal_fine_name], elements, np.repeat(i, ne))
+                    mb.tag_set_data(self.tags[name_tag_c], coarse_volume, i)
+                    coarse_volumes.append(coarse_volume)
+                    coarse_primal_ids.append(i)
+            else:
+                for i, vert in enumerate(vertex):
+                    primal_id = mb.tag_get_data(self.tags[primal_fine_name], vert, flat=True)[0]
+                    coarse_volume = mb.get_entities_by_type_and_tag(0, types.MBENTITYSET, np.array([self.tags[name_tag_c]]), np.array([primal_id]))[0]
+                    # elements = mb.get_entities_by_handle(coarse_volume)
+                    # ne = len(elements)
+                    # mb.tag_set_data(self.tags[primal_fine_name], elements, np.repeat(i, ne))
+                    # mb.tag_set_data(self.tags[name_tag_c], coarse_volume, i)
+                    coarse_volumes.append(coarse_volume)
+                    coarse_primal_ids.append(primal_id)
 
             self._coarse_volumes[level] = np.array(coarse_volumes)
             self._coarse_primal_id[level] = np.array(coarse_primal_ids)
 
-            mv1 = mb.create_meshset()
-            mb.add_entities(mv1, vertex)
+            nnn = tag_mv[0] + str(level)
+            if not self._carregar:
+                mv1 = mb.create_meshset()
+                mb.add_entities(mv1, vertex)
+                mb.tag_set_data(self.tags[nnn], 0, mv1)
+            else:
+                mv1 = mb.tag_get_data(self.tags[nnn], 0, flat=True)[0]
+
             self.mvs[level] = mv1
             mvs.append(mv1)
 
@@ -400,4 +410,15 @@ class DualPrimalMesh1:
             self._fine_primal_id[level] = fine_primal_id
 
             fine_dual_id = mb.tag_get_data(self.tags[dual_fine_name], all_volumes, flat=True)
-            self._fine_dual_id = fine_dual_id
+            self._fine_dual_id[level] = fine_dual_id
+
+        self.loaded()
+
+    def save_mesh(self, M):
+
+        M.state = 2
+        np.save(direc.state_path, np.array([M.state]))
+        np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[2]]))
+        M.core.print(text=direc.output_file+str(M.state))
+
+        pass

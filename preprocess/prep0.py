@@ -43,14 +43,12 @@ class Preprocess0:
 
         for key, item in direc.variables_impress.items():
             M.data.variables_impress[key] = item
+            
         self.set_permeability_and_phi(M)
         self.set_area_hex_structured(M)
         self.set_k_harm_and_pretransmissibility_hex_structured(M)
         self.set_transmissibility_monofasic(M)
-        ###
-        ##deletar
-        # self.conectivity_volumes(M)
-        ###
+
         M.state = 0
         M.data.update_variables_to_mesh()
         M.data.save_info_data()

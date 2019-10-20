@@ -41,10 +41,14 @@ state_path = os.path.join(flying, state_file)
 last_file_name = 'last_file_name.npy'
 path_local_last_file_name = os.path.join(flying, last_file_name)
 
-names_outfiles_steps = [output_file+'0-all.h5m', output_file+'1-all.h5m']
+names_outfiles_steps = [output_file+'0-all.h5m', output_file+'1-all.h5m',
+                        output_file+'2-all.h5m', output_file+'3-all.h5m']
 
 names_outfiles_variables_steps = [os.path.join(flying, 'variables0.npz'),
-                                  os.path.join(flying, 'variables1.npz')]
+                                  os.path.join(flying, 'variables1.npz'),
+                                  os.path.join(flying, 'variables2.npz'),
+                                  os.path.join(flying, 'variables3.npz')
+                                  ]
 
 with open(input_file_0, 'r') as f:
     data_loaded = yaml.safe_load(f)
