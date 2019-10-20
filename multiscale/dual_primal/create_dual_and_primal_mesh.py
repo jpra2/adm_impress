@@ -420,5 +420,3 @@ class DualPrimalMesh1:
         np.save(direc.state_path, np.array([M.state]))
         np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[2]]))
         M.core.print(text=direc.output_file+str(M.state))
-
-        pass
