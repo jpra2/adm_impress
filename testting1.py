@@ -1,5 +1,24 @@
-from running.run_simulation import RunSimulation as rodar
-rodar(state=3)
+from running.run_simulation import RunSimulation
+rodar = RunSimulation(state=5)
+
+
+from direct_solution.monophasic.monophasic1 import Monophasic
+
+m1 = Monophasic(rodar.M)
+m1.get_transmissibility_matrix()
+m1.get_RHS_term()
+
+import pdb; pdb.set_trace()
+from solvers.solvers_scipy.solver_sp import SolverSp
+solver = SolverSp(m1.T, m1.b)
+
+solver.direct_solver()
+m1.get_solution(solver.x)
+
+
+
+
+import pdb; pdb.set_trace()
 
 
 

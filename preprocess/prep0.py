@@ -43,7 +43,7 @@ class Preprocess0:
 
         for key, item in direc.variables_impress.items():
             M.data.variables_impress[key] = item
-            
+
         self.set_permeability_and_phi(M)
         self.set_area_hex_structured(M)
         self.set_k_harm_and_pretransmissibility_hex_structured(M)
@@ -223,9 +223,10 @@ class Preprocess0:
 
     def set_transmissibility_monofasic(self, M):
         mi_monofasic = 1.0
-        k_harm_faces = M.data.variables[direc.variables_impress['k_harm']]
+        pretransmissibility_faces = M.data.variables[M.data.variables_impress['pretransmissibility']]
         transmissibility = M.data.variables[M.data.variables_impress['transmissibility']]
-        transmissibility /= mi_monofasic
+        transmissibility = pretransmissibility_faces/mi_monofasic
+        M.data.variables[M.data.variables_impress['transmissibility']] = transmissibility
 
     def conectivity_volumes(self, M):
 

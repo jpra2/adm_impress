@@ -1,21 +1,28 @@
 import directories as direc
 from utils.utils_old import get_box, getting_tag
 from pymoab import types
+import numpy as np
 
 class Contours:
 
     def __init__(self, M):
-        self.ws_p = []
-        self.ws_q = []
-        self.ws_inj = []
-        self.ws_pro = []
-        self.values_p = []
-        self.values_q = []
+        self._loaded = False
+        # self.ws_p = [] # pocos de pressao prescrita
+        # self.ws_q = []  # pocos de vazao prescrita
+        # self.ws_inj = [] # pocos injetores
+        # self.ws_pro = [] # pocos produtores
+        # self.values_p = [] # valores de pressao prescrita
+        # self.values_q = [] # valores de vazao prescrita
+        self.name_datas = direc.names_datas_contour
+        self.name_file = direc.names_outfiles_steps[4]
+        self.datas = dict()
         self.tags = dict()
         self.tags_to_infos = dict()
+        self.names = ['ws_p', 'ws_q', 'ws_inj', 'ws_prod', 'values_p', 'values_q']
         M.contours = self
 
     def create_tags(self, M):
+        assert not self._loaded
 
         mb = M.core.mb
 
@@ -28,7 +35,7 @@ class Contours:
             t2 = types.MB_TAG_SPARSE
             getting_tag(mb, name, n, t1, t2, True, entitie, tipo, self.tags, self.tags_to_infos)
 
-        l = ['P', 'Q']
+        l = ['INJ', 'PROD']
         for name in l:
             n = 1
             tipo = 'integer'
@@ -37,13 +44,19 @@ class Contours:
             t2 = types.MB_TAG_SPARSE
             getting_tag(mb, name, n, t1, t2, True, entitie, tipo, self.tags, self.tags_to_infos)
 
-        pass
-
-    def load_wells(self, M):
+    def get_wells(self, M):
+        assert not self._loaded
 
         data_wells = direc.data_loaded['Wells']
         centroids = M.data.centroids[direc.entities_lv0[3]]
         volumes = M.data.elements_lv0[direc.entities_lv0[3]]
+
+        ws_p = []
+        ws_q = []
+        ws_inj = []
+        ws_prod = []
+        values_p = []
+        values_q = []
 
         for p in data_wells:
             well = data_wells[p]
@@ -56,23 +69,97 @@ class Contours:
                 p0 = well['p0']
                 p1 = well['p1']
                 limites = np.array([p0, p1])
-                vols = get_box(cenroids, limites)
+                vols = get_box(centroids, limites)
                 nv = len(vols)
                 if prescription == 'Q':
 
-                    val = value/n
+                    val = value/nv
                     if tipo == 'Producer':
-                        val *= -/1
+                        val *= -1
 
-                    self.ws_q.append(vols)
-                    self.values_q.append(np.repeat(val, nv))
+                    ws_q.append(vols)
+                    values_q.append(np.repeat(val, nv))
 
                 if prescription == 'P':
                     val = value
-                    self.ws_p.append(vols)
-                    self.values_p.append(np.repeat(val, nv))
+                    ws_p.append(vols)
+                    values_p.append(np.repeat(val, nv))
 
                 if tipo == 'Injector':
-                    self.ws_inj.append(vols)
+                    ws_inj.append(vols)
                 elif tipo == 'Producer':
-                    self.ws_pro.append(vols)
+                    ws_prod.append(vols)
+
+        # self.ws_q = np.array(self.ws_q).flatten()
+        # self.ws_p = np.array(self.ws_p).flatten()
+        # self.values_p = np.array(self.values_p).flatten()
+        # self.values_q = np.array(self.values_q).flatten()
+        # self.ws_inj = np.array(self.ws_inj).flatten()
+        # self.ws_pro = np.array(self.ws_pro).flatten()
+
+        ws_q = np.array(ws_q)
+        ws_p = np.array(ws_p)
+        values_p = np.array(values_p)
+        values_q = np.array(values_q)
+        ws_inj = np.array(ws_inj)
+        ws_prod = np.array(ws_prod)
+
+        self.datas['ws_p'] = ws_p
+        self.datas['ws_q'] = ws_q
+        self.datas['ws_inj'] = ws_inj
+        self.datas['ws_prod'] = ws_prod
+        self.datas['values_p'] = values_p
+        self.datas['values_q'] = values_q
+
+    def set_infos(self, M):
+        assert not self._loaded
+
+        mb = M.core.mb
+
+        all_volumes = np.array(M.core.all_volumes)
+        ws_p = all_volumes[self.datas['ws_p'].flatten()]
+        ws_q = all_volumes[self.datas['ws_q'].flatten()]
+        ws_prod = all_volumes[self.datas['ws_prod'].flatten()]
+        ws_inj = all_volumes[self.datas['ws_inj'].flatten()]
+        values_p = self.datas['values_p'].flatten()
+        values_q = self.datas['values_q'].flatten()
+
+        mb.tag_set_data(self.tags['INJ'], ws_inj, np.repeat(1, len(ws_inj)))
+        mb.tag_set_data(self.tags['PROD'], ws_prod, np.repeat(1, len(ws_prod)))
+        mb.tag_set_data(self.tags['P'], ws_p, values_p)
+        mb.tag_set_data(self.tags['Q'], ws_q, values_q)
+
+    def load_tags(self, M):
+        assert not self._loaded
+
+        mb = M.core.mb
+
+        names = ['P', 'Q', 'INJ', 'PROD']
+        for name in names:
+            self.tags[name] = mb.tag_get_handle(name)
+
+    def export_to_npz(self):
+        assert not self._loaded
+
+        file_name = self.name_datas
+
+        np.savez(file_name, **self.datas)
+
+    def load_from_npz(self):
+        assert not self._loaded
+        file_name = self.name_datas
+
+        arq = np.load(file_name)
+
+        for name, values in arq.items():
+            self.datas[name] = values
+
+    def save_mesh(self, M):
+        M.state = 4
+        np.save(direc.state_path, np.array([M.state]))
+        np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[4]]))
+        M.core.print(text=direc.output_file+str(M.state))
+
+    def loaded(self):
+        assert not self._loaded
+        self._loaded = True
