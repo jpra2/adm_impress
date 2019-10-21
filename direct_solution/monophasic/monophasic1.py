@@ -66,4 +66,37 @@ class Monophasic:
     def get_solution(self, x):
         self.x = x
         M.data.variables[M.data.variables_impress['pressure']] = x
-        M.data.update_variables_to_mesh(['pressure'])
+        # M.data.update_variables_to_mesh(['pressure'])
+
+    def get_flux_faces_and_volumes(self):
+
+        vols_viz_internal_faces = M.data.elements_lv0[direc.entities_lv0_0[2]]
+        v0 = vols_viz_internal_faces
+        internal_faces = M.data.elements_lv0[direc.entities_lv0_0[0]]
+        transmissibility_faces = M.data.variables[M.data.variables_impress['transmissibility']]
+        transmissibility_internal_faces = transmissibility_faces[internal_faces]
+        t0 = transmissibility_internal_faces
+        area_faces = M.data.variables[M.data.variables_impress['area']]
+        area_internal_faces = area_faces[internal_faces]
+        a0 = area_internal_faces
+        velocicty_faces = M.data.variables[M.data.variables_impress['velocicty_faces']]
+
+        ps0 = self.x[v0[:,0]]
+        ps1 = self.x[v0[:,1]]
+
+        flux_internal_faces = (ps1-ps0)*t0
+        velocity = flux_internal_faces/a0
+        velocicty_faces[internal_faces] = velocity
+        flux_volumes = M.data.variables[M.data.variables_impress['flux_volumes']]
+        flux_faces = M.data.variables[M.data.variables_impress['flux_faces']]
+
+        flux_faces[internal_faces] = flux_internal_faces
+
+        lines = np.array([v0[:,0], v0[:,1]])
+        cols = np.repeat(0, len(lines))
+        data = np.array([flux_internal_faces, -flux_internal_faces])
+        flux_volumes = sp.csc_matrix((data,(lines,cols)),shape=(self.n_volumes,1)).toarray()
+
+        M.data.variables[M.data.variables_impress['flux_volumes']] = flux_volumes
+        M.data.variables[M.data.variables_impress['flux_faces']] = flux_faces
+        M.data.variables[M.data.variables_impress['velocicty_faces']] = velocity_faces

@@ -1,5 +1,8 @@
+from ..monophasic.monophasic1 import Monophasic
 
-class Biphasic:
+class Biphasic(Monophasic):
 
     def __init__(self, M):
-        self.mesh = M
+        super().__init__(M)
+
+    
