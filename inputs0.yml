@@ -25,3 +25,30 @@ Permeability:
 Crs:
   Cr1: [3, 3, 3]
   Cr2: [9, 9, 9]
+
+Wells:
+  P1:
+    type_region: 'box'
+    type: Injector
+    prescription: 'Q' # vazao prescrita
+    p0: [0.0, 0.0, 0.0]
+    p1: [20.0, 10.0, 54]
+    value: 100.0
+
+  P2:
+    type_region: 'box'
+    type: Producer
+    prescription: 'P' # pressao prescrita
+    p0: [0.0, 260, 0.0]
+    p1: [20, 270, 54]
+    value: 1.0
+
+  P3:
+    type_region: 'box'
+    type: Producer
+    prescription: 'P'
+    p0: [520, 0.0, 0.0]
+    p1: [540, 10.0, 54.0]
+    value: 1.0
+
+# Saturacao
