@@ -165,7 +165,7 @@ class Preprocess0:
 
     def set_k_harm_and_pretransmissibility_hex_structured(self, M):
         '''
-        considerando malha estruturada
+        considerando malha estruturada uniforme
         '''
         normals = np.absolute(M.faces.normal[:])
         M.data.variables[direc.variables_impress['u_normal']] = normals
@@ -222,7 +222,8 @@ class Preprocess0:
             pretransmissibility_faces[f] = (area*k_harm)/(dist)
 
     def set_transmissibility_monofasic(self, M):
-        mi_monofasic = 1.0
+        # mi_monofasic = 1.0
+        mi_monofasic = direc.data_loaded['monophasic_data']['mi']
         pretransmissibility_faces = M.data.variables[M.data.variables_impress['pretransmissibility']]
         transmissibility = M.data.variables[M.data.variables_impress['transmissibility']]
         transmissibility = pretransmissibility_faces/mi_monofasic
