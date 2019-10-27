@@ -1,6 +1,6 @@
-from packs import directories as direc
+from .. import directories as direc
 from impress.preprocessor import directories as direc_impress
-from packs.utils import get_box
+from ..utils.utils_old import get_box
 import numpy as np
 
 

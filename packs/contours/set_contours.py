@@ -1,5 +1,5 @@
-from packs import directories as direc
-from packs.utils import get_box, getting_tag
+from .. import directories as direc
+from ..utils.utils_old import get_box, getting_tag
 from pymoab import types
 import numpy as np
 
@@ -49,7 +49,6 @@ class Contours:
 
         data_wells = direc.data_loaded['Wells']
         centroids = M.data.centroids[direc.entities_lv0[3]]
-        volumes = M.data.elements_lv0[direc.entities_lv0[3]]
 
         ws_p = []
         ws_q = []

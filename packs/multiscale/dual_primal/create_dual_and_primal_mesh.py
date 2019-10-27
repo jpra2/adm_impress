@@ -1,5 +1,5 @@
-from packs import directories as direc
-from packs.utils import getting_tag, get_box, Min_Max
+from ... import directories as direc
+from ...utils.utils_old import getting_tag, get_box, Min_Max
 # from pymoab import core, types, rng, topo_util
 from pymoab import types
 import numpy as np
