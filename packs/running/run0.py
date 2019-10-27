@@ -1,5 +1,5 @@
 import os
-import directories
+from packs import directories
 
 __all__ = []
 
@@ -10,5 +10,5 @@ M.data.init_datas()
 M.data.init_dicts()
 # from .impress.preprocessor0 import M
 os.chdir(path_ant)
-from preprocess.prep0 import Preprocess0
+from packs.preprocess.prep0 import Preprocess0
 Preprocess0(M)

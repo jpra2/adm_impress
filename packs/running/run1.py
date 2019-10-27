@@ -1,7 +1,6 @@
 
 import os
-import directories as direc
-import numpy as np
+from packs import directories as direc
 
 __all__ = []
 name0 = direc.names_outfiles_steps[0]

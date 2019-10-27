@@ -1,6 +1,6 @@
 
 def init_contours(M):
-    from contours.set_contours import Contours
+    from packs.contours.set_contours import Contours
     contours = Contours(M)
     contours.create_tags(M)
     contours.get_wells(M)

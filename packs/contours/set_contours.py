@@ -1,5 +1,5 @@
-import directories as direc
-from utils.utils_old import get_box, getting_tag
+from packs import directories as direc
+from packs.utils import get_box, getting_tag
 from pymoab import types
 import numpy as np
 

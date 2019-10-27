@@ -1,9 +1,8 @@
-
-import directories as direc
+from packs import directories as direc
 from impress.preprocessor import directories as direc_impress
-from utils.utils_old import get_box
+from packs.utils import get_box
 import numpy as np
-import pickle
+
 
 def set_permeability_and_phi_spe10(M):
     ks = np.load(direc.data_loaded['file_name_permeability'])['perms']

@@ -1,4 +1,4 @@
-import directories as direc
+from packs import directories as direc
 import scipy.sparse as sp
 import numpy as np
 
