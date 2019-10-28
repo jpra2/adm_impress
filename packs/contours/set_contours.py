@@ -6,6 +6,7 @@ import numpy as np
 class Contours:
 
     def __init__(self, M):
+        self._gravity = direc.data_loaded['gravity']
         self._loaded = False
         # self.ws_p = [] # pocos de pressao prescrita
         # self.ws_q = []  # pocos de vazao prescrita
@@ -103,6 +104,12 @@ class Contours:
         ws_inj = np.array(ws_inj)
         ws_prod = np.array(ws_prod)
 
+        if self._gravity == True:
+            zs = centroids[:, 0]
+            zs_ws_p = zs[ws_p]
+            gama = direc.data_loaded['monophasic_data']['gama']
+            values_p += gama*zs_ws_p
+
         self.datas['ws_p'] = ws_p
         self.datas['ws_q'] = ws_q
         self.datas['ws_inj'] = ws_inj
@@ -162,3 +169,6 @@ class Contours:
     def loaded(self):
         assert not self._loaded
         self._loaded = True
+
+
+

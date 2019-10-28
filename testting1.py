@@ -1,9 +1,10 @@
 from packs.running.run_simulation import RunSimulation
-rodar = RunSimulation(state=0)
+rodar = RunSimulation(state=5)
+M = rodar.M
 
 from packs.direct_solution.monophasic.monophasic1 import Monophasic
 
-m1 = Monophasic(rodar.M)
+m1 = Monophasic(M)
 m1.get_transmissibility_matrix_without_contours()
 m1.get_transmissibility_matrix()
 m1.get_RHS_term()
@@ -13,6 +14,10 @@ solver = SolverSp()
 x = solver.direct_solver(m1.datas['T'], m1.datas['b'])
 m1.get_solution(x)
 m1.get_flux_faces_and_volumes()
+import pdb
+pdb.set_trace()
+M.data.update_variables_to_mesh()
+
 
 
 
