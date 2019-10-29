@@ -1,22 +1,35 @@
-from packs.running.run_simulation import RunSimulation
-rodar = RunSimulation(state=5)
-M = rodar.M
-
-from packs.direct_solution.monophasic.monophasic1 import Monophasic
-
-m1 = Monophasic(M)
-m1.get_transmissibility_matrix_without_contours()
-m1.get_transmissibility_matrix()
-m1.get_RHS_term()
-
-from packs.solvers.solvers_scipy.solver_sp import SolverSp
-solver = SolverSp()
-x = solver.direct_solver(m1.datas['T'], m1.datas['b'])
-m1.get_solution(x)
-m1.get_flux_faces_and_volumes()
+# from packs.solvers.solvers_scipy.solver_sp import SolverSp
+# from packs.running.run_simulation import RunSimulation
+# # from packs.direct_solution.monophasic.monophasic1 import Monophasic
+# from packs.direct_solution.biphasic.biphasic1 import Biphasic
+# from packs.preprocess.preprocess1 import Preprocess1
 import pdb
+#
+# rodar = RunSimulation(state=5)
+# M = rodar.M
+#
+#
+# prep1 = Preprocess1()
+# prep1.set_saturation_regions(M)
+#
+# # m1 = Monophasic(M)
+# m1 = Biphasic(M)
+# m1.get_transmissibility_matrix_without_contours()
+# m1.get_transmissibility_matrix()
+# m1.get_RHS_term()
+#
+#
+# solver = SolverSp()
+# x = solver.direct_solver(m1.datas['T'], m1.datas['b'])
+# m1.get_solution(x)
+# m1.get_flux_faces_and_volumes()
+#
+# pdb.set_trace()
+# M.data.update_variables_to_mesh()
+
+from packs.simulations.monophasic_simulation import M
+
 pdb.set_trace()
-M.data.update_variables_to_mesh()
 
 
 

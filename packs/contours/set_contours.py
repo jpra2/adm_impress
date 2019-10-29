@@ -19,7 +19,7 @@ class Contours:
         self.datas = dict()
         self.tags = dict()
         self.tags_to_infos = dict()
-        self.names = ['ws_p', 'ws_q', 'ws_inj', 'ws_prod', 'values_p', 'values_q']
+        self.names = ['ws_p', 'ws_q', 'ws_inj', 'ws_prod', 'values_p', 'values_q', 'all_wells']
         M.contours = self
 
     def create_tags(self, M):
@@ -116,6 +116,7 @@ class Contours:
         self.datas['ws_prod'] = ws_prod
         self.datas['values_p'] = values_p
         self.datas['values_q'] = values_q
+        self.datas['all_wells'] = np.union1d(ws_inj, ws_prod)
 
     def set_infos(self, M):
         assert not self._loaded

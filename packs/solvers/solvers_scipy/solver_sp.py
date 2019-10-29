@@ -9,6 +9,8 @@ class SolverSp:
 
     def direct_solver(self, A, b):
 
+        print('\nSolving direct solver spsolve\n')
+
         A2 = A.tocsc().copy()
 
         solution = linalg.spsolve(A2,b)
@@ -16,6 +18,8 @@ class SolverSp:
         return solution
 
     def lu_solver(self, A, b):
+
+        print('\nSolving direct solver lu_solver\n')
 
         A2 = A.tocsc().copy()
 
@@ -25,6 +29,9 @@ class SolverSp:
         return solution
 
     def gmres_solver(self, A, b, x0=None, tol=1e-5, precond=None):
+
+        print('\nSolving gmres solver\n')
+
         n = A.shape[0]
         if precond:
             # M1 = linalg.spilu(A)

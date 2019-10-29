@@ -7,7 +7,7 @@ import pdb
 class Monophasic:
 
     def __init__(self, M):
-        print('\n Monophasic object \n')
+
         self.mesh = M
         self.gravity = direc.data_loaded['gravity']
         self.n_nodes = len(M.data.elements_lv0[direc.entities_lv0[0]])
@@ -15,6 +15,9 @@ class Monophasic:
         self.n_edges = len(M.data.elements_lv0[direc.entities_lv0[2]])
         self.n_volumes = len(M.data.elements_lv0[direc.entities_lv0[3]])
         self.datas = dict()
+        gama = direc.data_loaded['monophasic_data']['gama']
+        self.gama = np.repeat(gama, self.n_volumes)
+        M.simulation = self
 
     def get_transmissibility_matrix_without_contours(self):
         M = self.mesh
@@ -114,7 +117,7 @@ class Monophasic:
 
         if self.gravity:
 
-            gamma = direc.data_loaded['monophasic_data']['gama']
+            gamma = self.gama
 
             vols_viz_internal_faces = M.data.elements_lv0[direc.entities_lv0_0[2]]
             v0 = vols_viz_internal_faces
