@@ -91,7 +91,7 @@ class Monophasic:
         ps0 = x[v0[:, 0]]
         ps1 = x[v0[:, 1]]
 
-        flux_internal_faces = (ps1 - ps0) * t0 + self.get_gravity_source_term()
+        flux_internal_faces = -((ps1 - ps0) * t0 + self.get_gravity_source_term())
         velocity = flux_internal_faces / a0
         velocity_faces[internal_faces] = velocity
         flux_faces = M.data.variables[M.data.variables_impress['flux_faces']]
@@ -113,6 +113,7 @@ class Monophasic:
         centroids = M.data.centroids[direc.entities_lv0[3]]
         source_term_volumes = np.zeros(len(centroids))
         transmissibility_faces = M.data.variables[M.data.variables_impress['transmissibility']]
+        source_term_faces = np.zeros(len(transmissibility_faces))
         internal_faces = M.data.elements_lv0[direc.entities_lv0_0[0]]
 
         if self.gravity:
@@ -128,15 +129,10 @@ class Monophasic:
             delta_zs = zs[v0[:, 1]] - zs[v0[:, 0]]  # tamanho de internal faces, delta_z para cada face
             source_term_internal_faces = delta_zs * gamma
 
-            source_term_faces = np.zeros(len(transmissibility_faces))
             source_term_faces[internal_faces] = source_term_internal_faces
 
             source_term_volumes[v0[:, 0]] += source_term_internal_faces
             source_term_volumes[v0[:, 1]] -= source_term_internal_faces
-
-        else:
-            source_term_volumes = np.zeros(len(centroids))
-            source_term_faces = np.zeros(len(transmissibility_faces))
 
         M.data.variables[M.data.variables_impress['flux_grav_volumes']] = source_term_volumes
         M.data.variables[M.data.variables_impress['flux_grav_faces']] = source_term_faces

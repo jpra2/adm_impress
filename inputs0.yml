@@ -80,5 +80,8 @@ biphasic_data:
   n_o: 2.0
   Sor: 0.2
   Swr: 0.2
+  krw0: 1.0
+  kro0: 1.0
+  mi_w: 1.0
+  mi_o: 5.0
   relative_permeability: 'brooks_and_corey'
-
