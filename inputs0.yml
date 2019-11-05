@@ -9,7 +9,7 @@
 # se ler = True deve ter um arquivo para ler os valores de permeabilidade e alterar a funcao que le a permeabilidade
 #  em adm.preprocess.Preprocess0
 
-state: 5
+state: 0
 direct_solution: True
 read_permeability: True
 file_name_permeability: 'spe10_perms_and_phi.npz'
@@ -72,7 +72,7 @@ monophasic_data:
   gama: 10.0
   mi: 1.0
 
-biphasic: True
+biphasic: False
 biphasic_data:
   gama_w: 100.0
   gama_o: 90.0

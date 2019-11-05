@@ -1,5 +1,5 @@
 from .. import directories as direc
-from impress.preprocessor import directories as direc_impress
+from . import directories_impress as direc_impress
 from ..utils.utils_old import get_box
 import numpy as np
 

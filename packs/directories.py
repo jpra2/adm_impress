@@ -1,6 +1,7 @@
 import os
 import yaml
-from impress.preprocessor import directories as direc_impress
+# from impress.preprocessor import directories as direc_impress
+from .preprocess import directories_impress as direc_impress
 
 entities_lv0 = ['nodes', 'edges', 'faces', 'volumes']
 # entities_lv0 = direc_impress.entities_lv0

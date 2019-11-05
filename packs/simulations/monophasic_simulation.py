@@ -20,3 +20,4 @@ m1.get_solution(x)
 m1.get_flux_faces_and_volumes()
 
 M.data.update_variables_to_mesh()
+m1.export_datas_to_npz()

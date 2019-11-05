@@ -21,8 +21,8 @@ class PyTrilWrap:
             its: numero maximo de iteracoes
             tolerance: tolerancia para o residuo
         output:
-            res: informa se o residuo foi menor que a tolerancia
-            x: vetor resposta
+            # res: informa se o residuo foi menor que a tolerancia
+            x2: vetor resposta
         '''
         comm = self.comm
         n = len(b)
@@ -43,7 +43,7 @@ class PyTrilWrap:
         solver.Iterate(its, tolerance)
         x2 = np.array(x2)
         res = solver.ScaledResidual() < tolerance
-        return x2, res
+        return x2
 
     def set_parameters(self, params=None):
         if params:

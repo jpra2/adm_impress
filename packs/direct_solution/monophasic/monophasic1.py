@@ -1,5 +1,6 @@
 from ... import directories as direc
 import scipy.sparse as sp
+from . import directories_mono
 import numpy as np
 import pdb
 
@@ -15,9 +16,11 @@ class Monophasic:
         self.n_edges = len(M.data.elements_lv0[direc.entities_lv0[2]])
         self.n_volumes = len(M.data.elements_lv0[direc.entities_lv0[3]])
         self.datas = dict()
+
         gama = direc.data_loaded['monophasic_data']['gama']
         self.gama = np.repeat(gama, self.n_volumes)
         M.simulation = self
+        self.name_datas = directories_mono.name_datas
 
     def get_transmissibility_matrix_without_contours(self):
         M = self.mesh
@@ -138,3 +141,17 @@ class Monophasic:
         M.data.variables[M.data.variables_impress['flux_grav_faces']] = source_term_faces
 
         return source_term_faces[internal_faces]
+
+    def export_datas_to_npz(self):
+
+        name_datas = self.name_datas
+
+        np.savez(name_datas, **self.datas)
+
+    def load_datas_from_npz(self):
+        name_datas = self.name_datas
+
+        arq = np.load(name_variables)
+
+        for name, data in arq.items():
+            self.datas[name] = data
