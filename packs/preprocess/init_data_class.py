@@ -24,7 +24,3 @@ def initDataClass(M):
         for name in name_variables:
             infos = dic1[name]
             data.get_info_data(name, infos['data size'], infos['data format'], entity)
-
-    M.data.init_datas()
-    M.data.init_dicts()
-    
