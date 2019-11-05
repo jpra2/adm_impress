@@ -1,15 +1,15 @@
-from PyTrilinos import Epetra, AztecOO, EpetraExt, Teuchos, IFPACK
+from PyTrilinos import Epetra, AztecOO, EpetraExt, Teuchos
 import numpy as np
 import scipy.sparse as sp
 # IFPACK.PrintSparsity(Matrix, "matrix.ps")
 
 
-class PyTrilWrap:
+class solverTril:
 
     def __init__(self, p=1):
         self._comm  = Epetra.PyComm()
         self._params = dict()
-        self.set_parameters()
+        # self.set_parameters()
 
     def solve_linear_problem(self, A, b, x=None, its=1000, tolerance=1e-10):
         '''
@@ -24,7 +24,7 @@ class PyTrilWrap:
             # res: informa se o residuo foi menor que a tolerancia
             x2: vetor resposta
         '''
-        comm = self.comm
+        comm = self._comm
         n = len(b)
         std_map = Epetra.Map(n, 0, comm)
         x2 = Epetra.Vector(std_map)
