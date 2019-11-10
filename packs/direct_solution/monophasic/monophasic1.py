@@ -41,16 +41,16 @@ class Monophasic:
 
     def get_RHS_term(self):
         M = self.mesh
-        contours = M.contours.datas
+        wells = M.contours.datas
         b = np.zeros(self.n_volumes)
 
         if self.gravity:
-            contours.add_gravity(M, self.gama)
+            M.contours.add_gravity(M, self.gama)
 
-        ws_p = contours['ws_p']  # pocos de pressao prescrita
-        values_p = contours['values_p']  # valores de pressao prescrita
-        ws_q = contours['ws_q']  # pocos de vazao prescrita
-        values_q = contours['values_q']  # valor da vazao prescrita
+        ws_p = wells['ws_p']  # pocos de pressao prescrita
+        values_p = wells['values_p']  # valores de pressao prescrita
+        ws_q = wells['ws_q']  # pocos de vazao prescrita
+        values_q = wells['values_q']  # valor da vazao prescrita
 
         b[ws_p] = values_p
         b[ws_q] = values_q
@@ -62,10 +62,10 @@ class Monophasic:
         M = self.mesh
         contours = M.contours.datas
 
-        ws_p = contours['ws_p'].flatten()
+        ws_p = contours['ws_p']
 
         T = self.datas['Tini'].tolil().copy()
-        T[ws_p] = sp.lil_matrix((len(ws_p), T.shape[0]))
+        T[ws_p] = np.zeros((len(ws_p), T.shape[0]))
         T[ws_p, ws_p] = np.ones(len(ws_p))
 
         self.datas['T'] = T

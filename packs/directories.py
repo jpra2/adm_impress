@@ -7,7 +7,8 @@ entities_lv0 = ['nodes', 'edges', 'faces', 'volumes']
 # entities_lv0 = direc_impress.entities_lv0
 entities_lv0_0 = direc_impress.entities_lv0_0
 
-names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeability', 'Crs', 'Saturation']
+names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeability', 'Crs',
+                         'Saturation', 'set_permeability', 'set_porosity', 'Porosity']
 
 names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
 

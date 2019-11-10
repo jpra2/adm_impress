@@ -5,27 +5,23 @@ import numpy as np
 
 
 def set_permeability_and_phi_spe10(M):
-    ks = np.load(direc.data_loaded['file_name_permeability'])['perms']
-    phi = np.load(direc.data_loaded['file_name_permeability'])['phi']
+    data_spe10 = np.load(direc.data_loaded['file_name_permeability'])
+    ks = data_spe10['perms']
+    phi = data_spe10['phi']
     phi = phi.flatten()
 
     nx = 60
     ny = 220
     nz = 85
-    perms = []
-    phis = []
 
-    k = 1.0  #para converter a unidade de permeabilidade
     centroids = M.data.centroids[direc.entities_lv0[3]]
 
     ijk0 = np.array([centroids[:, 0]//20.0, centroids[:, 1]//10.0, centroids[:, 2]//2.0])
     ee = ijk0[0] + ijk0[1]*nx + ijk0[2]*nx*ny
     ee = ee.astype(np.int32)
-    perms = ks[ee]
-    phis = phi[ee]
 
-    M.data.variables[M.data.variables_impress['permeability']] = perms #permeabilidade
-    M.data.variables[M.data.variables_impress['poro']] = phis  #porosidade
+    M.data.variables[M.data.variables_impress['permeability']] = ks[ee] #permeabilidade
+    M.data.variables[M.data.variables_impress['poro']] = phi[ee]  #porosidade
 
 class Preprocess0:
     '''
@@ -116,20 +112,23 @@ class Preprocess0:
         M.data.variables[M.data.variables_impress['hs']] = dd
 
     def set_permeability_and_phi(self, M):
+
         data_loaded = direc.data_loaded
 
         read = data_loaded[direc.names_data_loaded_lv0[0]]
-        if data_loaded[direc.names_data_loaded_lv0[2]]:
-            if read:
-                set_permeability_and_phi_spe10(M)
-            else:
-                self.set_permeability_regions(M)
-                self.set_phi_regions(M)
+        set_perm = data_loaded[direc.names_data_loaded_lv0[5]]
+        set_phi = data_loaded[direc.names_data_loaded_lv0[6]]
+
+        if read:
+            set_permeability_and_phi_spe10(M)
+        if set_perm:
+            self.set_permeability_regions(M)
+        if set_phi:
+            self.set_phi_regions(M)
 
     def set_permeability_regions(self, M):
 
         centroids = M.data.centroids[direc.entities_lv0[3]]
-        n = len(centroids)
 
         for reg in direc.data_loaded[direc.names_data_loaded_lv0[2]]:
             d0 = direc.data_loaded[direc.names_data_loaded_lv0[2]][reg]
@@ -153,9 +152,24 @@ class Preprocess0:
     def set_phi_regions(self, M):
         # TODO: atualizar essa funcao
         centroids = M.data.centroids[direc.entities_lv0[3]]
-        n = len(centroids)
-        values = np.repeat(0.3, n)
-        M.data.variables[direc.variables_impress['poro']] = values
+
+        for reg in direc.data_loaded[direc.names_data_loaded_lv0[7]]:
+            d0 = direc.data_loaded[direc.names_data_loaded_lv0[7]][reg]
+            tipo = d0[direc.names_data_loaded_lv2[0]]
+            value = d0[direc.names_data_loaded_lv2[1]]
+            assert isinstance(value, float)
+
+            if tipo == direc.types_region_data_loaded[0]:
+                n_volumes = M.data.len_entities['volumes']
+                M.data.variables[M.data.variables_impress['poro']] = np.repeat(value, n_volumes)
+
+            elif tipo == direc.types_region_data_loaded[1]:
+                p0 = d0[direc.names_data_loaded_lv2[2]]
+                p1 = d0[direc.names_data_loaded_lv2[3]]
+                points = np.array([np.array(p0), np.array(p1)])
+                indices = get_box(centroids, points)
+                n_volumes = len(indices)
+                M.data.variables[M.data.variables_impress['poro']][indices] = np.repeat(value, n_volumes)
 
     def set_k_harm_and_pretransmissibility_hex_structured_dep0(self, M):
         '''

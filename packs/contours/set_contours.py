@@ -23,6 +23,8 @@ class Contours:
         M.contours = self
 
     def add_gravity(self, M, gama):
+        assert direc.data_loaded['gravity'] == True
+
         ws_p = self.datas['ws_p']
         values_p_ini = self.datas['values_p_ini']
 
@@ -71,6 +73,7 @@ class Contours:
         values_q = []
 
         for p in data_wells:
+
             well = data_wells[p]
             type_region = well['type_region']
             tipo = well['type']
@@ -78,6 +81,7 @@ class Contours:
             value = well['value']
 
             if type_region == direc.types_region_data_loaded[1]: #box
+
                 p0 = well['p0']
                 p1 = well['p1']
                 limites = np.array([p0, p1])
@@ -86,13 +90,13 @@ class Contours:
                 if prescription == 'Q':
 
                     val = value/nv
-                    if tipo == 'Producer':
+                    if tipo == 'Injector':
                         val *= -1
 
                     ws_q.append(vols)
                     values_q.append(np.repeat(val, nv))
 
-                if prescription == 'P':
+                elif prescription == 'P':
                     val = value
                     ws_p.append(vols)
                     values_p.append(np.repeat(val, nv))
@@ -109,18 +113,12 @@ class Contours:
         # self.ws_inj = np.array(self.ws_inj).flatten()
         # self.ws_pro = np.array(self.ws_pro).flatten()
 
-        ws_q = np.array(ws_q)
-        ws_p = np.array(ws_p)
-        values_p = np.array(values_p)
-        values_q = np.array(values_q)
-        ws_inj = np.array(ws_inj)
-        ws_prod = np.array(ws_prod)
-
-        if self._gravity == True:
-            zs = centroids[:, 0]
-            zs_ws_p = zs[ws_p]
-            gama = direc.data_loaded['monophasic_data']['gama']
-            values_p += gama*zs_ws_p
+        ws_q = np.array(ws_q).flatten()
+        ws_p = np.array(ws_p).flatten()
+        values_p = np.array(values_p).flatten()
+        values_q = np.array(values_q).flatten()
+        ws_inj = np.array(ws_inj).flatten()
+        ws_prod = np.array(ws_prod).flatten()
 
         self.datas['ws_p'] = ws_p
         self.datas['ws_q'] = ws_q
