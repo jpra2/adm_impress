@@ -1,0 +1,88 @@
+
+##Permeability
+
+# setar permeabilidade no reservatorio
+# se read_permeability = False precisa determinar a regiao para colocar a permeabilidade
+# se type = all, o valor (value) sera colocado em todos os volumes
+# se type = box, o valor sera colocado apenas na caixa delimitada pelos pontos p0 e p1
+# value eh o tensor de permeabilidade sendo [kxx, kxy, kxz, kyx, kyy, kyz, kzx, kzy, kzz]
+# se ler = True deve ter um arquivo para ler os valores de permeabilidade e alterar a funcao que le a permeabilidade
+#  em adm.preprocess.Preprocess0
+
+mesh_name: 'mesh/27x27x27.msh'
+state: 0
+type_of_solution: 'Fine_scale'
+gravity: False
+
+read_permeability: True
+file_name_permeability: 'spe10_perms_and_phi.npz'
+Permeability:
+  r1:
+    type: 'all'
+    value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+
+  r2:
+    type: 'box'
+    p0: [0.0, 0.0, 0.0]
+    p1: [70.0, 40.0, 10.0]
+    value: [10.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0]
+
+Crs:
+  Cr1: [3, 3, 3]
+  Cr2: [9, 9, 9]
+
+Wells:
+  P1:
+    type_region: 'box'
+    type: Injector
+    prescription: 'Q' # vazao prescrita
+    p0: [0.0, 0.0, 0.0]
+    p1: [20.0, 10.0, 54]
+    value: 100.0
+
+  P2:
+    type_region: 'box'
+    type: Producer
+    prescription: 'P' # pressao prescrita
+    p0: [0.0, 260, 0.0]
+    p1: [20, 270, 54]
+    value: 1.0
+
+  P3:
+    type_region: 'box'
+    type: Producer
+    prescription: 'P'
+    p0: [520, 0.0, 0.0]
+    p1: [540, 10.0, 54.0]
+    value: 1.0
+
+# Saturacao
+Saturation:
+  r1:
+    type: 'all'
+    value: 0.2
+
+  r2:
+    type: 'wells'
+    type1_well: 'injector'
+    type2_well: None
+    value: 1.0
+
+monophasic: true
+monophasic_data:
+  gama: 10.0
+  mi: 1.0
+
+biphasic: False
+biphasic_data:
+  gama_w: 10000.0
+  gama_o: 9000.0
+  n_w: 2.0
+  n_o: 2.0
+  Sor: 0.2
+  Swr: 0.2
+  krw0: 1.0
+  kro0: 1.0
+  mi_w: 1.0
+  mi_o: 5.0
+  relative_permeability: 'brooks_and_corey'

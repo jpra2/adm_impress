@@ -4,7 +4,6 @@ from ..solvers.solvers_scipy.solver_sp import SolverSp
 import time
 
 from ..direct_solution.monophasic.monophasic1 import Monophasic
-import pdb
 from .init_simulation import rodar
 
 M = rodar.M
@@ -24,5 +23,3 @@ m1.get_flux_faces_and_volumes()
 
 M.data.update_variables_to_mesh()
 m1.export_datas_to_npz()
-
-pdb.set_trace()

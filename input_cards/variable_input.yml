@@ -43,6 +43,13 @@ area:
   sparse: True
   level: 0
 
+velocity_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
 k_harm:
   type: faces
   data size: 1
@@ -58,6 +65,20 @@ pretransmissibility:
   level: 0
 
 transmissibility:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_grav_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_faces:
   type: faces
   data size: 1
   data type: float
@@ -103,6 +124,20 @@ hs:
 permeability:
   type: volumes
   data size: 9
+  data type: float
+  sparse: True
+  level: 0
+
+flux_grav_volumes:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_volumes:
+  type: volumes
+  data size: 1
   data type: float
   sparse: True
   level: 0
