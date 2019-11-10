@@ -16,18 +16,13 @@ def set_permeability_and_phi_spe10(M):
     phis = []
 
     k = 1.0  #para converter a unidade de permeabilidade
-    centroids=M.data.centroids[direc.entities_lv0[3]]
+    centroids = M.data.centroids[direc.entities_lv0[3]]
 
-    for centroid in centroids:
-        ijk = np.array([centroid[0]//20.0, centroid[1]//10.0, centroid[2]//2.0])
-        e = int(ijk[0] + ijk[1]*nx + ijk[2]*nx*ny)
-        permeabilidade = ks[e]
-        permeabilidade *= k
-        perms.append(permeabilidade)
-        phis.append(phi[e])
-
-    perms = np.array(perms)
-    phis = np.array(phis)
+    ijk0 = np.array([centroids[:, 0]//20.0, centroids[:, 1]//10.0, centroids[:, 2]//2.0])
+    ee = ijk0[0] + ijk0[1]*nx + ijk0[2]*nx*ny
+    ee = ee.astype(np.int32)
+    perms = ks[ee]
+    phis = phi[ee]
 
     M.data.variables[M.data.variables_impress['permeability']] = perms #permeabilidade
     M.data.variables[M.data.variables_impress['poro']] = phis  #porosidade
@@ -139,21 +134,21 @@ class Preprocess0:
         for reg in direc.data_loaded[direc.names_data_loaded_lv0[2]]:
             d0 = direc.data_loaded[direc.names_data_loaded_lv0[2]][reg]
             tipo = d0[direc.names_data_loaded_lv2[0]]
-            value = np.array(d0[direc.names_data_loaded_lv2[1]])
+            value = np.array([np.array(d0[direc.names_data_loaded_lv2[1]])])
 
             if tipo == direc.types_region_data_loaded[0]:
-                tamanho_variavel = M.data.info_data[direc.variables_impress['permeability']][direc_impress.names_datas[0]]
+                # tamanho_variavel = M.data.info_data[M.data.variables_impress['permeability']][direc_impress.names_datas[0]]
+                n_volumes = M.data.len_entities['volumes']
                 # valor = valor.reshape([n, tamanho_variavel])
-                for i in range(n):
-                    M.data.variables[direc.variables_impress['permeability']][i] = value
+                M.data.variables[M.data.variables_impress['permeability']] = np.repeat(value, n_volumes, axis=0)
 
             elif tipo == direc.types_region_data_loaded[1]:
                 p0 = d0[direc.names_data_loaded_lv2[2]]
                 p1 = d0[direc.names_data_loaded_lv2[3]]
                 points = np.array([np.array(p0), np.array(p1)])
                 indices = get_box(centroids, points)
-                for i in indices:
-                    M.data.variables[direc.variables_impress['permeability']][i] = value
+                n_volumes = len(indices)
+                M.data.variables[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
 
     def set_phi_regions(self, M):
         # TODO: atualizar essa funcao
@@ -225,7 +220,7 @@ class Preprocess0:
         '''
         considerando malha estruturada uniforme
         '''
-        
+
         u_normal = M.data.variables[M.data.variables_impress['u_normal']]
         vols_viz_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[1]]
         internal_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[0]]
