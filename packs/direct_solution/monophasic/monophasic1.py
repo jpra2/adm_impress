@@ -42,8 +42,10 @@ class Monophasic:
     def get_RHS_term(self):
         M = self.mesh
         contours = M.contours.datas
-
         b = np.zeros(self.n_volumes)
+
+        if self.gravity:
+            contours.add_gravity(M, self.gama)
 
         ws_p = contours['ws_p']  # pocos de pressao prescrita
         values_p = contours['values_p']  # valores de pressao prescrita

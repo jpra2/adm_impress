@@ -22,6 +22,17 @@ class Contours:
         self.names = ['ws_p', 'ws_q', 'ws_inj', 'ws_prod', 'values_p', 'values_q', 'all_wells']
         M.contours = self
 
+    def add_gravity(self, M, gama):
+        ws_p = self.datas['ws_p']
+        values_p_ini = self.datas['values_p_ini']
+
+        zs_ws_p = M.data.centroids['volumes'][ws_p][:,2]
+        gama_ws_p = gama[ws_p]
+
+        dz = gama_ws_p*zs_ws_p
+        values_p = values_p_ini + dz
+        self.datas['values_p'] = values_p
+
     def create_tags(self, M):
         assert not self._loaded
 
@@ -50,6 +61,7 @@ class Contours:
 
         data_wells = direc.data_loaded['Wells']
         centroids = M.data.centroids[direc.entities_lv0[3]]
+        gravity = direc.data_loaded['gravity']
 
         ws_p = []
         ws_q = []
@@ -117,6 +129,7 @@ class Contours:
         self.datas['values_p'] = values_p
         self.datas['values_q'] = values_q
         self.datas['all_wells'] = np.union1d(ws_inj, ws_prod)
+        self.datas['values_p_ini'] = values_p
 
     def set_infos(self, M):
         assert not self._loaded

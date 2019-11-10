@@ -162,12 +162,13 @@ class Preprocess0:
         values = np.repeat(0.3, n)
         M.data.variables[direc.variables_impress['poro']] = values
 
-    def set_k_harm_and_pretransmissibility_hex_structured(self, M):
+    def set_k_harm_and_pretransmissibility_hex_structured_dep0(self, M):
         '''
         considerando malha estruturada uniforme
         '''
-        normals = np.absolute(M.faces.normal[:])
-        M.data.variables[M.data.variables_impress['u_normal']] = normals
+        # normals = np.absolute(M.faces.normal[:])
+        # M.data.variables[M.data.variables_impress['u_normal']] = normals
+        normals = M.data.variables[M.data.variables_impress['u_normal']]
         vols_viz_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[1]]
         internal_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[0]]
         boundary_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[4]]
@@ -219,6 +220,52 @@ class Preprocess0:
             k_harm = k00
             k_harm_faces[f] = k_harm
             pretransmissibility_faces[f] = (area*k_harm)/(dist)
+
+    def set_k_harm_and_pretransmissibility_hex_structured(self, M):
+        '''
+        considerando malha estruturada uniforme
+        '''
+        
+        u_normal = M.data.variables[M.data.variables_impress['u_normal']]
+        vols_viz_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[1]]
+        internal_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[0]]
+        boundary_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[4]]
+        centroids_volumes = M.data.centroids[direc.entities_lv0[3]]
+        ks = M.data.variables[M.data.variables_impress['permeability']].copy()
+        dist_cent = M.data.variables[M.data.variables_impress['dist_cent']]
+        areas = M.data.variables[M.data.variables_impress['area']]
+        hs = M.data.variables[M.data.variables_impress['hs']]
+        vols_viz_internal_faces = M.data.elements_lv0[direc.entities_lv0_0[2]]
+        vols_viz_boundary_faces = M.data.elements_lv0[direc.entities_lv0_0[3]]
+
+        k_harm_faces = np.zeros(len(internal_faces) + len(boundary_faces))
+        pretransmissibility_faces = k_harm_faces.copy()
+
+        u_normal_internal_faces = u_normal[internal_faces]
+        ni = len(internal_faces)
+        ks0 = ks[vols_viz_internal_faces[:, 0]]
+        ks1 = ks[vols_viz_internal_faces[:, 1]]
+        ks0 = ks0.reshape([ni, 3, 3]) * u_normal_internal_faces.reshape([ni, 1, 3])
+        ks1 = ks1.reshape([ni, 3, 3]) * u_normal_internal_faces.reshape([ni, 1, 3])
+        ks0 = ks0.sum(axis=2).sum(axis=1)
+        ks1 = ks1.sum(axis=2).sum(axis=1)
+
+        hi = np.zeros((ni, 2))
+        hi[:, 0] = ((hs[vols_viz_internal_faces[:, 0]]*u_normal_internal_faces).sum(axis=1))/2
+        hi[:, 1] = ((hs[vols_viz_internal_faces[:, 1]]*u_normal_internal_faces).sum(axis=1))/2
+        k_harm_faces[internal_faces] = hi.sum(axis=1)/(hi[:, 0]/ks0 + hi[:, 1]/ks1)
+
+        u_normal_b_faces = u_normal[boundary_faces]
+        nb = len(boundary_faces)
+        ks0 = ks[vols_viz_boundary_faces.flatten()]
+        ks0 = ks0.reshape([nb, 3, 3]) * u_normal_b_faces.reshape([nb, 1, 3])
+        ks0 = ks0.sum(axis=2).sum(axis=1)
+        k_harm_faces[boundary_faces] = ks0
+
+        pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
+
+        M.data.variables[M.data.variables_impress['k_harm']] = k_harm_faces
+        M.data.variables[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
 
     def set_transmissibility_monofasic(self, M):
         # mi_monofasic = 1.0

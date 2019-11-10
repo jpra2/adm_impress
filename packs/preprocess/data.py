@@ -14,6 +14,7 @@ class Data:
     armazena as variaveis do impress e dicts que linkam
     as entidades do moab aos seus respectivos ids globais
     '''
+    valores_para_converter = ['hs', 'permeability', 'dist_cent']
 
     def __init__(self, n_nodes, n_edges, n_faces, n_volumes, fine_scale_mesh_obj):
         '''
@@ -145,6 +146,8 @@ class Data:
         self.centroids[direc.entities_lv0[2]] = self.mesh.faces.center(self.mesh.faces.all)
         self.centroids[direc.entities_lv0[1]] = self.mesh.edges.center(self.mesh.edges.all)
         self.centroids[direc.entities_lv0[0]] = self.mesh.nodes.center(self.mesh.nodes.all)
+        self.variables[self.variables_impress['u_normal']] = np.absolute(self.mesh.faces.normal[:])
+        self.variables[self.variables_impress['NODES']] = self.centroids[direc.entities_lv0[0]].copy()
 
     def update_variables_to_mesh(self, names=None):
 
