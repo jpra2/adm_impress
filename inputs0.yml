@@ -1,15 +1,16 @@
 
 ##Permeability
 
-# setar permeabilidade no reservatório
-# se read_permeability = False precisa determinar a região para colocar a permeabilidade
-# se type = all, o valor (value) será colocado em todos os volumes
-# se type = box, o valor será colocado apenas na caixa delimitada pelos pontos p0 e p1
+# setar permeabilidade no reservatorio
+# se read_permeability = False precisa determinar a regiao para colocar a permeabilidade
+# se type = all, o valor (value) sera colocado em todos os volumes
+# se type = box, o valor sera colocado apenas na caixa delimitada pelos pontos p0 e p1
 # value eh o tensor de permeabilidade sendo [kxx, kxy, kxz, kyx, kyy, kyz, kzx, kzy, kzz]
 # se ler = True deve ter um arquivo para ler os valores de permeabilidade e alterar a funcao que le a permeabilidade
 #  em adm.preprocess.Preprocess0
 
-state: 5
+mesh_name: 'mesh/27x27x27.msh'
+state: 0
 type_of_solution: 'Fine_scale'
 gravity: False
 

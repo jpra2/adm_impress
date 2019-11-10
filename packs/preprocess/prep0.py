@@ -29,8 +29,8 @@ def set_permeability_and_phi_spe10(M):
     perms = np.array(perms)
     phis = np.array(phis)
 
-    M.data.variables[direc.variables_impress['permeability']] = perms #permeabilidade
-    M.data.variables[direc.variables_impress['poro']] = phis  #porosidade
+    M.data.variables[M.data.variables_impress['permeability']] = perms #permeabilidade
+    M.data.variables[M.data.variables_impress['poro']] = phis  #porosidade
 
 class Preprocess0:
     '''
@@ -52,7 +52,7 @@ class Preprocess0:
         M.data.update_variables_to_mesh()
         M.data.save_info_data()
         M.data.export_variables_to_npz(direc.names_outfiles_variables_steps[0])
-        M.core.print(text=direc.output_file+str(M.state))
+        M.core.print(file=direc.output_file+str(M.state))
         np.save(direc.state_path, np.array([M.state]))
         np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[0]]))
 
@@ -114,8 +114,8 @@ class Preprocess0:
         for i in range(3):
             dd[:, i] = np.repeat(hs[i], n_volumes)
 
-        M.data.variables[direc.variables_impress['area']] = all_areas
-        M.data.variables[direc.variables_impress['dist_cent']] = dist_cent
+        M.data.variables[M.data.variables_impress['area']] = all_areas
+        M.data.variables[M.data.variables_impress['dist_cent']] = dist_cent
         M.data.variables[M.data.variables_impress['volume']] = np.repeat(volume, n_volumes)
         M.data.variables[M.data.variables_impress['NODES']] = coord_nodes
         M.data.variables[M.data.variables_impress['hs']] = dd
@@ -167,15 +167,15 @@ class Preprocess0:
         considerando malha estruturada uniforme
         '''
         normals = np.absolute(M.faces.normal[:])
-        M.data.variables[direc.variables_impress['u_normal']] = normals
+        M.data.variables[M.data.variables_impress['u_normal']] = normals
         vols_viz_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[1]]
         internal_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[0]]
         boundary_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[4]]
         centroids_volumes = M.data.centroids[direc.entities_lv0[3]]
-        ks = M.data.variables[direc.variables_impress['permeability']].copy()
-        dist_cent = M.data.variables[direc.variables_impress['dist_cent']]
-        areas = M.data.variables[direc.variables_impress['area']]
-        k_harm_faces = M.data.variables[direc.variables_impress['k_harm']]
+        ks = M.data.variables[M.data.variables_impress['permeability']].copy()
+        dist_cent = M.data.variables[M.data.variables_impress['dist_cent']]
+        areas = M.data.variables[M.data.variables_impress['area']]
+        k_harm_faces = M.data.variables[M.data.variables_impress['k_harm']]
         hs = M.data.variables[M.data.variables_impress['hs']]
         pretransmissibility_faces = M.data.variables[M.data.variables_impress['pretransmissibility']]
 

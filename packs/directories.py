@@ -16,8 +16,10 @@ types_region_for_saturation = ['all', 'wells']
 types_presc = ['dirichlet', 'neumann']
 types_wells = ['injector', 'producer']
 
-variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
-                     'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
+# variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
+#                      'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
+
+variables_impress = dict()
 
 impress = 'impress'
 tcc = 'tcc'
@@ -60,3 +62,6 @@ names_datas_contour = os.path.join(flying, 'datas_contour.npz')
 
 with open(input_file_0, 'r') as f:
     data_loaded = yaml.safe_load(f)
+
+with open('input_cards/variable_input.yml', 'r') as f:
+    variables_loaded = yaml.safe_load(f)

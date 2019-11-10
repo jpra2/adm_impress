@@ -1,6 +1,6 @@
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 #col
-from ..solvers.solvers_trilinos.solvers_tril import solverTril
+# from ..solvers.solvers_trilinos.solvers_tril import solverTril
 import time
 
 from ..direct_solution.monophasic.monophasic1 import Monophasic

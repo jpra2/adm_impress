@@ -91,7 +91,7 @@ def get_all_tags_2(mb, list_names_tags):
 
     return tags
 
-def set_faces_in_boundary_by_meshsets(mb, mtu, meshsets, faces_boundary_meshset_tag):
+def set_faces_in_boundary_by_meshsets_dep0(mb, mtu, meshsets, faces_boundary_meshset_tag):
     all_faces_on_boundary = mb.create_meshset()
     meshsets = list(meshsets)
     n = len(meshsets)
@@ -139,6 +139,55 @@ def set_faces_in_boundary_by_meshsets(mb, mtu, meshsets, faces_boundary_meshset_
         mb.add_entities(all_faces_on_boundary, faces_cont)
 
     mb.tag_set_data(faces_boundary_meshset_tag, 0, all_faces_on_boundary)
+
+def set_faces_in_boundary_by_meshsets(mb, mtu, meshsets, faces_boundary_meshset_tag, M):
+    all_faces_on_boundary = mb.create_meshset()
+    meshsets = list(meshsets)
+    n = len(meshsets)
+
+    ms0 = set()
+
+    # for m1 in meshsets:
+    #     ms0.add(m1)
+    #     cont = 0
+    #     elems1 = mb.get_entities_by_handle(m1)
+    #     faces1 = mtu.get_bridge_adjacencies(elems1, 2, 2)
+    #     for m2 in meshsets:
+    #         if m2 in ms0:
+    #             continue
+    #         elems2 = mb.get_entities_by_handle(m2)
+    #         faces2 = mtu.get_bridge_adjacencies(elems2, 2, 2)
+    #         intersect = rng.intersect(faces1, faces2)
+    #         if len(intersect) < 1:
+    #             continue
+    #         cont+=1
+    #         mb.add_entities(all_faces_on_boundary, intersect)
+    #     print(cont)
+    #     if cont > 3:
+    #         print(i)
+    #         print(cont)
+    #         import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
+
+    for m1 in meshsets:
+        cont = 0
+        elems1 = mb.get_entities_by_handle(m1)
+        faces1 = mtu.get_bridge_adjacencies(elems1, 3, 2)
+        # for face in faces1:
+        #     elems = mb.get_adjacencies(face, 3)
+        #     if len(elems) < 2:
+        #         continue
+        #     if elems[0] in elems1 and elems[1] in elems1:
+        #         continue
+        #     mb.add_entities(all_faces_on_boundary, rng.Range(face))
+        elems2 = mtu.get_bridge_adjacencies(elems1, 2, 3)
+        elems3 = rng.subtract(elems2, elems1)
+        faces3 = mtu.get_bridge_adjacencies(elems3, 3, 2)
+        faces_cont = rng.intersect(faces3, faces1)
+
+        mb.add_entities(all_faces_on_boundary, faces_cont)
+
+    mb.tag_set_data(faces_boundary_meshset_tag, M.core.root_set, all_faces_on_boundary)
 
 def load_adm_mesh():
     n_levels = 3

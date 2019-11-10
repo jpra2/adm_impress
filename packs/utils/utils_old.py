@@ -54,7 +54,7 @@ def getting_tag(mb, name, n, t1, t2, create, entitie, tipo, tags, tags_to_infos)
 
 
 def Min_Max(e, M1):
-    verts = M1.mb.get_connectivity(int(e))
+    verts = M1.mb.get_connectivity(e)
     coords = M1.mb.get_coords(verts).reshape(len(verts), 3)
     xmax, ymax, zmax = coords.max(axis=0)
     xmin, ymin, zmin = coords.min(axis=0)

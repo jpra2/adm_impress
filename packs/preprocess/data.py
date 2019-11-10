@@ -187,7 +187,7 @@ class Data:
         name_variables = self.name_variables
         name_info_data = self.name_info_data
 
-        from packs import directories as direc
+        from .. import directories as direc
 
         if file_name:
             arq = np.load(file_name)
