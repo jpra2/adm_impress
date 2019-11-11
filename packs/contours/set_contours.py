@@ -20,7 +20,22 @@ class Contours:
         self.tags = dict()
         self.tags_to_infos = dict()
         self.names = ['ws_p', 'ws_q', 'ws_inj', 'ws_prod', 'values_p', 'values_q', 'all_wells']
+        cent_nodes = M.data.variables[M.data.variables_impress['NODES']]
+        self.Lz = cent_nodes.max(axis=0)[2]
         M.contours = self
+
+    def add_gravity(self, M, gama):
+        assert direc.data_loaded['gravity'] == True
+
+        ws_p = self.datas['ws_p']
+        values_p_ini = self.datas['values_p_ini']
+
+        zs_ws_p = M.data.centroids['volumes'][ws_p][:,2]
+        gama_ws_p = gama[ws_p]
+
+        dz = gama_ws_p*(-zs_ws_p + self.Lz)
+        values_p = values_p_ini + dz
+        self.datas['values_p'] = values_p
 
     def create_tags(self, M):
         assert not self._loaded
@@ -50,6 +65,7 @@ class Contours:
 
         data_wells = direc.data_loaded['Wells']
         centroids = M.data.centroids[direc.entities_lv0[3]]
+        gravity = direc.data_loaded['gravity']
 
         ws_p = []
         ws_q = []
@@ -59,6 +75,7 @@ class Contours:
         values_q = []
 
         for p in data_wells:
+
             well = data_wells[p]
             type_region = well['type_region']
             tipo = well['type']
@@ -66,6 +83,7 @@ class Contours:
             value = well['value']
 
             if type_region == direc.types_region_data_loaded[1]: #box
+
                 p0 = well['p0']
                 p1 = well['p1']
                 limites = np.array([p0, p1])
@@ -74,13 +92,13 @@ class Contours:
                 if prescription == 'Q':
 
                     val = value/nv
-                    if tipo == 'Producer':
+                    if tipo == 'Injector':
                         val *= -1
 
                     ws_q.append(vols)
                     values_q.append(np.repeat(val, nv))
 
-                if prescription == 'P':
+                elif prescription == 'P':
                     val = value
                     ws_p.append(vols)
                     values_p.append(np.repeat(val, nv))
@@ -97,18 +115,12 @@ class Contours:
         # self.ws_inj = np.array(self.ws_inj).flatten()
         # self.ws_pro = np.array(self.ws_pro).flatten()
 
-        ws_q = np.array(ws_q)
-        ws_p = np.array(ws_p)
-        values_p = np.array(values_p)
-        values_q = np.array(values_q)
-        ws_inj = np.array(ws_inj)
-        ws_prod = np.array(ws_prod)
-
-        if self._gravity == True:
-            zs = centroids[:, 0]
-            zs_ws_p = zs[ws_p]
-            gama = direc.data_loaded['monophasic_data']['gama']
-            values_p += gama*zs_ws_p
+        ws_q = np.array(ws_q).flatten()
+        ws_p = np.array(ws_p).flatten()
+        values_p = np.array(values_p).flatten()
+        values_q = np.array(values_q).flatten()
+        ws_inj = np.array(ws_inj).flatten()
+        ws_prod = np.array(ws_prod).flatten()
 
         self.datas['ws_p'] = ws_p
         self.datas['ws_q'] = ws_q
@@ -117,6 +129,7 @@ class Contours:
         self.datas['values_p'] = values_p
         self.datas['values_q'] = values_q
         self.datas['all_wells'] = np.union1d(ws_inj, ws_prod)
+        self.datas['values_p_ini'] = values_p
 
     def set_infos(self, M):
         assert not self._loaded
@@ -165,11 +178,8 @@ class Contours:
         M.state = 4
         np.save(direc.state_path, np.array([M.state]))
         np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[4]]))
-        M.core.print(text=direc.output_file+str(M.state))
+        M.core.print(file=direc.output_file+str(M.state))
 
     def loaded(self):
         assert not self._loaded
         self._loaded = True
-
-
-

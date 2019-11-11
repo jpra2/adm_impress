@@ -118,6 +118,7 @@ class DualPrimalMesh1:
         def get_hs(M, coord_nodes):
 
             unis = np.array([np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])])
+            import pdb; pdb.set_trace()
             nos0 = M.volumes.bridge_adjacencies(0, 2, 0)[0]
             n0 = coord_nodes[nos0[0]]
             hs = np.zeros(3)
@@ -147,7 +148,8 @@ class DualPrimalMesh1:
         xmin, ymin, zmin = coord_nodes.min(axis=0)
         xmax, ymax, zmax = Lx, Ly, Lz
 
-        lx, ly, lz = get_hs(M, coord_nodes)
+        # lx, ly, lz = get_hs(M, coord_nodes)
+        lx, ly, lz = M.data.variables['hs'][0]
         dx0 = lx
         dy0 = ly
         dz0 = lz
@@ -164,7 +166,7 @@ class DualPrimalMesh1:
         z1 = nz * lz
 
         L2_meshset = mb.create_meshset()
-        mb.tag_set_data(self.tags['L2_MESHSET'], 0, L2_meshset)
+        mb.tag_set_data(self.tags['L2_MESHSET'], M.core.root_set, L2_meshset)
 
         lx2, ly2, lz2 = [], [], []
         # O valor 0.01 é adicionado para corrigir erros de ponto flutuante
@@ -428,9 +430,9 @@ class DualPrimalMesh1:
             if not self._carregar:
                 mv1 = mb.create_meshset()
                 mb.add_entities(mv1, vertex)
-                mb.tag_set_data(self.tags[nnn], 0, mv1)
+                mb.tag_set_data(self.tags[nnn], M.core.root_set, mv1)
             else:
-                mv1 = mb.tag_get_data(self.tags[nnn], 0, flat=True)[0]
+                mv1 = mb.tag_get_data(self.tags[nnn], M.core.root_set, flat=True)[0]
 
             self.mvs[level] = mv1
             mvs.append(mv1)
@@ -465,7 +467,7 @@ class DualPrimalMesh1:
             t2 = types.MB_TAG_MESH
             getting_tag(mb, name, n, t1, t2, True, entitie, tipo, self.tags, self.tags_to_infos)
             tag_boundary = self.tags[name]
-            utpy.set_faces_in_boundary_by_meshsets(mb, mtu, meshsets, tag_boundary)
+            utpy.set_faces_in_boundary_by_meshsets(mb, mtu, meshsets, tag_boundary, M)
 
     def get_elements_2(self, M):
         assert not self._loaded
@@ -490,7 +492,7 @@ class DualPrimalMesh1:
             name = name_tag_faces_boundary_meshsets + str(level)
             meshsets = all_meshsets[i]
             tag_boundary = self.tags[name]
-            boundary_faces_elements = mb.tag_get_data(tag_boundary, 0, flat=True)[0]
+            boundary_faces_elements = mb.tag_get_data(tag_boundary, M.core.root_set, flat=True)[0]
             boundary_faces_elements = mb.get_entities_by_handle(boundary_faces_elements)
             boundary_faces_all = np.array([dict_all_faces[f] for f in boundary_faces_elements])
 
@@ -526,7 +528,7 @@ class DualPrimalMesh1:
         M.state = 2
         np.save(direc.state_path, np.array([M.state]))
         np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[2]]))
-        M.core.print(text=direc.output_file + str(M.state))
+        M.core.print(file=direc.output_file + str(M.state))
 
 
 

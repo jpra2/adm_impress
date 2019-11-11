@@ -1,4 +1,5 @@
 from.data import Data
+from ..directories import variables_loaded
 
 def initDataClass(M):
     n_nodes = len(M.nodes)
@@ -9,18 +10,14 @@ def initDataClass(M):
     data = Data(n_nodes, n_faces, n_edges, n_volumes, M)
     verif_format = ['float', 'int']
 
-    name_variables_yml = 'variable_settings.yml'
-    data_variables = M.read_config(name_variables_yml)
+    data_variables = variables_loaded
 
-    entitties = data_variables.keys()
+    variables = data_variables.keys()
 
-    for entity in entitties:
+    for variable in variables:
         try:
-            dic1 = data_variables[entity]
+            infos = data_variables[variable]
         except:
             continue
 
-        name_variables = dic1.keys()
-        for name in name_variables:
-            infos = dic1[name]
-            data.get_info_data(name, infos['data size'], infos['data format'], entity)
+        data.get_info_data(variable, infos['data size'], infos['data type'], infos['type'])

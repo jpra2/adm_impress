@@ -7,7 +7,8 @@ entities_lv0 = ['nodes', 'edges', 'faces', 'volumes']
 # entities_lv0 = direc_impress.entities_lv0
 entities_lv0_0 = direc_impress.entities_lv0_0
 
-names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeability', 'Crs', 'Saturation']
+names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeability', 'Crs',
+                         'Saturation', 'set_permeability', 'set_porosity', 'Porosity']
 
 names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
 
@@ -16,14 +17,17 @@ types_region_for_saturation = ['all', 'wells']
 types_presc = ['dirichlet', 'neumann']
 types_wells = ['injector', 'producer']
 
-variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
-                     'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
+# variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
+#                      'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
+
+variables_impress = dict()
 
 impress = 'impress'
 tcc = 'tcc'
 flying = 'flying'
 adm = 'adm'
-input_file_0 = 'inputs0.yml'
+# input_file_0 = 'inputs0.yml'
+input_file_0 = 'input_cards/inputs0.yml'
 ext_h5m = '.h5m'
 name_out_file = 'output'
 states = ['0', '1', '2']
@@ -60,3 +64,6 @@ names_datas_contour = os.path.join(flying, 'datas_contour.npz')
 
 with open(input_file_0, 'r') as f:
     data_loaded = yaml.safe_load(f)
+
+with open('input_cards/variable_input.yml', 'r') as f:
+    variables_loaded = yaml.safe_load(f)

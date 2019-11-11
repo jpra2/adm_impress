@@ -1,4 +1,4 @@
-from packs import directories as direc
+from .. import directories as direc
 
 
 class RunSimulation:
