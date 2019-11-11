@@ -20,6 +20,8 @@ class Contours:
         self.tags = dict()
         self.tags_to_infos = dict()
         self.names = ['ws_p', 'ws_q', 'ws_inj', 'ws_prod', 'values_p', 'values_q', 'all_wells']
+        cent_nodes = M.data.variables[M.data.variables_impress['NODES']]
+        self.Lz = cent_nodes.max(axis=0)[2]
         M.contours = self
 
     def add_gravity(self, M, gama):
@@ -31,7 +33,7 @@ class Contours:
         zs_ws_p = M.data.centroids['volumes'][ws_p][:,2]
         gama_ws_p = gama[ws_p]
 
-        dz = gama_ws_p*zs_ws_p
+        dz = gama_ws_p*(-zs_ws_p + self.Lz)
         values_p = values_p_ini + dz
         self.datas['values_p'] = values_p
 
