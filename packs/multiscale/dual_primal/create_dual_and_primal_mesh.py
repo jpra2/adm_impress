@@ -25,6 +25,7 @@ class DualPrimalMesh1:
         self.mvs = dict()
         self._carregar = carregar
         M.dualprimal = self
+        self.mesh = M
 
     def create_tags(self, M):
         assert not self._loaded

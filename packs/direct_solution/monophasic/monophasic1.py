@@ -16,10 +16,11 @@ class Monophasic:
         self.n_edges = len(M.data.elements_lv0[direc.entities_lv0[2]])
         self.n_volumes = len(M.data.elements_lv0[direc.entities_lv0[3]])
         self.datas = dict()
+        M.simulation = self
 
         gama = direc.data_loaded['monophasic_data']['gama']
         self.gama = np.repeat(gama, self.n_volumes)
-        M.simulation = self
+        M.data.set_variable('gama', self.gama.copy())
         self.name_datas = directories_mono.name_datas
 
     def get_transmissibility_matrix_without_contours(self):
@@ -33,7 +34,7 @@ class Monophasic:
 
         lines = np.array([v0[:, 0], v0[:, 1], v0[:, 0], v0[:, 1]]).flatten()
         cols = np.array([v0[:, 1], v0[:, 0], v0[:, 0], v0[:, 1]]).flatten()
-        data = np.array([t0[:], t0[:], -t0[:], -t0[:]]).flatten()
+        data = np.array([t0, t0, -t0, -t0]).flatten()
 
         T = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, self.n_volumes))
 
@@ -48,7 +49,7 @@ class Monophasic:
 
         if self.gravity:
 
-            M.contours.add_gravity(M, self.gama)
+            M.contours.add_gravity(M, M.data.variables[M.data.variables_impress['gama']])
 
         ws_p = wells['ws_p']  # pocos de pressao prescrita
         values_p = wells['values_p']  # valores de pressao prescrita
@@ -109,7 +110,7 @@ class Monophasic:
         lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
         cols = np.repeat(0, len(lines))
         data = np.array([flux_internal_faces, -flux_internal_faces]).flatten()
-        flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray()
+        flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
 
         M.data.variables[M.data.variables_impress['flux_volumes']] = flux_volumes
         M.data.variables[M.data.variables_impress['flux_faces']] = flux_faces

@@ -27,7 +27,7 @@ class updateDatas:
         M.data.variables[M.data.variables_impress['lambda_t']] = lambda_t
         M.data.variables[M.data.variables_impress['fw_vol']] = fw_vol
 
-    def update_upwind(self, total_mobilities_vols, fw_vols, flux_internal_faces, adjs_internal_faces):
+    def update_upwind(self):
         M = self.mesh
         n_internal_faces = len(flux_faces)
         ids = np.arange(n_faces)
@@ -55,3 +55,5 @@ class updateDatas:
         M.data.variables[M.data.variables_impress['lambda_t_faces']][internal_faces] = lambda_t_faces
         M.data.variables[M.data.variables_impress['fw_face']][internal_faces] = fw_faces
         M.data.variables[M.data.variables_impress['transmissibility']][internal_faces] = transmissibility_internal_faces
+
+    def update_saturation_upwind(self)

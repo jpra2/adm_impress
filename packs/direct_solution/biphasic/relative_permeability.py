@@ -4,7 +4,7 @@ import numpy as np
 def brooks_and_corey(saturations):
 
     def _stemp(S, Swc, Sor):
-        return = (S - Swc) / (1 - Swc - Sor)
+        return (S - Swc) / (1 - Swc - Sor)
 
     def _krw(S_temp, krw0, n_w):
         return krw0*(np.power(S_temp, n_w))

@@ -26,7 +26,7 @@ class RunSimulation:
                     pass
                 elif self.state in [2]:
                     self.step2_run_dual_primal(M, self.state)
-                elif self.state in[4]:
+                elif self.state in [4]:
                     self.step4_set_wells(M)
 
             else:
@@ -39,7 +39,7 @@ class RunSimulation:
                     name_mesh = direc.names_outfiles_steps[2]
                     M = self.step1_load(name_mesh=name_mesh)
                     self.step3_load_dual(M)
-                elif self.state in[4]:
+                elif self.state in [4]:
                     name_mesh = direc.names_outfiles_steps[2]
                     M = self.step1_load(name_mesh=name_mesh)
                     self.step3_load_dual(M)
