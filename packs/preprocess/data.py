@@ -218,8 +218,11 @@ class Data:
         with open(name_info_data, 'rb') as f:
             self.info_data = pickle.loads(f.read())
 
-    def get_variable(self, name):
-        return self.variables[self.variables_impress[name]]
+    def __setitem__(self, key, value):
+        self.variables[self.variables_impress[key]] = value
 
-    def set_variable(self, name, value):
-        self.variables[self.variables_impress[name]] = value
+    def __getitem__(self, key):
+        return self.variables[self.variables_impress[key]]
+
+    def __hash__(self, key):
+        return hash(self.variables[self.variables_impress[key]])

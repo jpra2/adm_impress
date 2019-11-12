@@ -20,7 +20,7 @@ class Monophasic:
 
         gama = direc.data_loaded['monophasic_data']['gama']
         self.gama = np.repeat(gama, self.n_volumes)
-        M.data.set_variable('gama', self.gama.copy())
+        M.data['gama'] = self.gama.copy()
         self.name_datas = directories_mono.name_datas
 
     def get_transmissibility_matrix_without_contours(self):
