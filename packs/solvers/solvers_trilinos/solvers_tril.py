@@ -39,7 +39,7 @@ class solverTril:
         linearProblem = Epetra.LinearProblem(A2, x2, b2)
         solver = AztecOO.AztecOO(linearProblem)
         solver.SetAztecOption(AztecOO.AZ_output, AztecOO.AZ_warnings)
-        solver.SetParameters(self._params)
+        # solver.SetParameters(self._params)
         solver.Iterate(its, tolerance)
         x2 = np.array(x2)
         res = solver.ScaledResidual() < tolerance
