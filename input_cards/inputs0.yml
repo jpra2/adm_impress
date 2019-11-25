@@ -9,7 +9,7 @@
 mesh_name: 'mesh/27x27x27.msh'
 state: 0
 type_of_solution: 'Fine_scale'
-gravity: True
+gravity: False
 
 # se read_permeability == True vai ler a permeabilidade e a porosidade do spe10
 read_permeability: False
@@ -51,8 +51,8 @@ Wells:
     type: Injector
     prescription: 'Q' # vazao prescrita
     p0: [0.0, 0.0, 0.0]
-    p1: [20.0, 10.0, 54]
-    value: 1000000.0
+    p1: [20.0, 10.0, 54.0]
+    value: 100000.0
 
   # P2:
   #   type_region: 'box'

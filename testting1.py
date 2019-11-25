@@ -27,9 +27,17 @@ import pdb
 # pdb.set_trace()
 # M.data.update_variables_to_mesh()
 
-from packs.simulations.monophasic_simulation import M
+from packs.simulations.monophasic_simulation import run_monophasic
+from packs.simulations.init_simulation import rodar
+from packs.direct_solution.monophasic.monophasic1 import Monophasic
+M = rodar.M
+m1 = Monophasic(M)
+run_monophasic(m1)
 
-pdb.set_trace()
+import pdb; pdb.set_trace()
+
+M.core.print(file='flying/teste', extension='.vtk', config_input='input_cards/print_settings0.yml')
+
 
 
 

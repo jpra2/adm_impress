@@ -6,7 +6,7 @@ import time
 from ..direct_solution.monophasic.monophasic1 import Monophasic
 from .init_simulation import rodar
 
-M = rodar.M
+# M = rodar.M
 
 # prep1 = Preprocess1()
 # prep1.set_saturation_regions(M)
@@ -23,5 +23,5 @@ def run_monophasic(Monophasic_object):
     m1.get_solution(x)
     m1.get_flux_faces_and_volumes()
 
-    M.data.update_variables_to_mesh()
+    m1.mesh.data.update_variables_to_mesh()
     m1.export_datas_to_npz()

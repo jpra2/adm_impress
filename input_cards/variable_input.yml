@@ -45,7 +45,7 @@ area:
 
 velocity_faces:
   type: faces
-  data size: 1
+  data size: 3
   data type: float
   sparse: True
   level: 0

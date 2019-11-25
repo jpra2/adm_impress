@@ -94,6 +94,7 @@ class Monophasic:
         area_internal_faces = area_faces[internal_faces]
         a0 = area_internal_faces
         velocity_faces = M.data.variables[M.data.variables_impress['velocity_faces']]
+        u_normal = M.data[M.data.variables_impress['u_normal']]
 
         x = self.datas['x']
 
@@ -101,7 +102,8 @@ class Monophasic:
         ps1 = x[v0[:, 1]]
 
         flux_internal_faces = -((ps1 - ps0) * t0 + M.data.variables[M.data.variables_impress['flux_grav_faces']][internal_faces])
-        velocity = flux_internal_faces / a0
+        velocity = (flux_internal_faces / a0).reshape([len(internal_faces), 1])
+        velocity = velocity * u_normal[internal_faces]
         velocity_faces[internal_faces] = velocity
         flux_faces = M.data.variables[M.data.variables_impress['flux_faces']]
 
