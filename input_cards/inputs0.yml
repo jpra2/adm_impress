@@ -7,7 +7,7 @@
 # value eh o tensor de permeabilidade sendo [kxx, kxy, kxz, kyx, kyy, kyz, kzx, kzy, kzz]
 
 mesh_name: 'mesh/27x27x27.msh'
-state: 0
+state: 5
 type_of_solution: 'Fine_scale'
 gravity: False
 
@@ -82,12 +82,12 @@ Saturation:
     type2_well: None
     value: 1.0
 
-monophasic: true
+monophasic: False
 monophasic_data:
   gama: 10.0
   mi: 1.0
 
-biphasic: False
+biphasic: True
 biphasic_data:
   gama_w: 10000.0
   gama_o: 9000.0

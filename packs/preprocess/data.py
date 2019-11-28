@@ -69,6 +69,8 @@ class Data:
         variables = dict()
         variables_impress = dict()
 
+
+
         for name, infos in self.info_data.items():
             n = infos[direc.names_datas[0]]
             format = infos[direc.names_datas[1]]
@@ -146,8 +148,10 @@ class Data:
         self.centroids[direc.entities_lv0[2]] = self.mesh.faces.center(self.mesh.faces.all)
         self.centroids[direc.entities_lv0[1]] = self.mesh.edges.center(self.mesh.edges.all)
         self.centroids[direc.entities_lv0[0]] = self.mesh.nodes.center(self.mesh.nodes.all)
-        self.variables[self.variables_impress['u_normal']] = np.absolute(self.mesh.faces.normal[:])
-        self.variables[self.variables_impress['NODES']] = self.centroids[direc.entities_lv0[0]].copy()
+        # self.variables[self.variables_impress['u_normal']] = np.absolute(self.mesh.faces.normal[:])
+        # self.variables[self.variables_impress['NODES']] = self.centroids[direc.entities_lv0[0]].copy()
+        self.variables['u_normal'] = np.absolute(self.mesh.faces.normal[:])
+        self.variables['NODES'] = self.centroids[direc.entities_lv0[0]].copy()
 
     def update_variables_to_mesh(self, names=None):
 

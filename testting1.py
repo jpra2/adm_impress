@@ -29,15 +29,28 @@ import pdb
 
 from packs.simulations.monophasic_simulation import run_monophasic
 from packs.simulations.init_simulation import rodar
-from packs.direct_solution.monophasic.monophasic1 import Monophasic
+
 M = rodar.M
-m1 = Monophasic(M)
-run_monophasic(m1)
+
+#################################
+##test Monophasic
+# from packs.direct_solution.monophasic.monophasic1 import Monophasic
+# m1 = Monophasic(M)
+# run_monophasic(m1)
+# M.core.print(file='flying/teste', extension='.vtk', config_input='input_cards/print_settings0.yml')
+# import pdb; pdb.set_trace()
+#################################
+
+#############################
+# test biphasic
+from packs.simulations.biphasic_simulation import M
 
 import pdb; pdb.set_trace()
 
-M.core.print(file='flying/teste', extension='.vtk', config_input='input_cards/print_settings0.yml')
 
+
+
+######################################
 
 
 

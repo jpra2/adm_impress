@@ -76,7 +76,7 @@ class Biphasic(Monophasic):
         vols_viz_internal_faces = M.data.elements_lv0['vols_viz_internal_faces']
         vols_viz_boundary_faces = M.data.elements_lv0['vols_viz_boundary_faces'].flatten()
         fw_vol = M.data['fw_vol']
-        lamda_t = M.data['lambda_t']
+        lambda_t = M.data['lambda_t']
 
         ws_inj = M.contours.datas['ws_inj']
 
@@ -108,11 +108,11 @@ class Biphasic(Monophasic):
         fw_internal_faces[idv1] = fw_vol[v1[idv1]]
         fw_internal_faces[ids_fora] = (fw_vol[v0[ids_fora]] + fw_vol[v1[ids_fora]])/2
 
-        total_mobility_faces = transmissibility.copy()
-        fw_faces = transmissibility.copy()
+        total_mobility_faces = np.zeros(len(pretransmissibility))
+        fw_faces = total_mobility_faces.copy()
 
         total_mobility_faces[internal_faces] = total_mobility_internal_faces
-        total_mobility_faces[b_faces] = lamda_t[vols_viz_boundary_faces]
+        total_mobility_faces[b_faces] = lambda_t[vols_viz_boundary_faces]
 
         fw_faces[internal_faces] = fw_internal_faces
         fw_faces[b_faces] = fw_vol[vols_viz_boundary_faces]
@@ -122,21 +122,3 @@ class Biphasic(Monophasic):
         M.data['transmissibility'] = transmissibility
         M.data['lambda_t_faces'] = total_mobility_faces
         M.data['fw_faces'] = fw_faces
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        import pdb; pdb.set_trace()

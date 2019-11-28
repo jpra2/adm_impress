@@ -6,7 +6,9 @@ import pdb
 
 
 class Monophasic:
-
+    '''
+    TPFA
+    '''
     def __init__(self, M):
 
         self.mesh = M
@@ -24,6 +26,10 @@ class Monophasic:
         self.name_datas = directories_mono.name_datas
 
     def get_transmissibility_matrix_without_contours(self):
+        '''
+        transmissibility matrix without boundary conditions
+        '''
+
         M = self.mesh
         vols_viz_internal_faces = M.data.elements_lv0[direc.entities_lv0_0[2]]
         v0 = vols_viz_internal_faces
@@ -39,6 +45,45 @@ class Monophasic:
         T = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, self.n_volumes))
 
         self.datas['Tini'] = T
+
+
+    def get_gravity_source_term(self):
+        M = self.mesh
+        centroids = M.data.centroids[direc.entities_lv0[3]]
+        source_term_volumes = np.zeros(len(centroids))
+        transmissibility_faces = M.data.variables[M.data.variables_impress['transmissibility']]
+        source_term_faces = np.zeros(len(transmissibility_faces))
+        internal_faces = M.data.elements_lv0[direc.entities_lv0_0[0]]
+
+        if self.gravity:
+
+            gamma = self.gama
+
+            vols_viz_internal_faces = M.data.elements_lv0[direc.entities_lv0_0[2]]
+            v0 = vols_viz_internal_faces
+            transmissibility_faces = M.data.variables[M.data.variables_impress['transmissibility']]
+            transmissibility_internal_faces = transmissibility_faces[internal_faces]
+            t0 = transmissibility_internal_faces
+            zs = centroids[:, 2]
+
+            # for i, f in enumerate(internal_faces):
+            #     q_g_f = -1*(zs[v0[i][1]]*gamma[v0[i][1]] - zs[v0[i][0]]*gamma[v0[i][0]])*t0[i]
+            #     source_term_faces[f] = q_g_f
+            #     source_term_volumes[v0[i][0]] += q_g_f
+            #     source_term_volumes[v0[i][1]] -= q_g_f
+            #
+            # import pdb; pdb.set_trace()
+
+            source_term_internal_faces = -1*(zs[v0[:, 1]]*gamma[v0[:, 1]] - zs[v0[:, 0]]*gamma[v0[:, 0]])*t0
+            source_term_faces[internal_faces] = source_term_internal_faces
+
+            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            cols = np.zeros(len(lines), dtype=np.int32)
+            data = np.array([source_term_internal_faces, -source_term_internal_faces]).flatten()
+            source_term_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
+
+        M.data.variables[M.data.variables_impress['flux_grav_volumes']] = source_term_volumes
+        M.data.variables[M.data.variables_impress['flux_grav_faces']] = source_term_faces
 
     def get_RHS_term(self):
         M = self.mesh
@@ -62,6 +107,9 @@ class Monophasic:
         self.datas['b'] = b
 
     def get_transmissibility_matrix(self):
+        '''
+        transmissibility matrix with boundary conditions
+        '''
 
         M = self.mesh
         contours = M.contours.datas
@@ -73,12 +121,6 @@ class Monophasic:
         T[ws_p, ws_p] = np.ones(len(ws_p))
 
         self.datas['T'] = T
-
-    def get_solution(self, x) -> None:
-        M = self.mesh
-        self.datas['x'] = x
-        M.data.variables[M.data.variables_impress['pressure']] = x
-        # M.data.update_variables_to_mesh(['pressure'])
 
     def get_flux_faces_and_volumes(self) -> None:
 
@@ -119,43 +161,15 @@ class Monophasic:
         M.data.variables[M.data.variables_impress['velocity_faces']] = velocity_faces
         # M.data.update_variables_to_mesh(['flux_volumes', 'flux_faces', 'velocicty_faces'])
 
-    def get_gravity_source_term(self):
+
+    def get_solution(self, x) -> None:
+        '''
+        update initial pressure guess
+        '''
         M = self.mesh
-        centroids = M.data.centroids[direc.entities_lv0[3]]
-        source_term_volumes = np.zeros(len(centroids))
-        transmissibility_faces = M.data.variables[M.data.variables_impress['transmissibility']]
-        source_term_faces = np.zeros(len(transmissibility_faces))
-        internal_faces = M.data.elements_lv0[direc.entities_lv0_0[0]]
-
-        if self.gravity:
-
-            gamma = self.gama
-
-            vols_viz_internal_faces = M.data.elements_lv0[direc.entities_lv0_0[2]]
-            v0 = vols_viz_internal_faces
-            transmissibility_faces = M.data.variables[M.data.variables_impress['transmissibility']]
-            transmissibility_internal_faces = transmissibility_faces[internal_faces]
-            t0 = transmissibility_internal_faces
-            zs = centroids[:, 2]
-
-            # for i, f in enumerate(internal_faces):
-            #     q_g_f = -1*(zs[v0[i][1]]*gamma[v0[i][1]] - zs[v0[i][0]]*gamma[v0[i][0]])*t0[i]
-            #     source_term_faces[f] = q_g_f
-            #     source_term_volumes[v0[i][0]] += q_g_f
-            #     source_term_volumes[v0[i][1]] -= q_g_f
-            #
-            # import pdb; pdb.set_trace()
-
-            source_term_internal_faces = -1*(zs[v0[:, 1]]*gamma[v0[:, 1]] - zs[v0[:, 0]]*gamma[v0[:, 0]])*t0
-            source_term_faces[internal_faces] = source_term_internal_faces
-
-            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
-            cols = np.zeros(len(lines), dtype=np.int32)
-            data = np.array([source_term_internal_faces, -source_term_internal_faces]).flatten()
-            source_term_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
-
-        M.data.variables[M.data.variables_impress['flux_grav_volumes']] = source_term_volumes
-        M.data.variables[M.data.variables_impress['flux_grav_faces']] = source_term_faces
+        self.datas['x'] = x
+        M.data.variables[M.data.variables_impress['pressure']] = x
+        # M.data.update_variables_to_mesh(['pressure'])
 
     def export_datas_to_npz(self):
 
