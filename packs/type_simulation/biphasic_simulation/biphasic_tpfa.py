@@ -15,15 +15,19 @@ class biphasicTpfa(monophasicTpfa):
         self.mi_w = direc.data_loaded['biphasic_data']['mi_w']
         self.mi_o = direc.data_loaded['biphasic_data']['mi_o']
         self.cfl = direc.data_loaded['biphasic_data']['cfl']
+        self.V_total = (M.data['volume']*M.data['poro']).sum()
 
         if not load:
-            set_saturation_regions(M)
             self.get_gama()
             self.update_relative_permeability()
             self.update_mobilities()
             self.update_transmissibility_ini()
             M.data.update_variables_to_mesh()
             M.data.export_variables_to_npz()
+            self.loop = 0
+            self.vpi = 0.0
+            self.t = 0.0
+            self.hist2 = self.get_empty_hist()
         else:
             self.load_gama()
 
@@ -44,6 +48,25 @@ class biphasicTpfa(monophasicTpfa):
 
     def load_gama(self):
         self.data['gama'] = self.mesh.data['gama'].copy()
+
+    def update_flux_w_volumes(self) -> None:
+
+        vols_viz_internal_faces = M.data.elements_lv0[direc.elements_lv0_0[2]]
+        v0 = vols_viz_internal_faces
+        internal_faces = M.data.elements_lv0[direc.entities_lv0_0[0]]
+        total_flux_faces = M.data['flux_faces']
+        fw_faces = M.data['fw_faces']
+        flux_w_faces = fw_faces*total_flux_faces
+        flux_w_internal_faces = flux_w_faces[internal_faces]
+
+        lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+        cols = np.repeat(0, len(lines))
+        data = np.array([flux_w_internal_faces, -flux_w_internal_faces]).flatten()
+        flux_w_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
+
+        M.data['flux_w_faces'] = flux_w_faces
+        M.data['flux_w_volumes'] = flux_w_volumes
+        M.data['flux_o_volumes'] = M.data['flux_volumes'] - flux_w_volumes
 
     def update_mobilities(self):
         M = self.mesh
@@ -122,32 +145,47 @@ class biphasicTpfa(monophasicTpfa):
         M.data['lambda_t_faces'] = total_mobility_faces.copy()
         M.data['fw_faces'] = fw_faces.copy()
 
-    def update_flux_w_volumes(self, volumes, internal_faces, flux_w_internal_faces, vols_adj_internal_faces,
-        presc_flux_w: 'dict onde a chave eh o volume e o valor a prescricao de fluxo de agua'= None) -> array:
+    def update_delta_t(self):
 
-        v0 = vols_adj_internal_faces[:, 0]
-        v1 = vols_adj_internal_faces[:, 1]
+        flux_volumes = M.data['flux_volumes']
+        phis = M.data['poro']
+        volume = M.data['volume']
+        self.delta_t = (self.cfl*(1/4)*(volume*poro)/flux_volumes).min()
+        self.t += self.delta_t
 
-        vols_p = []
-        values_p = []
+    def update_mass_transport(self):
+        flux_w_volumes = M.data['flux_w_volumes']
+        flux_o_volumes = M.data['flux_o_volumes']
 
-        if presc_flux_w:
-            for i, j in presc_flux_w.items():
-                vols_p.append(i)
-                values_p.append(j)
-        else:
-            pass
+        M.data['mass_oil_production'] = flux_o_volumes*self.delta_t
+        M.data['mass_water_production'] = flux_w_volumes*self.delta_t
 
-        lines = np.array([v0, v1, vols_p]).flatten()
-        cols = np.repeat(0, len(lines))
-        data = np.array(flux_w_internal_faces, -flux_w_internal_faces, values_p).flatten()
-        flux_w_volumes = sp.csc_matrix((data, (lines, cols)), shape=(len(volumes), 1)).toarray().flatten()
-        return flux_w_volumes
+    def update_vpi(self):
+        flux_total_inj = M.data['flux_volumes'][M.contours.datas['ws_inj']]
+        self.vpi += (flux_total_prod.sum()*self.delta_t)/self.V_total
 
+    def update_loop(self):
+        self.loop += 1
 
-        # cfl_calc
-        # dt = self.cfl*(volumes*phis)/total_flux_volumes
+    def update_hist(self, simulation_time: float=0.0):
+        oil_production = M.data['flux_o_volumes'][M.contours.datas['ws_prod']].sum()
+        water_production = M.data['flux_w_volumes'][M.contours.datas['ws_prod']].sum()
+        wor = water_production/oil_production
 
+        self.hist = np.array([self.loop, self.delta_t, simulation_time,
+            oil_production, water_production, self.t, wor])
 
+        np.append(self.hist2, self.hist)
 
-        pass
+    def get_empty_hist(self):
+
+        dt = np.dtype([
+        ('loop', np.int64),
+        ('delta_t (s)', np.float64),
+        ('simulation_time (s)', np.float64),
+        ('oil_production (m3/s)', np.float64),
+        ('water_production (m3/s)', np.float64),
+        ('t (s)', np.float64),
+        ('wor', np.float64)])
+
+        return np.array([], dtype=dt)

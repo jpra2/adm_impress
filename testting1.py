@@ -43,8 +43,16 @@ M = rodar.M
 #############################
 # test biphasic
 from packs.type_simulation.biphasic_simulation.biphasic_tpfa import biphasicTpfa
+import time()
 b1 = biphasicTpfa(M)
+t0 = time.time()
 b1.run()
+b1.update_flux_w_volumes()
+b1.update_delta_t()
+
+
+
+
 
 import pdb; pdb.set_trace()
 

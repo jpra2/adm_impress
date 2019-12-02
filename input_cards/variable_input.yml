@@ -185,6 +185,20 @@ flux_volumes:
   sparse: True
   level: 0
 
+flux_w_volumes:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_o_volumes:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
 gama:
   type: volumes
   data size: 1
@@ -235,6 +249,20 @@ lambda_t:
   level: 0
 
 fw_vol:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+mass_oil_production:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+mass_water_production:
   type: volumes
   data size: 1
   data type: float

@@ -2,6 +2,7 @@ from .. import directories as direc
 from . import directories_impress as direc_impress
 from ..utils.utils_old import get_box
 import numpy as np
+from .preprocess1 import set_saturation_regions
 
 
 def set_permeability_and_phi_spe10(M):
@@ -40,6 +41,8 @@ class Preprocess0:
         self.set_k_harm_hex_structured(M)
         self.set_pretransmissibility(M)
         self.set_transmissibility_monophasic(M)
+        if direc.data_loaded['biphasic'] == True:
+            set_saturation_regions(M)
 
         M.state = 0
         M.data.update_variables_to_mesh()
@@ -241,7 +244,7 @@ class Preprocess0:
         k_harm_faces = M.data['k_harm']
         dist_cent = M.data['dist_cent']
         pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
-        M.data.variables[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
+        M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
 
     def conectivity_volumes(self, M):
 

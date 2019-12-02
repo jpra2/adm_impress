@@ -7,7 +7,7 @@
 # value eh o tensor de permeabilidade sendo [kxx, kxy, kxz, kyx, kyy, kyz, kzx, kzy, kzz]
 
 mesh_name: 'mesh/27x27x27.msh'
-state: 5
+state: 0
 type_of_solution: 'Fine_scale'
 gravity: False
 
