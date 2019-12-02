@@ -34,10 +34,12 @@ class Preprocess0:
         for key, item in direc.variables_impress.items():
             M.data.variables_impress[key] = item
 
+        self.update_centroids_and_unormal(M)
         self.set_permeability_and_phi(M)
         self.set_area_hex_structured(M)
-        self.set_k_harm_and_pretransmissibility_hex_structured(M)
-        self.set_transmissibility_monofasic(M)
+        self.set_k_harm_hex_structured(M)
+        self.set_pretransmissibility(M)
+        self.set_transmissibility_monophasic(M)
 
         M.state = 0
         M.data.update_variables_to_mesh()
@@ -128,7 +130,7 @@ class Preprocess0:
 
     def set_permeability_regions(self, M):
 
-        centroids = M.data.centroids[direc.entities_lv0[3]]
+        centroids = M.data['centroid_volumes']
 
         for reg in direc.data_loaded[direc.names_data_loaded_lv0[2]]:
             d0 = direc.data_loaded[direc.names_data_loaded_lv0[2]][reg]
@@ -151,7 +153,7 @@ class Preprocess0:
 
     def set_phi_regions(self, M):
         # TODO: atualizar essa funcao
-        centroids = M.data.centroids[direc.entities_lv0[3]]
+        centroids = M.data['centroid_volumes']
 
         for reg in direc.data_loaded[direc.names_data_loaded_lv0[7]]:
             d0 = direc.data_loaded[direc.names_data_loaded_lv0[7]][reg]
@@ -171,7 +173,7 @@ class Preprocess0:
                 n_volumes = len(indices)
                 M.data.variables[M.data.variables_impress['poro']][indices] = np.repeat(value, n_volumes)
 
-    def set_k_harm_and_pretransmissibility_hex_structured(self, M):
+    def set_k_harm_hex_structured(self, M):
         '''
         considerando malha estruturada uniforme
         '''
@@ -180,10 +182,10 @@ class Preprocess0:
         vols_viz_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[1]]
         internal_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[0]]
         boundary_faces = M.data.elements_lv0[direc_impress.entities_lv0_0[4]]
-        centroids_volumes = M.data.centroids[direc.entities_lv0[3]]
+        centroids_volumes = M.data['centroid_volumes']
         ks = M.data.variables[M.data.variables_impress['permeability']].copy()
-        dist_cent = M.data.variables[M.data.variables_impress['dist_cent']]
-        areas = M.data.variables[M.data.variables_impress['area']]
+        # dist_cent = M.data.variables[M.data.variables_impress['dist_cent']]
+        # areas = M.data.variables[M.data.variables_impress['area']]
         hs = M.data.variables[M.data.variables_impress['hs']]
         vols_viz_internal_faces = M.data.elements_lv0[direc.entities_lv0_0[2]]
         vols_viz_boundary_faces = M.data.elements_lv0[direc.entities_lv0_0[3]]
@@ -212,18 +214,34 @@ class Preprocess0:
         ks0 = ks0.sum(axis=2).sum(axis=1)
         k_harm_faces[boundary_faces] = ks0
 
-        pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
+        # pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
 
         M.data.variables[M.data.variables_impress['k_harm']] = k_harm_faces
-        M.data.variables[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
+        # M.data.variables[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
 
-    def set_transmissibility_monofasic(self, M):
+    def set_transmissibility_monophasic(self, M):
         # mi_monofasic = 1.0
         mi_monofasic = direc.data_loaded['monophasic_data']['mi']
         pretransmissibility_faces = M.data.variables[M.data.variables_impress['pretransmissibility']]
         transmissibility = M.data.variables[M.data.variables_impress['transmissibility']]
         transmissibility = pretransmissibility_faces/mi_monofasic
         M.data.variables[M.data.variables_impress['transmissibility']] = transmissibility
+
+    def update_centroids_and_unormal(self, M):
+
+        M.data['centroid_volumes'] = M.volumes.center(M.volumes.all)
+        M.data['centroid_faces'] = M.faces.center(M.faces.all)
+        M.data['centroid_edges'] = M.edges.center(M.edges.all)
+        M.data['centroid_nodes'] = M.nodes.center(M.nodes.all)
+        M.data['u_normal'] = np.absolute(M.faces.normal[:])
+        M.data['NODES'] = M.data['centroid_nodes']
+
+    def set_pretransmissibility(self, M):
+        areas = M.data['area']
+        k_harm_faces = M.data['k_harm']
+        dist_cent = M.data['dist_cent']
+        pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
+        M.data.variables[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
 
     def conectivity_volumes(self, M):
 

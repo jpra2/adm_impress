@@ -64,7 +64,7 @@ class Contours:
         assert not self._loaded
 
         data_wells = direc.data_loaded['Wells']
-        centroids = M.data.centroids[direc.entities_lv0[3]]
+        centroids = M.data['centroid_volumes']
         gravity = direc.data_loaded['gravity']
 
         ws_p = []

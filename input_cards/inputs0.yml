@@ -99,4 +99,5 @@ biphasic_data:
   kro0: 1.0
   mi_w: 1.0
   mi_o: 5.0
+  cfl: 0.5
   relative_permeability: 'brooks_and_corey'

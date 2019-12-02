@@ -141,7 +141,7 @@ class DualPrimalMesh1:
         cr1 = direc.data_loaded['Crs']['Cr1']
         cr2 = direc.data_loaded['Crs']['Cr2']
 
-        coord_nodes = M.data.centroids[direc.entities_lv0[0]]
+        coord_nodes = M.data['centroid_nodes']
 
         mb = M.core.mb
 
@@ -224,7 +224,7 @@ class DualPrimalMesh1:
 
         # print("definiu planos do nível 2")
 
-        centroids = M.data.centroids[direc.entities_lv0[3]]
+        centroids = M.data['centroid_volumes']
         all_volumes = np.array(M.core.all_volumes)
         dict_volumes = M.data.dict_elements[direc.entities_lv0[3]]
 

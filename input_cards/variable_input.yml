@@ -14,6 +14,21 @@ NODES:
   sparse: True
   level: 0
 
+centroid_nodes:
+  type: nodes
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+#edges
+centroid_edges:
+  type: edges
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
 # Faces
 flux:
   type: faces
@@ -99,7 +114,21 @@ fw_faces:
   sparse: True
   level: 0
 
+centroid_faces:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
 # Volumes
+centroid_volumes:
+  type: volumes
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
 pressure:
   type: volumes
   data size: 1

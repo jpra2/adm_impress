@@ -34,16 +34,17 @@ M = rodar.M
 
 #################################
 ##test Monophasic
-# from packs.direct_solution.monophasic.monophasic1 import Monophasic
-# m1 = Monophasic(M)
-# run_monophasic(m1)
-# M.core.print(file='flying/teste', extension='.vtk', config_input='input_cards/print_settings0.yml')
+# from packs.type_simulation.monophasic_tpfa import monophasicTpfa
+# m1 = monophasicTpfa(M)
+# m1.run()
 # import pdb; pdb.set_trace()
 #################################
 
 #############################
 # test biphasic
-from packs.simulations.biphasic_simulation import M
+from packs.type_simulation.biphasic_simulation.biphasic_tpfa import biphasicTpfa
+b1 = biphasicTpfa(M)
+b1.run()
 
 import pdb; pdb.set_trace()
 

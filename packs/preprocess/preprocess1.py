@@ -5,7 +5,7 @@ import numpy as np
 
 def set_saturation_regions(M):
 
-    centroids = M.data.centroids[direc.entities_lv0[3]]
+    centroids = M.data['centroid_volumes']
     n = len(centroids)
 
     for reg in direc.data_loaded[direc.names_data_loaded_lv0[4]]:
