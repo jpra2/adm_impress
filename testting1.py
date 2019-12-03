@@ -47,6 +47,7 @@ import time
 b1 = biphasicTpfa(M)
 b1.run()
 b1.run()
+# b1.run()
 # b1.update_flux_w_and_o_volumes()
 # b1.update_delta_t()
 # b1.update_saturation()

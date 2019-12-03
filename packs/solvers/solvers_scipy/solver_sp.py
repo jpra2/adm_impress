@@ -42,6 +42,7 @@ class SolverSp:
         else:
             M = None
 
-        x, exitcode = linalg.gmres(A, b, x0=x0, tol=tol, M=M)
+        # x, exitcode = linalg.gmres(A, b, x0=x0, tol=tol, M=M)
+        x, exitcode = linalg.cg(A, b, x0=x0, tol=tol, M=M)
 
         return x

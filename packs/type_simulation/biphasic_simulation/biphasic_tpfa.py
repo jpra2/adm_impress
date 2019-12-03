@@ -4,7 +4,7 @@ from ...utils import relative_permeability
 from ...preprocess.preprocess1 import set_saturation_regions
 import numpy as np
 import scipy.sparse as sp
-from ...convert_unit.conversion import convert1
+from ...convert_unit import conversion
 import time
 import os
 
@@ -23,13 +23,13 @@ class biphasicTpfa(monophasicTpfa):
         self.Swc = float(direc.data_loaded['biphasic_data']['Swc'])
         self.delta_sat_max = 0.6
         self.lim_flux_w = 1e-9
-        self.name_hist = os.path.join(direc.flying, 'hist.npy')
-        self.name_hist2 = os.path.join(direc.flying, 'hist2_')
+        self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
+        self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
 
         if not load:
 
             set_saturation_regions(M)
-            convert1(M)
+            conversion.convert_English_to_SI(M)
             self.update_gama()
             self.update_relative_permeability()
             self.update_mobilities()
@@ -39,7 +39,7 @@ class biphasicTpfa(monophasicTpfa):
             self.loop = 0
             self.vpi = 0.0
             self.t = 0.0
-            self.hist2 = self.get_empty_hist()
+            self.all_biphasic_results = self.get_empty_current_biphasic_results()
         else:
             self.load_infos()
 
@@ -243,7 +243,7 @@ class biphasicTpfa(monophasicTpfa):
     def update_loop(self):
         self.loop += 1
 
-    def update_hist(self, simulation_time: float=0.0):
+    def update_current_biphasic_results(self, simulation_time: float=0.0):
         M = self.mesh
         ws_prod = M.contours.datas['ws_prod']
         fw_vol = M.data['fw_vol']
@@ -252,10 +252,10 @@ class biphasicTpfa(monophasicTpfa):
 
         wor = water_production/oil_production
 
-        self.hist = np.array([self.loop, self.delta_t, simulation_time,
+        self.current_biphasic_results = np.array([self.loop, self.delta_t, simulation_time,
             -oil_production, -water_production, self.t, wor, self.vpi])
 
-        self.hist2.append(self.hist)
+        self.all_biphasic_results.append(self.current_biphasic_results)
 
     def update_sat(self):
         M = self.mesh
@@ -317,7 +317,7 @@ class biphasicTpfa(monophasicTpfa):
             if verif == 1:
                 self.reduce_delta_t()
 
-    def get_empty_hist(self):
+    def get_empty_current_biphasic_results(self):
 
         # self.dtype = np.dtype([
         # ('loop', int, (1,)),
@@ -334,25 +334,30 @@ class biphasicTpfa(monophasicTpfa):
         return [np.array(['loop', 'delta_t [s]', 'simulation_time [s]',
             'oil_production [m3/s]', 'water_production [m3/s]', 't [s]', 'wor', 'vpi'])]
 
-    def export_hist(self):
-        np.save(self.name_hist, self.hist)
+    def export_current_biphasic_results(self):
+        np.save(self.name_current_biphasic_results, self.current_biphasic_results)
 
-    def export_hist2(self):
-        np.save(self.name_hist2 + str(self.loop) + '.npy', np.array(self.hist2))
-        self.hist2 = self.get_empty_hist()
+    def export_all_biphasic_results(self):
+        np.save(self.name_all_biphasic_results + str(self.loop) + '.npy', np.array(self.all_biphasic_results))
+        self.all_biphasic_results = self.get_empty_current_biphasic_results()
 
     def load_infos(self):
         self.mesh.data.load_from_npz()
         self.mesh.data.update_variables_to_mesh()
-        self.hist = np.load(self.name_hist)
-        self.loop = int(self.hist[0])
-        self.t = self.hist[5]
-        self.vpi = self.hist[7]
-        self.hist2 = self.get_empty_hist()
+        self.current_biphasic_results = np.load(self.name_current_biphasic_results)
+        self.loop = int(self.current_biphasic_results[0])
+        self.t = self.current_biphasic_results[5]
+        self.vpi = self.current_biphasic_results[7]
+        self.all_biphasic_results = self.get_empty_current_biphasic_results()
 
-    def run(self, save=True):
+    def run(self, save=False):
         t0 = time.time()
-        super().run()
+        if self.loop == 0:
+            gmres_ = False
+        else:
+            gmres_ = True
+
+        super().run(gmres_)
         self.update_flux_w_and_o_volumes()
         self.update_delta_t()
         self.update_saturation()
@@ -365,10 +370,10 @@ class biphasicTpfa(monophasicTpfa):
         self.update_loop()
         t1 = time.time()
         dt = t1-t0
-        self.update_hist(dt)
+        self.update_current_biphasic_results(dt)
 
         if save:
-            self.export_hist()
-            self.export_hist2()
+            self.export_current_biphasic_results()
+            self.export_all_biphasic_results()
             self.mesh.data.update_variables_to_mesh()
             self.mesh.data.export_variables_to_npz()

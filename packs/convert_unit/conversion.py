@@ -1,14 +1,15 @@
 from . import constants
 
-def convert1(M):
+def convert_English_to_SI(M):
 
     '''
     converte as unidades do sistema americano para o SI
     '''
-
     M.contours.datas['values_p_ini'] *= constants.psi_to_Pa()
     M.contours.datas['values_p'] *= constants.psi_to_Pa()
     M.contours.datas['values_q'] *= constants.bbldia_to_m3seg()
+    M.contours.update_values()
+
     M.data['hs'] *= constants.pe_to_m()
     M.data['volume'] *= constants.pe_to_m()**3
     M.data['NODES'] *= constants.pe_to_m()

@@ -22,12 +22,14 @@ class Contours:
         self.tags = dict()
         self.tags_to_infos = dict()
         self.names = ['ws_p', 'ws_q', 'ws_inj', 'ws_prod', 'values_p', 'values_q', 'all_wells']
-        cent_nodes = M.data.variables[M.data.variables_impress['NODES']]
-        self.Lz = cent_nodes.max(axis=0)[2]
         M.contours = self
+        self.mesh = M
 
     def add_gravity(self, M, gama):
         assert direc.data_loaded['gravity'] == True
+
+        cent_nodes = M.data.variables[M.data.variables_impress['NODES']]
+        self.Lz = cent_nodes.max(axis=0)[2]
 
         ws_p = self.datas['ws_p']
         values_p_ini = self.datas['values_p_ini']
@@ -131,7 +133,7 @@ class Contours:
         self.datas['values_p'] = values_p
         self.datas['values_q'] = values_q
         self.datas['all_wells'] = np.union1d(ws_inj, ws_prod)
-        self.datas['values_p_ini'] = values_p
+        self.datas['values_p_ini'] = values_p.copy()
 
     def set_infos(self, M):
         assert not self._loaded
@@ -191,6 +193,12 @@ class Contours:
         np.save(direc.state_path, np.array([M.state]))
         np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[4]]))
         M.core.print(file=direc.output_file+str(M.state))
+
+    def update_values(self):
+        M = self.mesh
+
+        self.mesh.core.mb.tag_set_data(self.tags['P'], M.core.all_volumes[self.datas['ws_p']], self.datas['values_p'])
+        self.mesh.core.mb.tag_set_data(self.tags['Q'], M.core.all_volumes[self.datas['ws_q']], self.datas['values_q'])
 
     def loaded(self):
         assert not self._loaded

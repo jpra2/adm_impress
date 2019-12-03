@@ -289,9 +289,12 @@ class DualPrimalMesh1:
                     inds_glob_p2 = np.array([dict_volumes[k] for k in elem_por_L2])
                     centroid_p2 = centroids[inds_glob_p2]
                     cx, cy, cz = centroid_p2[:, 0], centroid_p2[:, 1], centroid_p2[:, 2]
-                    posx = np.where(abs(cx - lxd2[i]) <= l1[0] / 1.9)[0]
-                    posy = np.where(abs(cy - lyd2[j]) <= l1[1] / 1.9)[0]
-                    posz = np.where(abs(cz - lzd2[k]) <= l1[2] / 1.9)[0]
+                    try:
+                        posx = np.where(abs(cx - lxd2[i]) <= l1[0] / 1.9)[0]
+                        posy = np.where(abs(cy - lyd2[j]) <= l1[1] / 1.9)[0]
+                        posz = np.where(abs(cz - lzd2[k]) <= l1[2] / 1.9)[0]
+                    except:
+                        import pdb; pdb.set_trace()
                     f1a2v3 = np.zeros(len(elem_por_L2), dtype=int)
                     f1a2v3[posx] += 1
                     f1a2v3[posy] += 1
