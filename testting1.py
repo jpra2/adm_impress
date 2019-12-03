@@ -45,11 +45,16 @@ M = rodar.M
 from packs.type_simulation.biphasic_simulation.biphasic_tpfa import biphasicTpfa
 import time
 b1 = biphasicTpfa(M)
-t0 = time.time()
 b1.run()
-b1.update_flux_w_and_o_volumes()
-b1.update_delta_t()
-b1.update_saturation()
+b1.run()
+# b1.update_flux_w_and_o_volumes()
+# b1.update_delta_t()
+# b1.update_saturation()
+# b1.update_relative_permeability()
+# b1.update_mobilities()
+# b1.update_transmissibility()
+
+
 b1.mesh.data.update_variables_to_mesh()
 import pdb; pdb.set_trace()
 b1.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")

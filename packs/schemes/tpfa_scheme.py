@@ -59,12 +59,6 @@ class tpfaScheme:
         M.data.variables[M.data.variables_impress['velocity_faces']] = velocity_faces
         # M.data.update_variables_to_mesh(['flux_volumes', 'flux_faces', 'velocicty_faces'])
 
-    def get_gama(self):
-
-        M = self.mesh
-        gama = direc.data_loaded['monophasic_data']['gama']
-        M.data['gama'] = np.repeat(gama, self.n_volumes)
-
     def get_gravity_source_term(self):
         M = self.mesh
         centroids = M.data['centroid_volumes']
@@ -75,7 +69,7 @@ class tpfaScheme:
 
         if self.gravity:
 
-            gamma = self.gama
+            gamma = M.data['gama']
 
             vols_viz_internal_faces = M.data.elements_lv0[direc.entities_lv0_0[2]]
             v0 = vols_viz_internal_faces

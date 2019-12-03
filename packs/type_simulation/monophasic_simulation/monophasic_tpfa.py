@@ -6,7 +6,13 @@ class monophasicTpfa(tpfaScheme):
     def __init__(self, M, data_name: str='monophasicTpfa.npz') -> None:
         super().__init__(M, data_name)
         self.solver = SolverSp()
-        self.get_gama()
+        self.update_gama()
+
+    def update_gama(self):
+
+        M = self.mesh
+        gama = direc.data_loaded['monophasic_data']['gama']
+        M.data['gama'] = np.repeat(gama, self.n_volumes)
 
     def run(self) -> None:
 

@@ -5,6 +5,8 @@ from ...preprocess.preprocess1 import set_saturation_regions
 import numpy as np
 import scipy.sparse as sp
 from ...convert_unit.conversion import convert1
+import time
+import os
 
 
 class biphasicTpfa(monophasicTpfa):
@@ -21,12 +23,14 @@ class biphasicTpfa(monophasicTpfa):
         self.Swc = float(direc.data_loaded['biphasic_data']['Swc'])
         self.delta_sat_max = 0.6
         self.lim_flux_w = 1e-9
+        self.name_hist = os.path.join(direc.flying, 'hist.npy')
+        self.name_hist2 = os.path.join(direc.flying, 'hist2_')
 
         if not load:
 
             set_saturation_regions(M)
             convert1(M)
-            self.get_gama()
+            self.update_gama()
             self.update_relative_permeability()
             self.update_mobilities()
             self.update_transmissibility_ini()
@@ -37,25 +41,24 @@ class biphasicTpfa(monophasicTpfa):
             self.t = 0.0
             self.hist2 = self.get_empty_hist()
         else:
-            self.load_gama()
+            self.load_infos()
 
-    def get_gama(self):
+    def update_gama(self):
 
-        M = self.mesh
+        if self.gravity:
 
-        gama_w = direc.data_loaded['biphasic_data']['gama_w']
-        gama_o = direc.data_loaded['biphasic_data']['gama_o']
+            M = self.mesh
 
-        self.data['gama_w'] = np.repeat(gama_w, self.n_volumes)
-        self.data['gama_o'] = np.repeat(gama_o, self.n_volumes)
+            gama_w = direc.data_loaded['biphasic_data']['gama_w']
+            gama_o = direc.data_loaded['biphasic_data']['gama_o']
 
-        saturations = M.data['saturation']
+            gama_w = np.repeat(gama_w, self.n_volumes)
+            gama_o = np.repeat(gama_o, self.n_volumes)
 
-        self.data['gama'] = self.data['gama_w']*saturations + self.data['gama_o']*(1-saturations)
-        M.data['gama'] = self.data['gama'].copy()
+            saturations = M.data['saturation']
 
-    def load_gama(self):
-        self.data['gama'] = self.mesh.data['gama'].copy()
+            gama = gama_w*saturations + gama_o*(1-saturations)
+            M.data['gama'] = gama
 
     def update_flux_w_and_o_volumes(self) -> None:
 
@@ -170,6 +173,52 @@ class biphasicTpfa(monophasicTpfa):
         M.data['lambda_t_faces'] = total_mobility_faces.copy()
         M.data['fw_faces'] = fw_faces.copy()
 
+    def update_transmissibility(self):
+        M = self.mesh
+
+        pretransmissibility = M.data['pretransmissibility'].copy()
+        internal_faces = M.data.elements_lv0['internal_faces']
+        b_faces = M.data.elements_lv0['boundary_faces']
+        t_internal = pretransmissibility[internal_faces]
+        vols_viz_internal_faces = M.data.elements_lv0['vols_viz_internal_faces']
+        vols_viz_boundary_faces = M.data.elements_lv0['vols_viz_boundary_faces'].flatten()
+        fw_vol = M.data['fw_vol']
+        lambda_t = M.data['lambda_t']
+        v0 = vols_viz_internal_faces[:, 0]
+        v1 = vols_viz_internal_faces[:, 1]
+
+        flux_faces = M.data['flux_faces']
+        flux_internal_faces = flux_faces[internal_faces]
+
+        ids = np.arange(len(internal_faces))
+
+        fluxo_positivo = ids[flux_internal_faces <= 0]
+        outros = np.setdiff1d(ids, fluxo_positivo)
+
+        total_mobility_internal_faces = np.zeros(len(internal_faces))
+        fw_internal_faces = total_mobility_internal_faces.copy()
+
+        total_mobility_internal_faces[fluxo_positivo] = lambda_t[v1[fluxo_positivo]]
+        total_mobility_internal_faces[outros] = lambda_t[v0[outros]]
+
+        fw_internal_faces[fluxo_positivo] = fw_vol[v1[fluxo_positivo]]
+        fw_internal_faces[outros] = fw_vol[v0[outros]]
+
+        total_mobility_faces = np.zeros(len(pretransmissibility))
+        fw_faces = total_mobility_faces.copy()
+
+        total_mobility_faces[internal_faces] = total_mobility_internal_faces
+        total_mobility_faces[b_faces] = lambda_t[vols_viz_boundary_faces]
+
+        fw_faces[internal_faces] = fw_internal_faces
+        fw_faces[b_faces] = fw_vol[vols_viz_boundary_faces]
+
+        transmissibility = pretransmissibility*total_mobility_faces
+
+        M.data['transmissibility'] = transmissibility.copy()
+        M.data['lambda_t_faces'] = total_mobility_faces.copy()
+        M.data['fw_faces'] = fw_faces.copy()
+
     def update_delta_t(self):
         M = self.mesh
 
@@ -186,22 +235,16 @@ class biphasicTpfa(monophasicTpfa):
     def update_t(self):
         self.t += self.delta_t
 
-    def update_mass_transport(self):
-        M = self.mesh
-        flux_w_volumes = M.data['flux_w_volumes']
-        flux_o_volumes = M.data['flux_o_volumes']
-
-        M.data['mass_oil_production'] = flux_o_volumes*self.delta_t
-        M.data['mass_water_production'] = flux_w_volumes*self.delta_t
-
     def update_vpi(self):
-        flux_total_inj = M.data['flux_volumes'][M.contours.datas['ws_inj']]
+        M = self.mesh
+        flux_total_inj = np.absolute(M.data['flux_volumes'][M.contours.datas['ws_inj']])
         self.vpi += (flux_total_inj.sum()*self.delta_t)/self.V_total
 
     def update_loop(self):
         self.loop += 1
 
     def update_hist(self, simulation_time: float=0.0):
+        M = self.mesh
         ws_prod = M.contours.datas['ws_prod']
         fw_vol = M.data['fw_vol']
         water_production = (M.data['flux_volumes'][ws_prod]*fw_vol[ws_prod]).sum()
@@ -210,9 +253,9 @@ class biphasicTpfa(monophasicTpfa):
         wor = water_production/oil_production
 
         self.hist = np.array([self.loop, self.delta_t, simulation_time,
-            oil_production, water_production, self.t, wor])
+            -oil_production, -water_production, self.t, wor, self.vpi])
 
-        np.append(self.hist2, self.hist)
+        self.hist2.append(self.hist)
 
     def update_sat(self):
         M = self.mesh
@@ -267,6 +310,7 @@ class biphasicTpfa(monophasicTpfa):
         return 0
 
     def update_saturation(self):
+        self.mesh.data['saturation_last'] = self.mesh.data['saturation'].copy()
         verif = -1
         while verif != 0:
             verif = self.update_sat()
@@ -275,13 +319,56 @@ class biphasicTpfa(monophasicTpfa):
 
     def get_empty_hist(self):
 
-        dt = np.dtype([
-        ('loop', np.int64),
-        ('delta_t (s)', np.float64),
-        ('simulation_time (s)', np.float64),
-        ('oil_production (m3/s)', np.float64),
-        ('water_production (m3/s)', np.float64),
-        ('t (s)', np.float64),
-        ('wor', np.float64)])
+        # self.dtype = np.dtype([
+        # ('loop', int, (1,)),
+        # ('delta_t (s)', float, (1,)),
+        # ('simulation_time (s)', float, (1,)),
+        # ('oil_production (m3/s)', float, (1,)),
+        # ('water_production (m3/s)', float, (1,)),
+        # ('t (s)', float, (1,)),
+        # ('wor', float, (1,))])
 
-        return np.array([], dtype=dt)
+        # return np.array([np.array(['loop', 'delta_t [s]', 'simulation_time [s]',
+        #     'oil_production [m3/s]', 'water_production [m3/s]', 't [s]', 'wor'])])
+
+        return [np.array(['loop', 'delta_t [s]', 'simulation_time [s]',
+            'oil_production [m3/s]', 'water_production [m3/s]', 't [s]', 'wor', 'vpi'])]
+
+    def export_hist(self):
+        np.save(self.name_hist, self.hist)
+
+    def export_hist2(self):
+        np.save(self.name_hist2 + str(self.loop) + '.npy', np.array(self.hist2))
+        self.hist2 = self.get_empty_hist()
+
+    def load_infos(self):
+        self.mesh.data.load_from_npz()
+        self.mesh.data.update_variables_to_mesh()
+        self.hist = np.load(self.name_hist)
+        self.loop = int(self.hist[0])
+        self.t = self.hist[5]
+        self.vpi = self.hist[7]
+        self.hist2 = self.get_empty_hist()
+
+    def run(self, save=True):
+        t0 = time.time()
+        super().run()
+        self.update_flux_w_and_o_volumes()
+        self.update_delta_t()
+        self.update_saturation()
+        self.update_t()
+        self.update_vpi()
+        self.update_gama()
+        self.update_relative_permeability()
+        self.update_mobilities()
+        self.update_transmissibility()
+        self.update_loop()
+        t1 = time.time()
+        dt = t1-t0
+        self.update_hist(dt)
+
+        if save:
+            self.export_hist()
+            self.export_hist2()
+            self.mesh.data.update_variables_to_mesh()
+            self.mesh.data.export_variables_to_npz()

@@ -2,6 +2,7 @@ from .. import directories as direc
 from ..utils.utils_old import get_box, getting_tag
 from pymoab import types
 import numpy as np
+from ..data_class.data_manage import dataManager
 
 class Contours:
 
@@ -16,7 +17,8 @@ class Contours:
         # self.values_q = [] # valores de vazao prescrita
         self.name_datas = direc.names_datas_contour
         self.name_file = direc.names_outfiles_steps[4]
-        self.datas = dict()
+        # self.datas = dict()
+        self.datas = dataManager('contours.npz')
         self.tags = dict()
         self.tags_to_infos = dict()
         self.names = ['ws_p', 'ws_q', 'ws_inj', 'ws_prod', 'values_p', 'values_q', 'all_wells']
@@ -158,14 +160,19 @@ class Contours:
         for name in names:
             self.tags[name] = mb.tag_get_handle(name)
 
-    def export_to_npz(self):
+    def export_to_npz_dep0(self):
         assert not self._loaded
 
         file_name = self.name_datas
 
         np.savez(file_name, **self.datas)
 
-    def load_from_npz(self):
+    def export_to_npz(self):
+        assert not self._loaded
+
+        self.datas.export_to_npz()
+
+    def load_from_npz_dep0(self):
         assert not self._loaded
         file_name = self.name_datas
 
@@ -173,6 +180,11 @@ class Contours:
 
         for name, values in arq.items():
             self.datas[name] = values
+
+    def load_from_npz(self):
+        assert not self._loaded
+
+        self.datas.load_from_npz()
 
     def save_mesh(self, M):
         M.state = 4
