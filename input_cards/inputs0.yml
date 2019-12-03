@@ -7,16 +7,17 @@
 # value eh o tensor de permeabilidade sendo [kxx, kxy, kxz, kyx, kyy, kyz, kzx, kzy, kzz]
 
 # mesh_name: 'mesh/27x27x27.msh'
-mesh_name: 'mesh/45x45x45.msh'
+# mesh_name: 'mesh/45x45x45.msh'
+mesh_name: 'mesh/30x30x45.msh'
 state: 0
 type_of_solution: 'Fine_scale'
 gravity: False
 
 # se read_permeability == True vai ler a permeabilidade e a porosidade do spe10
-read_permeability: False
+read_permeability: True
 file_name_permeability: 'spe10_perms_and_phi.npz'
 # se set_permeability == True vai setar a permeabilidade definida em Permeability
-set_permeability: True
+set_permeability: False
 Permeability:
   r1:
     type: 'all'
@@ -52,7 +53,7 @@ Wells:
     type: Injector
     prescription: 'Q' # vazao prescrita
     p0: [0.0, 0.0, 0.0]
-    p1: [20.0, 10.0, 54.0]
+    p1: [20.0, 10.0, 90.0]
     value: 100000.0
 
   # P2:
@@ -67,8 +68,8 @@ Wells:
     type_region: 'box'
     type: Producer
     prescription: 'P'
-    p0: [520, 260.0, 0.0]
-    p1: [540, 270.0, 54.0]
+    p0: [580.0, 290.0, 0.0]
+    p1: [600.0, 300.0, 90.0]
     value: 1.0
 
 # Saturacao

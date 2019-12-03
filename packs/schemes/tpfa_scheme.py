@@ -37,3 +37,19 @@ class tpfaScheme:
         T = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, self.n_volumes))
 
         self.data['Tini'] = T
+
+    def corrigir_pocos(self):
+
+        faces_n=[] "todas faces de neumman"
+        for v in volumes_n:
+            faces_n.append(np.array(M1.mtu.get_bridge_adjacencies(v,3,2)))
+        fc_n=np.concatenate(faces_n)
+        facs_nn=[] 'faces que pertencem a mais de um volume de neumman'
+        for f in fc_n:
+            if len(np.where(fc_n==f)[0])==2:facs_nn.append(f)
+        facs_nn=np.unique(np.uint64(facs_nn))
+        ks_neu=M1.mb.tag_get_data(M1.k_eq_tag,facs_nn,flat=True) 'k nas facs_nn'
+        # kst = todas transmissibilidades
+        vals=np.repeat(kst.max(),len(facs_nn))
+        M1.mb.tag_set_data(M1.k_eq_tag, np.uint64(facs_nn), vals)
+        M1.mb.tag_set_data(M1.kharm_tag, np.uint64(facs_nn), vals)
