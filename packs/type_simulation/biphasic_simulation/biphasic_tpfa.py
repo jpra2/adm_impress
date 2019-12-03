@@ -4,6 +4,7 @@ from ...utils import relative_permeability
 from ...preprocess.preprocess1 import set_saturation_regions
 import numpy as np
 import scipy.sparse as sp
+from ...convert_unit.conversion import convert1
 
 
 class biphasicTpfa(monophasicTpfa):
@@ -16,8 +17,15 @@ class biphasicTpfa(monophasicTpfa):
         self.mi_o = direc.data_loaded['biphasic_data']['mi_o']
         self.cfl = direc.data_loaded['biphasic_data']['cfl']
         self.V_total = (M.data['volume']*M.data['poro']).sum()
+        self.Sor = float(direc.data_loaded['biphasic_data']['Sor'])
+        self.Swc = float(direc.data_loaded['biphasic_data']['Swc'])
+        self.delta_sat_max = 0.6
+        self.lim_flux_w = 1e-9
 
         if not load:
+
+            set_saturation_regions(M)
+            convert1(M)
             self.get_gama()
             self.update_relative_permeability()
             self.update_mobilities()
@@ -49,13 +57,17 @@ class biphasicTpfa(monophasicTpfa):
     def load_gama(self):
         self.data['gama'] = self.mesh.data['gama'].copy()
 
-    def update_flux_w_volumes(self) -> None:
+    def update_flux_w_and_o_volumes(self) -> None:
 
-        vols_viz_internal_faces = M.data.elements_lv0[direc.elements_lv0_0[2]]
+        M = self.mesh
+
+        vols_viz_internal_faces = M.data.elements_lv0[direc.entities_lv0_0[2]]
         v0 = vols_viz_internal_faces
         internal_faces = M.data.elements_lv0[direc.entities_lv0_0[0]]
         total_flux_faces = M.data['flux_faces']
         fw_faces = M.data['fw_faces']
+        fw_vol = M.data['fw_vol']
+        flux_volumes = M.data['flux_volumes']
         flux_w_faces = fw_faces*total_flux_faces
         flux_w_internal_faces = flux_w_faces[internal_faces]
 
@@ -64,9 +76,22 @@ class biphasicTpfa(monophasicTpfa):
         data = np.array([flux_w_internal_faces, -flux_w_internal_faces]).flatten()
         flux_w_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
 
+        ws_prod = M.contours.datas['ws_prod']
+        ws_inj = M.contours.datas['ws_inj']
+        flux_w_volumes[ws_prod] -= flux_volumes[ws_prod]*fw_vol[ws_prod]
+        flux_w_volumes[ws_inj] -= flux_volumes[ws_inj]*fw_vol[ws_inj]
+
+        flux_o_internal_faces = total_flux_faces[internal_faces] - flux_w_internal_faces
+
+        lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+        cols = np.repeat(0, len(lines))
+        data = np.array([flux_o_internal_faces, -flux_o_internal_faces]).flatten()
+        flux_o_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
+        flux_o_volumes[ws_prod] -= flux_volumes[ws_prod]*(1 - fw_vol[ws_prod])
+
         M.data['flux_w_faces'] = flux_w_faces
         M.data['flux_w_volumes'] = flux_w_volumes
-        M.data['flux_o_volumes'] = M.data['flux_volumes'] - flux_w_volumes
+        M.data['flux_o_volumes'] = flux_o_volumes
 
     def update_mobilities(self):
         M = self.mesh
@@ -146,14 +171,23 @@ class biphasicTpfa(monophasicTpfa):
         M.data['fw_faces'] = fw_faces.copy()
 
     def update_delta_t(self):
+        M = self.mesh
 
-        flux_volumes = M.data['flux_volumes']
+        flux_volumes = np.absolute(M.data['flux_volumes'])
         phis = M.data['poro']
         volume = M.data['volume']
-        self.delta_t = (self.cfl*(1/4)*(volume*poro)/flux_volumes).min()
+        self.delta_t = (self.cfl*(volume*phis)/flux_volumes).min()
+
+    def reduce_delta_t(self):
+        d = self.delta_t
+        self.delta_t *= 1/2
+        print(f'\nreducing delta_t: {d} -> {self.delta_t} \n')
+
+    def update_t(self):
         self.t += self.delta_t
 
     def update_mass_transport(self):
+        M = self.mesh
         flux_w_volumes = M.data['flux_w_volumes']
         flux_o_volumes = M.data['flux_o_volumes']
 
@@ -162,20 +196,82 @@ class biphasicTpfa(monophasicTpfa):
 
     def update_vpi(self):
         flux_total_inj = M.data['flux_volumes'][M.contours.datas['ws_inj']]
-        self.vpi += (flux_total_prod.sum()*self.delta_t)/self.V_total
+        self.vpi += (flux_total_inj.sum()*self.delta_t)/self.V_total
 
     def update_loop(self):
         self.loop += 1
 
     def update_hist(self, simulation_time: float=0.0):
-        oil_production = M.data['flux_o_volumes'][M.contours.datas['ws_prod']].sum()
-        water_production = M.data['flux_w_volumes'][M.contours.datas['ws_prod']].sum()
+        ws_prod = M.contours.datas['ws_prod']
+        fw_vol = M.data['fw_vol']
+        water_production = (M.data['flux_volumes'][ws_prod]*fw_vol[ws_prod]).sum()
+        oil_production = (M.data['flux_volumes'][ws_prod]).sum() - water_production
+
         wor = water_production/oil_production
 
         self.hist = np.array([self.loop, self.delta_t, simulation_time,
             oil_production, water_production, self.t, wor])
 
         np.append(self.hist2, self.hist)
+
+    def update_sat(self):
+        M = self.mesh
+
+        saturations0 = M.data['saturation'].copy()
+        saturations = saturations0.copy()
+        ids = np.arange(len(saturations))
+
+        fw_volumes = -M.data['flux_w_volumes']
+        volumes = M.data['volume']
+        phis = M.data['poro']
+
+        ###########################
+        ## teste
+        test = ids[(saturations < 0) & (saturations > 1)]
+        if len(test) > 0:
+            import pdb; pdb.set_trace()
+            raise ValueError(f'valor errado da saturacao {saturations[test]}')
+        ###########################
+
+        ###########################
+        ## teste
+        test = ids[fw_volumes < -self.lim_flux_w]
+        if len(test) > 0:
+            import pdb; pdb.set_trace()
+            raise ValueError(f'valor errado da saturacao {saturations[test]}')
+        ###########################
+
+        ids_var = ids[(fw_volumes > self.lim_flux_w)]
+
+        fw_volumes = fw_volumes[ids_var]
+        volumes = volumes[ids_var]
+        phis = phis[ids_var]
+        sats = saturations[ids_var]
+
+        sats += (fw_volumes*self.delta_t)/(phis*volumes)
+
+        delta_sat = sats - saturations[ids_var]
+        ids2 = np.arange(len(delta_sat))
+
+        #############
+        ## teste
+        test = ids2[delta_sat > self.delta_sat_max]
+        if len(test) > 0:
+            return 1
+        ##############
+
+        saturations[ids_var] = sats
+
+        M.data['saturation'] = saturations
+
+        return 0
+
+    def update_saturation(self):
+        verif = -1
+        while verif != 0:
+            verif = self.update_sat()
+            if verif == 1:
+                self.reduce_delta_t()
 
     def get_empty_hist(self):
 

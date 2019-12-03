@@ -41,8 +41,8 @@ class Preprocess0:
         self.set_k_harm_hex_structured(M)
         self.set_pretransmissibility(M)
         self.set_transmissibility_monophasic(M)
-        if direc.data_loaded['biphasic'] == True:
-            set_saturation_regions(M)
+        # if direc.data_loaded['biphasic'] == True:
+        #     set_saturation_regions(M)
 
         M.state = 0
         M.data.update_variables_to_mesh()

@@ -100,6 +100,13 @@ flux_faces:
   sparse: True
   level: 0
 
+flux_w_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
 lambda_t_faces:
   type: faces
   data size: 1
