@@ -153,7 +153,7 @@ class monophasicTpfa(tpfaScheme):
         self.data['p'] = p
         M.data.variables[M.data.variables_impress['pressure']] = p
 
-    def run(self, gmres=True) -> None:
+    def run(self, iterative=True) -> None:
 
         self.get_transmissibility_matrix_without_boundary_conditions()
         self.set_boundary_conditions()
@@ -161,8 +161,8 @@ class monophasicTpfa(tpfaScheme):
 
 
         t0 = time.time()
-        if gmres:
-            self.update_initial_pressure_guess(self.solver.gmres_solver(self.data['T'], self.data['b'], self.data['p'], tol=1e-12))
+        if iterative:
+            self.update_initial_pressure_guess(self.solver.conjugate_gradient_solver(self.data['T'], self.data['b'], self.data['p'], tol=1e-12))
         else:
              self.update_initial_pressure_guess(self.solver.direct_solver(self.data['T'], self.data['b']))
         t1 = time.time()

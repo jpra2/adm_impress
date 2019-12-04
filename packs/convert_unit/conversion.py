@@ -5,23 +5,30 @@ def convert_English_to_SI(M):
     '''
     converte as unidades do sistema americano para o SI
     '''
-    M.contours.datas['values_p_ini'] *= constants.psi_to_Pa()
-    M.contours.datas['values_p'] *= constants.psi_to_Pa()
-    M.contours.datas['values_q'] *= constants.bbldia_to_m3seg()
+    k0 = constants.psi_to_Pa()
+    k1 = constants.bbldia_to_m3seg()
+
+    M.contours.datas['values_p_ini'] *= k0
+    M.contours.datas['values_p'] *= k0
+    M.contours.datas['values_q'] *= k1
     M.contours.update_values()
 
-    M.data['hs'] *= constants.pe_to_m()
-    M.data['volume'] *= constants.pe_to_m()**3
-    M.data['NODES'] *= constants.pe_to_m()
-    M.data['centroid_volumes'] *= constants.pe_to_m()
-    M.data['centroid_faces'] *= constants.pe_to_m()
-    M.data['centroid_edges'] *= constants.pe_to_m()
-    M.data['centroid_nodes'] *= constants.pe_to_m()
+    k2 = constants.pe_to_m()
 
-    M.data['area'] *= constants.pe_to_m()**2
-    M.data['permeability'] *= constants.milidarcy_to_m2()
-    M.data['k_harm'] *= constants.milidarcy_to_m2()
-    M.data['dist_cent'] *= constants.pe_to_m()
+    M.data['hs'] *= k2
+    M.data['volume'] *= k2**3
+    M.data['NODES'] *= k2
+    M.data['centroid_volumes'] *= k2
+    M.data['centroid_faces'] *= k2
+    M.data['centroid_edges'] *= k2
+    M.data['centroid_nodes'] *= k2
+
+    k3 = constants.milidarcy_to_m2()
+
+    M.data['area'] *= k2**2
+    M.data['permeability'] *= k3
+    M.data['k_harm'] *= k3
+    M.data['dist_cent'] *= k2
 
     areas = M.data['area']
     k_harm_faces = M.data['k_harm']

@@ -3,6 +3,7 @@ from ..utils.utils_old import get_box, getting_tag
 from pymoab import types
 import numpy as np
 from ..data_class.data_manage import dataManager
+import collections
 
 class Contours:
 
@@ -199,6 +200,25 @@ class Contours:
 
         self.mesh.core.mb.tag_set_data(self.tags['P'], M.core.all_volumes[self.datas['ws_p']], self.datas['values_p'])
         self.mesh.core.mb.tag_set_data(self.tags['Q'], M.core.all_volumes[self.datas['ws_q']], self.datas['values_q'])
+
+    def correct_wells(self):
+        M = self.mesh
+        wells_q = self.datas['ws_q']
+
+        fc_n = M.volumes.bridge_adjacencies(wells_q, 3, 2).flatten()
+        contador = collections.Counter(fc_n)
+        facs_nn = np.array([k for k, v in contador.items() if v > 1])
+        k_harm_faces = M.data['k_harm'].copy()
+        k_max = k_harm_faces.max()
+        k_harm_faces[facs_nn] = np.repeat(k_max, len(facs_nn))
+
+        areas = M.data['area']
+        dist_cent = M.data['dist_cent']
+        pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
+
+        M.data['k_harm'] = k_harm_faces
+        M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
+        M.data.update_variables_to_mesh(['k_harm', 'pretransmissibility'])
 
     def loaded(self):
         assert not self._loaded

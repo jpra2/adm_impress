@@ -14,7 +14,7 @@ class Data:
     armazena as variaveis do impress e dicts que linkam
     as entidades do moab aos seus respectivos ids globais
     '''
-    valores_para_converter = ['hs', 'permeability', 'dist_cent']
+    # valores_para_converter = ['hs', 'permeability', 'dist_cent']
 
     def __init__(self, n_nodes, n_edges, n_faces, n_volumes, fine_scale_mesh_obj):
         '''
@@ -48,7 +48,7 @@ class Data:
         entity: entidade onde foi setada
         level: nivel
 
-        dict que armazena as informacoes das variaveis do impress
+        self.info_data: dict que armazena as informacoes das variaveis do impress
         '''
         # self.variables[name] = impress_variable
         info = dict()
@@ -68,8 +68,6 @@ class Data:
 
         variables = dict()
         variables_impress = dict()
-
-
 
         for name, infos in self.info_data.items():
             n = infos[direc.names_datas[0]]

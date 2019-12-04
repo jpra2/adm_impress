@@ -21,10 +21,14 @@ class biphasicTpfa(monophasicTpfa):
         self.V_total = (M.data['volume']*M.data['poro']).sum()
         self.Sor = float(direc.data_loaded['biphasic_data']['Sor'])
         self.Swc = float(direc.data_loaded['biphasic_data']['Swc'])
+        self.loops_para_gravar = direc.data_loaded['biphasic_data']['loops_para_gravar']
+        self.vpis_para_gravar_vtk = direc.data_loaded['biphasic_data']['vpis_para_gravar_vtk']
+        self.max_contador_vtk = len(self.vpis_para_gravar_vtk)
         self.delta_sat_max = 0.6
         self.lim_flux_w = 1e-9
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
+        self.mesh_name = os.path.join(direc.flying, 'biphasic')
 
         if not load:
 
@@ -40,6 +44,7 @@ class biphasicTpfa(monophasicTpfa):
             self.vpi = 0.0
             self.t = 0.0
             self.all_biphasic_results = self.get_empty_current_biphasic_results()
+            self.contador_vtk = 0
         else:
             self.load_infos()
 
@@ -253,7 +258,7 @@ class biphasicTpfa(monophasicTpfa):
         wor = water_production/oil_production
 
         self.current_biphasic_results = np.array([self.loop, self.delta_t, simulation_time,
-            -oil_production, -water_production, self.t, wor, self.vpi])
+            -oil_production, -water_production, self.t, wor, self.vpi, self.contador_vtk])
 
         self.all_biphasic_results.append(self.current_biphasic_results)
 
@@ -332,7 +337,7 @@ class biphasicTpfa(monophasicTpfa):
         #     'oil_production [m3/s]', 'water_production [m3/s]', 't [s]', 'wor'])])
 
         return [np.array(['loop', 'delta_t [s]', 'simulation_time [s]',
-            'oil_production [m3/s]', 'water_production [m3/s]', 't [s]', 'wor', 'vpi'])]
+            'oil_production [m3/s]', 'water_production [m3/s]', 't [s]', 'wor', 'vpi', 'contador_vtk'])]
 
     def export_current_biphasic_results(self):
         np.save(self.name_current_biphasic_results, self.current_biphasic_results)
@@ -342,22 +347,31 @@ class biphasicTpfa(monophasicTpfa):
         self.all_biphasic_results = self.get_empty_current_biphasic_results()
 
     def load_infos(self):
-        self.mesh.data.load_from_npz()
-        self.mesh.data.update_variables_to_mesh()
+        self.mesh.data.load_variables_from_npz()
         self.current_biphasic_results = np.load(self.name_current_biphasic_results)
         self.loop = int(self.current_biphasic_results[0])
         self.t = self.current_biphasic_results[5]
         self.vpi = self.current_biphasic_results[7]
+        self.contador_vtk = self.current_biphasic_results[8]
         self.all_biphasic_results = self.get_empty_current_biphasic_results()
 
-    def run(self, save=False):
+    def save_infos(self):
+        self.export_current_biphasic_results()
+        self.export_all_biphasic_results()
+        self.mesh.data.update_variables_to_mesh()
+        self.mesh.data.export_variables_to_npz()
+        self.mesh.core.print(file=self.mesh_name, extension='.h5m', config_input="input_cards/print_settings.yml")
+
+    def run(self):
+        save = False
+        imprimir_vtk = False
         t0 = time.time()
         if self.loop == 0:
-            gmres_ = False
+            iterative = False
         else:
-            gmres_ = True
+            iterative = True
 
-        super().run(gmres_)
+        super().run(iterative)
         self.update_flux_w_and_o_volumes()
         self.update_delta_t()
         self.update_saturation()
@@ -372,8 +386,17 @@ class biphasicTpfa(monophasicTpfa):
         dt = t1-t0
         self.update_current_biphasic_results(dt)
 
+        if self.loop % self.loops_para_gravar == 0:
+            save=True
+
+        if self.vpi > self.vpis_para_gravar_vtk[self.contador_vtk] and self.contador_vtk < self.max_contador_vtk:
+            imprimir_vtk = True
+
         if save:
-            self.export_current_biphasic_results()
-            self.export_all_biphasic_results()
-            self.mesh.data.update_variables_to_mesh()
-            self.mesh.data.export_variables_to_npz()
+            self.save_infos()
+            save=False
+            
+        if imprimir_vtk:
+            name = os.path.join('results', 'biphasic') + '_loop_' + str(self.loop) + '_vpi_' + str(self.vpi)
+            self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+            imprimir_vtk = False

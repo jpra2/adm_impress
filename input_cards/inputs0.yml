@@ -9,15 +9,15 @@
 # mesh_name: 'mesh/27x27x27.msh'
 # mesh_name: 'mesh/45x45x45.msh'
 mesh_name: 'mesh/30x30x45.msh'
-state: 0
+state: 5
 type_of_solution: 'Fine_scale'
 gravity: False
 
 # se read_permeability == True vai ler a permeabilidade e a porosidade do spe10
-read_permeability: True
+read_permeability: False
 file_name_permeability: 'spe10_perms_and_phi.npz'
 # se set_permeability == True vai setar a permeabilidade definida em Permeability
-set_permeability: False
+set_permeability: True
 Permeability:
   r1:
     type: 'all'
@@ -90,6 +90,7 @@ monophasic_data:
   mi: 1.0
 
 biphasic: True
+load_biphasic: False
 biphasic_data:
   gama_w: 10000.0
   gama_o: 9000.0
@@ -103,3 +104,5 @@ biphasic_data:
   mi_o: 5.0
   cfl: 0.5
   relative_permeability: 'brooks_and_corey'
+  vpis_para_gravar_vtk: [0.0, 0.1, 0.3, 0.5]
+  loops_para_gravar: 2
