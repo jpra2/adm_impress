@@ -289,7 +289,7 @@ class biphasicTpfa(monophasicTpfa):
             raise ValueError(f'valor errado da saturacao {saturations[test]}')
         ###########################
 
-        ids_var = ids[(fw_volumes > self.lim_flux_w)]
+        ids_var = ids[fw_volumes > self.lim_flux_w]
 
         fw_volumes = fw_volumes[ids_var]
         volumes = volumes[ids_var]
@@ -302,7 +302,7 @@ class biphasicTpfa(monophasicTpfa):
         ids2 = np.arange(len(delta_sat))
 
         #############
-        ## teste
+        ## teste variacao maxima de saturacao
         test = ids2[delta_sat > self.delta_sat_max]
         if len(test) > 0:
             return 1
