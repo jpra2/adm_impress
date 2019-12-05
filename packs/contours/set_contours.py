@@ -35,7 +35,7 @@ class Contours:
         ws_p = self.datas['ws_p']
         values_p_ini = self.datas['values_p_ini']
 
-        zs_ws_p = M.data.centroids['volumes'][ws_p][:,2]
+        zs_ws_p = M.data['centroid_volumes'][ws_p][:,2]
         gama_ws_p = gama[ws_p]
 
         dz = gama_ws_p*(-zs_ws_p + self.Lz)

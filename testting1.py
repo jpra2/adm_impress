@@ -70,13 +70,11 @@ def mostrar():
 verif = True
 contador = 1
 while verif:
-    if contador % 20 == 0:
+    if contador % 2 == 0:
         contador = 1
         import pdb; pdb.set_trace()
     r1()
     contador += 1
-
-
 
 import pdb; pdb.set_trace()
 # b1.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
