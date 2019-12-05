@@ -171,7 +171,6 @@ class Contours:
         np.savez(file_name, **self.datas)
 
     def export_to_npz(self):
-        assert not self._loaded
 
         self.datas.export_to_npz()
 
@@ -185,7 +184,6 @@ class Contours:
             self.datas[name] = values
 
     def load_from_npz(self):
-        assert not self._loaded
 
         self.datas.load_from_npz()
 

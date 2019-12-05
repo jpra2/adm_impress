@@ -44,7 +44,7 @@ M = rodar.M
 # test biphasic
 from packs.type_simulation.biphasic_simulation.biphasic_tpfa import biphasicTpfa
 import time
-b1 = biphasicTpfa(M)
+b1 = biphasicTpfa(M, load=False)
 # b1.run()
 # b1.run()
 # b1.update_flux_w_and_o_volumes()
@@ -61,6 +61,20 @@ def r2():
     r1()
     b1.mesh.data.update_variables_to_mesh()
     b1.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
+
+
+def mostrar():
+    b1.mesh.data.update_variables_to_mesh()
+    b1.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
+
+verif = True
+contador = 1
+while verif:
+    if contador % 20 == 0:
+        contador = 1
+        import pdb; pdb.set_trace()
+    r1()
+    contador += 1
 
 
 

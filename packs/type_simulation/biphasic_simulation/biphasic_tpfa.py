@@ -11,7 +11,7 @@ import os
 
 class biphasicTpfa(monophasicTpfa):
 
-    def __init__(self, M, data_name: str='biphasicTpfa.npz', load=False) -> None:
+    def __init__(self, M, data_name: str='biphasicTpfa.npz', load=True) -> None:
         super().__init__(M, data_name)
         name_relative_permeability = direc.data_loaded['biphasic_data']['relative_permeability']
         self.relative_permeability = getattr(relative_permeability, name_relative_permeability)
@@ -348,6 +348,7 @@ class biphasicTpfa(monophasicTpfa):
 
     def load_infos(self):
         self.mesh.data.load_variables_from_npz()
+        self.mesh.contours.load_from_npz()
         self.current_biphasic_results = np.load(self.name_current_biphasic_results)
         self.loop = int(self.current_biphasic_results[0])
         self.t = self.current_biphasic_results[5]
@@ -360,16 +361,16 @@ class biphasicTpfa(monophasicTpfa):
         self.export_all_biphasic_results()
         self.mesh.data.update_variables_to_mesh()
         self.mesh.data.export_variables_to_npz()
+        self.mesh.contours.export_to_npz()
         self.mesh.core.print(file=self.mesh_name, extension='.h5m', config_input="input_cards/print_settings.yml")
 
-    def run(self):
-        save = False
+    def run(self, save=False):
         imprimir_vtk = False
         t0 = time.time()
         if self.loop == 0:
             iterative = False
         else:
-            iterative = True
+            iterative = False
 
         super().run(iterative)
         self.update_flux_w_and_o_volumes()
@@ -386,17 +387,14 @@ class biphasicTpfa(monophasicTpfa):
         dt = t1-t0
         self.update_current_biphasic_results(dt)
 
-        if self.loop % self.loops_para_gravar == 0:
-            save=True
-
         if self.vpi > self.vpis_para_gravar_vtk[self.contador_vtk] and self.contador_vtk < self.max_contador_vtk:
             imprimir_vtk = True
 
-        if save:
-            self.save_infos()
-            save=False
-            
         if imprimir_vtk:
             name = os.path.join('results', 'biphasic') + '_loop_' + str(self.loop) + '_vpi_' + str(self.vpi)
             self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
             imprimir_vtk = False
+
+        if save:
+            self.save_infos()
+            save=False

@@ -106,3 +106,5 @@ biphasic_data:
   relative_permeability: 'brooks_and_corey'
   vpis_para_gravar_vtk: [0.0, 0.1, 0.3, 0.5]
   loops_para_gravar: 2
+  loop_maximo: 10
+  tempo_maximo: Null

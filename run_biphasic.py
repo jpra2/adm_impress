@@ -1,7 +1,8 @@
-from ...simulations.init_simulation import rodar
-from .biphasic_tpfa import biphasicTpfa
-from .biphasic_tpfa import direc
+from packs.simulations.init_simulation import rodar
+from packs.type_simulation.biphasic_simulation.biphasic_tpfa import biphasicTpfa
+from packs import directories as direc
 import os
+import numpy as np
 
 
 load = np.load(direc.name_load)[0]

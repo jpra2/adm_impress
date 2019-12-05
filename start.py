@@ -1,5 +1,5 @@
 import os
-from ... import directories as direc
+from packs import directories as direc
 import numpy as np
 data_loaded = direc.data_loaded
 __all__ = []
