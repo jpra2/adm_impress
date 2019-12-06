@@ -28,6 +28,8 @@ class Wells(DataManager):
         self.Lz = cent_nodes.max(axis=0)[2]
 
         ws_p = self._data['ws_p']
+        if len(ws_p) < 1:
+            return 0
         values_p_ini = self._data['values_p_ini']
 
         zs_ws_p = M.data['centroid_volumes'][ws_p][:,2]

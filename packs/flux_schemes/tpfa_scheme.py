@@ -1,14 +1,16 @@
 from ..data_class.data_manager import DataManager
+from ..directories import data_loaded
 import numpy as np
 import scipy.sparse as sp
 
 class TpfaScheme(DataManager):
 
     def __init__(self, data_impress, elements_lv0, data_name: str='TpfaScheme.npz', load=False):
-        super().__init__(data_name, load)
+        super().__init__(data_name, load=load)
         self.data_impress = data_impress
         self.elements_lv0 = elements_lv0
         self.n_volumes = self.data_impress.len_entities['volumes']
+        self.gravity = data_loaded['gravity']
 
     def get_transmissibility_matrix_without_boundary_conditions(self) -> None:
 
