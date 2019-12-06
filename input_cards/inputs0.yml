@@ -6,9 +6,9 @@
 # se type = box, o valor sera colocado apenas na caixa delimitada pelos pontos p0 e p1
 # value eh o tensor de permeabilidade sendo [kxx, kxy, kxz, kyx, kyy, kyz, kzx, kzy, kzz]
 
-# mesh_name: 'mesh/27x27x27.msh'
+mesh_name: 'mesh/27x27x27.msh'
 # mesh_name: 'mesh/45x45x45.msh'
-mesh_name: 'mesh/30x30x45.msh'
+# mesh_name: 'mesh/30x30x45.msh'
 state: 0
 type_of_solution: 'Fine_scale'
 gravity: True
@@ -53,8 +53,8 @@ Wells:
     type: Injector
     prescription: 'Q' # vazao prescrita
     p0: [0.0, 0.0, 0.0]
-    p1: [20.0, 10.0, 90.0]
-    value: 0.0001
+    p1: [20.0, 10.0, 54.0]
+    value: 1000.0
 
   # P2:
   #   type_region: 'box'
@@ -68,8 +68,8 @@ Wells:
     type_region: 'box'
     type: Producer
     prescription: 'P'
-    p0: [580.0, 290.0, 0.0]
-    p1: [600.0, 300.0, 90.0]
+    p0: [520.0, 260.0, 0.0]
+    p1: [540.0, 270.0, 54.0]
     value: 1.0
 
 # Saturacao

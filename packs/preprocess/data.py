@@ -30,10 +30,6 @@ class Data:
         self.len_entities = dict()
         self.variables_impress = dict()
 
-        self.len_entities[direc.entities_lv0[0]] = n_nodes
-        self.len_entities[direc.entities_lv0[1]] = n_faces
-        self.len_entities[direc.entities_lv0[2]] = n_edges
-        self.len_entities[direc.entities_lv0[3]] = n_volumes
         self.mesh = fine_scale_mesh_obj
         self.name_variables = direc.path_local_variables
         self.name_info_data = direc.path_local_info_data

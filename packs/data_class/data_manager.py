@@ -2,23 +2,26 @@ import os
 from ..directories import flying
 import numpy as np
 
-class dataManager:
+class DataManager:
     all_datas = dict()
 
-    def __init__(self, data_name: str) -> None:
+    def __init__(self, data_name: str, load: bool=False) -> None:
 
+        self._loaded = False
         if not isinstance(data_name, str):
             raise ValueError('data_name must be string')
 
         if data_name[-4:] != '.npz':
             raise NameError('data_name must end with ".npz"')
 
-        if data_name in dataManager.all_datas.keys():
+        if data_name in DataManager.all_datas.keys():
             raise ValueError('data_name cannot be repeated')
 
         self.name = os.path.join(flying, data_name)
         self._data = dict()
-        dataManager.all_datas[data_name] = self
+        DataManager.all_datas[data_name] = self
+        if load:
+            self.load_from_npz()
 
     def export_to_npz(self):
 
@@ -29,10 +32,19 @@ class dataManager:
 
     def load_from_npz(self):
 
-        arq = np.load(self.name)
+        arq = np.load(self.name, allow_pickle=True)
 
         for name, variable in arq.items():
             self._data[name] = variable
+
+        self._loaded = True
+
+    def export_all_datas(self):
+        for obj in DataManager.all_datas.values():
+            obj.export_to_npz()
+
+    def __str__(self):
+        return str(list(self._data.keys()))
 
     def __setitem__(self, key, value):
         self._data[key] = value

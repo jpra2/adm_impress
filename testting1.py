@@ -27,11 +27,6 @@ import pdb
 # pdb.set_trace()
 # M.data.update_variables_to_mesh()
 
-from packs.simulations.monophasic_simulation import run_monophasic
-from packs.simulations.init_simulation import rodar
-
-M = rodar.M
-
 #################################
 ##test Monophasic
 # from packs.type_simulation.monophasic_tpfa import monophasicTpfa
@@ -41,10 +36,10 @@ M = rodar.M
 #################################
 
 #############################
-# test biphasic
-from packs.type_simulation.biphasic_simulation.biphasic_tpfa import biphasicTpfa
-import time
-b1 = biphasicTpfa(M, load=False)
+# # test biphasic
+# from packs.type_simulation.biphasic_simulation.biphasic_tpfa import biphasicTpfa
+# import time
+# b1 = biphasicTpfa(M, load=False)
 # b1.run()
 # b1.run()
 # b1.update_flux_w_and_o_volumes()
@@ -54,55 +49,45 @@ b1 = biphasicTpfa(M, load=False)
 # b1.update_mobilities()
 # b1.update_transmissibility()
 
-def r1():
-    b1.run()
+# def r1():
+#     b1.run()
+#
+# def r2():
+#     r1()
+#     b1.mesh.data.update_variables_to_mesh()
+#     b1.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
+#
+#
+# def mostrar():
+#     b1.mesh.data.update_variables_to_mesh()
+#     b1.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
+#
+# verif = True
+# contador = 1
+# while verif:
+#     if contador % 2 == 0:
+#         contador = 1
+#         import pdb; pdb.set_trace()
+#     r1()
+#     contador += 1
 
-def r2():
-    r1()
-    b1.mesh.data.update_variables_to_mesh()
-    b1.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
 
 
-def mostrar():
-    b1.mesh.data.update_variables_to_mesh()
-    b1.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
 
-verif = True
-contador = 1
-while verif:
-    if contador % 2 == 0:
-        contador = 1
-        import pdb; pdb.set_trace()
-    r1()
-    contador += 1
+
+from packs.load.preprocessor0 import M
+from packs.data_class.data_impress import Data
+from packs.data_class.elements_lv0 import ElementsLv0
+from packs.contours.wells import Wells
 
 import pdb; pdb.set_trace()
-# b1.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
-
-# b1.update_delta_t()
-
-
-
-
-
-import pdb; pdb.set_trace()
-
-
-
-
-######################################
-
+elements_lv0 = ElementsLv0(M, load=True)
+data_impress = Data(M, elements_lv0, load=True)
+wells =
 
 
 
 import pdb; pdb.set_trace()
-
-
-
-
-
-import pdb; pdb.set_trace()
-
 
 
 
