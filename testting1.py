@@ -75,20 +75,42 @@ import pdb
 
 
 
-from packs.load.preprocessor0 import M
-from packs.data_class.data_impress import Data
-from packs.data_class.elements_lv0 import ElementsLv0
-from packs.contours.wells import Wells
-from packs.preprocess.prep0_0 import Preprocess0
+
+# from packs.data_class.data_impress import Data
+# from packs.data_class.elements_lv0 import ElementsLv0
+# from packs.contours.wells import Wells
+# from packs.convert_unit.conversion import Conversion
 
 # import pdb; pdb.set_trace()
-elements_lv0 = ElementsLv0(M)
-data_impress = Data(M, elements_lv0)
-Preprocess0(M, elements_lv0)
-wells = Wells(M)
-wells.export_all_datas_to_npz()
-data_impress.update_variables_to_mesh()
-import pdb; pdb.set_trace()
+
+# def initial_mesh(load=False, convert=False):
+#     from packs.load.preprocessor0 import M
+#
+#     elements_lv0 = ElementsLv0(M, load=load)
+#     data_impress = Data(M, elements_lv0, load=load)
+#     wells = Wells(M, load=load)
+#     if convert:
+#         conversion = Conversion(wells, data_impress)
+#         conversion.convert_English_to_SI()
+#
+#     if not load:
+#
+#         wells.update_values_to_mesh()
+#         wells.export_to_npz()
+#         data_impress.update_variables_to_mesh()
+#         data_impress.export_to_npz()
+#
+#     return M, elements_lv0, data_impress, wells
+
+from packs.running.initial_mesh_properties import initial_mesh
+from packs.flux_schemes.tpfa_scheme import TpfaScheme
+
+load = False
+convert = False
+M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
+tpfa_scheme = TpfaScheme(data_impress, elements_lv0)
+tpfa_scheme.get_transmissibility_matrix_without_boundary_conditions()
+
 
 
 

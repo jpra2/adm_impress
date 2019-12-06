@@ -2,7 +2,7 @@ from .. import directories as direc
 from . import directories_impress as direc_impress
 from ..utils.utils_old import get_box
 import numpy as np
-from .preprocess1 import set_saturation_regions
+# from .preprocess1 import set_saturation_regions
 
 
 def set_permeability_and_phi_spe10(M):

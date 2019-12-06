@@ -9,6 +9,7 @@ from .. import directories as direc
 import pickle
 import pdb
 from .data_manager import DataManager
+from ..convert_unit import constants
 
 class Data(DataManager):
     '''
@@ -35,6 +36,8 @@ class Data(DataManager):
         fine_scale_mesh_obj.data = self
         if not load:
             self.run()
+
+        self._loaded = True
 
     def get_info_data(self):
         '''
@@ -101,5 +104,3 @@ class Data(DataManager):
     def run(self):
         self.get_info_data()
         self.init_datas()
-
-        self._loaded = True

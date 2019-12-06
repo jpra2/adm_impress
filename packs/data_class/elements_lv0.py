@@ -9,6 +9,8 @@ class ElementsLv0(DataManager):
         if not load:
             self.run()
 
+        self._loaded = True
+
     def load_elements_from_mesh(self):
 
         self._data['volumes'] = self.mesh.volumes.all
@@ -27,4 +29,3 @@ class ElementsLv0(DataManager):
 
     def run(self):
         self.load_elements_from_mesh()
-        self._loaded = True

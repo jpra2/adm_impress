@@ -37,12 +37,15 @@ class DataManager:
         for name, variable in arq.items():
             self._data[name] = variable
 
-        self._loaded = True
-
     @classmethod
     def export_all_datas_to_npz(cls):
         for obj in cls.all_datas.values():
             obj.export_to_npz()
+
+    @classmethod
+    def load_all_datas_from_npz(cls):
+        for obj in cls.all_datas.values():
+            obj.load_from_npz()
 
     def __str__(self):
         return str(list(self._data.keys()))

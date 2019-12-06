@@ -164,8 +164,8 @@ class Wells(DataManager):
     def update_values_to_mesh(self):
         M = self.mesh
 
-        self.mesh.core.mb.tag_set_data(self.tags['P'], M.core.all_volumes[self.datas['ws_p']], self.datas['values_p'])
-        self.mesh.core.mb.tag_set_data(self.tags['Q'], M.core.all_volumes[self.datas['ws_q']], self.datas['values_q'])
+        self.mesh.core.mb.tag_set_data(self.tags['P'], M.core.all_volumes[self._data['ws_p']], self._data['values_p'])
+        self.mesh.core.mb.tag_set_data(self.tags['Q'], M.core.all_volumes[self._data['ws_q']], self._data['values_q'])
 
     def correct_wells(self):
         if len(self._data['ws_q']) == 0:
