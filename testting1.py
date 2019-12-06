@@ -79,11 +79,23 @@ from packs.load.preprocessor0 import M
 from packs.data_class.data_impress import Data
 from packs.data_class.elements_lv0 import ElementsLv0
 from packs.contours.wells import Wells
+from packs.preprocess.prep0_0 import Preprocess0
 
+# import pdb; pdb.set_trace()
+elements_lv0 = ElementsLv0(M)
+data_impress = Data(M, elements_lv0)
+Preprocess0(M, elements_lv0)
+wells = Wells(M)
+wells.export_all_datas_to_npz()
+data_impress.update_variables_to_mesh()
 import pdb; pdb.set_trace()
-elements_lv0 = ElementsLv0(M, load=True)
-data_impress = Data(M, elements_lv0, load=True)
-wells =
+
+
+
+
+
+
+
 
 
 

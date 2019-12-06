@@ -78,24 +78,24 @@ class Data(DataManager):
 
         if names:
             for name in names:
-                command = 'self.mesh.' + name + '[:] = ' + 'self.variables["' + name + '"]'
+                command = 'self.mesh.' + name + '[:] = ' + 'self._data["' + name + '"]'
                 exec(command)
 
         else:
-            for name in self.variables.keys():
-                command = 'self.mesh.' + name + '[:] = ' + 'self.variables["' + name + '"]'
+            for name in self._data.keys():
+                command = 'self.mesh.' + name + '[:] = ' + 'self._data["' + name + '"]'
                 exec(command)
 
     def load_variables_from_mesh(self, names=None):
 
         if names:
             for name in names:
-                command = 'self.variables["' + name + '"] = self.mesh.' + name + '[:]'
+                command = 'self._data["' + name + '"] = self.mesh.' + name + '[:]'
                 exec(command)
 
         else:
-            for name in self.variables.keys():
-                command = 'self.variables["' + name + '"] = self.mesh.' + name + '[:]'
+            for name in self._data.keys():
+                command = 'self._data["' + name + '"] = self.mesh.' + name + '[:]'
                 exec(command)
 
     def run(self):

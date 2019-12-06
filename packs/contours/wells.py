@@ -14,6 +14,11 @@ class Wells(DataManager):
         self.tags_to_infos = dict()
         self.names = ['ws_p', 'ws_q', 'ws_inj', 'ws_prod', 'values_p', 'values_q', 'all_wells']
         self.mesh = M
+        if not load:
+            self.run()
+        else:
+            self.load_tags()
+            self._loaded = True
 
     def add_gravity(self):
         assert direc.data_loaded['gravity'] == True
@@ -111,14 +116,14 @@ class Wells(DataManager):
         ws_inj = np.array(ws_inj).flatten()
         ws_prod = np.array(ws_prod).flatten()
 
-        self.data['ws_p'] = ws_p
-        self.data['ws_q'] = ws_q
-        self.data['ws_inj'] = ws_inj
-        self.data['ws_prod'] = ws_prod
-        self.data['values_p'] = values_p
-        self.data['values_q'] = values_q
-        self.data['all_wells'] = np.union1d(ws_inj, ws_prod)
-        self.data['values_p_ini'] = values_p.copy()
+        self._data['ws_p'] = ws_p
+        self._data['ws_q'] = ws_q
+        self._data['ws_inj'] = ws_inj
+        self._data['ws_prod'] = ws_prod
+        self._data['values_p'] = values_p
+        self._data['values_q'] = values_q
+        self._data['all_wells'] = np.union1d(ws_inj, ws_prod)
+        self._data['values_p_ini'] = values_p.copy()
 
     def set_infos(self):
         assert not self._loaded
@@ -127,12 +132,12 @@ class Wells(DataManager):
         mb = M.core.mb
 
         all_volumes = np.array(M.core.all_volumes)
-        ws_p = all_volumes[self.datas['ws_p']]
-        ws_q = all_volumes[self.datas['ws_q']]
-        ws_prod = all_volumes[self.datas['ws_prod']]
-        ws_inj = all_volumes[self.datas['ws_inj']]
-        values_p = self.datas['values_p']
-        values_q = self.datas['values_q']
+        ws_p = all_volumes[self._data['ws_p']]
+        ws_q = all_volumes[self._data['ws_q']]
+        ws_prod = all_volumes[self._data['ws_prod']]
+        ws_inj = all_volumes[self._data['ws_inj']]
+        values_p = self._data['values_p']
+        values_q = self._data['values_q']
 
         mb.tag_set_data(self.tags['INJ'], ws_inj, np.repeat(1, len(ws_inj)))
         mb.tag_set_data(self.tags['PROD'], ws_prod, np.repeat(1, len(ws_prod)))
@@ -149,14 +154,6 @@ class Wells(DataManager):
         for name in names:
             self.tags[name] = mb.tag_get_handle(name)
 
-    def export_to_npz(self):
-
-        self.data.export_to_npz()
-
-    def load_from_npz(self):
-
-        self.datas.load_from_npz()
-
     def save_mesh(self):
         M = self.mesh
         M.state = 4
@@ -171,12 +168,13 @@ class Wells(DataManager):
         self.mesh.core.mb.tag_set_data(self.tags['Q'], M.core.all_volumes[self.datas['ws_q']], self.datas['values_q'])
 
     def correct_wells(self):
-        M = self.mesh
-        wells_q = self.data['ws_q']
+        if len(self._data['ws_q']) == 0:
+            return 0
 
-        fc_n = M.volumes.bridge_adjacencies(wells_q, 3, 2).flatten()
-        contador = collections.Counter(fc_n)
-        facs_nn = np.array([k for k, v in contador.items() if v > 1])
+        M = self.mesh
+        wells_q = self._data['ws_q']
+
+        facs_nn = self._data['facs_nn']
         k_harm_faces = M.data['k_harm'].copy()
         k_max = k_harm_faces.max()
         k_harm_faces[facs_nn] = np.repeat(k_max, len(facs_nn))
@@ -187,11 +185,26 @@ class Wells(DataManager):
 
         M.data['k_harm'] = k_harm_faces
         M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
-        M.data.update_variables_to_mesh(['k_harm', 'pretransmissibility'])
+
+    def get_facs_nn(self):
+        assert not self._loaded
+        M = self.mesh
+        wells_q = self._data['ws_q']
+
+        fc_n = M.volumes.bridge_adjacencies(wells_q, 3, 2).flatten()
+        contador = collections.Counter(fc_n)
+        facs_nn = np.array([k for k, v in contador.items() if v > 1])
+        self._data['facs_nn'] = facs_nn
 
     def loaded(self):
         assert not self._loaded
         self._loaded = True
 
     def run(self):
+        self.create_tags()
+        self.get_wells()
+        self.set_infos()
+        self.get_facs_nn()
+        self.correct_wells()
+        self.loaded()
         pass

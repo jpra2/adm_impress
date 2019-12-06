@@ -39,8 +39,9 @@ class DataManager:
 
         self._loaded = True
 
-    def export_all_datas(self):
-        for obj in DataManager.all_datas.values():
+    @classmethod
+    def export_all_datas_to_npz(cls):
+        for obj in cls.all_datas.values():
             obj.export_to_npz()
 
     def __str__(self):
