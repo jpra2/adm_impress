@@ -11,7 +11,7 @@ mesh_name: 'mesh/27x27x27.msh'
 # mesh_name: 'mesh/30x30x45.msh'
 state: 0
 type_of_solution: 'Fine_scale'
-gravity: True
+gravity: False
 
 # se read_permeability == True vai ler a permeabilidade e a porosidade do spe10
 read_permeability: False

@@ -37,6 +37,9 @@ class Data(DataManager):
         if not load:
             self.run()
 
+        if load:
+            self.get_variables_impress()
+
         self._loaded = True
 
     def get_info_data(self):
@@ -100,6 +103,11 @@ class Data(DataManager):
             for name in self._data.keys():
                 command = 'self._data["' + name + '"] = self.mesh.' + name + '[:]'
                 exec(command)
+
+    def get_variables_impress(self):
+        self.variables_impress = dict()
+        for name in self._data.keys():
+            self.variables_impress[name] = name
 
     def run(self):
         self.get_info_data()

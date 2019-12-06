@@ -1,9 +1,10 @@
+import numpy as np
 
 class GravitySourceTermTpfa:
 
     def get_gravity_source_term(self):
 
-        centroids = self.data['centroid_volumes']
+        centroids = self.data_impress['centroid_volumes']
         source_term_volumes = np.zeros(len(centroids))
         transmissibility_faces = self.data_impress[self.data_impress.variables_impress['transmissibility']]
         source_term_faces = np.zeros(len(transmissibility_faces))
@@ -11,7 +12,7 @@ class GravitySourceTermTpfa:
 
         if self.gravity:
 
-            gamma = self.data['gama']
+            gamma = self.data_impress['gama']
 
             vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
             v0 = vols_viz_internal_faces

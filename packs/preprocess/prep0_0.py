@@ -1,5 +1,6 @@
 from .. import directories as direc
 from . import directories_impress as direc_impress
+from ..directories import data_loaded
 from ..utils.utils_old import get_box
 import numpy as np
 # from .preprocess1 import set_saturation_regions
@@ -22,8 +23,8 @@ def set_permeability_and_phi_spe10(M):
     ee = ijk0[0] + ijk0[1]*nx + ijk0[2]*nx*ny
     ee = ee.astype(np.int32)
 
-    M.data.variables[M.data.variables_impress['permeability']] = ks[ee] #permeabilidade
-    M.data.variables[M.data.variables_impress['poro']] = phi[ee]  #porosidade
+    M.data[M.data.variables_impress['permeability']] = ks[ee] #permeabilidade
+    M.data[M.data.variables_impress['poro']] = phi[ee]  #porosidade
 
 class Preprocess0:
     '''
@@ -234,6 +235,10 @@ class Preprocess0:
         M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
         # M.data.update_variables_to_mesh([M.data.variables_impress['pretransmissibility']])
 
+    def initial_gama(self, M):
+        gama_mono = data_loaded['monophasic_data']['gama']
+        M.data['gama'] = np.repeat(gama_mono, len(M.data['gama']))
+
     def run(self, M):
         self.update_centroids_and_unormal(M)
         self.set_permeability_and_phi(M)
@@ -241,3 +246,4 @@ class Preprocess0:
         self.set_k_harm_hex_structured(M)
         self.set_pretransmissibility(M)
         self.set_transmissibility_monophasic(M)
+        self.initial_gama(M)

@@ -17,7 +17,9 @@ class Wells(DataManager):
         if not load:
             self.run()
         else:
-            self.load_tags()
+            # self.load_tags()
+            self.create_tags()
+            self.set_infos()
             self._loaded = True
 
     def add_gravity(self):

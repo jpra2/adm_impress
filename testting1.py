@@ -103,13 +103,14 @@ import pdb
 #     return M, elements_lv0, data_impress, wells
 
 from packs.running.initial_mesh_properties import initial_mesh
-from packs.flux_schemes.tpfa_scheme import TpfaScheme
+from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 
-load = False
-convert = False
+load = True
+convert = True
 M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
-tpfa_scheme = TpfaScheme(data_impress, elements_lv0)
-tpfa_scheme.get_transmissibility_matrix_without_boundary_conditions()
+tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
+tpfa_solver.run()
+
 
 
 

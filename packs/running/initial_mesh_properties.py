@@ -21,10 +21,11 @@ def initial_mesh(load=False, convert=False):
     wells = Wells(M, load=load)
 
     biphasic = data_loaded['biphasic']
-    if biphasic:
+    if biphasic and not load:
         set_saturation_regions(M, wells)
+        # TODO: atualizar gama
 
-    if convert:
+    if convert and not load:
         conversion = Conversion(wells, data_impress)
         conversion.convert_English_to_SI()
 

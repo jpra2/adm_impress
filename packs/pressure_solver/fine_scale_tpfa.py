@@ -2,6 +2,7 @@ from ..flux_schemes.tpfa_scheme import TpfaScheme
 from ..flux_calculation.gravity_source_term_tpfa import GravitySourceTermTpfa
 from ..directories import data_loaded
 from ..solvers.solvers_scipy.solver_sp import SolverSp
+import numpy as np
 
 class FineScaleTpfaPressureSolver(TpfaScheme, GravitySourceTermTpfa):
 
@@ -35,7 +36,7 @@ class FineScaleTpfaPressureSolver(TpfaScheme, GravitySourceTermTpfa):
         '''
         ws_p = self.wells['ws_p']
 
-        T = self.data['Tini'].tolil().copy()
+        T = self._data['Tini'].tolil().copy()
         T[ws_p] = np.zeros((len(ws_p), T.shape[0]))
         T[ws_p, ws_p] = np.ones(len(ws_p))
 
