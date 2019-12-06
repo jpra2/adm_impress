@@ -11,7 +11,7 @@ mesh_name: 'mesh/27x27x27.msh'
 # mesh_name: 'mesh/30x30x45.msh'
 state: 0
 type_of_solution: 'Fine_scale'
-gravity: False
+gravity: True
 
 # se read_permeability == True vai ler a permeabilidade e a porosidade do spe10
 read_permeability: False
@@ -54,7 +54,7 @@ Wells:
     prescription: 'Q' # vazao prescrita
     p0: [0.0, 0.0, 0.0]
     p1: [20.0, 10.0, 54.0]
-    value: 1000.0
+    value: 10000.0
 
   # P2:
   #   type_region: 'box'
@@ -93,18 +93,18 @@ biphasic: True
 load_biphasic: False
 biphasic_data:
   gama_w: 1000.0
-  gama_o: 1000.0
+  gama_o: 900.0
   n_w: 2.0
   n_o: 2.0
   Sor: 0.2
   Swc: 0.2
   krw0: 1.0
   kro0: 1.0
-  mi_w: 1.0
-  mi_o: 1.0
-  cfl: 0.5
+  mi_w: 0.001
+  mi_o: 0.005
+  cfl: 0.9
   relative_permeability: 'brooks_and_corey'
   vpis_para_gravar_vtk: [0.0, 0.1, 0.3, 0.5]
   loops_para_gravar: 2
-  loop_maximo: 10
+  loop_maximo: Null
   tempo_maximo: Null
