@@ -1,10 +1,10 @@
 from ..flux_schemes.tpfa_scheme import TpfaScheme
-from ..flux_calculation.gravity_source_term_tpfa import GravitySourceTermTpfa
+from ..flux_calculation.flux_tpfa import TpfaFlux
 from ..directories import data_loaded
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 import numpy as np
 
-class FineScaleTpfaPressureSolver(TpfaScheme, GravitySourceTermTpfa):
+class FineScaleTpfaPressureSolver(TpfaScheme, TpfaFlux):
 
     def __init__(self, data_impress, elements_lv0, wells, data_name: str='FineScaleTpfaPressureSolver.npz', load=False):
         super().__init__(data_impress, elements_lv0, data_name=data_name, load=load)
@@ -42,18 +42,17 @@ class FineScaleTpfaPressureSolver(TpfaScheme, GravitySourceTermTpfa):
 
         return T.tocsc()
 
-    def update_initial_pressure_guess(self, p) -> None:
-        '''
-        update initial pressure guess
-        '''
+    def update_gama(self):
 
-        self.data_impress[self.data_impress.variables_impress['pressure']] = p
+        gama = data_loaded['monophasic_data']['gama']
+        self.data_impress['gama'] = np.repeat(gama, self.n_volumes)
 
     def run(self):
+        self.update_gama()
         self.get_transmissibility_matrix_without_boundary_conditions()
         self.get_gravity_source_term()
         T = self.set_boundary_conditions()
         b = self.get_RHS_term()
-
         p = self.solver.direct_solver(T, b)
-        self.update_initial_pressure_guess(p)
+        self.data_impress['pressure'] = p
+        self.get_flux_faces_and_volumes()

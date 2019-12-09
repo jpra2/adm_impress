@@ -6,6 +6,7 @@ from ..convert_unit.conversion import Conversion
 from ..preprocess.preprocess1 import set_saturation_regions
 from ..preprocess.prep0_0 import Preprocess0
 from ..directories import data_loaded
+import numpy as np
 
 # import pdb; pdb.set_trace()
 
@@ -28,6 +29,8 @@ def initial_mesh(load=False, convert=False):
     if convert and not load:
         conversion = Conversion(wells, data_impress)
         conversion.convert_English_to_SI()
+        mi_monophasic = data_loaded['monophasic_data']['mi']
+        data_impress['transmissibility'] = data_impress['pretransmissibility']*np.repeat(mi_monophasic, len(data_impress['pretransmissibility']))
 
     if not load:
 

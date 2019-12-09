@@ -1,27 +1,13 @@
-from ..solvers.solvers_scipy.solver_sp import SolverSp
-#col
-# from ..solvers.solvers_trilinos.solvers_tril import solverTril
-import time
+from packs.running.initial_mesh_properties import initial_mesh
+from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
+from packs.directories import data_loaded
 
-from ..direct_solution.monophasic.monophasic1 import Monophasic
-from .init_simulation import rodar
+load = data_loaded['load_mesh']
+convert = data_loaded['convert_english_to_SI']
+n = data_loaded['n_test']
 
-# M = rodar.M
-
-# prep1 = Preprocess1()
-# prep1.set_saturation_regions(M)
-
-def run_monophasic(Monophasic_object):
-    m1 = Monophasic_object
-
-    m1.get_transmissibility_matrix_without_contours()
-    m1.get_transmissibility_matrix()
-    m1.get_RHS_term()
-
-    solver = SolverSp()
-    x = solver.direct_solver(m1.datas['T'], m1.datas['b'])
-    m1.get_solution(x)
-    m1.get_flux_faces_and_volumes()
-
-    m1.mesh.data.update_variables_to_mesh()
-    m1.export_datas_to_npz()
+M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
+tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
+tpfa_solver.run()
+data_impress.update_variables_to_mesh()
+M.core.print(file='test'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')

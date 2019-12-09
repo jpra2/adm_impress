@@ -14,12 +14,12 @@ class DataManager:
         if data_name[-4:] != '.npz':
             raise NameError('data_name must end with ".npz"')
 
-        if data_name in DataManager.all_datas.keys():
+        if data_name in self.__class__.all_datas.keys():
             raise ValueError('data_name cannot be repeated')
 
         self.name = os.path.join(flying, data_name)
         self._data = dict()
-        DataManager.all_datas[data_name] = self
+        self.__class__.all_datas[self.name] = self
         if load:
             self.load_from_npz()
 
@@ -47,6 +47,10 @@ class DataManager:
         for obj in cls.all_datas.values():
             obj.load_from_npz()
 
+    @classmethod
+    def get_obj_by_name(cls, name):
+        return cls.all_datas[name]
+
     def __str__(self):
         return str(list(self._data.keys()))
 
@@ -57,7 +61,14 @@ class DataManager:
         return self._data[key]
 
     def __hash__(self, key):
-        return hash(self._data[key])
+        return hash(self._data)
+
+    def __contains__(self, key):
+        return key in self._data
+
+    def __del__(self):
+        del self.__class__.all_datas[self.name]
+
 
 # if __name__ == '__main__':
 #

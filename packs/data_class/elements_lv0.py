@@ -21,7 +21,7 @@ class ElementsLv0(DataManager):
         self._data['boundary_faces'] = np.setdiff1d(self._data['faces'], self._data['internal_faces'])
         self._data['neig_faces'] = self.mesh.faces.bridge_adjacencies(self._data['faces'], 2, 3)
         self._data['neig_internal_faces'] = self.mesh.faces.bridge_adjacencies(self._data['internal_faces'], 2, 3)
-        self._data['neig_boundary_faces'] = self.mesh.faces.bridge_adjacencies(self._data['boundary_faces'], 2, 3)
+        self._data['neig_boundary_faces'] = self.mesh.faces.bridge_adjacencies(self._data['boundary_faces'], 2, 3).flatten()
         self._data['all_volumes'] = self.mesh.core.all_volumes
         self._data['all_faces'] = self.mesh.core.all_faces
         self._data['all_edges'] = self.mesh.core.all_edges
