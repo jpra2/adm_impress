@@ -18,7 +18,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.V_total = (data_impress['volume']*data_impress['poro']).sum()
         self.max_contador_vtk = len(self.biphasic_data['vpis_para_gravar_vtk'])
         self.delta_sat_max = 0.6
-        self.lim_flux_w = 1e-9
+        self.lim_flux_w = 9e-8
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
         self.mesh_name = os.path.join(direc.flying, 'biphasic_')
@@ -207,13 +207,22 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
             raise ValueError(f'valor errado da saturacao {saturations[test]}')
         ###########################
 
-        ###########################
-        ## teste
+        #####
+        ## correct flux
+        test = ids[(fw_volumes < 0) & (np.absolute(fw_volumes) < self.lim_flux_w)]
+        if len(test) > 0:
+            import pdb; pdb.set_trace()
+            fw_volumes[test] = np.zeros(len(test))
+
+        #####
+
+        ##########################
+        # teste
         test = ids[fw_volumes < -self.lim_flux_w]
         if len(test) > 0:
             import pdb; pdb.set_trace()
-            raise ValueError(f'valor errado da saturacao {saturations[test]}')
-        ###########################
+            raise ValueError(f'fluxo negativo de agua {fw_volumes[test]}')
+        ##########################
 
         ids_var = ids[fw_volumes > self.lim_flux_w]
 
@@ -235,6 +244,9 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         ##############
 
         saturations[ids_var] = sats
+
+        if np.allclose(saturations, saturations0):
+            import pdb; pdb.set_trace()
 
         self.data_impress['saturation'] = saturations
 
@@ -314,7 +326,21 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
 
         self.all_biphasic_results.append(self.current_biphasic_results)
 
-    def run(self):
+    def save_infos(self):
+        self.export_current_biphasic_results()
+        self.export_all_biphasic_results()
+        self.data_impress.update_variables_to_mesh()
+        self.data_impress.export_all_datas_to_npz()
+        # self.mesh.core.print(file=self.mesh_name, extension='.h5m', config_input="input_cards/print_settings.yml")
+
+    def export_current_biphasic_results(self):
+        np.save(self.name_current_biphasic_results, self.current_biphasic_results)
+
+    def export_all_biphasic_results(self):
+        np.save(self.name_all_biphasic_results + str(self.loop) + '.npy', np.array(self.all_biphasic_results))
+        self.all_biphasic_results = self.get_empty_current_biphasic_results()
+
+    def run(self, save=False):
         t0 = time.time()
         super().run()
         self.update_flux_w_and_o_volumes()
@@ -329,3 +355,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         t1 = time.time()
         dt = t1-t0
         self.update_current_biphasic_results(dt)
+
+        if save:
+            self.save_infos()

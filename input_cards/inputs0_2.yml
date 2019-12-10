@@ -2,7 +2,7 @@ mesh_name: mesh/27x27x27.msh
 n_test: 0
 state: 0
 type_of_solution: Fine_scale
-gravity: false
+gravity: true
 # load_biphasic: false
 load_data: false
 convert_english_to_SI: true
