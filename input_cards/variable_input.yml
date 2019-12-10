@@ -282,3 +282,10 @@ mass_water_production:
   data type: float
   sparse: True
   level: 0
+
+test_fw:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0

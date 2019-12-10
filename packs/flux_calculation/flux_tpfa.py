@@ -52,6 +52,7 @@ class TpfaFlux:
         ps1 = x[v0[:, 1]]
 
         flux_internal_faces = -((ps1 - ps0) * t0 - self.data_impress['flux_grav_faces'][internal_faces])
+        # flux_internal_faces = -((ps1 - ps0) * t0)
         velocity = (flux_internal_faces / a0).reshape([len(internal_faces), 1])
         velocity = velocity * u_normal[internal_faces]
         velocity_faces[internal_faces] = velocity

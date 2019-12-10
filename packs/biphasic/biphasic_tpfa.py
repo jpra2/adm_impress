@@ -9,7 +9,7 @@ import time
 
 class BiphasicTpfa(FineScaleTpfaPressureSolver):
 
-    def __init__(self, data_impress, elements_lv0, wells, data_name: str='BiphasicTpfa.npz', load=False):
+    def __init__(self, M, data_impress, elements_lv0, wells, data_name: str='BiphasicTpfa.npz', load=False):
         load = data_loaded['load_data']
         super().__init__(data_impress, elements_lv0, wells, data_name=data_name, load=load)
         self.biphasic_data = data_loaded['biphasic_data']
@@ -17,12 +17,13 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.relative_permeability = self.relative_permeability()
         self.V_total = (data_impress['volume']*data_impress['poro']).sum()
         self.max_contador_vtk = len(self.biphasic_data['vpis_para_gravar_vtk'])
-        self.delta_sat_max = 0.6
+        self.delta_sat_max = 0.4
         self.lim_flux_w = 9e-8
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
         self.mesh_name = os.path.join(direc.flying, 'biphasic_')
         self.all_biphasic_results = self.get_empty_current_biphasic_results()
+        self.mesh = M
 
         if not load:
             self.loop = 0
@@ -181,6 +182,36 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         volume = self.data_impress['volume']
         self.delta_t = (self.biphasic_data['cfl']*(volume*phis)/flux_volumes).min()
 
+    def update_delta_t_new(self):
+
+        lim_ds = 1e-10
+
+        phis = self.data_impress['poro']
+        volume = self.data_impress['volume']
+        velocity_faces = np.absolute(self.data_impress['velocity_faces'])
+        internal_faces = self.elements_lv0['internal_faces']
+        fw_vol = self.data_impress['fw_vol']
+        saturation = self.data_impress['saturation']
+        viz_int = self.elements_lv0['neig_internal_faces']
+        dists = self.data_impress['dist_cent']
+
+        dists_int = dists[internal_faces]
+        vel_internal_faces = np.linalg.norm(velocity_faces[internal_faces], axis=1)
+
+        v0 = viz_int[:, 0]
+        v1 = viz_int[:, 1]
+        df = np.absolute(fw_vol[v1] - fw_vol[v0])
+        ds = np.absolute(saturation[v1] - saturation[v0])
+        ids = np.arange(len(ds))
+        ids_2 = ids[ds > lim_ds]
+
+        dists_int = dists_int[ids_2]
+        vel_internal_faces = vel_internal_faces[ids_2]
+        df = df[ids_2]
+        ds = ds[ids_2]
+        dfds = df/ds
+        self.delta_t = (self.biphasic_data['cfl']*(dists_int/(vel_internal_faces*dfds))).min()
+
     def update_saturation(self):
         self.data_impress['saturation_last'] = self.data_impress['saturation'].copy()
         verif = -1
@@ -199,6 +230,15 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         volumes = self.data_impress['volume']
         phis = self.data_impress['poro']
 
+        # ids_2 = ids[fw_volumes < 0]
+        # if len(ids_2) > 0:
+        #     self.data_impress['test_fw'][ids_2] = np.repeat(1.0, len(ids_2))
+        #     self.data_impress.update_variables_to_mesh()
+        #     self.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
+        #     import pdb; pdb.set_trace()
+        #     self.data_impress['test_fw'] = np.repeat(0.0, len(self.data_impress['test_fw']))
+        #     self.data_impress.update_variables_to_mesh(['test_fw'])
+
         ###########################
         ## teste
         test = ids[(saturations < 0) & (saturations > 1)]
@@ -208,23 +248,30 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         ###########################
 
         #####
-        ## correct flux
-        test = ids[(fw_volumes < 0) & (np.absolute(fw_volumes) < self.lim_flux_w)]
-        if len(test) > 0:
-            import pdb; pdb.set_trace()
-            fw_volumes[test] = np.zeros(len(test))
+        ### correct flux
+        # test = ids[(fw_volumes < 0) & (np.absolute(fw_volumes) < self.lim_flux_w)]
+        # if len(test) > 0:
+        #     import pdb; pdb.set_trace()
+        #     fw_volumes[test] = np.zeros(len(test))
 
         #####
 
-        ##########################
-        # teste
-        test = ids[fw_volumes < -self.lim_flux_w]
-        if len(test) > 0:
-            import pdb; pdb.set_trace()
-            raise ValueError(f'fluxo negativo de agua {fw_volumes[test]}')
-        ##########################
+        # ##########################
+        # # teste
+        # test = ids[fw_volumes < -self.lim_flux_w]
+        # if len(test) > 0:
+        #     import pdb; pdb.set_trace()
+        #     raise ValueError(f'fluxo negativo de agua {fw_volumes[test]}')
+        # ##########################
+
 
         ids_var = ids[fw_volumes > self.lim_flux_w]
+
+        ###################
+        ## teste variacao do fluxo de agua
+        if len(ids_var) == 0:
+            import pdb; pdb.set_trace()
+        ###################
 
         fw_volumes = fw_volumes[ids_var]
         volumes = volumes[ids_var]

@@ -7,8 +7,9 @@ gravity: true
 load_data: false
 convert_english_to_SI: true
 # load_mesh: false
-monophasic: true
+monophasic: false
 biphasic: true
+deletar_results: true
 
 Crs:
   Cr1: [3, 3, 3]
@@ -22,11 +23,23 @@ Permeability:
     type: all
     value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
 
+  # r2:
+  #   type: box
+  #   p0: [0.0, 0.0, 0.0]
+  #   p1: [20.0, 10.0, 54.0]
+  #   value: [100.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 100.0]
+
 set_porosity: true
 Porosity:
   r1:
     type: all
     value: 0.3
+
+  # r2:
+  #   type: box
+  #   p0: [0.0, 0.0, 0.0]
+  #   p1: [20.0, 10.0, 54.0]
+  #   value: 0.1
 
 Saturation:
   r1:
@@ -38,6 +51,12 @@ Saturation:
     type2_well: null
     value: 1.0
 
+  # r3:
+  #   type: wells
+  #   type1_well: Injector
+  #   type2_well: 'P'
+  #   value: 1.0
+
 Wells:
   P1:
     p0: [0.0, 0.0, 0.0]
@@ -45,7 +64,7 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: 10.0
+    value: 10000.0
   P3:
     p0: [520.0, 260.0, 0.0]
     p1: [540.0, 270.0, 54.0]
@@ -62,8 +81,8 @@ biphasic_data:
   Sor: 0.2
   Swc: 0.2
   cfl: 0.9
-  gama_o: 900.0
-  gama_w: 1000.0
+  gama_o: 500000.0
+  gama_w: 500000.0
   kro0: 1.0
   krw0: 1.0
   loop_maximo: null
