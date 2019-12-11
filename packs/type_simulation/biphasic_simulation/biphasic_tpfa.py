@@ -391,7 +391,7 @@ class biphasicTpfa(monophasicTpfa):
             imprimir_vtk = True
 
         if imprimir_vtk:
-            name = os.path.join('results', 'biphasic') + '_loop_' + str(self.loop) + '_vpi_' + str(self.vpi)
+            name = os.path.join('results', 'biphasic') + '_loop_' + str(self.loop)
             self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
             imprimir_vtk = False
 

@@ -1,40 +1,43 @@
 from . import constants
 
-def convert_English_to_SI(M):
 
-    '''
-    converte as unidades do sistema americano para o SI
-    '''
-    k0 = constants.psi_to_Pa()
-    k1 = constants.bbldia_to_m3seg()
+class Conversion:
 
-    M.contours.datas['values_p_ini'] *= k0
-    M.contours.datas['values_p'] *= k0
-    M.contours.datas['values_q'] *= k1
-    M.contours.update_values()
+    def __init__(self, wells, data_impress):
+        self.wells = wells
+        self.data_impress = data_impress
 
-    k2 = constants.pe_to_m()
+    def convert_English_to_SI(self):
 
-    M.data['hs'] *= k2
-    M.data['volume'] *= k2**3
-    M.data['NODES'] *= k2
-    M.data['centroid_volumes'] *= k2
-    M.data['centroid_faces'] *= k2
-    M.data['centroid_edges'] *= k2
-    M.data['centroid_nodes'] *= k2
+        '''
+        converte as unidades do sistema americano para o SI
+        '''
+        k0 = constants.psi_to_Pa()
+        k1 = constants.bbldia_to_m3seg()
 
-    k3 = constants.milidarcy_to_m2()
+        self.wells['values_p_ini'] *= k0
+        self.wells['values_p'] *= k0
+        self.wells['values_q'] *= k1
 
-    M.data['area'] *= k2**2
-    M.data['permeability'] *= k3
-    M.data['k_harm'] *= k3
-    M.data['dist_cent'] *= k2
+        k2 = constants.pe_to_m()
 
-    areas = M.data['area']
-    k_harm_faces = M.data['k_harm']
-    dist_cent = M.data['dist_cent']
+        self.data_impress['hs'] *= k2
+        self.data_impress['volume'] *= k2**3
+        self.data_impress['NODES'] *= k2
+        self.data_impress['centroid_volumes'] *= k2
+        self.data_impress['centroid_faces'] *= k2
+        self.data_impress['centroid_edges'] *= k2
+        self.data_impress['centroid_nodes'] *= k2
 
-    M.data['pretransmissibility'] = (areas*k_harm_faces)/dist_cent
+        k3 = constants.milidarcy_to_m2()
 
-    M.data.update_variables_to_mesh()
-    M.data.export_variables_to_npz()
+        self.data_impress['area'] *= k2**2
+        self.data_impress['permeability'] *= k3
+        self.data_impress['k_harm'] *= k3
+        self.data_impress['dist_cent'] *= k2
+
+        areas = self.data_impress['area']
+        k_harm_faces = self.data_impress['k_harm']
+        dist_cent = self.data_impress['dist_cent']
+
+        self.data_impress['pretransmissibility'] = (areas*k_harm_faces)/dist_cent

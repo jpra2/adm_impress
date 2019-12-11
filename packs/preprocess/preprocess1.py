@@ -3,7 +3,7 @@ import numpy as np
 
 
 
-def set_saturation_regions(M):
+def set_saturation_regions(M, wells):
 
     centroids = M.data['centroid_volumes']
     n = len(centroids)
@@ -14,9 +14,9 @@ def set_saturation_regions(M):
         value = d0['value']
 
         if tipo == direc.types_region_for_saturation[0]:
-            tamanho_variavel = len(M.data.variables[M.data.variables_impress['saturation']])
+            tamanho_variavel = len(M.data[M.data.variables_impress['saturation']])
             data = np.repeat(value, tamanho_variavel)
-            M.data.variables[M.data.variables_impress['saturation']] = data
+            M.data[M.data.variables_impress['saturation']] = data
 
         elif tipo == direc.types_region_for_saturation[1]:
             type1 = d0['type1_well']
@@ -27,13 +27,13 @@ def set_saturation_regions(M):
 
             for tipo in tipos:
                 if tipo == 'dirichlet':
-                    wells = M.contours.datas['ws_p']
+                    wells = wells['ws_p']
                 elif tipo == 'neumann':
-                    wells = M.contours.datas['ws_q']
+                    wells = wells['ws_q']
                 elif tipo == 'Injector':
-                    wells = M.contours.datas['ws_inj']
+                    wells = wells['ws_inj']
                 elif tipo == 'Producer':
-                    wells = M.contours.datas['ws_prod']
+                    wells = wells['ws_prod']
                 else:
                     continue
 
@@ -42,4 +42,4 @@ def set_saturation_regions(M):
 
             all_wells = np.array(all_wells)
             all_values = np.array(all_values)
-            M.data.variables[M.data.variables_impress['saturation']][all_wells] = all_values
+            M.data[M.data.variables_impress['saturation']][all_wells] = all_values
