@@ -1,34 +1,51 @@
-from ... import directories as direc
-from ...utils.utils_old import getting_tag, get_box, Min_Max
+from .... import directories as direc
+from ....utils.utils_old import getting_tag, get_box, Min_Max
 # from pymoab import core, types, rng, topo_util
 from pymoab import types
 import numpy as np
 import pdb
-from .coarse_volumes import CoarseVolume
+from ....data_class.data_manager import DataManager
 
 
-class DualPrimalMesh1:
+class MultilevelData(DataManager):
 
-    def __init__(self, M, carregar=False):
-        self._loaded = False
+    def __init__(self, M, data_name: str='MultilevelData.npz', load=False):
+        carregar = load
+
+        super().__init__(data_name=data_name, load=load)
         self.tags = dict()
         self.tags_to_infos = dict()
-        self._coarse_volumes = dict()
-        self._coarse_primal_id = dict()
-        self._interns = dict()
-        self._faces = dict()
-        self._edges = dict()
-        self._vertex = dict()
-        self._fine_primal_id = dict()
-        self._fine_dual_id = dict()
-        self._coarse_volumes_property = dict()
-        self.mvs = dict()
+        # self._coarse_volumes = dict()
+        # self._coarse_primal_id = dict()
+        # self._interns = dict()
+        # self._faces = dict()
+        # self._edges = dict()
+        # self._vertex = dict()
+        # self._fine_primal_id = dict()
+        # self._fine_dual_id = dict()
+        # self._coarse_volumes_property = dict()
+        # self.mvs = dict()
         self._carregar = carregar
-        M.dualprimal = self
+        M.multilevel_data = self
         self.mesh = M
+        self.levels = 3
+        self.l1 = 1
 
-    def create_tags(self, M):
+        self.fine_primal_id = 'fine_primal_id_level_'
+        self.coarse_volumes = 'coarse_volumes_level_'
+        self.coarse_primal_id = 'coarse_primal_id_level_'
+        self.fine_dual_id = 'fine_dual_id_level_'
+        self.interns = 'interns_level_'
+        self.faces = 'faces_level_'
+        self.edges = 'edges_level_'
+        self.vertex = 'vertex_level_'
+        self.meshset_vertices = 'meshset_vertices_level_'
+        self.faces_boundary_meshset_level = 'FACES_BOUNDARY_MESHSETS_LEVEL_'
+        self.name_mesh = 'flying/multilevel_data'
+
+    def create_tags(self):
         assert not self._loaded
+        M = self.mesh
 
         mb = M.core.mb
 
@@ -70,12 +87,13 @@ class DualPrimalMesh1:
 
         return 0
 
-    def load_tags(self, M):
+    def load_tags(self):
         assert not self._loaded
+        M = self.mesh
 
         tags0 = ['D', 'FINE_TO_PRIMAL_CLASSIC_', 'PRIMAL_ID_', 'MV_']
         tags1 = ['L2_MESHSET']
-        name_tag_faces_boundary_meshsets = 'FACES_BOUNDARY_MESHSETS_LEVEL_'
+        name_tag_faces_boundary_meshsets = self.faces_boundary_meshset_level
         n_levels = 2
 
         mb = M.core.mb
@@ -98,20 +116,21 @@ class DualPrimalMesh1:
         assert not self._loaded
         self._loaded = True
 
-    def run(self, M):
+    def run(self):
+        M = self.mesh
 
         assert not self._loaded
 
-        self.create_tags(M)
+        self.create_tags()
         # self.set_primal_level_l_meshsets(M)
         self.generate_dual_and_primal(M)
         self.get_elements(M)
         self.get_boundary_coarse_faces(M)
-        self.get_elements_2(M)
+        # self.get_elements_2(M)
         self.loaded()
 
-        if not self._carregar:
-            self.save_mesh(M)
+        # if not self._carregar:
+        #     self.save_mesh(M)
 
     def generate_dual_and_primal(self, M):
         assert not self._loaded
@@ -119,7 +138,6 @@ class DualPrimalMesh1:
         def get_hs(M, coord_nodes):
 
             unis = np.array([np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])])
-            import pdb; pdb.set_trace()
             nos0 = M.volumes.bridge_adjacencies(0, 2, 0)[0]
             n0 = coord_nodes[nos0[0]]
             hs = np.zeros(3)
@@ -150,7 +168,7 @@ class DualPrimalMesh1:
         xmax, ymax, zmax = Lx, Ly, Lz
 
         # lx, ly, lz = get_hs(M, coord_nodes)
-        lx, ly, lz = M.data.variables['hs'][0]
+        lx, ly, lz = M.data['hs'][0]
         dx0 = lx
         dy0 = ly
         dz0 = lz
@@ -226,7 +244,7 @@ class DualPrimalMesh1:
 
         centroids = M.data['centroid_volumes']
         all_volumes = np.array(M.core.all_volumes)
-        dict_volumes = M.data.dict_elements[direc.entities_lv0[3]]
+        dict_volumes = dict(zip(all_volumes, M.volumes.all))
 
         D1_tag = self.tags['D1']
         D2_tag = self.tags['D2']
@@ -302,7 +320,7 @@ class DualPrimalMesh1:
                     mb.tag_set_data(D2_tag, elem_por_L2, f1a2v3)
                     mb.tag_set_data(fine_to_primal2_classic_tag, elem_por_L2, np.repeat(nc2, len(elem_por_L2)))
                     mb.add_parent_child(L2_meshset, l2_meshset)
-                    sg = mb.get_entities_by_handle(l2_meshset)
+                    # sg = mb.get_entities_by_handle(l2_meshset)
                     # print(k, len(sg), time.time()-t1)
                     # t1=time.time()
                     mb.tag_set_data(primal_id_tag2, l2_meshset, nc2)
@@ -362,9 +380,9 @@ class DualPrimalMesh1:
         tags_coarse = ['PRIMAL_ID_']
         tag_mv = ['MV_']
         all_volumes = M.core.all_volumes
-        dict_volumes = M.data.dict_elements[direc.entities_lv0[3]]
+        dict_volumes = dict(zip(all_volumes, M.volumes.all))
 
-        mvs = [0]
+        mvs = [M.core.root_set]
 
         for i in range(2):
             n = i + 1
@@ -379,22 +397,27 @@ class DualPrimalMesh1:
             interns = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                       np.array([0]))
             interns = np.array([dict_volumes[k] for k in interns])
-            self._interns[level] = interns
+            # self._interns[level] = interns
 
             edges = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                     np.array([1]))
             edges = np.array([dict_volumes[k] for k in edges])
-            self._edges[level] = edges
+            # self._edges[level] = edges
 
             faces = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                     np.array([2]))
             faces = np.array([dict_volumes[k] for k in faces])
-            self._faces[level] = faces
+            # self._faces[level] = faces
 
             vertex = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                      np.array([3]))
             vertexes = np.array([dict_volumes[k] for k in vertex])
-            self._vertex[level] = vertexes
+            # self._vertex[level] = vertexes
+
+            self._data[self.interns + str(level)] = interns
+            self._data[self.faces + str(level)] = faces
+            self._data[self.edges + str(level)] = edges
+            self._data[self.vertex + str(level)] = vertexes
 
             coarse_volumes = []
             coarse_primal_ids = []
@@ -406,8 +429,8 @@ class DualPrimalMesh1:
                                                     np.array([primal_id]))[0]
                     elements = mb.get_entities_by_handle(coarse_volume)
                     ne = len(elements)
-                    mb.tag_set_data(self.tags[primal_fine_name], elements, np.repeat(i, ne))
-                    mb.tag_set_data(self.tags[name_tag_c], coarse_volume, i)
+                    # mb.tag_set_data(self.tags[primal_fine_name], elements, np.repeat(i, ne))
+                    # mb.tag_set_data(self.tags[name_tag_c], coarse_volume, i)
                     coarse_volumes.append(coarse_volume)
                     coarse_primal_ids.append(i)
             else:
@@ -423,12 +446,14 @@ class DualPrimalMesh1:
                     coarse_volumes.append(coarse_volume)
                     coarse_primal_ids.append(primal_id)
 
-            self._coarse_volumes[level] = np.array(coarse_volumes)
+            # self._coarse_volumes[level] = np.array(coarse_volumes)
+            self._data[self.coarse_volumes + str(level)] = np.array(coarse_volumes)
             dtype = [('elements', np.uint64), ('id', np.uint64)]
             structured_array = np.zeros(len(coarse_volumes), dtype=dtype)
             structured_array['elements'] = np.array(coarse_volumes)
             structured_array['id'] = np.array(coarse_primal_ids)
-            self._coarse_primal_id[level] = structured_array
+            # self._coarse_primal_id[level] = structured_array
+            self._data[self.coarse_primal_id + str(level)] = np.array(coarse_primal_ids)
 
             nnn = tag_mv[0] + str(level)
             if not self._carregar:
@@ -438,28 +463,34 @@ class DualPrimalMesh1:
             else:
                 mv1 = mb.tag_get_data(self.tags[nnn], M.core.root_set, flat=True)[0]
 
-            self.mvs[level] = mv1
+            # self.mvs[level] = mv1
             mvs.append(mv1)
+            self._data[self.meshset_vertices + str(level)] = mv1
 
             fine_primal_id = mb.tag_get_data(self.tags[primal_fine_name], all_volumes, flat=True)
-            self._fine_primal_id[level] = fine_primal_id
+            # self._fine_primal_id[level] = fine_primal_id
+            self._data[self.fine_primal_id + str(level)] = fine_primal_id
 
             fine_dual_id = mb.tag_get_data(self.tags[dual_fine_name], all_volumes, flat=True)
-            self._fine_dual_id[level] = fine_dual_id
+            # self._fine_dual_id[level] = fine_dual_id
+            self._data[self.fine_dual_id + str(level)] = fine_dual_id
 
     def get_boundary_coarse_faces(self, M):
         assert not self._loaded
-        meshsets_nv1 = self._coarse_volumes[1]
-        meshsets_nv2 = self._coarse_volumes[2]
+        # meshsets_nv1 = self._coarse_volumes[1]
+        # meshsets_nv2 = self._coarse_volumes[2]
+        meshsets_nv1 = self._data[self.coarse_volumes + str(1)]
+        meshsets_nv2 = self._data[self.coarse_volumes + str(2)]
 
         mb = M.core.mb
         mtu = M.core.mtu
         n_levels = 2
 
-        name_tag_faces_boundary_meshsets = 'FACES_BOUNDARY_MESHSETS_LEVEL_'
+        name_tag_faces_boundary_meshsets = self.faces_boundary_meshset_level
         all_meshsets = [meshsets_nv1, meshsets_nv2]
+        d_faces = dict(zip(M.core.all_faces, M.faces.all))
 
-        from ...utils import pymoab_utils as utpy
+        from ....utils import pymoab_utils as utpy
 
         for i in range(n_levels):
             name = name_tag_faces_boundary_meshsets + str(i + 1)
@@ -472,6 +503,9 @@ class DualPrimalMesh1:
             getting_tag(mb, name, n, t1, t2, True, entitie, tipo, self.tags, self.tags_to_infos)
             tag_boundary = self.tags[name]
             utpy.set_faces_in_boundary_by_meshsets(mb, mtu, meshsets, tag_boundary, M)
+            faces_boundary = mb.tag_get_data(tag_boundary, M.core.root_set, flat=True)[0]
+            faces_boundary = mb.get_entities_by_handle(faces_boundary)
+            self._data[self.faces_boundary_meshset_level + str(i+1)] = np.array([d_faces[k] for k in faces_boundary])
 
     def get_elements_2(self, M):
         assert not self._loaded
@@ -488,7 +522,7 @@ class DualPrimalMesh1:
         mtu = M.core.mtu
         n_levels = 2
 
-        name_tag_faces_boundary_meshsets = 'FACES_BOUNDARY_MESHSETS_LEVEL_'
+        name_tag_faces_boundary_meshsets = self.faces_boundary_meshset_level
 
         for i in range(n_levels):
             coarse_volumes_property = []
@@ -527,12 +561,17 @@ class DualPrimalMesh1:
 
             self._coarse_volumes_property[level] = coarse_volumes_property
 
-    def save_mesh(self, M):
+    def save_mesh_dep0(self, M):
 
         M.state = 2
         np.save(direc.state_path, np.array([M.state]))
         np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[2]]))
         M.core.print(file=direc.output_file + str(M.state))
+
+    def save_mesh(self):
+        M = self.mesh
+
+        M.core.print(file=self.name_mesh, config_input='input_cards/print_settings.yml')
 
 
 

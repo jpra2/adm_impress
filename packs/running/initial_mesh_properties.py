@@ -6,18 +6,38 @@ from ..convert_unit.conversion import Conversion
 from ..preprocess.preprocess1 import set_saturation_regions
 from ..preprocess.prep0_0 import Preprocess0
 from ..directories import data_loaded
+from ..multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 import numpy as np
 
 # import pdb; pdb.set_trace()
 
 def initial_mesh(load=False, convert=False):
-    from ..load.preprocessor0 import M
+
     global data_loaded
 
-    elements_lv0 = ElementsLv0(M, load=load)
-    data_impress = Data(M, elements_lv0, load=load)
-    if not load:
-        Preprocess0(M, elements_lv0)
+    multilevel_data = data_loaded['multilevel_data']
+    load_multilevel_data = data_loaded['load_multilevel_data']
+
+    if multilevel_data and load_multilevel_data:
+        from ..load.preprocessor_load import init_mesh
+        M = init_mesh('flying/multilevel_data-all.h5m')
+        elements_lv0 = ElementsLv0(M, load=load)
+        data_impress = Data(M, elements_lv0, load=load)
+        if not load:
+            Preprocess0(M, elements_lv0)
+        ml_data = MultilevelData(M, load=load_multilevel_data)
+        ml_data.load_tags()
+
+    else:
+        from ..load.preprocessor0 import M
+        elements_lv0 = ElementsLv0(M, load=load)
+        data_impress = Data(M, elements_lv0, load=load)
+        if not load:
+            Preprocess0(M, elements_lv0)
+        if multilevel_data:
+            ml_data = MultilevelData(M)
+            ml_data.run()
+            ml_data.save_mesh()
 
     wells = Wells(M, load=load)
 

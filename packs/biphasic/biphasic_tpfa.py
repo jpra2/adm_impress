@@ -176,6 +176,9 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.data_impress['flux_o_volumes'] = flux_o_volumes
 
     def update_delta_t(self):
+        ###
+        ## de acordo com o fluxo nos volumes
+        ###
 
         flux_volumes = np.absolute(self.data_impress['flux_volumes'])
         phis = self.data_impress['poro']
@@ -183,6 +186,10 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.delta_t = (self.biphasic_data['cfl']*(volume*phis)/flux_volumes).min()
 
     def update_delta_t_new(self):
+
+        ####
+        # de acordo com as faces
+        ####
 
         lim_ds = 1e-10
 
