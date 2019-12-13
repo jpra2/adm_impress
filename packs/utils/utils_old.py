@@ -59,3 +59,20 @@ def Min_Max(e, M1):
     xmax, ymax, zmax = coords.max(axis=0)
     xmin, ymin, zmin = coords.min(axis=0)
     return ([xmin, xmax, ymin, ymax, zmin, zmax])
+
+
+def add_topology(conj_vols,tag_local,lista, mb, mtu, ID_reordenado_tag):
+    all_fac=np.uint64(mtu.get_bridge_adjacencies(conj_vols, 2 ,2))
+    all_int_fac=np.uint64([face for face in all_fac if len(mb.get_adjacencies(face, 3))==2])
+    adjs=np.array([mb.get_adjacencies(face, 3) for face in all_int_fac])
+    adjs1=mb.tag_get_data(tag_local,np.array(adjs[:,0]),flat=True)
+    adjs2=mb.tag_get_data(tag_local,np.array(adjs[:,1]),flat=True)
+    adjsg1=mb.tag_get_data(ID_reordenado_tag,np.array(adjs[:,0]),flat=True)
+    adjsg2=mb.tag_get_data(ID_reordenado_tag,np.array(adjs[:,1]),flat=True)
+    Gids=mb.tag_get_data(ID_reordenado_tag,conj_vols,flat=True)
+    lista.append(Gids)
+    lista.append(all_int_fac)
+    lista.append(adjs1)
+    lista.append(adjs2)
+    lista.append(adjsg1)
+    lista.append(adjsg2)

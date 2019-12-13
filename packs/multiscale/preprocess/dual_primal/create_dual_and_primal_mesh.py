@@ -1,7 +1,7 @@
 from .... import directories as direc
-from ....utils.utils_old import getting_tag, get_box, Min_Max
+from ....utils.utils_old import getting_tag, get_box, Min_Max, add_topology
 # from pymoab import core, types, rng, topo_util
-from pymoab import types
+from pymoab import types, rng
 import numpy as np
 import pdb
 from ....data_class.data_manager import DataManager
@@ -40,7 +40,8 @@ class MultilevelData(DataManager):
 
         mb = M.core.mb
 
-        l = ['D1', 'D2', 'FINE_TO_PRIMAL_CLASSIC_1', 'FINE_TO_PRIMAL_CLASSIC_2', 'reordered_id_1', 'reordered_id_2']
+        l = ['D1', 'D2', 'FINE_TO_PRIMAL_CLASSIC_1', 'FINE_TO_PRIMAL_CLASSIC_2', 'reordered_id_1', 'reordered_id_2',
+        'local_id_internos', 'local_fac_internos']
         for name in l:
             n = 1
             tipo = 'integer'
@@ -83,7 +84,7 @@ class MultilevelData(DataManager):
         M = self.mesh
 
         tags0 = ['D', 'FINE_TO_PRIMAL_CLASSIC_', 'PRIMAL_ID_', 'MV_', 'reordered_id_']
-        tags1 = ['L2_MESHSET']
+        tags1 = ['L2_MESHSET', 'local_id_internos', 'local_fac_internos']
         name_tag_faces_boundary_meshsets = self.faces_boundary_meshset_level
         n_levels = 2
 
@@ -96,7 +97,8 @@ class MultilevelData(DataManager):
                 tag = mb.tag_get_handle(name2)
                 self.tags[name2] = tag
 
-        self.tags[tags1[0]] = mb.tag_get_handle(tags1[0])
+        for name in tags1:
+            self.tags[name] = mb.tag_get_handle(name)
 
         for i in range(n_levels):
             name_tag = name_tag_faces_boundary_meshsets + str(i+1)
@@ -153,6 +155,7 @@ class MultilevelData(DataManager):
         coord_nodes = M.data['centroid_nodes']
 
         mb = M.core.mb
+        mtu = M.core.mtu
 
         Lx, Ly, Lz = coord_nodes.max(axis=0)
         xmin, ymin, zmin = coord_nodes.min(axis=0)
@@ -363,6 +366,118 @@ class MultilevelData(DataManager):
                                 mb.add_parent_child(l2_meshset, l1_meshset)
         # -------------------------------------------------------------------------------
 
+        mv = M.core.root_set
+        n_reord = 0
+        interns = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags['D1']]),
+                                                  np.array([0]))
+        mb.tag_set_data(self.tags['reordered_id_1'], interns, np.arange(n_reord, n_reord + len(interns)))
+        n_reord += len(interns)
+
+        edges = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags['D1']]),
+                                                np.array([1]))
+        mb.tag_set_data(self.tags['reordered_id_1'], edges, np.arange(n_reord, n_reord + len(edges)))
+        n_reord += len(edges)
+
+        faces = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags['D1']]),
+                                                np.array([2]))
+        mb.tag_set_data(self.tags['reordered_id_1'], faces, np.arange(n_reord, n_reord + len(faces)))
+        n_reord += len(faces)
+
+        vertex = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags['D1']]),
+                                                 np.array([3]))
+        mb.tag_set_data(self.tags['reordered_id_1'], vertex, np.arange(n_reord, n_reord + len(vertex)))
+        n_reord += len(vertex)
+
+        local_id_int_tag = self.tags['local_id_internos']
+        local_id_fac_tag = self.tags['local_fac_internos']
+        ID_reordenado_tag = self.tags['reordered_id_1']
+        mb.tag_set_data(local_id_int_tag, all_volumes,np.repeat(len(all_volumes)+1,len(all_volumes)))
+        mb.tag_set_data(local_id_fac_tag, all_volumes,np.repeat(len(all_volumes)+1,len(all_volumes)))
+        sgids = 0
+
+        intern_adjs_by_dual=[]
+        faces_adjs_by_dual=[]
+
+        for i in range(len(lxd1)-1):
+            x0=lxd1[i]
+            x1=lxd1[i+1]
+            box_x=np.array([[x0-0.01,ymin,zmin],[x1+0.01,ymax,zmax]])
+            inds_vols_x = get_box(centroids, box_x)
+            vols_x = all_volumes[inds_vols_x]
+            x_centroids = centroids[inds_vols_x]
+            map_x_centroids = dict(zip(range(len(x_centroids)), x_centroids))
+
+            for j in range(len(lyd1)-1):
+                y0=lyd1[j]
+                y1=lyd1[j+1]
+                box_y=np.array([[x0-0.01,y0-0.01,zmin],[x1+0.01,y1+0.01,zmax]])
+                inds_vols_y = get_box(x_centroids, box_y)
+                vols_y = vols_x[inds_vols_y]
+                y_centroids = np.array([map_x_centroids[k] for k in inds_vols_y])
+                map_y_centroids = dict(zip(range(len(y_centroids)), y_centroids))
+                for k in range(len(lzd1)-1):
+                    z0=lzd1[k]
+                    z1=lzd1[k+1]
+                    box_dual_1=np.array([[x0-0.01,y0-0.01,z0-0.01],[x1+0.01,y1+0.01,z1+0.01]])
+                    inds_vols = get_box(y_centroids, box_dual_1)
+                    vols = vols_y[inds_vols]
+                    tipo=mb.tag_get_data(D1_tag,vols,flat=True)
+                    inter=rng.Range(np.array(vols)[np.where(tipo==0)[0]])
+
+                    mb.tag_set_data(local_id_int_tag,inter,range(len(inter)))
+                    add_topology(inter,local_id_int_tag,intern_adjs_by_dual, mb, mtu, ID_reordenado_tag)
+
+
+                    fac=rng.Range(np.array(vols)[np.where(tipo==1)[0]])
+                    fac_centroids = np.array([map_y_centroids[k] for k in inds_vols])
+                    # fac_centroids=np.array([M1.mtu.get_average_position([f]) for f in fac])
+
+                    box_faces_x=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x0+lx/2,y1+ly/2,z1+lz/2]])
+                    box_faces_y=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y0+ly/2,z1+lz/2]])
+                    box_faces_z=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z0+lz/2]])
+
+                    inds_faces_x = get_box(fac_centroids, box_faces_x)
+                    faces_x = fac[inds_faces_x]
+                    # faces_x=get_box(fac, fac_centroids, box_faces_x, False)
+
+                    inds_faces_y = get_box(fac_centroids, box_faces_y)
+                    faces_y = fac[inds_faces_y]
+                    # faces_y=get_box(fac, fac_centroids, box_faces_y, False)
+                    f1=rng.unite(faces_x,faces_y)
+
+                    inds_faces_z = get_box(fac_centroids, box_faces_z)
+                    faces_z = fac[inds_faces_z]
+                    # faces_z=get_box(fac, fac_centroids, box_faces_z, False)
+                    f1=rng.unite(f1,faces_z)
+
+                    if i==len(lxd1)-2:
+                        box_faces_x2=np.array([[x1-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+                        inds_faces_x2 = get_box(fac_centroids, box_faces_x2)
+                        faces_x2 = fac[inds_faces_x2]
+                        # faces_x2=get_box(fac, fac_centroids, box_faces_x2, False)
+                        f1=rng.unite(f1,faces_x2)
+
+                    if j==len(lyd1)-2:
+                        box_faces_y2=np.array([[x0-lx/2,y1-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+                        inds_faces_y2 = get_box(fac_centroids, box_faces_y2)
+                        faces_y2 = fac[inds_faces_y2]
+                        # faces_y2=get_box(fac, fac_centroids, box_faces_y2, False)
+                        f1=rng.unite(f1,faces_y2)
+
+                    if k==len(lzd1)-2:
+                        box_faces_z2=np.array([[x0-lx/2,y0-ly/2,z1-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
+                        inds_faces_z2 = get_box(fac_centroids, box_faces_z2)
+                        faces_z2 = fac[inds_faces_z2]
+                        # faces_z2=get_box(fac, fac_centroids, box_faces_z2, False)
+                        f1=rng.unite(f1,faces_z2)
+
+                    sgids+=len(f1)
+                    mb.tag_set_data(local_id_fac_tag,f1,range(len(f1)))
+                    add_topology(f1,local_id_fac_tag,faces_adjs_by_dual, mb, mtu, ID_reordenado_tag)
+
+        self._data['intern_adjs_by_dual'] = np.array(intern_adjs_by_dual)
+        self._data['faces_adjs_by_dual'] = np.array(faces_adjs_by_dual)
+
     def get_elements(self, M):
         assert not self._loaded
 
@@ -391,28 +506,32 @@ class MultilevelData(DataManager):
 
             interns = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                       np.array([0]))
-            mb.tag_set_data(self.tags[tag_reord_id], interns, np.arange(n_reord, len(interns)))
+            if n not in [1]:
+                mb.tag_set_data(self.tags[tag_reord_id], interns, np.arange(n_reord, len(interns)))
             n_reord += len(interns)
             interns = np.array([dict_volumes[k] for k in interns])
             # self._interns[level] = interns
 
             edges = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                     np.array([1]))
-            mb.tag_set_data(self.tags[tag_reord_id], edges, np.arange(n_reord, n_reord + len(edges)))
+            if n not in [1]:
+                mb.tag_set_data(self.tags[tag_reord_id], edges, np.arange(n_reord, n_reord + len(edges)))
             n_reord += len(edges)
             edges = np.array([dict_volumes[k] for k in edges])
             # self._edges[level] = edges
 
             faces = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                     np.array([2]))
-            mb.tag_set_data(self.tags[tag_reord_id], faces, np.arange(n_reord, n_reord + len(faces)))
+            if n not in [1]:
+                mb.tag_set_data(self.tags[tag_reord_id], faces, np.arange(n_reord, n_reord + len(faces)))
             n_reord += len(faces)
             faces = np.array([dict_volumes[k] for k in faces])
             # self._faces[level] = faces
 
             vertex = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                      np.array([3]))
-            mb.tag_set_data(self.tags[tag_reord_id], vertex, np.arange(n_reord, n_reord + len(vertex)))
+            if n not in [1]:
+                mb.tag_set_data(self.tags[tag_reord_id], vertex, np.arange(n_reord, n_reord + len(vertex)))
             n_reord += len(vertex)
             vertexes = np.array([dict_volumes[k] for k in vertex])
             # self._vertex[level] = vertexes
