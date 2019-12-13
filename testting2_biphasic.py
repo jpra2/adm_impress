@@ -9,7 +9,7 @@ convert = dd['convert_english_to_SI']
 M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
 b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
 # b1.run()
-n = 50
+n = 10
 n2 = 5
 loop = 0
 cont = 1

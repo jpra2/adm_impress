@@ -11,13 +11,34 @@ import numpy as np
 # import pdb; pdb.set_trace()
 
 def initial_mesh(load=False, convert=False):
-    from ..load.preprocessor0 import M
+
     global data_loaded
 
-    elements_lv0 = ElementsLv0(M, load=load)
-    data_impress = Data(M, elements_lv0, load=load)
-    if not load:
-        Preprocess0(M, elements_lv0)
+    import pdb; pdb.set_trace()
+
+    multiscale_data = data_loaded['multiscale_data']
+    load_multiscale_data = data_loaded['load_multiscale_data']
+
+    if multiscale_data and load_multiscale_data:
+        from ..load.preprocessor_load import init_mesh
+        M = init_mesh('flying/dual_and_primal-all.h5m')
+        elements_lv0 = ElementsLv0(M, load=load)
+        data_impress = Data(M, elements_lv0, load=load)
+        if not load:
+            Preprocess0(M, elements_lv0)
+        # TODO: carregar informacaoes da malha dual
+
+    else:
+        from ..load.preprocessor0 import M
+        elements_lv0 = ElementsLv0(M, load=load)
+        data_impress = Data(M, elements_lv0, load=load)
+        if not load:
+            Preprocess0(M, elements_lv0)
+        if multiscale_data:
+            from ..multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
+            ml_data = MultilevelData(M)
+            ml_data.run()
+            ml_data.save_mesh()
 
     wells = Wells(M, load=load)
 

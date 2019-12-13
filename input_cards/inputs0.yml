@@ -84,13 +84,15 @@ biphasic_data:
 convert_english_to_SI: true
 deletar_results: true
 file_name_permeability: spe10_perms_and_phi.npz
-gravity: true
+gravity: false
 load_data: false
+load_multiscale_data: false
 mesh_name: mesh/27x27x27.msh
 monophasic: false
 monophasic_data:
   gama: 10000.0
   mi: 1.0
+multiscale_data: true
 n_test: 0
 read_permeability: false
 set_permeability: true
