@@ -15,16 +15,6 @@ class MultilevelData(DataManager):
         super().__init__(data_name=data_name, load=load)
         self.tags = dict()
         self.tags_to_infos = dict()
-        # self._coarse_volumes = dict()
-        # self._coarse_primal_id = dict()
-        # self._interns = dict()
-        # self._faces = dict()
-        # self._edges = dict()
-        # self._vertex = dict()
-        # self._fine_primal_id = dict()
-        # self._fine_dual_id = dict()
-        # self._coarse_volumes_property = dict()
-        # self.mvs = dict()
         self._carregar = carregar
         M.multilevel_data = self
         self.mesh = M
@@ -40,6 +30,7 @@ class MultilevelData(DataManager):
         self.edges = 'edges_level_'
         self.vertex = 'vertex_level_'
         self.meshset_vertices = 'meshset_vertices_level_'
+        self.reordered_id = 'reordered_id_'
         self.faces_boundary_meshset_level = 'FACES_BOUNDARY_MESHSETS_LEVEL_'
         self.name_mesh = 'flying/multilevel_data'
 
@@ -49,7 +40,7 @@ class MultilevelData(DataManager):
 
         mb = M.core.mb
 
-        l = ['D1', 'D2', 'FINE_TO_PRIMAL_CLASSIC_1', 'FINE_TO_PRIMAL_CLASSIC_2']
+        l = ['D1', 'D2', 'FINE_TO_PRIMAL_CLASSIC_1', 'FINE_TO_PRIMAL_CLASSIC_2', 'reordered_id_1', 'reordered_id_2']
         for name in l:
             n = 1
             tipo = 'integer'
@@ -91,7 +82,7 @@ class MultilevelData(DataManager):
         assert not self._loaded
         M = self.mesh
 
-        tags0 = ['D', 'FINE_TO_PRIMAL_CLASSIC_', 'PRIMAL_ID_', 'MV_']
+        tags0 = ['D', 'FINE_TO_PRIMAL_CLASSIC_', 'PRIMAL_ID_', 'MV_', 'reordered_id_']
         tags1 = ['L2_MESHSET']
         name_tag_faces_boundary_meshsets = self.faces_boundary_meshset_level
         n_levels = 2
@@ -379,6 +370,7 @@ class MultilevelData(DataManager):
         tags_fine = ['D', 'FINE_TO_PRIMAL_CLASSIC_']
         tags_coarse = ['PRIMAL_ID_']
         tag_mv = ['MV_']
+        tag_reordered_id = ['reordered_id_']
         all_volumes = M.core.all_volumes
         dict_volumes = dict(zip(all_volumes, M.volumes.all))
 
@@ -390,27 +382,38 @@ class MultilevelData(DataManager):
             name_tag_c = tags_coarse[0] + str(n)
             dual_fine_name = tags_fine[0] + str(n)
             primal_fine_name = tags_fine[1] + str(n)
+            tag_reord_id = tag_reordered_id[0] + str(n)
             mv = mvs[i]
+            n_reord = 0
 
             # coarse_volumes = mb.get_entities_by_type_and_tag(0, types.MBENTITYSET, np.array([self.tags[name_tag_c]]), np.array([None]))
             # self._coarse_volumes[level] = coarse_volumes
+
             interns = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                       np.array([0]))
+            mb.tag_set_data(self.tags[tag_reord_id], interns, np.arange(n_reord, len(interns)))
+            n_reord += len(interns)
             interns = np.array([dict_volumes[k] for k in interns])
             # self._interns[level] = interns
 
             edges = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                     np.array([1]))
+            mb.tag_set_data(self.tags[tag_reord_id], edges, np.arange(n_reord, n_reord + len(edges)))
+            n_reord += len(edges)
             edges = np.array([dict_volumes[k] for k in edges])
             # self._edges[level] = edges
 
             faces = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                     np.array([2]))
+            mb.tag_set_data(self.tags[tag_reord_id], faces, np.arange(n_reord, n_reord + len(faces)))
+            n_reord += len(faces)
             faces = np.array([dict_volumes[k] for k in faces])
             # self._faces[level] = faces
 
             vertex = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                      np.array([3]))
+            mb.tag_set_data(self.tags[tag_reord_id], vertex, np.arange(n_reord, n_reord + len(vertex)))
+            n_reord += len(vertex)
             vertexes = np.array([dict_volumes[k] for k in vertex])
             # self._vertex[level] = vertexes
 
@@ -427,12 +430,12 @@ class MultilevelData(DataManager):
                     coarse_volume = \
                     mb.get_entities_by_type_and_tag(0, types.MBENTITYSET, np.array([self.tags[name_tag_c]]),
                                                     np.array([primal_id]))[0]
-                    elements = mb.get_entities_by_handle(coarse_volume)
-                    ne = len(elements)
+                    # elements = mb.get_entities_by_handle(coarse_volume)
+                    # ne = len(elements)
                     # mb.tag_set_data(self.tags[primal_fine_name], elements, np.repeat(i, ne))
                     # mb.tag_set_data(self.tags[name_tag_c], coarse_volume, i)
                     coarse_volumes.append(coarse_volume)
-                    coarse_primal_ids.append(i)
+                    coarse_primal_ids.append(primal_id)
             else:
                 for i, vert in enumerate(vertex):
                     primal_id = mb.tag_get_data(self.tags[primal_fine_name], vert, flat=True)[0]
@@ -474,6 +477,19 @@ class MultilevelData(DataManager):
             fine_dual_id = mb.tag_get_data(self.tags[dual_fine_name], all_volumes, flat=True)
             # self._fine_dual_id[level] = fine_dual_id
             self._data[self.fine_dual_id + str(level)] = fine_dual_id
+
+        for m in self._data[self.coarse_volumes + str(1)]:
+            elements = mb.get_entities_by_handle(m)
+            ne = len(elements)
+            ids = np.arange(ne)
+            dual_info = mb.tag_get_data(self.tags[tags_fine[0] + str(1)], elements, flat=True)
+            id_vert = ids[dual_info == 3]
+            vertex = elements[id_vert]
+            reord_id_2 = mb.tag_get_data(self.tags[tag_reordered_id[0] + str(2)], vertex, flat=True)[0]
+            mb.tag_set_data(self.tags[tag_reordered_id[0] + str(2)], elements, np.repeat(reord_id_2, ne))
+
+        self._data[self.reordered_id + str(1)] = mb.tag_get_data(self.tags[self.reordered_id + str(1)], all_volumes, flat=True)
+        self._data[self.reordered_id + str(2)] = mb.tag_get_data(self.tags[self.reordered_id + str(2)], all_volumes, flat=True)
 
     def get_boundary_coarse_faces(self, M):
         assert not self._loaded
