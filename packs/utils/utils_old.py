@@ -40,7 +40,7 @@ def get_box(all_centroids, limites):
 def getting_tag(mb, name, n, t1, t2, create, entitie, tipo, tags, tags_to_infos):
     types_data = ['handle', 'integer', 'array', 'double']
     entities = ['nodes', 'edges', 'faces', 'volumes', 'root_set', 'intern_faces', 'boundary_faces', 'vols_viz_face',
-                'coarse_volumes_lv1', 'coarse_volumes_lv2']
+                'coarse_volumes_lv1', 'coarse_volumes_lv2', 'coarse_volumes']
 
     assert tipo in types_data, f'tipo nao listado: {tipo}'
 

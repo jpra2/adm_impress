@@ -4,7 +4,7 @@ state: 0
 type_of_solution: fine_scale
 gravity: false
 # load_biphasic: false
-load_data: false
+load_data: true
 convert_english_to_SI: true
 # load_mesh: false
 monophasic: true
@@ -13,7 +13,7 @@ biphasic: false
 deletar_results: true
 
 multilevel_data: true
-load_multilevel_data: false
+load_multilevel_data: true
 
 Crs:
   Cr1: [3, 3, 3]
