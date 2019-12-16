@@ -120,14 +120,14 @@ class Wells(DataManager):
         ws_inj = np.array(ws_inj).flatten()
         ws_prod = np.array(ws_prod).flatten()
 
-        self._data['ws_p'] = ws_p
-        self._data['ws_q'] = ws_q
-        self._data['ws_inj'] = ws_inj
-        self._data['ws_prod'] = ws_prod
-        self._data['values_p'] = values_p
-        self._data['values_q'] = values_q
-        self._data['all_wells'] = np.union1d(ws_inj, ws_prod)
-        self._data['values_p_ini'] = values_p.copy()
+        self['ws_p'] = ws_p
+        self['ws_q'] = ws_q
+        self['ws_inj'] = ws_inj
+        self['ws_prod'] = ws_prod
+        self['values_p'] = values_p
+        self['values_q'] = values_q
+        self['all_wells'] = np.union1d(ws_inj, ws_prod)
+        self['values_p_ini'] = values_p.copy()
 
     def set_infos(self):
         assert not self._loaded
@@ -136,12 +136,12 @@ class Wells(DataManager):
         mb = M.core.mb
 
         all_volumes = np.array(M.core.all_volumes)
-        ws_p = all_volumes[self._data['ws_p']]
-        ws_q = all_volumes[self._data['ws_q']]
-        ws_prod = all_volumes[self._data['ws_prod']]
-        ws_inj = all_volumes[self._data['ws_inj']]
-        values_p = self._data['values_p']
-        values_q = self._data['values_q']
+        ws_p = all_volumes[self['ws_p']]
+        ws_q = all_volumes[self['ws_q']]
+        ws_prod = all_volumes[self['ws_prod']]
+        ws_inj = all_volumes[self['ws_inj']]
+        values_p = self['values_p']
+        values_q = self['values_q']
 
         mb.tag_set_data(self.tags['INJ'], ws_inj, np.repeat(1, len(ws_inj)))
         mb.tag_set_data(self.tags['PROD'], ws_prod, np.repeat(1, len(ws_prod)))
@@ -168,17 +168,17 @@ class Wells(DataManager):
     def update_values_to_mesh(self):
         M = self.mesh
 
-        self.mesh.core.mb.tag_set_data(self.tags['P'], M.core.all_volumes[self._data['ws_p']], self._data['values_p'])
-        self.mesh.core.mb.tag_set_data(self.tags['Q'], M.core.all_volumes[self._data['ws_q']], self._data['values_q'])
+        self.mesh.core.mb.tag_set_data(self.tags['P'], M.core.all_volumes[self['ws_p']], self['values_p'])
+        self.mesh.core.mb.tag_set_data(self.tags['Q'], M.core.all_volumes[self['ws_q']], self['values_q'])
 
     def correct_wells(self):
-        if len(self._data['ws_q']) == 0:
+        if len(self['ws_q']) == 0:
             return 0
 
         M = self.mesh
-        wells_q = self._data['ws_q']
+        wells_q = self['ws_q']
 
-        facs_nn = self._data['facs_nn']
+        facs_nn = self['facs_nn']
         k_harm_faces = M.data['k_harm'].copy()
         k_max = k_harm_faces.max()
         k_harm_faces[facs_nn] = np.repeat(k_max, len(facs_nn))
@@ -193,12 +193,12 @@ class Wells(DataManager):
     def get_facs_nn(self):
         assert not self._loaded
         M = self.mesh
-        wells_q = self._data['ws_q']
+        wells_q = self['ws_q']
 
         fc_n = M.volumes.bridge_adjacencies(wells_q, 3, 2).flatten()
         contador = collections.Counter(fc_n)
         facs_nn = np.array([k for k, v in contador.items() if v > 1])
-        self._data['facs_nn'] = facs_nn
+        self['facs_nn'] = facs_nn
 
     def loaded(self):
         assert not self._loaded

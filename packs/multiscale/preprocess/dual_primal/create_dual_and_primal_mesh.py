@@ -486,8 +486,8 @@ class MultilevelData(DataManager):
                     mb.tag_set_data(local_id_fac_tag,f1,range(len(f1)))
                     add_topology(f1,local_id_fac_tag,faces_adjs_by_dual, mb, mtu, ID_reordenado_tag)
 
-        self._data['intern_adjs_by_dual'] = np.array(intern_adjs_by_dual)
-        self._data['faces_adjs_by_dual'] = np.array(faces_adjs_by_dual)
+        self['intern_adjs_by_dual'] = np.array(intern_adjs_by_dual)
+        self['faces_adjs_by_dual'] = np.array(faces_adjs_by_dual)
 
     def get_elements(self, M):
         assert not self._loaded
@@ -540,10 +540,10 @@ class MultilevelData(DataManager):
             n_reord += len(vertex)
             vertexes = np.array([dict_volumes[k] for k in vertex])
 
-            self._data[self.interns + str(level)] = interns
-            self._data[self.faces + str(level)] = faces
-            self._data[self.edges + str(level)] = edges
-            self._data[self.vertex + str(level)] = vertexes
+            self[self.interns + str(level)] = interns
+            self[self.faces + str(level)] = faces
+            self[self.edges + str(level)] = edges
+            self[self.vertex + str(level)] = vertexes
 
             coarse_volumes = []
             coarse_primal_ids = []
@@ -576,10 +576,10 @@ class MultilevelData(DataManager):
             coarse_neig_face = np.array(coarse_neig_face)
             coarse_id_neig_face = np.array(coarse_id_neig_face)
 
-            self._data[self.coarse_neig_face + str(level)] = coarse_neig_face
-            self._data[self.coarse_id_neig_face + str(level)] = coarse_id_neig_face
-            self._data[self.coarse_volumes + str(level)] = np.array(coarse_volumes)
-            self._data[self.coarse_primal_id + str(level)] = np.array(coarse_primal_ids)
+            self[self.coarse_neig_face + str(level)] = coarse_neig_face
+            self[self.coarse_id_neig_face + str(level)] = coarse_id_neig_face
+            self[self.coarse_volumes + str(level)] = np.array(coarse_volumes)
+            self[self.coarse_primal_id + str(level)] = np.array(coarse_primal_ids)
             # dtype = [('elements', np.uint64), ('id', np.uint64)]
             # structured_array = np.zeros(len(coarse_volumes), dtype=dtype)
             # structured_array['elements'] = np.array(coarse_volumes)
@@ -600,15 +600,15 @@ class MultilevelData(DataManager):
 
             # self.mvs[level] = mv1
             mvs.append(mv1)
-            self._data[self.meshset_vertices + str(level)] = mv1
+            self[self.meshset_vertices + str(level)] = mv1
 
             fine_primal_id = mb.tag_get_data(self.tags[primal_fine_name], all_volumes, flat=True)
-            self._data[self.fine_primal_id + str(level)] = fine_primal_id
+            self[self.fine_primal_id + str(level)] = fine_primal_id
 
             fine_dual_id = mb.tag_get_data(self.tags[dual_fine_name], all_volumes, flat=True)
-            self._data[self.fine_dual_id + str(level)] = fine_dual_id
+            self[self.fine_dual_id + str(level)] = fine_dual_id
 
-        for m in self._data[self.coarse_volumes + str(1)]:
+        for m in self[self.coarse_volumes + str(1)]:
             elements = mb.get_entities_by_handle(m)
             ne = len(elements)
             ids = np.arange(ne)
@@ -618,15 +618,15 @@ class MultilevelData(DataManager):
             reord_id_2 = mb.tag_get_data(self.tags[tag_reordered_id[0] + str(2)], vertex, flat=True)[0]
             mb.tag_set_data(self.tags[tag_reordered_id[0] + str(2)], elements, np.repeat(reord_id_2, ne))
 
-        self._data[self.reordered_id + str(1)] = mb.tag_get_data(self.tags[self.reordered_id + str(1)], all_volumes, flat=True)
-        self._data[self.reordered_id + str(2)] = mb.tag_get_data(self.tags[self.reordered_id + str(2)], all_volumes, flat=True)
+        self[self.reordered_id + str(1)] = mb.tag_get_data(self.tags[self.reordered_id + str(1)], all_volumes, flat=True)
+        self[self.reordered_id + str(2)] = mb.tag_get_data(self.tags[self.reordered_id + str(2)], all_volumes, flat=True)
 
     def get_boundary_coarse_faces(self, M):
         assert not self._loaded
         # meshsets_nv1 = self._coarse_volumes[1]
         # meshsets_nv2 = self._coarse_volumes[2]
-        meshsets_nv1 = self._data[self.coarse_volumes + str(1)]
-        meshsets_nv2 = self._data[self.coarse_volumes + str(2)]
+        meshsets_nv1 = self[self.coarse_volumes + str(1)]
+        meshsets_nv2 = self[self.coarse_volumes + str(2)]
 
         mb = M.core.mb
         mtu = M.core.mtu
@@ -651,7 +651,7 @@ class MultilevelData(DataManager):
             utpy.set_faces_in_boundary_by_meshsets(mb, mtu, meshsets, tag_boundary, M)
             faces_boundary = mb.tag_get_data(tag_boundary, M.core.root_set, flat=True)[0]
             faces_boundary = mb.get_entities_by_handle(faces_boundary)
-            self._data[self.faces_boundary_meshset_level + str(i+1)] = np.array([d_faces[k] for k in faces_boundary])
+            self[self.faces_boundary_meshset_level + str(i+1)] = np.array([d_faces[k] for k in faces_boundary])
 
     def get_elements_2(self, M):
         assert not self._loaded

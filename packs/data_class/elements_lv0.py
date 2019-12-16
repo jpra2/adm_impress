@@ -13,19 +13,19 @@ class ElementsLv0(DataManager):
 
     def load_elements_from_mesh(self):
 
-        self._data['volumes'] = self.mesh.volumes.all
-        self._data['faces'] = self.mesh.faces.all
-        self._data['edges'] = self.mesh.edges.all
-        self._data['nodes'] = self.mesh.nodes.all
-        self._data['internal_faces'] = self.mesh.faces.internal
-        self._data['boundary_faces'] = np.setdiff1d(self._data['faces'], self._data['internal_faces'])
-        self._data['neig_faces'] = self.mesh.faces.bridge_adjacencies(self._data['faces'], 2, 3)
-        self._data['neig_internal_faces'] = self.mesh.faces.bridge_adjacencies(self._data['internal_faces'], 2, 3)
-        self._data['neig_boundary_faces'] = self.mesh.faces.bridge_adjacencies(self._data['boundary_faces'], 2, 3).flatten()
-        self._data['all_volumes'] = self.mesh.core.all_volumes
-        self._data['all_faces'] = self.mesh.core.all_faces
-        self._data['all_edges'] = self.mesh.core.all_edges
-        self._data['all_nodes'] = self.mesh.core.all_nodes
+        self['volumes'] = self.mesh.volumes.all
+        self['faces'] = self.mesh.faces.all
+        self['edges'] = self.mesh.edges.all
+        self['nodes'] = self.mesh.nodes.all
+        self['internal_faces'] = self.mesh.faces.internal
+        self['boundary_faces'] = np.setdiff1d(self['faces'], self['internal_faces'])
+        self['neig_faces'] = self.mesh.faces.bridge_adjacencies(self['faces'], 2, 3)
+        self['neig_internal_faces'] = self.mesh.faces.bridge_adjacencies(self['internal_faces'], 2, 3)
+        self['neig_boundary_faces'] = self.mesh.faces.bridge_adjacencies(self['boundary_faces'], 2, 3).flatten()
+        self['all_volumes'] = self.mesh.core.all_volumes
+        self['all_faces'] = self.mesh.core.all_faces
+        self['all_edges'] = self.mesh.core.all_edges
+        self['all_nodes'] = self.mesh.core.all_nodes
 
     def run(self):
         self.load_elements_from_mesh()

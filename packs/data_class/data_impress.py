@@ -75,7 +75,7 @@ class Data(DataManager):
             if n > 1:
                 data = np.repeat(data, n).reshape([n_entity, n])
 
-            self._data[name] = data
+            self[name] = data
             variables_impress[name] = name
 
         self.variables_impress = variables_impress
@@ -84,29 +84,29 @@ class Data(DataManager):
 
         if names:
             for name in names:
-                command = 'self.mesh.' + name + '[:] = ' + 'self._data["' + name + '"]'
+                command = 'self.mesh.' + name + '[:] = ' + 'self["' + name + '"]'
                 exec(command)
 
         else:
-            for name in self._data.keys():
-                command = 'self.mesh.' + name + '[:] = ' + 'self._data["' + name + '"]'
+            for name in self.keys():
+                command = 'self.mesh.' + name + '[:] = ' + 'self["' + name + '"]'
                 exec(command)
 
     def load_variables_from_mesh(self, names=None):
 
         if names:
             for name in names:
-                command = 'self._data["' + name + '"] = self.mesh.' + name + '[:]'
+                command = 'self["' + name + '"] = self.mesh.' + name + '[:]'
                 exec(command)
 
         else:
             for name in self._data.keys():
-                command = 'self._data["' + name + '"] = self.mesh.' + name + '[:]'
+                command = 'self["' + name + '"] = self.mesh.' + name + '[:]'
                 exec(command)
 
     def get_variables_impress(self):
         self.variables_impress = dict()
-        for name in self._data.keys():
+        for name in self.keys():
             self.variables_impress[name] = name
 
     def run(self):

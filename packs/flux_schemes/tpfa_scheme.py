@@ -27,4 +27,4 @@ class TpfaScheme(DataManager):
 
         T = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, self.n_volumes))
 
-        self._data['Tini'] = T
+        self['Tini'] = T

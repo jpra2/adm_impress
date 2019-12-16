@@ -7,8 +7,8 @@ gravity: false
 load_data: true
 convert_english_to_SI: true
 # load_mesh: false
-monophasic: true
-biphasic: false
+monophasic: false
+biphasic: true
 
 deletar_results: true
 
@@ -68,7 +68,7 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: 10000.0
+    value: 1000000.0
   P3:
     p0: [520.0, 260.0, 0.0]
     p1: [540.0, 270.0, 54.0]

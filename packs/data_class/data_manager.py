@@ -2,7 +2,7 @@ import os
 from ..directories import flying
 import numpy as np
 
-class DataManager:
+class DataManager(dict):
     all_datas = dict()
 
     def __init__(self, data_name: str, load: bool=False) -> None:
@@ -18,14 +18,14 @@ class DataManager:
             raise ValueError('data_name cannot be repeated')
 
         self.name = os.path.join(flying, data_name)
-        self._data = dict()
+        # self._data = dict()
         self.__class__.all_datas[self.name] = self
         if load:
             self.load_from_npz()
 
     def export_to_npz(self):
 
-        np.savez(self.name, **self._data)
+        np.savez(self.name, **self)
 
         # with open(self.name_info_data, 'rb') as f:
         #     pickle.dump
@@ -35,7 +35,7 @@ class DataManager:
         arq = np.load(self.name, allow_pickle=True)
 
         for name, variable in arq.items():
-            self._data[name] = variable
+            self[name] = variable
 
     @classmethod
     def export_all_datas_to_npz(cls):
@@ -51,23 +51,23 @@ class DataManager:
     def get_obj_by_name(cls, name):
         return cls.all_datas[name]
 
-    def __str__(self):
-        return str(list(self._data.keys()))
-
-    def __setitem__(self, key, value):
-        self._data[key] = value
-
-    def __getitem__(self, key):
-        return self._data[key]
-
-    def __hash__(self, key):
-        return hash(self._data)
-
-    def __contains__(self, key):
-        return key in self._data
-
-    def __del__(self):
-        del self.__class__.all_datas[self.name]
+    # def __str__(self):
+    #     return str(type(self))
+    #
+    # def __setitem__(self, key, value):
+    #     self._data[key] = value
+    #
+    # def __getitem__(self, key):
+    #     return self._data[key]
+    #
+    # def __hash__(self, key):
+    #     return hash(self._data)
+    #
+    # def __contains__(self, key):
+    #     return key in self._data
+    #
+    # def __del__(self):
+    #     del self.__class__.all_datas[self.name]
 
 
 # if __name__ == '__main__':
