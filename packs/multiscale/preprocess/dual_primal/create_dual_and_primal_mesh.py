@@ -174,13 +174,14 @@ class MultilevelData(DataManager):
 
         # lx, ly, lz = get_hs(M, coord_nodes)
         lx, ly, lz = M.data['hs'][0]
+
         dx0 = lx
         dy0 = ly
         dz0 = lz
 
-        nx = int(Lx / lx)
-        ny = int(Ly / ly)
-        nz = int(Lz / lz)
+        nx = int(round(Lx / lx))
+        ny = int(round(Ly / ly))
+        nz = int(round(Lz / lz))
 
         l1 = [cr1[0] * lx, cr1[1] * ly, cr1[2] * lz]
         l2 = [cr2[0] * lx, cr2[1] * ly, cr2[2] * lz]
@@ -194,38 +195,38 @@ class MultilevelData(DataManager):
 
         lx2, ly2, lz2 = [], [], []
         # O valor 0.01 é adicionado para corrigir erros de ponto flutuante
-        for i in range(int(Lx / l2[0])):    lx2.append(xmin + i * l2[0])
-        for i in range(int(Ly / l2[1])):    ly2.append(ymin + i * l2[1])
-        for i in range(int(Lz / l2[2])):    lz2.append(zmin + i * l2[2])
+        for i in range(int(round(Lx / l2[0]))):    lx2.append(xmin + i * l2[0])
+        for i in range(int(round(Ly / l2[1]))):    ly2.append(ymin + i * l2[1])
+        for i in range(int(round(Lz / l2[2]))):    lz2.append(zmin + i * l2[2])
         lx2.append(Lx)
         ly2.append(Ly)
         lz2.append(Lz)
 
         lx1, ly1, lz1 = [], [], []
-        for i in range(int(l2[0] / l1[0])):   lx1.append(i * l1[0])
-        for i in range(int(l2[1] / l1[1])):   ly1.append(i * l1[1])
-        for i in range(int(l2[2] / l1[2])):   lz1.append(i * l1[2])
+        for i in range(int(round(l2[0] / l1[0]))):   lx1.append(i * l1[0])
+        for i in range(int(round(l2[1] / l1[1]))):   ly1.append(i * l1[1])
+        for i in range(int(round(l2[2] / l1[2]))):   lz1.append(i * l1[2])
 
-        D_x = max(Lx - int(Lx / l1[0]) * l1[0], Lx - int(Lx / l2[0]) * l2[0])
-        D_y = max(Ly - int(Ly / l1[1]) * l1[1], Ly - int(Ly / l2[1]) * l2[1])
-        D_z = max(Lz - int(Lz / l1[2]) * l1[2], Lz - int(Lz / l2[2]) * l2[2])
+        D_x = max(Lx - int(round(Lx / l1[0])) * l1[0], Lx - int(round(Lx / l2[0])) * l2[0])
+        D_y = max(Ly - int(round(Ly / l1[1])) * l1[1], Ly - int(round(Ly / l2[1])) * l2[1])
+        D_z = max(Lz - int(round(Lz / l1[2])) * l1[2], Lz - int(round(Lz / l2[2])) * l2[2])
         nD_x = int((D_x + 0.001) / l1[0])
         nD_y = int((D_y + 0.001) / l1[1])
         nD_z = int((D_z + 0.001) / l1[2])
 
         lxd1 = [xmin + dx0 / 100]
-        for i in range(int(Lx / l1[0]) - 2 - nD_x):
+        for i in range(int(round(Lx / l1[0])) - 2 - nD_x):
             lxd1.append(l1[0] / 2 + (i + 1) * l1[0])
         lxd1.append(xmin + Lx - dx0 / 100)
 
         lyd1 = [ymin + dy0 / 100]
-        for i in range(int(Ly / l1[1]) - 2 - nD_y):
+        for i in range(int(round(Ly / l1[1])) - 2 - nD_y):
             lyd1.append(l1[1] / 2 + (i + 1) * l1[1])
         lyd1.append(ymin + Ly - dy0 / 100)
 
         lzd1 = [zmin + dz0 / 100]
 
-        for i in range(int(Lz / l1[2]) - 2 - nD_z):
+        for i in range(int(round(Lz / l1[2])) - 2 - nD_z):
             lzd1.append(l1[2] / 2 + (i + 1) * l1[2])
         lzd1.append(xmin + Lz - dz0 / 100)
 
@@ -263,6 +264,7 @@ class MultilevelData(DataManager):
 
         # add_parent_child(self, parent_meshset, child_meshset, exceptions = ()):
         ##-----------------------------------------------------------------
+
         for i in range(len(lx2) - 1):
             # t1=time.time()
             if i == len(lx2) - 2:
@@ -617,6 +619,7 @@ class MultilevelData(DataManager):
             vertex = elements[id_vert]
             reord_id_2 = mb.tag_get_data(self.tags[tag_reordered_id[0] + str(2)], vertex, flat=True)[0]
             mb.tag_set_data(self.tags[tag_reordered_id[0] + str(2)], elements, np.repeat(reord_id_2, ne))
+            import pdb; pdb.set_trace()
 
         self[self.reordered_id + str(1)] = mb.tag_get_data(self.tags[self.reordered_id + str(1)], all_volumes, flat=True)
         self[self.reordered_id + str(2)] = mb.tag_get_data(self.tags[self.reordered_id + str(2)], all_volumes, flat=True)

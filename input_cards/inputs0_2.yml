@@ -1,19 +1,20 @@
-mesh_name: mesh/27x27x27.msh
+mesh_name: mesh/45x45x45.msh
+# mesh_name: mesh/27x27x27.msh
 n_test: 0
 state: 0
 type_of_solution: fine_scale
 gravity: false
 # load_biphasic: false
-load_data: true
+load_data: false
 convert_english_to_SI: true
 # load_mesh: false
-monophasic: false
-biphasic: true
+monophasic: true
+biphasic: false
 
 deletar_results: true
 
 multilevel_data: true
-load_multilevel_data: true
+load_multilevel_data: false
 
 Crs:
   Cr1: [3, 3, 3]

@@ -12,6 +12,7 @@
 *.png
 *_tt.py
 impress/
+impress(copia)/
 *.pyc
 .idea/
 
