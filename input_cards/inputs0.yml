@@ -85,8 +85,8 @@ convert_english_to_SI: true
 deletar_results: true
 file_name_permeability: spe10_perms_and_phi.npz
 gravity: false
-load_data: true
-load_multilevel_data: true
+load_data: false
+load_multilevel_data: false
 mesh_name: mesh/27x27x27.msh
 monophasic: true
 monophasic_data:
