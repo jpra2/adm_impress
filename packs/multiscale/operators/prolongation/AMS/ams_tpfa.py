@@ -89,6 +89,42 @@ class AMSTpfa:
         self.As['Aev'] = Aev
         self.As['Ivv'] = Ivv
 
+    def get_OP_AMS_TPFA_by_AS(As, wirebasket_numbers):
+
+        ni = wirebasket_numbers[0]
+        nf = wirebasket_numbers[1]
+        ne = wirebasket_numbers[2]
+        nv = wirebasket_numbers[3]
+
+        nni = ni
+        nnf = nni + nf
+        nne = nnf + ne
+        nnv = nne + nv
+
+        lines = np.arange(nne, nnv).astype(np.int32)
+        ntot = sum(wirebasket_numbers)
+        op = sp.lil_matrix((ntot, nv))
+        op[lines] = As['Ivv'].tolil()
+
+        M = As['Aee']
+        M = linalg.spsolve(M.tocsc(), sp.identity(ne).tocsc())
+        M = M.dot(-1*As['Aev'])
+        op[nnf:nne] = M.tolil()
+
+        M2 = As['Aff']
+        M2 = linalg.spsolve(M2.tocsc(), sp.identity(nf).tocsc())
+        M2 = M2.dot(-1*As['Afe'])
+        M = M2.dot(M)
+        op[nni:nnf] = M.tolil()
+
+        M2 = As['Aii']
+        M2 = linalg.spsolve(M2.tocsc(), sp.identity(ni).tocsc())
+        M2 = M2.dot(-1*As['Aif'])
+        M = M2.dot(M)
+        op[0:nni] = M.tolil()
+
+        return op
+
     def run(self):
 
         self.T_wire = self.G*self.T*self.GT
