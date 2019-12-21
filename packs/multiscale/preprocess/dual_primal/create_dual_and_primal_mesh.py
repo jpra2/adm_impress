@@ -5,6 +5,7 @@ from pymoab import types, rng
 import numpy as np
 import pdb
 from ....data_class.data_manager import DataManager
+import scipy.sparse as sp
 
 
 class MultilevelData(DataManager):
@@ -35,6 +36,7 @@ class MultilevelData(DataManager):
         self.name_mesh = 'flying/multilevel_data'
         self.coarse_neig_face = 'coarse_neig_face_level_'
         self.coarse_id_neig_face = 'coarse_id_neig_face_level_'
+        self.restriction = 'restriction_level_'
 
     def create_tags(self):
         assert not self._loaded
@@ -519,38 +521,54 @@ class MultilevelData(DataManager):
             if n not in [1]:
                 mb.tag_set_data(self.tags[tag_reord_id], interns, np.arange(n_reord, len(interns)))
             n_reord += len(interns)
-            interns = np.array([dict_volumes[k] for k in interns])
-
-            edges = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
-                                                    np.array([1]))
-            if n not in [1]:
-                mb.tag_set_data(self.tags[tag_reord_id], edges, np.arange(n_reord, n_reord + len(edges)))
-            n_reord += len(edges)
-            edges = np.array([dict_volumes[k] for k in edges])
+            if n == 1:
+                interns = np.array([dict_volumes[k] for k in interns])
+            else:
+                interns = mb.tag_get_data(self.tags[tags_fine[1] + str(n-1)], interns, flat=True)
 
             faces = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
-                                                    np.array([2]))
+                                                    np.array([1]))
             if n not in [1]:
                 mb.tag_set_data(self.tags[tag_reord_id], faces, np.arange(n_reord, n_reord + len(faces)))
             n_reord += len(faces)
-            faces = np.array([dict_volumes[k] for k in faces])
+            if n == 1:
+                faces = np.array([dict_volumes[k] for k in faces])
+            else:
+                faces = mb.tag_get_data(self.tags[tags_fine[1] + str(n-1)], faces, flat=True)
+
+            edges = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
+                                                    np.array([2]))
+            if n not in [1]:
+                mb.tag_set_data(self.tags[tag_reord_id], edges, np.arange(n_reord, n_reord + len(edges)))
+            n_reord += len(edges)
+            if n == 1:
+                edges = np.array([dict_volumes[k] for k in edges])
+            else:
+                edges = mb.tag_get_data(self.tags[tags_fine[1] + str(n-1)], edges, flat=True)
 
             vertex = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
                                                      np.array([3]))
             if n not in [1]:
                 mb.tag_set_data(self.tags[tag_reord_id], vertex, np.arange(n_reord, n_reord + len(vertex)))
             n_reord += len(vertex)
-            vertexes = np.array([dict_volumes[k] for k in vertex])
+            if n == 1:
+                vertexes = np.array([dict_volumes[k] for k in vertex])
+            else:
+                vertexes = mb.tag_get_data(self.tags[tags_fine[1] + str(n-1)], vertex, flat=True)
 
-            self[self.interns + str(level)] = interns
-            self[self.faces + str(level)] = faces
-            self[self.edges + str(level)] = edges
-            self[self.vertex + str(level)] = vertexes
+            self._data[self.interns + str(level)] = interns
+            self._data[self.faces + str(level)] = faces
+            self._data[self.edges + str(level)] = edges
+            self._data[self.vertex + str(level)] = vertexes
+            wire_num = np.array([len(interns), len(faces), len(edges), len(vertexes)])
+            nv = wire_num[3]
 
             coarse_volumes = []
             coarse_primal_ids = []
             coarse_neig_face = []
             coarse_id_neig_face = []
+            lines_r = []
+            cols_r = []
 
             for i, vert in enumerate(vertex):
                 neigs = []
@@ -562,6 +580,12 @@ class MultilevelData(DataManager):
                 coarse_volumes.append(coarse_volume)
                 coarse_primal_ids.append(primal_id)
                 elems_in_meshset = mb.get_entities_by_handle(coarse_volume)
+                if n == 1:
+                    gids = np.array([dict_volumes[k] for k in elems_in_meshset])
+                else:
+                    gids = np.unique(mb.tag_get_data(self.tags[tags_fine[1] + str(n-1)], elems_in_meshset, flat=True))
+                lines_r.append(np.repeat(primal_id, len(gids)))
+                cols_r.append(gids)
                 elems_fora = mtu.get_bridge_adjacencies(elems_in_meshset, 2, 3)
                 elems_fora = rng.subtract(elems_fora, elems_in_meshset)
                 ids_meshsets_vizinhos = np.unique(mb.tag_get_data(self.tags[primal_fine_name], elems_fora, flat=True))
@@ -578,10 +602,16 @@ class MultilevelData(DataManager):
             coarse_neig_face = np.array(coarse_neig_face)
             coarse_id_neig_face = np.array(coarse_id_neig_face)
 
-            self[self.coarse_neig_face + str(level)] = coarse_neig_face
-            self[self.coarse_id_neig_face + str(level)] = coarse_id_neig_face
-            self[self.coarse_volumes + str(level)] = np.array(coarse_volumes)
-            self[self.coarse_primal_id + str(level)] = np.array(coarse_primal_ids)
+            lines_r = np.concatenate(lines_r)
+            cols_r = np.concatenate(cols_r)
+            data_r = np.ones(len(lines_r))
+            OR = sp.csc_matrix((data_r,(lines_r,cols_r)), shape=(nv, wire_num.sum()))
+
+            self._data[self.restriction + str(level)] = OR
+            self._data[self.coarse_neig_face + str(level)] = coarse_neig_face
+            self._data[self.coarse_id_neig_face + str(level)] = coarse_id_neig_face
+            self._data[self.coarse_volumes + str(level)] = np.array(coarse_volumes)
+            self._data[self.coarse_primal_id + str(level)] = np.array(coarse_primal_ids)
             # dtype = [('elements', np.uint64), ('id', np.uint64)]
             # structured_array = np.zeros(len(coarse_volumes), dtype=dtype)
             # structured_array['elements'] = np.array(coarse_volumes)

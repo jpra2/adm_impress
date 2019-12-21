@@ -1,57 +1,74 @@
-from .....flux_schemes.tpfa_scheme import TpfaScheme
-import scipy.sparse as sp
+from .....data_class.data_manager import DataManager
 import numpy as np
+import scipy.sparse as sp
+from scipy.sparse import linalg
+import time
 
-
-class AMSTpfa(TpfaScheme):
+class AMSTpfa(DataManager):
     name = 'AMSTpfa_'
     id = 1
 
     def __init__(self,
-        T: 'transmissibility_matrix',
-        gids: 'global_ids',
-        reordered_ids: 'ids_for_wirebasket_pattern',
-        ni: 'number_of_interns',
-        nf: 'number of faces',
-        ne: 'number of edges',
-        nv: 'number_of_vertices',
-        name: 'unique name for data'='',
+        internals,
+        faces,
+        edges,
+        vertices,
         load=False):
 
-        if name == '':
-            data_name = AMSTpfa.name + str(AMSTpfa.id) + '.npz'
-        else:
-            data_name = AMSTpfa.name + name + '.npz'
+        data_name = AMSTpfa.name + str(AMSTpfa.id) + '.npz'
+        self.id = AMSTpfa.id
         super().__init__(data_name=data_name, load=load)
         AMSTpfa.id += 1
-        self['gids'] = gids.copy()
-        self['reordered_ids'] = reordered_ids.copy()
-        self.nv = nv
-        self.ne = ne
-        self.nf = nf
-        self.ni = ni
 
-    def get_permutation_matrix(self):
-        lines = self['reordered_ids']
-        cols = self['gids']
-        data = np.ones(len(lines))
-        self['permutation'] = sp.csc_matrix((data, (lines, cols)), shape=(self.nv, self.nv))
+        # self.T = T
+        self.wirebasket_elements = np.array([internals, faces, edges, vertices])
+        self.wirebasket_numbers = np.array([len(internals), len(faces), len(edges), len(vertices)])
+        self.nv = self.wirebasket_numbers[-1]
+        self.ns_sum = [self.wirebasket_numbers[0]]
+        for i in range(3):
+            self.ns_sum.append(self.ns_sum[i] + self.wirebasket_numbers[i+1])
+        self.ns_sum = np.array(self.ns_sum)
 
-    def get_prolongation_operator(self):
-        pass
+        n_reord = 0
+        self.wirebasket_ids = []
+        for i in range(4):
+            n2 = len(self.wirebasket_elements[i])
+            self.wirebasket_ids.append(np.arange(n_reord, n_reord + n2))
+            n_reord += n2
 
-    def get_AS(self):
+        self.wirebasket_ids = np.array(self.wirebasket_ids)
+        self.get_G()
+        # self.T_wire = self.G*self.T*self.GT
+        # # self.T_wire = self.GT*self.T*self.G
+        # self.get_as()
+        # self._data['OP_AMS_' + str(self.id)] = self.get_OP_AMS_TPFA_by_AS()
 
-        Tmod = self['Tini'].copy().tolil()
-        ni = self.ni
-        nf = self.nf
-        ne = self.ne
-        nv = self.nv
+        # self.run()
 
-        nni = ni
-        nnf = nf + nni
-        nne = ne + nnf
-        nnv = nv + nne
+    def get_G(self):
+        cols = np.concatenate(self.wirebasket_elements)
+        n = len(cols)
+        lines = np.concatenate(self.wirebasket_ids)
+        data = np.ones(n)
+        self.G = sp.csc_matrix((data,(lines,cols)), shape=(n, n))
+        self.GT = self.G.copy()
+        self.GT = self.GT.transpose()
+
+    def get_as(self, T_wire):
+        t0 = time.time()
+        As = dict()
+
+        Tmod = T_wire.copy().tolil()
+        # As['Tf'] = Tmod
+        ni = self.wirebasket_numbers[0]
+        nf = self.wirebasket_numbers[1]
+        ne = self.wirebasket_numbers[2]
+        nv = self.wirebasket_numbers[3]
+
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
 
         #internos
         Aii = Tmod[0:nni, 0:nni]
@@ -73,8 +90,9 @@ class AMSTpfa(TpfaScheme):
         d1 += soma
         Aee.setdiag(d1)
         Ivv = sp.identity(nv)
+        t1 = time.time()
+        dt = t1-t0
 
-        As = {}
         As['Aii'] = Aii
         As['Aif'] = Aif
         As['Aff'] = Aff
@@ -85,4 +103,44 @@ class AMSTpfa(TpfaScheme):
 
         return As
 
-    self.get_transmissibility_matrix_without_boundary_conditions()
+    def get_OP_AMS_TPFA_by_AS(self, As):
+
+        ni = self.wirebasket_numbers[0]
+        nf = self.wirebasket_numbers[1]
+        ne = self.wirebasket_numbers[2]
+        nv = self.wirebasket_numbers[3]
+
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
+
+        lines = np.arange(nne, nnv).astype(np.int32)
+        ntot = (self.wirebasket_numbers.sum())
+        op = sp.lil_matrix((ntot, nv))
+        op[lines] = As['Ivv'].tolil()
+
+        M = As['Aee']
+        M = linalg.spsolve(M.tocsc(), sp.identity(ne).tocsc())
+        M = M.dot(-1*As['Aev'])
+        op[nnf:nne] = M.tolil()
+
+        M2 = As['Aff']
+        M2 = linalg.spsolve(M2.tocsc(), sp.identity(nf).tocsc())
+        M2 = M2.dot(-1*As['Afe'])
+        M = M2.dot(M)
+        op[nni:nnf] = M.tolil()
+
+        M2 = As['Aii']
+        M2 = linalg.spsolve(M2.tocsc(), sp.identity(ni).tocsc())
+        M2 = M2.dot(-1*As['Aif'])
+        M = M2.dot(M)
+        op[0:nni] = M.tolil()
+
+        return self.GT*op
+
+    def run(self, T: 'transmissibility matrix'):
+
+        T_wire = self.G*T*self.GT
+        As = self.get_as(T_wire)
+        self._data['OP_AMS_' + str(self.id)] = self.get_OP_AMS_TPFA_by_AS(As)
