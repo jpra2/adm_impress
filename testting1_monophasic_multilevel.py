@@ -105,15 +105,29 @@ import pdb
 from packs.running.initial_mesh_properties import initial_mesh
 from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 from packs.directories import data_loaded
+from packs.multiscale.operators.prolongation.AMS.ams_tpfa import AMSTpfa
+import time
 
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 n = data_loaded['n_test']
 
 M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
-# tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
-# tpfa_solver.run()
-data_impress.update_variables_to_mesh()
+tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
+tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
+ml = M.multilevel_data
+# import pdb; pdb.set_trace()
+ams_prolongation = AMSTpfa(ml['interns_level_1'],
+                           ml['faces_level_1'],
+                           ml['edges_level_1'],
+                           ml['vertex_level_1'],
+                           load=False)
+t0 = time.time()
+ams_prolongation.run(tpfa_solver['Tini'])
+
+import pdb; pdb.set_trace()
+# data_impress.update_variables_to_mesh()
+# data_impress.export_all_datas_to_npz()
 M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
 

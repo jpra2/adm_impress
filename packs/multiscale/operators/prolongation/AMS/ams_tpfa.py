@@ -1,19 +1,26 @@
 from .....data_class.data_manager import DataManager
 import numpy as np
 import scipy.sparse as sp
+from scipy.sparse import linalg
+import time
 
-class AMSTpfa:
+class AMSTpfa(DataManager):
     name = 'AMSTpfa_'
     id = 1
 
-    def __init__(self, T: 'transmissibility_matrix',
+    def __init__(self,
         internals,
         faces,
         edges,
         vertices,
         load=False):
 
-        self.T = T
+        data_name = AMSTpfa.name + str(AMSTpfa.id) + '.npz'
+        self.id = AMSTpfa.id
+        super().__init__(data_name=data_name, load=load)
+        AMSTpfa.id += 1
+
+        # self.T = T
         self.wirebasket_elements = np.array([internals, faces, edges, vertices])
         self.wirebasket_numbers = np.array([len(internals), len(faces), len(edges), len(vertices)])
         self.nv = self.wirebasket_numbers[-1]
@@ -31,34 +38,37 @@ class AMSTpfa:
 
         self.wirebasket_ids = np.array(self.wirebasket_ids)
         self.get_G()
+        # self.T_wire = self.G*self.T*self.GT
+        # # self.T_wire = self.GT*self.T*self.G
+        # self.get_as()
+        # self._data['OP_AMS_' + str(self.id)] = self.get_OP_AMS_TPFA_by_AS()
 
-        # data_name = AMSTpfa.name + str(AMSTpfa.id)
-        # super().__init__(data_name=data_name, load=load)
-        # AMSTpfa.id += 1
-
-        self.run()
+        # self.run()
 
     def get_G(self):
-        cols = self.wirebasket_elements.flatten()
-        lines = self.wirebasket_ids.flatten()
-        data = np.ones(len(cols))
-        self.G = sp.csc_matrix((data,(lines,cols)),shape=(self.nv, self.nv))
+        cols = np.concatenate(self.wirebasket_elements)
+        n = len(cols)
+        lines = np.concatenate(self.wirebasket_ids)
+        data = np.ones(n)
+        self.G = sp.csc_matrix((data,(lines,cols)), shape=(n, n))
         self.GT = self.G.copy()
         self.GT = self.GT.transpose()
 
-    def get_as(self):
+    def get_as(self, T_wire):
+        t0 = time.time()
+        As = dict()
 
-        Tmod = self.T_wire.copy().tolil()
+        Tmod = T_wire.copy().tolil()
         # As['Tf'] = Tmod
         ni = self.wirebasket_numbers[0]
         nf = self.wirebasket_numbers[1]
         ne = self.wirebasket_numbers[2]
         nv = self.wirebasket_numbers[3]
 
-        nni = ni
-        nnf = nf + nni
-        nne = ne + nnf
-        nnv = nv + nne
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
 
         #internos
         Aii = Tmod[0:nni, 0:nni]
@@ -80,29 +90,33 @@ class AMSTpfa:
         d1 += soma
         Aee.setdiag(d1)
         Ivv = sp.identity(nv)
+        t1 = time.time()
+        dt = t1-t0
 
-        self.As['Aii'] = Aii
-        self.As['Aif'] = Aif
-        self.As['Aff'] = Aff
-        self.As['Afe'] = Afe
-        self.As['Aee'] = Aee
-        self.As['Aev'] = Aev
-        self.As['Ivv'] = Ivv
+        As['Aii'] = Aii
+        As['Aif'] = Aif
+        As['Aff'] = Aff
+        As['Afe'] = Afe
+        As['Aee'] = Aee
+        As['Aev'] = Aev
+        As['Ivv'] = Ivv
 
-    def get_OP_AMS_TPFA_by_AS(As, wirebasket_numbers):
+        return As
 
-        ni = wirebasket_numbers[0]
-        nf = wirebasket_numbers[1]
-        ne = wirebasket_numbers[2]
-        nv = wirebasket_numbers[3]
+    def get_OP_AMS_TPFA_by_AS(self, As):
 
-        nni = ni
-        nnf = nni + nf
-        nne = nnf + ne
-        nnv = nne + nv
+        ni = self.wirebasket_numbers[0]
+        nf = self.wirebasket_numbers[1]
+        ne = self.wirebasket_numbers[2]
+        nv = self.wirebasket_numbers[3]
+
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
 
         lines = np.arange(nne, nnv).astype(np.int32)
-        ntot = sum(wirebasket_numbers)
+        ntot = (self.wirebasket_numbers.sum())
         op = sp.lil_matrix((ntot, nv))
         op[lines] = As['Ivv'].tolil()
 
@@ -123,9 +137,10 @@ class AMSTpfa:
         M = M2.dot(M)
         op[0:nni] = M.tolil()
 
-        return op
+        return self.GT*op
 
-    def run(self):
+    def run(self, T: 'transmissibility matrix'):
 
-        self.T_wire = self.G*self.T*self.GT
-        self.get_as()
+        T_wire = self.G*T*self.GT
+        As = self.get_as(T_wire)
+        self._data['OP_AMS_' + str(self.id)] = self.get_OP_AMS_TPFA_by_AS(As)
