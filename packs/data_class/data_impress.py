@@ -84,29 +84,29 @@ class Data(DataManager):
 
         if names:
             for name in names:
-                command = 'self.mesh.' + name + '[:] = ' + 'self["' + name + '"]'
+                command = 'self.mesh.' + name + '[:] = ' + 'self._data["' + name + '"]'
                 exec(command)
 
         else:
-            for name in self.keys():
-                command = 'self.mesh.' + name + '[:] = ' + 'self["' + name + '"]'
+            for name in self._data.keys():
+                command = 'self.mesh.' + name + '[:] = ' + 'self._data["' + name + '"]'
                 exec(command)
 
     def load_variables_from_mesh(self, names=None):
 
         if names:
             for name in names:
-                command = 'self["' + name + '"] = self.mesh.' + name + '[:]'
+                command = 'self._data["' + name + '"] = self.mesh.' + name + '[:]'
                 exec(command)
 
         else:
             for name in self._data.keys():
-                command = 'self["' + name + '"] = self.mesh.' + name + '[:]'
+                command = 'self._data["' + name + '"] = self.mesh.' + name + '[:]'
                 exec(command)
 
     def get_variables_impress(self):
         self.variables_impress = dict()
-        for name in self.keys():
+        for name in self._data.keys():
             self.variables_impress[name] = name
 
     def run(self):
