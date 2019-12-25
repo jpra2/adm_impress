@@ -289,3 +289,59 @@ test_fw:
   data type: float
   sparse: True
   level: 0
+
+verif_po:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+verif_rest:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+PRIMAL_CLASSIC_ID_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+PRIMAL_CLASSIC_ID_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+LEVEL:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+LEVEL_ID_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+LEVEL_ID_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+definition_level:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0

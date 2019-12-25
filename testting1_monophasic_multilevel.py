@@ -106,6 +106,9 @@ from packs.running.initial_mesh_properties import initial_mesh
 from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 from packs.directories import data_loaded
 from packs.multiscale.operators.prolongation.AMS.ams_tpfa import AMSTpfa
+from packs.multiscale.operators.prolongation.AMS.ams_mpfa import AMSMpfa
+import scipy.sparse as sp
+import numpy as np
 import time
 
 load = data_loaded['load_data']
@@ -121,13 +124,67 @@ ams_prolongation = AMSTpfa(ml['interns_level_1'],
                            ml['faces_level_1'],
                            ml['edges_level_1'],
                            ml['vertex_level_1'],
+                           elements_lv0['volumes'],
+                           data_impress['PRIMAL_CLASSIC_ID_1'],
                            load=False)
-t0 = time.time()
-ams_prolongation.run(tpfa_solver['Tini'])
 
+ams_prolongation.run(tpfa_solver['Tini'])
+data_impress.update_variables_to_mesh()
+
+def mostrar(i, data_impress, M, op1, rest1):
+    l0 = np.concatenate(op1[:,i].toarray())
+    el0 = np.concatenate(rest1[i].toarray())
+    data_impress['verif_po'] = l0
+    data_impress['verif_rest'] = el0
+    data_impress.update_variables_to_mesh(['verif_po', 'verif_rest'])
+    M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+
+#
+op1 = ams_prolongation['OP_AMS_1']
+rest1 = ml['restriction_level_1']
+cont = 0
+for i in range(4, op1.shape[1]):
+    mostrar(i, data_impress, M, op1, rest1)
+    import pdb; pdb.set_trace()
+
+
+# T_lv2 = tpfa_solver['Tini']*op1
+# T_lv2 = rest1*T_lv2
+
+########################
+
+# from pymoab import types
+# idd = sp.find(T_lv2[0])
+# cols = idd[1]
+# idcv = np.unique(idd[0])
+#
+# cv0 = M.core.mb.get_entities_by_type_and_tag(M.core.root_set, types.MBENTITYSET, np.array([ml.tags['PRIMAL_ID_1']]), idcv)[0]
+# elements = M.core.mb.get_entities_by_handle(cv0)
+# M.core.mb.tag_set_data(ml.tags['verif_op'], elements, np.repeat(2.0, len(elements)))
+# for i in cols:
+#     cc = M.core.mb.get_entities_by_type_and_tag(M.core.root_set, types.MBENTITYSET, np.array([ml.tags['PRIMAL_ID_1']]), np.array([i]))[0]
+#     elements = M.core.mb.get_entities_by_handle(cc)
+#     M.core.mb.tag_set_data(ml.tags['verif_op'], elements, np.repeat(1.0, len(elements)))
+
+# M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+
+########################
+
+
+
+# ams_2 = AMSMpfa(ml['interns_level_2'],
+#                 ml['faces_level_2'],
+#                 ml['edges_level_2'],
+#                 ml['vertex_level_2'],
+#                 load=False)
+#
+# ams_2.run(T_lv2)
+#
+# import pdb; pdb.set_trace()
+data_impress.update_variables_to_mesh()
+# M.pressure.update_all()
 import pdb; pdb.set_trace()
-# data_impress.update_variables_to_mesh()
-# data_impress.export_all_datas_to_npz()
+# # data_impress.export_all_datas_to_npz()
 M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
 

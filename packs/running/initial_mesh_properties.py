@@ -25,7 +25,7 @@ def initial_mesh(load=False, convert=False):
         data_impress = Data(M, elements_lv0, load=load)
         if not load:
             Preprocess0(M, elements_lv0)
-        ml_data = MultilevelData(M, load=load_multilevel_data)
+        ml_data = MultilevelData(data_impress, M, load=load_multilevel_data)
         ml_data.load_tags()
 
     else:
@@ -35,7 +35,7 @@ def initial_mesh(load=False, convert=False):
         if not load:
             Preprocess0(M, elements_lv0)
         if multilevel_data:
-            ml_data = MultilevelData(M)
+            ml_data = MultilevelData(data_impress, M)
             ml_data.run()
             ml_data.save_mesh()
 

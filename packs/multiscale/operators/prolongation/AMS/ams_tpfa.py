@@ -5,7 +5,7 @@ from scipy.sparse import linalg
 import time
 
 class AMSTpfa(DataManager):
-    name = 'AMSTpfa_'
+    # name = 'AMSTpfa_'
     id = 1
 
     def __init__(self,
@@ -13,9 +13,13 @@ class AMSTpfa(DataManager):
         faces,
         edges,
         vertices,
+        gids: 'global_ids',
+        primal_ids: 'primal_ids',
+        data_name='AMSTpfa_',
         load=False):
 
-        data_name = AMSTpfa.name + str(AMSTpfa.id) + '.npz'
+        # data_name = AMSTpfa.name + str(AMSTpfa.id) + '.npz'
+        data_name = data_name + str(AMSTpfa.id) + '.npz'
         self.id = AMSTpfa.id
         super().__init__(data_name=data_name, load=load)
         AMSTpfa.id += 1
@@ -38,6 +42,14 @@ class AMSTpfa(DataManager):
 
         self.wirebasket_ids = np.array(self.wirebasket_ids)
         self.get_G()
+        dt = [('gid', np.dtype(int)), ('primal_id', np.dtype(int))]
+        self.gid_to_primal = np.zeros(len(gids), dtype=dt)
+        self.gid_to_primal['gid'] = gids
+        self.gid_to_primal['primal_id'] = primal_ids
+        cols = primal_ids[vertices]
+        lines = np.arange(len(cols))
+        data = np.ones(len(lines))
+        self.G2 = sp.csc_matrix((data,(lines,cols)), shape=(self.nv, self.nv))
         # self.T_wire = self.G*self.T*self.GT
         # # self.T_wire = self.GT*self.T*self.G
         # self.get_as()
@@ -55,7 +67,7 @@ class AMSTpfa(DataManager):
         self.GT = self.GT.transpose()
 
     def get_as(self, T_wire):
-        t0 = time.time()
+
         As = dict()
 
         Tmod = T_wire.copy().tolil()
@@ -90,8 +102,6 @@ class AMSTpfa(DataManager):
         d1 += soma
         Aee.setdiag(d1)
         Ivv = sp.identity(nv)
-        t1 = time.time()
-        dt = t1-t0
 
         As['Aii'] = Aii
         As['Aif'] = Aif
@@ -137,10 +147,11 @@ class AMSTpfa(DataManager):
         M = M2.dot(M)
         op[0:nni] = M.tolil()
 
-        return self.GT*op
+        return self.GT*op*self.G2
 
     def run(self, T: 'transmissibility matrix'):
 
         T_wire = self.G*T*self.GT
+        self._data['T_wire_' + str(self.id)] = T_wire
         As = self.get_as(T_wire)
         self._data['OP_AMS_' + str(self.id)] = self.get_OP_AMS_TPFA_by_AS(As)

@@ -10,7 +10,7 @@ import scipy.sparse as sp
 
 class MultilevelData(DataManager):
 
-    def __init__(self, M, data_name: str='MultilevelData.npz', load=False):
+    def __init__(self, data_impress, M, data_name: str='MultilevelData.npz', load=False):
         carregar = load
 
         super().__init__(data_name=data_name, load=load)
@@ -21,6 +21,7 @@ class MultilevelData(DataManager):
         self.mesh = M
         self.levels = 3
         self.l1 = 1
+        self.data_impress = data_impress
 
         self.fine_primal_id = 'fine_primal_id_level_'
         self.coarse_volumes = 'coarse_volumes_level_'
@@ -88,6 +89,15 @@ class MultilevelData(DataManager):
             entitie = 'root_set'
             t1 = types.MB_TYPE_HANDLE
             t2 = types.MB_TAG_MESH
+            getting_tag(mb, name, n, t1, t2, True, entitie, tipo, self.tags, self.tags_to_infos)
+
+        l = ['verif_op']
+        for name in l:
+            n = 1
+            tipo = 'double'
+            entitie = 'volumes'
+            t1 = types.MB_TYPE_DOUBLE
+            t2 = types.MB_TAG_SPARSE
             getting_tag(mb, name, n, t1, t2, True, entitie, tipo, self.tags, self.tags_to_infos)
 
         return 0
@@ -403,6 +413,16 @@ class MultilevelData(DataManager):
         mb.tag_set_data(self.tags['reordered_id_1'], vertex, np.arange(n_reord, n_reord + len(vertex)))
         n_reord += len(vertex)
 
+        # ids_cv_verts_ant = mb.tag_get_data(self.tags['FINE_TO_PRIMAL_CLASSIC_1'], vertex, flat=True)
+        # primal_id = 0
+        # for vert, primal_id_ant in zip(vertex, ids_cv_verts_ant):
+        #     coarse_volume = mb.get_entities_by_type_and_tag(mv, types.MBENTITYSET,
+        #         np.array([self.tags['PRIMAL_ID_1']]), np.array([primal_id_ant]))[0]
+        #     elements = mb.get_entities_by_handle(coarse_volume)
+        #     mb.tag_set_data(self.tags['FINE_TO_PRIMAL_CLASSIC_1'], elements, np.repeat(primal_id, len(elements)))
+        #     mb.tag_set_data(self.tags['PRIMAL_ID_1'], coarse_volume, primal_id)
+        #     primal_id += 1
+
         local_id_int_tag = self.tags['local_id_internos']
         local_id_fac_tag = self.tags['local_fac_internos']
         ID_reordenado_tag = self.tags['reordered_id_1']
@@ -500,6 +520,7 @@ class MultilevelData(DataManager):
         mtu = M.core.mtu
         tags_fine = ['D', 'FINE_TO_PRIMAL_CLASSIC_']
         tags_coarse = ['PRIMAL_ID_']
+        coarse_id_impress = 'PRIMAL_CLASSIC_ID_'
         tag_mv = ['MV_']
         tag_reordered_id = ['reordered_id_']
         all_volumes = M.core.all_volumes
@@ -580,8 +601,11 @@ class MultilevelData(DataManager):
                 coarse_volumes.append(coarse_volume)
                 coarse_primal_ids.append(primal_id)
                 elems_in_meshset = mb.get_entities_by_handle(coarse_volume)
+                gggids = np.array([dict_volumes[k] for k in elems_in_meshset])
+                self.data_impress[coarse_id_impress + str(n)][gggids] = np.repeat(primal_id, len(gggids))
                 if n == 1:
-                    gids = np.array([dict_volumes[k] for k in elems_in_meshset])
+                    gids = gggids
+                    # gids = mb.tag_get_data(self.tags[tag_reord_id], elems_in_meshset, flat=True)
                 else:
                     gids = np.unique(mb.tag_get_data(self.tags[tags_fine[1] + str(n-1)], elems_in_meshset, flat=True))
                 lines_r.append(np.repeat(primal_id, len(gids)))
