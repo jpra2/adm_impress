@@ -11,6 +11,8 @@ class AMSMpfa(AMSTpfa):
         faces,
         edges,
         vertices,
+        gids: 'global_ids',
+        primal_ids: 'primal_ids',
         load=False,
         data_name='AMSMpfa_'):
 
@@ -19,12 +21,13 @@ class AMSMpfa(AMSTpfa):
             faces,
             edges,
             vertices,
+            gids,
+            primal_ids,
             load=load,
             data_name=data_name
         )
 
     def get_as(self, T_wire):
-        import pdb; pdb.set_trace()
 
         As = dict()
 
@@ -45,8 +48,6 @@ class AMSMpfa(AMSTpfa):
         Aif = Tmod[0:nni, nni:nnf]
         Aie = Tmod[0:nni, nnf:nne]
         Aiv = Tmod[0:nni, nne:nnv]
-
-        import pdb; pdb.set_trace()
 
         #faces
         Aff = Tmod[nni:nnf, nni:nnf]
@@ -101,8 +102,6 @@ class AMSMpfa(AMSTpfa):
         op = sp.lil_matrix((ntot, nv))
         op[lines] = As['Ivv'].tolil()
 
-        import pdb; pdb.set_trace()
-
         Meeinv = As['Aee']
         Meeinv = linalg.spsolve(Meeinv.tocsc(), sp.identity(ne).tocsc())
         Pe = Meeinv.dot(-1*As['Aev'])
@@ -120,7 +119,7 @@ class AMSMpfa(AMSTpfa):
         Pi = Miiinv.dot(Pi)
         op[0:nni] = Pi.tolil()
 
-        return self.GT*op
+        return self.GT*op*self.G2
 
     def run(self, T: 'transmissibility matrix'):
 

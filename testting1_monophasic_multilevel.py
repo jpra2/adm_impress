@@ -111,25 +111,20 @@ import scipy.sparse as sp
 import numpy as np
 import time
 
-load = data_loaded['load_data']
-convert = data_loaded['convert_english_to_SI']
-n = data_loaded['n_test']
+def get_gids_and_primal_id(gids, primal_ids):
 
-M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
-tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
-tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
-ml = M.multilevel_data
-# import pdb; pdb.set_trace()
-ams_prolongation = AMSTpfa(ml['interns_level_1'],
-                           ml['faces_level_1'],
-                           ml['edges_level_1'],
-                           ml['vertex_level_1'],
-                           elements_lv0['volumes'],
-                           data_impress['PRIMAL_CLASSIC_ID_1'],
-                           load=False)
+    gids2 = np.unique(gids)
+    primal_ids2 = []
+    for i in gids2:
+        primal_id = np.unique(primal_ids[gids==i])
+        if len(primal_id) > 1:
+            print('erro get_gids_and_primal_id')
+            import pdb; pdb.set_trace()
+        primal_ids2.append(primal_id[0])
 
-ams_prolongation.run(tpfa_solver['Tini'])
-data_impress.update_variables_to_mesh()
+    primal_ids2 = np.array(primal_ids2)
+
+    return gids2, primal_ids2
 
 def mostrar(i, data_impress, M, op1, rest1):
     l0 = np.concatenate(op1[:,i].toarray())
@@ -139,46 +134,85 @@ def mostrar(i, data_impress, M, op1, rest1):
     data_impress.update_variables_to_mesh(['verif_po', 'verif_rest'])
     M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
-#
+load = data_loaded['load_data']
+convert = data_loaded['convert_english_to_SI']
+n = data_loaded['n_test']
+
+M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
+#######################
+tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
+tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
+ml = M.multilevel_data
+gids, primal_ids = get_gids_and_primal_id(elements_lv0['volumes'], data_impress['PRIMAL_CLASSIC_ID_1'])
+
+ams_prolongation = AMSTpfa(ml['interns_level_1'],
+                           ml['faces_level_1'],
+                           ml['edges_level_1'],
+                           ml['vertex_level_1'],
+                           gids,
+                           primal_ids,
+                           load=False)
+
+ams_prolongation.run(tpfa_solver['Tini'])
+# data_impress.update_variables_to_mesh()
+
 op1 = ams_prolongation['OP_AMS_1']
 rest1 = ml['restriction_level_1']
 cont = 0
-for i in range(4, op1.shape[1]):
-    mostrar(i, data_impress, M, op1, rest1)
-    import pdb; pdb.set_trace()
+# for i in range(4, op1.shape[1]):
+#     mostrar(i, data_impress, M, op1, rest1)
+#     import pdb; pdb.set_trace()
 
+# import pdb; pdb.set_trace()
 
-# T_lv2 = tpfa_solver['Tini']*op1
-# T_lv2 = rest1*T_lv2
+T_lv2 = tpfa_solver['Tini']*op1
+T_lv2 = rest1*T_lv2
+#################################
 
-########################
+#######################
 
 # from pymoab import types
-# idd = sp.find(T_lv2[0])
-# cols = idd[1]
-# idcv = np.unique(idd[0])
+# cvs = T_lv2.shape[0]
+# for cv in range(cvs):
 #
-# cv0 = M.core.mb.get_entities_by_type_and_tag(M.core.root_set, types.MBENTITYSET, np.array([ml.tags['PRIMAL_ID_1']]), idcv)[0]
-# elements = M.core.mb.get_entities_by_handle(cv0)
-# M.core.mb.tag_set_data(ml.tags['verif_op'], elements, np.repeat(2.0, len(elements)))
-# for i in cols:
-#     cc = M.core.mb.get_entities_by_type_and_tag(M.core.root_set, types.MBENTITYSET, np.array([ml.tags['PRIMAL_ID_1']]), np.array([i]))[0]
-#     elements = M.core.mb.get_entities_by_handle(cc)
-#     M.core.mb.tag_set_data(ml.tags['verif_op'], elements, np.repeat(1.0, len(elements)))
-
+#     idd = sp.find(T_lv2[cv])
+#     cols = idd[1]
+#     idcv = cv
+#
+#     cv0 = M.core.mb.get_entities_by_type_and_tag(M.core.root_set, types.MBENTITYSET, np.array([ml.tags['PRIMAL_ID_1']]), np.array([idcv]))[0]
+#     elements = M.core.mb.get_entities_by_handle(cv0)
+#     M.core.mb.tag_set_data(ml.tags['verif_op'], elements, np.repeat(2.0, len(elements)))
+#     for i in cols:
+#         if i == idcv:
+#             continue
+#         cc = M.core.mb.get_entities_by_type_and_tag(M.core.root_set, types.MBENTITYSET, np.array([ml.tags['PRIMAL_ID_1']]), np.array([i]))[0]
+#         elements = M.core.mb.get_entities_by_handle(cc)
+#         M.core.mb.tag_set_data(ml.tags['verif_op'], elements, np.repeat(1.0, len(elements)))
+#
+#     M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+#         # import pdb; pdb.set_trace()
+#
+#     import pdb; pdb.set_trace()
+#     M.core.mb.tag_set_data(ml.tags['verif_op'], M.core.all_volumes, np.repeat(0.0, len(M.core.all_volumes)))
 # M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
-
-########################
-
-
-
-# ams_2 = AMSMpfa(ml['interns_level_2'],
-#                 ml['faces_level_2'],
-#                 ml['edges_level_2'],
-#                 ml['vertex_level_2'],
-#                 load=False)
 #
-# ams_2.run(T_lv2)
+# import pdb; pdb.set_trace()
+#######################
+
+gids, primal_ids = get_gids_and_primal_id(data_impress['PRIMAL_CLASSIC_ID_1'], data_impress['PRIMAL_CLASSIC_ID_2'])
+
+ams_2 = AMSMpfa(ml['interns_level_2'],
+                ml['faces_level_2'],
+                ml['edges_level_2'],
+                ml['vertex_level_2'],
+                gids,
+                primal_ids,
+                load=False)
+
+import pdb; pdb.set_trace()
+ams_2.run(T_lv2)
+
+
 #
 # import pdb; pdb.set_trace()
 data_impress.update_variables_to_mesh()
@@ -186,11 +220,6 @@ data_impress.update_variables_to_mesh()
 import pdb; pdb.set_trace()
 # # data_impress.export_all_datas_to_npz()
 M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
-
-
-
-
-
 
 
 
