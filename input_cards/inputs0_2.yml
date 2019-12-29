@@ -5,7 +5,7 @@ state: 0
 type_of_solution: fine_scale
 gravity: false
 # load_biphasic: false
-load_data: true
+load_data: false
 convert_english_to_SI: false
 # load_mesh: false
 monophasic: true

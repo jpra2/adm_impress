@@ -304,14 +304,35 @@ verif_rest:
   sparse: True
   level: 0
 
-PRIMAL_CLASSIC_ID_1:
+GID_0:
   type: volumes
   data size: 1
   data type: int
   sparse: True
   level: 0
 
-PRIMAL_CLASSIC_ID_2:
+GID_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+GID_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+DUAL_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+DUAL_2:
   type: volumes
   data size: 1
   data type: int
@@ -333,13 +354,6 @@ LEVEL_ID_1:
   level: 0
 
 LEVEL_ID_2:
-  type: volumes
-  data size: 1
-  data type: int
-  sparse: True
-  level: 0
-
-definition_level:
   type: volumes
   data size: 1
   data type: int

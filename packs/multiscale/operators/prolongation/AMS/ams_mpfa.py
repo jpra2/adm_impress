@@ -85,7 +85,7 @@ class AMSMpfa(AMSTpfa):
 
         return As
 
-    def get_OP_AMS_TPFA_by_AS(self, As):
+    def get_OP_AMS_MPFA_by_AS(self, As):
 
         ni = self.wirebasket_numbers[0]
         nf = self.wirebasket_numbers[1]
@@ -125,4 +125,5 @@ class AMSMpfa(AMSTpfa):
 
         T_wire = self.G*T*self.GT
         As = self.get_as(T_wire)
-        self._data['OP_AMS_' + str(self.id)] = self.get_OP_AMS_TPFA_by_AS(As)
+        OP = self.get_OP_AMS_MPFA_by_AS(As)
+        return OP

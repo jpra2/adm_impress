@@ -91,15 +91,6 @@ class MultilevelData(DataManager):
             t2 = types.MB_TAG_MESH
             getting_tag(mb, name, n, t1, t2, True, entitie, tipo, self.tags, self.tags_to_infos)
 
-        l = ['verif_op']
-        for name in l:
-            n = 1
-            tipo = 'double'
-            entitie = 'volumes'
-            t1 = types.MB_TYPE_DOUBLE
-            t2 = types.MB_TAG_SPARSE
-            getting_tag(mb, name, n, t1, t2, True, entitie, tipo, self.tags, self.tags_to_infos)
-
         return 0
 
     def load_tags(self):
@@ -520,7 +511,7 @@ class MultilevelData(DataManager):
         mtu = M.core.mtu
         tags_fine = ['D', 'FINE_TO_PRIMAL_CLASSIC_']
         tags_coarse = ['PRIMAL_ID_']
-        coarse_id_impress = 'PRIMAL_CLASSIC_ID_'
+        coarse_id_impress = 'GID_'
         tag_mv = ['MV_']
         tag_reordered_id = ['reordered_id_']
         all_volumes = M.core.all_volumes
@@ -602,14 +593,11 @@ class MultilevelData(DataManager):
                 coarse_primal_ids.append(primal_id)
                 elems_in_meshset = mb.get_entities_by_handle(coarse_volume)
                 gggids = np.array([dict_volumes[k] for k in elems_in_meshset])
-                self.data_impress[coarse_id_impress + str(n)][gggids] = np.repeat(primal_id, len(gggids))
                 if n == 1:
                     gids = gggids
                     # gids = mb.tag_get_data(self.tags[tag_reord_id], elems_in_meshset, flat=True)
                 else:
                     gids = np.unique(mb.tag_get_data(self.tags[tags_fine[1] + str(n-1)], elems_in_meshset, flat=True))
-                lines_r.append(np.repeat(primal_id, len(gids)))
-                cols_r.append(gids)
                 elems_fora = mtu.get_bridge_adjacencies(elems_in_meshset, 2, 3)
                 elems_fora = rng.subtract(elems_fora, elems_in_meshset)
                 ids_meshsets_vizinhos = np.unique(mb.tag_get_data(self.tags[primal_fine_name], elems_fora, flat=True))
@@ -622,16 +610,15 @@ class MultilevelData(DataManager):
                 neigs_ids = np.array(neigs_ids)
                 coarse_neig_face.append(neigs)
                 coarse_id_neig_face.append(neigs_ids)
+                if level == 1:
+                    d2 = mb.tag_get_data(self.tags[tags_fine[0] + str(level+1)], vert, flat=True)[0]
+                    mb.tag_set_data(self.tags[tags_fine[0] + str(level+1)], elems_in_meshset, np.repeat(d2, len(elems_in_meshset)))
+
+
 
             coarse_neig_face = np.array(coarse_neig_face)
             coarse_id_neig_face = np.array(coarse_id_neig_face)
 
-            lines_r = np.concatenate(lines_r)
-            cols_r = np.concatenate(cols_r)
-            data_r = np.ones(len(lines_r))
-            OR = sp.csc_matrix((data_r,(lines_r,cols_r)), shape=(nv, wire_num.sum()))
-
-            self._data[self.restriction + str(level)] = OR
             self._data[self.coarse_neig_face + str(level)] = coarse_neig_face
             self._data[self.coarse_id_neig_face + str(level)] = coarse_id_neig_face
             self._data[self.coarse_volumes + str(level)] = np.array(coarse_volumes)
@@ -676,6 +663,11 @@ class MultilevelData(DataManager):
 
         self[self.reordered_id + str(1)] = mb.tag_get_data(self.tags[self.reordered_id + str(1)], all_volumes, flat=True)
         self[self.reordered_id + str(2)] = mb.tag_get_data(self.tags[self.reordered_id + str(2)], all_volumes, flat=True)
+        self.data_impress['DUAL_1'] = mb.tag_get_data(self.tags['D1'], all_volumes, flat=True)
+        self.data_impress['DUAL_2'] = mb.tag_get_data(self.tags['D2'], all_volumes, flat=True)
+        self.data_impress[coarse_id_impress + str(2)] = mb.tag_get_data(self.tags['FINE_TO_PRIMAL_CLASSIC_2'], all_volumes, flat=True)
+        self.data_impress[coarse_id_impress + str(1)] = mb.tag_get_data(self.tags['FINE_TO_PRIMAL_CLASSIC_1'], all_volumes, flat=True)
+        self.data_impress[coarse_id_impress + str(0)] = M.volumes.all
 
     def get_boundary_coarse_faces(self, M):
         assert not self._loaded

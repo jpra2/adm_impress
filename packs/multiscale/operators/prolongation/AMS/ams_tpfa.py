@@ -152,6 +152,7 @@ class AMSTpfa(DataManager):
     def run(self, T: 'transmissibility matrix'):
 
         T_wire = self.G*T*self.GT
-        self._data['T_wire_' + str(self.id)] = T_wire
+        self._data['T_wire'] = T_wire
         As = self.get_as(T_wire)
-        self._data['OP_AMS_' + str(self.id)] = self.get_OP_AMS_TPFA_by_AS(As)
+        OP = self.get_OP_AMS_TPFA_by_AS(As)
+        return OP
