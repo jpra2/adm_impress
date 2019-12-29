@@ -24,11 +24,11 @@ def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
 
     return gids2, primal_ids2, dual_ids2
 
-class MultilevelMonophasic(DataManager):
+class MultilevelOperators(DataManager):
     def __init__(self,
                 n_levels,
                 data_impress,
-                data_name='MultilevelMonophasic.npz',
+                data_name='MultilevelOperators.npz',
                 load=False):
 
         super().__init__(data_name=data_name, load=load)

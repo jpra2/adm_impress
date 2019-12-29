@@ -104,7 +104,7 @@ import pdb
 
 from packs.running.initial_mesh_properties import initial_mesh
 from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
-from packs.multiscale.multilevel.multilevel_process import MultilevelMonophasic
+from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.directories import data_loaded
 import scipy.sparse as sp
 import numpy as np
@@ -140,7 +140,7 @@ M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
 #######################
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
-multilevel_process = MultilevelMonophasic(2, data_impress)
+multilevel_process = MultilevelOperators(2, data_impress)
 multilevel_process.run(tpfa_solver['Tini'])
 import pdb; pdb.set_trace()
 
