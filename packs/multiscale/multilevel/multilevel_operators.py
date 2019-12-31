@@ -7,11 +7,12 @@ import scipy.sparse as sp
 def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
 
     gids2 = np.unique(gids)
-    ids = np.arange(len(gids))
+    # ids = np.arange(len(gids))
     primal_ids2 = []
     dual_ids2 = []
     for i in gids2:
-        test = ids[gids==i]
+        # test = ids[gids==i]
+        test = gids==i
         primal_id = np.unique(primal_ids[test])
         dual_id = np.unique(dual_ids[test])
         if len(primal_id) > 1 or len(dual_id) > 1:
@@ -66,7 +67,7 @@ class MultilevelOperators(DataManager):
             if n > 0:
                 gids, primal_ids, dual_ids = get_gids_primalids_dualids(gids, primal_ids, dual_ids)
             tam = len(gids)
-            tam2 = len(np.unique(primal_ids))
+            tam2 = len(primal_ids)
             structured_array = np.zeros(tam, dtype=dt)
             structured_array[self.gid_n] = gids
             structured_array[self.primal_id_n] = primal_ids
