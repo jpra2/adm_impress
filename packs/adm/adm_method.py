@@ -1,22 +1,101 @@
-# from ..data_class.data_manager import DataManager
+from ..data_class.data_manager import DataManager
 import numpy as np
+import scipy.sparse as sp
+from ..solvers.solvers_scipy.solver_sp import SolverSp
+from ..flux_calculation.flux_tpfa import TpfaFlux2
+import time
 
-class AdmMethod:
 
-    def __init__(self, all_wells_ids, n_levels, M, data_impress, load=False):
+def get_levelantids_levelids(level_ids_ant, level_ids):
+
+    gids2 = np.unique(level_ids_ant)
+    level_ids2 = []
+    for i in gids2:
+        test = level_ids_ant==i
+        level_id = np.unique(level_ids[test])
+        if len(level_id) > 1:
+            raise ValueError('erro get_level_id')
+        level_ids2.append(level_id[0])
+
+    level_ids2 = np.array(level_ids2)
+
+    return gids2, level_ids2
+
+def solve_local_local_problem(solver, neigh_intern_faces, transmissibility, volumes,
+                                        indices_p, values_p, indices_q=[], values_q=[]):
+
+    # t0 = transmissibility
+    v02 = neigh_intern_faces
+    indices_p2 = indices_p
+    t0 = transmissibility
+    n = len(volumes)
+    # local_ids = np.arange(n)
+    # map_volumes = dict(zip(volumes, local_ids))
+    # v02 = np.zeros(v0.shape)
+    # v02[:,0] = np.array([map_volumes[k] for k in v0[:, 0]])
+    # v02[:,1] = np.array([map_volumes[k] for k in v0[:, 1]])
+    # indices_p2 = np.array(map_volumes[k] for k in indices_p)
+    # indices_q2 = np.array(map_volumes[k] for k in indices_p)
+
+    lines = np.concatenate([v02[:, 0], v02[:, 1], v02[:, 0], v02[:, 1]])
+    cols = np.concatenate([v02[:, 1], v02[:, 0], v02[:, 0], v02[:, 1]])
+    data = np.concatenate([t0, t0, -t0, -t0])
+    T = sp.csc_matrix((data, (lines, cols)), shape=(n, n))
+    T = T.tolil()
+
+    T[indices_p2] = sp.lil_matrix((len(indices_p2), n))
+    T[indices_p2, indices_p2] = np.ones(len(indices_p2))
+
+    b = np.zeros(n)
+    b[indices_p] = values_p
+    b[indices_q] += values_q
+    x = solver(T.tocsc(), b)
+    return x
+
+def set_boundary_conditions(T: 'transmissibility matrix',
+                            b: 'source term',
+                            indices_q: 'indices flux prescription',
+                            values_q: 'flux prescription',
+                            indices_p: 'indices pressure prescription',
+                            values_p: 'values pressure prescription'):
+    n = T.shape[0]
+
+    T = T.tolil()
+    np = len(indices_p)
+    nq = len(indices_q)
+
+    T[indices_p] = sp.lil_matrix((np, n))
+    T[indices_p, indices_p] = np.ones(np)
+
+    b[indices_q] += values_q
+
+    return T.tocsc(), b
+
+
+class AdmMethod(DataManager, TpfaFlux2):
+
+    def __init__(self, all_wells_ids, n_levels, M, data_impress, elements_lv0, load=False):
+        data_name = 'AdmMethod.npz'
+        super().__init__(data_name=data_name, load=load)
         self.mesh = M
+        self.elements_lv0 = elements_lv0
+        self.ml_data = M.multilevel_data
         self.all_wells_ids = all_wells_ids
         self.n_levels = n_levels
         self.data_impress = data_impress
         self.number_vols_in_levels = np.zeros(self.n_levels+1, dtype=int)
+        gids_0 = self.data_impress['GID_0']
+        self.data_impress['LEVEL_ID_0'] = gids_0.copy()
+        self.solver = SolverSp()
+
+        self.adm_op_n = 'adm_prolongation_level_'
+        self.adm_rest_n = 'adm_restriction_level_'
 
         if load == False:
             self.set_initial_mesh()
 
     def set_level_wells(self):
-        levels = np.repeat(-1, len(self.data_impress['GID_0']))
-        levels[self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
-        self.data_impress['LEVEL'] = levels
+        self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
 
     def set_adm_mesh(self):
 
@@ -37,7 +116,6 @@ class AdmMethod:
         print('\n')
         print("INICIOU GERACAO DA MALHA ADM")
         print('\n')
-        import pdb; pdb.set_trace()
 
         for v2 in vvv2:
             #1
@@ -46,8 +124,9 @@ class AdmMethod:
             nivel2 = False
             nivel1 = False
             vols2 = gids_0[gids_2==v2]
-            gids_1_1 = gids_1[gids_2==v2]
-            vvv1 = range(len(np.unique(gids_1_1)))
+            # gids_1_1 = gids_1[gids_2==v2]
+            gids_1_1 = gids_1[vols2]
+            vvv1 = np.unique(gids_1_1)
             n_vols_2 = len(vols2)
             conj_vols_1 = set()
 
@@ -142,5 +221,235 @@ class AdmMethod:
         self.n1_adm = n1
         self.n2_adm = n2
 
+    def restart_levels(self):
+        self.data_impress['LEVEL'] = np.repeat(-1, len(self.data_impress['LEVEL']))
+
+    def organize_ops_adm(self, OP_AMS, OR_AMS, level):
+
+        gid_0 = self.data_impress['GID_0']
+        gid_level = self.data_impress['GID_' + str(level)]
+        gid_ant = self.data_impress['GID_' + str(level-1)]
+        level_id = self.data_impress['LEVEL_ID_' + str(level)]
+        level_id_ant = self.data_impress['LEVEL_ID_' + str(level-1)]
+        levels = self.data_impress['LEVEL']
+        OP_AMS = OP_AMS.tolil()
+
+        n_adm = len(np.unique(level_id))
+        n_adm_ant = len(np.unique(level_id_ant))
+
+        gids_nivel_n_engrossados = gid_0[levels<level]
+        classic_ids_n_engrossados = set(gid_ant[gids_nivel_n_engrossados])
+        adm_ids_ant_n_engrossados = level_id_ant[gids_nivel_n_engrossados]
+        adm_ids_level_n_engrossados = level_id[gids_nivel_n_engrossados]
+        if level > 1:
+            adm_ids_ant_n_engrossados, adm_ids_level_n_engrossados = get_levelantids_levelids(adm_ids_ant_n_engrossados, adm_ids_level_n_engrossados)
+
+        lines_op = adm_ids_ant_n_engrossados
+        cols_op = adm_ids_level_n_engrossados
+        data_op = np.ones(len(adm_ids_ant_n_engrossados))
+
+        adm_ids_ant_gids = level_id_ant
+        adm_ids_level = level_id
+        classic_ids_ant = gid_ant
+        classic_ids_level = gid_level
+
+        ams_to_adm_coarse = dict(zip(classic_ids_level, adm_ids_level))
+        ams_to_adm_fine = dict(zip(classic_ids_ant, adm_ids_ant_gids))
+
+        if level > 1:
+            adm_ids_ant_gids, adm_ids_level = get_levelantids_levelids(adm_ids_ant_gids, adm_ids_level)
+
+        lines_2_op = []
+        cols_2_op = []
+        data_2_op = []
+
+        lines_or = adm_ids_level
+        cols_or = adm_ids_ant_gids
+        data_or = np.repeat(1.0, len(adm_ids_level))
+
+        data_op_ams = sp.find(OP_AMS)
+
+        for l, c, d, in zip(data_op_ams[0], data_op_ams[1], data_op_ams[2]):
+            if set([l]) & classic_ids_n_engrossados:
+                continue
+            lines_2_op.append(ams_to_adm_fine[l])
+            cols_2_op.append(ams_to_adm_coarse[c])
+            data_2_op.append(d)
+
+        lines_2_op = np.array(lines_2_op)
+        cols_2_op = np.array(cols_2_op)
+        data_2_op = np.array(data_2_op)
+
+        lines_op = np.concatenate([lines_op, lines_2_op])
+        cols_op = np.concatenate([cols_op, cols_2_op])
+        data_op = np.concatenate([data_op, data_2_op])
+
+        OP_ADM = sp.csc_matrix((data_op, (lines_op, cols_op)), shape=(n_adm_ant, n_adm))
+        OR_ADM = sp.csc_matrix((data_or, (lines_or, cols_or)), shape=(n_adm, n_adm_ant))
+
+        self._data[self.adm_op_n + str(level)] = OP_ADM
+        self._data[self.adm_rest_n + str(level)] = OR_ADM
+
+    def solve_multiscale_pressure(self, T: 'fine transmissibility matrix', b: 'fine source term'):
+
+        T_adm = T.copy()
+        b_adm = b.copy()
+
+        n_levels = self.n_levels
+        for i in range(n_levels):
+            level = i+1
+            # op_adm = self._data[self.adm_op_n + str(level)]
+            # rest_adm = self._data[self.adm_rest_n + str(level)]
+            T_adm = self._data[self.adm_rest_n + str(level)]*T_adm*self._data[self.adm_op_n + str(level)]
+            b_adm = self._data[self.adm_rest_n + str(level)]*b_adm
+
+        pms = self.solver.direct_solver(T_adm, b_adm)
+        # p_adm = pms.copy()
+
+        for i in range(n_levels):
+            level = self.n_levels - i
+            pms = self._data[self.adm_op_n + str(level)]*pms
+
+        self.data_impress['pms'] = pms
+        self.data_impress['pressure'] = pms
+
+    def set_pms_flux_intersect_faces(self):
+
+        levels = self.data_impress['LEVEL']
+        faces_intersect_lv1 = np.unique(np.concatenate(self.ml_data['coarse_intersect_faces_level_'+str(1)]))
+        neig_intersect_faces_lv1 = self.ml_data['neig_intersect_faces_level_'+str(1)]
+
+        v0 = neig_intersect_faces_lv1
+        n_volumes = len(self.elements_lv0['volumes'])
+        pms = self.data_impress['pms']
+        t_intersect_faces = self.data_impress['transmissibility'][faces_intersect_lv1]
+        t0 = t_intersect_faces
+        flux_grav_intersect_faces = self.data_impress['flux_grav_faces'][faces_intersect_lv1]
+
+        ps0 = pms[v0[:, 0]]
+        ps1 = pms[v0[:, 1]]
+        flux_intersect_faces = -((ps1 - ps0) * t0 - flux_grav_intersect_faces)
+
+        lines = np.concatenate([v0[:, 0], v0[:, 1]])
+        cols = np.repeat(0, len(lines))
+        data = np.concatenate([flux_intersect_faces, -flux_intersect_faces])
+        flux_pms_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+
+        n = len(self.data_impress['pms_flux_faces'])
+        flux = np.zeros(n)
+        flux[faces_intersect_lv1] = flux_intersect_faces
+
+        self.data_impress['pms_flux_faces'] = flux
+        self.data_impress['pms_flux_interfaces_volumes'] = flux_pms_volumes
+
+    def set_pcorr(self):
+        presc_flux_volumes = self.data_impress['pms_flux_interfaces_volumes'].copy()
+        levels = self.data_impress['LEVEL']
+        n_volumes = len(levels)
+        flux_volumes = np.zeros(n_volumes)
+        gid0 = self.data_impress['GID_0']
+        transmissibility = self.data_impress['transmissibility']
+        pms = self.data_impress['pms']
+        neig_internal_faces = self.elements_lv0['neig_internal_faces']
+        remaped_internal_faces = self.elements_lv0['remaped_internal_faces']
+        flux_grav_faces = self.data_impress['flux_grav_faces']
+
+        pcorr = np.zeros(len(pms))
+        flux_faces = np.zeros(len(transmissibility))
+
+        for i in range(self.n_levels):
+            level=i+1
+            all_gids_coarse = self.data_impress['GID_'+str(level)]
+            all_local_ids_coarse = self.data_impress['COARSE_LOCAL_ID_'+str(level)]
+            all_intern_boundary_volumes = self.ml_data['internal_boundary_fine_volumes_level_'+str(level)]
+            all_intersect_faces = self.ml_data['coarse_intersect_faces_level_'+str(level)]
+            all_intern_faces = self.ml_data['coarse_internal_faces_level_'+str(level)]
+            # all_faces = self.ml_data['coarse_faces_level_'+str(level)]
+            all_fine_vertex = self.ml_data['fine_vertex_coarse_volumes_level_'+str(level)]
+            coarse_ids = self.ml_data['coarse_primal_id_level_'+str(level)]
+            gids_level = np.unique(all_gids_coarse[levels==level])
+            for gidc in gids_level:
+                intersect_faces = all_intersect_faces[coarse_ids==gidc][0] # faces na interseccao
+                intern_local_faces = all_intern_faces[coarse_ids==gidc][0] # faces internas
+                neig_internal_local_faces = neig_internal_faces[remaped_internal_faces[intern_local_faces]]
+                intern_boundary_volumes = all_intern_boundary_volumes[coarse_ids==gidc][0] # volumes internos no contorno
+                vertex = all_fine_vertex[coarse_ids==gidc]
+                pressure_vertex = pms[vertex]
+                volumes = gid0[all_gids_coarse==gidc]
+
+                local_id_volumes = all_local_ids_coarse[volumes]
+                local_neig_internal_local_faces = neig_internal_local_faces.copy()
+                local_neig_internal_local_faces[:,0] = all_local_ids_coarse[neig_internal_local_faces[:,0]]
+                local_neig_internal_local_faces[:,1] = all_local_ids_coarse[neig_internal_local_faces[:,1]]
+                local_intern_boundary_volumes = all_local_ids_coarse[intern_boundary_volumes]
+                values_q = presc_flux_volumes[intern_boundary_volumes]
+                t0 = transmissibility[intern_local_faces]
+                local_vertex = all_local_ids_coarse[vertex]
+                x = solve_local_local_problem(self.solver.direct_solver, local_neig_internal_local_faces, t0, local_id_volumes,
+                    local_vertex, pressure_vertex, local_intern_boundary_volumes, values_q)
+
+                pcorr[volumes] = x
+
+                neig_intersect_faces = neig_internal_faces[remaped_internal_faces[intersect_faces]]
+                transmissibility_intersect_faces = transmissibility[intersect_faces]
+                t0 = transmissibility_intersect_faces
+                pms0 = pms[neig_intersect_faces[:,0]]
+                pms1 = pms[neig_intersect_faces[:,1]]
+                flux_grav_intersect_faces = flux_grav_faces[intersect_faces]
+                flux_intersect_faces = -((pms1 - pms0) * t0 - flux_grav_intersect_faces)
+                flux_faces[intersect_faces] = flux_intersect_faces
+
+                pcorr0 = pcorr[neig_internal_local_faces[:,0]]
+                pcorr1 = pcorr[neig_internal_local_faces[:,1]]
+                flux_grav_intern_faces = flux_grav_faces[intern_local_faces]
+                t0 = transmissibility[intern_local_faces]
+                flux_intern_faces = -((pcorr1 - pcorr0) * t0 - flux_grav_intern_faces)
+                flux_faces[intern_local_faces] = flux_intern_faces
+
+                v0 = neig_internal_local_faces
+
+                lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+                cols = np.repeat(0, len(lines))
+                data = np.array([flux_intern_faces, -flux_intern_faces]).flatten()
+                flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+                flux_volumes_2[intern_boundary_volumes] += values_q
+                flux_volumes[volumes] = flux_volumes_2[volumes]
+
+        volumes_fine = gid0[levels==0]
+        intern_faces_volumes_fine = self.mesh.volumes.bridge_adjacencies(volumes_fine, 3, 2)
+        intern_faces_volumes_fine = np.setdiff1d(intern_faces_volumes_fine, self.elements_lv0['boundary_faces'])
+        neig_intern_faces_volumes_fine = neig_internal_faces[remaped_internal_faces[intern_faces_volumes_fine]]
+        v0 = neig_intern_faces_volumes_fine
+
+        pms0 = pms[neig_intern_faces_volumes_fine[:,0]]
+        pms1 = pms[neig_intern_faces_volumes_fine[:,1]]
+        t0 = transmissibility[intern_faces_volumes_fine]
+        flux_grav_faces_volumes_fine = flux_grav_faces[intern_faces_volumes_fine]
+        flux_intern_faces_volumes_fine = -((pms1 - pms0) * t0 - flux_grav_faces_volumes_fine)
+        flux_faces[intern_faces_volumes_fine] = flux_intern_faces_volumes_fine
+
+        lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+        cols = np.repeat(0, len(lines))
+        data = np.concatenate([flux_intern_faces_volumes_fine, -flux_intern_faces_volumes_fine])
+        flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+
+        flux_volumes[volumes_fine] = flux_volumes_2[volumes_fine]
+
+        self.data_impress['pcorr'] = pcorr
+        self.data_impress['flux_faces'] = flux_faces
+        self.data_impress['flux_volumes'] = flux_volumes
+
+        #######################
+        ## test
+        v0 = neig_internal_faces
+        internal_faces = self.elements_lv0['internal_faces']
+        lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+        cols = np.repeat(0, len(lines))
+        data = np.array([flux_faces[internal_faces], -flux_faces[internal_faces]]).flatten()
+        flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+        self.data_impress['flux_volumes_test'] = flux_volumes_2
+        ######################################
+
     def set_initial_mesh(self):
+        # TODO: atualizar
         pass

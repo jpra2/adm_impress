@@ -76,6 +76,7 @@ class Data(DataManager):
                 data = np.repeat(data, n).reshape([n_entity, n])
 
             self[name] = data
+            self._data[name] = data
             variables_impress[name] = name
 
         self.variables_impress = variables_impress
@@ -90,7 +91,11 @@ class Data(DataManager):
         else:
             for name in self._data.keys():
                 command = 'self.mesh.' + name + '[:] = ' + 'self._data["' + name + '"]'
-                exec(command)
+                try:
+                    exec(command)
+                except:
+                    print(command)
+                    import pdb; pdb.set_trace()
 
     def load_variables_from_mesh(self, names=None):
 

@@ -53,6 +53,7 @@ class FineScaleTpfaPressureSolver(TpfaScheme, TpfaFlux):
         self.get_gravity_source_term()
         T = self.set_boundary_conditions()
         b = self.get_RHS_term()
-        p = self.solver.direct_solver(T, b)
-        self.data_impress['pressure'] = p
-        self.get_flux_faces_and_volumes()
+        return T, b
+        # p = self.solver.direct_solver(T, b)
+        # self.data_impress['pressure'] = p
+        # self.get_flux_faces_and_volumes()

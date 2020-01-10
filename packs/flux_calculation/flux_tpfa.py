@@ -43,7 +43,7 @@ class TpfaFlux:
         area_faces = self.data_impress['area']
         area_internal_faces = area_faces[internal_faces]
         a0 = area_internal_faces
-        velocity_faces = self.data_impress['velocity_faces']
+        velocity_faces = np.zeros(self.data_impress['velocity_faces'].shape)
         u_normal = self.data_impress['u_normal']
 
         x = self.data_impress['pressure']
@@ -56,7 +56,7 @@ class TpfaFlux:
         velocity = (flux_internal_faces / a0).reshape([len(internal_faces), 1])
         velocity = velocity * u_normal[internal_faces]
         velocity_faces[internal_faces] = velocity
-        flux_faces = self.data_impress['flux_faces']
+        flux_faces = np.zeros(len(self.data_impress['flux_faces']))
 
         flux_faces[internal_faces] = flux_internal_faces
 
@@ -67,4 +67,32 @@ class TpfaFlux:
 
         self.data_impress['flux_volumes'] = flux_volumes
         self.data_impress['flux_faces'] = flux_faces
+        self.data_impress['velocity_faces'] = velocity_faces
+
+class TpfaFlux2:
+
+    def get_flux_volumes_and_velocity(self) -> None:
+
+        vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
+        v0 = vols_viz_internal_faces
+        n_volumes = len(self.elements_lv0['volumes'])
+        internal_faces = self.elements_lv0['internal_faces']
+        area_faces = self.data_impress['area']
+        area_internal_faces = area_faces[internal_faces]
+        a0 = area_internal_faces
+        velocity_faces = np.zeros(self.data_impress['velocity_faces'].shape)
+        u_normal = self.data_impress['u_normal']
+        flux_faces = self.data_impress['flux_faces']
+
+        flux_internal_faces = flux_faces[internal_faces]
+        velocity = (flux_internal_faces / a0).reshape([len(internal_faces), 1])
+        velocity = velocity * u_normal[internal_faces]
+        velocity_faces[internal_faces] = velocity
+
+        lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+        cols = np.repeat(0, len(lines))
+        data = np.array([flux_internal_faces, -flux_internal_faces]).flatten()
+        flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+
+        self.data_impress['flux_volumes'] = flux_volumes
         self.data_impress['velocity_faces'] = velocity_faces

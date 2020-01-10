@@ -132,14 +132,56 @@ def mostrar(i, data_impress, M, op1, rest1):
     data_impress.update_variables_to_mesh(['verif_po', 'verif_rest'])
     M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
+def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
+    l0 = np.concatenate(op[:,i].toarray())
+    el0 = np.concatenate(rest[i].toarray())
+    el2 = np.zeros(len(gid0))
+    l2 = el2.copy()
+    for fid in el0:
+        if fid == 0:
+            continue
+
+        el2[gid_coarse2==fid] = np.ones(len(el2[gid_coarse2==fid]))
+
+    for fid, val in enumerate(l0):
+        if val == 0:
+            continue
+        n = len(gid_coarse1[gid_coarse1==fid])
+
+        l2[gid_coarse1==fid] = np.repeat(val, n)
+
+    data_impress['verif_po'] = l2
+    data_impress['verif_rest'] = el2
+    data_impress.update_variables_to_mesh(['verif_po', 'verif_rest'])
+    M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+
+def dados_unitarios(data_impress):
+    data_impress['hs'] = np.ones(len(data_impress['hs'])*3).reshape([len(data_impress['hs']), 3])
+    data_impress['volume'] = np.ones(len(data_impress['volume']))
+    data_impress['area'] = np.ones(len(data_impress['area']))
+    data_impress['permeability'] = np.ones(data_impress['permeability'].shape)
+    data_impress['k_harm'] = np.ones(len(data_impress['k_harm']))
+    data_impress['dist_cent'] = np.ones(len(data_impress['dist_cent']))
+    data_impress['transmissibility'] = np.ones(len(data_impress['transmissibility']))
+    data_impress['pretransmissibility'] = data_impress['transmissibility'].copy()
+    data_impress.export_to_npz()
+
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 n = data_loaded['n_test']
+load_operators = data_loaded['load_operators']
 
 M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
+# dados_unitarios(data_impress)
+
 #######################
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
-multilevel_process = MultilevelOperators(2, data_impress)
-multilevel_process.run(tpfa_solver['Tini'])
-import pdb; pdb.set_trace()
+# tpfa_solver.get_RHS_term()
+# tpfa_solver.get_transmissibility_matrix()
+multilevel_operators = MultilevelOperators(2, data_impress, M.multilevel_data, load=load_operators)
+
+if load_operators:
+    pass
+else:
+    multilevel_operators.run(tpfa_solver['Tini'])

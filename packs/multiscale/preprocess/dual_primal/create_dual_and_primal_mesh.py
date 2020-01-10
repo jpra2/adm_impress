@@ -38,6 +38,12 @@ class MultilevelData(DataManager):
         self.coarse_neig_face = 'coarse_neig_face_level_'
         self.coarse_id_neig_face = 'coarse_id_neig_face_level_'
         self.restriction = 'restriction_level_'
+        self.coarse_faces = 'coarse_faces_level_'
+        self.coarse_internal_faces = 'coarse_internal_faces_level_'
+        self.coarse_intersect_faces = 'coarse_intersect_faces_level_'
+        self.fine_vertex_coarse_volumes = 'fine_vertex_coarse_volumes_level_'
+        self.neig_intersect_faces = 'neig_intersect_faces_level_'
+        self.internal_boundary_fine_volumes = 'internal_boundary_fine_volumes_level_'
 
     def create_tags(self):
         assert not self._loaded
@@ -563,11 +569,14 @@ class MultilevelData(DataManager):
             if n not in [1]:
                 mb.tag_set_data(self.tags[tag_reord_id], vertex, np.arange(n_reord, n_reord + len(vertex)))
             n_reord += len(vertex)
+            ids_fine_vertexes = np.array([dict_volumes[k] for k in vertex])
             if n == 1:
-                vertexes = np.array([dict_volumes[k] for k in vertex])
+                # vertexes = np.array([dict_volumes[k] for k in vertex])
+                vertexes = ids_fine_vertexes
             else:
                 vertexes = mb.tag_get_data(self.tags[tags_fine[1] + str(n-1)], vertex, flat=True)
 
+            self._data[self.fine_vertex_coarse_volumes+str(level)] = ids_fine_vertexes
             self._data[self.interns + str(level)] = interns
             self._data[self.faces + str(level)] = faces
             self._data[self.edges + str(level)] = edges
@@ -582,6 +591,8 @@ class MultilevelData(DataManager):
             lines_r = []
             cols_r = []
 
+            contador_coarse_gids = 0
+
             for i, vert in enumerate(vertex):
                 neigs = []
                 neigs_ids = []
@@ -592,7 +603,13 @@ class MultilevelData(DataManager):
                 coarse_volumes.append(coarse_volume)
                 coarse_primal_ids.append(primal_id)
                 elems_in_meshset = mb.get_entities_by_handle(coarse_volume)
+                n_elems = len(elems_in_meshset)
                 gggids = np.array([dict_volumes[k] for k in elems_in_meshset])
+                local_id = np.arange(n_elems)
+                coarse_global_id = np.arange(contador_coarse_gids, contador_coarse_gids + n_elems)
+                self.data_impress['COARSE_GID_'+str(level)][gggids] = coarse_global_id
+                self.data_impress['COARSE_LOCAL_ID_'+str(level)][gggids] = local_id
+                contador_coarse_gids += n_elems
                 if n == 1:
                     gids = gggids
                     # gids = mb.tag_get_data(self.tags[tag_reord_id], elems_in_meshset, flat=True)
@@ -613,8 +630,6 @@ class MultilevelData(DataManager):
                 if level == 1:
                     d2 = mb.tag_get_data(self.tags[tags_fine[0] + str(level+1)], vert, flat=True)[0]
                     mb.tag_set_data(self.tags[tags_fine[0] + str(level+1)], elems_in_meshset, np.repeat(d2, len(elems_in_meshset)))
-
-
 
             coarse_neig_face = np.array(coarse_neig_face)
             coarse_id_neig_face = np.array(coarse_id_neig_face)
@@ -643,15 +658,15 @@ class MultilevelData(DataManager):
 
             # self.mvs[level] = mv1
             mvs.append(mv1)
-            self[self.meshset_vertices + str(level)] = mv1
+            self._data[self.meshset_vertices + str(level)] = mv1
 
             fine_primal_id = mb.tag_get_data(self.tags[primal_fine_name], all_volumes, flat=True)
-            self[self.fine_primal_id + str(level)] = fine_primal_id
+            self._data[self.fine_primal_id + str(level)] = fine_primal_id
 
             fine_dual_id = mb.tag_get_data(self.tags[dual_fine_name], all_volumes, flat=True)
-            self[self.fine_dual_id + str(level)] = fine_dual_id
+            self._data[self.fine_dual_id + str(level)] = fine_dual_id
 
-        for m in self[self.coarse_volumes + str(1)]:
+        for m in self._data[self.coarse_volumes + str(1)]:
             elements = mb.get_entities_by_handle(m)
             ne = len(elements)
             ids = np.arange(ne)
@@ -661,8 +676,8 @@ class MultilevelData(DataManager):
             reord_id_2 = mb.tag_get_data(self.tags[tag_reordered_id[0] + str(2)], vertex, flat=True)[0]
             mb.tag_set_data(self.tags[tag_reordered_id[0] + str(2)], elements, np.repeat(reord_id_2, ne))
 
-        self[self.reordered_id + str(1)] = mb.tag_get_data(self.tags[self.reordered_id + str(1)], all_volumes, flat=True)
-        self[self.reordered_id + str(2)] = mb.tag_get_data(self.tags[self.reordered_id + str(2)], all_volumes, flat=True)
+        self._data[self.reordered_id + str(1)] = mb.tag_get_data(self.tags[self.reordered_id + str(1)], all_volumes, flat=True)
+        self._data[self.reordered_id + str(2)] = mb.tag_get_data(self.tags[self.reordered_id + str(2)], all_volumes, flat=True)
         self.data_impress['DUAL_1'] = mb.tag_get_data(self.tags['D1'], all_volumes, flat=True)
         self.data_impress['DUAL_2'] = mb.tag_get_data(self.tags['D2'], all_volumes, flat=True)
         self.data_impress[coarse_id_impress + str(2)] = mb.tag_get_data(self.tags['FINE_TO_PRIMAL_CLASSIC_2'], all_volumes, flat=True)
@@ -679,14 +694,18 @@ class MultilevelData(DataManager):
         mb = M.core.mb
         mtu = M.core.mtu
         n_levels = 2
+        all_volumes = M.core.all_volumes
+        dict_volumes = dict(zip(all_volumes, M.volumes.all))
 
         name_tag_faces_boundary_meshsets = self.faces_boundary_meshset_level
         all_meshsets = [meshsets_nv1, meshsets_nv2]
         d_faces = dict(zip(M.core.all_faces, M.faces.all))
+        b_faces_all = M.faces.boundary
 
         from ....utils import pymoab_utils as utpy
 
         for i in range(n_levels):
+            level = i+1
             name = name_tag_faces_boundary_meshsets + str(i + 1)
             meshsets = all_meshsets[i]
             n = 1
@@ -699,7 +718,50 @@ class MultilevelData(DataManager):
             utpy.set_faces_in_boundary_by_meshsets(mb, mtu, meshsets, tag_boundary, M)
             faces_boundary = mb.tag_get_data(tag_boundary, M.core.root_set, flat=True)[0]
             faces_boundary = mb.get_entities_by_handle(faces_boundary)
-            self[self.faces_boundary_meshset_level + str(i+1)] = np.array([d_faces[k] for k in faces_boundary])
+            faces_boundary = np.array([d_faces[k] for k in faces_boundary])
+            self._data[self.faces_boundary_meshset_level + str(i+1)] = faces_boundary
+            self._data[self.neig_intersect_faces+str(level)] = M.faces.bridge_adjacencies(faces_boundary, 2, 3)
+
+
+            coarse_faces = []
+            coarse_internal_faces = []
+            coarse_intersect_faces = []
+            coarse_internal_boundary_volumes = []
+
+            # tag_coarse_id = self.tags['PRIMAL_ID_' + str(level)]
+            # cids = self._data[self.coarse_primal_id + str(level)]
+            # cont = 0
+
+            for m in meshsets:
+                # primal_id = mb.tag_get_data(tag_coarse_id, m, flat=True)[0]
+                # assert primal_id == cids[cont]
+                elements = mb.get_entities_by_handle(m)
+                volumes = np.array([dict_volumes[k] for k in elements])
+                faces = mtu.get_bridge_adjacencies(elements, 3, 2)
+                faces = np.array([d_faces[k] for k in faces])
+                coarse_faces.append(faces)
+                internal_faces = np.setdiff1d(faces, faces_boundary)
+                internal_faces = np.setdiff1d(internal_faces, b_faces_all)
+                coarse_internal_faces.append(internal_faces)
+                intersect_faces = np.intersect1d(faces, faces_boundary)
+                coarse_intersect_faces.append(intersect_faces)
+                boundary_faces = np.setdiff1d(faces, internal_faces)
+                # internal_boundary_volumes = np.concatenate(M.faces.bridge_adjacencies(boundary_faces, 2, 3))
+                internal_boundary_volumes = np.concatenate(M.faces.bridge_adjacencies(intersect_faces, 2, 3))
+                internal_boundary_volumes = np.intersect1d(internal_boundary_volumes, volumes)
+                coarse_internal_boundary_volumes.append(internal_boundary_volumes)
+
+                # cont += 1
+
+            coarse_faces = np.array(coarse_faces)
+            coarse_internal_faces = np.array(coarse_internal_faces)
+            coarse_intersect_faces = np.array(coarse_intersect_faces)
+            coarse_internal_boundary_volumes = np.array(coarse_internal_boundary_volumes)
+
+            self._data[self.internal_boundary_fine_volumes+str(level)] = coarse_internal_boundary_volumes
+            self._data[self.coarse_faces+str(level)] = coarse_faces
+            self._data[self.coarse_intersect_faces+str(level)] = coarse_intersect_faces
+            self._data[self.coarse_internal_faces+str(level)] = coarse_internal_faces
 
     def get_elements_2(self, M):
         assert not self._loaded

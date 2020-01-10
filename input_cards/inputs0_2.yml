@@ -6,15 +6,23 @@ type_of_solution: fine_scale
 gravity: false
 # load_biphasic: false
 load_data: false
+# load_data: true
 convert_english_to_SI: false
 # load_mesh: false
 monophasic: true
 biphasic: false
+# biphasic: true
+load_biphasic_data: false
 
-deletar_results: true
+# deletar_results: true
+deletar_results: false
 
+# multilevel_data: false
 multilevel_data: true
 load_multilevel_data: false
+# load_multilevel_data: true
+# load_operators: false
+load_operators: false
 
 Crs:
   Cr1: [3, 3, 3]

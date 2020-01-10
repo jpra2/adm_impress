@@ -19,10 +19,10 @@ class AMSTpfa(DataManager):
         load=False):
 
         # data_name = AMSTpfa.name + str(AMSTpfa.id) + '.npz'
-        data_name = data_name + str(AMSTpfa.id) + '.npz'
-        self.id = AMSTpfa.id
-        super().__init__(data_name=data_name, load=load)
-        AMSTpfa.id += 1
+        # data_name = data_name + str(AMSTpfa.id) + '.npz'
+        # self.id = AMSTpfa.id
+        # super().__init__(data_name=data_name, load=load)
+        # AMSTpfa.id += 1
 
         # self.T = T
         self.wirebasket_elements = np.array([internals, faces, edges, vertices])
@@ -42,10 +42,10 @@ class AMSTpfa(DataManager):
 
         self.wirebasket_ids = np.array(self.wirebasket_ids)
         self.get_G()
-        dt = [('gid', np.dtype(int)), ('primal_id', np.dtype(int))]
-        self.gid_to_primal = np.zeros(len(gids), dtype=dt)
-        self.gid_to_primal['gid'] = gids
-        self.gid_to_primal['primal_id'] = primal_ids
+        # dt = [('gid', np.dtype(int)), ('primal_id', np.dtype(int))]
+        # self.gid_to_primal = np.zeros(len(gids), dtype=dt)
+        # self.gid_to_primal['gid'] = gids
+        # self.gid_to_primal['primal_id'] = primal_ids
         cols = primal_ids[vertices]
         lines = np.arange(len(cols))
         data = np.ones(len(lines))
@@ -152,7 +152,7 @@ class AMSTpfa(DataManager):
     def run(self, T: 'transmissibility matrix'):
 
         T_wire = self.G*T*self.GT
-        self._data['T_wire'] = T_wire
+        # self._data['T_wire'] = T_wire
         As = self.get_as(T_wire)
         OP = self.get_OP_AMS_TPFA_by_AS(As)
         return OP

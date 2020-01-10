@@ -1,6 +1,7 @@
 from ..pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 from ..directories import data_loaded
 from ..utils import relative_permeability
+from ..solvers.solvers_scipy.solver_sp import SolverSp
 import os
 from .. import directories as direc
 import numpy as np
@@ -9,8 +10,8 @@ import time
 
 class BiphasicTpfa(FineScaleTpfaPressureSolver):
 
-    def __init__(self, M, data_impress, elements_lv0, wells, data_name: str='BiphasicTpfa.npz', load=False):
-        load = data_loaded['load_data']
+    def __init__(self, M, data_impress, elements_lv0, wells, data_name: str='BiphasicTpfa.npz'):
+        load = data_loaded['load_biphasic_data']
         super().__init__(data_impress, elements_lv0, wells, data_name=data_name, load=load)
         self.biphasic_data = data_loaded['biphasic_data']
         self.relative_permeability = getattr(relative_permeability, self.biphasic_data['relative_permeability'])
@@ -24,6 +25,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.mesh_name = os.path.join(direc.flying, 'biphasic_')
         self.all_biphasic_results = self.get_empty_current_biphasic_results()
         self.mesh = M
+        self.solver = SolverSp()
 
         if not load:
             self.loop = 0
@@ -395,8 +397,19 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.all_biphasic_results = self.get_empty_current_biphasic_results()
 
     def run(self, save=False):
+
+        T, b = super().run()
+        p = self.solver.direct_solver(T, b)
+        self.data_impress['pressure'] = p
+        self.get_flux_faces_and_volumes()
+        self.run_2(save = save)
+
+    def run_2(self, save=False):
+        ######
+        ## run for adm_method
+        ######
+
         t0 = time.time()
-        super().run()
         self.update_flux_w_and_o_volumes()
         self.update_delta_t()
         self.update_saturation()

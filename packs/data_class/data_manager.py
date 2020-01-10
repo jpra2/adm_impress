@@ -37,6 +37,15 @@ class DataManager:
         for name, variable in arq.items():
             self._data[name] = variable
 
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
+
+    def items(self):
+        return self._data.items()
+
     @classmethod
     def export_all_datas_to_npz(cls):
         for obj in cls.all_datas.values():
@@ -67,7 +76,7 @@ class DataManager:
         return key in self._data
 
     def __del__(self):
-        del self.__class__.all_datas[self.name]
+        del DataManager.all_datas[self.name]
 
 
 # if __name__ == '__main__':

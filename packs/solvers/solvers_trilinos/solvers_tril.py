@@ -15,13 +15,13 @@ class solverTril:
         '''
         resolve o problema Ax = b
         input:
-            A: matriz quadrada do scipy
+            A: matriz quadrada esparsa do scipy
             b = termo fonte
             x: chute inicial
             its: numero maximo de iteracoes
             tolerance: tolerancia para o residuo
         output:
-            # res: informa se o residuo foi menor que a tolerancia
+            res: informa se o residuo foi menor que a tolerancia
             x2: vetor resposta
         '''
         comm = self._comm

@@ -128,6 +128,13 @@ centroid_faces:
   sparse: True
   level: 0
 
+pms_flux_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
 # Volumes
 centroid_volumes:
   type: volumes
@@ -186,6 +193,13 @@ flux_grav_volumes:
   level: 0
 
 flux_volumes:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_volumes_test:
   type: volumes
   data size: 1
   data type: float
@@ -304,6 +318,34 @@ verif_rest:
   sparse: True
   level: 0
 
+COARSE_GID_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+COARSE_GID_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+COARSE_LOCAL_ID_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+COARSE_LOCAL_ID_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
 GID_0:
   type: volumes
   data size: 1
@@ -339,7 +381,21 @@ DUAL_2:
   sparse: True
   level: 0
 
+INITIAL_LEVEL:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
 LEVEL:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+LEVEL_ID_0:
   type: volumes
   data size: 1
   data type: int
@@ -359,3 +415,31 @@ LEVEL_ID_2:
   data type: int
   sparse: True
   level: 0
+
+pms:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+pcorr:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+pms_flux_interfaces_volumes:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+pms_flux_volumes:
+    type: volumes
+    data size: 1
+    data type: float
+    sparse: True
+    level: 0
