@@ -4,7 +4,7 @@ import scipy.sparse as sp
 from scipy.sparse import linalg
 import time
 
-class AMSTpfa(DataManager):
+class AMSTpfa:
     # name = 'AMSTpfa_'
     id = 1
 

@@ -3,6 +3,9 @@ import numpy as np
 import scipy.sparse as sp
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 from ..flux_calculation.flux_tpfa import TpfaFlux2
+from scipy.sparse import linalg
+from ..directories import file_adm_mesh_def
+import matplotlib.pyplot as plt
 import time
 
 
@@ -71,6 +74,41 @@ def set_boundary_conditions(T: 'transmissibility matrix',
 
     return T.tocsc(), b
 
+def Jacobi(xini, T, b):
+    b = b.reshape([len(b), 1])
+
+    nf = len(xini)
+    jacobi_options = file_adm_mesh_def['jacobi_options']
+    n = jacobi_options['n_verif']
+    _dev = file_adm_mesh_def['_dev']
+
+    titer = time.time()
+
+    ran=range(nf)
+    D=T.diagonal()
+    l_inv=range(nf)
+    data_inv=1/D
+    D_inv=sp.csc_matrix((data_inv,(l_inv,l_inv)),shape=(nf, nf))
+    D=sp.csc_matrix((D,(l_inv,l_inv)),shape=(nf, nf))
+    R=T-D
+    x0=sp.csc_matrix(xini).transpose()
+    cont=0
+    for i in range(n):x0=D_inv*(b-R*x0)
+    delta_ant=abs((D_inv*(b-R*x0)-x0)).max()
+    cont+=n
+    for i in range(n):x0=D_inv*(b-R*x0)
+    delta=abs((D_inv*(b-R*x0)-x0)).max()
+    cont+=n
+    while  delta<0.6*delta_ant:
+        delta_ant=delta
+        for i in range(n):x0=D_inv*(b-R*x0)
+        delta=abs((D_inv*(b-R*x0)-x0)).max()
+        cont+=n
+    x0=np.array(x0).T[0]
+
+    if _dev:
+        print(time.time()-titer,n, "iterou ")
+    return x0
 
 class AdmMethod(DataManager, TpfaFlux2):
 
@@ -91,8 +129,8 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.adm_op_n = 'adm_prolongation_level_'
         self.adm_rest_n = 'adm_restriction_level_'
 
-        if load == False:
-            self.set_initial_mesh()
+        # if load == False:
+        #     self.set_initial_mesh()
 
     def set_level_wells(self):
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
@@ -450,6 +488,154 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['flux_volumes_test'] = flux_volumes_2
         ######################################
 
-    def set_initial_mesh(self):
-        # TODO: atualizar
-        pass
+    def set_initial_mesh(self, mlo, T, b):
+
+        iterar_mono = file_adm_mesh_def['iterar_mono']
+        refinar_nv2 = file_adm_mesh_def['refinar_nv2']
+        imprimir_a_cada_iteracao = file_adm_mesh_def['imprimir_a_cada_iteracao']
+        rel_v2 = file_adm_mesh_def['rel_v2']
+        TOL = file_adm_mesh_def['TOL']
+        tol_n2 = file_adm_mesh_def['tol_n2']
+        Ni = file_adm_mesh_def['Ni']
+        calc_tpfa = file_adm_mesh_def['calc_tpfa']
+        load_tpfa = file_adm_mesh_def['load_tpfa']
+        _dev = file_adm_mesh_def['_dev']
+        name = 'flying/SOL_TPFA.npy'
+        nfine_vols = len(self.data_impress['LEVEL'])
+        GID_0 = self.data_impress['GID_0']
+        GID_1 = self.data_impress['GID_1']
+        DUAL_1 = self.data_impress['DUAL_1']
+        solver = file_adm_mesh_def['solver']
+
+        if calc_tpfa:
+            SOL_TPFA = self.solver.direct_solver(T, b)
+            print("\nresolveu TPFA\n")
+            np.save(name, SOL_TPFA)
+        elif load_tpfa:
+            try:
+                SOL_TPFA = np.load(name)
+            except:
+                raise FileNotFoundError('O aqruivo {} nao existe'.format(name))
+
+        if solver == 'direct':
+            solver = linalg.spsolve
+
+        self.restart_levels()
+        self.set_level_wells()
+        self.set_adm_mesh()
+
+        multilevel_meshes = []
+
+        active_nodes = []
+        perro = []
+        erro = []
+
+        Nmax = tol_n2*nfine_vols
+        finos = self.all_wells_ids.copy()
+        primal_finos = np.unique(GID_1[finos])
+        pfins = primal_finos
+        vertices = GID_0[DUAL_1==3]
+        primal_id_vertices = GID_1[vertices]
+        dt = [('vertices', np.dtype(int)), ('primal_vertices', np.dtype(int))]
+        structured_array = np.zeros(len(vertices), dtype=dt)
+        structured_array['vertices'] = vertices
+        structured_array['primal_vertices'] = primal_id_vertices
+        structured_array = np.sort(structured_array, order='primal_vertices')
+        vertices = structured_array['vertices']
+        primal_id_vertices = structured_array['primal_vertices']
+
+        nr = int(tol_n2*(len(vertices)-len(primal_finos))/(Ni))
+        n1 = self.data_impress['LEVEL_ID_1'].max() + 1
+        n2 = self.data_impress['LEVEL_ID_2'].max() + 1
+
+        pseudo_erro=np.repeat(TOL+1,2) #iniciou pseudo_erro
+        t0=time.time()
+        cont=0
+        pos_new_inter=[]
+        interm=np.array([])
+
+
+        while (pseudo_erro.max()>TOL and n2<Nmax and iterar_mono) or cont==0:
+
+            if cont>0:
+
+                levels = self.data_impress['LEVEL'].copy()
+                # import pdb; pdb.set_trace()
+
+                lim=np.sort(psr)[len(psr)-nr-1]
+                positions=np.where(psr>lim)[0]
+                nv_verts=levels[vertices]
+                nv_positions=nv_verts[positions]
+                pos_new_fines=positions[nv_positions==1]
+                pos_new_inter=positions[nv_positions==2]
+
+                interm=np.concatenate([interm,np.array(vertices)[pos_new_inter]]).astype(np.int)
+                finos=np.concatenate([finos,np.array(vertices)[pos_new_fines]]).astype(np.int)
+
+                # import pdb; pdb.set_trace()
+
+                primal_id_interm = np.unique(GID_1[interm])
+                interm = np.concatenate([GID_0[GID_1==k] for k in primal_id_interm])
+                primal_id_finos = np.unique(GID_1[finos])
+                finos = np.concatenate([GID_0[GID_1==k] for k in primal_id_finos])
+                pfins=np.unique(GID_1[finos])
+                self.restart_levels()
+                levels = self.data_impress['LEVEL'].copy()
+                levels[finos] = np.zeros(len(finos), dtype=int)
+                levels[interm] = np.ones(len(interm), dtype=int)
+                self.data_impress['LEVEL'] = levels.copy()
+                self.set_adm_mesh()
+                n1 = self.data_impress['LEVEL_ID_1'].max() + 1
+                n2 = self.data_impress['LEVEL_ID_2'].max() + 1
+
+                if _dev:
+                    print('\n',n1,n2,'n1 e n2\n')
+
+            self.organize_ops_adm(mlo['prolongation_level_1'],
+                                  mlo['restriction_level_1'],
+                                  1)
+
+            OP_ADM = self._data[self.adm_op_n + str(1)]
+            OR_ADM = self._data[self.adm_rest_n + str(1)]
+
+            if (len(pos_new_inter)>0 or cont==0) and refinar_nv2:
+                self.organize_ops_adm(mlo['prolongation_level_2'],
+                                      mlo['restriction_level_2'],
+                                      2)
+
+                OP_ADM_2 = self._data[self.adm_op_n + str(2)]
+                OR_ADM_2 = self._data[self.adm_rest_n + str(2)]
+
+                SOL_ADM=solver(OR_ADM_2*OR_ADM*T*OP_ADM*OP_ADM_2,OR_ADM_2*OR_ADM*b)
+                SOL_ADM_fina=OP_ADM*OP_ADM_2*SOL_ADM
+            else:
+                SOL_ADM=solver(OR_ADM*T*OP_ADM,OR_ADM*b)
+                SOL_ADM_fina=OP_ADM*SOL_ADM
+            x0=Jacobi(SOL_ADM_fina, T, b)
+            pseudo_erro=abs((SOL_ADM_fina-x0))
+
+            if calc_tpfa or load_tpfa:
+                erro.append(abs((SOL_TPFA-SOL_ADM_fina)/SOL_TPFA).max())
+            else:
+                erro.append(abs(pseudo_erro/x0).max())
+                SOL_TPFA=x0
+            OR_AMS = mlo['restriction_level_1']
+            psr=(OR_AMS*abs(pseudo_erro))
+            psr[pfins]=0
+
+            perro.append(abs((SOL_ADM_fina-x0)/x0).max())
+            active_nodes.append(n2/nfine_vols)
+
+            if imprimir_a_cada_iteracao:
+                M1.mb.tag_set_data(Pseudo_ERRO_tag,M1.all_volumes,abs(pseudo_erro/x0)[GIDs])
+
+                M1.mb.tag_set_data(ERRO_tag,M1.all_volumes,abs((SOL_ADM_fina-SOL_TPFA)/SOL_TPFA)[GIDs])
+                M1.mb.tag_set_data(P_ADM_tag,M1.all_volumes,SOL_ADM_fina[GIDs])
+                M1.mb.tag_set_data(P_TPFA_tag,M1.all_volumes,SOL_TPFA[GIDs])
+                ext_vtk = 'testes_MAD'  + str(cont) + '.vtk'
+                M1.mb.write_file(ext_vtk,[av])
+            cont+=1
+
+        plt.plot(active_nodes,perro, marker='o')
+        plt.yscale('log')
+        plt.savefig('results/initial_adm_mesh/hist.png')

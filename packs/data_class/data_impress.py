@@ -97,6 +97,8 @@ class Data(DataManager):
                     print(command)
                     import pdb; pdb.set_trace()
 
+            command = 'self.mesh.' + name + '.update_all()'
+
     def load_variables_from_mesh(self, names=None):
 
         if names:
