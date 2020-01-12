@@ -3,6 +3,8 @@ import numpy as np
 import scipy.sparse as sp
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 from ..flux_calculation.flux_tpfa import TpfaFlux2
+import multiprocessing as mp
+from .local_solution import LocalSolution
 import time
 
 
@@ -90,6 +92,8 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         self.adm_op_n = 'adm_prolongation_level_'
         self.adm_rest_n = 'adm_restriction_level_'
+
+        self.n_cpu = mp.cpu_count()
 
         if load == False:
             self.set_initial_mesh()
@@ -312,6 +316,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms
+        self.T = T
 
     def set_pms_flux_intersect_faces(self):
 
@@ -449,6 +454,17 @@ class AdmMethod(DataManager, TpfaFlux2):
         flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
         self.data_impress['flux_volumes_test'] = flux_volumes_2
         ######################################
+
+    def set_paralel_pcorr(self):
+        presc_flux_volumes = self.data_impress['pms_flux_interfaces_volumes'].copy()
+        levels = self.data_impress['LEVEL']
+        gid0 = self.data_impress['GID_0']
+        pms = self.data_impress['pms']
+        neig_internal_faces = self.elements_lv0['neig_internal_faces']
+        remaped_internal_faces = self.elements_lv0['remaped_internal_faces']
+        flux_grav_faces = self.data_impress['flux_grav_faces']
+
+        pass
 
     def set_initial_mesh(self):
         # TODO: atualizar
