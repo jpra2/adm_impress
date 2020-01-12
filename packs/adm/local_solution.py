@@ -1,6 +1,35 @@
 import scipy.sparse as sp
 import numpy as np
 
+def run_local_solution(local_solution_obj,
+    T: 'global transmissibility matrix without boundary conditions',
+    pms: 'global multiscale presure',
+    g_flux_grav_faces,
+    gids: 'global gids',
+    g_faces: 'global_faces',
+    g_neig_internal_faces: 'all neig internal faces',
+    remaped_internal_faces,
+    solver):
+    return local_solution_obj.run(T, pms, g_flux_grav_faces, gids, g_faces,
+           g_neig_internal_faces, remaped_internal_faces, solver)
+
+def get_list_n_process(n_cpu, n_total_process):
+
+    n_process_per_cpu = int(round(n_total_process/n_cpu))
+    list_of_n_process = np.repeat(n_process_per_cpu, n_cpu)
+    cont = 0
+
+    if n_cpu*n_process_per_cpu > n_total_process:
+        while list_of_n_process.sum() > n_total_process:
+            list_of_n_process[cont] -= 1
+            cont += 1
+    elif n_cpu*n_process_per_cpu < n_total_process:
+        while list_of_n_process.sum() < n_total_process:
+            list_of_n_process[cont] += 1
+            cont += 1
+
+    return list_of_n_process
+
 
 class LocalSolution:
     def __init__(self,
@@ -11,15 +40,7 @@ class LocalSolution:
         values_n: 'list of neumman values',
         faces: 'list of faces',
         internal_faces: 'list of internal faces',
-        intersect_faces,
-        T: 'global transmissibility matrix without boundary conditions',
-        pms: 'global multiscale presure',
-        g_flux_grav_faces,
-        gids: 'global gids',
-        g_faces: 'global_faces'
-        g_neig_internal_faces: 'all neig internal faces',
-        remaped_internal_faces,
-        solver):
+        intersect_faces: 'list of intersect faces'):
 
         self.n_problems = len(volumes)
         self.volumes = volumes
@@ -30,19 +51,12 @@ class LocalSolution:
         self.faces = faces
         self.internal_faces = internal_faces
         self.intersect_faces = intersect_faces
-        self.T = T
-        self.pms = pms
-        self.g_flux_grav_faces = g_flux_grav_faces
-        self.gids = gids
-        self.g_neig_internal_faces = neig_internal_faces
-        self.remaped_internal_faces = remaped_internal_faces
-        self.solver = solver
 
     def get_remaped_gids(self, gids, volumes, g_faces, faces):
         n_vols = len(volumes)
         local_ids = np.arange(n_vols)
         remaped_gids = gids.copy()
-        remaped_gids[gids] = local_ids
+        remaped_gids[volumes] = local_ids
         local_faces = np.arange(len(faces))
         remaped_faces = g_faces.copy()
         remaped_faces[faces] = local_faces
@@ -54,19 +68,20 @@ class LocalSolution:
             get the local transmissibility
         '''
         T2_w = T[volumes][:,volumes]
-        data = np.array(T2.sum(axis=1))[0]
-        diag = T2.diagonal()
+        data = np.array(T2_w.sum(axis=1))[0]
+        diag = T2_w.diagonal()
         diag -= data
         T2_w.setdiag(diag)
         return  T2_w
 
-    def get_local_problem(self, T2, indices_d, values_d, indices_n, values_n, remaped_gids):
+    def get_local_problem(self, T2_w, indices_d, values_d, indices_n, values_n, remaped_gids):
         '''
             get the local transmissibility and source
             term with boundary conditions
         '''
         n1 = len(indices_d)
-        T2[remaped_gids[indices_d]] = sp.csc_matrix(shape=(n1, n1))
+        T2 = T2_w.copy().tolil()
+        T2[remaped_gids[indices_d]] = sp.lil_matrix((n1, n1))
         T2[remaped_gids[indices_d], remaped_gids[indices_d]] = np.ones(n1)
         n_vols = T2.shape[0]
 
@@ -75,10 +90,10 @@ class LocalSolution:
             b[remaped_gids[indices_n]] += values_n
         b[remaped_gids[indices_d]] = values_d
 
-        return T2, b
+        return T2.tocsc(), b
 
-    def solve_local_problem(self, T2, b):
-        return self.solve(T2, b)
+    def solve_local_problem(self, T2, b, solver):
+        return solver(T2, b)
 
     def local_flux(self,
         T,
@@ -129,7 +144,15 @@ class LocalSolution:
 
         return flux_faces, flux_volumes
 
-    def run(self):
+    def run(self,
+        T: 'global transmissibility matrix without boundary conditions',
+        pms: 'global multiscale presure',
+        g_flux_grav_faces,
+        gids: 'global gids',
+        g_faces: 'global_faces',
+        g_neig_internal_faces: 'all neig internal faces',
+        remaped_internal_faces,
+        solver):
 
         solution = []
         dtvolumes = [('volumes', np.dtype(int)), ('pcorr', np.dtype(float)), ('flux_volumes', np.dtype(float))]
@@ -138,7 +161,7 @@ class LocalSolution:
         for i in range(self.n_problems):
             volumes = self.volumes[i]
             indices_d = self.indices_d[i]
-            indices_n = self.indices_nd[i]
+            indices_n = self.indices_n[i]
             values_d = self.values_d[i]
             values_n = self.values_n[i]
             faces = self.faces[i]
@@ -147,14 +170,14 @@ class LocalSolution:
             sarray_vols = np.zeros(len(volumes), dtype=dtvolumes)
             sarray_faces = np.zeros(len(faces), dtype=dtfaces)
 
-            remaped_gids, remaped_faces = self.get_remaped_gids(self.gids, volumes, self.g_faces, faces)
-            T2_w = self.get_local_t(volumes, self.T)
+            remaped_gids, remaped_faces = self.get_remaped_gids(gids, volumes, g_faces, faces)
+            T2_w = self.get_local_t(volumes, T)
             T2, b = self.get_local_problem(T2_w, indices_d, values_d, indices_n, values_n, remaped_gids)
-            pcorr = self.solve_local_problem(T2, b)
-            flux_faces, flux_volumes = self.local_flux(self.T, T2_w, pcorr, self.pms, values_n, indices_n,
-                                                       remaped_gids, self.g_flux_grav_faces, internal_faces,
-                                                       self.g_neig_internal_faces, faces, remaped_faces,
-                                                       intersect_faces, self.remaped_internal_faces)
+            pcorr = self.solve_local_problem(T2, b, solver)
+            flux_faces, flux_volumes = self.local_flux(T, T2_w, pcorr, pms, values_n, indices_n,
+                                                       remaped_gids, g_flux_grav_faces, internal_faces,
+                                                       g_neig_internal_faces, faces, remaped_faces,
+                                                       intersect_faces, remaped_internal_faces)
             sarray_vols['volumes'] = volumes
             sarray_vols['pcorr'] = pcorr
             sarray_vols['flux_volumes'] = flux_volumes

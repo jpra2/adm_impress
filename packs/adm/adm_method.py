@@ -3,7 +3,8 @@ import numpy as np
 import scipy.sparse as sp
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 from ..flux_calculation.flux_tpfa import TpfaFlux2
-import multiprocessing as mp
+import joblib
+from joblib import Parallel, delayed
 from .local_solution import LocalSolution
 import time
 
@@ -93,7 +94,8 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.adm_op_n = 'adm_prolongation_level_'
         self.adm_rest_n = 'adm_restriction_level_'
 
-        self.n_cpu = mp.cpu_count()
+        self.n_cpu = joblib.cpu_count()
+        self.n_workers = self.n_cpu
 
         if load == False:
             self.set_initial_mesh()
@@ -388,8 +390,8 @@ class AdmMethod(DataManager, TpfaFlux2):
                 local_neig_internal_local_faces[:,1] = all_local_ids_coarse[neig_internal_local_faces[:,1]]
                 local_intern_boundary_volumes = all_local_ids_coarse[intern_boundary_volumes]
                 values_q = presc_flux_volumes[intern_boundary_volumes]
-                t0 = transmissibility[intern_local_faces]
                 local_vertex = all_local_ids_coarse[vertex]
+                t0 = transmissibility[intern_local_faces]
                 x = solve_local_local_problem(self.solver.direct_solver, local_neig_internal_local_faces, t0, local_id_volumes,
                     local_vertex, pressure_vertex, local_intern_boundary_volumes, values_q)
 
@@ -455,14 +457,130 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['flux_volumes_test'] = flux_volumes_2
         ######################################
 
-    def set_paralel_pcorr(self):
-        presc_flux_volumes = self.data_impress['pms_flux_interfaces_volumes'].copy()
+    def get_nt_process(self):
+
         levels = self.data_impress['LEVEL']
-        gid0 = self.data_impress['GID_0']
+        gids = self.data_impress['GID_0']
+        nt_process = 0
+
+        for i in range(self.n_levels):
+            level = i+1
+            gids_lv = self.data_impress['GID_' + str(level)]
+            gids_eng = np.unique(gids_lv[levels==level])
+            nt_process += len(gids_eng)
+
+        return nt_process
+
+    def get_lists_objects(self):
+
+        levels = self.data_impress['LEVEL']
         pms = self.data_impress['pms']
-        neig_internal_faces = self.elements_lv0['neig_internal_faces']
+        gid0 = self.data_impress['GID_0']
+        presc_flux_volumes = self.data_impress['pms_flux_interfaces_volumes']
+
+        all_list_volumes = []
+        all_list_indices_d = []
+        all_list_values_d = []
+        all_list_indices_n = []
+        all_list_values_n = []
+        all_list_faces = []
+        all_list_internal_faces = []
+        all_list_intersect_faces = []
+        cont0 = 0
+        cont = 0
+
+        for i in range(self.n_levels):
+            level=i+1
+            all_gids_coarse = self.data_impress['GID_'+str(level)]
+            all_local_ids_coarse = self.data_impress['COARSE_LOCAL_ID_'+str(level)]
+            all_intern_boundary_volumes = self.ml_data['internal_boundary_fine_volumes_level_'+str(level)]
+            all_intersect_faces = self.ml_data['coarse_intersect_faces_level_'+str(level)]
+            all_intern_faces = self.ml_data['coarse_internal_faces_level_'+str(level)]
+            all_faces = self.ml_data['coarse_faces_level_'+str(level)]
+            all_fine_vertex = self.ml_data['fine_vertex_coarse_volumes_level_'+str(level)]
+            coarse_ids = self.ml_data['coarse_primal_id_level_'+str(level)]
+            gids_level = np.unique(all_gids_coarse[levels==level])
+            for gidc in gids_level:
+                intersect_faces = all_intersect_faces[coarse_ids==gidc][0] # faces na interseccao
+                intern_local_faces = all_intern_faces[coarse_ids==gidc][0] # faces internas
+                faces = all_faces[coarse_ids==gidc][0] # faces do volume
+                intern_boundary_volumes = all_intern_boundary_volumes[coarse_ids==gidc][0] # volumes internos no contorno
+                vertex = all_fine_vertex[coarse_ids==gidc]
+                pressure_vertex = pms[vertex]
+                volumes = gid0[all_gids_coarse==gidc]
+                values_q = presc_flux_volumes[intern_boundary_volumes]
+
+                if cont0 < self.n_workers and cont0 >= 0:
+                    all_list_volumes.append([volumes])
+                    all_list_indices_d.append([vertex])
+                    all_list_values_d.append([pressure_vertex])
+                    all_list_indices_n.append([intern_boundary_volumes])
+                    all_list_values_n.append([values_q])
+                    all_list_faces.append([faces])
+                    all_list_internal_faces.append([intern_local_faces])
+                    all_list_intersect_faces.append([intersect_faces])
+                    cont0 += 1
+                    if cont0 == self.n_workers:
+                        cont0 = -1
+                else:
+                    all_list_volumes[cont].append(volumes)
+                    all_list_indices_d[cont].append(vertex)
+                    all_list_values_d[cont].append(pressure_vertex)
+                    all_list_indices_n[cont].append(intern_boundary_volumes)
+                    all_list_values_n[cont].append(values_q)
+                    all_list_faces[cont].append(faces)
+                    all_list_internal_faces[cont].append(intern_local_faces)
+                    all_list_intersect_faces[cont].append(intersect_faces)
+                    cont += 1
+                    if cont == self.n_workers:
+                        cont = 0
+
+        list_objects = []
+        for i in range(self.n_workers):
+            list_objects.append(
+                LocalSolution(
+                    np.array(all_list_volumes[i]),
+                    np.array(all_list_indices_d[i]),
+                    np.array(all_list_values_d[i]),
+                    np.array(all_list_indices_n[i]),
+                    np.array(all_list_values_n[i]),
+                    np.array(all_list_faces[i]),
+                    np.array(all_list_internal_faces[i]),
+                    np.array(all_list_intersect_faces[i])
+                )
+            )
+
+        return list_objects
+
+    def set_paralel_pcorr(self):
+        presc_flux_volumes = self.data_impress['pms_flux_interfaces_volumes']
+        levels = self.data_impress['LEVEL']
+        gids = self.data_impress['GID_0']
+        pms = self.data_impress['pms']
+        g_neig_internal_faces = self.elements_lv0['neig_internal_faces']
         remaped_internal_faces = self.elements_lv0['remaped_internal_faces']
-        flux_grav_faces = self.data_impress['flux_grav_faces']
+        g_flux_grav_faces = self.data_impress['flux_grav_faces']
+        g_faces = self.elements_lv0['faces']
+        T = self.T
+        solver = self.solver.direct_solver
+        list_objects = self.get_lists_objects()
+        nt_process = self.get_nt_process()
+
+        def f(local_solution_obj):
+            return local_solution_obj.run(T, pms, g_flux_grav_faces, gids, g_faces,
+                   g_neig_internal_faces, remaped_internal_faces, solver)
+
+        t0 = time.time()
+        result = Parallel(n_jobs=self.n_workers, require='sharedmem')(delayed(f)(i) for i in list_objects)
+        t1 = time.time()
+        print(t1-t0)
+
+
+        import pdb; pdb.set_trace()
+
+
+
+
 
         pass
 
