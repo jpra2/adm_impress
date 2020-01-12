@@ -1,5 +1,6 @@
 import scipy.sparse as sp
 import numpy as np
+from ..directories import data_loaded
 
 def run_local_solution(local_solution_obj,
     T: 'global transmissibility matrix without boundary conditions',
@@ -68,7 +69,7 @@ class LocalSolution:
             get the local transmissibility
         '''
         T2_w = T[volumes][:,volumes]
-        data = np.array(T2_w.sum(axis=1))[0]
+        data = np.array(T2_w.sum(axis=1).transpose())[0]
         diag = T2_w.diagonal()
         diag -= data
         T2_w.setdiag(diag)
@@ -79,6 +80,12 @@ class LocalSolution:
             get the local transmissibility and source
             term with boundary conditions
         '''
+
+        if data_loaded['_debug']:
+            soma = abs(values_n.sum())
+            if soma > 1e-5:
+                raise ValueError(f'Volume nao conservativo {soma}, {values_n}')
+
         n1 = len(indices_d)
         T2 = T2_w.copy().tolil()
         T2[remaped_gids[indices_d]] = sp.lil_matrix((n1, n1))
@@ -127,7 +134,7 @@ class LocalSolution:
         cols = np.repeat(0, len(lines))
         data = np.concatenate([flux_internal_faces, -flux_internal_faces])
         flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
-        flux_volumes[remaped_gids[indices_n]] -= values_n
+        flux_volumes[remaped_gids[indices_n]] += values_n
 
         # intersect faces
         ids_g0 = g_neig_internal_faces[remaped_internal_faces[intersect_faces]][:,0]

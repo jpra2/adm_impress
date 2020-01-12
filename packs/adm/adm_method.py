@@ -353,7 +353,6 @@ class AdmMethod(DataManager, TpfaFlux2):
         presc_flux_volumes = self.data_impress['pms_flux_interfaces_volumes'].copy()
         levels = self.data_impress['LEVEL']
         n_volumes = len(levels)
-        flux_volumes = np.zeros(n_volumes)
         gid0 = self.data_impress['GID_0']
         transmissibility = self.data_impress['transmissibility']
         pms = self.data_impress['pms']
@@ -363,6 +362,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         pcorr = np.zeros(len(pms))
         flux_faces = np.zeros(len(transmissibility))
+        flux_volumes = np.zeros(n_volumes)
 
         for i in range(self.n_levels):
             level=i+1
@@ -553,6 +553,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         return list_objects
 
     def set_paralel_pcorr(self):
+        transmissibility = self.data_impress['transmissibility']
         presc_flux_volumes = self.data_impress['pms_flux_interfaces_volumes']
         levels = self.data_impress['LEVEL']
         gids = self.data_impress['GID_0']
@@ -563,8 +564,16 @@ class AdmMethod(DataManager, TpfaFlux2):
         g_faces = self.elements_lv0['faces']
         T = self.T
         solver = self.solver.direct_solver
+
+        _pcorr = np.zeros(len(pms))
+        _flux_faces = np.zeros(len(transmissibility))
+        _flux_volumes = np.zeros(len(gids))
+
+        # nt_process = self.get_nt_process()
+        # self.n_workers = nt_process
+
         list_objects = self.get_lists_objects()
-        nt_process = self.get_nt_process()
+
 
         def f(local_solution_obj):
             return local_solution_obj.run(T, pms, g_flux_grav_faces, gids, g_faces,
@@ -572,8 +581,31 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         t0 = time.time()
         result = Parallel(n_jobs=self.n_workers, require='sharedmem')(delayed(f)(i) for i in list_objects)
-        t1 = time.time()
-        print(t1-t0)
+
+        import pdb; pdb.set_trace()
+
+        gid0 = gids
+        volumes_fine = gid0[levels==0]
+        intern_faces_volumes_fine = self.mesh.volumes.bridge_adjacencies(volumes_fine, 3, 2)
+        intern_faces_volumes_fine = np.setdiff1d(intern_faces_volumes_fine, self.elements_lv0['boundary_faces'])
+        neig_intern_faces_volumes_fine = neig_internal_faces[remaped_internal_faces[intern_faces_volumes_fine]]
+        v0 = neig_intern_faces_volumes_fine
+
+        pms0 = pms[neig_intern_faces_volumes_fine[:,0]]
+        pms1 = pms[neig_intern_faces_volumes_fine[:,1]]
+        t0 = transmissibility[intern_faces_volumes_fine]
+        flux_grav_faces_volumes_fine = flux_grav_faces[intern_faces_volumes_fine]
+        flux_intern_faces_volumes_fine = -((pms1 - pms0) * t0 - flux_grav_faces_volumes_fine)
+        flux_faces[intern_faces_volumes_fine] = flux_intern_faces_volumes_fine
+
+        lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+        cols = np.repeat(0, len(lines))
+        data = np.concatenate([flux_intern_faces_volumes_fine, -flux_intern_faces_volumes_fine])
+        flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+        flux_volumes[volumes_fine] = flux_volumes_2[volumes_fine]
+
+
+
 
 
         import pdb; pdb.set_trace()
