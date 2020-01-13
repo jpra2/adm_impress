@@ -575,25 +575,24 @@ class AdmMethod(DataManager, TpfaFlux2):
         # self.n_workers = nt_process
         # self.n_workers = 1
 
-        qvolumes = mp.Queue()
-        qfaces = mp.Queue()
-        qinfos = mp.Queue()
+        m = mp.Manager()
+        qvolumes = m.Queue()
+        qfaces = m.Queue()
+        qinfos = m.Queue()
         # lock = mp.Lock()
 
         infos = InfosForProcess(T, pms, g_flux_grav_faces, gids, g_faces, g_neig_internal_faces,
             remaped_internal_faces, solver)
 
-        for i in range(self.n_workers+1):
+        for i in range(self.n_workers):
             qinfos.put(infos.copy())
         # tt = qinfos.qsize()
-
-        import pdb; pdb.set_trace()
 
         list_objects = self.get_lists_objects()
 
         def f(local_solution_obj, qinfos, qvolumes, qfaces):
             local_solution_obj.run(qinfos, qvolumes, qfaces)
-            return 0
+            # return 0
 
         # results = Parallel(n_jobs=self.n_workers, require='sharedmem')(delayed(f)(i) for i in list_objects)
         procs = []
@@ -607,8 +606,6 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         for proc in procs:
             proc.join()
-
-        print('terminou pcorr')
 
         while not qvolumes.empty():
             resp = qvolumes.get()

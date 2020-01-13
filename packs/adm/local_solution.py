@@ -156,7 +156,8 @@ class LocalSolution:
 
         # lock.acquire()
         try:
-            infos = qinfos.get(block=True, timeout=1)
+            # infos = qinfos.get(block=True, timeout=1)
+            infos = qinfos.get()
         except:
             raise EmptyQueueError('Empty Queue')
         # lock.release()
