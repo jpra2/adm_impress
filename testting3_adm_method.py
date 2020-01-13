@@ -33,8 +33,12 @@ adm_method.organize_ops_adm(mlo['prolongation_level_2'],
 T, b = tpfa_solver.run()
 adm_method.solve_multiscale_pressure(T, b)
 adm_method.set_pms_flux_intersect_faces()
+t1 = time.time()
 # adm_method.set_pcorr()
 adm_method.set_paralel_pcorr()
+t2 = time.time()
+print(t2-t1)
+import pdb; pdb.set_trace()
 # b1.run_2()
 # adm_method.set_pms_flux_volumes()
 

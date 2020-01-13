@@ -1,0 +1,3 @@
+
+class EmptyQueueError(Exception):
+    pass

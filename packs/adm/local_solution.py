@@ -1,6 +1,7 @@
 import scipy.sparse as sp
 import numpy as np
 from ..directories import data_loaded
+from ..errors.err import EmptyQueueError
 
 def run_local_solution(local_solution_obj,
     T: 'global transmissibility matrix without boundary conditions',
@@ -151,17 +152,17 @@ class LocalSolution:
 
         return flux_faces, flux_volumes
 
-    def run(self,
-        T: 'global transmissibility matrix without boundary conditions',
-        pms: 'global multiscale presure',
-        g_flux_grav_faces,
-        gids: 'global gids',
-        g_faces: 'global_faces',
-        g_neig_internal_faces: 'all neig internal faces',
-        remaped_internal_faces,
-        solver):
+    def run(self, qinfos, qvolumes, qfaces):
 
-        solution = []
+        # lock.acquire()
+        try:
+            infos = qinfos.get(block=True, timeout=1)
+        except:
+            raise EmptyQueueError('Empty Queue')
+        # lock.release()
+
+        # solution = 0
+        # solution = []
         dtvolumes = [('volumes', np.dtype(int)), ('pcorr', np.dtype(float)), ('flux_volumes', np.dtype(float))]
         dtfaces = [('faces', np.dtype(int)), ('flux_faces', np.dtype(float))]
 
@@ -177,19 +178,23 @@ class LocalSolution:
             sarray_vols = np.zeros(len(volumes), dtype=dtvolumes)
             sarray_faces = np.zeros(len(faces), dtype=dtfaces)
 
-            remaped_gids, remaped_faces = self.get_remaped_gids(gids, volumes, g_faces, faces)
-            T2_w = self.get_local_t(volumes, T)
+            remaped_gids, remaped_faces = self.get_remaped_gids(infos.gids, volumes, infos.g_faces, faces)
+            T2_w = self.get_local_t(volumes, infos.T)
             T2, b = self.get_local_problem(T2_w, indices_d, values_d, indices_n, values_n, remaped_gids)
-            pcorr = self.solve_local_problem(T2, b, solver)
-            flux_faces, flux_volumes = self.local_flux(T, T2_w, pcorr, pms, values_n, indices_n,
-                                                       remaped_gids, g_flux_grav_faces, internal_faces,
-                                                       g_neig_internal_faces, faces, remaped_faces,
-                                                       intersect_faces, remaped_internal_faces)
+            pcorr = self.solve_local_problem(T2, b, infos.solver)
+            flux_faces, flux_volumes = self.local_flux(infos.T, T2_w, pcorr, infos.pms, values_n, indices_n,
+                                                       remaped_gids, infos.g_flux_grav_faces, internal_faces,
+                                                       infos.g_neig_internal_faces, faces, remaped_faces,
+                                                       intersect_faces, infos.remaped_internal_faces)
             sarray_vols['volumes'] = volumes
             sarray_vols['pcorr'] = pcorr
             sarray_vols['flux_volumes'] = flux_volumes
             sarray_faces['faces'] = faces
             sarray_faces['flux_faces'] = flux_faces
-            solution.append(np.array([sarray_vols, sarray_faces]))
+            # solution.append(np.array([sarray_vols, sarray_faces]))
+            # lock.acquire()
+            qvolumes.put(sarray_vols)
+            qfaces.put(sarray_faces)
+            # lock.release()
 
-        return solution
+        # return solution

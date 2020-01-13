@@ -9,7 +9,7 @@ class SolverSp:
 
     def direct_solver(self, A, b):
 
-        print('\nSolving direct solver spsolve\n')
+        # print('\nSolving direct solver spsolve\n')
 
         A2 = A.tocsc().copy()
 
