@@ -109,3 +109,10 @@ biphasic_data:
   relative_permeability: BrooksAndCorey
   tempo_maximo: null
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
+
+compositional_data:
+  cfl: 
+  mi_o:
+  mi_g:
+  mi_w:
+  relative_permeability:
