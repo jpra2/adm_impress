@@ -6,6 +6,10 @@ import numpy as np
 import pdb
 from ....data_class.data_manager import DataManager
 import scipy.sparse as sp
+from ....directories import data_loaded
+from ....errors.err import DualStructureError
+from ....adm.adm_method import get_levelantids_levelids
+import time
 
 
 class MultilevelData(DataManager):
@@ -44,6 +48,7 @@ class MultilevelData(DataManager):
         self.fine_vertex_coarse_volumes = 'fine_vertex_coarse_volumes_level_'
         self.neig_intersect_faces = 'neig_intersect_faces_level_'
         self.internal_boundary_fine_volumes = 'internal_boundary_fine_volumes_level_'
+        self.dual_structure = 'dual_structure_level_'
 
     def create_tags(self):
         assert not self._loaded
@@ -139,6 +144,7 @@ class MultilevelData(DataManager):
         self.generate_dual_and_primal(M)
         self.get_elements(M)
         self.get_boundary_coarse_faces(M)
+        self.get_dual_structure()
         # self.get_elements_2(M)
         self.loaded()
 
@@ -823,6 +829,49 @@ class MultilevelData(DataManager):
         np.save(direc.state_path, np.array([M.state]))
         np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[2]]))
         M.core.print(file=direc.output_file + str(M.state))
+
+    def get_dual_structure(self):
+
+        M = self.mesh
+        gids = self.data_impress['GID_0']
+        dt = [('volumes', np.dtype(int)), ('dual_id', np.dtype(int)), ('primal_id', np.dtype(int))]
+
+        for level in range(1, self.levels):
+            structure = []
+            gid_level = self.data_impress['GID_'+str(level-1)]
+            coarse_id_level = self.data_impress['GID_'+str(level)]
+            dual_ids = self.data_impress['DUAL_'+str(level)]
+            set_interns = set(gids[dual_ids==0])
+
+            while set_interns:
+
+                intern0 = [set_interns.pop()]
+                inter = M.volumes.bridge_adjacencies(intern0, 0, 3)
+                dif = set(inter) - set(intern0)
+
+                while dif & set_interns:
+
+                    intern0 = np.setdiff1d(inter, gids[dual_ids!=0])
+                    inter = np.unique(np.concatenate(M.volumes.bridge_adjacencies(intern0, 0, 3)))
+                    dif = set(inter) - set(intern0)
+
+                gids1 = gid_level[inter]
+                duais = dual_ids[inter]
+                primais = coarse_id_level[inter]
+                if level > 1:
+                    gids2, duais = get_levelantids_levelids(gids1, duais)
+                    gids2, primais = get_levelantids_levelids(gids1, primais)
+                else:
+                    gids2 = gids1
+
+                sarray = np.zeros(len(gids2), dtype=dt)
+                sarray['volumes'] = gids2
+                sarray['dual_id'] = duais
+                sarray['primal_id'] = primais
+                structure.append(sarray)
+                set_interns = set_interns - set(inter)
+
+            self._data[self.dual_structure+str(level)] = np.array(structure)
 
     def save_mesh(self):
         M = self.mesh
