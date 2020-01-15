@@ -82,7 +82,7 @@ biphasic_data:
   - 0.3
   - 0.5
 convert_english_to_SI: false
-deletar_results: false
+deletar_results: true
 file_name_permeability: spe10_perms_and_phi.npz
 gravity: false
 load_biphasic_data: false
@@ -96,8 +96,8 @@ monophasic_data:
   mi: 1.0
 multilevel_data: true
 n_test: 0
-read_permeability: true
-set_permeability: false
+read_permeability: false
+set_permeability: true
 set_porosity: true
 state: 0
 type_of_solution: fine_scale
