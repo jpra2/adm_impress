@@ -43,9 +43,9 @@ import pdb; pdb.set_trace()
 # adm_method.set_pms_flux_volumes()
 
 # import pdb; pdb.set_trace()
-p2 = adm_method.solver.direct_solver(T, b)
-data_impress['pressure'] = p2
-tpfa_solver.get_flux_faces_and_volumes()
+# p2 = adm_method.solver.direct_solver(T, b)
+# data_impress['pressure'] = p2
+# tpfa_solver.get_flux_faces_and_volumes()
 
 data_impress.update_variables_to_mesh()
 if biphasic:

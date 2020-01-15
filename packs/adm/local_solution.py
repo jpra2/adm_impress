@@ -42,7 +42,8 @@ class LocalSolution:
         values_n: 'list of neumman values',
         faces: 'list of faces',
         internal_faces: 'list of internal faces',
-        intersect_faces: 'list of intersect faces'):
+        intersect_faces: 'list of intersect faces',
+        infos):
 
         self.n_problems = len(volumes)
         self.volumes = volumes
@@ -53,6 +54,7 @@ class LocalSolution:
         self.faces = faces
         self.internal_faces = internal_faces
         self.intersect_faces = intersect_faces
+        self.infos = infos
 
     def get_remaped_gids(self, gids, volumes, g_faces, faces):
         n_vols = len(volumes)
@@ -152,18 +154,20 @@ class LocalSolution:
 
         return flux_faces, flux_volumes
 
-    def run(self, qinfos, qvolumes, qfaces):
+    def run(self, w2m):
 
-        # lock.acquire()
-        try:
-            # infos = qinfos.get(block=True, timeout=1)
-            infos = qinfos.get()
-        except:
-            raise EmptyQueueError('Empty Queue')
+        # # lock.acquire()
+        # try:
+        #     # infos = qinfos.get(block=True, timeout=1)
+        #     infos = qinfos.get()
+        # except:
+        #     raise EmptyQueueError('Empty Queue')
         # lock.release()
 
+        infos = self.infos
+
         # solution = 0
-        # solution = []
+        solution = []
         dtvolumes = [('volumes', np.dtype(int)), ('pcorr', np.dtype(float)), ('flux_volumes', np.dtype(float))]
         dtfaces = [('faces', np.dtype(int)), ('flux_faces', np.dtype(float))]
 
@@ -192,10 +196,10 @@ class LocalSolution:
             sarray_vols['flux_volumes'] = flux_volumes
             sarray_faces['faces'] = faces
             sarray_faces['flux_faces'] = flux_faces
-            # solution.append(np.array([sarray_vols, sarray_faces]))
-            # lock.acquire()
-            qvolumes.put(sarray_vols)
-            qfaces.put(sarray_faces)
-            # lock.release()
+            solution.append(np.array([sarray_vols, sarray_faces]))
+            # # lock.acquire()
+            # qvolumes.put(sarray_vols)
+            # qfaces.put(sarray_faces)
+            # # lock.release()
 
-        # return solution
+        w2m.send(np.array(solution))

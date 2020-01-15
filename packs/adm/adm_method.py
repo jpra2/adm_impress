@@ -6,6 +6,7 @@ from ..flux_calculation.flux_tpfa import TpfaFlux2
 import multiprocessing as mp
 from .local_solution import LocalSolution
 from. obj_infos import InfosForProcess
+from ..directories import data_loaded
 import time
 
 
@@ -471,7 +472,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         return nt_process
 
-    def get_lists_objects(self):
+    def get_lists_objects(self, infos):
 
         levels = self.data_impress['LEVEL']
         pms = self.data_impress['pms']
@@ -547,7 +548,8 @@ class AdmMethod(DataManager, TpfaFlux2):
                     all_list_values_n[i],
                     all_list_faces[i],
                     all_list_internal_faces[i],
-                    all_list_intersect_faces[i]
+                    all_list_intersect_faces[i],
+                    infos.copy()
                 )
             )
 
@@ -575,46 +577,64 @@ class AdmMethod(DataManager, TpfaFlux2):
         # self.n_workers = nt_process
         # self.n_workers = 1
 
-        m = mp.Manager()
-        qvolumes = m.Queue()
-        qfaces = m.Queue()
-        qinfos = m.Queue()
+        # m = mp.Manager()
+        # qvolumes = m.Queue()
+        # qfaces = m.Queue()
+        # qinfos = m.Queue()
         # lock = mp.Lock()
 
         infos = InfosForProcess(T, pms, g_flux_grav_faces, gids, g_faces, g_neig_internal_faces,
             remaped_internal_faces, solver)
 
-        for i in range(self.n_workers):
-            qinfos.put(infos.copy())
+        # for i in range(self.n_workers):
+        #     qinfos.put(infos.copy())
         # tt = qinfos.qsize()
 
-        list_objects = self.get_lists_objects()
+        list_objects = self.get_lists_objects(infos)
 
-        def f(local_solution_obj, qinfos, qvolumes, qfaces):
-            local_solution_obj.run(qinfos, qvolumes, qfaces)
+        def f(local_solution_obj, w2m):
+            local_solution_obj.run(w2m)
+
+        master2worker = [mp.Pipe() for _ in range(self.n_workers)]
+        m2w, w2m = list(zip(*master2worker))
+        procs = [mp.Process(target=f, args=[obj, comm]) for obj, comm in zip(list_objects, w2m)]
+
+        # def f(local_solution_obj, qinfos, qvolumes, qfaces):
+        #     local_solution_obj.run(qinfos, qvolumes, qfaces)
+        #     # return 0
+
             # return 0
 
         # results = Parallel(n_jobs=self.n_workers, require='sharedmem')(delayed(f)(i) for i in list_objects)
-        procs = []
+        # procs = []
 
-        for i in range(self.n_workers):
-            proc = mp.Process(target=f, args=(list_objects[i], qinfos, qvolumes, qfaces))
-            procs.append(proc)
+        # for i in range(self.n_workers):
+        #     proc = mp.Process(target=f, args=(list_objects[i], qinfos, qvolumes, qfaces))
+        #     procs.append(proc)
 
         for proc in procs:
             proc.start()
 
+        for comm in m2w:
+            msg = comm.recv()
+            for resp in msg:
+                resp_vols = resp[0]
+                resp_faces = resp[1]
+                _pcorr[resp_vols['volumes']] = resp_vols['pcorr']
+                _flux_volumes[resp_vols['volumes']] = resp_vols['flux_volumes']
+                _flux_faces[resp_faces['faces']] = resp_faces['flux_faces']
+
         for proc in procs:
             proc.join()
 
-        while not qvolumes.empty():
-            resp = qvolumes.get()
-            _pcorr[resp['volumes']] = resp['pcorr']
-            _flux_volumes[resp['volumes']] = resp['flux_volumes']
-
-        while not qfaces.empty():
-            resp = qfaces.get()
-            _flux_faces[resp['faces']] = resp['flux_faces']
+        # while not qvolumes.empty():
+        #     resp = qvolumes.get()
+        #     _pcorr[resp['volumes']] = resp['pcorr']
+        #     _flux_volumes[resp['volumes']] = resp['flux_volumes']
+        #
+        # while not qfaces.empty():
+        #     resp = qfaces.get()
+        #     _flux_faces[resp['faces']] = resp['flux_faces']
 
         # for result in results:
         #     for resp in result:
@@ -647,6 +667,20 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['pcorr'] = _pcorr
         self.data_impress['flux_volumes'] = _flux_volumes
         self.data_impress['flux_faces'] = _flux_faces
+
+        _debug = data_loaded['_debug']
+        if _debug:
+
+            #######################
+            ## test
+            v0 = g_neig_internal_faces
+            internal_faces = self.elements_lv0['internal_faces']
+            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            cols = np.repeat(0, len(lines))
+            data = np.array([_flux_faces[internal_faces], -_flux_faces[internal_faces]]).flatten()
+            flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+            self.data_impress['flux_volumes_test'] = flux_volumes_2
+            ######################################
 
     def set_initial_mesh(self):
         # TODO: atualizar
