@@ -5,18 +5,12 @@ from .ams_tpfa import AmsTpfa
 import multiprocessing as mp
 
 class SubDomain:
-	def __init__(self):
-		self.interns,
-		self.faces,
-		self.edges,
-		self.vertices,
-		self.gids_global,
-		self.primal_ids_global,
-		self.T: 'transmissibility matrix'
+	def __init__(self, dual_info: 'gids of dual volume'):
+		self.dual_info = dual_info
 
-class LocalOperator
-	def __init__(subDomain):
-		self.local_OP=self.local_operator(subDomain)
+class LocalOperator:
+	def __init__(self, subDomains: 'list of SubDomain'):
+		self.subdomains = subDomains
 
 	def local_operator(subDomain):
 		interns=subDomain.intens

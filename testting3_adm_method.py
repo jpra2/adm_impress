@@ -34,11 +34,10 @@ T, b = tpfa_solver.run()
 adm_method.solve_multiscale_pressure(T, b)
 adm_method.set_pms_flux_intersect_faces()
 t1 = time.time()
-# adm_method.set_pcorr()
-adm_method.set_paralel_pcorr()
+adm_method.set_pcorr()
+# adm_method.set_paralel_pcorr()
 t2 = time.time()
 print(t2-t1)
-import pdb; pdb.set_trace()
 # b1.run_2()
 # adm_method.set_pms_flux_volumes()
 
@@ -50,5 +49,6 @@ import pdb; pdb.set_trace()
 data_impress.update_variables_to_mesh()
 if biphasic:
     n=1
-import pdb; pdb.set_trace()
 M.core.print(folder='results', file='test'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+
+import pdb; pdb.set_trace()

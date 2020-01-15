@@ -4,3 +4,9 @@ class EmptyQueueError(Exception):
 
 class DualStructureError(Exception):
     pass
+
+class ConservativeVolumeError(Exception):
+    pass
+
+class PmsFluxFacesError(Exception):
+    pass
