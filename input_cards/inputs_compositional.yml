@@ -9,5 +9,9 @@ compositional_data:
   mi: Lorenz
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
-  Sor:
-  Swc:
+  Sorw:
+  Swr:
+  Sgr:
+  krw0:
+  kwg0:
+  kro0:
