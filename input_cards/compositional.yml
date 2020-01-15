@@ -2,7 +2,8 @@
 
 compositional_data:
   cfl:
-  mi_o:
-  mi_g:
-  mi_w:
-  relative_permeability:
+  mi: Lorenz
+  relative_permeability: BrooksAndCorey
+  capillary_pressure: Chang
+  Sor:
+  Swc:
