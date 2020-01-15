@@ -46,5 +46,6 @@ adm_method.set_initial_mesh(mlo, T, b)
 data_impress.update_variables_to_mesh()
 # if biphasic:
 #     n=1
-import pdb; pdb.set_trace()
+
 M.core.print(folder='results', file='test'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+import pdb; pdb.set_trace()
