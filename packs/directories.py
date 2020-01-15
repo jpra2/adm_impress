@@ -68,5 +68,8 @@ with open(input_file_0, 'r') as f:
 with open('input_cards/variable_input.yml', 'r') as f:
     variables_loaded = yaml.safe_load(f)
 
+with open('input_cards/compositional.yml', 'r') as f:
+    variables_loaded_compositional = yaml.safe_load(f)
+
 name_load = os.path.join(flying, 'load.npy')
 name_hist = os.path.join(flying, 'current_biphasic_results.npy')

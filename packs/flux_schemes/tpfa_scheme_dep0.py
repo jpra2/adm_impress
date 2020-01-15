@@ -37,3 +37,11 @@ class tpfaScheme:
         T = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, self.n_volumes))
 
         self.data['Tini'] = T
+
+    def get_transmissibility_matrix_without_boundary_conditions_compositional(self) -> None:
+        #z - molar fraction of the component in each phase - ex: z = [[zc1.liq, zc2.liq],[zc1.vap,zc2.vap]
+        molar_fractions = np.zeros([fluid_properties.Nc,2])
+        molar_fractions[0] = fluid_properties.x; molar_fractions[1] = fluid_properties.y
+        mass_densities = np.array([fluid_properties.rho_L,fluid_properties.rho_V])
+        mobilities = relative_permeabilities/phase_viscosities #2 column vectors
+        transmissibility = molar_fractions*mass_densities*mobilities*M.data[M.data.variables_impress['pretransmissibility']]
