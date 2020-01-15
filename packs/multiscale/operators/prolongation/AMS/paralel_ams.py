@@ -2,6 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.sparse import linalg
 from .ams_tpfa import AmsTpfa
+from .ams_mpfa import AMSMpfa
 import multiprocessing as mp
 
 class SubDomain:
@@ -9,17 +10,69 @@ class SubDomain:
 		self.dual_info = dual_info
 
 class LocalOperator:
-	def __init__(self, subDomains: 'list of SubDomain'):
+	def __init__(self, subDomains: 'list of SubDomain',
+	
+		tpfa=True):
 		self.subdomains = subDomains
+		self.info = info
+		self.tpfa = tpfa
+		"""
+			info.T: global transmissibility matrix
+			info.gids: global ids
+			info.dual_id: global dual id
+			info.primal_id: global primal_id
+		"""
 
-	def local_operator(subDomain):
-		interns=subDomain.intens
+	def get_local_t(self, T, volumes):
+		T2 =  T[volumes][:,volumes]
+		data = np.array(T2.sum(axis=1).transpose())[0]
+		data2 = T2.diagonal()
+		data2 -= data
+		T2.setdiag(data2)
+		return T2
 
-		gids = np.concatenate([interns, faces, edges, vertices])
-		ni = len(interns)
-		nf = len(faces)
-		ne = len(edges)
-		nv = len(vertices)
+	def local_operator(self):
+		g_dual_id = self.info.dual_id
+		g_primal_id = self.info.primal_id
+		T = self.info.T
+		gids = self.info.gids
+		n_gids = len(gids)
+
+		for volumes in self.dual_info:
+			interns = volumes[g_dual_id[volumes]==0]
+			faces = volumes[g_dual_id[volumes]==1]
+			edges = volumes[g_dual_id[volumes]==2]
+			vertexes = volumes[g_dual_id[volumes]==3]
+			n_volumes = len(volumes)
+			local_ids = np.arange(n_volumes)
+			primal_ids_vertices = g_primal_id[vertexes]
+			primal_ids = g_primal_id[volumes]
+			local_primal_ids_vertices = np.arange(len(vertexes))
+			map_g_to_local_primal_id = dict(zip(primal_ids_vertices, local_primal_ids))
+			map_local_to_g_primal_id = dict(zip(local_primal_ids, primal_ids_vertices))
+			local_primal_ids = np.array([map_g_to_local_primal_id[k] for k in primal_ids])
+			remap_gids = gids.copy()
+			remap_gids[volumes] = local_ids
+			interns_local = remap_gids[interns]
+			edges_local = remap_gids[edges]
+			faces_local = remap_gids[faces]
+			vertexes_local = remap_gids[vertexes]
+			T2 =  self.get_local_t(T, volumes)
+
+			if self.tpfa:
+				operator = AmsTpfa(interns_local, edges_local, faces_local, vertexes_local, local_ids, local_primal_ids)
+			else:
+				operator = AMSMpfa(interns_local, edges_local, faces_local, vertexes_local, local_ids, local_primal_ids)
+
+
+
+
+
+
+
+
+
+
 		s_gids = set(gids)
 		n1 = len(gids)
 		local_ids = np.arange(n1)
