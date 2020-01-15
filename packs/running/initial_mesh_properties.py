@@ -43,6 +43,7 @@ def initial_mesh(load=False, convert=False):
 
     biphasic = data_loaded['biphasic']
     load_biphasic_data = data_loaded['load_biphasic_data']
+
     if biphasic and not load_biphasic_data:
         set_saturation_regions(M, wells)
         # TODO: atualizar gama

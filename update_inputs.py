@@ -1,8 +1,11 @@
 from packs.utils.info_manager import InfoManager
 import os
 
-dd = InfoManager('input_cards/inputs0_2.yml', 'input_cards/inputs0.yml')
+dd = InfoManager('input_cards/inputs_compositional.yml', 'input_cards/inputs0.yml')
+dd2 = InfoManager('input_cards/variable_inputs_compositional.yml','input_cards/variable_input.yml')
+#dd['load_data'] = True
 dd.save_obj()
+dd2.save_obj()
 
 if dd['deletar_results']:
 

@@ -37,28 +37,3 @@ class tpfaScheme:
         T = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, self.n_volumes))
 
         self.data['Tini'] = T
-
-    def get_transmissibility_matrix_without_boundary_conditions_compositional(self) -> None:
-        M = self.mesh
-        vols_viz_internal_faces = M.data.elements_lv0[direc.entities_lv0_0[2]]
-        v0 = vols_viz_internal_faces
-        internal_faces = M.data.elements_lv0[direc.entities_lv0_0[0]]
-        pretransmissibility_faces = M.data.variables[M.data.variables_impress['pretransmissibility']]
-        pretransmissibility_internal_faces = transmissibility_faces[internal_faces]
-
-        #z - molar fraction of the component in each phase - ex: z = [[zc1.liq, zc2.liq],[zc1.vap,zc2.vap]
-        molar_fractions = np.zeros([fluid_properties.Nc,2])
-        molar_fractions[:,0] = fluid_properties.x; molar_fractions[:,1] = fluid_properties.y
-        mass_densities = np.array([fluid_properties.rho_L,fluid_properties.rho_V])
-        mobilities = relative_permeabilities/phase_viscosities #2 column vectors
-        t0 = (molar_fractions*mass_densities*mobilities).sum(axis=1).sum(axis=1)
-        t0 = t0*pretransmissibility_internal_faces
-
-        lines = np.array([v0[:, 0], v0[:, 1], v0[:, 0], v0[:, 1]]).flatten()
-        cols = np.array([v0[:, 1], v0[:, 0], v0[:, 0], v0[:, 1]]).flatten()
-        data = np.array([t0, t0, -t0, -t0]).flatten()
-
-        T = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, self.n_volumes))
-        # Falta incluir o termo da derivada de V por P que soma na diagonal principal
-        #e o termo da derivada de V por Nk que multiplica a transmissibilidade t0 (ele
-        #entra no segundo somatório)

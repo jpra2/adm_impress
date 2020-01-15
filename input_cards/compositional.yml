@@ -1,9 +1,0 @@
-
-
-compositional_data:
-  cfl:
-  mi: Lorenz
-  relative_permeability: BrooksAndCorey
-  capillary_pressure: Chang
-  Sor:
-  Swc:
