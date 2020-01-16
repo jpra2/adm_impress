@@ -3,7 +3,22 @@ import scipy.sparse as sp
 from scipy.sparse import linalg
 from .ams_tpfa import AmsTpfa
 from .ams_mpfa import AMSMpfa
+from .....common_files.common_infos import CommonInfos
 import multiprocessing as mp
+
+class InfoForLocalOperator(CommonInfos):
+
+	def __init__(self,
+		T: 'transmissibility matrix',
+		gids: 'global ids',
+		dual_id: 'global dual ids',
+		primal_id: 'global primal ids'):
+
+		self.T = T
+		self.gids = gids
+		self.dual_id = dual_id
+		self.primal_id = primal_id
+
 
 class SubDomain:
 	def __init__(self, dual_info: 'gids of dual volume'):
@@ -11,17 +26,11 @@ class SubDomain:
 
 class LocalOperator:
 	def __init__(self, subDomains: 'list of SubDomain',
-	
 		tpfa=True):
+
 		self.subdomains = subDomains
 		self.info = info
 		self.tpfa = tpfa
-		"""
-			info.T: global transmissibility matrix
-			info.gids: global ids
-			info.dual_id: global dual id
-			info.primal_id: global primal_id
-		"""
 
 	def get_local_t(self, T, volumes):
 		T2 =  T[volumes][:,volumes]
@@ -60,9 +69,13 @@ class LocalOperator:
 			T2 =  self.get_local_t(T, volumes)
 
 			if self.tpfa:
-				operator = AmsTpfa(interns_local, edges_local, faces_local, vertexes_local, local_ids, local_primal_ids)
+				operator = AmsTpfa
 			else:
-				operator = AMSMpfa(interns_local, edges_local, faces_local, vertexes_local, local_ids, local_primal_ids)
+				operator = AMSMpfa
+
+			operator = operator(interns_local, edges_local, faces_local, vertexes_local, local_ids, local_primal_ids)
+			
+
 
 
 
