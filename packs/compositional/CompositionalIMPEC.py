@@ -1,8 +1,11 @@
 from ..directories import data_loaded
 from ..data_class.data_manager import DataManager
-from ..utils import relative_permeability2
+from ..utils import relative_permeability2, phase_viscosity
 from .. import directories as direc
 import numpy as np
+
+#Next step: por os parâmetros de entrada e entender como a class fluid_properties vai entrar
+# e tentar rodar
 
 class CompositionalTPFA(DataManager):
     def __init__(self,data_name: str='CompositionalTPFA.npz'):
@@ -11,8 +14,21 @@ class CompositionalTPFA(DataManager):
         self.relative_permeability = getattr(relative_permeability2, self.compositional_data['relative_permeability'])
         self.relative_permeability = self.relative_permeability2()
         self.n_blocks = len(elements_lv0['volumes']) #número de blocos da malha
+        self.phase_viscosity = phase_viscosity(self.n_blocks)
         self.n_phases = 3 #len(relative_permeabilities[:,0,0])
         self.Nc = fluid_properties.Nc
+        if not load:
+            self.loop = 0
+            self.vpi = 0.0
+            self.t = 0.0
+            self.contador_vtk = 0
+            self.update_viscosities(T,fluid_properties)
+            self.update_saturations()
+            self.update_relative_permeability()
+            #self.update_mobilities()
+            self.update_transmissibility_ini()
+        else:
+            self.load_infos()
         # self.M = M
         # self.elements_lv0 = elements_lv0
         # self.relative_permeability = getattr(relative_permeability, self.compositional_data['relative_permeability'])
@@ -56,8 +72,8 @@ class CompositionalTPFA(DataManager):
         fluid_properties.phase_molar_densities = phase_molar_densities
         fluid_properties.phase_viscosities = phase_viscosities
 
-    def update_viscosities(self,fluid_properties):
-
+    def update_viscosities(self,T,fluid_properties):
+        phase_viscosities = self.phase_viscosity(T,fluid_properties)
 
     def update_saturations(self,fluid_properties):
         Sw = self.data_impress['saturation']
