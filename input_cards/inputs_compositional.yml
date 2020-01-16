@@ -10,8 +10,25 @@ compositional_data:
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
   Sorw:
+  Sorg:
   Swr:
   Sgr:
   krw0:
   kwg0:
   kro0:
+
+Wells:
+  P1:
+    # p0: [0.0, 0.0, 0.0]
+    # p1: [20.0, 10.0, 54.0]
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: 1000000.0
+  P3:
+    # p0: [520.0, 260.0, 0.0]
+    # p1: [540.0, 270.0, 54.0]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 1.0
