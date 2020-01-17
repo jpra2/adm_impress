@@ -15,9 +15,14 @@ def initial_mesh(load=False, convert=False):
 
     compositional = data_loaded['compositional_data']
     load_compositional_data = data_loaded['load_data']
+    fluid_properties = data_loaded['compositional']
 
     if compositional and not load_compositional_data:
-        #set_saturation_regions(M, wells)
-        # TODO: atualizar gama
+        M = init_mesh('flying/compositional_data-all_.h5m')
+        elements_lv0 = ElementsLv0(M, load=load)
+        data_impress = Data(M, elements_lv0, load=load)
+        if not load:
+            Preprocess0(M, elements_lv0)
+        fluid_properties = FluidProperties() #CREATE
 
     return M,elements_lv0,data_impress,wells,fluid_properties
