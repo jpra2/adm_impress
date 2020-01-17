@@ -45,6 +45,7 @@ Permeability:
   #   value: [100.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 100.0]
 
 set_porosity: true
+
 Porosity:
   r1:
     type: all
