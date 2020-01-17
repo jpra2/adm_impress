@@ -24,6 +24,8 @@ load_multilevel_data: false
 load_operators: false
 # load_operators: true
 
+_debug: True
+
 Crs:
   Cr1: [3, 3, 3]
   Cr2: [9, 9, 9]

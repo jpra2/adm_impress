@@ -60,6 +60,7 @@ Wells:
     type: Producer
     type_region: box
     value: 1.0
+_debug: true
 biphasic: false
 biphasic_data:
   Sor: 0.2

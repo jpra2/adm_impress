@@ -170,6 +170,7 @@ load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 n = data_loaded['n_test']
 load_operators = data_loaded['load_operators']
+_debug = data_loaded['_debug']
 
 M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
 # dados_unitarios(data_impress)
@@ -185,3 +186,10 @@ if load_operators:
     pass
 else:
     multilevel_operators.run(tpfa_solver['Tini'])
+
+if _debug:
+    op1 = multilevel_operators['prolongation_level_1']
+    rr = np.array(op1.sum(axis=1).transpose())[0]
+    op2 = multilevel_operators['prolongation_level_2']
+    rr2 = np.array(op2.sum(axis=1).transpose())[0]
+    import pdb; pdb.set_trace()

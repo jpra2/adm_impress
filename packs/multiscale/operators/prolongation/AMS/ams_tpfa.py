@@ -91,7 +91,7 @@ class AMSTpfa:
         #faces
         Aff = Tmod[nni:nnf, nni:nnf]
         Afe = Tmod[nni:nnf, nnf:nne]
-        soma = Aif.transpose().sum(axis=1)
+        soma = Tmod[nni:nnf, 0:nni].sum(axis=1)
         d1 = np.matrix(Aff.diagonal()).reshape([nf, 1])
         d1 += soma
         Aff.setdiag(d1)
@@ -99,7 +99,7 @@ class AMSTpfa:
         #arestas
         Aee = Tmod[nnf:nne, nnf:nne]
         Aev = Tmod[nnf:nne, nne:nnv]
-        soma = Afe.transpose().sum(axis=1)
+        soma = Tmod[nnf:nne, nni:nnf].sum(axis=1)
         d1 = np.matrix(Aee.diagonal()).reshape([ne, 1])
         d1 += soma
         Aee.setdiag(d1)
@@ -164,10 +164,26 @@ class AMSTpfa:
 
         T_wire2 = T_wire.copy().tolil()
 
-        T_wire2[0:nni,nnf:nnv] = sp.lil_matrix((ni, ne+nv))
-        T_wire2[nni:nnf, nne:nnv] = sp.lil_matrix((nf, nv))
-        T_wire2[nnf:nne, 0:nni] = sp.lil_matrix((ne, ni))
-        T_wire2[nne:nnv, 0:nnf] = sp.lil_matrix((nv, ni+nf))
+        rr = np.array(T_wire2[0:nni, nnf:nnv].sum(axis=1).transpose())[0]
+        T_wire2[0:nni,nnf:nnv] = 0
+        inds = np.arange(nni)
+        T_wire2[inds,inds] += rr
+
+        rr = np.array(T_wire2[nni:nnf, nne:nnv].sum(axis=1).transpose())[0]
+        T_wire2[nni:nnf, nne:nnv] = 0
+        inds = np.arange(nni, nnf)
+        T_wire2[inds,inds] += rr
+
+        rr = np.array(T_wire2[nnf:nne, 0:nni].sum(axis=1).transpose())[0]
+        T_wire2[nnf:nne, 0:nni] = 0
+        inds = np.arange(nnf, nne)
+        T_wire2[inds,inds] += rr
+
+        rr = np.array(T_wire2[nne:nnv, 0:nnf].sum(axis=1).transpose())[0]
+        T_wire2[nne:nnv, 0:nnf] = 0
+        inds = np.arange(nne, nnv)
+        T_wire2[inds,inds] += rr
+
         return T_wire2
 
     def run(self, T: 'transmissibility matrix'):

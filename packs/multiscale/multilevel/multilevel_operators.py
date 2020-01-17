@@ -133,9 +133,11 @@ class MultilevelOperators(DataManager):
             vertices = gid[dual_id==3]
             if level == 1:
                 operator = AMSTpfa
+                tpfalizar = False
             else:
                 # operator = AMSMpfa
                 operator = AMSTpfa
+                tpfalizar = True
             self.operators[str(level)] = operator(interns,
                                                  faces,
                                                  edges,
@@ -143,7 +145,7 @@ class MultilevelOperators(DataManager):
                                                  gid,
                                                  primal_id,
                                                  load=load,
-                                                 tpfalizar=True)
+                                                 tpfalizar=tpfalizar)
 
     def run(self, T: 'fine transmissibility without boundary conditions'):
 
@@ -160,6 +162,6 @@ class MultilevelOperators(DataManager):
             if level == self.n_levels:
                 continue
             T_ant = OR*T_ant*OP
-            # cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]
-            # cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
-            # T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
+            cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]
+            cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
+            T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
