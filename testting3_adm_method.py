@@ -49,6 +49,8 @@ adm_method.solve_multiscale_pressure(T, b)
 # p2 = adm_method.solver.direct_solver(T, b)
 # data_impress['pressure'] = p2
 # tpfa_solver.get_flux_faces_and_volumes()
+
+data_impress['erro'] = np.absolute((p2-data_impress['pms'])/p2)
 #
 data_impress.update_variables_to_mesh()
 # if biphasic:

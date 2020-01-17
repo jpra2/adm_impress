@@ -14,7 +14,8 @@ class AMSMpfa(AMSTpfa):
         gids: 'global_ids',
         primal_ids: 'primal_ids',
         load=False,
-        data_name='AMSMpfa_'):
+        data_name='AMSMpfa_',
+        tpfalizar=False):
 
         super().__init__(
             internals,
@@ -24,7 +25,8 @@ class AMSMpfa(AMSTpfa):
             gids,
             primal_ids,
             load=load,
-            data_name=data_name
+            data_name=data_name,
+            tpfalizar=tpfalizar
         )
 
     def get_as(self, T_wire):
@@ -122,6 +124,9 @@ class AMSMpfa(AMSTpfa):
         return self.GT*op*self.G2
 
     def run(self, T: 'transmissibility matrix'):
+
+        if self.tpfalizar:
+            return super().run(T)
 
         T_wire = self.G*T*self.GT
         As = self.get_as(T_wire)

@@ -135,8 +135,8 @@ class MultilevelOperators(DataManager):
                 operator = AMSTpfa
                 tpfalizar = False
             else:
-                # operator = AMSMpfa
-                operator = AMSTpfa
+                operator = AMSMpfa
+                # operator = AMSTpfa
                 # tpfalizar = True
                 tpfalizar = False
             self.operators[str(level)] = operator(interns,
@@ -163,6 +163,6 @@ class MultilevelOperators(DataManager):
             if level == self.n_levels:
                 continue
             T_ant = OR*T_ant*OP
-            cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]
-            cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
-            T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
+            # cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]
+            # cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
+            # T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
