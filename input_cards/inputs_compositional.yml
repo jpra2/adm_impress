@@ -6,7 +6,7 @@ load_data: False
 
 compositional_data:
   cfl:
-  mi: Lorenz
+  phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
   Sorw:

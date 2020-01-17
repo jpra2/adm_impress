@@ -1,6 +1,6 @@
 
 
-class LorenzModel:
+class LorenzBrayClark:
     def __init__(self,n_blocks):
         self.n_blocks = n_blocks
 
@@ -14,7 +14,7 @@ class LorenzModel:
 
         mi_components[ind_Tr_lower] = 3.4e-4 * Trs[ind_Tr_lower] ** 0.94 / \
                                         self.zetas[ind_Tr_lower]
-        mi_components[ind_Tr_higher] = (1.776e-4 * (4.58 * Trs[ind_Tr_higher] -
+        mi_components[ind_Tr_higher] = (1.778e-4 * (4.58 * Trs[ind_Tr_higher] -
                                         1.67) ** (5/8)) / self.zetas[ind_Tr_higher]
 
         mi_components = mi_components[:, np.newaxis, np.newaxis]
