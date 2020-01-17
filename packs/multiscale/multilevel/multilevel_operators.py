@@ -135,10 +135,10 @@ class MultilevelOperators(DataManager):
                 operator = AMSTpfa
                 tpfalizar = False
             else:
-                operator = AMSMpfa
-                # operator = AMSTpfa
-                # tpfalizar = True
-                tpfalizar = False
+                # operator = AMSMpfa
+                operator = AMSTpfa
+                tpfalizar = True
+                # tpfalizar = False
             self.operators[str(level)] = operator(interns,
                                                  faces,
                                                  edges,

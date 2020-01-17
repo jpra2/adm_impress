@@ -40,22 +40,22 @@ Wells:
     - 0.0
     - 0.0
     p1:
-    - 20.0
-    - 10.0
-    - 54.0
+    - 1.0
+    - 1.0
+    - 27.0
     prescription: P
     type: Injector
     type_region: box
     value: 10000.0
   P3:
     p0:
-    - 520.0
-    - 260
+    - 26.0
+    - 26.0
     - 0.0
     p1:
-    - 540.0
-    - 270.0
-    - 54.0
+    - 27.0
+    - 27.0
+    - 27.0
     prescription: P
     type: Producer
     type_region: box

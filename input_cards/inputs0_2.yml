@@ -75,7 +75,7 @@ Saturation:
 Wells:
   P1:
     p0: [0.0, 0.0, 0.0]
-    p1: [20.0, 10.0, 54.0]
+    p1: [1.0, 1.0, 27.0]
     # prescription: Q
     prescription: P
     type: Injector
@@ -83,8 +83,8 @@ Wells:
     # value: 1000000.0
     value: 10000.0
   P3:
-    p0: [520.0, 260, 0.0]
-    p1: [540.0, 270.0, 54.0]
+    p0: [26.0, 26.0, 0.0]
+    p1: [27.0, 27.0, 27.0]
     prescription: P
     type: Producer
     type_region: box
