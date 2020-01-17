@@ -120,6 +120,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.ml_data = M.multilevel_data
         self.all_wells_ids = all_wells_ids
         self.n_levels = n_levels
+        # self.n_levels = 1
         self.data_impress = data_impress
         self.number_vols_in_levels = np.zeros(self.n_levels+1, dtype=int)
         gids_0 = self.data_impress['GID_0']
@@ -349,7 +350,7 @@ class AdmMethod(DataManager, TpfaFlux2):
             pms = self._data[self.adm_op_n + str(level)]*pms
 
         self.data_impress['pms'] = pms
-        self.data_impress['pressure'] = pms
+        # self.data_impress['pressure'] = pms
 
     def set_pms_flux_intersect_faces(self):
 
