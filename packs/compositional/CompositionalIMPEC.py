@@ -11,10 +11,11 @@ class CompositionalTPFA(DataManager):
     def __init__(self,data_name: str='CompositionalTPFA.npz'):
         super().__init__(data_impress, load=load)
         self.biphasic_data = data_loaded['biphasic_data']
+        self.n_blocks = len(elements_lv0['volumes']) #número de blocos da malha
         self.relative_permeability = getattr(relative_permeability2, self.compositional_data['relative_permeability'])
         self.relative_permeability = self.relative_permeability2()
-        self.n_blocks = len(elements_lv0['volumes']) #número de blocos da malha
-        self.phase_viscosity = phase_viscosity(self.n_blocks)
+        self.relative_permeability = getattr(phase_viscosity, self.compositional_data['phase_viscosity'])
+        self.relative_permeability = self.phase_viscosity(self.n_blocks)
         self.n_phases = 3 #len(relative_permeabilities[:,0,0])
         self.Nc = fluid_properties.Nc
         if not load:
@@ -102,7 +103,7 @@ class CompositionalTPFA(DataManager):
         pretransmissibility_internal_faces = transmissibility_faces[internal_faces]
 
         mobilities = fluid_properties.relative_permeabilities / fluid_properties.phase_viscosities
-
+        print('Yay')
         t0 = (fluid_properties.component_molar_fractions *
                 fluid_properties.phase_molar_densities * mobilities).sum(axis=1).sum(axis=1)
 
@@ -112,7 +113,7 @@ class CompositionalTPFA(DataManager):
         cols = np.array([v0[:, 1], v0[:, 0], v0[:, 0], v0[:, 1]]).flatten()
         data = np.array([t0, t0, -t0, -t0]).flatten()
 
-        T = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, self.n_volumes))
+        T = sp.csc_matrix((data, (lines, cols)), shape = (self.n_volumes, self.n_volumes))
         self['Tini'] = T
         # Falta incluir o termo da derivada de V por P que soma na diagonal principal
         #e o termo da derivada de V por Nk que multiplica a transmissibilidade t0 (ele
