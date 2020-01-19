@@ -11,14 +11,17 @@ deletar_results: false
 load_operators: false
 
 compositional_data:
+  #  Pensar em um jeito de reorganizar isso
   #cfl: 0.9
   vpis_para_gravar_vtk: [0.157]
   tempo_maximo: null
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
-  capillary_pressure: Chang
+  # capillary_pressure: Chang
   rock_compressibility: 7.25e-5
-  mi_w: 1e-3
+  mi_W: 1e-3
+  rho_W: 999.6
+  Mw_w: 
   Sorw: 1e-6
   Sorg: 1e-6
   Swr: 0.25
@@ -29,12 +32,11 @@ compositional_data:
   n_o: 2.
   n_g: 2.
   n_w: 2.
-  initial_P: 13.79
-  temperature: 366.33
   z: 1.
   Tc: 617.7
   Pc: 2103000.0
   Vc: 0.00428556
+  R: 8.314
   Mw: 142.28
   w: 0.4884
 
@@ -55,6 +57,16 @@ Permeability:
   r1:
     type: all
     value: 5e-13
+
+Pressure:
+  r1:
+    type: all
+    value: 13.79E3 #confirmar
+
+Temperature:
+  r1:
+    type: all
+    value: 366.33
 
 Wells:
   P1:
