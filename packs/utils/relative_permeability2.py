@@ -21,10 +21,10 @@ class BrooksAndCorey:
         self.Sor = self.Sorw * (1 - Sg / (1 - self.Swr - self.Sorg)) + \
                     self.Sorg * Sg / (1 - self.Swr - self.Sorg)
         kr = np.zeros(saturations.shape)
-        kr[] = self.krw0 * ((Sw - self.Swr) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_w
-        kro = self.kro0 * ((saturations[0,:] - self.Sor) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_o
+        krw = self.krw0 * ((Sw - self.Swr) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_w
+        kro = self.kro0 * ((So - self.Sor) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_o
         krg = self.krg0 * ((Sg - self.Sgr) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_g
         return krw, kro, krg
 
-    def __call__(self, saturations):
+    def __call__(self, So, Sg, Sw):
         return self.relative_permeabilities(Sw, So, Sg)
