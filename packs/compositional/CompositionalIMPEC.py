@@ -49,9 +49,9 @@ class CompositionalTPFA(DataManager):
 
     def set_properties(self, fluid_properties, elements_lv0): #provavelmente n vai estar aqui
 
-        component_molar_fractions = np.zeros([self.Nc+1, self.n_phases, self.n_blocks])
-        phase_mass_densities = np.zeros([1, self.n_phases, self.n_blocks])
-        phase_molar_densities = np.copy(phase_mass_densities)
+        self.component_molar_fractions = np.zeros([self.Nc+1, self.n_phases, self.n_blocks])
+        self.phase_mass_densities = np.zeros([1, self.n_phases, self.n_blocks])
+        self.phase_molar_densities = np.copy(phase_mass_densities)
 
         self.component_molar_fractions[:,0,:] = fluid_properties.x
         self.component_molar_fractions[:,1,:] = fluid_properties.y
