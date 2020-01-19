@@ -20,7 +20,7 @@ def initial_mesh(load=False, convert=False):
 
     if multilevel_data and load_multilevel_data:
         from ..load.preprocessor_load import init_mesh
-        M = init_mesh('flying/multilevel_data-all.h5m')
+        M = init_mesh('flying/multilevel_data-all_.h5m')
         elements_lv0 = ElementsLv0(M, load=load)
         data_impress = Data(M, elements_lv0, load=load)
         if not load:

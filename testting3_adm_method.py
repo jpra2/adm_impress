@@ -51,10 +51,9 @@ adm_method.solve_multiscale_pressure(T, b)
 # tpfa_solver.get_flux_faces_and_volumes()
 
 data_impress['erro'] = np.absolute((p2-data_impress['pms'])/p2)
-#
 data_impress.update_variables_to_mesh()
 # if biphasic:
 #     n=1
-
-M.core.print(folder='results', file='test'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+n=0
+M.core.print(folder='results', file='test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 import pdb; pdb.set_trace()

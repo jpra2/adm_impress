@@ -139,11 +139,13 @@ def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     el0 = np.concatenate(rest[i].toarray())
     el2 = np.zeros(len(gid0))
     l2 = el2.copy()
-    for fid in el0:
-        if fid == 0:
+    cont = 0
+    for fid, val in enumerate(el0):
+        if val == 0:
+            cont += 1
             continue
-
-        el2[gid_coarse2==fid] = np.ones(len(el2[gid_coarse2==fid]))
+        else:
+            el2[gid_coarse1==fid] = np.ones(len(el2[gid_coarse1==fid]))
 
     for fid, val in enumerate(l0):
         if val == 0:
@@ -155,7 +157,8 @@ def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     data_impress['verif_po'] = l2
     data_impress['verif_rest'] = el2
     data_impress.update_variables_to_mesh(['verif_po', 'verif_rest'])
-    M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    M.core.print(file='results/test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    import pdb; pdb.set_trace()
 
 def dados_unitarios(data_impress):
     data_impress['hs'] = np.ones(len(data_impress['hs'])*3).reshape([len(data_impress['hs']), 3])
@@ -175,21 +178,33 @@ load_operators = data_loaded['load_operators']
 _debug = data_loaded['_debug']
 
 M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
-M.core.print(file='test'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
-import pdb; pdb.set_trace()
+# M.core.print(file='test'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+# import pdb; pdb.set_trace()
 # dados_unitarios(data_impress)
 
-#######################
-# tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
-# tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
-# # tpfa_solver.get_RHS_term()
-# # tpfa_solver.get_transmissibility_matrix()
-# multilevel_operators = MultilevelOperators(2, data_impress, M.multilevel_data, load=load_operators)
+######################
+tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
+tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
+# tpfa_solver.get_RHS_term()
+# tpfa_solver.get_transmissibility_matrix()
+multilevel_operators = MultilevelOperators(2, data_impress, M.multilevel_data, load=load_operators)
 #
-# if load_operators:
-#     pass
-# else:
-#     multilevel_operators.run(tpfa_solver['Tini'])
+if load_operators:
+    pass
+else:
+    multilevel_operators.run(tpfa_solver['Tini'])
+
+# op2 = multilevel_operators['prolongation_level_2']
+# rest2 = multilevel_operators['restriction_level_2']
+# gid0 = data_impress['GID_0']
+# gidc1 = data_impress['GID_1']
+# gidc2 = data_impress['GID_2']
+#
+# for i in range(op2.shape[1]):
+#     mostrar_2(i, data_impress, M, op2, rest2, gid0, gidc1, gidc2)
+#
+# import pdb; pdb.set_trace()
+
 
 # if _debug:
 #     op1 = multilevel_operators['prolongation_level_1']
