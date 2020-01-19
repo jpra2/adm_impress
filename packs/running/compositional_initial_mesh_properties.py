@@ -7,6 +7,7 @@ from ..preprocess.preprocess1 import set_saturation_regions
 from ..preprocess.prep0_0 import Preprocess0
 from ..directories import data_loaded
 from ..multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
+from ..compositional.get_properties import FluidProperties
 import numpy as np
 
 def initial_mesh(load=False, convert=False):
@@ -15,7 +16,6 @@ def initial_mesh(load=False, convert=False):
 
     compositional = data_loaded['compositional_data']
     load_compositional_data = data_loaded['load_data']
-    fluid_properties = data_loaded['compositional']
 
     if compositional and not load_compositional_data:
         M = init_mesh('flying/compositional_data-all_.h5m')
@@ -23,6 +23,6 @@ def initial_mesh(load=False, convert=False):
         data_impress = Data(M, elements_lv0, load=load)
         if not load:
             Preprocess0(M, elements_lv0)
-        fluid_properties = FluidProperties() #CREATE
+        #fluid_properties = FluidProperties()
 
-    return M,elements_lv0,data_impress,wells,fluid_properties
+    return M,elements_lv0, data_impress, wells #fluid_properties
