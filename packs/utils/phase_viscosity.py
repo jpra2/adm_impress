@@ -2,12 +2,12 @@ import numpy as np
 
 ## Attention to units: Temperature[K] and Pressure[atm]
 # P  = 9.87E-6*P #[Pa] to [atm]
-
+# Still going to add StoneII method so the user can choose
 class LorenzBrayClark:
-    def __init__(self,n_blocks):
+    def __init__(self,n_blocks,fluid_properties):
         self.n_blocks = n_blocks
-        self.P = 9.87E-6*P
-        self.Vc = 1e3*Vc
+        self.P = 9.87E-6*fluid_properties.P
+        self.Vc = 1e3*fluid_properties.Vc
 
     def component_viscosity(self,T,fluid_properties):
         mi_components = np.zeros(fluid_properties.Nc)
@@ -27,8 +27,8 @@ class LorenzBrayClark:
 
     def mixture_viscosity(self,fluid_properties):
         self.component_molar_fractions = np.zeros(fluid_properties.Nc,2,self.n_blocks)
-        self.component_molar_fractions[:,0,:] = fluid_properties.component_molar_fractions[:,0,:]
-        self.component_molar_fractions[:,1,:] = fluid_properties.component_molar_fractions[:,1,:]
+        self.component_molar_fractions[:,0,:] = fluid_properties.x
+        self.component_molar_fractions[:,1,:] = fluid_properties.y
 
         mi_mix = np.sum(component_molar_fractions * self.mi_components *
                 fluid_properties.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0) \
@@ -68,7 +68,8 @@ class LorenzBrayClark:
 
         return mi_phase
 
-    def __call__(self,T,fluid_properties):
+    def __call__(self,fluid_properties):
+        T = fluid_properties.T
         self.component_viscosity(T,fluid_properties)
         self.mixture_viscosity(self,fluid_properties)
         mi_phase = self.phase_viscosity(self,fluid_properties)
