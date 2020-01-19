@@ -30,9 +30,9 @@ class LorenzBrayClark:
         self.component_molar_fractions[:,0,:] = fluid_properties.x
         self.component_molar_fractions[:,1,:] = fluid_properties.y
 
-        mi_mix = np.sum(component_molar_fractions * self.mi_components *
+        mi_mix = np.sum(self.component_molar_fractions * self.mi_components *
                 fluid_properties.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0) \
-                /np.sum(component_molar_fractions *
+                /np.sum(self.component_molar_fractions *
                 fluid_properties.Mw[:, np.newaxis, np.newaxis] , axis = 0)
 
         self.mi_mix = mi_mix[np.newaxis,:,:]
@@ -41,8 +41,11 @@ class LorenzBrayClark:
         #include in the entry parameters the vc: component critical molar volume
         # mi_phase = np.zeros([1,2,self.n_blocks])
         a = np.array([0.1023,0.023354,0.058533, -0.040758, 0.0093324])
+        self.phase_mass_densities = np.zeros([1, self.n_phases, self.n_blocks])
+        self.phase_mass_densities[0,0,:] = fluid_properties.rho_L
+        self.phase_mass_densities[0,1,:] = fluid_properties.rho_V
 
-        phase_reduced_rho = fluid_properties.phase_rho * \
+        phase_reduced_rho = self.phase_mass_densities * \
             np.sum(self.component_molar_fractions * fluid_properties.Vc, axis = 0)
 
         # ind_lower = np.argwhere(phase_reduced_molar_density <= 0.18)
