@@ -1,5 +1,5 @@
 mesh_name: mesh/100x1x1.msh
-
+n_test: 0
 compositional: True
 load_compositional_data: False
 load_data: False
@@ -21,7 +21,7 @@ compositional_data:
   rock_compressibility: 7.25e-5
   mi_W: 1e-3
   rho_W: 999.6
-  Mw_w: 
+  Mw_w:
   Sorw: 1e-6
   Sorg: 1e-6
   Swr: 0.25
