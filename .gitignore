@@ -7,6 +7,7 @@
 *.vtk
 *.msh
 !27x27x27.msh
+!100x1x1.msh
 *.txt
 *.csv
 *.png
