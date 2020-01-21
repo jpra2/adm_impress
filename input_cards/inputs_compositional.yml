@@ -9,6 +9,12 @@ set_permeability: true
 gravity: false
 deletar_results: false
 load_operators: false
+read_permeability: false
+monophasic_data: false
+
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
 
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
@@ -21,24 +27,28 @@ compositional_data:
   rock_compressibility: 7.25e-5
   mi_W: 1e-3
   rho_W: 999.6
-  Mw_w:
+  Mw_w: 18.015e-3
   Sorw: 1e-6
   Sorg: 1e-6
   Swr: 0.25
   Sgr: 0
   krw0: 1.0
-  kwg0: 1.0
+  krg0: 1.0
   kro0: 1.0
   n_o: 2.
   n_g: 2.
   n_w: 2.
-  z: 1.
-  Tc: 617.7
-  Pc: 2103000.0
-  Vc: 0.00428556
-  R: 8.314
-  Mw: 142.28
-  w: 0.4884
+  z: [1.]
+  Tc: [617.7]
+  Pc: [2103000.0]
+  Vc: [0.00428556]
+  R: [8.314]
+  Mw: [142.28e-3]
+  w: [0.4884]
+  Bin: [0]
+  C7: [1]
+  P: 13.79E3
+  T: 366.33
 
 
 #water saturation data
@@ -56,17 +66,17 @@ Porosity:
 Permeability:
   r1:
     type: all
-    value: 5e-13
+    value: [5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13]
 
-Pressure:
-  r1:
-    type: all
-    value: 13.79E3 #confirmar
-
-Temperature:
-  r1:
-    type: all
-    value: 366.33
+# Pressure:
+#   r1:
+#     type: all
+#     value: 13.79E3 #confirmar
+#
+# Temperature:
+#   r1:
+#     type: all
+#     value: 366.33
 
 Wells:
   P1:
