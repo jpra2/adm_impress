@@ -754,6 +754,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         return list_objects
 
     def set_paralel_pcorr(self):
+        self.set_pms_flux_intersect_faces()
         transmissibility = self.data_impress['transmissibility']
         presc_flux_volumes = self.data_impress['pms_flux_interfaces_volumes']
         levels = self.data_impress['LEVEL']
