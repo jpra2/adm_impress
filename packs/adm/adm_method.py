@@ -3,14 +3,14 @@ import numpy as np
 import scipy.sparse as sp
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 from ..flux_calculation.flux_tpfa import TpfaFlux2
-from scipy.sparse import linalg
-from ..directories import file_adm_mesh_def
-import matplotlib.pyplot as plt
 import multiprocessing as mp
 from .local_solution import LocalSolution
 from. obj_infos import InfosForProcess
 from ..directories import data_loaded
 from ..errors.err import ConservativeVolumeError, PmsFluxFacesError
+from scipy.sparse import linalg
+from ..directories import file_adm_mesh_def
+import matplotlib.pyplot as plt
 import time
 
 
@@ -135,13 +135,9 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.adm_op_n = 'adm_prolongation_level_'
         self.adm_rest_n = 'adm_restriction_level_'
 
-        self.so_nv1 = False
         self.n_cpu = mp.cpu_count()
         self.n_workers = self.n_cpu
-
-
-        # if load == False:
-        #     self.set_initial_mesh()
+        self.so_nv1 = False
 
     def set_level_wells(self):
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
@@ -514,6 +510,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['pms_flux_faces'] = pms_flux_faces
 
     def set_pcorr(self):
+
         _debug = data_loaded['_debug']
         presc_flux_volumes = self.data_impress['pms_flux_interfaces_volumes'].copy()
         flux_faces = self.data_impress['pms_flux_faces']
@@ -573,7 +570,8 @@ class AdmMethod(DataManager, TpfaFlux2):
                 local_neig_internal_local_faces[:,0] = all_local_ids_coarse[neig_internal_local_faces[:,0]]
                 local_neig_internal_local_faces[:,1] = all_local_ids_coarse[neig_internal_local_faces[:,1]]
                 local_intern_boundary_volumes = all_local_ids_coarse[intern_boundary_volumes]
-                # values_q = presc_flux_volumes[intern_boundary_volumes]
+                t0 = transmissibility[intern_local_faces]
+                local_vertex = all_local_ids_coarse[vertex]
                 t0 = transmissibility[intern_local_faces]
                 x = solve_local_local_problem(self.solver.direct_solver, local_neig_internal_local_faces, t0, local_id_volumes,
                     local_vertex, pressure_vertex, local_intern_boundary_volumes, values_q)
@@ -620,7 +618,6 @@ class AdmMethod(DataManager, TpfaFlux2):
                 #     import pdb; pdb.set_trace()
                 # ##################
 
-
         volumes_fine = gid0[levels==0]
         intern_faces_volumes_fine = self.mesh.volumes.bridge_adjacencies(volumes_fine, 3, 2)
         intern_faces_volumes_fine = np.setdiff1d(intern_faces_volumes_fine, self.elements_lv0['boundary_faces'])
@@ -646,7 +643,6 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['flux_volumes'] = flux_volumes
 
         if _debug:
-            import pdb; pdb.set_trace()
             #######################
             ## test
             v0 = neig_internal_faces
@@ -655,8 +651,8 @@ class AdmMethod(DataManager, TpfaFlux2):
             cols = np.repeat(0, len(lines))
             data = np.array([flux_faces[internal_faces], -flux_faces[internal_faces]]).flatten()
             flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
-            if not np.allclose(flux_volumes_2, flux_volumes):
-                raise ValueError('Diferenca entre fluxo pms local e global')
+            # if not np.allclose(flux_volumes_2, flux_volumes):
+            #     raise ValueError('Diferenca entre fluxo pms local e global')
             self.data_impress['flux_volumes_test'] = flux_volumes_2
             ######################################
 
@@ -885,6 +881,7 @@ class AdmMethod(DataManager, TpfaFlux2):
             ######################################
 
     def set_initial_mesh(self, mlo, T, b):
+        return 0
 
         M = self.mesh
 

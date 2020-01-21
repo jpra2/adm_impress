@@ -10,7 +10,7 @@ class InfoManager:
         self.file_name = to_file_name2
         self.from_file_name1 = from_file_name1
 
-        if set([self.file_name]) & set(self.__class__.all_files.keys()):
+        if set([self.file_name]) & set(InfoManager.all_files.keys()):
             raise NameError(f'\n O arquivo {self.file_name} ja foi carregado\n')
         self.load()
         InfoManager.all_files[self.file_name] = self
