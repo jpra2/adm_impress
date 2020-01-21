@@ -40,26 +40,26 @@ Wells:
     - 0.0
     - 0.0
     p1:
-    - 20.0
-    - 10.0
-    - 54.0
+    - 1.0
+    - 1.0
+    - 27.0
     prescription: Q
     type: Injector
     type_region: box
-    value: 1000000.0
+    value: 10000.0
   P3:
     p0:
-    - 520.0
-    - 260.0
+    - 26.0
+    - 26.0
     - 0.0
     p1:
-    - 540.0
-    - 270.0
-    - 54.0
+    - 27.0
+    - 27.0
+    - 27.0
     prescription: P
     type: Producer
     type_region: box
-    value: 1.0
+    value: 4000.0
 _debug: true
 biphasic: false
 biphasic_data:
@@ -83,7 +83,7 @@ biphasic_data:
   - 0.3
   - 0.5
 convert_english_to_SI: false
-deletar_results: false
+deletar_results: true
 file_name_permeability: spe10_perms_and_phi.npz
 gravity: false
 load_biphasic_data: false

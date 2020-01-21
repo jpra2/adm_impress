@@ -11,9 +11,9 @@ class InfoManager:
         self.from_file_name1 = from_file_name1
 
         if set([self.file_name]) & set(self.__class__.all_files.keys()):
-            raise NameError(f'\n O arquivo {file_name} ja foi carregado\n')
+            raise NameError(f'\n O arquivo {self.file_name} ja foi carregado\n')
         self.load()
-        self.__class__.all_files[self.file_name] = self
+        InfoManager.all_files[self.file_name] = self
 
     def load(self):
         with open(self.from_file_name1, 'r') as f:

@@ -16,7 +16,8 @@ class AMSTpfa:
         gids: 'global_ids',
         primal_ids: 'primal_ids',
         data_name='AMSTpfa_',
-        load=False):
+        load=False,
+        tpfalizar=False):
 
         # data_name = AMSTpfa.name + str(AMSTpfa.id) + '.npz'
         # data_name = data_name + str(AMSTpfa.id) + '.npz'
@@ -25,6 +26,7 @@ class AMSTpfa:
         # AMSTpfa.id += 1
 
         # self.T = T
+        self.tpfalizar = tpfalizar
         self.wirebasket_elements = np.array([internals, faces, edges, vertices])
         self.wirebasket_numbers = np.array([len(internals), len(faces), len(edges), len(vertices)])
         self.nv = self.wirebasket_numbers[-1]
@@ -89,7 +91,7 @@ class AMSTpfa:
         #faces
         Aff = Tmod[nni:nnf, nni:nnf]
         Afe = Tmod[nni:nnf, nnf:nne]
-        soma = Aif.transpose().sum(axis=1)
+        soma = Tmod[nni:nnf, 0:nni].sum(axis=1)
         d1 = np.matrix(Aff.diagonal()).reshape([nf, 1])
         d1 += soma
         Aff.setdiag(d1)
@@ -97,7 +99,7 @@ class AMSTpfa:
         #arestas
         Aee = Tmod[nnf:nne, nnf:nne]
         Aev = Tmod[nnf:nne, nne:nnv]
-        soma = Afe.transpose().sum(axis=1)
+        soma = Tmod[nnf:nne, nni:nnf].sum(axis=1)
         d1 = np.matrix(Aee.diagonal()).reshape([ne, 1])
         d1 += soma
         Aee.setdiag(d1)
@@ -149,9 +151,46 @@ class AMSTpfa:
 
         return self.GT*op*self.G2
 
+    def tpfalize(self, T_wire):
+        ni = self.wirebasket_numbers[0]
+        nf = self.wirebasket_numbers[1]
+        ne = self.wirebasket_numbers[2]
+        nv = self.wirebasket_numbers[3]
+
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
+
+        T_wire2 = T_wire.copy().tolil()
+
+        rr = np.array(T_wire2[0:nni, nnf:nnv].sum(axis=1).transpose())[0]
+        T_wire2[0:nni,nnf:nnv] = 0
+        inds = np.arange(nni)
+        T_wire2[inds,inds] += rr
+
+        rr = np.array(T_wire2[nni:nnf, nne:nnv].sum(axis=1).transpose())[0]
+        T_wire2[nni:nnf, nne:nnv] = 0
+        inds = np.arange(nni, nnf)
+        T_wire2[inds,inds] += rr
+
+        rr = np.array(T_wire2[nnf:nne, 0:nni].sum(axis=1).transpose())[0]
+        T_wire2[nnf:nne, 0:nni] = 0
+        inds = np.arange(nnf, nne)
+        T_wire2[inds,inds] += rr
+
+        rr = np.array(T_wire2[nne:nnv, 0:nnf].sum(axis=1).transpose())[0]
+        T_wire2[nne:nnv, 0:nnf] = 0
+        inds = np.arange(nne, nnv)
+        T_wire2[inds,inds] += rr
+
+        return T_wire2
+
     def run(self, T: 'transmissibility matrix'):
 
         T_wire = self.G*T*self.GT
+        if self.tpfalizar:
+            T_wire = self.tpfalize(T_wire)
         # self._data['T_wire'] = T_wire
         As = self.get_as(T_wire)
         OP = self.get_OP_AMS_TPFA_by_AS(As)

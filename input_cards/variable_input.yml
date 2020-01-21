@@ -438,8 +438,29 @@ pms_flux_interfaces_volumes:
   level: 0
 
 pms_flux_volumes:
-    type: volumes
-    data size: 1
-    data type: float
-    sparse: True
-    level: 0
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+pseudo_erro:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+erro:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+tpfa_pressure:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
