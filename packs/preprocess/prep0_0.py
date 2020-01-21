@@ -128,7 +128,9 @@ class Preprocess0:
         for reg in direc.data_loaded[direc.names_data_loaded_lv0[2]]:
             d0 = direc.data_loaded[direc.names_data_loaded_lv0[2]][reg]
             tipo = d0[direc.names_data_loaded_lv2[0]]
-            value = np.array([np.array(d0[direc.names_data_loaded_lv2[1]])])
+            value = np.array(d0[direc.names_data_loaded_lv2[1]])
+            value = np.array([float(v) for v in value.flatten()])
+            value = value[np.newaxis,:]
 
             if tipo == direc.types_region_data_loaded[0]:
                 # tamanho_variavel = M.data.info_data[M.data.variables_impress['permeability']][direc_impress.names_datas[0]]

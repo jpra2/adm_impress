@@ -4,14 +4,15 @@ import numpy as np
 # P  = 9.87E-6*P #[Pa] to [atm]
 # Still going to add StoneII method so the user can choose
 class LorenzBrayClark:
+
     def __init__(self,n_blocks,fluid_properties):
         self.n_blocks = n_blocks
         self.P = 9.87E-6*fluid_properties.P
         self.Vc = 1e3*fluid_properties.Vc
 
-    def component_viscosity(self,T,fluid_properties):
+    def component_viscosity(self, fluid_properties):
         mi_components = np.zeros(fluid_properties.Nc)
-        Trs = T/Tc
+        Trs = fluid_properties.T/fluid_properties.Tc
         ind_Tr_lower = np.argwhere(Trs <= 1.5)
         ind_Tr_higher = np.argwhere(Trs > 1.5)
         self.pure_components_viscosity_parameters = fluid_properties.Tc ** (1/6) \
@@ -26,7 +27,7 @@ class LorenzBrayClark:
         self.mi_components = np.ones([fluid_properties.Nc, 1, self.n_blocks]) * mi_components
 
     def mixture_viscosity(self,fluid_properties):
-        self.component_molar_fractions = np.zeros(fluid_properties.Nc,2,self.n_blocks)
+        self.component_molar_fractions = np.zeros([fluid_properties.Nc,2,self.n_blocks])
         self.component_molar_fractions[:,0,:] = fluid_properties.x
         self.component_molar_fractions[:,1,:] = fluid_properties.y
 
@@ -40,8 +41,8 @@ class LorenzBrayClark:
     def phase_viscosity(self,fluid_properties):
         #include in the entry parameters the vc: component critical molar volume
         # mi_phase = np.zeros([1,2,self.n_blocks])
-        a = np.array([0.1023,0.023354,0.058533, -0.040758, 0.0093324])
-        self.phase_mass_densities = np.zeros([1, self.n_phases, self.n_blocks])
+        a = np.array([0.1023, 0.023354, 0.058533, -0.040758, 0.0093324])
+        self.phase_mass_densities = np.zeros([1, 2, self.n_blocks])
         self.phase_mass_densities[0,0,:] = fluid_properties.rho_L
         self.phase_mass_densities[0,1,:] = fluid_properties.rho_V
 
@@ -71,9 +72,9 @@ class LorenzBrayClark:
 
         return mi_phase
 
-    def __call__(self,fluid_properties):
+    def __call__(self, fluid_properties):
         T = fluid_properties.T
-        self.component_viscosity(T,fluid_properties)
-        self.mixture_viscosity(self,fluid_properties)
-        mi_phase = self.phase_viscosity(self,fluid_properties)
+        self.component_viscosity(fluid_properties)
+        self.mixture_viscosity(fluid_properties)
+        mi_phase = self.phase_viscosity(fluid_properties)
         return mi_phase

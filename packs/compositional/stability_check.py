@@ -9,25 +9,28 @@ class StabilityCheck:
     """Check for stability of a thermodynamic equilibrium and returns the
     equilibrium phase compositions (perform the flash calculation)."""
 
-    def __init__(self, w, Bin, R, Tc, Pc, T, P, C7):
-        self.w = w
-        self.Bin = Bin
-        self.R = R
-        self.Tc = Tc
-        self.Pc = Pc
-        self.T = T
-        self.P = P
+    def __init__(self, w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7):
+        self.w = np.array(w).astype(float)
+        self.Bin = np.array(Bin).astype(float)
+        self.Mw = np.array(Mw).astype(float)
+        self.R = np.array(R).astype(float)
+        self.Tc = np.array(Tc).astype(float)
+        self.Pc = np.array(Pc).astype(float)
+        self.Vc = np.array(Vc).astype(float)
+        self.T = np.array(T).astype(float)
+        self.P = np.array(P).astype(float)
         self.Nc = len(w)
-        self.C7 = C7
+        self.C7 = np.array(C7)
         #StabilityCheck.TPD(self)
 
-    def run(self, z, Mw):
+    def run(self, z):
         if any(z <= 0):
-            self.molar_properties(z, Mw)
+            self.molar_properties(z)
         else:
             sp1,sp2 = self.Stability(z)
+            # import pdb; pdb.set_trace()
             if sp1 > 1 or sp2 > 1:
-                self.molar_properties(z, Mw)
+                self.molar_properties(z)
             '''if sp1<1 and sp2<1:
                 TPD = obj.TPD(z)
                 if TPD.any()<0: #checar se isso iria funcionar
@@ -252,8 +255,9 @@ class StabilityCheck:
     def solve_objective_function_Whitson(self, z):
         """ Solving for V """
         #K1 = max(self.K); KNc = min(self.K)
-        Vmax = 1 / (1 - min(self.K))
-        Vmin = 1 / (1 - max(self.K))
+        Vmax = max(1, 1 / (1 - min(self.K)))#1 / (1 - min(self.K))#
+        Vmin = min(0, 1 / (1 - max(self.K))) # 1 / (1 - max(self.K))
+
         #Vmin = ((K1-KNc)*z[self.K==K1]-(1-KNc))/((1-KNc)*(K1-1))
         #proposed by Li et al for Whitson method
         V = (Vmin + Vmax) / 2
@@ -263,9 +267,10 @@ class StabilityCheck:
             Vold = V
             f = sum((self.K - 1) * z / (1 + V * (self.K - 1)))
             df = -sum((self.K - 1) ** 2 * z / (1 + V * (self.K - 1)) ** 2)
+            # import pdb; pdb.set_trace()
             V = V - f / df #Newton-Raphson iterative method
-            if V > Vmax: V = Vmax
-            elif V < Vmin: V = Vmin
+            if V > Vmax: V = Vmax #(Vold + Vmax)/2
+            elif V < Vmin: V = Vmin #(Vold + Vmin)/2
 
         self.x = z / (1 + V * (self.K - 1))
         self.y = self.K * self.x
@@ -292,7 +297,7 @@ class StabilityCheck:
             self.fl = np.exp(lnphil) * (self.x * self.P)
             self.K = (self.fl / self.fv) * self.K
 
-    def molar_properties(self,z,Mw):
+    def molar_properties(self,z):
         self.coefficientsPR()
         # Aqui a correlação de wilson é utilizada apenas para achar o K inicial
         self.fv = 2 * np.ones(self.Nc); self.fl = np.ones(self.Nc) #entrar no primeiro loop
@@ -306,16 +311,20 @@ class StabilityCheck:
         self.L = 1 - self.V
 
         ''' Phase Molecular Weight '''
-        self.Mw_L = sum(self.x * Mw)
-        self.Mw_V = sum(self.y * Mw)
+        self.Mw_L = sum(self.x * self.Mw)
+        self.Mw_V = sum(self.y * self.Mw)
 
         ''' Phase Mass Densities '''
-        self.rho_L = self.Mw_L / self.L
-        self.rho_V = self.Mw_V / self.V
-
+        if self.V!=0:
+            self.rho_V = self.Mw_V / self.V
+        else: self.rho_V = 0
+        if self.L!=0:
+            self.rho_L = self.Mw_L / self.L
+        else: self.rho_L = 0
+        
         ''' Phase molar densities '''
         self.eta_L = self.rho_L/self.Mw_L
-        self.eta_V = self.who_V/self.Mw_V
+        self.eta_V = self.rho_V/self.Mw_V
 
         # se precisar retornar mais coisa, entra aqui
 

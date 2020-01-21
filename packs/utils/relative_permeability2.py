@@ -17,14 +17,15 @@ class BrooksAndCorey:
         self.kro0 = float(direc.data_loaded['compositional_data']['kro0'])
         self.krg0 = float(direc.data_loaded['compositional_data']['krg0'])
 
-    def relative_permeabilities(self, Sw, So, Sg):
-        self.Sor = self.Sorw * (1 - Sg / (1 - self.Swr - self.Sorg)) + \
-                    self.Sorg * Sg / (1 - self.Swr - self.Sorg)
+    def relative_permeabilities(self, saturations):
+        #saturations = [So,Sg,Sw]
+        self.Sor = self.Sorw * (1 - saturations[1] / (1 - self.Swr - self.Sorg)) + \
+                    self.Sorg * saturations[1] / (1 - self.Swr - self.Sorg)
         kr = np.zeros(saturations.shape)
-        krw = self.krw0 * ((Sw - self.Swr) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_w
-        kro = self.kro0 * ((So - self.Sor) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_o
-        krg = self.krg0 * ((Sg - self.Sgr) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_g
-        return krw, kro, krg
+        krw = self.krw0 * ((saturations[2] - self.Swr) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_w
+        kro = self.kro0 * ((saturations[0] - self.Sor) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_o
+        krg = self.krg0 * ((saturations[1] - self.Sgr) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_g
+        return kro, krg, krw
 
-    def __call__(self, So, Sg, Sw):
-        return self.relative_permeabilities(Sw, So, Sg)
+    def __call__(self, saturations):
+        return self.relative_permeabilities(saturations)

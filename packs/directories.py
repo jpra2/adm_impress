@@ -26,8 +26,7 @@ impress = 'impress'
 tcc = 'tcc'
 flying = 'flying'
 adm = 'adm'
-# input_file_0 = 'inputs0.yml'
-input_file_0 = 'input_cards/inputs0.yml'
+# input_file_0 = 'input_cards/inputs0.yml'
 ext_h5m = '.h5m'
 name_out_file = 'output'
 states = ['0', '1', '2']
@@ -62,14 +61,14 @@ names_outfiles_variables_steps = [os.path.join(flying, 'variables0.npz'),
                                   ]
 names_datas_contour = os.path.join(flying, 'datas_contour.npz')
 
-with open(input_file_0, 'r') as f:
+with open('input_cards/inputs_compositional.yml', 'r') as f:
     data_loaded = yaml.safe_load(f)
 
-with open('input_cards/variable_input.yml', 'r') as f:
-    variables_loaded = yaml.safe_load(f)
+# with open('input_cards/variable_input.yml', 'r') as f:
+#     variables_loaded = yaml.safe_load(f)
 
 with open('input_cards/variable_inputs_compositional.yml', 'r') as f:
-    variables_loaded_compositional = yaml.safe_load(f)
+    variables_loaded = yaml.safe_load(f)
 
 name_load = os.path.join(flying, 'load.npy')
 name_hist = os.path.join(flying, 'current_biphasic_results.npy')

@@ -1,0 +1,90 @@
+Permeability:
+  r1:
+    type: all
+    value:
+    - 5e-13
+    - 5e-13
+    - 5e-13
+    - 5e-13
+    - 5e-13
+    - 5e-13
+    - 5e-13
+    - 5e-13
+    - 5e-13
+Porosity:
+  r1:
+    type: all
+    value: 0.2
+Saturation:
+  r1:
+    type: all
+    value: 0.2
+Wells:
+  P1:
+    p0:
+    - 0.0
+    - 0.0
+    - 0.0
+    p1:
+    - 3.048
+    - 3.048
+    - 0.0
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 13.1
+compositional: true
+compositional_data:
+  Bin:
+  - 0
+  C7:
+  - 1
+  Mw:
+  - 0.14228
+  Mw_w: 0.018015
+  P: 13.79E3
+  Pc:
+  - 2103000.0
+  R:
+  - 8.314
+  Sgr: 0
+  Sorg: 1e-6
+  Sorw: 1e-6
+  Swr: 0.25
+  T: 366.33
+  Tc:
+  - 617.7
+  Vc:
+  - 0.00428556
+  krg0: 1.0
+  kro0: 1.0
+  krw0: 1.0
+  mi_W: 1e-3
+  n_g: 2.0
+  n_o: 2.0
+  n_w: 2.0
+  phase_viscosity: LorenzBrayClark
+  relative_permeability: BrooksAndCorey
+  rho_W: 999.6
+  rock_compressibility: 7.25e-05
+  tempo_maximo: null
+  vpis_para_gravar_vtk:
+  - 0.157
+  w:
+  - 0.4884
+  z:
+  - 1.0
+convert_english_to_SI: false
+deletar_results: false
+gravity: false
+load_compositional_data: false
+load_data: true
+load_operators: false
+mesh_name: mesh/100x1x1.msh
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+n_test: 0
+read_permeability: false
+set_permeability: true
+set_porosity: true

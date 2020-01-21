@@ -120,10 +120,10 @@ class Wells(DataManager):
         ws_inj = np.array(ws_inj).flatten()
         ws_prod = np.array(ws_prod).flatten()
 
-        self['ws_p'] = ws_p
-        self['ws_q'] = ws_q
-        self['ws_inj'] = ws_inj
-        self['ws_prod'] = ws_prod
+        self['ws_p'] = ws_p.astype(int)
+        self['ws_q'] = ws_q.astype(int)
+        self['ws_inj'] = ws_inj.astype(int)
+        self['ws_prod'] = ws_prod.astype(int)
         self['values_p'] = values_p
         self['values_q'] = values_q
         self['all_wells'] = np.union1d(ws_inj, ws_prod)
@@ -193,12 +193,13 @@ class Wells(DataManager):
     def get_facs_nn(self):
         assert not self._loaded
         M = self.mesh
-        wells_q = self['ws_q']
 
-        fc_n = M.volumes.bridge_adjacencies(wells_q, 3, 2).flatten()
-        contador = collections.Counter(fc_n)
-        facs_nn = np.array([k for k, v in contador.items() if v > 1])
-        self['facs_nn'] = facs_nn
+        # fc_n = M.volumes.bridge_adjacencies(wells_q, 3, 2).flatten()
+        # contador = collections.Counter(fc_n)
+        # facs_nn = np.array([k for k, v in contador.items() if v > 1])
+        # self['facs_nn'] = facs_nn
+
+        self['facs_nn'] = []
 
     def loaded(self):
         assert not self._loaded
