@@ -40,16 +40,17 @@ adm_method.organize_ops_adm(mlo['prolongation_level_2'],
                             2)
 
 adm_method.solve_multiscale_pressure(T, b)
-adm_method.set_pcorr()
+# adm_method.set_pcorr()
+adm_method.set_paralel_pcorr()
 # # b1.run_2()
 # # adm_method.set_pms_flux_volumes()
 #
 # # import pdb; pdb.set_trace()
-# p2 = adm_method.solver.direct_solver(T, b)
-# data_impress['pressure'] = p2
+p2 = adm_method.solver.direct_solver(T, b)
+data_impress['pressure'] = p2
 # tpfa_solver.get_flux_faces_and_volumes()
 
-# data_impress['erro'] = np.absolute((p2-data_impress['pms'])/p2)
+data_impress['erro'] = np.absolute((p2-data_impress['pms']))
 data_impress.update_variables_to_mesh()
 # if biphasic:
 #     n=1

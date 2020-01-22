@@ -137,16 +137,16 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         self.n_cpu = mp.cpu_count()
         self.n_workers = self.n_cpu
-        self.so_nv1 = False
+        self.so_nv1 = True
 
     def set_level_wells(self):
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
 
-        # so_nv1 = False
-        #
-        # if so_nv1:
-        #     self.data_impress['LEVEL'] = np.ones(len(self.data_impress['GID_0']), dtype=int)
-        #     self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids), dtype=int)
+        so_nv1 = self.so_nv1
+
+        if so_nv1:
+            self.data_impress['LEVEL'] = np.ones(len(self.data_impress['GID_0']), dtype=int)
+            self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids), dtype=int)
 
     def set_adm_mesh(self):
 
@@ -290,14 +290,14 @@ class AdmMethod(DataManager, TpfaFlux2):
         ###############################
         ## test
 
-        if (so_nv1 and level > 1):
-            resto = np.setdiff1d(gid_0, self.all_wells_ids)
-            self.data_impress['LEVEL'][resto] = np.ones(len(resto), dtype=int)
-            n_adm = len(np.unique(self.data_impress['LEVEL_ID_1']))
-            OP_ADM = sp.identity(n_adm)
-            self._data[self.adm_op_n + str(level)] = OP_ADM
-            self._data[self.adm_rest_n + str(level)] = OP_ADM
-            return 0
+        # if (so_nv1 and level > 1):
+        #     resto = np.setdiff1d(gid_0, self.all_wells_ids)
+        #     self.data_impress['LEVEL'][resto] = np.ones(len(resto), dtype=int)
+        #     n_adm = len(np.unique(self.data_impress['LEVEL_ID_1']))
+        #     OP_ADM = sp.identity(n_adm)
+        #     self._data[self.adm_op_n + str(level)] = OP_ADM
+        #     self._data[self.adm_rest_n + str(level)] = OP_ADM
+        #     return 0
 
         if level == 1:
             OP_ADM, OR_ADM = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level)
@@ -370,15 +370,17 @@ class AdmMethod(DataManager, TpfaFlux2):
         self._data[self.adm_rest_n + str(level)] = OR_ADM
 
     def organize_ops_adm_level_1(self, OP_AMS, OR_AMS, level):
+
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
         gid_ant = self.data_impress['GID_' + str(level-1)]
         level_id = self.data_impress['LEVEL_ID_' + str(level)]
         level_id_ant = self.data_impress['LEVEL_ID_' + str(level-1)]
         levels = self.data_impress['LEVEL']
+        vertices = gid_0[self.data_impress['DUAL_1']==3]
         OP_AMS = OP_AMS.copy().tolil()
 
-        AMS_TO_ADM = dict(zip(gid_level, level_id))
+        AMS_TO_ADM = dict(zip(gid_level[vertices], level_id[vertices]))
 
         nivel_0 = gid_0[levels==0]
         ID_global1 = nivel_0

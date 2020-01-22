@@ -120,10 +120,10 @@ class Wells(DataManager):
         ws_inj = np.array(ws_inj).flatten()
         ws_prod = np.array(ws_prod).flatten()
 
-        self['ws_p'] = ws_p
+        self['ws_p'] = ws_p.astype(np.int64)
         self['ws_q'] = ws_q.astype(np.int64)
-        self['ws_inj'] = ws_inj
-        self['ws_prod'] = ws_prod
+        self['ws_inj'] = ws_inj.astype(np.int64)
+        self['ws_prod'] = ws_prod.astype(np.int64)
         self['values_p'] = values_p
         self['values_q'] = values_q
         self['all_wells'] = np.union1d(ws_inj, ws_prod)

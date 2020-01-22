@@ -5,8 +5,8 @@ state: 0
 type_of_solution: fine_scale
 gravity: false
 # load_biphasic: false
-# load_data: false
-load_data: true
+load_data: false
+# load_data: true
 convert_english_to_SI: false
 # load_mesh: false
 monophasic: true
@@ -75,15 +75,15 @@ Saturation:
 Wells:
   P1:
     p0: [0.0, 0.0, 0.0]
-    p1: [1.0, 1.0, 27.0]
-    prescription: Q
-    # prescription: P
+    p1: [1.0, 27.0, 27.0]
+    # prescription: Q
+    prescription: P
     type: Injector
     type_region: box
     # value: 1000000.0
     value: 10000.0
   P3:
-    p0: [26.0, 26.0, 0.0]
+    p0: [26.0, 0.0, 0.0]
     p1: [27.0, 27.0, 27.0]
     prescription: P
     type: Producer

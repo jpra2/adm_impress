@@ -129,10 +129,17 @@ def mostrar(i, data_impress, M, op1, rest1):
     el0 = np.concatenate(rest1[i].toarray())
     data_impress['verif_po'] = l0
     data_impress['verif_rest'] = el0
-    data_impress.upda# tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
-# tpfa_solver.run()
-# data_impress.update_variables_to_mesh()te_variables_to_mesh(['verif_po', 'verif_rest'])
-    M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    rr = set(np.where(l0>0)[0])
+    rr2 = set(np.where(el0>0)[0])
+    if rr & rr2 != rr2:
+        import pdb; pdb.set_trace()
+    # data_impress.update_variables_to_mesh(['verif_po', 'verif_rest'])
+    # tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
+    # tpfa_solver.run()
+    # data_impress.update_variables_to_mesh()te_variables_to_mesh(['verif_po', 'verif_rest'])
+    # n=0
+    # M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    # import pdb; pdb.set_trace()
 
 def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     l0 = np.concatenate(op[:,i].toarray())
@@ -204,6 +211,17 @@ else:
 #     mostrar_2(i, data_impress, M, op2, rest2, gid0, gidc1, gidc2)
 #
 # import pdb; pdb.set_trace()
+
+# op1 = multilevel_operators['prolongation_level_1']
+# rest1 = multilevel_operators['restriction_level_1']
+#
+# for i in range(op1.shape[1]):
+#     mostrar(i, data_impress, M, op1, rest1)
+#
+# import pdb; pdb.set_trace()
+
+
+
 
 
 # if _debug:
