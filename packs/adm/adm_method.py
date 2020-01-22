@@ -137,7 +137,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         self.n_cpu = mp.cpu_count()
         self.n_workers = self.n_cpu
-        self.so_nv1 = True
+        self.so_nv1 = False
 
     def set_level_wells(self):
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
@@ -276,6 +276,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['LEVEL'] = np.repeat(-1, len(self.data_impress['LEVEL']))
 
     def organize_ops_adm(self, OP_AMS, OR_AMS, level):
+        t0 = time.time()
 
         so_nv1 = self.so_nv1
 
@@ -285,19 +286,8 @@ class AdmMethod(DataManager, TpfaFlux2):
         level_id = self.data_impress['LEVEL_ID_' + str(level)]
         level_id_ant = self.data_impress['LEVEL_ID_' + str(level-1)]
         levels = self.data_impress['LEVEL']
+        dual_id = self.data_impress['DUAL_'+str(level)]
         OP_AMS = OP_AMS.tolil()
-
-        ###############################
-        ## test
-
-        # if (so_nv1 and level > 1):
-        #     resto = np.setdiff1d(gid_0, self.all_wells_ids)
-        #     self.data_impress['LEVEL'][resto] = np.ones(len(resto), dtype=int)
-        #     n_adm = len(np.unique(self.data_impress['LEVEL_ID_1']))
-        #     OP_ADM = sp.identity(n_adm)
-        #     self._data[self.adm_op_n + str(level)] = OP_ADM
-        #     self._data[self.adm_rest_n + str(level)] = OP_ADM
-        #     return 0
 
         if level == 1:
             OP_ADM, OR_ADM = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level)
@@ -305,10 +295,10 @@ class AdmMethod(DataManager, TpfaFlux2):
             self._data[self.adm_rest_n + str(level)] = OR_ADM
             return 0
 
-        ################################
-
         n_adm = len(np.unique(level_id))
         n_adm_ant = len(np.unique(level_id_ant))
+        n1_adm = n_adm_ant
+        n2_adm = n_adm
 
         if n_adm == n_adm_ant:
             OP_ADM = sp.identity(n_adm)
@@ -316,58 +306,69 @@ class AdmMethod(DataManager, TpfaFlux2):
             self._data[self.adm_rest_n + str(level)] = OP_ADM
             return 0
 
-        gids_nivel_n_engrossados = gid_0[levels<level]
-        classic_ids_n_engrossados = set(gid_ant[gids_nivel_n_engrossados])
-        adm_ids_ant_n_engrossados = level_id_ant[gids_nivel_n_engrossados]
-        adm_ids_level_n_engrossados = level_id[gids_nivel_n_engrossados]
-        if level > 1:
-            adm_ids_ant_n_engrossados, adm_ids_level_n_engrossados = get_levelantids_levelids(adm_ids_ant_n_engrossados, adm_ids_level_n_engrossados)
+        lines=[]
+        cols=[]
+        data=[]
 
-        lines_op = adm_ids_ant_n_engrossados
-        cols_op = adm_ids_level_n_engrossados
-        data_op = np.ones(len(adm_ids_ant_n_engrossados))
+        lines_or=[]
+        cols_or=[]
+        data_or=[]
 
-        adm_ids_ant_gids = level_id_ant
-        adm_ids_level = level_id
-        classic_ids_ant = gid_ant
-        classic_ids_level = gid_level
+        vertices_lv = gid_0[self.data_impress['DUAL_1']==3]
+        for i in range(2, self.n_levels+1):
+            vertices_lv = np.intersect1d(vertices_lv, gid_0[self.data_impress['DUAL_'+str(i)]==3])
 
-        ams_to_adm_coarse = dict(zip(classic_ids_level, adm_ids_level))
-        ams_to_adm_fine = dict(zip(classic_ids_ant, adm_ids_ant_gids))
+        ids_classic_level = self.data_impress['GID_'+str(level)][vertices_lv]
+        ids_adm_level = self.data_impress['LEVEL_ID_'+str(level)][vertices_lv]
+        AMS_TO_ADM = dict(zip(ids_classic_level, ids_adm_level))
 
-        if level > 1:
-            adm_ids_ant_gids, adm_ids_level = get_levelantids_levelids(adm_ids_ant_gids, adm_ids_level)
-
-        lines_2_op = []
-        cols_2_op = []
-        data_2_op = []
-
-        lines_or = adm_ids_level
-        cols_or = adm_ids_ant_gids
-        data_or = np.repeat(1.0, len(adm_ids_level))
-
-        data_op_ams = sp.find(OP_AMS)
-
-        for l, c, d, in zip(data_op_ams[0], data_op_ams[1], data_op_ams[2]):
-            if set([l]) & classic_ids_n_engrossados:
+        veri = set()
+        My_IDs_2 = set()
+        for gid in gid_0:
+            ID_ADM_ANT = level_id_ant[gid]
+            if set([ID_ADM_ANT]) & set(My_IDs_2):
                 continue
-            lines_2_op.append(ams_to_adm_fine[l])
-            cols_2_op.append(ams_to_adm_coarse[c])
-            data_2_op.append(d)
+            My_IDs_2.add(ID_ADM_ANT)
+            ID_ADM = level_id[gid]
+            nivel = levels[gid]
+            ID_AMS = gid_ant[gid]
 
-        lines_2_op = np.array(lines_2_op)
-        cols_2_op = np.array(cols_2_op)
-        data_2_op = np.array(data_2_op)
+            if nivel<level:
+                lines.append(ID_ADM_ANT)
+                cols.append(ID_ADM)
+                data.append(1)
+                lines_or.append(ID_ADM)
+                cols_or.append(ID_ADM_ANT)
+                data_or.append(1)
+                #OP_ADM_2[ID_global][ID_ADM]=1
+            else:
+                lines_or.append(ID_ADM)
+                cols_or.append(ID_ADM_ANT)
+                data_or.append(1)
+                ff = sp.find(OP_AMS[ID_AMS])
+                ids_ADM = [AMS_TO_ADM[k] for k in ff[1]]
+                lines += np.repeat(ID_ADM_ANT, len(ids_ADM)).astype(int).tolist()
+                cols += ids_ADM
+                data += ff[2].tolist()
 
-        lines_op = np.concatenate([lines_op, lines_2_op])
-        cols_op = np.concatenate([cols_op, cols_2_op])
-        data_op = np.concatenate([data_op, data_2_op])
+                # for i in range(OP_AMS[ID_AMS].shape[1]):
+                #     p = OP_AMS[ID_AMS, i]
+                #     if p != 0:
+                #         id_ADM = AMS_TO_ADM[i]
+                #         lines.append(ID_ADM)
+                #         cols.append(id_ADM)
+                #         data.append(float(p))
+                #         #OP_ADM_2[ID_global][id_ADM]=p
 
-        OP_ADM = sp.csc_matrix((data_op, (lines_op, cols_op)), shape=(n_adm_ant, n_adm))
-        OR_ADM = sp.csc_matrix((data_or, (lines_or, cols_or)), shape=(n_adm, n_adm_ant))
+        OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(n1_adm,n2_adm))
+        OR_ADM = sp.csc_matrix((data_or,(lines_or,cols_or)),shape=(n2_adm,n1_adm))
+        t1 = time.time()
+        dt = t1-t0
 
         self._data[self.adm_op_n + str(level)] = OP_ADM
         self._data[self.adm_rest_n + str(level)] = OR_ADM
+
+        return 0
 
     def organize_ops_adm_level_1(self, OP_AMS, OR_AMS, level):
 
