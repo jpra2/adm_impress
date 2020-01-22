@@ -29,7 +29,7 @@ class StabilityCheck:
         else:
             sp1,sp2 = self.Stability(z)
             # import pdb; pdb.set_trace()
-            if sp1 > 1 or sp2 > 1:
+            if sp1 >= 1 or sp2 >= 1:
                 self.molar_properties(z)
             '''if sp1<1 and sp2<1:
                 TPD = obj.TPD(z)
@@ -197,7 +197,7 @@ class StabilityCheck:
         index1 = np.argwhere(self.K == K1)
         zi = np.delete(z, index1)
         indexNc = np.argwhere(self.K == KNc)
-        zi = np.delete(zi, indexNc - 1)
+        zi = np.delete(zi, indexNc)
 
         #starting x
         self.x = np.zeros(self.Nc)
@@ -255,26 +255,39 @@ class StabilityCheck:
     def solve_objective_function_Whitson(self, z):
         """ Solving for V """
         #K1 = max(self.K); KNc = min(self.K)
-        Vmax = max(1, 1 / (1 - min(self.K)))#1 / (1 - min(self.K))#
-        Vmin = min(0, 1 / (1 - max(self.K))) # 1 / (1 - max(self.K))
-
+        #Vmax = max(1, 1 / (1 - min(self.K)))#1 / (1 - min(self.K))#
+        #Vmin = min(0, 1 / (1 - max(self.K))) # 1 / (1 - max(self.K))
         #Vmin = ((K1-KNc)*z[self.K==K1]-(1-KNc))/((1-KNc)*(K1-1))
         #proposed by Li et al for Whitson method
-        V = (Vmin + Vmax) / 2
-        Vold = V / 2 #just to get into the loop
+        #V = (Vmin + Vmax) / 2
+        #Vold = V / 2 #just to get into the loop
 
-        while abs(V / Vold - 1) > 1e-8:
-            Vold = V
-            f = sum((self.K - 1) * z / (1 + V * (self.K - 1)))
-            df = -sum((self.K - 1) ** 2 * z / (1 + V * (self.K - 1)) ** 2)
-            # import pdb; pdb.set_trace()
-            V = V - f / df #Newton-Raphson iterative method
-            if V > Vmax: V = Vmax #(Vold + Vmax)/2
-            elif V < Vmin: V = Vmin #(Vold + Vmin)/2
-
-        self.x = z / (1 + V * (self.K - 1))
+        # while abs(V / Vold - 1) > 1e-8:
+        #     Vold = V
+        #     f = sum((self.K - 1) * z / (1 + V * (self.K - 1)))
+        #     df = -sum((self.K - 1) ** 2 * z / (1 + V * (self.K - 1)) ** 2)
+        #     V = V - f / df #Newton-Raphson iterative method
+        #     if V > Vmax: V = Vmax#(Vmax + Vold)/2
+        #     elif V < Vmin: V = Vmin#(Vmin + Vold)/2
+        #
+        # self.x = z / (1 + V * (self.K - 1))
+        # self.y = self.K * self.x
+        Lmax = max(self.K)/(max(self.K)-1)
+        Lmin = min(self.K)/(min(self.K)-1)
+        L = (Lmin + Lmax)/2
+        Lold = L/2
+        import pdb; pdb.set_trace()
+        while abs(L / Lold - 1) > 1e-9:
+            Lold = L
+            f = sum((1 - self.K) * z / (Lold + (1 - Lold) * self.K ))
+            df = -sum((1 - self.K) ** 2 * z / (Lold + (1 - Lold) * self.K) ** 2)
+            L = Lold - f / df #Newton-Raphson iterative method
+            if L > Lmax: L = (Lmax + Lold)/2
+            elif L < Lmin: L = (Lmin + Lold)/2
+        # self.L = L
+        # self.V = (1 - self.L)
+        self.x = z / (L + (1 - L) * self.K)
         self.y = self.K * self.x
-
 
     def molar_properties_Whitson(self, z):
 
@@ -315,20 +328,17 @@ class StabilityCheck:
         self.Mw_V = sum(self.y * self.Mw)
 
         ''' Phase Mass Densities '''
-        if self.V!=0:
-            self.rho_V = self.Mw_V / self.V
-        else: self.rho_V = 0
-        if self.L!=0:
+        if self.L != 0:
             self.rho_L = self.Mw_L / self.L
         else: self.rho_L = 0
-        
+        if self.V != 0:
+            self.rho_V = self.Mw_V / self.V
+        else: self.rho_V = 0
+
         ''' Phase molar densities '''
         self.eta_L = self.rho_L/self.Mw_L
         self.eta_V = self.rho_V/self.Mw_V
-
         # se precisar retornar mais coisa, entra aqui
-
-
 
     def TPD(self, z): #ainda não sei onde usar isso
         x = np.zeros(self.Nc)

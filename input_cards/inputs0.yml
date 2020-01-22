@@ -26,9 +26,9 @@ Wells:
     - 0.0
     - 0.0
     p1:
+    - 6.096
     - 3.048
     - 3.048
-    - 0.0
     prescription: P
     type: Producer
     type_region: box
@@ -42,11 +42,11 @@ compositional_data:
   Mw:
   - 0.14228
   Mw_w: 0.018015
-  P: 13.79E3
+  P: 13.79E6
   Pc:
   - 2103000.0
   R:
-  - 8.314
+  - 8.3144598
   Sgr: 0
   Sorg: 1e-6
   Sorw: 1e-6
@@ -71,7 +71,7 @@ compositional_data:
   vpis_para_gravar_vtk:
   - 0.157
   w:
-  - 0.4884
+  - 0.4885
   z:
   - 1.0
 convert_english_to_SI: false

@@ -42,12 +42,12 @@ compositional_data:
   Tc: [617.7]
   Pc: [2103000.0]
   Vc: [0.00428556]
-  R: [8.314]
+  R: [8.3144598]
   Mw: [142.28e-3]
-  w: [0.4884]
+  w: [0.4885]
   Bin: [0]
   C7: [1]
-  P: 13.79E3
+  P: 13.79E6
   T: 366.33
 
 
@@ -81,7 +81,7 @@ Permeability:
 Wells:
   P1:
     p0: [0.0, 0.0, 0.0]
-    p1: [3.048, 3.048, 0.0]
+    p1: [6.096, 3.048, 3.048]
     prescription: P
     type: Producer
     type_region: box
