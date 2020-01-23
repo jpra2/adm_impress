@@ -276,9 +276,6 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['LEVEL'] = np.repeat(-1, len(self.data_impress['LEVEL']))
 
     def organize_ops_adm(self, OP_AMS, OR_AMS, level):
-        t0 = time.time()
-
-        so_nv1 = self.so_nv1
 
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
@@ -320,9 +317,9 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         ids_classic_level = self.data_impress['GID_'+str(level)][vertices_lv]
         ids_adm_level = self.data_impress['LEVEL_ID_'+str(level)][vertices_lv]
-        AMS_TO_ADM = dict(zip(ids_classic_level, ids_adm_level))
+        AMS_TO_ADM = np.arange(len(ids_classic_level))
+        AMS_TO_ADM[ids_classic_level] = ids_adm_level
 
-        veri = set()
         My_IDs_2 = set()
         for gid in gid_0:
             ID_ADM_ANT = level_id_ant[gid]
@@ -334,9 +331,9 @@ class AdmMethod(DataManager, TpfaFlux2):
             ID_AMS = gid_ant[gid]
 
             if nivel<level:
-                lines.append(ID_ADM_ANT)
-                cols.append(ID_ADM)
-                data.append(1)
+                lines.append([ID_ADM_ANT])
+                cols.append([ID_ADM])
+                data.append([1])
                 lines_or.append(ID_ADM)
                 cols_or.append(ID_ADM_ANT)
                 data_or.append(1)
@@ -346,24 +343,17 @@ class AdmMethod(DataManager, TpfaFlux2):
                 cols_or.append(ID_ADM_ANT)
                 data_or.append(1)
                 ff = sp.find(OP_AMS[ID_AMS])
-                ids_ADM = [AMS_TO_ADM[k] for k in ff[1]]
-                lines += np.repeat(ID_ADM_ANT, len(ids_ADM)).astype(int).tolist()
-                cols += ids_ADM
-                data += ff[2].tolist()
+                ids_ADM = AMS_TO_ADM[ff[1]]
+                lines.append(np.repeat(ID_ADM_ANT, len(ids_ADM)).astype(int))
+                cols.append(ids_ADM)
+                data.append(ff[2])
 
-                # for i in range(OP_AMS[ID_AMS].shape[1]):
-                #     p = OP_AMS[ID_AMS, i]
-                #     if p != 0:
-                #         id_ADM = AMS_TO_ADM[i]
-                #         lines.append(ID_ADM)
-                #         cols.append(id_ADM)
-                #         data.append(float(p))
-                #         #OP_ADM_2[ID_global][id_ADM]=p
+        lines = np.concatenate(lines)
+        cols = np.concatenate(cols)
+        data = np.concatenate(data)
 
         OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(n1_adm,n2_adm))
         OR_ADM = sp.csc_matrix((data_or,(lines_or,cols_or)),shape=(n2_adm,n1_adm))
-        t1 = time.time()
-        dt = t1-t0
 
         self._data[self.adm_op_n + str(level)] = OP_ADM
         self._data[self.adm_rest_n + str(level)] = OR_ADM
@@ -381,7 +371,8 @@ class AdmMethod(DataManager, TpfaFlux2):
         vertices = gid_0[self.data_impress['DUAL_1']==3]
         OP_AMS = OP_AMS.copy().tolil()
 
-        AMS_TO_ADM = dict(zip(gid_level[vertices], level_id[vertices]))
+        AMS_TO_ADM = np.arange(len(gid_level[vertices]))
+        AMS_TO_ADM[gid_level[vertices]] = level_id[vertices]
 
         nivel_0 = gid_0[levels==0]
         ID_global1 = nivel_0
@@ -399,7 +390,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         lines=ID_global1
         cols=IDs_ADM1
         data=np.repeat(1,len(lines))
-        ID_ADM1=[AMS_TO_ADM[k] for k in c1]
+        ID_ADM1 = AMS_TO_ADM[c1]
 
         lines = np.concatenate([lines,l1])
         cols = np.concatenate([cols,ID_ADM1])
