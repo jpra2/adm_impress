@@ -20,8 +20,8 @@ if biphasic:
 
 adm_method = AdmMethod(wells['all_wells'], 2, M, data_impress, elements_lv0)
 T, b = tpfa_solver.run()
-p2 = adm_method.solver.direct_solver(T, b)
-data_impress['pressure'] = p2
+# p2 = adm_method.solver.direct_solver(T, b)
+# data_impress['pressure'] = p2
 
 
 
@@ -54,6 +54,7 @@ data_impress['erro'] = np.absolute((p2-data_impress['pms']))
 data_impress.update_variables_to_mesh()
 # if biphasic:
 #     n=1
+b1.run_2()
 n=0
 M.core.print(folder='results', file='test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 import pdb; pdb.set_trace()
