@@ -3,7 +3,10 @@ from Get_Jacobian.Assembly import Ass
 import sympy as sym
 from impress import FineScaleMesh as mesh
 import pdb; pdb.set_trace()
-M=mesh('input/mesh/5x5x5.msh')
+
+# M=mesh('/mesh/5x5x5.msh')
+# import pdb; pdb.set_trace()
+M=MeshManager('mesh/6x6.msh',dim=2)
 obj=Ass(M)
 F_J=obj.F_Jacobian.copy()
 internos=obj.internal_faces.copy()

@@ -6,12 +6,14 @@ import os
 
 class MeshManager:
     def __init__(self,mesh_file, dim=2):
+
         self.dimension = dim
         self.mb = core.Core()
         self.root_set = self.mb.get_root_set()
         self.mtu = topo_util.MeshTopoUtil(self.mb)
-
+        # import pdb; pdb.set_trace()
         self.mb.load_file(mesh_file)
+        # self.mb.load_file('mesh/6x6.msh')
 
         self.physical_tag = self.mb.tag_get_handle("MATERIAL_SET")
         self.physical_sets = self.mb.get_entities_by_type_and_tag(

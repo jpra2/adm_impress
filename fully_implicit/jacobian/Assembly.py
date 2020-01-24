@@ -1,6 +1,7 @@
-from Get_Jacobian.obt_jacobian import F_Jacobian
+from fully_implicit.get_jacobian.obt_jacobian import F_Jacobian
 import sympy as sym
 import numpy as np
+
 # import pandas as pd
 from sympy import Heaviside as H
 
@@ -134,7 +135,7 @@ class Ass:
         print('oleo, agua',qo,qw,qo+qw,'pvi',self.pvi_acum)
         m4 = M.mb.create_meshset()
         M.mb.add_entities(m4, M.all_volumes)
-        M.mb.write_file('output/volumes'+str(self.i)+'.vtk',[m4])
+        M.mb.write_file('results/biphasic/fully_implicit'+str(self.i)+'.vtk',[m4])
         M.mb.tag_set_data(M.Swn1s_tag,M.all_volumes,S0[gids])
 
         # import pdb; pdb.set_trace()
