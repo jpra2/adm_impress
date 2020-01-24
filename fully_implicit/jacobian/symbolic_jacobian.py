@@ -17,11 +17,11 @@ class symbolic_J:
         relative_permeability_model=fluid_properties["relative_permeability"]
 
         T, S_up, Sw, So, Swn, Son, Dt, k, phi, p_i, p_j, Dx, Dy=sym.symbols("T S Sw So Swn Son Dt k phi p_i p_j Dx Dy")
+        if relative_permeability_model=='BrooksAndCorey':
+            krw=((Sw - Swc)/(1 - Swc - Sor))**n_o
+            kro=(1-(Sw - Swc)/(1 - Swc - Sor))**n_w
 
-        krw=((Sw - Swc)/(1 - Swc - Sor))**n_o
-        kro=(1-(Sw - Swc)/(1 - Swc - Sor))**n_w
-
-        lam_w=k*krw/mi_w
+        lam_w=k*krw/mi_w # k é a permeabilidade upwind
         lam_o=k*kro/mi_o
 
         self.F_w=r_w*lam_w*T*(p_j-p_i)

@@ -1,4 +1,4 @@
-from fully_implicit.get_jacobian.obt_jacobian import F_Jacobian
+from fully_implicit.jacobian.symbolic_jacobian import symbolic_J as F_Jacobian
 import sympy as sym
 import numpy as np
 
@@ -8,8 +8,10 @@ from sympy import Heaviside as H
 T, S_up, Sw, So, Swn, Son, Dt, k, phi, p_i, p_j, Dx, Dy=sym.symbols("T S Sw So Swn Son Dt k phi p_i p_j Dx Dy")
 class Ass:
     def __init__(self,M):
-        self.internal_faces=[f for f in M.all_faces if len(M.mb.get_adjacencies(f,2))==2]
+        self.internal_faces=[f for f in M.all_faces if len(M.mb.get_adjacencies(f,M.dimension))==2]
+
         self.boundary_faces=np.setdiff1d(M.all_faces,self.internal_faces)
+
         self.F_Jacobian=F_Jacobian().J
         # self.set_properties(M)
 
@@ -88,7 +90,7 @@ class Ass:
 
             Fp=-q[0:n]
             Fs=-q[n:]
-            # import pdb; pdb.set_trace()
+
             Mp=Jpp-np.dot(Jps,np.linalg.solve(Jss,Jsp))
             qp=Fp-np.dot(Jps,np.linalg.solve(Jss,Fs))
             dp=np.linalg.solve(Mp,qp)
@@ -165,6 +167,7 @@ class Ass:
 
 
             adjs=np.array([M.mb.get_adjacencies(face, M.dimension) for face in internal_faces])
+            
             adjs0=adjs[:,0]
             adjs1=adjs[:,1]
 
