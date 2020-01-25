@@ -125,6 +125,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.ml_data = M.multilevel_data
         self.all_wells_ids = all_wells_ids
         self.n_levels = n_levels
+        self.delta_sat_max = 0.1
         # self.n_levels = 1
         self.data_impress = data_impress
         self.number_vols_in_levels = np.zeros(self.n_levels+1, dtype=int)
@@ -792,19 +793,6 @@ class AdmMethod(DataManager, TpfaFlux2):
         m2w, w2m = list(zip(*master2worker))
         procs = [mp.Process(target=f, args=[obj, comm]) for obj, comm in zip(list_objects, w2m)]
 
-        # def f(local_solution_obj, qinfos, qvolumes, qfaces):
-        #     local_solution_obj.run(qinfos, qvolumes, qfaces)
-        #     # return 0
-
-            # return 0
-
-        # results = Parallel(n_jobs=self.n_workers, require='sharedmem')(delayed(f)(i) for i in list_objects)
-        # procs = []
-
-        # for i in range(self.n_workers):
-        #     proc = mp.Process(target=f, args=(list_objects[i], qinfos, qvolumes, qfaces))
-        #     procs.append(proc)
-
         for proc in procs:
             proc.start()
 
@@ -861,19 +849,38 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['flux_volumes'] = _flux_volumes
         self.data_impress['flux_faces'] = _flux_faces
 
-        _debug = data_loaded['_debug']
-        if _debug:
+        # _debug = data_loaded['_debug']
+        # if _debug:
+        #
+        #     #######################
+        #     ## test
+        #     v0 = g_neig_internal_faces
+        #     internal_faces = self.elements_lv0['internal_faces']
+        #     lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+        #     cols = np.repeat(0, len(lines))
+        #     data = np.array([_flux_faces[internal_faces], -_flux_faces[internal_faces]]).flatten()
+        #     flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+        #     self.data_impress['flux_volumes_test'] = flux_volumes_2
+        #     ######################################
 
-            #######################
-            ## test
-            v0 = g_neig_internal_faces
-            internal_faces = self.elements_lv0['internal_faces']
-            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
-            cols = np.repeat(0, len(lines))
-            data = np.array([_flux_faces[internal_faces], -_flux_faces[internal_faces]]).flatten()
-            flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
-            self.data_impress['flux_volumes_test'] = flux_volumes_2
-            ######################################
+    def set_saturation_level(self):
+
+        levels = self.data_impress['LEVEL'].copy()
+        gid1 = self.data_impress['GID_1']
+        gid0 = self.data_impress['GID_0']
+        saturation = self.data_impress['saturation']
+        all_wells = set(self.all_wells_ids)
+        gidsc = np.unique(gid1)
+        for gidc in gidsc:
+            gids0 = gid0[gid1==gidc]
+            if set(gids0) & all_wells:
+                continue
+            sats_local = saturation[gids0]
+            dif = sats_local.max() - sats_local.min()
+            if dif >= self.delta_sat_max:
+                levels[gids0] = np.repeat(0, len(gids0))
+
+        self.data_impress['LEVEL'] = levels.copy()
 
     def set_initial_mesh(self, mlo, T, b):
         return 0

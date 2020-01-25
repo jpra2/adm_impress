@@ -18,7 +18,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.relative_permeability = self.relative_permeability()
         self.V_total = (data_impress['volume']*data_impress['poro']).sum()
         self.max_contador_vtk = len(self.biphasic_data['vpis_para_gravar_vtk'])
-        self.delta_sat_max = 0.4
+        self.delta_sat_max = 0.2
         self.lim_flux_w = 9e-8
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
@@ -31,10 +31,14 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
             self.loop = 0
             self.vpi = 0.0
             self.t = 0.0
+            self.delta_t = 0.0
             self.contador_vtk = 0
             self.update_relative_permeability()
             self.update_mobilities()
             self.update_transmissibility_ini()
+            self.export_to_npz()
+            self.update_current_biphasic_results(0.0)
+            self.save_infos()
         else:
             self.load_infos()
 
@@ -403,6 +407,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.data_impress['pressure'] = p
         self.get_flux_faces_and_volumes()
         self.run_2(save = save)
+        return T, b
 
     def run_2(self, save=False):
         ######
@@ -425,3 +430,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
 
         if save:
             self.save_infos()
+
+    def get_T_and_b(self):
+
+        T, b = super().run()
+        return T, b
