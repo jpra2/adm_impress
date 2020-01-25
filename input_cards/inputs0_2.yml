@@ -10,7 +10,7 @@ load_data: false
 convert_english_to_SI: false
 # load_mesh: false
 monophasic: true
-biphasic: false
+biphasic: true
 # biphasic: true
 load_biphasic_data: false
 

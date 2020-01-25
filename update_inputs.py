@@ -6,6 +6,7 @@ dd['load_data'] = True
 dd['load_multilevel_data'] = True
 dd['load_operators'] = True
 dd['deletar_results'] = True
+dd['load_biphasic_data'] = True
 dd.save_obj()
 
 if dd['deletar_results']:
