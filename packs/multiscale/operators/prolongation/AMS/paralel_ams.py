@@ -9,7 +9,7 @@ import multiprocessing as mp
 class InfoForLocalOperator(CommonInfos):
 
 	def __init__(self,
-		T: 'transmissibility matrix',
+		T: 'local_transmissibility matrix',
 		gids: 'global ids',
 		dual_id: 'global dual ids',
 		primal_id: 'global primal ids'):
@@ -20,9 +20,33 @@ class InfoForLocalOperator(CommonInfos):
 		self.primal_id = primal_id
 
 
-class SubDomain:
-	def __init__(self, dual_info: 'gids of dual volume'):
-		self.dual_info = dual_info
+class SubDomain(CommonInfos):
+	def __init__(self,
+		T: 'global transmissibility matrix',
+		g_local_ids: 'global id of local volumes',
+		dual_ids: 'global dual id of all volumes',
+		gids: 'global ids',
+		primal_ids: 'global primal ids'
+	):
+		self.l_T = self.get_local_t(T, g_local_gids) # local transmissibility
+		self.g_local_ids = g_local_ids
+		g_vertices = g_local_ids[dual_ids[g_local_ids]==3]
+		local_dual_id = dual_ids[g_local_ids]
+		global_primal_ids = primal_ids[g_local_ids]
+
+		local_primal_ids = np.arange(len(g_vertices))
+		primal_ids_vertices = primal_ids[g_vertices]
+		map_primal_ids = dict(zip(primal_ids_vertices, local_primal_ids))
+		self.r_map_primal_ids = dict(zip(local_primal_ids, primal_ids_vertices))
+
+		self.local_ids = np.arange(len(g_local_ids))
+		self.l_primal_ids = np.array([map_primal_ids[k] for k in primal_ids_vertices])
+		self.l_primal_ids = np.arange(len(self.g_vertices))
+		self.l_interns = self.local_ids[local_dual_id==0]
+		self.l_faces = self.local_ids[local_dual_id==1]
+		self.l_edges = self.local_ids[local_dual_id==2]
+		self.l_vertices = self.local_ids[local_dual_id==3]
+
 
 class LocalOperator:
 	def __init__(self, subDomains: 'list of SubDomain',
@@ -74,7 +98,7 @@ class LocalOperator:
 				operator = AMSMpfa
 
 			operator = operator(interns_local, edges_local, faces_local, vertexes_local, local_ids, local_primal_ids)
-			
+
 
 
 
