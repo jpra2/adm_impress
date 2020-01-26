@@ -21,12 +21,14 @@ class InfoForLocalOperator(CommonInfos):
 
 
 class SubDomain(CommonInfos):
+
 	def __init__(self,
 		T: 'global transmissibility matrix',
 		g_local_ids: 'global id of local volumes',
 		dual_ids: 'global dual id of all volumes',
 		gids: 'global ids',
-		primal_ids: 'global primal ids'
+		primal_ids: 'global primal ids',
+		coupled_edges: 'global coupled edges'=[]
 	):
 		self.l_T = self.get_local_t(T, g_local_gids) # local transmissibility
 		self.g_local_ids = g_local_ids
@@ -40,12 +42,14 @@ class SubDomain(CommonInfos):
 		self.r_map_primal_ids = dict(zip(local_primal_ids, primal_ids_vertices))
 
 		self.local_ids = np.arange(len(g_local_ids))
-		self.l_primal_ids = np.array([map_primal_ids[k] for k in primal_ids_vertices])
-		self.l_primal_ids = np.arange(len(self.g_vertices))
+		remaped_gids = gids.copy()
+		remaped_gids[g_local_ids] = self.local_ids
+		self.l_primal_ids = np.array([map_primal_ids[k] for k in global_primal_ids])
 		self.l_interns = self.local_ids[local_dual_id==0]
 		self.l_faces = self.local_ids[local_dual_id==1]
 		self.l_edges = self.local_ids[local_dual_id==2]
 		self.l_vertices = self.local_ids[local_dual_id==3]
+		self.l_coupled_edges = remaped_gids[coupled_edges]
 
 
 class LocalOperator:
