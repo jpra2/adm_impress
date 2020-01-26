@@ -1,55 +1,44 @@
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse import linalg
-from .ams_tpfa import AmsTpfa
+from .ams_tpfa import AMSTpfa
 from .ams_mpfa import AMSMpfa
 from .....common_files.common_infos import CommonInfos
 import multiprocessing as mp
-
-class InfoForLocalOperator(CommonInfos):
-
-	def __init__(self,
-		T: 'local_transmissibility matrix',
-		gids: 'global ids',
-		dual_id: 'global dual ids',
-		primal_id: 'global primal ids'):
-
-		self.T = T
-		self.gids = gids
-		self.dual_id = dual_id
-		self.primal_id = primal_id
-
+import collections
 
 class SubDomain(CommonInfos):
 
 	def __init__(self,
 		T: 'global transmissibility matrix',
 		g_local_ids: 'global id of local volumes',
-		dual_ids: 'global dual id of all volumes',
-		gids: 'global ids',
-		primal_ids: 'global primal ids',
-		coupled_edges: 'global coupled edges'=[]
+		dual_ids: 'dual id of g_local_ids',
+		primal_ids: 'primal ids of g_local_ids',
+		coupled_edges: 'coupled edges'=[]
 	):
-		self.l_T = self.get_local_t(T, g_local_gids) # local transmissibility
+
+		self.l_T = self.get_local_t(T, g_local_ids) # local transmissibility
 		self.g_local_ids = g_local_ids
-		g_vertices = g_local_ids[dual_ids[g_local_ids]==3]
-		local_dual_id = dual_ids[g_local_ids]
-		global_primal_ids = primal_ids[g_local_ids]
+		local_dual_id = dual_ids
+		g_vertices = g_local_ids[local_dual_id==3]
+		global_primal_ids = primal_ids
 
 		local_primal_ids = np.arange(len(g_vertices))
-		primal_ids_vertices = primal_ids[g_vertices]
+		primal_ids_vertices = primal_ids[local_dual_id==3]
 		map_primal_ids = dict(zip(primal_ids_vertices, local_primal_ids))
 		self.r_map_primal_ids = dict(zip(local_primal_ids, primal_ids_vertices))
 
 		self.local_ids = np.arange(len(g_local_ids))
-		remaped_gids = gids.copy()
-		remaped_gids[g_local_ids] = self.local_ids
-		self.l_primal_ids = np.array([map_primal_ids[k] for k in global_primal_ids])
+		map_gids = dict(zip(g_local_ids, self.local_ids))
+		try:
+			self.l_primal_ids = np.array([map_primal_ids[k] for k in global_primal_ids])
+		except:
+			import pdb; pdb.set_trace()
 		self.l_interns = self.local_ids[local_dual_id==0]
 		self.l_faces = self.local_ids[local_dual_id==1]
 		self.l_edges = self.local_ids[local_dual_id==2]
 		self.l_vertices = self.local_ids[local_dual_id==3]
-		self.l_coupled_edges = remaped_gids[coupled_edges]
+		self.l_coupled_edges = np.array([map_gids[k] for k in coupled_edges])
 
 
 class LocalOperator:
@@ -152,11 +141,49 @@ class LocalOperator:
 
 		d0 = sp.find(op_local)
 
-    	lines_global_op = gids[d0[0]]
-    	cols_global_op = primal_ids[d0[1]]
-    	data_global_op = d0[2]
+		lines_global_op = gids[d0[0]]
+		cols_global_op = primal_ids[d0[1]]
+		data_global_op = d0[2]
 
-    	return lines_global_op, cols_global_op, data_global_op
+		return lines_global_op, cols_global_op, data_global_op
+
+class MasterOP:
+	def __init__(self,
+		T: 'global transmissibility matrix',
+		all_dual_subsets: 'all dual volumes',
+		operator
+	):
+
+		list_of_subdomains = self.get_list_subdomains(T, all_dual_subsets)
+
+		import pdb; pdb.set_trace()
+
+
+	def get_list_subdomains(self, T, all_dual_subsets):
+		list_of_subdomains = []
+		for dual_subset in all_dual_subsets:
+			sarray = np.concatenate([dual_subset])
+			volumes = sarray['volumes']
+			dual_ids1 = sarray['dual_id']
+			primal_ids1 = sarray['primal_id']
+
+			all_edges = volumes[dual_ids1==2]
+			contador = collections.Counter(all_edges)
+			coupled_edges = np.array([k for k, v in contador.items() if v > 1])
+			local_gids = np.unique(volumes)
+			dual_ids = np.concatenate([dual_ids1[volumes==k] for k in local_gids])
+			primal_ids = np.concatenate([primal_ids1[volumes==k] for k in local_gids])
+			list_of_subdomains.append(SubDomain(T, local_gids, dual_ids, primal_ids, coupled_edges))
+
+		return list_of_subdomains
+
+
+
+
+
+
+
+
 
 if __name__=="__main__":
 	nworker=6
@@ -166,8 +193,8 @@ if __name__=="__main__":
 	procs = [mp.Process(target=LocalOperator, args=[s]) for s in subDomains] #Cria processos
 
 	for p in procs:
-        p.start()
+		p.start()
 
 	## receber resultados
 	for p in procs:
-        p.join()
+		p.join()

@@ -4,6 +4,7 @@ from ..operators.prolongation.AMS.ams_mpfa import AMSMpfa
 import numpy as np
 import scipy.sparse as sp
 import os
+from ...multiscale.operators.prolongation.AMS import paralel_ams
 
 def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
 
@@ -166,3 +167,11 @@ class MultilevelOperators(DataManager):
             cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
+
+    def run_paralel(self, T: 'fine transmissibility without boundary conditions'):
+        T_ant = T.copy()
+
+        for n in range(self.n_levels):
+            level = n+1
+            master = paralel_ams.MasterOP(T, self.ml_data['dual_structure_level_'+str(level)], self.operators[str(level)])
+        pass
