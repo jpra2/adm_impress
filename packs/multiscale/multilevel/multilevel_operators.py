@@ -173,5 +173,19 @@ class MultilevelOperators(DataManager):
 
         for n in range(self.n_levels):
             level = n+1
-            master = paralel_ams.MasterOP(T, self.ml_data['dual_structure_level_'+str(level)], self.operators[str(level)])
-        pass
+            master = paralel_ams.MasterOP(T, self.ml_data['dual_structure_level_'+str(level)])
+            OP = master.run()
+            self._data[self.prolongation + str(level)] = OP
+            OR = self._data[self.restriction + str(level)]
+
+            import pdb; pdb.set_trace()
+
+            sp.save_npz(os.path.join('flying', self.prolongation + str(level) + '.npz'), OP)
+            sp.save_npz(os.path.join('flying', self.restriction + str(level) + '.npz'), OR)
+
+            if level == self.n_levels:
+                continue
+            T_ant = OR*T_ant*OP
+            cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]
+            cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
+            T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)

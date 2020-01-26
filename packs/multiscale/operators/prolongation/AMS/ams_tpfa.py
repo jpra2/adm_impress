@@ -17,7 +17,8 @@ class AMSTpfa:
         primal_ids: 'primal_ids',
         data_name='AMSTpfa_',
         load=False,
-        tpfalizar=False):
+        tpfalizar=False,
+        coupled_edges=[]):
 
         # data_name = AMSTpfa.name + str(AMSTpfa.id) + '.npz'
         # data_name = data_name + str(AMSTpfa.id) + '.npz'

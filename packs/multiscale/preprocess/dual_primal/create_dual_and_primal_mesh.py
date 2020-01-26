@@ -146,6 +146,7 @@ class MultilevelData(DataManager):
         self.get_boundary_coarse_faces(M)
         self.get_dual_structure()
         # self.get_elements_2(M)
+        self.export_to_npz()
         self.loaded()
 
         # if not self._carregar:
@@ -835,9 +836,9 @@ class MultilevelData(DataManager):
         dt = [('volumes', np.dtype(int)), ('dual_id', np.dtype(int)), ('primal_id', np.dtype(int))]
         all_volumes = M.core.all_volumes
 
-        av = mb.create_meshset()
-        mb.add_entities(av, all_volumes)
-        mb.write_file('teste0.vtk', [av])
+        # av = mb.create_meshset()
+        # mb.add_entities(av, all_volumes)
+        # mb.write_file('teste0.vtk', [av])
 
         for level in range(1, self.levels):
             structure = []
@@ -883,12 +884,12 @@ class MultilevelData(DataManager):
                 else:
                     gids2 = gids1
 
-                vertices = gids2[duais==3]
-                if len(vertices) < 8:
-                    av = mb.create_meshset()
-                    mb.add_entities(av, all_volumes[gids2])
-                    mb.write_file('teste.vtk', [av])
-                    import pdb; pdb.set_trace()
+                # vertices = gids2[duais==3]
+                # if len(vertices) < 8:
+                #     av = mb.create_meshset()
+                #     mb.add_entities(av, all_volumes[gids2])
+                #     mb.write_file('teste.vtk', [av])
+                #     import pdb; pdb.set_trace()
 
                 sarray = np.zeros(len(gids2), dtype=dt)
                 sarray['volumes'] = gids2
