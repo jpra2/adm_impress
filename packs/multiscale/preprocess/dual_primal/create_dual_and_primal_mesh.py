@@ -847,6 +847,13 @@ class MultilevelData(DataManager):
             dual_ids = self.data_impress['DUAL_'+str(level)]
             set_interns = set(gids[dual_ids==0])
 
+            # if level > 1:
+            #     av = mb.create_meshset()
+            #     mb.add_entities(av, all_volumes[gids[dual_ids==0]])
+            #     mb.write_file('teste.vtk', [av])
+            #     import pdb; pdb.set_trace()
+            #     import pdb; pdb.set_trace()
+
             while set_interns:
 
                 intern0 = [set_interns.pop()]
@@ -859,37 +866,67 @@ class MultilevelData(DataManager):
                     inter = np.unique(np.concatenate(M.volumes.bridge_adjacencies(intern0, 0, 3)))
                     dif = set(inter) - set(intern0)
 
-                primais1 = coarse_id_level[inter]
-                all_primal_ids = np.unique(primais1)
-                all_vertex = []
-                for gidc in all_primal_ids:
-                    vertex_all = gid_level[dual_ids==3]
-                    vols_in_coarse_id = gid_level[coarse_id_level==gidc]
-                    vertex = np.intersect1d(vertex_all, vols_in_coarse_id)
-                    all_vertex.append(vertex)
-
-                all_vertex = np.concatenate(all_vertex)
-                vertex_in_inter = np.intersect1d(inter, all_vertex)
-                all_vertex = np.setdiff1d(all_vertex, vertex_in_inter)
-                if len(all_vertex) > 0:
-                    inter = np.concatenate([inter, all_vertex])
-
-                gids1 = gid_level[inter]
-                primais = coarse_id_level[inter]
-                duais = dual_ids[inter]
-
-                if level > 1:
-                    gids2, duais = get_levelantids_levelids(gids1, duais)
-                    gids2, primais = get_levelantids_levelids(gids1, primais)
-                else:
-                    gids2 = gids1
-
-                # vertices = gids2[duais==3]
-                # if len(vertices) < 8:
+                # if level > 1:
                 #     av = mb.create_meshset()
-                #     mb.add_entities(av, all_volumes[gids2])
+                #     mb.add_entities(av, all_volumes[gids[inter]])
                 #     mb.write_file('teste.vtk', [av])
                 #     import pdb; pdb.set_trace()
+
+                if level == 1:
+                    primais1 = coarse_id_level[inter]
+                    all_primal_ids = np.unique(primais1)
+                    all_vertex = []
+                    for gidc in all_primal_ids:
+                        vertex_all = gid_level[dual_ids==3]
+                        vols_in_coarse_id = gid_level[coarse_id_level==gidc]
+                        vertex = np.intersect1d(vertex_all, vols_in_coarse_id)
+                        all_vertex.append(vertex)
+
+                    all_vertex = np.concatenate(all_vertex)
+                    vertex_in_inter = np.intersect1d(inter, all_vertex)
+                    all_vertex = np.setdiff1d(all_vertex, vertex_in_inter)
+                    if len(all_vertex) > 0:
+                        inter = np.concatenate([inter, all_vertex])
+
+                _gids1 = gid_level[inter]
+                _primais = coarse_id_level[inter]
+                _duais = dual_ids[inter]
+
+                if level > 1:
+                    yy1 = dict(zip(_gids1, _primais))
+                    yy2 = dict(zip(_gids1, _duais))
+                    test1 = np.array(list(yy1.keys()))
+                    test2 = np.array(list(yy2.keys()))
+                    if not np.allclose(test1, test2):
+                        print('erro')
+                        import pdb; pdb.set_trace()
+                    gids2 = test1
+                    primais = np.array(list(yy1.values()))
+                    duais = np.array(list(yy2.values()))
+                    # gids2, duais = get_levelantids_levelids(_gids1, _duais)
+                    # gids2, primais = get_levelantids_levelids(_gids1, _primais)
+                else:
+                    gids2 = _gids1
+                    duais = _duais
+                    primais = _primais
+
+                # ####################################
+                # ## teste
+                # if level == 1:
+                #     vertices = gids2[duais==3]
+                #     if len(vertices) < 8:
+                #         av = mb.create_meshset()
+                #         mb.add_entities(av, all_volumes[gids2])
+                #         mb.write_file('teste.vtk', [av])
+                #         import pdb; pdb.set_trace()
+                # else:
+                #     vertices = gids2[duais==3]
+                #     av = mb.create_meshset()
+                #     for vv in gids2:
+                #         mb.add_entities(av, all_volumes[gids[gid_level==vv]])
+                #     mb.write_file('teste.vtk', [av])
+                #     import pdb; pdb.set_trace()
+                # ####################################
 
                 sarray = np.zeros(len(gids2), dtype=dt)
                 sarray['volumes'] = gids2

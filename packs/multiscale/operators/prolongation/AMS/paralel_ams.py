@@ -6,9 +6,11 @@ from .ams_mpfa import AMSMpfa
 from .....common_files.common_infos import CommonInfos
 import multiprocessing as mp
 import collections
+import time
 
 def run_thing(local_operator_obj):
 	local_operator_obj.run()
+
 
 class SubDomain(CommonInfos):
 
@@ -167,6 +169,7 @@ class LocalOperator:
 
 		self.comm.send(structure)
 
+
 class MasterOP:
 	def __init__(self,
 		T: 'global transmissibility matrix',
@@ -182,10 +185,18 @@ class MasterOP:
 		resto = n_subdomains % self.n_workers
 		n_process_per_cpu = n_subdomains//self.n_workers
 
-		for i in range(self.n_workers):
-			list_of_process_per_cpu.append(list_of_subdomains[i*n_process_per_cpu:n_process_per_cpu*(i+1)])
+		if n_process_per_cpu > 0:
 
-		if resto != 0:
+			for i in range(self.n_workers):
+				list_of_process_per_cpu.append(list_of_subdomains[i*n_process_per_cpu:n_process_per_cpu*(i+1)])
+
+			if resto != 0:
+				for i in range(resto):
+					list_of_process_per_cpu[i].append(list_of_subdomains[-i])
+
+		else:
+			self.n_workers = resto
+
 			for i in range(resto):
 				list_of_process_per_cpu[i].append(list_of_subdomains[-i])
 
@@ -193,6 +204,7 @@ class MasterOP:
 
 	def get_list_subdomains(self, T, all_dual_subsets):
 		list_of_subdomains = []
+		import pdb; pdb.set_trace()
 		for dual_subset in all_dual_subsets:
 			sarray = np.concatenate([dual_subset])
 			volumes = sarray['volumes']
@@ -208,6 +220,38 @@ class MasterOP:
 			list_of_subdomains.append(SubDomain(T, local_gids, dual_ids, primal_ids, coupled_edges))
 
 		return list_of_subdomains
+
+	def get_data_for_op(self, all_lines, all_cols, all_datas, set_lines):
+
+		lines = []
+		cols = []
+		data = []
+
+		for ls, cs, ds in zip(all_lines, all_cols, all_datas):
+			resp = set(ls) - set_lines
+			if resp:
+				conj_lines = []
+				for k in resp:
+					indice = np.where(ls == k)[0]
+					conj_lines.append(indice)
+
+				conj_lines = np.concatenate(conj_lines)
+
+				resp_ls = ls[conj_lines]
+				resp_cols = cs[conj_lines]
+				resp_data = ds[conj_lines]
+
+				lines.append(resp_ls)
+				cols.append(resp_cols)
+				data.append(resp_data)
+
+				set_lines = set_lines | resp
+
+		lines = np.concatenate(lines)
+		cols = np.concatenate(cols)
+		data = np.concatenate(data)
+
+		return lines, cols, data, set_lines
 
 	def run(self):
 
@@ -226,69 +270,26 @@ class MasterOP:
 
 		for comm in m2w:
 			msg = comm.recv()
-			ls = msg[0]
-			cs = msg[1]
-			ds = msg[2]
+			resp = msg
+			all_lines = resp[0]
+			all_cols = resp[1]
+			all_datas = resp[2]
 
-			set_ls = set(ls) & set_lines
-			set_m_ls = set_ls - set_lines
-			positions = []
-
-			for li in set_ls:
-				pos = np.where(ls == li)[0]
-				positions.append(pos[0])
-
-			ls = np.delete(ls, positions)
-			cs = np.delete(cs, positions)
-			ds = np.delete(ds, positions)
-
+			ls, cs, ds, set_lines = self.get_data_for_op(all_lines, all_cols, all_datas, set_lines)
 			lines.append(ls)
 			cols.append(cs)
 			data.append(ds)
 
-			set_lines = set_lines | set_m_ls
-
 		for proc in procs:
 			proc.join()
 
-		lines = np.concatenate(lines)
-		cols = np.concatenate(cols)
+		lines = np.concatenate(lines).astype(np.int64)
+		cols = np.concatenate(cols).astype(np.int64)
 		data = np.concatenate(data)
 
-		n_volumes = len(np.unique(lines))
-		n_c_volumes = len(np.unique(cols))
+		n_volumes = lines.max() + 1
+		n_c_volumes = cols.max() + 1
 
 		OP = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, n_c_volumes))
 
 		return OP
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-if __name__=="__main__":
-	nworker=6
-	#balanceamento para obter entradas
-	subdomains=[SubDomain(entradas[i]) for i in range(nworker)]
-
-	procs = [mp.Process(target=LocalOperator, args=[s]) for s in subDomains] #Cria processos
-
-	for p in procs:
-		p.start()
-
-	## receber resultados
-	for p in procs:
-		p.join()
