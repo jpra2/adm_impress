@@ -854,6 +854,9 @@ class MultilevelData(DataManager):
             #     import pdb; pdb.set_trace()
             #     import pdb; pdb.set_trace()
 
+            if level > 1:
+                import pdb; pdb.set_trace()
+
             while set_interns:
 
                 intern0 = [set_interns.pop()]
@@ -893,6 +896,7 @@ class MultilevelData(DataManager):
                 _duais = dual_ids[inter]
 
                 if level > 1:
+                    import pdb; pdb.set_trace()
                     yy1 = dict(zip(_gids1, _primais))
                     yy2 = dict(zip(_gids1, _duais))
                     test1 = np.array(list(yy1.keys()))
