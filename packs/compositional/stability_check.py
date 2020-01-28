@@ -1,5 +1,7 @@
 """Check stability of a thermodynamic equilibrium."""
 import numpy as np
+from scipy.misc import derivative
+import thermo
 import math
 # import matplotlib.pyplot as plt
 ## Encontrar os pontos estacionarios. Estes correspondem aos pontos nos quais a derivada de g com respeito a Y é 0
@@ -41,6 +43,8 @@ class StabilityCheck:
                 self.fl = np.exp(lnphil) * (self.x * self.P)
                 self.K = self.y/self.x
 
+        # dlnphi_dn = [derivative(self.lnphi_try,self.x[i],args = i,dx=1E-7,n=1) for i in range(self.Nc)]
+        import pdb; pdb.set_trace()
         self.z = self.x * self.L + self.y * self.V
         self.Mw_L, self.eta_L, self.rho_L = self.other_properties(self.x)
         self.Mw_V, self.eta_V, self.rho_V = self.other_properties(self.y)
@@ -98,6 +102,7 @@ class StabilityCheck:
                 * B) * (2 * self.psi / self.aalpha - self.b / self.bm) * np.log((Z + (1 +
                 2 ** (1/2)) * B) / (Z + (1 - 2 ** (1/2)) * B))
         return lnphi
+
 
 
     """------------------- Stability test calculation -----------------------"""
