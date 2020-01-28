@@ -32,7 +32,7 @@ class CompositionalTPFA(DataManager):
         self.update_saturations(data_impress, wells, fluid_properties)
         self.update_relative_permeabilities(fluid_properties)
         self.update_phase_viscosities(fluid_properties)
-        self.update_transmissibility(M, data_impress, elements_lv0, fluid_properties)
+        self.update_transmissibility(M, data_impress, data_loaded, elements_lv0, fluid_properties)
 
         # self.M = M
         # self.elements_lv0 = elements_lv0
@@ -114,7 +114,7 @@ class CompositionalTPFA(DataManager):
 
     def update_deltaT(self):
         """include CFL condition and flux calculations"""
-        
+
     def update_transmissibility(self, M, data_impress, data_loaded, elements_lv0, fluid_properties):
         v0 = elements_lv0['neig_internal_faces']
         pretransmissibility_faces = M.data[M.data.variables_impress['pretransmissibility']]
