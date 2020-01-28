@@ -173,7 +173,7 @@ class MultilevelOperators(DataManager):
 
         for n in range(self.n_levels):
             level = n+1
-            master = paralel_ams.MasterOP(T_ant, self.ml_data['dual_structure_level_'+str(level)])
+            master = paralel_ams.MasterOP(T_ant, self.ml_data['dual_structure_level_'+str(level)], level)
             OP = master.run()
             del master
             self._data[self.prolongation + str(level)] = OP

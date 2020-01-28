@@ -30,6 +30,10 @@ class SubDomain(CommonInfos):
 
 		local_primal_ids = np.arange(len(g_vertices))
 		primal_ids_vertices = primal_ids[local_dual_id==3]
+		# ###########
+		# ##test
+		# self.pp = primal_ids_vertices
+		# ###########
 		map_primal_ids = dict(zip(primal_ids_vertices, local_primal_ids))
 		self.r_map_primal_ids = dict(zip(local_primal_ids, primal_ids_vertices))
 
@@ -173,13 +177,28 @@ class LocalOperator:
 class MasterOP:
 	def __init__(self,
 		T: 'global transmissibility matrix',
-		all_dual_subsets: 'all dual volumes'
+		all_dual_subsets: 'all dual volumes',
+		level
 	):
 
 		n_cpu = mp.cpu_count()
 		self.n_workers = n_cpu
+		self.level = level
 
 		list_of_subdomains = self.get_list_subdomains(T, all_dual_subsets)
+		# ###############
+		# ##test
+		# ggg = []
+		# ttt = []
+		# if level > 1:
+		# 	for j in list_of_subdomains:
+		# 		ggg.append(j.g_local_ids)
+		# 		ttt.append(j.pp)
+		# 	ggg = np.concatenate(ggg)
+		# 	ttt = np.concatenate(ttt)
+		# 	self.n_lines_max = ggg.max()
+		# 	self.n_cols_max = ttt.max()
+		# ###############
 		list_of_process_per_cpu = []
 		n_subdomains = len(list_of_subdomains)
 		resto = n_subdomains % self.n_workers
@@ -204,7 +223,7 @@ class MasterOP:
 
 	def get_list_subdomains(self, T, all_dual_subsets):
 		list_of_subdomains = []
-		import pdb; pdb.set_trace()
+		# import pdb; pdb.set_trace()
 		for dual_subset in all_dual_subsets:
 			sarray = np.concatenate([dual_subset])
 			volumes = sarray['volumes']
@@ -247,8 +266,8 @@ class MasterOP:
 
 				set_lines = set_lines | resp
 
-		lines = np.concatenate(lines)
-		cols = np.concatenate(cols)
+		lines = np.concatenate(lines).astype(np.int64)
+		cols = np.concatenate(cols).astype(np.int64)
 		data = np.concatenate(data)
 
 		return lines, cols, data, set_lines
@@ -268,6 +287,8 @@ class MasterOP:
 		for proc in procs:
 			proc.start()
 
+		rrlist = []
+
 		for comm in m2w:
 			msg = comm.recv()
 			resp = msg
@@ -276,12 +297,28 @@ class MasterOP:
 			all_datas = resp[2]
 
 			ls, cs, ds, set_lines = self.get_data_for_op(all_lines, all_cols, all_datas, set_lines)
+
+			# ####################
+			# ## test
+			# if self.level > 1:
+			# 	rrlist.append(sp.csc_matrix((ds, (ls, cs)), shape=(self.n_lines_max+1, self.n_cols_max+1)))
+			# ####################
+
 			lines.append(ls)
 			cols.append(cs)
 			data.append(ds)
 
 		for proc in procs:
 			proc.join()
+
+		# ##################
+		# ##test
+		# if self.level > 1:
+		# 	rrs = []
+		# 	for i in rrlist:
+		# 		rrs.append(np.concatenate(np.array(i.sum(axis=1))))
+		# 	import pdb; pdb.set_trace()
+		# ###################
 
 		lines = np.concatenate(lines).astype(np.int64)
 		cols = np.concatenate(cols).astype(np.int64)
