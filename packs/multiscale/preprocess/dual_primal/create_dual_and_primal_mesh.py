@@ -836,26 +836,12 @@ class MultilevelData(DataManager):
         dt = [('volumes', np.dtype(int)), ('dual_id', np.dtype(int)), ('primal_id', np.dtype(int))]
         all_volumes = M.core.all_volumes
 
-        # av = mb.create_meshset()
-        # mb.add_entities(av, all_volumes)
-        # mb.write_file('teste0.vtk', [av])
-
         for level in range(1, self.levels):
             structure = []
             gid_level = self.data_impress['GID_'+str(level-1)]
             coarse_id_level = self.data_impress['GID_'+str(level)]
             dual_ids = self.data_impress['DUAL_'+str(level)]
             set_interns = set(gids[dual_ids==0])
-
-            # if level > 1:
-            #     av = mb.create_meshset()
-            #     mb.add_entities(av, all_volumes[gids[dual_ids==0]])
-            #     mb.write_file('teste.vtk', [av])
-            #     import pdb; pdb.set_trace()
-            #     import pdb; pdb.set_trace()
-
-            # if level > 1:
-            #     import pdb; pdb.set_trace()
 
             while set_interns:
 
@@ -868,12 +854,6 @@ class MultilevelData(DataManager):
                     intern0 = np.setdiff1d(inter, gids[dual_ids!=0])
                     inter = np.unique(np.concatenate(M.volumes.bridge_adjacencies(intern0, 0, 3)))
                     dif = set(inter) - set(intern0)
-
-                # if level > 1:
-                #     av = mb.create_meshset()
-                #     mb.add_entities(av, all_volumes[gids[inter]])
-                #     mb.write_file('teste.vtk', [av])
-                #     import pdb; pdb.set_trace()
 
                 if level == 1:
                     primais1 = coarse_id_level[inter]
@@ -896,7 +876,6 @@ class MultilevelData(DataManager):
                 _duais = dual_ids[inter]
 
                 if level > 1:
-                    # import pdb; pdb.set_trace()
                     yy1 = dict(zip(_gids1, _primais))
                     yy2 = dict(zip(_gids1, _duais))
                     test1 = np.array(list(yy1.keys()))
