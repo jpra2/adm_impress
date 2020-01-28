@@ -16,6 +16,7 @@ w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7, z = update_inputs.inputs_components_propert
 M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
 fluid_properties = StabilityCheck(w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7)
 fluid_properties.run(z)
+
 t = 0
 tfinal = 1
 while t < tfinal:
