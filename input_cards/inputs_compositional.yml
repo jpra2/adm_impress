@@ -25,6 +25,7 @@ compositional_data:
   relative_permeability: BrooksAndCorey
   # capillary_pressure: Chang
   rock_compressibility: 7.25e-5
+  Pf: 13.79E6
   mi_W: 1e-3
   rho_W: 999.6
   Mw_w: 18.015e-3
@@ -49,6 +50,7 @@ compositional_data:
   C7: [1]
   P: 13.79E6
   T: 366.33
+  porosity: 0.2
 
 
 #water saturation data
