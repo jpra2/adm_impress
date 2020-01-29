@@ -45,6 +45,7 @@ compositional_data:
   P: 13.79E6
   Pc:
   - 2103000.0
+  Pf: 13.79E6
   R:
   - 8.3144598
   Sgr: 0
@@ -64,6 +65,7 @@ compositional_data:
   n_o: 2.0
   n_w: 2.0
   phase_viscosity: LorenzBrayClark
+  porosity: 0.2
   relative_permeability: BrooksAndCorey
   rho_W: 999.6
   rock_compressibility: 7.25e-05
