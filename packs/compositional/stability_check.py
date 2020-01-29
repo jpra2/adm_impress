@@ -1,7 +1,6 @@
 """Check stability of a thermodynamic equilibrium."""
 import numpy as np
 from scipy.misc import derivative
-import thermo
 import math
 # import matplotlib.pyplot as plt
 ## Encontrar os pontos estacionarios. Estes correspondem aos pontos nos quais a derivada de g com respeito a Y é 0
@@ -43,8 +42,6 @@ class StabilityCheck:
                 self.fl = np.exp(lnphil) * (self.x * self.P)
                 self.K = self.y/self.x
 
-        # dlnphi_dn = [derivative(self.lnphi_try,self.x[i],args = i,dx=1E-7,n=1) for i in range(self.Nc)]
-        import pdb; pdb.set_trace()
         self.z = self.x * self.L + self.y * self.V
         self.Mw_L, self.eta_L, self.rho_L = self.other_properties(self.x)
         self.Mw_V, self.eta_V, self.rho_V = self.other_properties(self.y)
@@ -81,10 +78,8 @@ class StabilityCheck:
         # PR cubic EOS: Z**3 - (1-B)*Z**2 + (A-2*B-3*B**2)*Z-(A*B-B**2-B**3)
         coef = [1, -(1 - B), (A - 2*B - 3*B**2), -(A*B - B**2 - B**3)]
         Z = np.roots(coef)
-        root = np.isreal(Z) # return True for real roots
-        #position where the real roots are - crated for organization only
-        real_roots_position = np.where(root == True)
-        Z_reais = np.real(Z[real_roots_position[:]]) #Saving the real roots
+        roots = np.isreal(Z)
+        Z_reais = np.real(Z[roots]) #Saving the real roots
         Z_ans = min(Z_reais) * ph + max(Z_reais) * (1 - ph)
 
         ''' This last line, considers that the phase is composed by a pure
