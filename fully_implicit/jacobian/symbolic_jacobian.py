@@ -21,8 +21,8 @@ class symbolic_J:
             krw=((Sw - Swc)/(1 - Swc - Sor))**n_o
             kro=(1-(Sw - Swc)/(1 - Swc - Sor))**n_w
 
-        lam_w=k*krw/mi_w # k é a permeabilidade upwind
-        lam_o=k*kro/mi_o
+        lam_w=krw/mi_w
+        lam_o=kro/mi_o
 
         self.F_w=r_w*lam_w*T*(p_j-p_i)
         self.F_o=r_o*lam_o*T*(p_j-p_i)

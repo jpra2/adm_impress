@@ -1,4 +1,5 @@
 from fully_implicit.jacobian.symbolic_jacobian import symbolic_J as F_Jacobian
+import scipy
 import sympy as sym
 import numpy as np
 
@@ -19,6 +20,9 @@ class Ass:
         self.porous_volume=1*0.3  #Volume*porosidade
         self.Dx=1.0/6
         self.Dy=1.0/6
+        self.Dx_av=np.repeat(1.0/6,len(M.all_volumes))
+        self.Dy_av=np.repeat(1.0/6,len(M.all_volumes))
+        self.Dz_av=np.repeat(1.0/6,len(M.all_volumes))
         self.pvi_lim=1.0
 
         for j in range(8):
@@ -143,8 +147,6 @@ class Ass:
         # import pdb; pdb.set_trace()
 
 
-
-
     def get_jacobian_matrix(self,M):
         GID_volumes=M.mb.tag_get_data(M.GLOBAL_ID_tag,M.all_volumes, flat=True)
         count=0
@@ -152,7 +154,9 @@ class Ass:
         q=np.zeros(2*len(M.all_volumes))
         Swns=M.mb.tag_get_data(M.Swns_tag,M.all_volumes,flat=True)
         Swn1s=M.mb.tag_get_data(M.Swn1s_tag,M.all_volumes,flat=True)
+        vols=np.repeat(1.0,len(M.all_volumes)) #Volume de cada um dos volumes
         n=len(M.all_volumes)
+
         for v in M.all_volumes:
             pv=M.mb.tag_get_data(M.n_pressure_tag,v,flat=True)[0]
             faces=M.mb.get_adjacencies(v, M.dimension-1)
@@ -167,7 +171,7 @@ class Ass:
 
 
             adjs=np.array([M.mb.get_adjacencies(face, M.dimension) for face in internal_faces])
-            
+
             adjs0=adjs[:,0]
             adjs1=adjs[:,1]
 
@@ -194,22 +198,10 @@ class Ass:
                 if id_j==ID_vol:
                     print("ERRO FATAL!!!")
 
-                # id_up=ID_vol if pv>pj else id_j
-
-                # if id_up2!=id_up and pv!=pj:
-                    # print("id_up2!=id_up!")
-
-
-
-
                 J00=float(self.F_Jacobian[0][0].subs({T:1, k:1, Sw:swf}))
                 J01=float(self.F_Jacobian[0][1].subs({T:1, k:1, Sw:swf, p_i:pv, p_j:pj}))
                 J10=float(self.F_Jacobian[1][0].subs({T:1, k:1, Sw:swf}))
                 J11=float(self.F_Jacobian[1][1].subs({T:1, k:1, Sw:swf, p_i:pv, p_j:pj}))
-
-                # if id_up<ID_vol:
-                #     print("id_up<ID_vol! J01, J11, ID_vol, id_up: ", J01, J11, ID_vol, id_up,' self.i: ', self.i)
-                    # import pdb; pdb.set_trace()
 
                 q[ID_vol]-=float(F_Jacobian().F_o.subs({T:1.0, k:1.0, Sw:Swns1[count_fac], p_i:pv, p_j:pj}))
 
@@ -227,6 +219,189 @@ class Ass:
                 count_fac+=1
 
             count+=1
+
+
+        pv=M.mb.tag_get_data(M.n_pressure_tag,M.all_volumes,flat=True)
+        M.internal_faces=np.setdiff1d(M.all_faces, self.boundary_faces)
+        ID_vol=GID_volumes
+        symbolic_J=F_Jacobian()
+        c_o=symbolic_J.c_o
+        c_w=symbolic_J.c_w
+
+        lines=[]
+        cols=[]
+        data=[]
+        lines.append(ID_vol)
+        cols.append(n+ID_vol)
+        data.append(sym.lambdify((Dx,Dy,phi,Dt),c_o)(self.Dx,self.Dy,np.repeat(0.3,len(M.all_volumes)),np.repeat(self.dt,len(M.all_volumes))))
+        # J[ID_vol][n+ID_vol]+=float(F_Jacobian().c_o.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt}))
+
+        lines.append(n+ID_vol)
+        cols.append(n+ID_vol)
+        data.append(sym.lambdify((Dx,Dy,phi,Dt),c_w)(self.Dx,self.Dy,np.repeat(0.3,len(M.all_volumes)),np.repeat(self.dt,len(M.all_volumes))))
+        # J[n+ID_vol][n+ID_vol]+=float(F_Jacobian().c_w.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt}))
+
+        # lines=np.concatenate(lines)
+        # cols=np.concatenate(cols)
+        # data=np.concatenate(data)
+
+        linesq=[]
+        dataq=[]
+        linesq.append(ID_vol)
+        dataq.append(sym.lambdify((Dx,Dy,phi,Dt,Sw,Swn),F_Jacobian().acum_o)(self.Dx,self.Dy,np.repeat(0.3,len(M.all_volumes)),np.repeat(self.dt,len(M.all_volumes)),Swns,Swn1s))
+        # q[ID_vol]+=float(F_Jacobian().acum_o.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt, Sw:Swns[count], Swn:Swn1s[count]}))
+
+        linesq.append(n+ID_vol)
+        dataq.append(sym.lambdify((Dx,Dy,phi,Dt,Sw,Swn),F_Jacobian().acum_w)(self.Dx,self.Dy,np.repeat(0.3,len(M.all_volumes)),np.repeat(self.dt,len(M.all_volumes)),Swns,Swn1s))
+        # q[n+ID_vol]+=float(F_Jacobian().acum_w.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt, Sw:Swns[count], Swn:Swn1s[count]}))
+
+        # linesq=np.concatenate(linesq)
+        # dataq=np.concatenate(dataq)
+        fac=M.internal_faces
+        mb=M.mb.get_adjacencies
+        Adjs=[]
+        for f in fac: Adjs.append(mb(f,M.dimension))
+        Adjs=np.array(Adjs)
+        adj0=np.array(Adjs[:,0])
+        adj1=np.array(Adjs[:,1])
+
+        ids0=M.mb.tag_get_data(M.GLOBAL_ID_tag,adj0,flat=True)
+        ids1=M.mb.tag_get_data(M.GLOBAL_ID_tag,adj1,flat=True)
+        ID_vol=ids0
+        id_j=ids1
+
+        swns0=Swns[ids0]
+        swns1=Swns[ids1]
+
+        press0=M.mb.tag_get_data(M.n_pressure_tag,np.array(adj0),flat=True)
+        press1=M.mb.tag_get_data(M.n_pressure_tag,np.array(adj1),flat=True)
+
+
+        pf0=press0
+        pf1=press1
+
+        # import pdb; pdb.set_trace()
+        up0=pf0>pf1
+        up1=pf0<=pf1
+        swf=np.zeros(len(M.internal_faces))
+        swf[up0]=swns0[up0]
+        swf[up1]=swns1[up1]
+        # swf=Swns0[count_fac] if pf0>pf1 else Swns1[count_fac]
+
+        id_up=np.zeros(len(M.internal_faces),dtype=np.int32)
+        id_up[up0]=ids0[up0]
+        id_up[up1]=ids1[up1]
+        # id_up=ids0[count_fac] if pf0>pf1 else ids1[count_fac]
+
+
+        # pj=press0[count_fac] if press1[count_fac]==pv else press1[count_fac]
+        # id_j=ids1[count_fac] if ids0[count_fac]==ID_vol else ids0[count_fac]
+        # if id_j==ID_vol:
+            # print("ERRO FATAL!!!")
+        Ts=np.ones(len(M.internal_faces))
+
+        J00=sym.lambdify((T,Sw),self.F_Jacobian[0][0])(Ts,swf)
+        # J00=float(self.F_Jacobian[0][0].subs({T:1, Sw:swf}))
+
+        J01=sym.lambdify((T,Sw, p_i, p_j),self.F_Jacobian[0][1])(Ts,swf, pf0, pf1)
+        # J01=float(self.F_Jacobian[0][1].subs({T:1, Sw:swf, p_i:pv, p_j:pj}))
+
+        J10=sym.lambdify((T,Sw),self.F_Jacobian[1][0])(Ts,swf)
+        # J10=float(self.F_Jacobian[1][0].subs({T:1, Sw:swf}))
+
+        J11=sym.lambdify((T,Sw, p_i, p_j),self.F_Jacobian[1][1])(Ts,swf, pf0, pf1)
+        # J11=float(self.F_Jacobian[1][1].subs({T:1, Sw:swf, p_i:pv, p_j:pj}))
+
+        linesq.append(ID_vol)
+        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),F_Jacobian().F_o)(Ts,swns1, pf0, pf1))
+        linesq.append(id_j)
+        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),F_Jacobian().F_o)(Ts,swns1, pf1, pf0))
+        # q[ID_vol]-=float(F_Jacobian().F_o.subs({T:1.0, Sw:Swns1[count_fac], p_i:pv, p_j:pj}))
+
+        linesq.append(n+ID_vol)
+        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),F_Jacobian().F_w)(Ts,swns1, pf0, pf1))
+        linesq.append(n+id_j)
+        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),F_Jacobian().F_w)(Ts,swns1, pf1, pf0))
+        # q[n+ID_vol]-=float(F_Jacobian().F_w.subs({T:1.0, Sw:Swns1[count_fac], p_i:pv, p_j:pj}))
+
+        lines.append(ID_vol)
+        cols.append(ID_vol)
+        data.append(-J00)
+        lines.append(id_j)
+        cols.append(id_j)
+        data.append(-J00)
+        # J[ID_vol][ID_vol]-=J00
+        # import pdb; pdb.set_trace()
+        lines.append(ID_vol)
+        cols.append(id_j)
+        data.append(J00)
+        lines.append(id_j)
+        cols.append(ID_vol)
+        data.append(J00)
+        # J[ID_vol][id_j]+=J00
+        #
+        lines.append(n+ID_vol)
+        cols.append(ID_vol)
+        data.append(-J10)
+        lines.append(n+id_j)
+        cols.append(id_j)
+        data.append(-J10)
+        # J[n+ID_vol][ID_vol]-=J10
+
+        lines.append(n+ID_vol)
+        cols.append(id_j)
+        data.append(J10)
+        lines.append(n+id_j)
+        cols.append(ID_vol)
+        data.append(J10)
+        # J[n+ID_vol][id_j]+=J10
+        #
+        lines.append(ID_vol)
+        cols.append(n+id_up)
+        data.append(-J01)
+        lines.append(id_j)
+        cols.append(n+id_up)
+        data.append(J01)
+        # J[ID_vol][n+id_up]-=J01
+
+        lines.append(n+ID_vol)
+        cols.append(n+id_up)
+        data.append(-J11)
+        lines.append(n+id_j)
+        cols.append(n+id_up)
+        data.append(J11)
+        # J[n+ID_vol][n+id_up]-=J11
+        lines=np.concatenate(lines)
+        cols=np.concatenate(cols)
+        data=np.concatenate(data)
+
+        linesq=np.concatenate(linesq)
+        dataq=np.concatenate(dataq)
+
+        JJ=scipy.sparse.csc_matrix((data,(lines,cols)),shape=(2*len(M.all_volumes),2*len(M.all_volumes)))
+        # JJ=JJ.toarray()
+        csc=scipy.sparse.csc_matrix
+
+        qq=scipy.sparse.csc_matrix((dataq,(linesq,np.zeros(len(linesq)))),shape=(2*len(M.all_volumes),1))
+        # import pdb; pdb.set_trace()
+        # q=qq.transpose().toarray()[0]
+        # J=JJ.toarray()
+
+
+        if (abs(csc(JJ)-csc(J))<0.0001).sum()!=250**2 or (abs(csc(qq)-csc(q).transpose())<0.0001).sum()!=250:
+            print("diferentes")
+            import pdb; pdb.set_trace()
+        else:
+            print("iguais")
+        # abs(JJ.sum(axis=1)-J.sum(axis=1)).max()
+
+        # import pdb; pdb.set_trace()
+
+
+
+
+
+
         # df = pd.DataFrame (J)
         self.iterac+=1
         # filepath = 'output/my_excel_file'+str(self.iterac)+'.xlsx'
