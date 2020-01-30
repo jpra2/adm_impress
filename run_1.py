@@ -4,8 +4,8 @@ import numpy as np
 import update_inputs
 # os.system('python3 update_inputs.py')
 # os.system('python3 testting2_biphasic.py')
-os.system('python3 testting1_monophasic_multilevel.py')
-# os.system('python3 testting3_adm_method.py')
+# os.system('python3 testting1_monophasic_multilevel.py')
+os.system('python3 testting3_adm_method.py')
 # os.system('python3 testting1_monophasic.py')
 
 # from packs.load.preprocessor0 import M

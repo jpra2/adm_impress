@@ -276,6 +276,9 @@ class AdmMethod(DataManager, TpfaFlux2):
     def restart_levels(self):
         self.data_impress['LEVEL'] = np.repeat(-1, len(self.data_impress['LEVEL']))
 
+    def restart_levels_2(self):
+        self.data_impress['LEVEL'] = self.data_impress['INITIAL_LEVEL'].copy()
+
     def organize_ops_adm(self, OP_AMS, OR_AMS, level):
 
         gid_0 = self.data_impress['GID_0']
@@ -883,7 +886,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['LEVEL'] = levels.copy()
 
     def set_initial_mesh(self, mlo, T, b):
-        return 0
+
 
         M = self.mesh
 
@@ -903,6 +906,17 @@ class AdmMethod(DataManager, TpfaFlux2):
         GID_1 = self.data_impress['GID_1']
         DUAL_1 = self.data_impress['DUAL_1']
         solver = file_adm_mesh_def['solver']
+        load_adm_levels = file_adm_mesh_def['load_adm_levels']
+        set_initial_mesh = file_adm_mesh_def['set_initial_mesh']
+
+        if load_adm_levels:
+            return 0
+
+        if not set_initial_mesh:
+            self.restart_levels()
+            self.set_level_wells()
+            self.set_adm_mesh()
+            return 0
 
         if calc_tpfa:
             SOL_TPFA = self.solver.direct_solver(T, b)
@@ -945,19 +959,24 @@ class AdmMethod(DataManager, TpfaFlux2):
         n1 = self.data_impress['LEVEL_ID_1'].max() + 1
         n2 = self.data_impress['LEVEL_ID_2'].max() + 1
 
+        accum_levels = []
+
         pseudo_erro=np.repeat(TOL+1,2) #iniciou pseudo_erro
         t0=time.time()
         cont=0
         pos_new_inter=[]
         interm=np.array([])
+        continuar = True
 
 
-        while (pseudo_erro.max()>TOL and n2<Nmax and iterar_mono) or cont==0:
+        while (pseudo_erro.max()>TOL and n2<Nmax and iterar_mono and continuar) or cont==0:
 
             if cont>0:
 
                 levels = self.data_impress['LEVEL'].copy()
                 # import pdb; pdb.set_trace()
+                n1_ant = self.data_impress['LEVEL_ID_1'].max() + 1
+                n2_ant = self.data_impress['LEVEL_ID_2'].max() + 1
 
                 lim=np.sort(psr)[len(psr)-nr-1]
                 positions=np.where(psr>lim)[0]
@@ -982,6 +1001,9 @@ class AdmMethod(DataManager, TpfaFlux2):
                 self.set_adm_mesh()
                 n1 = self.data_impress['LEVEL_ID_1'].max() + 1
                 n2 = self.data_impress['LEVEL_ID_2'].max() + 1
+
+                if n1 == n1_ant and n2 == n2_ant:
+                    continuar = False
 
                 if _dev:
                     print('\n',n1,n2,'n1 e n2\n')
@@ -1034,6 +1056,16 @@ class AdmMethod(DataManager, TpfaFlux2):
                 M.core.print(folder='results', file='test'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
             cont+=1
 
+            accum_levels.append(self.data_impress['LEVEL'].copy())
+
+
         plt.plot(active_nodes,perro, marker='o')
         plt.yscale('log')
         plt.savefig('results/initial_adm_mesh/hist.png')
+
+        n = int(input('\nQual a malha adm que deseja utilizar?\nDigite o numero da iteracao.\n'))
+
+        self.data_impress['INITIAL_LEVEL'] = accum_levels[n]
+
+        self.data_impress.update_variables_to_mesh()
+        self.data_impress.export_to_npz()

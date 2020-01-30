@@ -19,14 +19,18 @@ if biphasic:
     b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
 
 adm_method = AdmMethod(wells['all_wells'], 2, M, data_impress, elements_lv0)
-adm_method.restart_levels()
-adm_method.set_level_wells()
-adm_method.set_adm_mesh()
+# adm_method.restart_levels()
+# adm_method.set_level_wells()
+# adm_method.set_adm_mesh()
+T, b = b1.get_T_and_b()
+adm_method.set_initial_mesh(mlo, T, b)
+
+import pdb; pdb.set_trace()
 verif = True
 
+
 while verif:
-    
-    T, b = b1.get_T_and_b()
+
     adm_method.organize_ops_adm(mlo['prolongation_level_1'],
                                 mlo['restriction_level_1'],
                                 1)
@@ -34,6 +38,7 @@ while verif:
     adm_method.organize_ops_adm(mlo['prolongation_level_2'],
                                 mlo['restriction_level_2'],
                                 2)
+    import pdb; pdb.set_trace()
 
     adm_method.solve_multiscale_pressure(T, b)
     adm_method.set_pcorr()
@@ -44,14 +49,16 @@ while verif:
 
     b1.run_2()
 
-    adm_method.restart_levels()
-    adm_method.set_level_wells()
+    adm_method.restart_levels_2()
+    # adm_method.set_level_wells()
     adm_method.set_saturation_level()
     adm_method.set_adm_mesh()
 
-    n=0
-    data_impress.update_variables_to_mesh()
-    M.core.print(folder='results', file='test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    # n=0
+    # data_impress.update_variables_to_mesh()
+    # M.core.print(folder='results', file='test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+
+    T, b = b1.get_T_and_b()
 
     import pdb; pdb.set_trace()
 
