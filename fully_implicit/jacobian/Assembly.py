@@ -40,9 +40,9 @@ class Ass:
             for i in range(ni):
                 self.Newton(M)
                 self.i+=1
-                filepath = 'output/production_data.xlsx'
+            filepath = 'results/production_data.xlsx'
             try:
-                old=pd.read_excel(filepath)
+                old=numpy.savetxt(filepath,self.F_Jacobian,delimiter=",")
                 data=np.hstack([old,self.data])
                 print('Appended to an old file')
             except:
@@ -156,12 +156,12 @@ class Ass:
         Swn1s=M.mb.tag_get_data(M.Swn1s_tag,M.all_volumes,flat=True)
         vols=np.repeat(1.0,len(M.all_volumes)) #Volume de cada um dos volumes
         n=len(M.all_volumes)
-
+        '''
         for v in M.all_volumes:
             pv=M.mb.tag_get_data(M.n_pressure_tag,v,flat=True)[0]
             faces=M.mb.get_adjacencies(v, M.dimension-1)
             internal_faces=np.setdiff1d(faces, self.boundary_faces)
-            Swn_v=Swns[count]
+            # Swn_v=Swns[count]
             ID_vol=GID_volumes[count]
 
             J[ID_vol][n+ID_vol]+=float(F_Jacobian().c_o.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt}))
@@ -219,7 +219,8 @@ class Ass:
                 count_fac+=1
 
             count+=1
-
+        '''
+        np.savetxt("results/for.csv",J,delimiter=",")
 
         pv=M.mb.tag_get_data(M.n_pressure_tag,M.all_volumes,flat=True)
         M.internal_faces=np.setdiff1d(M.all_faces, self.boundary_faces)
@@ -233,34 +234,27 @@ class Ass:
         data=[]
         lines.append(ID_vol)
         cols.append(n+ID_vol)
-        data.append(sym.lambdify((Dx,Dy,phi,Dt),c_o)(self.Dx,self.Dy,np.repeat(0.3,len(M.all_volumes)),np.repeat(self.dt,len(M.all_volumes))))
+        data.append(sym.lambdify((Dx,Dy,phi,Dt),c_o)(self.Dx,self.Dy,0.3,np.repeat(self.dt,len(M.all_volumes))))
         # J[ID_vol][n+ID_vol]+=float(F_Jacobian().c_o.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt}))
 
         lines.append(n+ID_vol)
         cols.append(n+ID_vol)
-        data.append(sym.lambdify((Dx,Dy,phi,Dt),c_w)(self.Dx,self.Dy,np.repeat(0.3,len(M.all_volumes)),np.repeat(self.dt,len(M.all_volumes))))
+        data.append(sym.lambdify((Dx,Dy,phi,Dt),c_w)(self.Dx,self.Dy,0.3,np.repeat(self.dt,len(M.all_volumes))))
         # J[n+ID_vol][n+ID_vol]+=float(F_Jacobian().c_w.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt}))
-
-        # lines=np.concatenate(lines)
-        # cols=np.concatenate(cols)
-        # data=np.concatenate(data)
 
         linesq=[]
         dataq=[]
         linesq.append(ID_vol)
-        dataq.append(sym.lambdify((Dx,Dy,phi,Dt,Sw,Swn),F_Jacobian().acum_o)(self.Dx,self.Dy,np.repeat(0.3,len(M.all_volumes)),np.repeat(self.dt,len(M.all_volumes)),Swns,Swn1s))
+        dataq.append(sym.lambdify((Dx,Dy,phi,Dt,Sw,Swn),F_Jacobian().acum_o)(self.Dx,self.Dy,0.3,self.dt,Swns,Swn1s))
         # q[ID_vol]+=float(F_Jacobian().acum_o.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt, Sw:Swns[count], Swn:Swn1s[count]}))
 
         linesq.append(n+ID_vol)
-        dataq.append(sym.lambdify((Dx,Dy,phi,Dt,Sw,Swn),F_Jacobian().acum_w)(self.Dx,self.Dy,np.repeat(0.3,len(M.all_volumes)),np.repeat(self.dt,len(M.all_volumes)),Swns,Swn1s))
+        dataq.append(sym.lambdify((Dx,Dy,phi,Dt,Sw,Swn),F_Jacobian().acum_w)(self.Dx,self.Dy,0.3,self.dt,Swns,Swn1s))
         # q[n+ID_vol]+=float(F_Jacobian().acum_w.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt, Sw:Swns[count], Swn:Swn1s[count]}))
 
-        # linesq=np.concatenate(linesq)
-        # dataq=np.concatenate(dataq)
         fac=M.internal_faces
-        mb=M.mb.get_adjacencies
         Adjs=[]
-        for f in fac: Adjs.append(mb(f,M.dimension))
+        for f in fac: Adjs.append(M.mb.get_adjacencies(f,M.dimension))
         Adjs=np.array(Adjs)
         adj0=np.array(Adjs[:,0])
         adj1=np.array(Adjs[:,1])
@@ -384,15 +378,15 @@ class Ass:
 
         qq=scipy.sparse.csc_matrix((dataq,(linesq,np.zeros(len(linesq)))),shape=(2*len(M.all_volumes),1))
         # import pdb; pdb.set_trace()
-        # q=qq.transpose().toarray()[0]
-        # J=JJ.toarray()
+        q=qq.transpose().toarray()[0]
+        J=JJ.toarray()
+        np.savetxt("results/vec.csv",JJ.toarray(),delimiter=",")
 
-
-        if (abs(csc(JJ)-csc(J))<0.0001).sum()!=250**2 or (abs(csc(qq)-csc(q).transpose())<0.0001).sum()!=250:
-            print("diferentes")
-            import pdb; pdb.set_trace()
-        else:
-            print("iguais")
+        # if (abs(csc(JJ)-csc(J))<0.0001).sum()!=250**2 or (abs(csc(qq)-csc(q).transpose())<0.0001).sum()!=250:
+            # print("diferentes")
+            # import pdb; pdb.set_trace()
+        # else:
+            # print("iguais")
         # abs(JJ.sum(axis=1)-J.sum(axis=1)).max()
 
         # import pdb; pdb.set_trace()
@@ -412,8 +406,8 @@ class Ass:
     def set_properties(self,M):
         M.mb.tag_set_data(M.GLOBAL_ID_tag,M.all_volumes,range(len(M.all_volumes)))
 
-        M.mb.tag_set_data(M.GLOBAL_ID_tag,M.all_volumes[5],2)
-        M.mb.tag_set_data(M.GLOBAL_ID_tag,M.all_volumes[2],5)
+        # M.mb.tag_set_data(M.GLOBAL_ID_tag,M.all_volumes[5],2)
+        # M.mb.tag_set_data(M.GLOBAL_ID_tag,M.all_volumes[2],5)
 
         M.mb.tag_set_data(M.k_eq_tag,self.internal_faces,np.repeat(1.0,len(self.internal_faces)))
         M.mb.tag_set_data(M.phi_tag,M.all_volumes,np.repeat(0.3,len(M.all_volumes)))
