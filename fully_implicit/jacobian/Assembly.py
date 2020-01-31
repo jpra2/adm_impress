@@ -88,16 +88,24 @@ class Ass:
             Fp=-q[0:n]
             Fs=-q[n:]
 
-            # Mp=Jpp-Jps*linalg.spsolve(Jss,Jsp)
+            # J=scipy.sparse.csc_matrix(J)
+            # Jpp1=J[0:n,0:n]
+            # Jps1=J[0:n,n:]
+            # Jsp1=J[n:,0:n]
+            # Jss1=J[n:,n:]
+
+            # Mp1=Jpp1-Jps1*linalg.spsolve(Jss1,Jsp1)
             Mp=Jpp-np.dot(Jps,np.linalg.solve(Jss,Jsp))
-            # qp=scipy.sparse.csc_matrix(Fp).T-scipy.sparse.csc_matrix(Jps*linalg.spsolve(Jss,Fs)).T
+
+            # qp1=(scipy.sparse.csc_matrix(Fp).T-scipy.sparse.csc_matrix(Jps1*linalg.spsolve(Jss1,Fs)).T).toarray().transpose()[0]
             qp=Fp-np.dot(Jps,np.linalg.solve(Jss,Fs))
 
-            # dp=linalg.spsolve(Mp,qp)
+            # dp1=linalg.spsolve(Mp1,qp1)
             dp=np.linalg.solve(Mp,qp)
-            # ds=linalg.spsolve(Jss,Fs-Jsp*dp)
-            ds=np.linalg.solve(Jss,Fs-np.dot(Jsp,dp))
 
+            # ds1=linalg.spsolve(Jss1,Fs-Jsp1*dp1)
+            ds=np.linalg.solve(Jss,Fs-np.dot(Jsp,dp))
+            # import pdb; pdb.set_trace()
             sol=np.concatenate([dp,ds])
 
             S0+=sol[n:]
