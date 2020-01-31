@@ -1,5 +1,6 @@
 from fully_implicit.jacobian.symbolic_jacobian import symbolic_J as F_Jacobian
 import scipy
+from scipy.sparse import linalg
 import sympy as sym
 import numpy as np
 
@@ -72,21 +73,13 @@ class Ass:
             J[0][0]=1.0
 
             J[n,:]=0.0
-            # J[:,n]=0.0
             J[n,n]=1.0
             q[n]=0.0
 
             q[0]=0.0
+            # q[-1]=q[-1].toarray()[0][0]-self.vazao
             q[-1]-=self.vazao
-            # q[n-1]-=2.0
-            # Ab=np.zeros((2*n,2*n+1),dtype=float)
-            # Ab[:,:-1]+=J
-            # Ab[:,-1]+=q
-            # df = pd.DataFrame (Ab)
-            # self.iterac+=1
-            # filepath = 'output/Jacob_mod'+str(self.i)+str(i)+'.xlsx'
-            # df.to_excel(filepath, index=False)
-
+            # J=scipy.sparse.csc_matrix(J)
             Jpp=J[0:n,0:n]
             Jps=J[0:n,n:]
             Jsp=J[n:,0:n]
@@ -95,15 +88,18 @@ class Ass:
             Fp=-q[0:n]
             Fs=-q[n:]
 
+            # Mp=Jpp-Jps*linalg.spsolve(Jss,Jsp)
             Mp=Jpp-np.dot(Jps,np.linalg.solve(Jss,Jsp))
+            # qp=scipy.sparse.csc_matrix(Fp).T-scipy.sparse.csc_matrix(Jps*linalg.spsolve(Jss,Fs)).T
             qp=Fp-np.dot(Jps,np.linalg.solve(Jss,Fs))
+
+            # dp=linalg.spsolve(Mp,qp)
             dp=np.linalg.solve(Mp,qp)
+            # ds=linalg.spsolve(Jss,Fs-Jsp*dp)
             ds=np.linalg.solve(Jss,Fs-np.dot(Jsp,dp))
 
             sol=np.concatenate([dp,ds])
-            # sol2=np.linalg.solve(J,-q)
-            # import pdb; pdb.set_trace()
-            # sol=np.linalg.solve(J,-q)
+
             S0+=sol[n:]
             pos_men=np.where(S0<0.2)[0]
             pos_mai=np.where(S0>0.8)[0]
@@ -144,8 +140,6 @@ class Ass:
         M.mb.write_file('results/biphasic/fully_implicit'+str(self.i)+'.vtk',[m4])
         M.mb.tag_set_data(M.Swn1s_tag,M.all_volumes,S0[gids])
 
-        # import pdb; pdb.set_trace()
-
 
     def get_jacobian_matrix(self,M):
         GID_volumes=M.mb.tag_get_data(M.GLOBAL_ID_tag,M.all_volumes, flat=True)
@@ -156,71 +150,6 @@ class Ass:
         Swn1s=M.mb.tag_get_data(M.Swn1s_tag,M.all_volumes,flat=True)
         vols=np.repeat(1.0,len(M.all_volumes)) #Volume de cada um dos volumes
         n=len(M.all_volumes)
-        '''
-        for v in M.all_volumes:
-            pv=M.mb.tag_get_data(M.n_pressure_tag,v,flat=True)[0]
-            faces=M.mb.get_adjacencies(v, M.dimension-1)
-            internal_faces=np.setdiff1d(faces, self.boundary_faces)
-            # Swn_v=Swns[count]
-            ID_vol=GID_volumes[count]
-
-            J[ID_vol][n+ID_vol]+=float(F_Jacobian().c_o.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt}))
-            J[n+ID_vol][n+ID_vol]+=float(F_Jacobian().c_w.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt}))
-            q[ID_vol]+=float(F_Jacobian().acum_o.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt, Sw:Swns[count], Swn:Swn1s[count]}))
-            q[n+ID_vol]+=float(F_Jacobian().acum_w.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt, Sw:Swns[count], Swn:Swn1s[count]}))
-
-
-            adjs=np.array([M.mb.get_adjacencies(face, M.dimension) for face in internal_faces])
-
-            adjs0=adjs[:,0]
-            adjs1=adjs[:,1]
-
-            ids0=M.mb.tag_get_data(M.GLOBAL_ID_tag,np.array(adjs0),flat=True)
-            ids1=M.mb.tag_get_data(M.GLOBAL_ID_tag,np.array(adjs1),flat=True)
-
-            Swns0=M.mb.tag_get_data(M.Swns_tag,np.array(adjs0),flat=True)
-            Swns1=M.mb.tag_get_data(M.Swns_tag,np.array(adjs1),flat=True)
-
-            press0=M.mb.tag_get_data(M.n_pressure_tag,np.array(adjs0),flat=True)
-            press1=M.mb.tag_get_data(M.n_pressure_tag,np.array(adjs1),flat=True)
-
-            count_fac=0
-
-            for f in internal_faces:
-                pf0=press0[count_fac]
-                pf1=press1[count_fac]
-
-                swf=Swns0[count_fac] if pf0>pf1 else Swns1[count_fac]
-                id_up=ids0[count_fac] if pf0>pf1 else ids1[count_fac]
-
-                pj=press0[count_fac] if press1[count_fac]==pv else press1[count_fac]
-                id_j=ids1[count_fac] if ids0[count_fac]==ID_vol else ids0[count_fac]
-                if id_j==ID_vol:
-                    print("ERRO FATAL!!!")
-
-                J00=float(self.F_Jacobian[0][0].subs({T:1, k:1, Sw:swf}))
-                J01=float(self.F_Jacobian[0][1].subs({T:1, k:1, Sw:swf, p_i:pv, p_j:pj}))
-                J10=float(self.F_Jacobian[1][0].subs({T:1, k:1, Sw:swf}))
-                J11=float(self.F_Jacobian[1][1].subs({T:1, k:1, Sw:swf, p_i:pv, p_j:pj}))
-
-                q[ID_vol]-=float(F_Jacobian().F_o.subs({T:1.0, k:1.0, Sw:Swns1[count_fac], p_i:pv, p_j:pj}))
-
-                q[n+ID_vol]-=float(F_Jacobian().F_w.subs({T:1.0, k:1.0, Sw:Swns1[count_fac], p_i:pv, p_j:pj}))
-
-                J[ID_vol][ID_vol]-=J00
-                J[ID_vol][id_j]+=J00
-
-                J[n+ID_vol][ID_vol]-=J10
-                J[n+ID_vol][id_j]+=J10
-
-                J[ID_vol][n+id_up]-=J01
-                J[n+ID_vol][n+id_up]-=J11
-
-                count_fac+=1
-
-            count+=1
-        '''
-        np.savetxt("results/for.csv",J,delimiter=",")
 
         pv=M.mb.tag_get_data(M.n_pressure_tag,M.all_volumes,flat=True)
         M.internal_faces=np.setdiff1d(M.all_faces, self.boundary_faces)
@@ -274,24 +203,16 @@ class Ass:
         pf0=press0
         pf1=press1
 
-        # import pdb; pdb.set_trace()
         up0=pf0>pf1
         up1=pf0<=pf1
         swf=np.zeros(len(M.internal_faces))
         swf[up0]=swns0[up0]
         swf[up1]=swns1[up1]
-        # swf=Swns0[count_fac] if pf0>pf1 else Swns1[count_fac]
 
         id_up=np.zeros(len(M.internal_faces),dtype=np.int32)
         id_up[up0]=ids0[up0]
         id_up[up1]=ids1[up1]
-        # id_up=ids0[count_fac] if pf0>pf1 else ids1[count_fac]
 
-
-        # pj=press0[count_fac] if press1[count_fac]==pv else press1[count_fac]
-        # id_j=ids1[count_fac] if ids0[count_fac]==ID_vol else ids0[count_fac]
-        # if id_j==ID_vol:
-            # print("ERRO FATAL!!!")
         Ts=np.ones(len(M.internal_faces))
 
         J00=sym.lambdify((T,Sw),self.F_Jacobian[0][0])(Ts,swf)
@@ -325,7 +246,7 @@ class Ass:
         cols.append(id_j)
         data.append(-J00)
         # J[ID_vol][ID_vol]-=J00
-        # import pdb; pdb.set_trace()
+
         lines.append(ID_vol)
         cols.append(id_j)
         data.append(J00)
@@ -333,7 +254,7 @@ class Ass:
         cols.append(ID_vol)
         data.append(J00)
         # J[ID_vol][id_j]+=J00
-        #
+
         lines.append(n+ID_vol)
         cols.append(ID_vol)
         data.append(-J10)
@@ -372,43 +293,18 @@ class Ass:
         linesq=np.concatenate(linesq)
         dataq=np.concatenate(dataq)
 
-        JJ=scipy.sparse.csc_matrix((data,(lines,cols)),shape=(2*len(M.all_volumes),2*len(M.all_volumes)))
-        # JJ=JJ.toarray()
-        csc=scipy.sparse.csc_matrix
+        J=scipy.sparse.csc_matrix((data,(lines,cols)),shape=(2*len(M.all_volumes),2*len(M.all_volumes)))
+        q=scipy.sparse.csc_matrix((dataq,(linesq,np.zeros(len(linesq)))),shape=(2*len(M.all_volumes),1))
 
-        qq=scipy.sparse.csc_matrix((dataq,(linesq,np.zeros(len(linesq)))),shape=(2*len(M.all_volumes),1))
-        # import pdb; pdb.set_trace()
-        q=qq.transpose().toarray()[0]
-        J=JJ.toarray()
-        np.savetxt("results/vec.csv",JJ.toarray(),delimiter=",")
+        q=q.transpose().toarray()[0]
+        J=J.toarray()
+        # np.savetxt("results/vec.csv",JJ.toarray(),delimiter=",")
 
-        # if (abs(csc(JJ)-csc(J))<0.0001).sum()!=250**2 or (abs(csc(qq)-csc(q).transpose())<0.0001).sum()!=250:
-            # print("diferentes")
-            # import pdb; pdb.set_trace()
-        # else:
-            # print("iguais")
-        # abs(JJ.sum(axis=1)-J.sum(axis=1)).max()
-
-        # import pdb; pdb.set_trace()
-
-
-
-
-
-
-        # df = pd.DataFrame (J)
         self.iterac+=1
-        # filepath = 'output/my_excel_file'+str(self.iterac)+'.xlsx'
-        # df.to_excel(filepath, index=False)
-        # print('salvou a jacobiana '+filepath)
         return(J, q)
 
     def set_properties(self,M):
         M.mb.tag_set_data(M.GLOBAL_ID_tag,M.all_volumes,range(len(M.all_volumes)))
-
-        # M.mb.tag_set_data(M.GLOBAL_ID_tag,M.all_volumes[5],2)
-        # M.mb.tag_set_data(M.GLOBAL_ID_tag,M.all_volumes[2],5)
-
         M.mb.tag_set_data(M.k_eq_tag,self.internal_faces,np.repeat(1.0,len(self.internal_faces)))
         M.mb.tag_set_data(M.phi_tag,M.all_volumes,np.repeat(0.3,len(M.all_volumes)))
         M.mb.tag_set_data(M.press_value_tag,np.uint64([M.all_volumes[0],M.all_volumes[-1]]),[0.0,15.0])
