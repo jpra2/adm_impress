@@ -57,8 +57,8 @@ class CompositionalTPFA(DataManager):
         self.phase_mass_densities = np.zeros([1, self.n_phases, len(self.internal_faces)])
         self.phase_molar_densities = np.copy(self.phase_mass_densities)
 
-        self.component_molar_fractions[:,0,:] = fluid_properties.x
-        self.component_molar_fractions[:,1,:] = fluid_properties.y
+        self.component_molar_fractions[0:fluid_properties.Nc,0,:] = fluid_properties.x
+        self.component_molar_fractions[0:fluid_properties.Nc,1,:] = fluid_properties.y
         self.component_molar_fractions[fluid_properties.Nc,2,:] = 1 #water molar fraction in water component
 
         self.phase_mass_densities[0,0,:] = fluid_properties.rho_L
@@ -100,14 +100,15 @@ class CompositionalTPFA(DataManager):
 
     def update_phase_mole_numbers(self, fluid_properties, data_impress):
         self.update_phase_volumes(fluid_properties, data_impress)
-        eta = np.ones([1,2,len(fluid_properties.eta_V)])
+        self.eta = np.ones([1,2,len(fluid_properties.eta_V)])
         V = np.ones([1,2,len(self.Vo)])
         eta[0,0,:] = fluid_properties.eta_V
         eta[0,1,:] = fluid_properties.eta_L
         V[0,0,:] = self.Vg
         V[0,1,:] = self.Vo
-        self.Nphase = eta * V
-        self.Nw = fluid_properties.eta_W * self.Vw
+        Nphase = self.eta * V
+        Nw = fluid_properties.eta_W * self.Vw
+        return eta, Nphase, Nw
         #saem como um vetor em  função dos blocos
 
     def update_relative_permeabilities(self, fluid_properties):
@@ -126,28 +127,15 @@ class CompositionalTPFA(DataManager):
         self.phase_viscosities[0,1,:] = self.phase_viscosities_oil_and_gas[0,1,:]
         self.phase_viscosities[0,2,:] = self.mi_W
 
-    def dVtdNk(self, data_impress, fluid_properties):
-        self.update_phase_mole_numbers(fluid_properties, data_impress)
-
-        for b in range(len(data_impress['volume'])):
-            Nphase = self.Nphase[0,:,b]
-            matrix = FugacityParcialDerivative().dlnphi_dn_matrix_numerically(fluid_properties, Nphase)
-            for k in range(0, self.Nc):
-                dlnphi_dnk = FugacityParcialDerivative.get_dlnphi_dnk_numerically(fluid_properties, fluid_properties.x[k], Nphase, 1)
-                dnkx_dNk = np.linalg.inv(matrix)@dlnphi_dnk
-                dnky_dNk = - dnkx_dNk
-                dnky_dNk[k] = 1 - dnkx_dNk
-            import pdb; pdb.set_trace()
-        # dvl_dn #falta
-        # dVxdNk = sum(dnkx_dNk*(1/fluid_properties.eta_L + self.Nphase[1]*dvl_dn))
-        return dVtdNk
-
-    def dVtdNw(self):
-        return dVtdNw
-
-    def dVtdP(self):
-        """é o mesmo fumo do de cima"""
-        return dVtdP
+    def dVt_derivatives(self, data_impress, fluid_properties):
+        dVtk = np.zeros([fluid_properties.Nc + 1, 2, len(self.Vo)])
+        eta, Nphase, Nw = self.update_phase_mole_numbers(fluid_properties, data_impress)
+        dVtk[0:fluid_properties.Nc,0,:], dVtP = ParcialDerivatives().dVt_derivatives(
+                fluid_properties, Nphase, self.component_molar_fractions, eta)
+        dVtk[fluid_properties.Nc,1,:] = 1 / fluid_properties.eta_W
+        dVwP = np.zeros(len(self.Vo)) #SE fase água incompressível
+        dVtP = dVtP + dVwP
+        return dVtk, dVtP
 
     def update_deltaT(self):
         """include CFL condition and flux calculations"""
@@ -158,13 +146,12 @@ class CompositionalTPFA(DataManager):
         pretransmissibility_internal_faces = pretransmissibility_faces[self.internal_faces]
         n_volumes = data_impress.len_entities['volumes']
         mobilities = self.relative_permeabilities / self.phase_viscosities
-        dVtdNk = self.dVtdNk(data_impress, fluid_properties)
-        import pdb; pdb.set_trace()
-        dVtdP = self.dVtdP()
+        dVtk, dVtP = self.dVdN(data_impress, fluid_properties)
+
         porosity = data_loaded['compositional_data']['Porosity']
         cf = data_loaded['compositional_data']['rock_compressibility']
 
-        t0 = (dVtdNk*(self.component_molar_fractions * self.phase_molar_densities *\
+        t0 = (dVtk*(self.component_molar_fractions * self.phase_molar_densities *\
               mobilities).sum(axis=1)).sum(axis=0)
 
         t0 = t0 * pretransmissibility_internal_faces
