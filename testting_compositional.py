@@ -14,8 +14,8 @@ convert = data_loaded['convert_english_to_SI']
 w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7, z = update_inputs.inputs_components_properties(data_loaded['compositional_data'])
 
 M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
-fluid_properties = StabilityCheck(w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7)
-fluid_properties.run(z)
+fluid_properties = StabilityCheck(w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7) #isso é feito bloco a bloco
+fluid_properties.run(z) # isso também
 
 t = 0
 tfinal = 1
