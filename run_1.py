@@ -1,7 +1,8 @@
 
 import os
 import numpy as np
-os.system('python3 update_inputs.py')
+import update_inputs
+# os.system('python3 update_inputs.py')
 # os.system('python3 testting2_biphasic.py')
 # os.system('python3 testting1_monophasic_multilevel.py')
 os.system('python3 testting3_adm_method.py')

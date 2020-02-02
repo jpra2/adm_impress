@@ -61,9 +61,15 @@ names_outfiles_variables_steps = [os.path.join(flying, 'variables0.npz'),
                                   os.path.join(flying, 'variables3.npz')
                                   ]
 names_datas_contour = os.path.join(flying, 'datas_contour.npz')
+file_adm_mesh_def = 'initial_mesh_def.yml'
+file_adm_mesh_def = os.path.join('input_cards', file_adm_mesh_def)
 
 with open(input_file_0, 'r') as f:
     data_loaded = yaml.safe_load(f)
+
+with open(file_adm_mesh_def, 'r') as f:
+    file_adm_mesh_def = yaml.safe_load(f)
+
 
 with open('input_cards/variable_input.yml', 'r') as f:
     variables_loaded = yaml.safe_load(f)
