@@ -118,6 +118,11 @@ class AMSTpfa:
 
     def get_OP_AMS_TPFA_by_AS(self, As):
 
+        # ni = self.wirebasket_numbers[0]
+        # nf = self.wirebasket_numbers[1]
+        # ne = self.wirebasket_numbers[2]
+        nv = self.wirebasket_numbers[3]
+
         Pv = sp.identity(nv)
         Pe = -linalg.spsolve(As['Aee'],As['Aev']*Pv)
         Pf = -linalg.spsolve(As['Aff'],As['Afe']*Pe)
@@ -126,10 +131,7 @@ class AMSTpfa:
 
         import pdb; pdb.set_trace()
 
-        # ni = self.wirebasket_numbers[0]
-        # nf = self.wirebasket_numbers[1]
-        # ne = self.wirebasket_numbers[2]
-        # nv = self.wirebasket_numbers[3]
+
         #
         # nni = self.ns_sum[0]
         # nnf = self.ns_sum[1]

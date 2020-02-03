@@ -145,7 +145,7 @@ class MultilevelData(DataManager):
         self.get_elements(M)
         self.get_boundary_coarse_faces(M)
         self.get_dual_structure()
-        self.set_volumes_without_gravity_source_term()
+        self.set_volumes_with_gravity_source_term()
         # self.get_elements_2(M)
         self.export_to_npz()
         self.loaded()
@@ -921,7 +921,7 @@ class MultilevelData(DataManager):
 
             self._data[self.dual_structure+str(level)] = np.array(structure)
 
-    def set_volumes_without_gravity_source_term(self):
+    def set_volumes_with_gravity_source_term(self):
 
         lim = self.data_impress['hs'].min()*(0.2)
 
