@@ -129,9 +129,6 @@ class AMSTpfa:
         Pi = -linalg.spsolve(As['Aii'],As['Aif']*Pf)
         op = sp.vstack([Pi,Pf,Pe,Pv])
 
-        import pdb; pdb.set_trace()
-
-
         #
         # nni = self.ns_sum[0]
         # nnf = self.ns_sum[1]
