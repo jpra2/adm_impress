@@ -2,7 +2,7 @@ from ..directories import data_loaded
 from ..data_class.data_manager import DataManager
 from ..utils import relative_permeability2, phase_viscosity
 from .. import directories as direc
-from .partial_derivatives import FugacityParcialDerivative
+from .partial_derivatives import ParcialDerivatives
 import scipy.sparse as sp
 import numpy as np
 
@@ -18,7 +18,12 @@ class CompositionalTPFA(DataManager):
         self.relative_permeability = self.relative_permeability()
         self.phase_viscosity = getattr(phase_viscosity, data_loaded['compositional_data']['phase_viscosity'])
         self.phase_viscosity = self.phase_viscosity(len(self.internal_faces), fluid_properties)
-        self.n_phases = 3 #len(relative_permeabilities[:,0,0])
+        self.n_phases = 3 #includding water
+        self.n_volumes = data_impress.len_entities['volumes']
+        self.all_wells = wells['all_wells']
+        self.Vbulk = data_impress['volume']
+        self.porosity = data_loaded['compositional_data']['porosity']
+        self.cf = data_loaded['compositional_data']['rock_compressibility']
 
         if not load:
             self.loop = 0
@@ -34,8 +39,8 @@ class CompositionalTPFA(DataManager):
         self.update_saturations(data_impress, wells, fluid_properties)
         self.update_relative_permeabilities(fluid_properties)
         self.update_phase_viscosities(fluid_properties)
-        self.update_transmissibility(M, data_impress, data_loaded, elements_lv0, fluid_properties)
-
+        T = self.update_transmissibility(M, data_impress, data_loaded, elements_lv0, fluid_properties)
+        D = self.update_independent_terms(fluid_properties)
         # self.M = M
         # self.elements_lv0 = elements_lv0
         # self.relative_permeability = getattr(relative_permeability, self.compositional_data['relative_permeability'])
@@ -52,18 +57,12 @@ class CompositionalTPFA(DataManager):
         fluid_properties.eta_W = fluid_properties.rho_W/fluid_properties.Mw_w
 
     def set_properties(self, fluid_properties, elements_lv0): #provavelmente n vai estar aqui
-
-        self.component_molar_fractions = np.zeros([fluid_properties.Nc+1, self.n_phases, len(self.internal_faces)])
-        self.phase_mass_densities = np.zeros([1, self.n_phases, len(self.internal_faces)])
-        self.phase_molar_densities = np.copy(self.phase_mass_densities)
+        self.component_molar_fractions = np.zeros([fluid_properties.Nc+1, self.n_phases, self.n_volumes])
+        self.phase_molar_densities = np.zeros([1, self.n_phases, self.n_volumes])
 
         self.component_molar_fractions[0:fluid_properties.Nc,0,:] = fluid_properties.x
         self.component_molar_fractions[0:fluid_properties.Nc,1,:] = fluid_properties.y
         self.component_molar_fractions[fluid_properties.Nc,2,:] = 1 #water molar fraction in water component
-
-        self.phase_mass_densities[0,0,:] = fluid_properties.rho_L
-        self.phase_mass_densities[0,1,:] = fluid_properties.rho_V
-        self.phase_mass_densities[0,2,:] = fluid_properties.rho_W
 
         self.phase_molar_densities[0,0,:] = fluid_properties.eta_L
         self.phase_molar_densities[0,1,:] = fluid_properties.eta_V
@@ -71,49 +70,44 @@ class CompositionalTPFA(DataManager):
 
 
     def update_saturations(self, data_impress, wells, fluid_properties):
-        Sw = data_impress['saturation']
-        # ind = np.arange(len(Sw))
-        self.all_wells = wells['all_wells']
-        # index_wells = np.argwhere(Sw == Sw[all_wells])
-        self.Sw = np.delete(Sw, self.all_wells)
+        self.Sw = data_impress['saturation']
 
         if fluid_properties.V != 0:
             self.Sg = (1 - self.Sw) * (fluid_properties.V / fluid_properties.rho_V) / \
                 (fluid_properties.V / fluid_properties.rho_V +
                 fluid_properties.L / fluid_properties.rho_L )
-        else: self.Sg = 0
+        else: self.Sg = np.zeros(len(self.Sw))
         self.So = 1 - self.Sw - self.Sg
 
-
     def update_phase_volumes(self, fluid_properties, data_impress):
-        cf = data_loaded['compositional_data']['rock_compressibility']
         Pf = data_loaded['compositional_data']['Pf']
         Pf = np.array(Pf).astype(float)
-        Vbulk = data_impress['volume']
-        Vbulk = np.delete(Vbulk, self.all_wells)
-        porosities = data_loaded['compositional_data']['porosity']
-        self.Vp = porosities * Vbulk * (1 + cf*(fluid_properties.P - Pf))
+        self.Vp = self.porosity * self.Vbulk * (1 + self.cf*(fluid_properties.P - Pf))
         self.Vo = self.Vp * self.So
         self.Vg = self.Vp * self.Sg
         self.Vw = self.Vp * self.Sw
-        import pdb; pdb.set_trace()
 
     def update_phase_mole_numbers(self, fluid_properties, data_impress):
         self.update_phase_volumes(fluid_properties, data_impress)
-        self.eta = np.ones([1,2,len(fluid_properties.eta_V)])
+        self.phase_mole_numbers = np.zeros([1, self.n_phases, self.n_volumes])
+        eta = np.ones([1,2,len(fluid_properties.eta_V)])
         V = np.ones([1,2,len(self.Vo)])
         eta[0,0,:] = fluid_properties.eta_V
         eta[0,1,:] = fluid_properties.eta_L
         V[0,0,:] = self.Vg
         V[0,1,:] = self.Vo
-        Nphase = self.eta * V
+        No_g = eta * V
         Nw = fluid_properties.eta_W * self.Vw
-        return eta, Nphase, Nw
+        self.phase_mole_numbers[0,0:2,:] = No_g
+        self.phase_mole_numbers[0,2,:] = Nw
+        return eta, No_g, Nw
         #saem como um vetor em  função dos blocos
 
     def update_relative_permeabilities(self, fluid_properties):
-        saturations = np.array([self.So, self.Sg, self.Sw])
-        # self.data_impress['saturation'] = saturations
+        So = np.delete(self.So, self.all_wells)
+        Sw = np.delete(self.Sw, self.all_wells)
+        Sg = np.delete(self.Sg, self.all_wells)
+        saturations = np.array([So, Sg, Sw])
         kro,krg,krw = self.relative_permeability(saturations)
         self.relative_permeabilities = np.zeros([1,self.n_phases,len(self.internal_faces)])
         self.relative_permeabilities[0,0,:] = kro
@@ -128,30 +122,41 @@ class CompositionalTPFA(DataManager):
         self.phase_viscosities[0,2,:] = self.mi_W
 
     def dVt_derivatives(self, data_impress, fluid_properties):
-        dVtk = np.zeros([fluid_properties.Nc + 1, 2, len(self.Vo)])
-        eta, Nphase, Nw = self.update_phase_mole_numbers(fluid_properties, data_impress)
-        dVtk[0:fluid_properties.Nc,0,:], dVtP = ParcialDerivatives().dVt_derivatives(
-                fluid_properties, Nphase, self.component_molar_fractions, eta)
-        dVtk[fluid_properties.Nc,1,:] = 1 / fluid_properties.eta_W
-        dVwP = np.zeros(len(self.Vo)) #SE fase água incompressível
+        eta, No_g, Nw = self.update_phase_mole_numbers(fluid_properties, data_impress)
+        dVtk = np.zeros([fluid_properties.Nc + 1, self.n_volumes])
+        dVtk[0:fluid_properties.Nc,:], dVtP = ParcialDerivatives().dVt_derivatives(
+                fluid_properties, No_g, self.component_molar_fractions, eta)
+        dVtk[fluid_properties.Nc,:] = 1 / fluid_properties.eta_W
+        dVwP = np.zeros(self.n_volumes)
         dVtP = dVtP + dVwP
         return dVtk, dVtP
 
+    def update_flux_volumes(self):
+        "need to do that"
+
     def update_deltaT(self):
-        """include CFL condition and flux calculations"""
+        ###
+        ## de acordo com o fluxo nos volumes
+        ###
+
+        flux_volumes = np.absolute(self.data_impress['flux_volumes'])
+        phis = self.data_impress['poro']
+        volume = self.data_impress['volume']
+        self.delta_t = (self.biphasic_data['cfl']*(volume*phis)/flux_volumes).min()
 
     def update_transmissibility(self, M, data_impress, data_loaded, elements_lv0, fluid_properties):
         v0 = elements_lv0['neig_internal_faces']
         pretransmissibility_faces = M.data[M.data.variables_impress['pretransmissibility']]
         pretransmissibility_internal_faces = pretransmissibility_faces[self.internal_faces]
-        n_volumes = data_impress.len_entities['volumes']
+
         mobilities = self.relative_permeabilities / self.phase_viscosities
-        dVtk, dVtP = self.dVdN(data_impress, fluid_properties)
+        self.dVtk, self.dVtP = self.dVt_derivatives(data_impress, fluid_properties)
+        dVtk = np.delete(self.dVtk, self.all_wells, axis = 1)
+        ''' Retracting the well volume (transmissibility without contours)'''
+        component_molar_fractions = np.delete(self.component_molar_fractions, self.all_wells, axis=2)
+        phase_molar_densities = np.delete(self.phase_molar_densities, self.all_wells, axis=2)
 
-        porosity = data_loaded['compositional_data']['Porosity']
-        cf = data_loaded['compositional_data']['rock_compressibility']
-
-        t0 = (dVtk*(self.component_molar_fractions * self.phase_molar_densities *\
+        t0 = (dVtk * (component_molar_fractions * phase_molar_densities *\
               mobilities).sum(axis=1)).sum(axis=0)
 
         t0 = t0 * pretransmissibility_internal_faces
@@ -160,28 +165,22 @@ class CompositionalTPFA(DataManager):
         cols = np.array([v0[:, 1], v0[:, 0], v0[:, 0], v0[:, 1]]).flatten()
         data = np.array([t0, t0, -t0, -t0]).flatten()
 
-        T = sp.csc_matrix((data, (lines, cols)), shape = (n_volumes, n_volumes))
+        T = sp.csc_matrix((data, (lines, cols)), shape = (self.n_volumes, self.n_volumes))
 
         # diagonal matrix:
         # see from where I get the bulk volume (sum of the fluid and rock and volumes
         # i guess the impress already has that (it can be calculated with the mesh
         # dimensions))
-        # diag = np.diag(V_bulk * porosity * cf - dVtdP)
-        # T += diag
+        diag = np.diag(self.Vbulk * self.porosity * self.cf - self.dVtP)
+        T += diag
         self['Tini'] = T
+        return T
 
-    # def independent_terms(self):
-    #     Vp = V_bulk * porosity * (1 + cf * (P - self.P))
-    #     Q = Vp - sum(phase_moles_number/self.phase_molar_densities)
-    #
-    # def solve_pressure(self):
-    #     """pressure solver"""
-
-
-
-
-
-
-        # Falta incluir o termo da derivada de V por P que soma na diagonal principal
-        #e o termo da derivada de V por Nk que multiplica a transmissibilidade t0 (ele
-        #entra no segundo somatório)
+    def update_independent_terms(self, fluid_properties):
+        vec_Pn = self.Vbulk * self.porosity * self.cf - self.dVtP
+        deltaT = 2
+        q = np.zeros(self.n_volumes)
+        deltaV = self.Vp - np.sum(np.sum(self.phase_mole_numbers / self.phase_molar_densities, axis = 0),axis=0)
+        import pdb; pdb.set_trace()
+        independent_terms = vec_Pn * fluid_properties.P - deltaV + deltaT * np.sum(self.dVtk,axis=0) * q
+        return independent_terms
