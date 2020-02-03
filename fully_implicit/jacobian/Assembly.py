@@ -84,7 +84,8 @@ class Ass:
                 self.dt*=40
 
             J, q=self.get_jacobian_matrix(M)
-            J2=self.apply_dirichlet(J,[0,n])
+            J=self.apply_dirichlet(J,[0,n])
+
             q[n]=0.0
 
             q[0]=0.0
@@ -92,27 +93,28 @@ class Ass:
 
             Fp=-q[0:n]
             Fs=-q[n:]
-            J1=scipy.sparse.csc_matrix(J2)
 
-            Jpp1=J1[0:n,0:n]
-            Jps1=J1[0:n,n:]
-            Jsp1=J1[n:,0:n]
-            Jss1=J1[n:,n:]
+            Jpp1=J[0:n,0:n]
+            Jps1=J[0:n,n:]
+            Jsp1=J[n:,0:n]
+            Jss1=J[n:,n:]
 
-            Mp1=Jpp1-Jps1*linalg.spsolve(Jss1,Jsp1)
+
 
             qp1=(scipy.sparse.csc_matrix(Fp).T-scipy.sparse.csc_matrix(Jps1*linalg.spsolve(Jss1,Fs)).T).toarray().transpose()[0]
 
+            # dp1=linalg.spsolve(Jpp1,qp1)-Jps1*linalg.spsolve(Jss1,Jsp1*qp1)
+            # import pdb; pdb.set_trace()
+            # inv(Jpp1-Jps1*inv(Jss1)*Jsp1)*qp1
+            Mp1=Jpp1-Jps1*linalg.spsolve(Jss1,Jsp1)
             dp1=linalg.spsolve(Mp1,qp1)
             ds1=linalg.spsolve(Jss1,Fs-Jsp1*dp1)
 
             sol=np.concatenate([dp1,ds1])
 
             S0+=sol[n:]
-            pos_men=np.where(S0<0.2)[0]
-            pos_mai=np.where(S0>0.8)[0]
-            S0[pos_men]=0.2
-            S0[pos_mai]=0.8
+            S0[S0<0.2]=0.2
+            S0[S0>0.8]=0.8
             P0+=sol[0:n]
             print(max(abs(sol[0:n])),max(abs(sol[n:])))
 
@@ -304,9 +306,6 @@ class Ass:
         q=scipy.sparse.csc_matrix((dataq,(linesq,np.zeros(len(linesq)))),shape=(2*len(M.all_volumes),1))
 
         q=q.transpose().toarray()[0]
-        # J=J.toarray()
-        # np.savetxt("results/vec.csv",JJ.toarray(),delimiter=",")
-
         self.iterac+=1
         return(J, q)
 
