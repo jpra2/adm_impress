@@ -145,6 +145,7 @@ class MultilevelData(DataManager):
         self.get_elements(M)
         self.get_boundary_coarse_faces(M)
         self.get_dual_structure()
+        self.set_volumes_without_gravity_source_term()
         # self.get_elements_2(M)
         self.export_to_npz()
         self.loaded()
@@ -920,29 +921,48 @@ class MultilevelData(DataManager):
 
             self._data[self.dual_structure+str(level)] = np.array(structure)
 
+    def set_volumes_without_gravity_source_term(self):
+
+        lim = self.data_impress['hs'].min()*(0.2)
+
+        all_centroids = self.data_impress['centroid_volumes']
+
+        # for level in range(1, self.levels):
+        # fazendo apenas para o nivel 1
+        for level in range(1, 2):
+            structures = self._data[self.dual_structure+str(level)]
+            all_vols_without_grav = []
+
+            for structure in structures:
+                volumes = structure['volumes']
+                dual_id = structure['dual_id']
+                local_centroids = all_centroids[volumes]
+                xmin, ymin, zmin = local_centroids.min(axis=0)
+                xmax, ymax, zmax = local_centroids.max(axis=0)
+                b1 = np.array([np.array([xmin-lim, ymin-lim, zmax-lim]), np.array([xmax+lim, ymax+lim, zmax+lim])])
+                b2 = np.array([np.array([xmin-lim, ymin-lim, zmin-lim]), np.array([xmax+lim, ymax+lim, zmin+lim])])
+
+                vols_without_grav = np.concatenate([volumes[get_box(local_centroids, b1)], volumes[get_box(local_centroids, b2)]])
+                vols_without_grav = np.setdiff1d(vols_without_grav, volumes[dual_id==3])
+                all_vols_without_grav.append(vols_without_grav)
+
+            all_vols_without_grav = np.unique(np.concatenate(all_vols_without_grav))
+            volumes_with_grav = np.full(len(self.data_impress['VOLUMES_WITH_GRAV_'+str(level)]), True, dtype=bool)
+            volumes_with_grav[all_vols_without_grav] = np.full(len(all_vols_without_grav), False, dtype=bool)
+
+            self.data_impress['VOLUMES_WITH_GRAV_'+str(level)] = volumes_with_grav
+
+
+
+
+
+
+
+
+
+
+
     def save_mesh(self):
         M = self.mesh
 
         M.core.print(file=self.name_mesh, config_input='input_cards/print_settings.yml')
-
-
-
-
-
-'''
-def propriedade():
-    doc = "The propriedade property."
-
-    def fget(self):
-        return self._propriedade
-
-    def fset(self, value):
-        self._propriedade = value
-
-    def fdel(self):
-        del self._propriedade
-
-    return locals()
-
-propriedade = property(**propriedade())
-'''

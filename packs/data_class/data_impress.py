@@ -72,11 +72,15 @@ class Data(DataManager):
                 data = np.zeros(n_entity)
             elif format == 'int':
                 data = np.zeros(n_entity, dtype=np.int32)
+            elif format == 'bool':
+                data = np.full(n_entity, False, dtype=bool)
+            else:
+                raise TypeError('\nTipo nao listado\n')
             if n > 1:
                 data = np.repeat(data, n).reshape([n_entity, n])
 
             self[name] = data
-            self._data[name] = data
+            # self._data[name] = data
             variables_impress[name] = name
 
         self.variables_impress = variables_impress

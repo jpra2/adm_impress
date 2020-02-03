@@ -118,37 +118,45 @@ class AMSTpfa:
 
     def get_OP_AMS_TPFA_by_AS(self, As):
 
-        ni = self.wirebasket_numbers[0]
-        nf = self.wirebasket_numbers[1]
-        ne = self.wirebasket_numbers[2]
-        nv = self.wirebasket_numbers[3]
+        Pv = sp.identity(nv)
+        Pe = -linalg.spsolve(As['Aee'],As['Aev']*Pv)
+        Pf = -linalg.spsolve(As['Aff'],As['Afe']*Pe)
+        Pi = -linalg.spsolve(As['Aii'],As['Aif']*Pf)
+        op = sp.vstack([Pi,Pf,Pe,Pv])
 
-        nni = self.ns_sum[0]
-        nnf = self.ns_sum[1]
-        nne = self.ns_sum[2]
-        nnv = self.ns_sum[3]
+        import pdb; pdb.set_trace()
 
-        lines = np.arange(nne, nnv).astype(np.int32)
-        ntot = (self.wirebasket_numbers.sum())
-        op = sp.lil_matrix((ntot, nv))
-        op[lines] = As['Ivv'].tolil()
+        # ni = self.wirebasket_numbers[0]
+        # nf = self.wirebasket_numbers[1]
+        # ne = self.wirebasket_numbers[2]
+        # nv = self.wirebasket_numbers[3]
+        #
+        # nni = self.ns_sum[0]
+        # nnf = self.ns_sum[1]
+        # nne = self.ns_sum[2]
+        # nnv = self.ns_sum[3]
 
-        M = As['Aee']
-        M = linalg.spsolve(M.tocsc(), sp.identity(ne).tocsc())
-        M = M.dot(-1*As['Aev'])
-        op[nnf:nne] = M.tolil()
+        # lines = np.arange(nne, nnv).astype(np.int32)
+        # ntot = (self.wirebasket_numbers.sum())
+        # op = sp.lil_matrix((ntot, nv))
+        # op[lines] = As['Ivv'].tolil()
 
-        M2 = As['Aff']
-        M2 = linalg.spsolve(M2.tocsc(), sp.identity(nf).tocsc())
-        M2 = M2.dot(-1*As['Afe'])
-        M = M2.dot(M)
-        op[nni:nnf] = M.tolil()
-
-        M2 = As['Aii']
-        M2 = linalg.spsolve(M2.tocsc(), sp.identity(ni).tocsc())
-        M2 = M2.dot(-1*As['Aif'])
-        M = M2.dot(M)
-        op[0:nni] = M.tolil()
+        # M = As['Aee']
+        # M = linalg.spsolve(M.tocsc(), sp.identity(ne).tocsc())
+        # M = M.dot(-1*As['Aev'])
+        # op[nnf:nne] = M.tolil()
+        #
+        # M2 = As['Aff']
+        # M2 = linalg.spsolve(M2.tocsc(), sp.identity(nf).tocsc())
+        # M2 = M2.dot(-1*As['Afe'])
+        # M = M2.dot(M)
+        # op[nni:nnf] = M.tolil()
+        #
+        # M2 = As['Aii']
+        # M2 = linalg.spsolve(M2.tocsc(), sp.identity(ni).tocsc())
+        # M2 = M2.dot(-1*As['Aif'])
+        # M = M2.dot(M)
+        # op[0:nni] = M.tolil()
 
         return self.GT*op*self.G2
 

@@ -202,6 +202,8 @@ else:
     multilevel_operators.run(tpfa_solver['Tini'])
     # multilevel_operators.run_paralel(tpfa_solver['Tini'])
 
+import pdb; pdb.set_trace()
+
 # op2 = multilevel_operators['prolongation_level_2']
 # rest2 = multilevel_operators['restriction_level_2']
 # gid0 = data_impress['GID_0']
