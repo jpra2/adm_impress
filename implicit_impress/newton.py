@@ -1,36 +1,71 @@
-
+import numpy as np
+import scipy.sparse
+from scipy.sparse import linalg
+from implicit_impress.jacobian.symbolic_jacobian import symbolic_J as s_J
+from implicit_impress.jacobian.impress_assembly import assembly
+import sympy as sym
+T, S_up, Sw, So, Swn, Son, Dt, k, phi, p_i, p_j, Dx, Dy=sym.symbols("T S Sw So Swn Son Dt k phi p_i p_j Dx Dy")
 class newton():
-    def __init__(self):
-        d=1
+    def __init__(self,M):
+        self.set_properties(M)
+        self.i=0
+        # self.F_Jacobian=s_J()
+        self.assembly=assembly(M)
+        # self.iteration(M)
+
+        for j in range(8):
+            self.pvi_def=0.15-0.02*j
+            ni=int(self.assembly.pvi_lim/self.pvi_def)
+            # self.assembly=assembly(M)
+            self.qov=[]
+            self.qwv=[]
+            self.vpiv=[]
+            self.pvi_acum=0.0
+            self.pvi=0.5
+            self.dt=-400*self.assembly.porous_volume*self.pvi/self.assembly.vazao
+            print(self.dt)
+            # self.set_properties(M)
+            # self.i=0
+            self.iterac=0
+            for i in range(ni):
+                self.iteration(M)
+                self.i+=1
+            filepath = 'results/production_data.xlsx'
+            try:
+                old=numpy.savetxt(filepath,self.F_Jacobian,delimiter=",")
+                data=np.hstack([old,self.data])
+                print('Appended to an old file')
+            except:
+                print('First Data file')
+                data=self.data
+                self.iterac+=1
+            df = pd.DataFrame (data)
+            df.to_excel(filepath, index=False)
+
     def iteration(self,M):
-        n=len(M.all_volumes)
-        S0=M.mb.tag_get_data(M.Swns_tag,M.all_volumes,flat=True)
-        P0=M.mb.tag_get_data(M.n_pressure_tag,M.all_volumes,flat=True)
+        n=len(M.volumes.all)
+        S0=M.swns[:].T[0]
+        P0=M.pressure[:].T[0]
         SP=np.concatenate([S0,P0])
-        gids=M.mb.tag_get_data(M.GLOBAL_ID_tag,M.all_volumes,flat=True)
+        gids=M.volumes.all
         max_iter=8
         if self.i==0:
             max_iter*=3
         i=0
         csc_matrix=scipy.sparse.csc_matrix
         while i<max_iter and (i==0 or max(abs(sol))>0.001):
-
+            self.assembly=assembly(M)
             if i>4 or self.i>0:
                 self.pvi=self.pvi_def
-                self.dt=self.porous_volume*self.pvi/self.vazao
-                self.dt*=40
+                self.dt=self.assembly.porous_volume*self.pvi/self.assembly.vazao
+                self.dt*=50
 
-            J, q=self.get_jacobian_matrix(M)
-            J2=self.apply_dirichlet(J,[0,n])
-
-            q[n]=0.0
-
-            q[0]=0.0
-            q[-1]-=self.vazao
-
+            # J, q=assembly(M).get_jacobian_matrix(M)
+            J=self.assembly.J
+            q=self.assembly.q
             Fp=-q[0:n]
             Fs=-q[n:]
-            J1=scipy.sparse.csc_matrix(J2)
+            J1=scipy.sparse.csc_matrix(J)
 
             Jpp1=J1[0:n,0:n]
             Jps1=J1[0:n,n:]
@@ -51,48 +86,63 @@ class newton():
             S0[S0>0.8]=0.8
             P0+=sol[0:n]
             print(max(abs(sol[0:n])),max(abs(sol[n:])))
+            M.pressure[:]=P0[gids]
 
-            M.mb.tag_set_data(M.n_pressure_tag,M.all_volumes,P0[gids])
-            M.mb.tag_set_data(M.Swns_tag,M.all_volumes,S0[gids])
+            M.swns[:]=S0[gids]
+            # import pdb; pdb.set_trace()
+            # M.mb.tag_set_data(M.n_pressure_tag,M.all_volumes,P0[gids])
+            # M.mb.tag_set_data(M.Swns_tag,M.all_volumes,S0[gids])
             i+=1
-
-        v0_facs=M.mb.get_adjacencies(M.all_volumes[0], M.dimension-1)
-        v0_internal_faces=np.setdiff1d(v0_facs, self.boundary_faces)
-        pv=M.mb.tag_get_data(M.n_pressure_tag,M.all_volumes[0],flat=True)[0]
+        v0_facs=M.volumes.adjacencies(M.volumes.all_elements[0])
+        # Adjs=M.faces.bridge_adjacencies(M.faces.internal_elements[:],2,3)
+        # v0_facs=M.mb.get_adjacencies(M.all_volumes[0], M.dimension-1)
+        v0_internal_faces=np.intersect1d(v0_facs, M.faces.internal_elements[:])
+        pv=M.pressure[M.volumes.all_elements[0]]
+        # pv=M.mb.tag_get_data(M.n_pressure_tag,M.all_volumes[0],flat=True)[0]
 
         qo=0.0
         qw=0.0
 
         for f in v0_internal_faces:
-
-            adjs=M.mb.get_adjacencies(f,M.dimension)
-            Sw_up=max(M.mb.tag_get_data(M.Swns_tag,np.array(adjs),flat=True))
-            pj=max(M.mb.tag_get_data(M.n_pressure_tag,adjs,flat=True))
-            qo+=float(F_Jacobian().F_o.subs({T:1.0, k:1.0, Sw:Sw_up, p_i:pv, p_j:pj}))/0.8
-            qw+=float(F_Jacobian().F_w.subs({T:1.0, k:1.0, Sw:Sw_up, p_i:pv, p_j:pj}))
-        self.pvi_acum+=self.pvi
+            adjs=M.faces.bridge_adjacencies(f,2,3)
+            Sw_up=max(M.swns[adjs])
+            # Sw_up=max(M.mb.tag_get_data(M.Swns_tag,np.array(adjs),flat=True))
+            pj=max(M.pressure[adjs])
+            # pj=max(M.mb.tag_get_data(M.n_pressure_tag,adjs,flat=True))
+            qo+=float(self.assembly.F_Jacobian.F_o.subs({T:1.0, k:1.0, Sw:Sw_up, p_i:pv, p_j:pj}))/0.8
+            qw+=float(self.assembly.F_Jacobian.F_w.subs({T:1.0, k:1.0, Sw:Sw_up, p_i:pv, p_j:pj}))
+        self.assembly.pvi_acum+=self.assembly.pvi
         self.qov.append(qo)
         self.qwv.append(qw)
-        self.vpiv.append(self.pvi_acum)
+        self.vpiv.append(self.assembly.pvi_acum)
 
         self.data=np.array([self.vpiv,self.qov,self.qwv])
 
-        print('oleo, agua',qo,qw,qo+qw,'pvi',self.pvi_acum)
-        m4 = M.mb.create_meshset()
-        M.mb.add_entities(m4, M.all_volumes)
-        M.mb.write_file('results/biphasic/fully_implicit'+str(self.i)+'.vtk',[m4])
-        M.mb.tag_set_data(M.Swn1s_tag,M.all_volumes,S0[gids])
+        print('oleo, agua',qo,qw,qo+qw,'pvi',self.assembly.pvi_acum)
+        # m4 = M.mb.create_meshset()
+        # M.mb.add_entities(m4, M.all_volumes)
+        # M.mb.write_file('results/biphasic/fully_implicit'+str(self.i)+'.vtk',[m4])
+        # import pdb; pdb.set_trace()
+        M.swn1s[:]=S0[gids]
+        # M.mb.tag_set_data(M.Swn1s_tag,M.all_volumes,S0[gids])
 
     def set_properties(self,M):
-        M.mb.tag_set_data(M.GLOBAL_ID_tag,M.all_volumes,range(len(M.all_volumes)))
-        M.mb.tag_set_data(M.k_eq_tag,self.internal_faces,np.repeat(1.0,len(self.internal_faces)))
-        M.mb.tag_set_data(M.phi_tag,M.all_volumes,np.repeat(0.3,len(M.all_volumes)))
-        M.mb.tag_set_data(M.press_value_tag,np.uint64([M.all_volumes[0],M.all_volumes[-1]]),[0.0,15.0])
-        M.mb.tag_set_data(M.Swns_tag,M.all_volumes,np.repeat(0.2,len(M.all_volumes)))
-        M.mb.tag_set_data(M.Swns_tag,M.all_volumes[-1],0.8)
-        M.mb.tag_set_data(M.Swn1s_tag,M.all_volumes,np.repeat(0.2,len(M.all_volumes)))
-        M.mb.tag_set_data(M.Swn1s_tag,M.all_volumes[-1],0.8)
-        M.mb.tag_set_data(M.n_pressure_tag,M.all_volumes,np.array(range(len(M.all_volumes)),dtype=np.float))
+        n=len(M.volumes.all)
+        # M.mb.tag_set_data(M.k_eq,self.internal_faces,np.repeat(1.0,len(self.internal_faces)))
+        M.k_eq[:]=np.repeat(1.0,n)
+        # M.mb.tag_set_data(M.phi,M.all_volumes,np.repeat(0.3,len(M.all_volumes)))
+        M.phi[:]=np.repeat(0.3,n)
+        # M.mb.tag_set_data(M.swns,M.all_volumes,np.repeat(0.2,len(M.all_volumes)))
+
+        M.swns[:]=np.repeat(0.2,n)
+        # M.mb.tag_set_data(M.swns,M.all_volumes[-1],0.8)
+        M.swns[-1]=0.8
+        # M.mb.tag_set_data(M.swn1s,M.all_volumes,np.repeat(0.2,len(M.all_volumes)))
+        M.swn1s[:]=np.repeat(0.2,n)
+        # M.mb.tag_set_data(M.swn1s,M.all_volumes[-1],0.8)
+        M.swn1s[-1]=0.8
+        # M.mb.tag_set_data(M.pressure,M.all_volumes,np.array(range(len(M.all_volumes)),dtype=np.float))
+        M.pressure[:]=np.arange(n,dtype=np.float)
 
     def potential_ordering(self, M):
         #Reordena a matriz jacobiana

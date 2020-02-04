@@ -164,7 +164,7 @@ volume:
   sparse: True
   level: 0
 
-poro:
+phi:
   type: volumes
   data size: 1
   data type: float
@@ -459,6 +459,34 @@ erro:
   level: 0
 
 tpfa_pressure:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+swns:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+swn1s:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+k_eq:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+k_eq:
   type: volumes
   data size: 1
   data type: float

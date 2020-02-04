@@ -33,7 +33,7 @@ class Ass:
             self.qwv=[]
             self.vpiv=[]
             self.pvi_acum=0.0
-            self.pvi=0.5
+            self.pvi=0.15
             self.dt=self.porous_volume*self.pvi/self.vazao
             print(self.dt)
             self.set_properties(M)
@@ -81,7 +81,7 @@ class Ass:
             if i>4 or self.i>0:
                 self.pvi=self.pvi_def
                 self.dt=self.porous_volume*self.pvi/self.vazao
-                self.dt*=40
+                # self.dt*=40
 
             J, q=self.get_jacobian_matrix(M)
             J=self.apply_dirichlet(J,[0,n])
@@ -179,7 +179,6 @@ class Ass:
         cols.append(n+ID_vol)
         data.append(sym.lambdify((Dx,Dy,phi,Dt),c_w)(self.Dx,self.Dy,0.3,np.repeat(self.dt,len(M.all_volumes))))
         # J[n+ID_vol][n+ID_vol]+=float(F_Jacobian().c_w.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt}))
-
         linesq=[]
         dataq=[]
         linesq.append(ID_vol)
@@ -247,7 +246,7 @@ class Ass:
         linesq.append(n+id_j)
         dataq.append(-sym.lambdify((T,Sw, p_i, p_j),F_Jacobian().F_w)(Ts,swns1, pf1, pf0))
         # q[n+ID_vol]-=float(F_Jacobian().F_w.subs({T:1.0, Sw:Swns1[count_fac], p_i:pv, p_j:pj}))
-
+        # import pdb; pdb.set_trace()
         lines.append(ID_vol)
         cols.append(ID_vol)
         data.append(-J00)
@@ -307,6 +306,9 @@ class Ass:
 
         q=q.transpose().toarray()[0]
         self.iterac+=1
+        J2=scipy.sparse.load_npz("results/J.npz")
+        q2=np.load("results/q.npy")
+        # import pdb; pdb.set_trace()
         return(J, q)
 
     def set_properties(self,M):
