@@ -6,7 +6,7 @@ import os
 
 # sudo docker run -it -v  $PWD:/pytest elliptic_scy:latest bash -c "cd /pytest/preprocessor; bash"
 # os.system('sudo docker run -it -v  $PWD:/pytest desenvolvimento-scipy:latest bash -c "cd /pytest; bash"')
-os.system('docker run -it -v  $PWD:/pytest gabrielmmats/impress:latest bash -c "cd /pytest; bash"')
+os.system('sudo docker run -it -v  $PWD:/pytest gabrielmmats/impress:latest bash -c "cd /pytest; bash"')
 
 # profiling
 # os.system('python -m cProfile -s cumtime definicoes.py')

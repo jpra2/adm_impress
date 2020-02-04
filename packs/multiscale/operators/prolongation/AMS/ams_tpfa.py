@@ -124,10 +124,12 @@ class AMSTpfa:
         nv = self.wirebasket_numbers[3]
 
         Pv = sp.identity(nv)
-        Pe = -linalg.spsolve(As['Aee'],As['Aev']*Pv)
-        Pf = -linalg.spsolve(As['Aff'],As['Afe']*Pe)
-        Pi = -linalg.spsolve(As['Aii'],As['Aif']*Pf)
+        Pe = -linalg.spsolve(As['Aee'].tocsc(),(As['Aev']*Pv).tocsc())
+        Pf = -linalg.spsolve(As['Aff'].tocsc(),(As['Afe']*Pe).tocsc())
+        Pi = -linalg.spsolve(As['Aii'].tocsc(),(As['Aif']*Pf).tocsc())
         op = sp.vstack([Pi,Pf,Pe,Pv])
+
+        import pdb; pdb.set_trace()
 
         #
         # nni = self.ns_sum[0]
