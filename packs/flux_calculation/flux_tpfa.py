@@ -96,3 +96,11 @@ class TpfaFlux2:
 
         self.data_impress['flux_volumes'] = flux_volumes
         self.data_impress['velocity_faces'] = velocity_faces
+
+def get_flux_faces(p0: 'left side pressure',
+    p1: 'right side pressure',
+    t0: 'transmissibility faces',
+    flux_grav_faces: 'gravity flux of faces'
+):
+
+    return -((p1 - p0) * t0 - flux_grav_faces)
