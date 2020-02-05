@@ -6,7 +6,7 @@ import sympy as sym
 
 T, S_up, Sw, So, Swn, Son, Dt, k, phi, p_i, p_j, Dx, Dy=sym.symbols("T S Sw So Swn Son Dt k phi p_i p_j Dx Dy")
 class assembly():
-    def __init__(self,M):
+    def __init__(self,M,iterac=0):
         self.n=len(M.volumes.all)
         self.nfi=len(M.faces.internal)
         self.vazao=10000.0
@@ -18,13 +18,17 @@ class assembly():
         self.pvi_lim=1.0
         self.dt=self.porous_volume*self.pvi/self.vazao
         self.F_Jacobian=s_J()
-        self.iterac=0
+        self.iterac=iterac
         self.pvi_acum=0
         J,q=self.get_jacobian_matrix(M)
         self.J=self.apply_dirichlet(J,[0,self.n])
         self.q=q
         # import pdb; pdb.set_trace()
     def get_jacobian_matrix(self,M):
+        if self.iterac>0:
+            # self.pvi=self.pvi_def
+            # self.dt=self.assembly.porous_volume*self.pvi/self.assembly.vazao
+            self.dt*=36
         GID_volumes=M.volumes.all
         n=len(GID_volumes)
         count=0
@@ -46,6 +50,7 @@ class assembly():
         data=[]
         lines.append(ID_vol)
         cols.append(n+ID_vol)
+        # print(self.dt,self.iterac)
         data.append(sym.lambdify((Dx,Dy,phi,Dt),c_o)(self.Dx,self.Dy,0.3,np.repeat(self.dt,self.n)))
         # J[ID_vol][n+ID_vol]+=float(F_Jacobian().c_o.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt}))
 
