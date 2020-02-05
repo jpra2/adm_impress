@@ -11,7 +11,10 @@ import time
 
 adm_method = AdmMethod(wells['all_wells'], 2, M, data_impress, elements_lv0)
 T, b = tpfa_solver.run()
-adm_method.set_initial_mesh(mlo, T, b)
+adm_method.restart_levels()
+adm_method.set_level_wells()
+adm_method.set_adm_mesh()
+# adm_method.set_initial_mesh(mlo, T, b)
 
 adm_method.organize_ops_adm(mlo['prolongation_level_1'],
                             mlo['restriction_level_1'],
@@ -23,6 +26,9 @@ adm_method.organize_ops_adm(mlo['prolongation_level_2'],
 
 adm_method.solve_multiscale_pressure(T, b)
 adm_method.set_pcorr()
+
+data_impress['pressure'] = adm_method.solver.direct_solver(T, b)
+data_impress['erro'] = np.absolute((data_impress['pressure'] - data_impress['pms'])/data_impress['pms'])
 
 data_impress.update_variables_to_mesh()
 M.core.print(folder='results', file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')

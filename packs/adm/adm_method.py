@@ -871,8 +871,10 @@ class AdmMethod(DataManager, TpfaFlux2):
         levels = self.data_impress['LEVEL'].copy()
         gid1 = self.data_impress['GID_1']
         gid0 = self.data_impress['GID_0']
+        level_0_ini = set(gid0[levels==0])
         saturation = self.data_impress['saturation']
         all_wells = set(self.all_wells_ids)
+        gids_lv1_sat = set()
         gidsc = np.unique(gid1)
         for gidc in gidsc:
             gids0 = gid0[gid1==gidc]
@@ -882,6 +884,20 @@ class AdmMethod(DataManager, TpfaFlux2):
             dif = sats_local.max() - sats_local.min()
             if dif >= self.delta_sat_max:
                 levels[gids0] = np.repeat(0, len(gids0))
+                gids_lv1_sat.add(gidc)
+
+        cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(1)]
+        cids_level = self.ml_data['coarse_primal_id_level_'+str(1)]
+
+        for gidc in gids_lv1_sat:
+            vizs = cids_neigh[cids_level==gidc]
+            for viz in vizs:
+                if set([viz]) & gids_lv1_sat:
+                    continue
+                gids0 = gid0[gid1==gidc]
+                if set(gids0) & level_0_ini:
+                    continue
+                levels[gids0] = np.repeat(1, len(gids0))
 
         self.data_impress['LEVEL'] = levels.copy()
 
