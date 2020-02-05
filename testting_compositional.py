@@ -20,8 +20,9 @@ fluid_properties.run(z) # isso também
 
 t = 0
 tfinal = 1
+
 while t < tfinal:
-    fluid_properties.P = fluid_properties.P*np.ones(100)
+    fluid_properties.P = fluid_properties.P * np.ones(100)
     CompositionalTPFA( M, data_impress, wells, fluid_properties, elements_lv0, load)
     t = tfinal
     #check stability and perform flash calculation
