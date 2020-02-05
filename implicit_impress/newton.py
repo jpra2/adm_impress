@@ -8,26 +8,28 @@ T, S_up, Sw, So, Swn, Son, Dt, k, phi, p_i, p_j, Dx, Dy=sym.symbols("T S Sw So S
 class newton():
     def __init__(self,M):
         self.set_properties(M)
+        self.pvi_lim=1.0
+        self.pvi_acum=0
+        self.pvi=0.15
         self.i=0
-        # self.F_Jacobian=s_J()
-        self.assembly=assembly(M)
-        # self.iteration(M)
+        self.Dx=1.0
+        self.Dy=1.0
+        self.Dz=1.0
+        self.porous_volume=0.3*self.Dx*self.Dy*self.Dz  #Volume*porosidade
 
         for j in range(8):
+            self.assembly=assembly(M,0.00001)
             self.pvi_def=0.15-0.02*j
-            ni=int(self.assembly.pvi_lim/self.pvi_def)
-            # self.assembly=assembly(M)
+            ni=int(self.pvi_lim/self.pvi_def)
+
             self.qov=[]
             self.qwv=[]
             self.vpiv=[]
             self.pvi_acum=0.0
             self.pvi=0.5
-            self.dt=8*self.assembly.porous_volume*self.pvi/self.assembly.vazao
-            print(self.dt)
-            # self.set_properties(M)
-            # self.i=0
+            self.dt=self.porous_volume*self.pvi/self.assembly.vazao
 
-
+            self.set_properties(M)
             self.iterac=0
             for i in range(ni):
                 self.iteration(M)
@@ -59,9 +61,9 @@ class newton():
 
             if i>4 or self.i>0:
                 self.pvi=self.pvi_def
-                self.dt=self.assembly.porous_volume*self.pvi/self.assembly.vazao
-                self.dt*=500
-            self.assembly=assembly(M,self.i)
+                self.dt=self.porous_volume*self.pvi/self.assembly.vazao
+                self.dt*=36
+            self.assembly=assembly(M,self.dt)
             J=self.assembly.J
             q=self.assembly.q
             Fp=-q[0:n]
@@ -91,8 +93,6 @@ class newton():
             M.swns[:]=S0[gids]
             i+=1
         v0_facs=M.volumes.adjacencies(M.volumes.all_elements[0])
-        # Adjs=M.faces.bridge_adjacencies(M.faces.internal_elements[:],2,3)
-        # v0_facs=M.mb.get_adjacencies(M.all_volumes[0], M.dimension-1)
         v0_internal_faces=np.intersect1d(v0_facs, M.faces.internal_elements[:])
         pv=M.pressure[M.volumes.all_elements[0]]
         # pv=M.mb.tag_get_data(M.n_pressure_tag,M.all_volumes[0],flat=True)[0]
@@ -108,14 +108,14 @@ class newton():
             # pj=max(M.mb.tag_get_data(M.n_pressure_tag,adjs,flat=True))
             qo+=float(self.assembly.F_Jacobian.F_o.subs({T:1.0, k:1.0, Sw:Sw_up, p_i:pv, p_j:pj}))/0.8
             qw+=float(self.assembly.F_Jacobian.F_w.subs({T:1.0, k:1.0, Sw:Sw_up, p_i:pv, p_j:pj}))
-        self.assembly.pvi_acum+=self.assembly.pvi
+        self.pvi_acum+=self.pvi
         self.qov.append(qo)
         self.qwv.append(qw)
-        self.vpiv.append(self.assembly.pvi_acum)
+        self.vpiv.append(self.pvi_acum)
 
         self.data=np.array([self.vpiv,self.qov,self.qwv])
 
-        print('oleo, agua',qo,qw,qo+qw,'pvi',self.assembly.pvi_acum)
+        print('oleo, agua',qo,qw,qo+qw,'pvi',self.pvi_acum)
         m4 = M.core.mb.create_meshset()
         # import pdb; pdb.set_trace()
         M.core.mb.add_entities(m4, M.core.all_volumes)

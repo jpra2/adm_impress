@@ -6,29 +6,20 @@ import sympy as sym
 
 T, S_up, Sw, So, Swn, Son, Dt, k, phi, p_i, p_j, Dx, Dy=sym.symbols("T S Sw So Swn Son Dt k phi p_i p_j Dx Dy")
 class assembly():
-    def __init__(self,M,iterac=0):
+    def __init__(self,M,timestep):
         self.n=len(M.volumes.all)
         self.nfi=len(M.faces.internal)
         self.vazao=10000.0
         self.Dx=1.0
         self.Dy=1.0
         self.Dz=1.0
-        self.porous_volume=0.3*self.Dx*self.Dy*self.Dz  #Volume*porosidade
-        self.pvi=0.15
-        self.pvi_lim=1.0
-        self.dt=self.porous_volume*self.pvi/self.vazao
         self.F_Jacobian=s_J()
-        self.iterac=iterac
-        self.pvi_acum=0
+        self.dt=timestep
         J,q=self.get_jacobian_matrix(M)
         self.J=self.apply_dirichlet(J,[0,self.n])
         self.q=q
-        # import pdb; pdb.set_trace()
+
     def get_jacobian_matrix(self,M):
-        if self.iterac>0:
-            # self.pvi=self.pvi_def
-            # self.dt=self.assembly.porous_volume*self.pvi/self.assembly.vazao
-            self.dt*=36
         GID_volumes=M.volumes.all
         n=len(GID_volumes)
         count=0
@@ -36,7 +27,7 @@ class assembly():
         q=np.zeros(2*n)
         Swns=M.swns[:].transpose()[0]
         Swn1s=M.swn1s[:].transpose()[0]
-        vols=np.repeat(1.0,self.n) #Volume de cada um dos volumes
+        # vols=np.repeat(1.0,self.n) #Volume de cada um dos volumes
 
         pv=M.pressure
 
@@ -50,7 +41,6 @@ class assembly():
         data=[]
         lines.append(ID_vol)
         cols.append(n+ID_vol)
-        # print(self.dt,self.iterac)
         data.append(sym.lambdify((Dx,Dy,phi,Dt),c_o)(self.Dx,self.Dy,0.3,np.repeat(self.dt,self.n)))
         # J[ID_vol][n+ID_vol]+=float(F_Jacobian().c_o.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt}))
 
@@ -190,10 +180,7 @@ class assembly():
 
         q[0]=0.0
         q[-1]-=self.vazao
-        self.iterac+=1
-        scipy.sparse.save_npz("results/J.npz",J)
-        np.save("results/q.npy",q)
-        # import pdb; pdb.set_trace()
+        # self.iterac+=1
         return(J, q)
 
     def apply_dirichlet(self, Mat,l):
