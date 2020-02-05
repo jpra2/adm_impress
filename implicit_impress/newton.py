@@ -22,10 +22,12 @@ class newton():
             self.vpiv=[]
             self.pvi_acum=0.0
             self.pvi=0.5
-            self.dt=-400*self.assembly.porous_volume*self.pvi/self.assembly.vazao
+            self.dt=8*self.assembly.porous_volume*self.pvi/self.assembly.vazao
             print(self.dt)
             # self.set_properties(M)
             # self.i=0
+
+
             self.iterac=0
             for i in range(ni):
                 self.iteration(M)
@@ -54,23 +56,22 @@ class newton():
         i=0
         csc_matrix=scipy.sparse.csc_matrix
         while i<max_iter and (i==0 or max(abs(sol))>0.001):
-            self.assembly=assembly(M)
+
             if i>4 or self.i>0:
                 self.pvi=self.pvi_def
                 self.dt=self.assembly.porous_volume*self.pvi/self.assembly.vazao
-                self.dt*=50
-
-            # J, q=assembly(M).get_jacobian_matrix(M)
+                self.dt*=500
+            self.assembly=assembly(M,self.i)
             J=self.assembly.J
             q=self.assembly.q
             Fp=-q[0:n]
             Fs=-q[n:]
-            J1=scipy.sparse.csc_matrix(J)
+            J=scipy.sparse.csc_matrix(J)
 
-            Jpp1=J1[0:n,0:n]
-            Jps1=J1[0:n,n:]
-            Jsp1=J1[n:,0:n]
-            Jss1=J1[n:,n:]
+            Jpp1=J[0:n,0:n]
+            Jps1=J[0:n,n:]
+            Jsp1=J[n:,0:n]
+            Jss1=J[n:,n:]
 
             Mp1=Jpp1-Jps1*linalg.spsolve(Jss1,Jsp1)
 
@@ -87,11 +88,7 @@ class newton():
             P0+=sol[0:n]
             print(max(abs(sol[0:n])),max(abs(sol[n:])))
             M.pressure[:]=P0[gids]
-
             M.swns[:]=S0[gids]
-            # import pdb; pdb.set_trace()
-            # M.mb.tag_set_data(M.n_pressure_tag,M.all_volumes,P0[gids])
-            # M.mb.tag_set_data(M.Swns_tag,M.all_volumes,S0[gids])
             i+=1
         v0_facs=M.volumes.adjacencies(M.volumes.all_elements[0])
         # Adjs=M.faces.bridge_adjacencies(M.faces.internal_elements[:],2,3)
@@ -119,9 +116,10 @@ class newton():
         self.data=np.array([self.vpiv,self.qov,self.qwv])
 
         print('oleo, agua',qo,qw,qo+qw,'pvi',self.assembly.pvi_acum)
-        # m4 = M.mb.create_meshset()
-        # M.mb.add_entities(m4, M.all_volumes)
-        # M.mb.write_file('results/biphasic/fully_implicit'+str(self.i)+'.vtk',[m4])
+        m4 = M.core.mb.create_meshset()
+        # import pdb; pdb.set_trace()
+        M.core.mb.add_entities(m4, M.core.all_volumes)
+        M.core.mb.write_file('results/biphasic/fully_implicit'+str(self.i)+'.vtk',[m4])
         # import pdb; pdb.set_trace()
         M.swn1s[:]=S0[gids]
         # M.mb.tag_set_data(M.Swn1s_tag,M.all_volumes,S0[gids])
