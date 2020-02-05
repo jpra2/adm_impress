@@ -57,6 +57,7 @@ compositional_data:
   - 617.7
   Vc:
   - 0.00428556
+  capillary_pressure: Chang
   krg0: 1.0
   kro0: 1.0
   krw0: 1.0

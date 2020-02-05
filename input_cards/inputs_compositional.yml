@@ -23,7 +23,7 @@ compositional_data:
   tempo_maximo: null
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
-  # capillary_pressure: Chang
+  capillary_pressure: Chang
   rock_compressibility: 7.25e-5
   Pf: 13.79E6
   mi_W: 1e-3
