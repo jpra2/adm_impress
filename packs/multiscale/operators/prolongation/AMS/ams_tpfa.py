@@ -4,6 +4,38 @@ import scipy.sparse as sp
 from scipy.sparse import linalg
 import time
 
+def get_wirebasket_elements(internals, faces, edges, vertices):
+
+    wirebasket_elements = np.array([internals, faces, edges, vertices])
+    wirebasket_numbers = np.array([len(internals), len(faces), len(edges), len(vertices)])
+    nv = self.wirebasket_numbers[-1]
+    ns_sum = [self.wirebasket_numbers[0]]
+    for i in range(3):
+        ns_sum.append(self.ns_sum[i] + self.wirebasket_numbers[i+1])
+    ns_sum = np.array(self.ns_sum)
+
+    n_reord = 0
+    wirebasket_ids = []
+    for i in range(4):
+        n2 = len(self.wirebasket_elements[i])
+        wirebasket_ids.append(np.arange(n_reord, n_reord + n2))
+        n_reord += n2
+
+    wirebasket_ids = np.array(self.wirebasket_ids)
+
+    return wirebasket_elements, wirebasket_numbers, nv, ns_sum, wirebasket_ids
+
+def get_G2(vertices, primal_ids):
+
+    nv = len(vertices)
+    cols = primal_ids[vertices]
+    lines = np.arange(len(cols))
+    data = np.ones(len(lines))
+    G2 = sp.csc_matrix((data,(lines,cols)), shape=(nv, nv))
+
+    return G2
+
+
 class AMSTpfa:
     # name = 'AMSTpfa_'
     id = 1
@@ -18,7 +50,11 @@ class AMSTpfa:
         data_name='AMSTpfa_',
         load=False,
         tpfalizar=False,
-        coupled_edges=[]):
+        coupled_edges=[],
+        get_correction_term=False,
+        total_source_term=None,
+        gravity_source_term=None,
+        volumes_with_grav_source_term=None):
 
         # data_name = AMSTpfa.name + str(AMSTpfa.id) + '.npz'
         # data_name = data_name + str(AMSTpfa.id) + '.npz'
@@ -28,31 +64,42 @@ class AMSTpfa:
 
         # self.T = T
         self.tpfalizar = tpfalizar
-        self.wirebasket_elements = np.array([internals, faces, edges, vertices])
-        self.wirebasket_numbers = np.array([len(internals), len(faces), len(edges), len(vertices)])
-        self.nv = self.wirebasket_numbers[-1]
-        self.ns_sum = [self.wirebasket_numbers[0]]
-        for i in range(3):
-            self.ns_sum.append(self.ns_sum[i] + self.wirebasket_numbers[i+1])
-        self.ns_sum = np.array(self.ns_sum)
-
-        n_reord = 0
-        self.wirebasket_ids = []
-        for i in range(4):
-            n2 = len(self.wirebasket_elements[i])
-            self.wirebasket_ids.append(np.arange(n_reord, n_reord + n2))
-            n_reord += n2
-
-        self.wirebasket_ids = np.array(self.wirebasket_ids)
+        # self.wirebasket_elements = np.array([internals, faces, edges, vertices])
+        # self.wirebasket_numbers = np.array([len(internals), len(faces), len(edges), len(vertices)])
+        # self.nv = self.wirebasket_numbers[-1]
+        # self.ns_sum = [self.wirebasket_numbers[0]]
+        # for i in range(3):
+        #     self.ns_sum.append(self.ns_sum[i] + self.wirebasket_numbers[i+1])
+        # self.ns_sum = np.array(self.ns_sum)
+        #
+        # n_reord = 0
+        # self.wirebasket_ids = []
+        # for i in range(4):
+        #     n2 = len(self.wirebasket_elements[i])
+        #     self.wirebasket_ids.append(np.arange(n_reord, n_reord + n2))
+        #     n_reord += n2
+        #
+        # self.wirebasket_ids = np.array(self.wirebasket_ids)
+        self.wirebasket_elements, self.wirebasket_numbers, self.nv, self.ns_sum, self.wirebasket_ids = get_wirebasket_elements(internals, faces, edges, vertices)
         self.get_G()
         # dt = [('gid', np.dtype(int)), ('primal_id', np.dtype(int))]
         # self.gid_to_primal = np.zeros(len(gids), dtype=dt)
         # self.gid_to_primal['gid'] = gids
         # self.gid_to_primal['primal_id'] = primal_ids
-        cols = primal_ids[vertices]
-        lines = np.arange(len(cols))
-        data = np.ones(len(lines))
-        self.G2 = sp.csc_matrix((data,(lines,cols)), shape=(self.nv, self.nv))
+
+        # cols = primal_ids[vertices]
+        # lines = np.arange(len(cols))
+        # data = np.ones(len(lines))
+        # self.G2 = sp.csc_matrix((data,(lines,cols)), shape=(self.nv, self.nv))
+
+        self.G2 = get_G2(vertices, primal_ids)
+
+        if get_correction_term:
+            self.total_source_term = total_source_term
+            self.gravity_source_term = gravity_source_term
+            self.volumes_with_grav_source_term = volumes_with_grav_source_term
+
+
         # self.T_wire = self.G*self.T*self.GT
         # # self.T_wire = self.GT*self.T*self.G
         # self.get_as()
@@ -129,8 +176,6 @@ class AMSTpfa:
         Pi = -linalg.spsolve(As['Aii'].tocsc(),(As['Aif']*Pf).tocsc())
         op = sp.vstack([Pi,Pf,Pe,Pv])
 
-        import pdb; pdb.set_trace()
-
         #
         # nni = self.ns_sum[0]
         # nnf = self.ns_sum[1]
@@ -195,6 +240,32 @@ class AMSTpfa:
         T_wire2[inds,inds] += rr
 
         return T_wire2
+
+    def get_pcorr(self):
+
+        '''
+        obtem a correcao da pressao
+        '''
+
+
+        pass
+
+    def initialize_data(self):
+
+        # q_total_wirebasket = self.G*self.total_source_term
+        # gravity_source_term = self.gravity_source_term.copy()
+
+        total_source_term2 = self.total_source_term.copy()
+
+        ids = np.arange(len(total_source_term2))
+        ids_fora = np.setdiff1d(ids, self.volumes_with_grav_source_term)
+        
+
+
+
+
+
+
 
     def run(self, T: 'transmissibility matrix'):
 
