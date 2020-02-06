@@ -35,4 +35,4 @@ class symbolic_J:
         self.J=J
         self.c_o=sym.diff(self.acum_o,Sw)
         self.c_w=sym.diff(self.acum_w,Sw)
-        # import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()3
