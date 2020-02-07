@@ -191,10 +191,11 @@ M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
 
 ######################
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
-tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
+# tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
+T, b = tpfa_solver.run()
 # tpfa_solver.get_RHS_term()
 # tpfa_solver.get_transmissibility_matrix()
-multilevel_operators = MultilevelOperators(2, data_impress, M.multilevel_data, load=load_operators)
+multilevel_operators = MultilevelOperators(2, data_impress, M.multilevel_data, load=load_operators, get_correction_term=True)
 #
 if load_operators:
     pass

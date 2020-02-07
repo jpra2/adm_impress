@@ -56,18 +56,30 @@ def manter_vizinhos_de_face(T, ids, neigh_ids):
 
 class MultilevelOperators(DataManager):
     def __init__(self,
-                n_levels,
-                data_impress,
-                ml_data,
-                data_name='MultilevelOperators.npz',
-                load=False):
+        n_levels,
+        data_impress,
+        ml_data,
+        data_name='MultilevelOperators.npz',
+        load=False,
+        get_correction_term=False,
+        total_source_term_all_levels=None,
+        gravity_source_term_all_levels=None,
+        volumes_without_gravity_source_term_all_levels=None
+    ):
 
         super().__init__(data_name=data_name, load=load)
         self.load = load
         self.ml_data = ml_data
 
-        self.n_levels = n_levels
+        # self.n_levels = n_levels
+        self.n_levels = 1
         self.data_impress = data_impress
+        self.get_correction_term = get_correction_term
+
+        if get_correction_term:
+            self.total_source_term_all_levels = total_source_term_all_levels
+            self.gravity_source_term_all_levels = gravity_source_term_all_levels
+            self.volumes_without_gravity_source_term_all_levels = volumes_without_gravity_source_term_all_levels
 
         self.restriction = 'restriction_level_'
         self.prolongation = 'prolongation_level_'
@@ -75,6 +87,7 @@ class MultilevelOperators(DataManager):
         self.gid_n = 'gid'
         self.primal_id_n = 'primal_id'
         self.dual_id_n = 'dual_id'
+        self.pcorr_n = 'pcorr_level_'
         self.operators = dict()
 
         if load == False:
@@ -122,6 +135,8 @@ class MultilevelOperators(DataManager):
 
     def get_operators(self, load=False):
 
+        get_correction_term = self.get_correction_term
+
         for n in range(self.n_levels):
             level = n+1
             infos = self._data[self.infos_level + str(level)]
@@ -147,15 +162,17 @@ class MultilevelOperators(DataManager):
                                                  gid,
                                                  primal_id,
                                                  load=load,
-                                                 tpfalizar=tpfalizar)
+                                                 tpfalizar=tpfalizar,
+                                                 get_correction_term=get_correction_term)
 
     def run(self, T: 'fine transmissibility without boundary conditions'):
 
         T_ant = T.copy()
         for n in range(self.n_levels):
             level = n+1
-            OP = self.operators[str(level)].run(T_ant)
+            OP, pcorr = self.operators[str(level)].run(T_ant)
             self._data[self.prolongation + str(level)] = OP
+            self._data[self.pcorr_n + str(level)] = pcorr
             OR = self._data[self.restriction + str(level)]
 
             sp.save_npz(os.path.join('flying', self.prolongation + str(level) + '.npz'), OP)
@@ -163,10 +180,13 @@ class MultilevelOperators(DataManager):
 
             if level == self.n_levels:
                 continue
+
             T_ant = OR*T_ant*OP
             cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
+
+        self.export_to_npz()
 
     def run_paralel(self, T: 'fine transmissibility without boundary conditions'):
         T_ant = T.copy()
@@ -188,3 +208,5 @@ class MultilevelOperators(DataManager):
             cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
+
+        self.export_to_npz()
