@@ -53,8 +53,8 @@ class AMSTpfa:
         coupled_edges=[],
         get_correction_term=False,
         total_source_term=None,
-        gravity_source_term=None,
-        volumes_with_grav_source_term=None):
+        B_matrix=None,
+        Eps_matrix=None):
 
         # data_name = AMSTpfa.name + str(AMSTpfa.id) + '.npz'
         # data_name = data_name + str(AMSTpfa.id) + '.npz'
@@ -94,11 +94,13 @@ class AMSTpfa:
 
         self.G2 = get_G2(vertices, primal_ids)
 
+        self.get_correction_term = get_correction_term
         if get_correction_term:
-            self.total_source_term = total_source_term
-            self.gravity_source_term = gravity_source_term
-            self.volumes_with_grav_source_term = volumes_with_grav_source_term
-
+            self.B_wire = self.G*B_matrix*self.GT
+            self.Eps_wire = self.G*Eps_matrix*self.GT
+            self.I = sp.identity(len(np.concatenate(self.wirebasket_elements))).tocsc()
+            self.E_wire = self.Eps_wire*self.B_wire + self.I - self.B
+            self.it = 0
 
         # self.T_wire = self.G*self.T*self.GT
         # # self.T_wire = self.GT*self.T*self.G
@@ -241,31 +243,44 @@ class AMSTpfa:
 
         return T_wire2
 
-    def get_pcorr(self):
+    def get_pcorr(self, As):
 
         '''
         obtem a correcao da pressao
         '''
+        ni = self.wirebasket_numbers[0]
+        nf = self.wirebasket_numbers[1]
+        ne = self.wirebasket_numbers[2]
+        nv = self.wirebasket_numbers[3]
 
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
 
-        pass
+        if self.it > 0:
+            self.E_wire = self.I
 
-    def initialize_data(self):
+        q2 = self.E_wire*self.total_source_term_wire
+        pcorr = np.zeros(len(q2), dtype=float)
 
-        # q_total_wirebasket = self.G*self.total_source_term
-        # gravity_source_term = self.gravity_source_term.copy()
+        pcorr_ee = linalg.spsolve(As['Aee'], q2[nnf:nne])
+        pcorr_fe = -linalg.spsolve(As['Aff'], As['Afe']*pcorr_ee)
+        pcorr_ie = -linalg.spsolve(As['Aii'], As['Aif']*pcorr_fe)
 
-        total_source_term2 = self.total_source_term.copy()
+        pcorr_ff = linalg.spsolve(As['Aff'], q2[nni:nnf])
+        pcorr_if = -linalg.spsolve(As['Aii'], As['Aif']*pcorr_ff)
 
-        ids = np.arange(len(total_source_term2))
-        ids_fora = np.setdiff1d(ids, self.volumes_with_grav_source_term)
-        
+        pcorr_ii = linalg.spsolve(As['Aii'], q2[0:nni])
 
+        pcorr[0:nni] = pcorr_ii + pcorr_if + pcorr_ie
+        pcorr[nni:nnf] = pcorr_ff + pcorr_fe
+        pcorr[nnf:nne] = pcorr_ee
+        pcorr = self.GT*pcorr
 
+        self.it += 1
 
-
-
-
+        return pcorr
 
     def run(self, T: 'transmissibility matrix'):
 
@@ -274,5 +289,11 @@ class AMSTpfa:
             T_wire = self.tpfalize(T_wire)
         # self._data['T_wire'] = T_wire
         As = self.get_as(T_wire)
+        del T_wire
         OP = self.get_OP_AMS_TPFA_by_AS(As)
-        return OP
+        
+        if self.get_correction_term:
+            pcorr = self.get_pcorr(As)
+            return OP, pcorr
+        else:
+            return OP
