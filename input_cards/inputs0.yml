@@ -97,8 +97,8 @@ monophasic_data:
   mi: 1.0
 multilevel_data: true
 n_test: 0
-read_permeability: true
-set_permeability: false
+read_permeability: false
+set_permeability: true
 set_porosity: true
 state: 0
 type_of_solution: fine_scale

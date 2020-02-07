@@ -20,7 +20,8 @@ def initial_mesh(load=False, convert=False):
 
     if multilevel_data and load_multilevel_data:
         from ..load.preprocessor_load import init_mesh
-        M = init_mesh('flying/multilevel_data-all.h5m')
+        # M = init_mesh('flying/multilevel_data-all.h5m')
+        M = init_mesh('saves/initial_mesh.h5m')
         elements_lv0 = ElementsLv0(M, load=load)
         data_impress = Data(M, elements_lv0, load=load)
         if not load:
@@ -37,7 +38,7 @@ def initial_mesh(load=False, convert=False):
         if multilevel_data:
             ml_data = MultilevelData(data_impress, M)
             ml_data.run()
-            ml_data.save_mesh()
+            # ml_data.save_mesh()
 
     wells = Wells(M, load=load)
 
@@ -58,5 +59,6 @@ def initial_mesh(load=False, convert=False):
         wells.update_values_to_mesh()
         data_impress.update_variables_to_mesh()
         wells.export_all_datas_to_npz()
+        M.save_variables('initial_mesh')
 
     return M, elements_lv0, data_impress, wells

@@ -952,17 +952,10 @@ class MultilevelData(DataManager):
 
             self.data_impress['VOLUMES_WITH_GRAV_'+str(level)] = volumes_with_grav
 
-
-
-
-
-
-
-
-
-
-
     def save_mesh(self):
         M = self.mesh
 
-        M.core.print(file=self.name_mesh, config_input='input_cards/print_settings.yml')
+        self.data_impress.update_variables_to_mesh()
+
+        # M.core.print(file=self.name_mesh, config_input='input_cards/print_settings.yml')
+        M.save_variables('multiscale_data')

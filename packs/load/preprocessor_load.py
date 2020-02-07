@@ -3,7 +3,8 @@ import pdb
 
 def init_mesh(mesh_name):
 
-    M = msh(mesh_name, dim = 3)
+    # M = msh(mesh_name, dim = 3)
+    M = msh(mesh_name, dim = 3, load=1)
     # M = msh('mesh/malha03.msh', dim = 2)
 
     return M

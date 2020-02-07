@@ -9,8 +9,8 @@ def update_inputs():
     # dd['load_operators'] = True
     # dd['load_biphasic_data'] = True
 
-    dd['read_permeability'] = True
-    dd['set_permeability'] = False
+    # dd['read_permeability'] = True
+    # dd['set_permeability'] = False
 
     dd['biphasic'] = False
 
