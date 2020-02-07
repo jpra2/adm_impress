@@ -5,9 +5,12 @@ class global_assembly:
         self.nv=len(M.volumes.all)
         self.nfi=len(M.faces.internal)
         self.M_cont=self.get_continuity_matrix(M, dx, dy, dz)
-        self.M_momentum=self.get_momentum_x_matrix(M,dx,dy)
+        self.M_momentum_y=self.get_momentum_y_matrix(M,dx,dy)
+        self.M_momentum_x=self.get_momentum_x_matrix(M,dx,dy)
+        self.M=np.vstack([self.M_cont,self.M_momentum_x,self.M_momentum_y])
 
     def get_continuity_matrix(self, M, dx, dy, dz):
+
         M_cont=np.zeros((self.nv,self.nv+self.nfi))
         volumes=M.volumes.all
         adjs=M.volumes.bridge_adjacencies(volumes,2,2)
@@ -28,19 +31,22 @@ class global_assembly:
             for u in us:
                 verts=M.faces.bridge_adjacencies(u,0,0)
                 xs.append(M.nodes.coords[verts][:,0][0])
-            # import pdb; pdb.set_trace()
+
+            usl=M.id_fint[us].T[0]
+            vsl=M.id_fint[vs].T[0]
+
             if len(us)==2:
                 if xs[0]>xs[1]:
-                    M_cont[volumes[aa],self.nv+us[1]-30]=1
-                    M_cont[volumes[aa],self.nv+us[0]-30]=-1
+                    M_cont[volumes[aa],self.nv+usl[1]]=1
+                    M_cont[volumes[aa],self.nv+usl[0]]=-1
                 else:
-                    M_cont[volumes[aa],self.nv+us[1]-30]=-1
-                    M_cont[volumes[aa],self.nv+us[0]-30]=1
+                    M_cont[volumes[aa],self.nv+usl[1]]=-1
+                    M_cont[volumes[aa],self.nv+usl[0]]=1
             else:
                 if abs(xs[0]-dx)<0.6:
-                    M_cont[volumes[aa],self.nv+us[0]-30]=1
+                    M_cont[volumes[aa],self.nv+usl[0]]=1
                 else:
-                    M_cont[volumes[aa],self.nv+us[0]-30]=-1
+                    M_cont[volumes[aa],self.nv+usl[0]]=-1
 
             ys=[]
             for v in vs:
@@ -48,20 +54,19 @@ class global_assembly:
                 ys.append(M.nodes.coords[verts][:,1][0])
             if len(vs)==2:
                 if ys[0]>ys[1]:
-                    M_cont[volumes[aa],self.nv+vs[1]-30]=1
-                    M_cont[volumes[aa],self.nv+vs[0]-30]=-1
+                    M_cont[volumes[aa],self.nv+vsl[1]]=1
+                    M_cont[volumes[aa],self.nv+vsl[0]]=-1
                 else:
-                    M_cont[volumes[aa],self.nv+vs[1]-30]=-1
-                    M_cont[volumes[aa],self.nv+vs[0]-30]=1
+                    M_cont[volumes[aa],self.nv+vsl[1]]=-1
+                    M_cont[volumes[aa],self.nv+vsl[0]]=1
             else:
 
                 if abs(ys[0]-dy)<0.6:
-                    M_cont[volumes[aa],self.nv+vs[0]-30]=1
+                    M_cont[volumes[aa],self.nv+vsl[0]]=1
                 else:
-                    M_cont[volumes[aa],self.nv+vs[0]-30]=-1
-        return(M_cont)
+                    M_cont[volumes[aa],self.nv+vsl[0]]=-1
 
-                # import pdb; pdb.set_trace()
+
 
 
             # import pdb; pdb.set_trace()
@@ -74,11 +79,15 @@ class global_assembly:
         #
         # M_cont[adjs1,nv+adjs0]=-1
         # M_cont[adjs0,nv+adjs1]=1
-        np.savetxt("results/M_cont.csv",M_cont,delimiter=",")
+        # np.savetxt("results/M_cont.csv",M_cont,delimiter=",")
 
-    def get_momentum_x_matrix(self,M,dx,dy):
+
+        return(M_cont)
+
+    def get_momentum_y_matrix(self,M,dx,dy):
         T=1
         mi=1
+        k=1
 
         faces=M.faces.internal
         nodes=M.faces.bridge_adjacencies(faces,0,0).flatten()
@@ -89,7 +98,7 @@ class global_assembly:
         adjs_h=M.faces.bridge_adjacencies(vertical,2,3)
         adjs_h0=adjs_h[:,0]
         adjs_h1=adjs_h[:,1]
-        M_x=np.zeros((len(vertical),self.nv+self.nfi))
+        M_y=np.zeros((len(vertical),self.nv+self.nfi))
         c0=M.volumes.center(adjs_h0)[:,0]
         c1=M.volumes.center(adjs_h1)[:,0]
 
@@ -101,12 +110,112 @@ class global_assembly:
         lower_coord[c0<c1]=adjs_h0[c0<c1]
         lower_coord[c0>c1]=adjs_h1[c0>c1]
 
-        import pdb; pdb.set_trace()
-        M_x[self.nv+horizontal-30,higher_coord]=1
-        M_x[self.nv+horizontal-30,lower_coord]=-1
-
-        import pdb; pdb.set_trace()
+        h_l=M.id_fint[horizontal].T[0]
+        M_y[h_l,higher_coord]=1
+        M_y[h_l,lower_coord]=-1
 
 
+        fac_viz_ares = M.faces.bridge_adjacencies(horizontal,1,2)
+        laterais=[]
+        for fac in fac_viz_ares:
+            laterais.append(np.intersect1d(fac,horizontal))
 
+        laterais_l=[]
+        for l in laterais:
+            laterais_l.append(M.id_fint[l].T[0])
+
+        faces_viz_adjs_h=M.volumes.bridge_adjacencies(adjs_h.flatten(),2,2).reshape(len(vertical),12)
+
+        sup_inf=[]
+        i=0
+        for fac in faces_viz_adjs_h:
+            # import pdb; pdb.set_trace()
+            sup_inf.append(np.setdiff1d(np.intersect1d(fac,vertical),vertical[i]))
+            i+=1
+        sup_inf_l=[]
+        for si in sup_inf:
+            sup_inf_l.append(M.id_fint[si].T[0])
+        vertical_l=M.id_fint[vertical]-len(horizontal)
+
+        for i in range(len(vertical)):
+            M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]=mi/k-2/(dy*dy)
+            M_y[vertical_l[i],self.nv+sup_inf_l[i]]=-1/(dy*dy)
+
+            if len(laterais[i])==1:
+                M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]-=3/(dx*dx)
+                M_y[vertical_l[i],self.nv+len(horizontal)+laterais_l[i]]+=1/(dx*dx)
+            else:
+                M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]-=2/(dx*dx)
+                M_y[vertical_l[i],self.nv+len(horizontal)+laterais_l[i]]+=1/(dx*dx)
+
+        return M_y
+
+    def get_momentum_x_matrix(self,M,dx,dy):
+        T=1
+        mi=1
+        k=1
+
+        faces=M.faces.internal
+        nodes=M.faces.bridge_adjacencies(faces,0,0).flatten()
+        coords=M.nodes.coords[nodes].reshape(len(faces),4,3)
+        deltas_x_fac=coords[:,:,0].max(axis=1)-coords[:,:,0].min(axis=1)
+        horizontal=faces[deltas_x_fac>10**-8]
+        vertical=faces[deltas_x_fac<10**-8]
+
+        horizontal, vertical = vertical,horizontal
+        adjs_h=M.faces.bridge_adjacencies(vertical,2,3)
+        adjs_h0=adjs_h[:,0]
+        adjs_h1=adjs_h[:,1]
+        M_y=np.zeros((len(vertical),self.nv+self.nfi))
+        c0=M.volumes.center(adjs_h0)[:,1]
+        c1=M.volumes.center(adjs_h1)[:,1]
+
+        higher_coord=np.zeros(len(vertical),dtype=int)
+        higher_coord[c0>c1]=adjs_h0[c0>c1]
+        higher_coord[c0<c1]=adjs_h1[c0<c1]
+
+        lower_coord=np.zeros(len(vertical),dtype=int)
+        lower_coord[c0<c1]=adjs_h0[c0<c1]
+        lower_coord[c0>c1]=adjs_h1[c0>c1]
+
+        h_l=M.id_fint[horizontal].T[0]-len(vertical)
         # import pdb; pdb.set_trace()
+        M_y[h_l,higher_coord]=1
+        M_y[h_l,lower_coord]=-1
+
+
+        fac_viz_ares = M.faces.bridge_adjacencies(horizontal,1,2)
+        laterais=[]
+        for fac in fac_viz_ares:
+            laterais.append(np.intersect1d(fac,horizontal))
+
+        laterais_l=[]
+        for l in laterais:
+            laterais_l.append(M.id_fint[l].T[0])
+
+        faces_viz_adjs_h=M.volumes.bridge_adjacencies(adjs_h.flatten(),2,2).reshape(len(vertical),12)
+
+        sup_inf=[]
+        i=0
+        for fac in faces_viz_adjs_h:
+            # import pdb; pdb.set_trace()
+            sup_inf.append(np.setdiff1d(np.intersect1d(fac,vertical),vertical[i]))
+            i+=1
+        sup_inf_l=[]
+        for si in sup_inf:
+            sup_inf_l.append(M.id_fint[si].T[0])
+        vertical_l=M.id_fint[vertical]
+
+        for i in range(len(vertical)):
+
+            M_y[vertical_l[i],self.nv+vertical_l[i]]=mi/k-2/(dy*dy)
+            M_y[vertical_l[i],self.nv+sup_inf_l[i]]=+1/(dy*dy)
+
+            if len(laterais[i])==1:
+                M_y[vertical_l[i],self.nv+vertical_l[i]]-=3/(dx*dx)
+                M_y[vertical_l[i],self.nv+laterais_l[i]-len(horizontal)]+=1/(dx*dx)
+            else:
+                M_y[vertical_l[i],self.nv+vertical_l[i]]-=2/(dx*dx)
+                M_y[vertical_l[i],self.nv+laterais_l[i]-len(horizontal)]+=1/(dx*dx)
+
+        return M_y
