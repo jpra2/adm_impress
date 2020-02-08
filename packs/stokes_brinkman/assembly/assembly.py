@@ -181,7 +181,7 @@ class global_assembly:
             M_y[vertical_l[i],self.nv+sup_inf_l[i]]=self.mi_l/(dy*dy)
 
             if len(laterais[i])==1:
-                M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]-=1*self.mi_l/(dx*dx)
+                M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]-=2*self.mi_l/(dx*dx)
                 M_y[vertical_l[i],self.nv+len(horizontal)+laterais_l[i]]+=1*self.mi_l/(dx*dx)
             else:
                 M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]-=self.mi_l/(dx*dx)
@@ -251,7 +251,7 @@ class global_assembly:
             M_y[vertical_l[i],self.nv+sup_inf_l[i]]=self.mi_l/(dy*dy)
 
             if len(laterais[i])==1:
-                M_y[vertical_l[i],self.nv+vertical_l[i]]-=self.mi_l/(dx*dx)
+                M_y[vertical_l[i],self.nv+vertical_l[i]]-=2*self.mi_l/(dx*dx)
                 M_y[vertical_l[i],self.nv+laterais_l[i]-len(horizontal)]=self.mi_l/(dx*dx)
             else:
                 M_y[vertical_l[i],self.nv+vertical_l[i]]-=self.mi_l/(dx*dx)
