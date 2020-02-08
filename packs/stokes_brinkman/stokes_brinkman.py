@@ -8,24 +8,45 @@ class stokes_solver:
         self.initiate_f_int_tag(M)
         self.M = assembly.global_assembly(M, dx, dy, dz).M
         self.rhs=np.zeros(self.nv+self.nfi)
-        self.rhs[0]=0
-        self.rhs[self.nv-1]=1
+        self.rhs[0]=1
+        self.rhs[self.nv-1]=0
         np.savetxt("results/mat.csv",self.M,delimiter=",")
-        My=self.M[0:self.nv,self.nv:self.nv+6].copy()
-        Mx=self.M[0:self.nv,self.nv+6:self.nv+12].copy()
-        self.M[0:self.nv,self.nv:self.nv+6]=Mx.copy()
-        self.M[0:self.nv,self.nv+6:self.nv+12]=My.copy()
+        #self.M[self.nv:,self.nv:]=np.identity(self.nfi)
+
+        #self.M[range(9,21),range(9,21)]-=self.M[self.nv:,self.nv:].sum(axis=1)
+        #My=self.M[0:self.nv,self.nv:self.nv+6].copy()
+        #Mx=self.M[0:self.nv,self.nv+6:self.nv+12].copy()
+        #self.M[0:self.nv,self.nv:self.nv+6]=Mx.copy()
+        #self.M[0:self.nv,self.nv+6:self.nv+12]=My.copy()
 
 
+        #My=self.M[self.nv:self.nv+6,self.nv:self.nv+6].copy()
+        #My=abs(My)
+        #My[range(6),range(6)]-=My.sum(axis=1)
+        #Mx=self.M[self.nv+6:self.nv+12,self.nv+6:self.nv+12].copy()
+        #Mx=abs(Mx)
+        #Mx[range(6),range(6)]-=Mx.sum(axis=1)
 
-        My=self.M[self.nv:self.nv+6,self.nv:self.nv+6].copy()
-        Mx=self.M[self.nv+6:self.nv+12,self.nv+6:self.nv+12].copy()
-        # import pdb; pdb.set_trace()
-        self.M[self.nv:self.nv+6,self.nv:self.nv+6]=Mx.copy()
-        self.M[self.nv+6:self.nv+12,self.nv+6:self.nv+12]=My.copy()
+        #self.M[self.nv:self.nv+6,self.nv:self.nv+6]=Mx.copy()
+        #self.M[self.nv+6:self.nv+12,self.nv+6:self.nv+12]=My.copy()
+
         np.savetxt("results/mat2.csv",self.M,delimiter=",")
-        import pdb; pdb.set_trace()
-        self.solve(self.M,self.rhs)
+
+        self.sol=self.solve(self.M,self.rhs)
+        print(self.sol)
+        volumes=M.volumes.all
+        M.pressure[volumes]=self.sol[volumes]
+        M.velocity[self.horizontal]=self.sol[self.nv:self.nv+6]
+        M.velocity[self.vertical]=self.sol[self.nv+6:self.nv+12]
+
+        v=M.core.mb.create_meshset()
+        M.core.mb.add_entities(v,M.core.all_volumes)
+        M.core.mb.write_file("results/solution_volumes.vtk",[v])
+
+        f=M.core.mb.create_meshset()
+        M.core.mb.add_entities(f,M.core.all_faces)
+        M.core.mb.write_file("results/solution_faces.vtk",[f])
+
     def get_mesh_properties(self,M):
         v0=M.volumes.all[0]
         vert_v0=M.volumes.bridge_adjacencies(v0,0,0)
@@ -39,8 +60,10 @@ class stokes_solver:
         nodes=M.faces.bridge_adjacencies(faces,0,0).flatten()
         coords=M.nodes.coords[nodes].reshape(len(faces),4,3)
         deltas_x_fac=coords[:,:,0].max(axis=1)-coords[:,:,0].min(axis=1)
-        horizontal=faces[deltas_x_fac>10**-8]
-        vertical=faces[deltas_x_fac<10**-8]
+        horizontal=faces[deltas_x_fac>10**-2]
+        vertical=faces[deltas_x_fac<10**-2]
+        self.horizontal=horizontal
+        self.vertical=vertical
         n_h=len(horizontal)
         n_v=len(vertical)
         M.id_fint[horizontal] = range(n_h)
@@ -58,4 +81,4 @@ class stokes_solver:
 
 
         sol=np.linalg.solve(self.M,self.rhs)
-        import pdb; pdb.set_trace()
+        return sol

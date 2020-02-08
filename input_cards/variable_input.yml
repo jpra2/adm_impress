@@ -499,3 +499,10 @@ id_fint:
   data type: int
   sparse: True
   level: 0
+
+velocity:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0

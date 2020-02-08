@@ -4,14 +4,17 @@ class global_assembly:
     def __init__(self, M, dx, dy, dz):
         self.nv=len(M.volumes.all)
         self.nfi=len(M.faces.internal)
+        self.mi_l=0.1
         self.M_cont=self.get_continuity_matrix(M, dx, dy, dz)
         self.M_momentum_y=self.get_momentum_y_matrix(M,dx,dy)
         self.M_momentum_x=self.get_momentum_x_matrix(M,dx,dy)
         self.M=np.vstack([self.M_cont,self.M_momentum_x,self.M_momentum_y])
 
+
     def get_continuity_matrix(self, M, dx, dy, dz):
 
         M_cont=np.zeros((self.nv,self.nv+self.nfi))
+        '''
         volumes=M.volumes.all
         adjs=M.volumes.bridge_adjacencies(volumes,2,2)
         for f in M.faces.boundary:
@@ -65,6 +68,42 @@ class global_assembly:
                     M_cont[volumes[aa],self.nv+vsl[0]]=1
                 else:
                     M_cont[volumes[aa],self.nv+vsl[0]]=-1
+
+        '''
+        internal_faces=M.faces.internal
+        volumes=M.volumes.all
+        faces=M.volumes.bridge_adjacencies(volumes,2,2)
+        faces_center_x=M.faces.center(faces.flatten())[:,0].reshape(faces.shape)
+        faces_center_y=M.faces.center(faces.flatten())[:,1].reshape(faces.shape)
+
+        for i in range(len(faces)):
+            facs=faces[i]
+            xcents=faces_center_x[i]
+            ycents=faces_center_y[i]
+
+            xfe=facs[xcents==xcents.min()]
+            xfd=facs[xcents==xcents.max()]
+            if xfe[0] in internal_faces:
+                ide=M.id_fint[xfe[0]]
+                M_cont[volumes[i],self.nv+ide[0]]=-1
+
+            if xfd[0] in internal_faces:
+                idd=M.id_fint[xfd[0]]
+                M_cont[volumes[i],self.nv+idd[0]]=1
+
+            yfi=facs[ycents==ycents.min()]
+            yfs=facs[ycents==ycents.max()]
+            if yfi[0] in internal_faces:
+                idi=M.id_fint[yfi[0]]
+                M_cont[volumes[i],self.nv+idi[0]]=-1
+
+            if yfs[0] in internal_faces:
+                ids=M.id_fint[yfs[0]]
+                M_cont[volumes[i],self.nv+ids[0]]=1
+
+
+        #import pdb; pdb.set_trace()
+
 
 
 
@@ -138,15 +177,15 @@ class global_assembly:
         vertical_l=M.id_fint[vertical]-len(horizontal)
 
         for i in range(len(vertical)):
-            M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]=mi/k-2/(dy*dy)
-            M_y[vertical_l[i],self.nv+sup_inf_l[i]]=-1/(dy*dy)
+            M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]=1-self.mi_l/(dy*dy)
+            M_y[vertical_l[i],self.nv+sup_inf_l[i]]=self.mi_l/(dy*dy)
 
             if len(laterais[i])==1:
-                M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]-=3/(dx*dx)
-                M_y[vertical_l[i],self.nv+len(horizontal)+laterais_l[i]]+=1/(dx*dx)
+                M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]-=1*self.mi_l/(dx*dx)
+                M_y[vertical_l[i],self.nv+len(horizontal)+laterais_l[i]]+=1*self.mi_l/(dx*dx)
             else:
-                M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]-=2/(dx*dx)
-                M_y[vertical_l[i],self.nv+len(horizontal)+laterais_l[i]]+=1/(dx*dx)
+                M_y[vertical_l[i],self.nv+len(horizontal)+vertical_l[i]]-=self.mi_l/(dx*dx)
+                M_y[vertical_l[i],self.nv+len(horizontal)+laterais_l[i]]+=self.mi_l/(dx*dx)
 
         return M_y
 
@@ -208,14 +247,14 @@ class global_assembly:
 
         for i in range(len(vertical)):
 
-            M_y[vertical_l[i],self.nv+vertical_l[i]]=mi/k-2/(dy*dy)
-            M_y[vertical_l[i],self.nv+sup_inf_l[i]]=+1/(dy*dy)
+            M_y[vertical_l[i],self.nv+vertical_l[i]]=1-self.mi_l/(mi*dy*dy)
+            M_y[vertical_l[i],self.nv+sup_inf_l[i]]=self.mi_l/(dy*dy)
 
             if len(laterais[i])==1:
-                M_y[vertical_l[i],self.nv+vertical_l[i]]-=3/(dx*dx)
-                M_y[vertical_l[i],self.nv+laterais_l[i]-len(horizontal)]+=1/(dx*dx)
+                M_y[vertical_l[i],self.nv+vertical_l[i]]-=self.mi_l/(dx*dx)
+                M_y[vertical_l[i],self.nv+laterais_l[i]-len(horizontal)]=self.mi_l/(dx*dx)
             else:
-                M_y[vertical_l[i],self.nv+vertical_l[i]]-=2/(dx*dx)
-                M_y[vertical_l[i],self.nv+laterais_l[i]-len(horizontal)]+=1/(dx*dx)
+                M_y[vertical_l[i],self.nv+vertical_l[i]]-=self.mi_l/(dx*dx)
+                M_y[vertical_l[i],self.nv+laterais_l[i]-len(horizontal)]=self.mi_l/(dx*dx)
 
         return M_y
