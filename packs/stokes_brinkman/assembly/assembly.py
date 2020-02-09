@@ -203,11 +203,13 @@ class global_assembly:
 
         horizontal, vertical = vertical,horizontal
         adjs_h=M.faces.bridge_adjacencies(vertical,2,3)
+
         adjs_h0=adjs_h[:,0]
         adjs_h1=adjs_h[:,1]
         M_y=np.zeros((len(vertical),self.nv+self.nfi))
         c0=M.volumes.center(adjs_h0)[:,1]
         c1=M.volumes.center(adjs_h1)[:,1]
+
 
         higher_coord=np.zeros(len(vertical),dtype=int)
         higher_coord[c0>c1]=adjs_h0[c0>c1]
@@ -216,7 +218,7 @@ class global_assembly:
         lower_coord=np.zeros(len(vertical),dtype=int)
         lower_coord[c0<c1]=adjs_h0[c0<c1]
         lower_coord[c0>c1]=adjs_h1[c0>c1]
-
+        
         h_l=M.id_fint[horizontal].T[0]-len(vertical)
         # import pdb; pdb.set_trace()
         M_y[h_l,higher_coord]=1

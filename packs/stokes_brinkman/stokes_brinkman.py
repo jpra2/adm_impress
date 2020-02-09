@@ -35,9 +35,9 @@ class stokes_solver:
         self.sol=self.solve(self.M,self.rhs)
         print(self.sol)
         volumes=M.volumes.all
-        M.pressure[volumes]=self.sol[volumes]
-        M.velocity[self.horizontal]=self.sol[self.nv:self.nv+6]
-        M.velocity[self.vertical]=self.sol[self.nv+6:self.nv+12]
+        M.pressure[volumes]=self.sol[volumes]        
+        M.velocity[self.horizontal]=np.array([np.zeros(6),self.sol[self.nv:self.nv+6],np.zeros(6)]).T
+        M.velocity[self.vertical]=np.array([self.sol[self.nv+6:self.nv+12],np.zeros(6),np.zeros(6)]).T
 
         v=M.core.mb.create_meshset()
         M.core.mb.add_entities(v,M.core.all_volumes)

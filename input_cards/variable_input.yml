@@ -502,7 +502,15 @@ id_fint:
 
 velocity:
   type: faces
-  data size: 1
+  data size: 3
   data type: float
+  sparse: True
+  level: 0
+
+
+id_global:
+  type: volumes
+  data size: 1
+  data type: int
   sparse: True
   level: 0
