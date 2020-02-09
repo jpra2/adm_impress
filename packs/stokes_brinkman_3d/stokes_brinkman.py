@@ -21,6 +21,7 @@ class stokes_solver:
         self.rhs[0]=1
         self.rhs[self.nv-1]=0
         np.savetxt("results/mat3d.csv",self.M,delimiter=",")
+
         #import pdb; pdb.set_trace()
         self.sol=self.solve(self.M,self.rhs)
         self.write_output(M)
@@ -55,11 +56,15 @@ class stokes_solver:
         M.id_fint[fx] = range(n_x)
         M.id_fint[fy] = range(n_x,n_x+n_y)
         if n_z>0:
-            M.id_fint[fz] = range(n_x+ny,n_x+n_y+nz)
+            M.id_fint[fz] = range(n_x+n_y,n_x+n_y+n_z)
+        f=M.core.mb.create_meshset()
+        M.core.mb.add_entities(f,M.core.all_faces[:])
+        M.core.mb.write_file("results/solution_faces_all.vtk",[f])
 
     def solve(self,Mat, rhs):
         Mat[0]=np.zeros(self.nv+self.nfi)
         Mat[0][0]=1
+        
         Mat[self.nv-1]=np.zeros(self.nv+self.nfi)
         Mat[self.nv-1][self.nv-1]=1
         sol=np.linalg.solve(self.M,self.rhs)
@@ -67,11 +72,16 @@ class stokes_solver:
 
     def write_output(self,M):
         print(self.sol)
+        N=len(M.volumes.all)+len(M.faces.internal)
+        nx=len(self.fx)
+        ny=len(self.fy)
+        nz=len(self.fz)
         volumes=M.volumes.all
         M.pressure[volumes]=self.sol[volumes]
-        M.velocity[self.fx]=np.array([self.sol[self.nv:self.nv+6],np.zeros(6),np.zeros(6)]).T
-        M.velocity[self.fy]=np.array([np.zeros(6),self.sol[self.nv+6:self.nv+12],np.zeros(6)]).T
 
+        M.velocity[self.fx]=np.array([self.sol[self.nv:self.nv+nx],np.zeros(nx),np.zeros(nx)]).T
+        M.velocity[self.fy]=np.array([np.zeros(ny),self.sol[self.nv+nx:self.nv+nx+ny],np.zeros(ny)]).T
+        M.velocity[self.fz]=np.array([np.zeros(nz),np.zeros(nz),self.sol[self.nv+nx+ny:self.nv+nx+ny+nz]]).T
         v=M.core.mb.create_meshset()
         M.core.mb.add_entities(v,M.core.all_volumes)
         M.core.mb.write_file("results/solution_volumes.vtk",[v])
