@@ -49,6 +49,8 @@ class MultilevelData(DataManager):
         self.neig_intersect_faces = 'neig_intersect_faces_level_'
         self.internal_boundary_fine_volumes = 'internal_boundary_fine_volumes_level_'
         self.dual_structure = 'dual_structure_level_'
+        self.centroids_name = 'centroids_level_'
+        self.volumes_without_grav = 'volumes_without_grav_level_'
 
     def create_tags(self):
         assert not self._loaded
@@ -145,7 +147,7 @@ class MultilevelData(DataManager):
         self.get_elements(M)
         self.get_boundary_coarse_faces(M)
         self.get_dual_structure()
-        self.set_volumes_with_gravity_source_term()
+        self.set_volumes_without_gravity_source_term()
         # self.get_elements_2(M)
         self.export_to_npz()
         self.loaded()
@@ -530,6 +532,9 @@ class MultilevelData(DataManager):
         all_volumes = M.core.all_volumes
         dict_volumes = dict(zip(all_volumes, M.volumes.all))
         mvs = [M.core.root_set]
+        fine_centroids = self.data_impress['centroid_volumes']
+
+        self._data[self.centroids_name + str(0)] = fine_centroids.copy()
 
         for i in range(2):
             n = i + 1
@@ -599,11 +604,14 @@ class MultilevelData(DataManager):
             cols_r = []
 
             contador_coarse_gids = 0
+            centroids_coarse = np.zeros((len(vertex), 3), dtype=float)
 
             for i, vert in enumerate(vertex):
                 neigs = []
                 neigs_ids = []
                 primal_id = mb.tag_get_data(self.tags[primal_fine_name], vert, flat=True)[0]
+                centroid_vert = fine_centroids[dict_volumes[vert]]
+                centroids_coarse[primal_id] = centroid_vert
                 coarse_volume = \
                 mb.get_entities_by_type_and_tag(0, types.MBENTITYSET, np.array([self.tags[name_tag_c]]),
                                                 np.array([primal_id]))[0]
@@ -640,11 +648,13 @@ class MultilevelData(DataManager):
 
             coarse_neig_face = np.array(coarse_neig_face)
             coarse_id_neig_face = np.array(coarse_id_neig_face)
+            # centroids_coarse = np.array(centroids_coarse)
 
             self._data[self.coarse_neig_face + str(level)] = coarse_neig_face
             self._data[self.coarse_id_neig_face + str(level)] = coarse_id_neig_face
             self._data[self.coarse_volumes + str(level)] = np.array(coarse_volumes)
             self._data[self.coarse_primal_id + str(level)] = np.array(coarse_primal_ids)
+            self._data[self.centroids_name + str(level)] = centroids_coarse
             # dtype = [('elements', np.uint64), ('id', np.uint64)]
             # structured_array = np.zeros(len(coarse_volumes), dtype=dtype)
             # structured_array['elements'] = np.array(coarse_volumes)
@@ -921,17 +931,18 @@ class MultilevelData(DataManager):
 
             self._data[self.dual_structure+str(level)] = np.array(structure)
 
-    def set_volumes_with_gravity_source_term(self):
+    def set_volumes_without_gravity_source_term(self):
 
         lim = self.data_impress['hs'].min()*(0.2)
 
-        all_centroids = self.data_impress['centroid_volumes']
+        # all_centroids = self.data_impress['centroid_volumes']
 
         # for level in range(1, self.levels):
         # fazendo apenas para o nivel 1
         for level in range(1, 2):
             structures = self._data[self.dual_structure+str(level)]
             all_vols_without_grav = []
+            all_centroids = self._data[self.centroids_name + str(level-1)]
 
             for structure in structures:
                 volumes = structure['volumes']
@@ -947,10 +958,8 @@ class MultilevelData(DataManager):
                 all_vols_without_grav.append(vols_without_grav)
 
             all_vols_without_grav = np.unique(np.concatenate(all_vols_without_grav))
-            volumes_with_grav = np.full(len(self.data_impress['VOLUMES_WITH_GRAV_'+str(level)]), True, dtype=bool)
-            volumes_with_grav[all_vols_without_grav] = np.full(len(all_vols_without_grav), False, dtype=bool)
 
-            self.data_impress['VOLUMES_WITH_GRAV_'+str(level)] = volumes_with_grav
+            self._data[self.volumes_without_grav + str(level-1)] = all_vols_without_grav
 
     def save_mesh(self):
         M = self.mesh

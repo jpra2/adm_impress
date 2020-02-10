@@ -15,29 +15,18 @@ class AMSTpfa:
         vertices,
         gids: 'global_ids',
         primal_ids: 'primal_ids',
-        data_name='AMSTpfa_',
         load=False,
         tpfalizar=False,
         coupled_edges=[],
         get_prolongation_operator=True,
-        get_correction_term=False,
-        total_source_term=None,
-        B_matrix=None,
-        Eps_matrix=None):
+        get_correction_term=False):
 
         self.get_prolongation_operator = get_prolongation_operator
+        self.get_correction_term = get_correction_term
         self.tpfalizar = tpfalizar
         self.wirebasket_elements, self.wirebasket_numbers, self.nv, self.ns_sum, self.wirebasket_ids = get_wirebasket_elements(internals, faces, edges, vertices)
         self.get_G()
         self.G2 = get_G2(vertices, primal_ids)
-
-        self.get_correction_term = get_correction_term
-        if get_correction_term:
-            B_wire = self.G*B_matrix*self.GT
-            Eps_wire = self.G*Eps_matrix*self.GT
-            self.I = sp.identity(len(np.concatenate(self.wirebasket_elements))).tocsc()
-            self.E_wire = Eps_wire*B_wire + self.I - B_wire
-            self.it = 0
 
         # self.T_wire = self.G*self.T*self.GT
         # # self.T_wire = self.GT*self.T*self.G
@@ -92,13 +81,13 @@ class AMSTpfa:
         Aee.setdiag(d1)
         Ivv = sp.identity(nv)
 
-        As['Aii'] = Aii
-        As['Aif'] = Aif
-        As['Aff'] = Aff
-        As['Afe'] = Afe
-        As['Aee'] = Aee
-        As['Aev'] = Aev
-        As['Ivv'] = Ivv
+        As['Aii'] = Aii.tocsc()
+        As['Aif'] = Aif.tocsc()
+        As['Aff'] = Aff.tocsc()
+        As['Afe'] = Afe.tocsc()
+        As['Aee'] = Aee.tocsc()
+        As['Aev'] = Aev.tocsc()
+        As['Ivv'] = Ivv.tocsc()
 
         return As
 
@@ -199,7 +188,7 @@ class AMSTpfa:
         if self.it > 0:
             self.E_wire = self.I
 
-        q2 = total_source_term_wire
+        q2 = self.E_wire*total_source_term_wire
         pcorr = np.zeros(len(q2), dtype=float)
 
         pcorr_ee = linalg.spsolve(As['Aee'], q2[nnf:nne])
@@ -220,7 +209,15 @@ class AMSTpfa:
 
         return pcorr
 
-    def run(self, T: 'transmissibility matrix', total_source_term=None):
+    def run(self, T: 'transmissibility matrix', total_source_term=None, B_matrix=None, Eps_matrix=None):
+
+        if self.get_correction_term:
+            B_wire = self.G*B_matrix*self.GT
+            Eps_wire = self.G*Eps_matrix*self.GT
+            self.I = sp.identity(len(np.concatenate(self.wirebasket_elements))).tocsc()
+            self.E_wire = Eps_wire*B_wire + self.I - B_wire
+            self.it = 0
+            del B_wire, Eps_wire
 
         T_wire = self.G*T*self.GT
         if self.tpfalizar:
@@ -247,20 +244,20 @@ def get_wirebasket_elements(internals, faces, edges, vertices):
 
     wirebasket_elements = np.array([internals, faces, edges, vertices])
     wirebasket_numbers = np.array([len(internals), len(faces), len(edges), len(vertices)])
-    nv = self.wirebasket_numbers[-1]
-    ns_sum = [self.wirebasket_numbers[0]]
+    nv = wirebasket_numbers[-1]
+    ns_sum = [wirebasket_numbers[0]]
     for i in range(3):
-        ns_sum.append(self.ns_sum[i] + self.wirebasket_numbers[i+1])
-    ns_sum = np.array(self.ns_sum)
+        ns_sum.append(ns_sum[i] + wirebasket_numbers[i+1])
+    ns_sum = np.array(ns_sum)
 
     n_reord = 0
     wirebasket_ids = []
     for i in range(4):
-        n2 = len(self.wirebasket_elements[i])
+        n2 = len(wirebasket_elements[i])
         wirebasket_ids.append(np.arange(n_reord, n_reord + n2))
         n_reord += n2
 
-    wirebasket_ids = np.array(self.wirebasket_ids)
+    wirebasket_ids = np.array(wirebasket_ids)
 
     return wirebasket_elements, wirebasket_numbers, nv, ns_sum, wirebasket_ids
 

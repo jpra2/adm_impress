@@ -464,10 +464,3 @@ tpfa_pressure:
   data type: float
   sparse: True
   level: 0
-
-VOLUMES_WITH_GRAV_1:
-  type: volumes
-  data size: 1
-  data type: bool
-  sparse: True
-  level: 0

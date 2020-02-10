@@ -88,12 +88,6 @@ NODES:
   level: 0
   sparse: true
   type: nodes
-VOLUMES_WITH_GRAV_1:
-  data size: 1
-  data type: bool
-  level: 0
-  sparse: true
-  type: volumes
 area:
   data size: 1
   data type: float

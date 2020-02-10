@@ -15,6 +15,9 @@ def update_inputs():
     dd['biphasic'] = False
 
     dd['deletar_results'] = True
+    dd['gravity'] = True
+    dd['get_correction_term'] = True
+    # dd['convert_english_to_SI'] = True
     dd.save_obj()
 
     dd2 = InfoManager('input_cards/variable_adm.yml', 'input_cards/variable_input.yml')

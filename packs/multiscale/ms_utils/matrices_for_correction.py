@@ -6,6 +6,12 @@ class MatricesForCorrection:
     @staticmethod
     def get_B_matrix(total_source_term, gravity_source_term):
 
+        ###################
+        ## teste
+        rr = total_source_term==0
+        total_source_term[rr] = np.ones(len(total_source_term[rr]))
+        ###################
+
         diagg = gravity_source_term/total_source_term
         n = len(total_source_term)
 

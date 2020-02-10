@@ -5,6 +5,7 @@ import numpy as np
 import scipy.sparse as sp
 import os
 from ...multiscale.operators.prolongation.AMS import paralel_ams
+from ...multiscale.ms_utils.matrices_for_correction import MatricesForCorrection as mfc
 
 def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
 
@@ -62,9 +63,6 @@ class MultilevelOperators(DataManager):
         data_name='MultilevelOperators.npz',
         load=False,
         get_correction_term=False,
-        total_source_term_all_levels=None,
-        gravity_source_term_all_levels=None,
-        volumes_without_gravity_source_term_all_levels=None
     ):
 
         super().__init__(data_name=data_name, load=load)
@@ -75,11 +73,6 @@ class MultilevelOperators(DataManager):
         self.n_levels = 1
         self.data_impress = data_impress
         self.get_correction_term = get_correction_term
-
-        if get_correction_term:
-            self.total_source_term_all_levels = total_source_term_all_levels
-            self.gravity_source_term_all_levels = gravity_source_term_all_levels
-            self.volumes_without_gravity_source_term_all_levels = volumes_without_gravity_source_term_all_levels
 
         self.restriction = 'restriction_level_'
         self.prolongation = 'prolongation_level_'
@@ -165,12 +158,28 @@ class MultilevelOperators(DataManager):
                                                  tpfalizar=tpfalizar,
                                                  get_correction_term=get_correction_term)
 
-    def run(self, T: 'fine transmissibility without boundary conditions'):
+    def run(self, T: 'fine transmissibility without boundary conditions',
+        total_source_term: 'total fine source term'=None,
+        q_grav: 'fine gravity source term'=None):
+
+        import pdb; pdb.set_trace()
 
         T_ant = T.copy()
         for n in range(self.n_levels):
             level = n+1
-            OP, pcorr = self.operators[str(level)].run(T_ant)
+            if self.get_correction_term:
+                if level > 1:
+                    total_source_term = OR*total_source_term
+                    q_grav = OR*q_grav
+                volumes_without_grav = self.ml_data['volumes_without_grav_level_'+str(n)]
+                B_matrix = mfc.get_B_matrix(total_source_term, q_grav)
+                Eps_matrix = mfc.get_Eps_matrix(np.arange(len(total_source_term)), volumes_without_grav)
+            else:
+                B_matrix = None
+                Eps_matrix = None
+                total_source_term = None
+
+            OP, pcorr = self.operators[str(level)].run(T_ant, total_source_term=total_source_term, B_matrix=B_matrix, Eps_matrix=Eps_matrix)
             self._data[self.prolongation + str(level)] = OP
             self._data[self.pcorr_n + str(level)] = pcorr
             OR = self._data[self.restriction + str(level)]

@@ -138,7 +138,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         self.n_cpu = mp.cpu_count()
         self.n_workers = self.n_cpu
-        self.so_nv1 = False
+        self._so_nv1 = False
 
     def set_level_wells(self):
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
@@ -1085,3 +1085,16 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         self.data_impress.update_variables_to_mesh()
         self.data_impress.export_to_npz()
+
+    def so_nv1():
+        doc = "The so_nv1 property."
+        def fget(self):
+            return self._so_nv1
+        def fset(self, value):
+            self._so_nv1 = value
+            if self._so_nv1:
+                self.n_levels = 1
+        def fdel(self):
+            del self._so_nv1
+        return locals()
+    so_nv1 = property(**so_nv1())
