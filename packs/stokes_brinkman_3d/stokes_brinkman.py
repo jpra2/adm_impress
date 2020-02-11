@@ -1,7 +1,7 @@
 import numpy as np
 from packs.stokes_brinkman_3d.assembly import assembly
 from packs.preprocess.preprocess_stokes_brinkman import preprocess_stokes
-class stokes_solver:
+class stokes_solver:    
     def __init__(self,M):
         prep_sb=preprocess_stokes(M)
         assembled_matrices=assembly.global_assembly(prep_sb,M)
