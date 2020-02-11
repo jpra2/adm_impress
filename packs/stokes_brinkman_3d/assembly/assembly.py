@@ -1,15 +1,21 @@
 import numpy as np
 
 class global_assembly:
-    def __init__(self, sb, M, dx, dy, dz):
+    def __init__(self, sb, M):        
+        self.M=self.get_lhs(M, sb)
+        self.rhs=self.get_rhs(sb)
+
+    def get_lhs(self, M, sb):
         self.nv=len(M.volumes.all)
         self.nfi=len(M.faces.internal)
         self.mi_l=0.1
+        dx, dy, dz = sb.dx, sb.dy, sb.dz
         self.M_cont=self.get_continuity_matrix(M, dx, dy, dz)
         self.M_momentum_x=self.get_momentum_matrix(sb.fx, M,dx,dy, dz,0)
         self.M_momentum_y=self.get_momentum_matrix(sb.fy, M,dx,dy, dz,1)
         self.M_momentum_z=self.get_momentum_matrix(sb.fz, M,dx,dy, dz,2)
-        self.M=np.vstack([self.M_cont,self.M_momentum_x,self.M_momentum_y,self.M_momentum_z])
+        LHS =np.vstack([self.M_cont,self.M_momentum_x,self.M_momentum_y,self.M_momentum_z])
+        return LHS
 
     def get_continuity_matrix(self, M, dx, dy, dz):
         M_cont=np.zeros((self.nv,self.nv+self.nfi))
@@ -115,3 +121,9 @@ class global_assembly:
                 M_d[fd_l[i],self.nv+fd_l_orig[i]]-=self.mi_l/(dx*dx)
                 M_d[fd_l[i],self.nv+fd_l_orig[i]]+=self.mi_l/(dx*dx)
         return M_d
+
+    def get_rhs(self,sb):
+        rhs=np.zeros(sb.nv+sb.nfi)
+        rhs[0]=1
+        rhs[sb.nv-1]=0
+        return rhs
