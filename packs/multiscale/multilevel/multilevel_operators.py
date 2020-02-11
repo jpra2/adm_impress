@@ -162,8 +162,6 @@ class MultilevelOperators(DataManager):
         total_source_term: 'total fine source term'=None,
         q_grav: 'fine gravity source term'=None):
 
-        import pdb; pdb.set_trace()
-
         T_ant = T.copy()
         for n in range(self.n_levels):
             level = n+1
@@ -181,7 +179,7 @@ class MultilevelOperators(DataManager):
 
             OP, pcorr = self.operators[str(level)].run(T_ant, total_source_term=total_source_term, B_matrix=B_matrix, Eps_matrix=Eps_matrix)
             self._data[self.prolongation + str(level)] = OP
-            self._data[self.pcorr_n + str(level)] = pcorr
+            self._data[self.pcorr_n + str(level-1)] = pcorr
             OR = self._data[self.restriction + str(level)]
 
             sp.save_npz(os.path.join('flying', self.prolongation + str(level) + '.npz'), OP)

@@ -4,8 +4,8 @@ def update_inputs():
     from packs.utils.info_manager import InfoManager
     import os
     dd = InfoManager('input_cards/inputs0_2.yml', 'input_cards/inputs0.yml')
-    dd['load_data'] = True
-    dd['load_multilevel_data'] = True
+    # dd['load_data'] = True
+    # dd['load_multilevel_data'] = True
     # dd['load_operators'] = True
     # dd['load_biphasic_data'] = True
 

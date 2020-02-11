@@ -5,6 +5,7 @@ from packs.adm.adm_method import AdmMethod
 from packs.multiscale.ms_utils.matrices_for_correction import MatricesForCorrection as mfc
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 import numpy as np
+from scipy.sparse import linalg
 
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
@@ -25,8 +26,8 @@ T, b = tpfa_solver.run()
 
 q_grav = data_impress['flux_grav_volumes'].copy()
 total_source_term = b.copy()
-total_source_term[data_impress['LEVEL']==0] = np.ones(len(total_source_term[data_impress['LEVEL']==0]))
-q_grav[data_impress['LEVEL']==0] = np.zeros(len(q_grav[data_impress['LEVEL']==0]))
+total_source_term[wells['ws_p']] = np.zeros(len(wells['ws_p']))
+# q_grav[data_impress['LEVEL']==0] = np.zeros(len(q_grav[data_impress['LEVEL']==0]))
 
 ###################
 ## teste
@@ -42,8 +43,15 @@ total_source_term[rr] = np.ones(len(total_source_term[rr]))
 # Eps_matrix_0 = mfc.get_Eps_matrix(gid0, volumes_without_grav)
 
 mlo = MultilevelOperators(1, data_impress, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
-mlo.run(tpfa_solver['Tini'], b, q_grav)
+mlo.run(tpfa_solver['Tini'], total_source_term, q_grav)
 
+adm_method.organize_ops_adm(mlo['prolongation_level_'+str(1)], mlo['restriction_level_'+str(1)], 1, _pcorr=mlo['pcorr_level_'+str(0)])
+adm_method.solve_multiscale_pressure(T, b)
 
-import pdb; pdb.set_trace()
+p2 = linalg.spsolve(T, b)
+data_impress['pressure'] = p2
+data_impress['erro'] = np.absolute((data_impress['pms'] - p2))
+data_impress.update_variables_to_mesh()
+M.core.print(folder='results', file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
+
 import pdb; pdb.set_trace()

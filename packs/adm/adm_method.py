@@ -133,8 +133,12 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['LEVEL_ID_0'] = gids_0.copy()
         self.solver = SolverSp()
 
+        from ..directories import data_loaded
+        self.get_correction_term = data_loaded['get_correction_term']
+
         self.adm_op_n = 'adm_prolongation_level_'
         self.adm_rest_n = 'adm_restriction_level_'
+        self.pcorr_n = 'pcorr_level_'
 
         self.n_cpu = mp.cpu_count()
         self.n_workers = self.n_cpu
@@ -279,7 +283,7 @@ class AdmMethod(DataManager, TpfaFlux2):
     def restart_levels_2(self):
         self.data_impress['LEVEL'] = self.data_impress['INITIAL_LEVEL'].copy()
 
-    def organize_ops_adm(self, OP_AMS, OR_AMS, level):
+    def organize_ops_adm(self, OP_AMS, OR_AMS, level, _pcorr=None):
 
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
@@ -291,9 +295,10 @@ class AdmMethod(DataManager, TpfaFlux2):
         OP_AMS = OP_AMS.tolil()
 
         if level == 1:
-            OP_ADM, OR_ADM = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level)
+            OP_ADM, OR_ADM, pcorr = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
             self._data[self.adm_op_n + str(level)] = OP_ADM
             self._data[self.adm_rest_n + str(level)] = OR_ADM
+            self._data[self.pcorr_n+str(level-1)] = pcorr
             return 0
 
         n_adm = len(np.unique(level_id))
@@ -364,7 +369,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         return 0
 
-    def organize_ops_adm_level_1(self, OP_AMS, OR_AMS, level):
+    def organize_ops_adm_level_1(self, OP_AMS, OR_AMS, level, _pcorr=None):
 
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
@@ -407,7 +412,13 @@ class AdmMethod(DataManager, TpfaFlux2):
         data = np.ones(len(lines))
         OR_ADM = sp.csc_matrix((data,(lines,cols)),shape=(n1_adm,len(gid_0)))
 
-        return OP_ADM, OR_ADM
+        if self.get_correction_term:
+            pcorr = np.zeros(len(gid_0))
+            pcorr[levels>0] = _pcorr[levels>0]
+        else:
+            pcorr = np.array([False])
+
+        return OP_ADM, OR_ADM, pcorr
 
     def solve_multiscale_pressure(self, T: 'fine transmissibility matrix', b: 'fine source term'):
 
@@ -417,17 +428,23 @@ class AdmMethod(DataManager, TpfaFlux2):
         n_levels = self.n_levels
         for i in range(n_levels):
             level = i+1
-            # op_adm = self._data[self.adm_op_n + str(level)]
-            # rest_adm = self._data[self.adm_rest_n + str(level)]
-            T_adm = self._data[self.adm_rest_n + str(level)]*T_adm*self._data[self.adm_op_n + str(level)]
-            b_adm = self._data[self.adm_rest_n + str(level)]*b_adm
+            OP_adm = self._data[self.adm_op_n + str(level)]
+            OR_adm = self._data[self.adm_rest_n + str(level)]
+            pcorr_adm = self._data[self.pcorr_n+str(level-1)]
+            if self.get_correction_term:
+                b_adm = OR_adm*b_adm - OR_adm*T_adm*pcorr_adm
+            else:
+                b_adm = OR_adm*b_adm
+
+            T_adm = OR_adm*T_adm*OP_adm
 
         pms = self.solver.direct_solver(T_adm, b_adm)
         # p_adm = pms.copy()
 
         for i in range(n_levels):
             level = self.n_levels - i
-            pms = self._data[self.adm_op_n + str(level)]*pms
+            pcorr_adm = self._data[self.pcorr_n+str(level-1)]
+            pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms
