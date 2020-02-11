@@ -26,13 +26,13 @@ T, b = tpfa_solver.run()
 
 q_grav = data_impress['flux_grav_volumes'].copy()
 total_source_term = b.copy()
-total_source_term[wells['ws_p']] = np.zeros(len(wells['ws_p']))
+total_source_term[wells['all_wells']] = np.zeros(len(wells['all_wells']))
 # q_grav[data_impress['LEVEL']==0] = np.zeros(len(q_grav[data_impress['LEVEL']==0]))
 
 ###################
 ## teste
-rr = total_source_term==0
-total_source_term[rr] = np.ones(len(total_source_term[rr]))
+# rr = total_source_term==0
+# total_source_term[rr] = np.ones(len(total_source_term[rr]))
 ###################
 
 # B_matrix_0 = mfc.get_B_matrix(total_source_term, q_grav)
@@ -53,5 +53,9 @@ data_impress['pressure'] = p2
 data_impress['erro'] = np.absolute((data_impress['pms'] - p2))
 data_impress.update_variables_to_mesh()
 M.core.print(folder='results', file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
+
+
+
+pcorr = mlo['pcorr_level_0']
 
 import pdb; pdb.set_trace()

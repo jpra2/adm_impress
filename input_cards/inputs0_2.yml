@@ -92,7 +92,7 @@ Wells:
     value: 4000.0
 
 monophasic_data:
-  gama: 10.0
+  gama: 100.0
   mi: 1.0
 
 biphasic_data:
