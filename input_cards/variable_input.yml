@@ -514,3 +514,31 @@ id_global:
   data type: int
   sparse: True
   level: 0
+
+perm_x:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+perm_z:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+erro_p:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+erro_v:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0

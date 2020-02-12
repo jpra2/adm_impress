@@ -24,6 +24,9 @@ def set_permeability_and_phi_spe10(M):
     ee = ee.astype(np.int32)
 
     M.data[M.data.variables_impress['permeability']] = ks[ee] #permeabilidade
+    M.data[M.data.variables_impress['perm_z']] = ks[ee][:,-1]
+    M.data[M.data.variables_impress['perm_x']] = ks[ee][:,0]
+    
     M.data[M.data.variables_impress['poro']] = phi[ee]  #porosidade
 
 class Preprocess0:
@@ -33,7 +36,7 @@ class Preprocess0:
     '''
 
     def __init__(self, M, elements_lv0):
-        self.mesh = M
+
         self.elements_lv0 = elements_lv0
 
         for key, item in direc.variables_impress.items():
@@ -41,6 +44,7 @@ class Preprocess0:
 
         self.run(M)
         M.data.export_to_npz()
+        M.data.update_variables_to_mesh()
 
     def set_area_hex_structured(self, M):
 
@@ -109,7 +113,6 @@ class Preprocess0:
     def set_permeability_and_phi(self, M):
 
         data_loaded = direc.data_loaded
-
         read = data_loaded[direc.names_data_loaded_lv0[0]]
         set_perm = data_loaded[direc.names_data_loaded_lv0[5]]
         set_phi = data_loaded[direc.names_data_loaded_lv0[6]]

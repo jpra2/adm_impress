@@ -20,7 +20,7 @@ types_wells = ['injector', 'producer']
 # variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
 #                      'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
 
-variables_impress = dict()
+variables_impress = {'poro': 'phi'}
 
 impress = 'impress'
 tcc = 'tcc'

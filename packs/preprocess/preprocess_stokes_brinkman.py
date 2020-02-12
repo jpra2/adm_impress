@@ -1,16 +1,21 @@
+from packs.data_class.elements_lv0 import ElementsLv0
+from packs.data_class.data_impress import Data
+from packs.preprocess.prep0_0 import Preprocess0
 
 class preprocess_stokes:
     def __init__(self,M):
-        self.get_mesh_properties(M)
+        self.set_mesh_properties(M)
         self.nv=len(M.volumes.all)
         self.nfi=len(M.faces.internal)
         self.initiate_f_int_tag(M)
 
-    def get_mesh_properties(self,M):
-        v0=M.volumes.all[0]
-        vert_v0=M.volumes.bridge_adjacencies(v0,0,0)
-        coords_vert=M.nodes.coords(vert_v0)
-        self.dx, self.dy, self.dz=coords_vert.max(axis=0)-coords_vert.min(axis=0)
+    def set_mesh_properties(self,M):
+        elementsLv0=ElementsLv0(M)
+        data_impress = Data(M,elementsLv0)
+        Preprocess0(M,elementsLv0)
+        self.dx, self.dy, self.dz = M.hs[0][0]
+        data_impress.update_variables_to_mesh() 
+        del(M.data)
 
     def initiate_f_int_tag(self, M):
         faces=M.faces.internal
