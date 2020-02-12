@@ -7,16 +7,18 @@ class stokes_solver:
         assembled_matrices=assembly.global_assembly(prep_sb,M)
         self.M = assembled_matrices.M
         self.rhs= assembled_matrices.rhs
-        # self.M[prep_sb.nv:,prep_sb.nv:]=np.identity(len(M.faces.internal))
+        self.M[prep_sb.nv:,prep_sb.nv:]=np.identity(len(M.faces.internal))
         self.sol=self.solve(self.M,self.rhs, prep_sb)
-        np.save("results/b_sol.npy",self.sol)
+        np.savetxt("results/mat.csv",self.M,delimiter=",")
+        # np.save("results/b_sol.npy",self.sol)
 
-        # sol_sb=np.load("results/b_sol.npy")
+        sol_sb=np.load("results/b_sol.npy")
 
-        # self.erro=abs(self.sol-sol_sb)
+        self.erro=abs(self.sol-sol_sb)
 
 
         self.write_output(prep_sb, M)
+        import pdb; pdb.set_trace()
 
     def solve(self,Mat, rhs, prep_sb):
         Mat[0]=np.zeros(prep_sb.nv+prep_sb.nfi)
@@ -38,11 +40,11 @@ class stokes_solver:
         M.velocity[prep_sb.fy]=np.array([np.zeros(ny),self.sol[prep_sb.nv+nx:prep_sb.nv+nx+ny],np.zeros(ny)]).T
         M.velocity[prep_sb.fz]=np.array([np.zeros(nz),np.zeros(nz),self.sol[prep_sb.nv+nx+ny:prep_sb.nv+nx+ny+nz]]).T
 
-        # M.erro_p[volumes]=self.erro[volumes]
-        #
-        # M.erro_v[prep_sb.fx]=np.array([self.erro[prep_sb.nv:prep_sb.nv+nx],np.zeros(nx),np.zeros(nx)]).T
-        # M.erro_v[prep_sb.fy]=np.array([np.zeros(ny),self.erro[prep_sb.nv+nx:prep_sb.nv+nx+ny],np.zeros(ny)]).T
-        # M.erro_v[prep_sb.fz]=np.array([np.zeros(nz),np.zeros(nz),self.erro[prep_sb.nv+nx+ny:prep_sb.nv+nx+ny+nz]]).T
+        M.erro_p[volumes]=self.erro[volumes]
+
+        M.erro_v[prep_sb.fx]=np.array([self.erro[prep_sb.nv:prep_sb.nv+nx],np.zeros(nx),np.zeros(nx)]).T
+        M.erro_v[prep_sb.fy]=np.array([np.zeros(ny),self.erro[prep_sb.nv+nx:prep_sb.nv+nx+ny],np.zeros(ny)]).T
+        M.erro_v[prep_sb.fz]=np.array([np.zeros(nz),np.zeros(nz),self.erro[prep_sb.nv+nx+ny:prep_sb.nv+nx+ny+nz]]).T
 
         v=M.core.mb.create_meshset()
         M.core.mb.add_entities(v,M.core.all_volumes)

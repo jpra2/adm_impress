@@ -1,4 +1,5 @@
 import numpy as np
+import scipy as sp
 
 class global_assembly:
     def __init__(self, sb, M):
@@ -7,11 +8,18 @@ class global_assembly:
 
     def get_lhs(self, M, sb):
         self.mi_l=0.1
-        M_cont=self.get_continuity_matrix(M, sb)
-        M_momentum_x=self.get_momentum_matrix(sb.fx, M, sb,0)
-        M_momentum_y=self.get_momentum_matrix(sb.fy, M, sb,1)
-        M_momentum_z=self.get_momentum_matrix(sb.fz, M, sb,2)
-        LHS =np.vstack([M_cont,M_momentum_x,M_momentum_y,M_momentum_z])
+        M_cont, lcd_cont=self.get_continuity_matrix(M, sb)
+        LHS=M_cont
+        if len(sb.fx)>0:
+            M_momentum_x=self.get_momentum_matrix(sb.fx, M, sb,0)
+            LHS =np.vstack([LHS,M_momentum_x])
+        if len(sb.fy)>0:
+            M_momentum_y=self.get_momentum_matrix(sb.fy, M, sb,1)
+            LHS =np.vstack([LHS,M_momentum_y])
+        if len(sb.fz)>0:
+            M_momentum_z=self.get_momentum_matrix(sb.fz, M, sb,2)
+            LHS =np.vstack([LHS,M_momentum_z])
+        # LHS =np.vstack([M_cont,M_momentum_x,M_momentum_y,M_momentum_z])
         return LHS
 
     def get_continuity_matrix(self, M, sb):
@@ -23,6 +31,9 @@ class global_assembly:
         faces_center_x=M.faces.center(faces.flatten())[:,0].reshape(faces.shape)
         faces_center_y=M.faces.center(faces.flatten())[:,1].reshape(faces.shape)
         faces_center_z=M.faces.center(faces.flatten())[:,2].reshape(faces.shape)
+        lines=[]
+        cols=[]
+        data=[]
         for i in range(len(faces)):
             facs=faces[i]
             xcents=faces_center_x[i]
@@ -36,16 +47,27 @@ class global_assembly:
                 if dfe[0] in internal_faces:
                     ide=M.id_fint[dfe[0]]
                     M_cont[volumes[i],sb.nv+ide[0]]=-1
+                    #####################
+                    lines.append(volumes[i])
+                    cols.append(sb.nv+ide[0])
+                    data.append(-1)
+                    ################
 
                 if dfd[0] in internal_faces:
                     idd=M.id_fint[dfd[0]]
                     M_cont[volumes[i],sb.nv+idd[0]]=1
-
-        return(M_cont)
+                    ###############
+                    lines.append(volumes[i])
+                    cols.append(sb.nv+idd[0])
+                    data.append(1)
+                    ##################
+        lcd=np.array([lines,cols,data])
+        return(M_cont,lcd)
 
     def get_momentum_matrix(self, fd ,M, sb,col):
         dx, dy, dz= sb.dx, sb.dy, sb.dz
         k_harms=M.k_harm[M.faces.all].T[0]
+        # k_harms=np.ones(len(k_harms))
         mi=1
         k=1
 
@@ -67,10 +89,21 @@ class global_assembly:
 
         fd_l=M.id_fint[fd].T[0]
         fd_l-=fd_l.min()
+        lines=[]
+        cols=[]
+        data=[]
 
         M_d[fd_l,higher_coord]=k_harms[fd]
         M_d[fd_l,lower_coord]=-k_harms[fd]
+        ###########################3
+        lines.append(fd_l)
+        cols.append(higher_coord)
+        data.append(k_harms[fd])
 
+        lines.append(fd_l)
+        cols.append(lower_coord)
+        data.append(-k_harms[fd])
+        ##########################
         fac_viz_ares = M.faces.bridge_adjacencies(fd,1,2)
         laterais=[]
         for fac in fac_viz_ares:
@@ -90,16 +123,47 @@ class global_assembly:
         for si in sup_inf:
             sup_inf_l.append(M.id_fint[si].T[0])
         fd_l_orig=M.id_fint[fd].T[0]
+
         for i in range(len(fd)):
             M_d[fd_l[i],sb.nv+fd_l_orig[i]]=1+k_harms[fd[i]]*self.mi_l/(dy*dy)
             M_d[fd_l[i],sb.nv+sup_inf_l[i]]=-k_harms[fd[i]]*self.mi_l/(dy*dy)
 
+            ##########################
+            lines.append(fd_l[i])
+            cols.append(sb.nv+fd_l_orig[i])
+            data.append(1+k_harms[fd[i]]*self.mi_l/(dy*dy))
+
+            lines.append(fd_l[i])
+            cols.append(sb.nv+sup_inf_l[i])
+            data.append(-k_harms[fd[i]]*self.mi_l/(dy*dy))
+            ##############################
+
             if len(laterais[i])==1:
-                M_d[fd_l[i],sb.nv+fd_l_orig[i]]+=k_harms[fd[i]]*self.mi_l/(dx*dx)
-                M_d[fd_l[i],sb.nv+laterais_l[i]]-=k_harms[fd[i]]**self.mi_l/(dx*dx)
+                M_d[fd_l[i],sb.nv+fd_l_orig[i]]+=k_harms[laterais[i]]*self.mi_l/(dx*dx)
+                M_d[fd_l[i],sb.nv+laterais_l[i]]-=k_harms[laterais[i]]*self.mi_l/(dx*dx)
+                ######################
+                lines.append(fd_l[i])
+                cols.append(sb.nv+fd_l_orig[i])
+                data.append(k_harms[fd[i]]*self.mi_l/(dx*dx))
+
+                lines.append(fd_l[i])
+                cols.append(sb.nv+laterais_l[i])
+                data.append(-k_harms[fd[i]]*self.mi_l/(dx*dx))
+
+                ##################################
             else:
-                M_d[fd_l[i],sb.nv+fd_l_orig[i]]+=k_harms[fd[i]]*self.mi_l/(dx*dx)
-                M_d[fd_l[i],sb.nv+fd_l_orig[i]]-=k_harms[fd[i]]*self.mi_l/(dx*dx)
+                M_d[fd_l[i],sb.nv+fd_l_orig[i]]+=(k_harms[laterais[i]]*self.mi_l/(dx*dx)).sum()
+                M_d[fd_l[i],sb.nv+laterais_l[i]]-=k_harms[laterais[i]]*self.mi_l/(dx*dx)
+
+                ######################
+                lines.append(fd_l[i])
+                cols.append(sb.nv+fd_l_orig[i])
+                data.append(k_harms[fd[i]]*self.mi_l/(dx*dx))
+
+                lines.append(fd_l[i])
+                cols.append(sb.nv+laterais_l[i])
+                data.append(-k_harms[fd[i]]**self.mi_l/(dx*dx))
+                #################################
         return M_d
 
     def get_rhs(self,sb):
