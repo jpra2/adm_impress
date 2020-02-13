@@ -1,4 +1,4 @@
-from PyTrilinos import Epetra, AztecOO, EpetraExt, Teuchos
+from PyTrilinos import Epetra, AztecOO
 import numpy as np
 import scipy.sparse as sp
 # IFPACK.PrintSparsity(Matrix, "matrix.ps")

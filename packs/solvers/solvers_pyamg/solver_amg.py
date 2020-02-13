@@ -1,6 +1,6 @@
 import pyamg
 
-class SolverSp:
+class SolverAMG:
 
     def __init__(self):
         pass

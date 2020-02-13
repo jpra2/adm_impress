@@ -12,7 +12,7 @@ class Poisson(object):
 
     def dirichlet(self, u):
         return [(lambda x: u(x) - 0.0, Boundary())]
-import pdb; pdb.set_trace()
+
 # Create mesh using meshzo
 vertices, cells = meshzoo.rectangle(0.0, 2.0, 0.0, 1.0, 401, 201)
 mesh = meshplex.MeshTri(vertices, cells)
@@ -21,8 +21,10 @@ matrix, rhs = pyfvm.discretize_linear(Poisson(), mesh)
 u = linalg.spsolve(matrix, rhs)
 print(time.time()-t1)
 t2=time.time()
+
 ml = pyamg.smoothed_aggregation_solver(matrix)
-u = ml.solve(rhs, tol=1e-10)
+u2 = ml.solve(rhs, tol=1e-10)
+import pdb; pdb.set_trace()
 print(time.time()-t2)
 #mesh.write('out.vtk', point_data={'u': u})
 import pdb; pdb.set_trace()

@@ -1,5 +1,5 @@
 import numpy as np
-import scipy as sp
+from scipy import sparse
 
 class global_assembly:
     def __init__(self, sb, M):
@@ -10,17 +10,31 @@ class global_assembly:
         self.mi_l=0.1
         M_cont, lcd_cont=self.get_continuity_matrix(M, sb)
         LHS=M_cont
+        lcd=lcd_cont
+
         if len(sb.fx)>0:
-            M_momentum_x=self.get_momentum_matrix(sb.fx, M, sb,0)
+            M_momentum_x, lcdx=self.get_momentum_matrix(sb.fx, M, sb,0)
             LHS =np.vstack([LHS,M_momentum_x])
+            lcd[0]=np.concatenate([lcd[0],lcdx[0]+sb.nv])
+            lcd[1]=np.concatenate([lcd[1],lcdx[1]])
+            lcd[2]=np.concatenate([lcd[2],lcdx[2]])
         if len(sb.fy)>0:
-            M_momentum_y=self.get_momentum_matrix(sb.fy, M, sb,1)
+            M_momentum_y, lcdy=self.get_momentum_matrix(sb.fy, M, sb,1)
             LHS =np.vstack([LHS,M_momentum_y])
+            lcd[0]=np.concatenate([lcd[0],lcdy[0]+sb.nv+len(sb.fx)])
+            lcd[1]=np.concatenate([lcd[1],lcdy[1]])
+            lcd[2]=np.concatenate([lcd[2],lcdy[2]])
         if len(sb.fz)>0:
-            M_momentum_z=self.get_momentum_matrix(sb.fz, M, sb,2)
+            M_momentum_z, lcdz=self.get_momentum_matrix(sb.fz, M, sb,2)
             LHS =np.vstack([LHS,M_momentum_z])
+            lcd[0]=np.concatenate([lcd[0],lcdz[0]+sb.nv+len(sb.fx)+len(sb.fy)])
+            lcd[1]=np.concatenate([lcd[1],lcdz[1]])
+            lcd[2]=np.concatenate([lcd[2],lcdz[2]])
         # LHS =np.vstack([M_cont,M_momentum_x,M_momentum_y,M_momentum_z])
-        return LHS
+        # import pdb; pdb.set_trace()
+        lhs=sparse.csc_matrix((lcd[2],(lcd[0],lcd[1])),shape=(sb.nv+sb.nfi,sb.nv+sb.nfi))
+        # import pdb; pdb.set_trace()
+        return LHS, lhs
 
     def get_continuity_matrix(self, M, sb):
         ds=np.array([sb.dx, sb.dy, sb.dz])
@@ -61,13 +75,15 @@ class global_assembly:
                     cols.append(sb.nv+idd[0])
                     data.append(1)
                     ##################
-        lcd=np.array([lines,cols,data])
+
+        lcd=[np.array(lines),np.concatenate(cols),np.array(data)]
+
         return(M_cont,lcd)
 
     def get_momentum_matrix(self, fd ,M, sb,col):
         dx, dy, dz= sb.dx, sb.dy, sb.dz
         k_harms=M.k_harm[M.faces.all].T[0]
-        # k_harms=np.ones(len(k_harms))
+        k_harms=np.ones(len(k_harms))
         mi=1
         k=1
 
@@ -125,46 +141,84 @@ class global_assembly:
         fd_l_orig=M.id_fint[fd].T[0]
 
         for i in range(len(fd)):
-            M_d[fd_l[i],sb.nv+fd_l_orig[i]]=1+k_harms[fd[i]]*self.mi_l/(dy*dy)
-            M_d[fd_l[i],sb.nv+sup_inf_l[i]]=-k_harms[fd[i]]*self.mi_l/(dy*dy)
 
+            M_d[fd_l[i],sb.nv+fd_l_orig[i]]=1+k_harms[sup_inf[i]].sum()*self.mi_l/(dy*dy)
+            M_d[fd_l[i],sb.nv+sup_inf_l[i]]=-k_harms[sup_inf[i]]*self.mi_l/(dy*dy)
+            # import pdb; pdb.set_trace()
             ##########################
-            lines.append(fd_l[i])
-            cols.append(sb.nv+fd_l_orig[i])
-            data.append(1+k_harms[fd[i]]*self.mi_l/(dy*dy))
+            try:
+                lines.append(np.repeat(fd_l[i],len(fd_l_orig[i])))
+                cols.append([sb.nv+fd_l_orig[i]])
+                data.append([1+k_harms[fd[i]]*self.mi_l/(dy*dy)])
 
-            lines.append(fd_l[i])
-            cols.append(sb.nv+sup_inf_l[i])
-            data.append(-k_harms[fd[i]]*self.mi_l/(dy*dy))
+                lines.append([fd_l[i]])
+                cols.append(sb.nv+sup_inf_l[i])
+                data.append([-k_harms[sup_inf[i]]*self.mi_l/(dy*dy)])
+                
+            except:
+                lines.append([fd_l[i]])
+                cols.append([sb.nv+fd_l_orig[i]])
+                data.append([1+k_harms[fd[i]]*self.mi_l/(dy*dy)])
+
+                lines.append(np.repeat(fd_l[i],len(sup_inf_l[i])))
+                cols.append(sb.nv+sup_inf_l[i])
+                data.append(-k_harms[sup_inf[i]]*self.mi_l/(dy*dy))
+
             ##############################
-
+            try:
+                if len(np.concatenate(cols))!=len(np.concatenate(lines)):
+                    print("erro tamanho diferente no momento geral")
+                    import pdb; pdb.set_trace()
+            except:
+                print("erro ao concatenar")
+                import pdb; pdb.set_trace()
             if len(laterais[i])==1:
                 M_d[fd_l[i],sb.nv+fd_l_orig[i]]+=k_harms[laterais[i]]*self.mi_l/(dx*dx)
                 M_d[fd_l[i],sb.nv+laterais_l[i]]-=k_harms[laterais[i]]*self.mi_l/(dx*dx)
                 ######################
-                lines.append(fd_l[i])
-                cols.append(sb.nv+fd_l_orig[i])
-                data.append(k_harms[fd[i]]*self.mi_l/(dx*dx))
+                lines.append([fd_l[i]])
+                cols.append([sb.nv+fd_l_orig[i]])
+                data.append(np.array(k_harms[laterais[i]]*self.mi_l/(dx*dx)))
 
-                lines.append(fd_l[i])
-                cols.append(sb.nv+laterais_l[i])
-                data.append(-k_harms[fd[i]]*self.mi_l/(dx*dx))
-
+                lines.append(np.array([fd_l[i]]))
+                cols.append(np.array(sb.nv+laterais_l[i]))
+                data.append(np.array(-k_harms[laterais[i]]*self.mi_l/(dx*dx)))
+                try:
+                    # print(len(np.concatenate(lines)),len(np.concatenate(cols)),len(np.concatenate(data)))
+                    if len(np.concatenate(cols))!=len(np.concatenate(lines)):
+                        print("erro tamanho diferente")
+                        import pdb; pdb.set_trace()
+                except:
+                    print("erro ao concatenar em 1")
+                    import pdb; pdb.set_trace()
                 ##################################
             else:
                 M_d[fd_l[i],sb.nv+fd_l_orig[i]]+=(k_harms[laterais[i]]*self.mi_l/(dx*dx)).sum()
                 M_d[fd_l[i],sb.nv+laterais_l[i]]-=k_harms[laterais[i]]*self.mi_l/(dx*dx)
 
                 ######################
-                lines.append(fd_l[i])
-                cols.append(sb.nv+fd_l_orig[i])
-                data.append(k_harms[fd[i]]*self.mi_l/(dx*dx))
+                lines.append([fd_l[i]])
+                cols.append([sb.nv+fd_l_orig[i]])
+                data.append([(k_harms[laterais[i]]*self.mi_l/(dx*dx)).sum()])
 
-                lines.append(fd_l[i])
+                lines.append(np.repeat(fd_l[i], len(laterais_l[i])))
                 cols.append(sb.nv+laterais_l[i])
-                data.append(-k_harms[fd[i]]**self.mi_l/(dx*dx))
-                #################################
-        return M_d
+                data.append(-k_harms[laterais[i]]*self.mi_l/(dx*dx))
+
+                try:
+                    if len(np.concatenate(cols))!=len(np.concatenate(lines)):
+                        print("erro tamanho diferente no momento")
+                        import pdb; pdb.set_trace()
+                except:
+                    print("erro ao concatenar")
+                    import pdb; pdb.set_trace()
+
+                # import pdb; pdb.set_trace()
+                # print(len(np.concatenate(lines)),len(np.concatenate(cols)),len(np.concatenate(data)))
+                ######################
+
+        lcd=[np.concatenate(lines),np.concatenate(cols),np.concatenate(data)]
+        return M_d, lcd
 
     def get_rhs(self,sb):
         rhs=np.zeros(sb.nv+sb.nfi)
