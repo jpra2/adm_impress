@@ -4,18 +4,18 @@ import numpy as np
 class BrooksAndCorey:
 
     def __init__(self):
-        self.Sorw = float(direc.data_loaded['compositional_data']['Sorw'])
-        self.Sorg = float(direc.data_loaded['compositional_data']['Sorg'])
-        self.Sgr = float(direc.data_loaded['compositional_data']['Sgr'])
-        self.Swr = float(direc.data_loaded['compositional_data']['Swr'])
+        self.Sorw = float(direc.data_loaded['compositional_data']['residual_saturations']['Sorw'])
+        self.Sorg = float(direc.data_loaded['compositional_data']['residual_saturations']['Sorg'])
+        self.Sgr = float(direc.data_loaded['compositional_data']['residual_saturations']['Sgr'])
+        self.Swr = float(direc.data_loaded['compositional_data']['residual_saturations']['Swr'])
 
-        self.n_w = float(direc.data_loaded['compositional_data']['n_w'])
-        self.n_o = float(direc.data_loaded['compositional_data']['n_o'])
-        self.n_g = float(direc.data_loaded['compositional_data']['n_g'])
+        self.n_w = float(direc.data_loaded['compositional_data']['relative_permeability_data']['n_w'])
+        self.n_o = float(direc.data_loaded['compositional_data']['relative_permeability_data']['n_o'])
+        self.n_g = float(direc.data_loaded['compositional_data']['relative_permeability_data']['n_g'])
 
-        self.krw0 = float(direc.data_loaded['compositional_data']['krw0'])
-        self.kro0 = float(direc.data_loaded['compositional_data']['kro0'])
-        self.krg0 = float(direc.data_loaded['compositional_data']['krg0'])
+        self.krw0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['krw0'])
+        self.kro0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['kro0'])
+        self.krg0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['krg0'])
 
     def relative_permeabilities(self, saturations):
         #saturations = [So,Sg,Sw]

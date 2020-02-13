@@ -17,17 +17,17 @@ if dd['deletar_results']:
         if f[-4:] == '.vtk':
             os.remove(os.path.join(results, f))
 
-def inputs_components_properties(data_loaded_compositional):
-    w = data_loaded_compositional['w']
-    Bin = data_loaded_compositional['Bin']
-    R = data_loaded_compositional['R']
-    Tc = data_loaded_compositional['Tc']
-    Pc = data_loaded_compositional['Pc']
-    Vc = data_loaded_compositional['Vc']
-    T = data_loaded_compositional['T']
-    P = data_loaded_compositional['P']
-    C7 = data_loaded_compositional['C7']
-    Mw = data_loaded_compositional['Mw']
-    z = data_loaded_compositional['z']
-    z = np.array(z).astype(float)
+def inputs_components_properties(data_loaded, n_volumes):
+    w = np.array(data_loaded['compositional_data']['component_data']['w']).astype(float)
+    Bin = np.array(data_loaded['compositional_data']['component_data']['Bin']).astype(float)
+    R = np.array(data_loaded['compositional_data']['component_data']['R']).astype(float)
+    Tc = np.array(data_loaded['compositional_data']['component_data']['Tc']).astype(float)
+    Pc = np.array(data_loaded['compositional_data']['component_data']['Pc']).astype(float)
+    Vc = np.array(data_loaded['compositional_data']['component_data']['Vc']).astype(float)
+    T = np.array(data_loaded['Temperature']['r1']['value']).astype(float)
+    P = np.array(data_loaded['Pressure']['r1']['value']).astype(float)
+    C7 = np.array(data_loaded['compositional_data']['component_data']['C7']).astype(float)
+    Mw = np.array(data_loaded['compositional_data']['component_data']['Mw']).astype(float)
+    z = np.array(data_loaded['compositional_data']['component_data']['z']).astype(float)
+    P = P * np.ones(n_volumes)
     return w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7, z

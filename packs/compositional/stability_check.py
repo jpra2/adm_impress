@@ -11,15 +11,15 @@ class StabilityCheck:
     equilibrium phase compositions (perform the flash calculation)."""
 
     def __init__(self, w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7):
-        self.w = np.array(w).astype(float)
-        self.Bin = np.array(Bin).astype(float)
-        self.Mw = np.array(Mw).astype(float)
-        self.R = np.array(R).astype(float)
-        self.Tc = np.array(Tc).astype(float)
-        self.Pc = np.array(Pc).astype(float)
-        self.Vc = np.array(Vc).astype(float)
-        self.T = np.array(T).astype(float)
-        self.P = np.array(P).astype(float)
+        self.w = w
+        self.Bin = Bin
+        self.Mw = Mw
+        self.R = R
+        self.Tc = Tc
+        self.Pc = Pc
+        self.Vc = Vc
+        self.T = T
+        self.P = P
         self.Nc = len(w)
         self.C7 = np.array(C7)
         #StabilityCheck.TPD(self)

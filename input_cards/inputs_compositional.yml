@@ -15,7 +15,7 @@ monophasic_data: false
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-
+  
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   #cfl: 0.9
@@ -24,34 +24,39 @@ compositional_data:
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
+
   rock_compressibility: 7.25e-5
   Pf: 13.79E6
-  mi_W: 1e-3
-  rho_W: 999.6
-  Mw_w: 18.015e-3
-  Sorw: 1e-6
-  Sorg: 1e-6
-  Swr: 0.25
-  Sgr: 0
-  krw0: 1.0
-  krg0: 1.0
-  kro0: 1.0
-  n_o: 2.
-  n_g: 2.
-  n_w: 2.
-  z: [1.]
-  Tc: [617.7]
-  Pc: [2103000.0]
-  Vc: [0.00428556]
-  R: [8.3144598]
-  Mw: [142.28e-3]
-  w: [0.4885]
-  Bin: [0]
-  C7: [1]
-  P: 13.79E6
-  T: 366.33
-  porosity: 0.2
 
+  water_data:
+    mi_W: 1e-3
+    rho_W: 999.6
+    Mw_w: 18.015e-3
+
+  residual_saturations:
+    Sorw: 1e-6
+    Sorg: 1e-6
+    Swr: 0.25
+    Sgr: 0
+
+  relative_permeability_data:
+    krw0: 1.0
+    krg0: 1.0
+    kro0: 1.0
+    n_o: 2.
+    n_g: 2.
+    n_w: 2.
+
+  component_data:
+    z: [1.]
+    Tc: [617.7]
+    Pc: [2103000.0]
+    Vc: [0.00428556]
+    R: [8.3144598]
+    Mw: [142.28e-3]
+    w: [0.4885]
+    Bin: [0]
+    C7: [1]
 
 #water saturation data
 Saturation:
@@ -70,15 +75,15 @@ Permeability:
     type: all
     value: [5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13]
 
-# Pressure:
-#   r1:
-#     type: all
-#     value: 13.79E3 #confirmar
-#
-# Temperature:
-#   r1:
-#     type: all
-#     value: 366.33
+Pressure:
+  r1:
+    type: all
+    value: 13.79E6 #confirmar
+
+Temperature:
+  r1:
+    type: all
+    value: 366.33
 
 Wells:
   P1:
