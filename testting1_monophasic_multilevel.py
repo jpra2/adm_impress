@@ -183,6 +183,7 @@ convert = data_loaded['convert_english_to_SI']
 n = data_loaded['n_test']
 load_operators = data_loaded['load_operators']
 _debug = data_loaded['_debug']
+get_correction_term = data_loaded['get_correction_term']
 
 M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
 # M.core.print(file='test'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
@@ -195,15 +196,13 @@ tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 T, b = tpfa_solver.run()
 # tpfa_solver.get_RHS_term()
 # tpfa_solver.get_transmissibility_matrix()
-multilevel_operators = MultilevelOperators(2, data_impress, M.multilevel_data, load=load_operators, get_correction_term=True)
+multilevel_operators = MultilevelOperators(2, data_impress, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 #
 if load_operators:
     pass
 else:
     multilevel_operators.run(tpfa_solver['Tini'])
     # multilevel_operators.run_paralel(tpfa_solver['Tini'])
-
-import pdb; pdb.set_trace()
 
 # op2 = multilevel_operators['prolongation_level_2']
 # rest2 = multilevel_operators['restriction_level_2']

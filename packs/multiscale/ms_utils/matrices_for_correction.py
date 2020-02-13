@@ -8,11 +8,15 @@ class MatricesForCorrection:
 
         ###################
         ## teste
-        rr = total_source_term==0
-        total_source_term[rr] = np.ones(len(total_source_term[rr]))
+        # rr = total_source_term==0
+        # total_source_term[rr] = np.ones(len(total_source_term[rr]))
         ###################
+        diagg=np.ones(len(total_source_term))
+        non_null=abs(total_source_term)>1e-10
+        if len(non_null) > 0:
+            # import pdb; pdb.set_trace()
+            diagg[non_null]=gravity_source_term[non_null]/total_source_term[non_null]
 
-        diagg = gravity_source_term/total_source_term
         n = len(total_source_term)
 
         B_matrix = sp.lil_matrix((n ,n))

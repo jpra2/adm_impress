@@ -69,8 +69,8 @@ class MultilevelOperators(DataManager):
         self.load = load
         self.ml_data = ml_data
 
-        # self.n_levels = n_levels
-        self.n_levels = 1
+        self.n_levels = n_levels
+        # self.n_levels = 1
         self.data_impress = data_impress
         self.get_correction_term = get_correction_term
 

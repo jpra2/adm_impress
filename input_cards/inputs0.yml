@@ -43,7 +43,7 @@ Wells:
     - 1.0
     - 27.0
     - 27.0
-    prescription: P
+    prescription: Q
     type: Injector
     type_region: box
     value: 10000.0
@@ -94,7 +94,7 @@ load_operators: false
 mesh_name: mesh/27x27x27.msh
 monophasic: true
 monophasic_data:
-  gama: 100.0
+  gama: 10.0
   mi: 1.0
 multilevel_data: true
 n_test: 0

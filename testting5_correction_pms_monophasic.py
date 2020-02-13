@@ -26,8 +26,14 @@ T, b = tpfa_solver.run()
 
 q_grav = data_impress['flux_grav_volumes'].copy()
 total_source_term = b.copy()
-total_source_term[wells['all_wells']] = np.zeros(len(wells['all_wells']))
+# total_source_term = q_grav.copy()
+# total_source_term[wells['all_wells']] = np.zeros(len(wells['all_wells']))
+# total_source_term[wells['all_wells']] = q_grav[wells['all_wells']]
+# total_source_term[wells['ws_p']] = q_grav[wells['ws_p']]
+# total_source_term = np.zeros(len(b))
+# q_grav = total_source_term.copy()
 # q_grav[data_impress['LEVEL']==0] = np.zeros(len(q_grav[data_impress['LEVEL']==0]))
+total_source_term[data_impress['LEVEL']==0] = q_grav[data_impress['LEVEL']==0]
 
 ###################
 ## teste
@@ -47,12 +53,14 @@ mlo.run(tpfa_solver['Tini'], total_source_term, q_grav)
 
 adm_method.organize_ops_adm(mlo['prolongation_level_'+str(1)], mlo['restriction_level_'+str(1)], 1, _pcorr=mlo['pcorr_level_'+str(0)])
 adm_method.solve_multiscale_pressure(T, b)
+adm_method.set_pcorr()
 
 p2 = linalg.spsolve(T, b)
 data_impress['pressure'] = p2
-data_impress['erro'] = np.absolute((data_impress['pms'] - p2))
+data_impress['erro'] = np.absolute((data_impress['pms'] - p2)/p2)
+# data_impress['pcorr'] = mlo['pcorr_level_0']
 data_impress.update_variables_to_mesh()
-M.core.print(folder='results', file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
+M.core.print(folder='results', file='test_'+ str(77), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
 
 

@@ -150,13 +150,6 @@ pressure:
   sparse: True
   level: 0
 
-weight:
-  type: volumes
-  data size: 3
-  data type: float
-  sparse: True
-  level: 0
-
 volume:
   type: volumes
   data size: 1
@@ -458,7 +451,7 @@ erro:
   sparse: True
   level: 0
 
-tpfa_pressure:
+pcorr_adm_0:
   type: volumes
   data size: 1
   data type: float

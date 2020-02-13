@@ -232,8 +232,8 @@ class AMSTpfa:
             OP = np.array([False])
 
         if self.get_correction_term:
-            total_source_term_wire = self.G*total_source_term
-            pcorr = self.get_pcorr(As, total_source_term_wire)
+            # total_source_term_wire = self.G*total_source_term
+            pcorr = self.get_pcorr(As, self.G*total_source_term)
         else:
             pcorr = np.array([False])
 

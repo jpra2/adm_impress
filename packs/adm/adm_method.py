@@ -415,6 +415,9 @@ class AdmMethod(DataManager, TpfaFlux2):
         if self.get_correction_term:
             pcorr = np.zeros(len(gid_0))
             pcorr[levels>0] = _pcorr[levels>0]
+            ##############
+            ## test
+            self.data_impress['pcorr_adm_0'] = pcorr
         else:
             pcorr = np.array([False])
 
@@ -430,8 +433,8 @@ class AdmMethod(DataManager, TpfaFlux2):
             level = i+1
             OP_adm = self._data[self.adm_op_n + str(level)]
             OR_adm = self._data[self.adm_rest_n + str(level)]
-            pcorr_adm = self._data[self.pcorr_n+str(level-1)]
             if self.get_correction_term:
+                pcorr_adm = self._data[self.pcorr_n+str(level-1)]
                 b_adm = OR_adm*b_adm - OR_adm*T_adm*pcorr_adm
             else:
                 b_adm = OR_adm*b_adm
@@ -443,8 +446,11 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         for i in range(n_levels):
             level = self.n_levels - i
-            pcorr_adm = self._data[self.pcorr_n+str(level-1)]
-            pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
+            if self.get_correction_term:
+                pcorr_adm = self._data[self.pcorr_n+str(level-1)]
+                pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
+            else:
+                pms = self._data[self.adm_op_n + str(level)]*pms
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms
@@ -570,7 +576,8 @@ class AdmMethod(DataManager, TpfaFlux2):
                 pms0 = pms[neig_intersect_faces[:,0]]
                 pms1 = pms[neig_intersect_faces[:,1]]
                 flux_grav_intersect_faces = flux_grav_faces[intersect_faces]
-                flux_intersect_faces = -((pms1 - pms0) * t0 - flux_grav_intersect_faces)
+                # flux_intersect_faces = -((pms1 - pms0) * t0 - flux_grav_intersect_faces)
+                flux_intersect_faces = -((pms1 - pms0) * t0)
                 flux_faces[intersect_faces] = flux_intersect_faces
 
                 lines = np.concatenate([v0[:, 0], v0[:, 1]])
