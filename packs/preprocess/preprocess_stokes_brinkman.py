@@ -8,13 +8,13 @@ class preprocess_stokes:
         self.nv=len(M.volumes.all)
         self.nfi=len(M.faces.internal)
         self.initiate_f_int_tag(M)
-
+    
     def set_mesh_properties(self,M):
         elementsLv0=ElementsLv0(M)
         data_impress = Data(M,elementsLv0)
         Preprocess0(M,elementsLv0)
         self.dx, self.dy, self.dz = M.hs[0][0]
-        data_impress.update_variables_to_mesh() 
+        data_impress.update_variables_to_mesh()
         del(M.data)
 
     def initiate_f_int_tag(self, M):

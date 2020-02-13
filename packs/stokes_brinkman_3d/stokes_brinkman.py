@@ -5,6 +5,7 @@ from packs.solvers.solvers_pyamg import solver_amg
 from packs.solvers.solvers_trilinos.solvers_tril import solverTril
 import pyamg
 import scipy
+from scipy import sparse
 import gc
 import time
 class stokes_solver:
@@ -13,41 +14,38 @@ class stokes_solver:
         # print(gc.is_tracked(M))
         prep_sb=preprocess_stokes(M)
         assembled_matrices=assembly.global_assembly(prep_sb,M)
-        self.M, self.lhs = assembled_matrices.M
+        self.lhs = assembled_matrices.M
         self.rhs= assembled_matrices.rhs
-        # self.M[prep_sb.nv:,prep_sb.nv:]=np.identity(len(M.faces.internal))
-        self.sol=self.solve(self.M,self.rhs, self.lhs, prep_sb)
-        np.savetxt("results/mat.csv",self.M,delimiter=",")
+        # self.lhs[prep_sb.nv:,prep_sb.nv:]=sparse.identity(len(M.faces.internal))
+        self.sol=self.solve(self.lhs,self.rhs, prep_sb)
+        # np.savetxt("results/mat.csv",self.lhs,delimiter=",")
         # np.save("results/b_sol.npy",self.sol)
 
         # sol_sb=np.load("results/b_sol.npy")
 
         # self.erro=abs(self.sol-sol_sb)
-
-
         self.write_output(prep_sb, M)
-        
 
-    def solve(self,Mat, rhs, lhs, prep_sb):
-        Mat[0]=np.zeros(prep_sb.nv+prep_sb.nfi)
-        Mat[0][0]=1
-        Mat[prep_sb.nv-1]=np.zeros(prep_sb.nv+prep_sb.nfi)
-        Mat[prep_sb.nv-1][prep_sb.nv-1]=1#
-        t1=time.time()
-        sol=np.linalg.solve(self.M,self.rhs)
-        print(time.time()-t1,"numpy")
-        t2=time.time()
-        sol3=scipy.sparse.linalg.spsolve(lhs,rhs)
-        print(time.time()-t2,"scipy")
-        '''
+    def solve(self,lhs, rhs,prep_sb):
+        # Mat[0]=np.zeros(prep_sb.nv+prep_sb.nfi)
+        # Mat[0][0]=1
+        # Mat[prep_sb.nv-1]=np.zeros(prep_sb.nv+prep_sb.nfi)
+        # Mat[prep_sb.nv-1][prep_sb.nv-1]=1#
+        # t1=time.time()
+        # sol=np.linalg.solve(self.M,self.rhs)
+        # print(time.time()-t1,"numpy")
+
         lhs=lhs.tolil()
 
         lhs[0]=np.zeros(prep_sb.nv+prep_sb.nfi)
         lhs[0,0]=1
         lhs[prep_sb.nv-1]=np.zeros(prep_sb.nv+prep_sb.nfi)
         lhs[prep_sb.nv-1,prep_sb.nv-1]=1#
-        lhs.toarray()==Mat
-
+        lhs=lhs.tocsc()
+        t2=time.time()
+        sol3=scipy.sparse.linalg.spsolve(lhs,rhs)
+        print(time.time()-t2,"scipy")
+        '''
         sol2=solver_amg.SolverAMG().smoothed_aggregation_solver(lhs.tocsr(),self.rhs.T,10**-40)
         sol3=scipy.sparse.linalg.spsolve(lhs,rhs)
 
@@ -55,7 +53,7 @@ class stokes_solver:
         sol4 = ml.solve(rhs, tol=1e-10)
         sol5 = solverTril().solve_linear_problem(lhs.tocsr(),rhs)'''
 
-        return sol
+        return sol3
 
     def write_output(self,prep_sb,M):
         print(self.sol)
