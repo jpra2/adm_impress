@@ -12,12 +12,20 @@ class stokes_solver:
     def __init__(self,M):
 
         # print(gc.is_tracked(M))
+        t1=time.time()
         prep_sb=preprocess_stokes(M)
+        print(time.time()-t1,"preprocess")
+        t1=time.time()
         assembled_matrices=assembly.global_assembly(prep_sb,M)
+        print(time.time()-t1,"assembly")
+        t1=time.time()
         self.lhs = assembled_matrices.M
         self.rhs= assembled_matrices.rhs
         # self.lhs[prep_sb.nv:,prep_sb.nv:]=sparse.identity(len(M.faces.internal))
+
         self.sol=self.solve(self.lhs,self.rhs, prep_sb)
+        print(time.time()-t1,"solve")
+
         # np.savetxt("results/mat.csv",self.lhs,delimiter=",")
         # np.save("results/b_sol.npy",self.sol)
 
@@ -42,9 +50,18 @@ class stokes_solver:
         lhs[prep_sb.nv-1]=np.zeros(prep_sb.nv+prep_sb.nfi)
         lhs[prep_sb.nv-1,prep_sb.nv-1]=1#
         lhs=lhs.tocsc()
+
         t2=time.time()
         sol3=scipy.sparse.linalg.spsolve(lhs,rhs)
-        print(time.time()-t2,"scipy")
+        print(time.time()-t2,"spsolve")
+
+        # t3=time.time()
+        # sol6=scipy.sparse.linalg.gmres(lhs,rhs)[0]
+        # print(time.time()-t3,"gmres")
+        # import pdb; pdb.set_trace()
+        # print(max(abs(sol3-sol6)),"máximo delta")
+        # import pdb; pdb.set_trace()
+
         '''
         sol2=solver_amg.SolverAMG().smoothed_aggregation_solver(lhs.tocsr(),self.rhs.T,10**-40)
         sol3=scipy.sparse.linalg.spsolve(lhs,rhs)
@@ -56,7 +73,7 @@ class stokes_solver:
         return sol3
 
     def write_output(self,prep_sb,M):
-        print(self.sol)
+        # print(self.sol)
         N=len(M.volumes.all)+len(M.faces.internal)
         nx=len(prep_sb.fx)
         ny=len(prep_sb.fy)

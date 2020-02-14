@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import sparse
+import time
 
 class global_assembly:
     def __init__(self, sb, M):
@@ -38,46 +39,26 @@ class global_assembly:
 
     def get_continuity_matrix(self, M, sb):
         ds=np.array([sb.dx, sb.dy, sb.dz])
-        M_cont=np.zeros((sb.nv,sb.nv+sb.nfi))
         internal_faces=M.faces.internal
         volumes=M.volumes.all
         faces=M.volumes.bridge_adjacencies(volumes,2,2)
         faces_center_x=M.faces.center(faces.flatten())[:,0].reshape(faces.shape)
         faces_center_y=M.faces.center(faces.flatten())[:,1].reshape(faces.shape)
         faces_center_z=M.faces.center(faces.flatten())[:,2].reshape(faces.shape)
-        lines=[]
-        cols=[]
-        data=[]
-        for i in range(len(faces)):
-            facs=faces[i]
-            xcents=faces_center_x[i]
-            ycents=faces_center_y[i]
-            zcents=faces_center_z[i]
-            cents=([xcents, ycents, zcents])
-            for cent in cents:
-                dfe=facs[cent==cent.min()]
-                dfd=facs[cent==cent.max()]
 
-                if dfe[0] in internal_faces:
-                    ide=M.id_fint[dfe[0]]
-                    M_cont[volumes[i],sb.nv+ide[0]]=-1
-                    #####################
-                    lines.append(volumes[i])
-                    cols.append(sb.nv+ide[0])
-                    data.append(-1)
-                    ################
+        dfd_x=faces[(faces_center_x-np.array([faces_center_x.max(axis=1)]).T)==0]
+        dfe_x=faces[(faces_center_x-np.array([faces_center_x.min(axis=1)]).T)==0]
+        dfd_y=faces[(faces_center_y-np.array([faces_center_y.max(axis=1)]).T)==0]
+        dfe_y=faces[(faces_center_y-np.array([faces_center_y.min(axis=1)]).T)==0]
+        dfd_z=faces[(faces_center_z-np.array([faces_center_z.max(axis=1)]).T)==0]
+        dfe_z=faces[(faces_center_z-np.array([faces_center_z.min(axis=1)]).T)==0]
 
-                if dfd[0] in internal_faces:
-                    idd=M.id_fint[dfd[0]]
-                    M_cont[volumes[i],sb.nv+idd[0]]=1
-                    ###############
-                    lines.append(volumes[i])
-                    cols.append(sb.nv+idd[0])
-                    data.append(1)
-                    ##################
-
-        lcd=[np.array(lines),np.concatenate(cols),np.array(data)]
-
+        cp=M.id_fint[np.concatenate([dfd_x, dfd_y,dfd_z,dfe_x, dfe_y,dfe_z])].T[0]
+        cp_internal=cp>-1
+        l=np.concatenate([np.arange(sb.nv),np.arange(sb.nv),np.arange(sb.nv),np.arange(sb.nv),np.arange(sb.nv),np.arange(sb.nv)])[cp_internal]
+        c=cp[cp_internal]
+        d=np.concatenate([np.repeat(1,sb.nv),np.repeat(1,sb.nv),np.repeat(1,sb.nv),np.repeat(-1,sb.nv),np.repeat(-1,sb.nv),np.repeat(-1,sb.nv)])[cp_internal]
+        lcd=[l,c,d]
         return lcd
 
     def get_momentum_matrix(self, fd ,M, sb,col):

@@ -8,7 +8,7 @@ class preprocess_stokes:
         self.nv=len(M.volumes.all)
         self.nfi=len(M.faces.internal)
         self.initiate_f_int_tag(M)
-    
+
     def set_mesh_properties(self,M):
         elementsLv0=ElementsLv0(M)
         data_impress = Data(M,elementsLv0)
@@ -21,7 +21,7 @@ class preprocess_stokes:
         faces=M.faces.internal
         nodes=M.faces.bridge_adjacencies(faces,0,0).flatten()
         coords=M.nodes.coords[nodes].reshape(len(faces),4,3)
-
+        M.id_fint[M.faces.boundary]=-1
         cx=coords[:,:,0]
         cy=coords[:,:,1]
         cz=coords[:,:,2]
