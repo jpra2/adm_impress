@@ -42,3 +42,6 @@ class preprocess_stokes:
             M.id_fint[fy] = range(n_x,n_x+n_y)
         if n_z>0:
             M.id_fint[fz] = range(n_x+n_y,n_x+n_y+n_z)
+        M.perpendicular_direction_flag[fx]=1
+        M.perpendicular_direction_flag[fy]=2
+        M.perpendicular_direction_flag[fz]=3

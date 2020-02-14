@@ -73,7 +73,7 @@ class global_assembly:
         adjs_d0=adjs_d[:,0]
         adjs_d1=adjs_d[:,1]
 
-        M_d=np.zeros((len(fd),sb.nv+sb.nfi))
+        # M_d=np.zeros((len(fd),sb.nv+sb.nfi))
         c0=M.volumes.center(adjs_d0)[:,col]
         c1=M.volumes.center(adjs_d1)[:,col]
 
@@ -91,8 +91,8 @@ class global_assembly:
         cols=[]
         data=[]
 
-        M_d[fd_l,higher_coord]=k_harms[fd]
-        M_d[fd_l,lower_coord]=-k_harms[fd]
+        # M_d[fd_l,higher_coord]=k_harms[fd]
+        # M_d[fd_l,lower_coord]=-k_harms[fd]
         ###########################3
         lines.append(fd_l)
         cols.append(higher_coord)
@@ -107,11 +107,21 @@ class global_assembly:
         for fac in fac_viz_ares:
             laterais.append(np.intersect1d(fac,fd))
 
+
         laterais_l=[]
         for l in laterais:
             laterais_l.append(M.id_fint[l].T[0])
-        faces_viz_adjs_d=M.volumes.bridge_adjacencies(adjs_d.flatten(),2,2).reshape(len(fd),12) #12 é o número de faces 6faces/vol vezes 2 vols por adj
 
+        faces_viz_adjs_d=M.volumes.bridge_adjacencies(adjs_d.flatten(),2,2).reshape(len(fd),12) #12 é o número de faces 6faces/vol vezes 2 vols por adj
+        flags=M.perpendicular_direction_flag[faces_viz_adjs_d.flatten()].reshape(len(fd),12)
+
+        face_itself=(faces_viz_adjs_d-np.array([fd]).T)==0
+        sup_inf_pos=flags==col+1-face_itself
+
+        x=np.arange(len(fd))
+        faces_lines=np.repeat(x,12).reshape(len(fd),12)
+        sup_inf2=faces_viz_adjs_d[sup_inf_pos]
+        fl=faces_lines[sup_inf_pos]
         sup_inf=[]
         i=0
         for fac in faces_viz_adjs_d:
@@ -120,17 +130,43 @@ class global_assembly:
         sup_inf_l=[]
         for si in sup_inf:
             sup_inf_l.append(M.id_fint[si].T[0])
+        sup_inf2_l=M.id_fint[sup_inf2].T[0]
+        # import pdb; pdb.set_trace()
         fd_l_orig=M.id_fint[fd].T[0]
+        l1=lines.copy()
+        c1=cols.copy()
+        d1=data.copy()
+        l11=fl-fl.min()
+        c11=sb.nv+sup_inf2_l
+        d11=-k_harms[sup_inf2]*self.mi_l/(dy*dy)
+        l1.append(l11)
+        c1.append(c11)
+        d1.append(d11)
+
+        l11=np.unique(fl)
+        c11=sb.nv+np.unique(fl)
+        d11=np.repeat(1,len(l11))
+        l1.append(l11)
+        c1.append(c11)
+        d1.append(d11)
+
+        l11=fl-fl.min()
+        c11=sb.nv+fl
+        d11=k_harms[sup_inf2]*self.mi_l/(dy*dy)
+        l1.append(l11)
+        c1.append(c11)
+        d1.append(d11)
 
         for i in range(len(fd)):
             #
-            M_d[fd_l[i],sb.nv+fd_l_orig[i]]=1+k_harms[sup_inf[i]].sum()*self.mi_l/(dy*dy)
-            M_d[fd_l[i],sb.nv+sup_inf_l[i]]=-k_harms[sup_inf[i]]*self.mi_l/(dy*dy)
+            # M_d[fd_l[i],sb.nv+fd_l_orig[i]]=1+k_harms[sup_inf[i]].sum()*self.mi_l/(dy*dy)
+            # M_d[fd_l[i],sb.nv+sup_inf_l[i]]=-k_harms[sup_inf[i]]*self.mi_l/(dy*dy)
             # import pdb; pdb.set_trace()
             ##########################
+
             lines.append([fd_l[i]])
             cols.append([sb.nv+fd_l_orig[i]])
-            data.append([1+k_harms[fd[i]]*self.mi_l/(dy*dy)])
+            data.append([1+k_harms[sup_inf[i]].sum()*self.mi_l/(dy*dy)])
 
             lines.append(np.repeat(fd_l[i],len(sup_inf_l[i])))
             cols.append(sb.nv+sup_inf_l[i])
@@ -145,8 +181,8 @@ class global_assembly:
                 print("erro ao concatenar")
                 import pdb; pdb.set_trace()
             if len(laterais[i])==1:
-                M_d[fd_l[i],sb.nv+fd_l_orig[i]]+=k_harms[laterais[i]]*self.mi_l/(dx*dx)
-                M_d[fd_l[i],sb.nv+laterais_l[i]]-=k_harms[laterais[i]]*self.mi_l/(dx*dx)
+                # M_d[fd_l[i],sb.nv+fd_l_orig[i]]+=k_harms[laterais[i]]*self.mi_l/(dx*dx)
+                # M_d[fd_l[i],sb.nv+laterais_l[i]]-=k_harms[laterais[i]]*self.mi_l/(dx*dx)
                 ######################
                 lines.append([fd_l[i]])
                 cols.append([sb.nv+fd_l_orig[i]])
@@ -165,8 +201,8 @@ class global_assembly:
                     import pdb; pdb.set_trace()
                 ##################################
             else:
-                M_d[fd_l[i],sb.nv+fd_l_orig[i]]+=(k_harms[laterais[i]]*self.mi_l/(dx*dx)).sum()
-                M_d[fd_l[i],sb.nv+laterais_l[i]]-=k_harms[laterais[i]]*self.mi_l/(dx*dx)
+                # M_d[fd_l[i],sb.nv+fd_l_orig[i]]+=(k_harms[laterais[i]]*self.mi_l/(dx*dx)).sum()
+                # M_d[fd_l[i],sb.nv+laterais_l[i]]-=k_harms[laterais[i]]*self.mi_l/(dx*dx)
 
                 ######################
                 lines.append([fd_l[i]])
@@ -185,11 +221,20 @@ class global_assembly:
                     print("erro ao concatenar")
                     import pdb; pdb.set_trace()
 
-                # import pdb; pdb.set_trace()
-                # print(len(np.concatenate(lines)),len(np.concatenate(cols)),len(np.concatenate(data)))
-                ######################
+        l1=np.concatenate(l1)
+        c1=np.concatenate(c1)
+        d1=np.concatenate(d1)
+        lines=np.concatenate(lines)
+        cols=np.concatenate(cols)
+        data=np.concatenate(data)
+        # import pdb; pdb.set_trace()
+        M1=sparse.csc_matrix((d1,(l1,c1)),shape=(l1.max()+1,c1.max()+1))
+        M2=sparse.csc_matrix((data,(lines,cols)),shape=(lines.max()+1,cols.max()+1))
+        sup_inf_l2=M.id_fint[np.concatenate(sup_inf)].T[0]
+        # import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
-        lcd=[np.concatenate(lines),np.concatenate(cols),np.concatenate(data)]
+        lcd=[lines,cols,data]
         return lcd
 
     def get_rhs(self,sb):
