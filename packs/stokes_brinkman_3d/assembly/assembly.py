@@ -56,15 +56,16 @@ class global_assembly:
         cp=M.id_fint[np.concatenate([dfd_x, dfd_y,dfd_z,dfe_x, dfe_y,dfe_z])].T[0]
         cp_internal=cp>-1
         l=np.concatenate([np.arange(sb.nv),np.arange(sb.nv),np.arange(sb.nv),np.arange(sb.nv),np.arange(sb.nv),np.arange(sb.nv)])[cp_internal]
-        c=cp[cp_internal]
+        c=sb.nv+cp[cp_internal]
         d=np.concatenate([np.repeat(1,sb.nv),np.repeat(1,sb.nv),np.repeat(1,sb.nv),np.repeat(-1,sb.nv),np.repeat(-1,sb.nv),np.repeat(-1,sb.nv)])[cp_internal]
+
         lcd=[l,c,d]
         return lcd
 
     def get_momentum_matrix(self, fd ,M, sb,col):
         dx, dy, dz= sb.dx, sb.dy, sb.dz
         k_harms=M.k_harm[M.faces.all].T[0]
-        # k_harms=np.ones(len(k_harms))
+        k_harms=np.ones(len(k_harms))
         mi=1
         k=1
 
