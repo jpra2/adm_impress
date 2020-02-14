@@ -6,8 +6,7 @@ class PartialDerivatives:
     def __init__(self):
         self.n_phases = 2
 
-    def d_dn_all_derivatives(self, fluid_properties, Nphase, l):
-        nkphase = l * Nphase
+    def d_dn_all_derivatives(self, fluid_properties, Nphase, nkphase, l):
         delta = 0.0001
         dlnf_dn = np.zeros([fluid_properties.Nc, fluid_properties.Nc, self.n_phases])
         dZ_dn = np.zeros([fluid_properties.Nc, self.n_phases])
@@ -45,7 +44,12 @@ class PartialDerivatives:
         A, B = fluid_properties.coefficientsPR(l)
         return StabilityCheck.Z_PR(B, A, ph)
 
-    def dVt_derivatives(self, fluid_properties, Nphase_allvolumes, l_allvolumes, eta_j):
+    def dVt_derivatives(self, fluid_properties):
+        Nphase_allvolumes = fluid_properties.mole_numbers_o_and_g
+        nkphase_allvolumes = fluid_properties.component_mole_numbers
+        l_allvolumes = fluid_properties.component_molar_fractions
+        eta_j = fluid_properties.eta_o_and_g
+
         n_vols = len(Nphase_allvolumes[0,0,:])
 
         """ Initializing dN derivatives """
@@ -59,13 +63,14 @@ class PartialDerivatives:
         Zj = np.zeros([1,self.n_phases, n_vols])
         for b in range(n_vols):
             self.Pvolume = P[b]
-            fluid_properties.P = self.Pvolume 
+            fluid_properties.P = self.Pvolume
             self.y = l_allvolumes[:,0,b]
             self.x = l_allvolumes[:,1,b]
             l = np.zeros([fluid_properties.Nc, self.n_phases])
             l[:,0] = self.y[0:fluid_properties.Nc]; l[:,1] = self.x[0:fluid_properties.Nc]
             Nphase = Nphase_allvolumes[0,:,b]
-            dlnfij_dnij, dZj_dnij[:,:,b] = self.d_dn_all_derivatives(fluid_properties, Nphase, l)
+            nkphase = nkphase_allvolumes[:,:,b]
+            dlnfij_dnij, dZj_dnij[:,:,b] = self.d_dn_all_derivatives(fluid_properties, Nphase, nkphase, l)
             dlnfj_dP, dZj_dP[0,:,b] = self.d_dP_all_derivatives(fluid_properties, Nphase, l, b)
             Zj[0,:,b] = np.array([self.Z(fluid_properties,self.y,0), self.Z(fluid_properties, self.x,1)])
             matrix = np.sum(dlnfij_dnij, axis = 2)

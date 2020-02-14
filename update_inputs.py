@@ -31,3 +31,8 @@ def inputs_components_properties(data_loaded, n_volumes):
     z = np.array(data_loaded['compositional_data']['component_data']['z']).astype(float)
     P = P * np.ones(n_volumes)
     return w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7, z
+
+def inputs_water_properties(data_loaded, fluid_properties):
+    fluid_properties.rho_W = data_loaded['compositional_data']['water_data']['rho_W']
+    fluid_properties.Mw_w = data_loaded['compositional_data']['water_data']['Mw_w']
+    fluid_properties.eta_W = fluid_properties.rho_W/fluid_properties.Mw_w

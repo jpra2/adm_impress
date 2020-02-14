@@ -5,8 +5,8 @@ import numpy as np
 # Still going to add StoneII method so the user can choose
 class LorenzBrayClark:
 
-    def __init__(self,n_internal_faces,fluid_properties):
-        self.n_internal_faces = n_internal_faces
+    def __init__(self,n_volumes,fluid_properties):
+        self.n_volumes = n_volumes
         self.P = 9.87E-6*fluid_properties.P
         self.Vc = 1e3*fluid_properties.Vc
 
@@ -24,10 +24,10 @@ class LorenzBrayClark:
         1.67) ** (5/8)) / self.pure_components_viscosity_parameters[ind_Tr_higher]
 
         mi_components = mi_components[:, np.newaxis, np.newaxis]
-        self.mi_components = np.ones([fluid_properties.Nc, 1, self.n_internal_faces]) * mi_components
+        self.mi_components = np.ones([fluid_properties.Nc, 1, self.n_volumes]) * mi_components
 
     def mixture_viscosity(self,fluid_properties):
-        self.component_molar_fractions = np.zeros([fluid_properties.Nc,2,self.n_internal_faces])
+        self.component_molar_fractions = np.zeros([fluid_properties.Nc,2,self.n_volumes])
         self.component_molar_fractions[:,0,:] = fluid_properties.x
         self.component_molar_fractions[:,1,:] = fluid_properties.y
 
@@ -40,9 +40,9 @@ class LorenzBrayClark:
 
     def phase_viscosity(self,fluid_properties):
         #include in the entry parameters the vc: component critical molar volume
-        # mi_phase = np.zeros([1,2,self.n_internal_faces])
+        # mi_phase = np.zeros([1,2,self.n_volumes])
         a = np.array([0.1023, 0.023354, 0.058533, -0.040758, 0.0093324])
-        self.phase_mass_densities = np.zeros([1, 2, self.n_internal_faces])
+        self.phase_mass_densities = np.zeros([1, 2, self.n_volumes])
         self.phase_mass_densities[0,0,:] = fluid_properties.rho_L
         self.phase_mass_densities[0,1,:] = fluid_properties.rho_V
 
