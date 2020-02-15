@@ -86,11 +86,12 @@ class IMPEC(DataManager):
         pretransmissibility_faces = M.data[M.data.variables_impress['pretransmissibility']]
         self.pretransmissibility_internal_faces = pretransmissibility_faces[self.internal_faces]
 
-        ''' Retracting the well volume (transmissibility without contours)'''
-        mobilities = np.delete(self.mobilities, self.all_wells, axis = 2)
-        dVtk = np.delete(self.dVtk, self.all_wells, axis = 1)
-        component_molar_fractions = np.delete(fluid_properties.component_molar_fractions, self.all_wells, axis=2)
-        phase_molar_densities = np.delete(fluid_properties.phase_molar_densities, self.all_wells, axis=2)
+        ''' Using one-point upwind approximation '''
+        # NEED TO CORRECT THAT URGENTLY
+        mobilities =
+        dVtk =
+        component_molar_fractions =
+        phase_molar_densities =
 
         ''' Transmissibility '''
         t0 = (dVtk * (component_molar_fractions * phase_molar_densities *
