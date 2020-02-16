@@ -11,6 +11,7 @@ def update_inputs():
 
     # dd['read_permeability'] = True
     # dd['set_permeability'] = False
+    dd['n_levels'] = 1
 
     dd['biphasic'] = False
 

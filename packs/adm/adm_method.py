@@ -51,7 +51,7 @@ def solve_local_local_problem(solver, neigh_intern_faces, transmissibility, volu
     T = sp.csc_matrix((data, (lines, cols)), shape=(n, n))
     T = T.tolil()
 
-    T[indices_p2] = sp.lil_matrix((len(indices_p2), n))
+    T[indices_p2] = 0
     T[indices_p2, indices_p2] = np.ones(len(indices_p2))
 
     b = np.zeros(n)

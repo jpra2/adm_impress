@@ -21,17 +21,18 @@ adm_method.organize_ops_adm(mlo['prolongation_level_1'],
                             mlo['restriction_level_1'],
                             1)
 
-adm_method.organize_ops_adm(mlo['prolongation_level_2'],
-                            mlo['restriction_level_2'],
-                            2)
+if n_levels > 1:
+    adm_method.organize_ops_adm(mlo['prolongation_level_2'],
+                                mlo['restriction_level_2'],
+                                2)
 
 adm_method.solve_multiscale_pressure(T, b)
 adm_method.set_pcorr()
-# data_impress['pcorr'][data_impress['LEVEL']==0] = data_impress['pms'][data_impress['LEVEL']==0]
+data_impress['pcorr'][data_impress['LEVEL']==0] = data_impress['pms'][data_impress['LEVEL']==0]
 
 data_impress['pressure'] = adm_method.solver.direct_solver(T, b)
 data_impress['erro'] = np.absolute((data_impress['pressure'] - data_impress['pms'])/data_impress['pms'])
-# data_impress['erro_pcorr_pdm'] = data_impress['pcorr'] - data_impress['pms']
+data_impress['erro_pcorr_pdm'] = np.absolute(data_impress['pcorr'] - data_impress['pms'])
 
 data_impress.update_variables_to_mesh()
 M.core.print(folder='results', file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')

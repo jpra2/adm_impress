@@ -97,6 +97,7 @@ monophasic_data:
   gama: 10.0
   mi: 1.0
 multilevel_data: true
+n_levels: 1
 n_test: 0
 read_permeability: false
 set_permeability: true
