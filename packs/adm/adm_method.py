@@ -126,7 +126,6 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.all_wells_ids = all_wells_ids
         self.n_levels = n_levels
         self.delta_sat_max = 0.1
-        # self.n_levels = 1
         self.data_impress = data_impress
         self.number_vols_in_levels = np.zeros(self.n_levels+1, dtype=int)
         gids_0 = self.data_impress['GID_0']
@@ -143,6 +142,8 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.n_cpu = mp.cpu_count()
         self.n_workers = self.n_cpu
         self._so_nv1 = False
+        if self.n_levels == 1:
+            self.so_nv1 = True
 
     def set_level_wells(self):
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
@@ -430,8 +431,8 @@ class AdmMethod(DataManager, TpfaFlux2):
             level = i+1
             OP_adm = self._data[self.adm_op_n + str(level)]
             OR_adm = self._data[self.adm_rest_n + str(level)]
-            pcorr_adm = self._data[self.pcorr_n+str(level-1)]
             if self.get_correction_term:
+                pcorr_adm = self._data[self.pcorr_n+str(level-1)]
                 b_adm = OR_adm*b_adm - OR_adm*T_adm*pcorr_adm
             else:
                 b_adm = OR_adm*b_adm
@@ -443,8 +444,11 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         for i in range(n_levels):
             level = self.n_levels - i
-            pcorr_adm = self._data[self.pcorr_n+str(level-1)]
-            pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
+            if self.get_correction_term:
+                pcorr_adm = self._data[self.pcorr_n+str(level-1)]
+                pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
+            else:
+                pms = self._data[self.adm_op_n + str(level)]*pms
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms

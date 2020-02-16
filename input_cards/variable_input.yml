@@ -130,6 +130,12 @@ erro:
   level: 0
   sparse: true
   type: volumes
+erro_pcorr_pdm:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 flux:
   data size: 3
   data type: int
