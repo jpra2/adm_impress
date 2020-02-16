@@ -543,6 +543,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         neig_internal_faces = self.elements_lv0['neig_internal_faces']
         remaped_internal_faces = self.elements_lv0['remaped_internal_faces']
         flux_grav_faces = self.data_impress['flux_grav_faces']
+        flux_grav_volumes = self.data_impress['flux_grav_volumes']
 
         pcorr = np.zeros(len(pms))
         flux_faces = np.zeros(len(transmissibility))
@@ -568,6 +569,10 @@ class AdmMethod(DataManager, TpfaFlux2):
                 vertex = all_fine_vertex[coarse_ids==gidc]
                 pressure_vertex = pms[vertex]
                 volumes = gid0[all_gids_coarse==gidc]
+                internal_volumes = np.setdiff1d(volumes, np.concatenate([intern_boundary_volumes, vertex]))
+                flux_grav_internal_volumes = flux_grav_volumes[internal_volumes]
+
+                # import pdb; pdb.set_trace()
 
                 neig_intersect_faces = neig_internal_faces[remaped_internal_faces[intersect_faces]]
                 v0 = neig_intersect_faces
@@ -576,8 +581,8 @@ class AdmMethod(DataManager, TpfaFlux2):
                 pms0 = pms[neig_intersect_faces[:,0]]
                 pms1 = pms[neig_intersect_faces[:,1]]
                 flux_grav_intersect_faces = flux_grav_faces[intersect_faces]
-                # flux_intersect_faces = -((pms1 - pms0) * t0 - flux_grav_intersect_faces)
-                flux_intersect_faces = -((pms1 - pms0) * t0)
+                flux_intersect_faces = -((pms1 - pms0) * t0 - flux_grav_intersect_faces)
+                # flux_intersect_faces = -((pms1 - pms0) * t0)
                 flux_faces[intersect_faces] = flux_intersect_faces
 
                 lines = np.concatenate([v0[:, 0], v0[:, 1]])
@@ -595,8 +600,13 @@ class AdmMethod(DataManager, TpfaFlux2):
                 t0 = transmissibility[intern_local_faces]
                 local_vertex = all_local_ids_coarse[vertex]
                 t0 = transmissibility[intern_local_faces]
+                local_id_internal_volumes = all_local_ids_coarse[internal_volumes]
+                indices_q2 = np.concatenate([local_intern_boundary_volumes, local_id_internal_volumes])
+                values_q2 = np.concatenate([values_q, flux_grav_internal_volumes])
+                # x = solve_local_local_problem(self.solver.direct_solver, local_neig_internal_local_faces, t0, local_id_volumes,
+                #     local_vertex, pressure_vertex, local_intern_boundary_volumes, values_q)
                 x = solve_local_local_problem(self.solver.direct_solver, local_neig_internal_local_faces, t0, local_id_volumes,
-                    local_vertex, pressure_vertex, local_intern_boundary_volumes, values_q)
+                    local_vertex, pressure_vertex, indices_q2, values_q2)
 
                 pcorr[volumes] = x
 
@@ -659,6 +669,8 @@ class AdmMethod(DataManager, TpfaFlux2):
         flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
 
         flux_volumes[volumes_fine] = flux_volumes_2[volumes_fine]
+
+        pcorr[self.data_impress['LEVEL']==0] = self.data_impress['pms'][self.data_impress['LEVEL']==0]
 
         self.data_impress['pcorr'] = pcorr
         self.data_impress['flux_faces'] = flux_faces

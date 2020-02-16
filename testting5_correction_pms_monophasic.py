@@ -62,8 +62,6 @@ data_impress['erro'] = np.absolute((data_impress['pms'] - p2)/p2)
 data_impress.update_variables_to_mesh()
 M.core.print(folder='results', file='test_'+ str(77), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
-
-
 pcorr = mlo['pcorr_level_0']
 
 import pdb; pdb.set_trace()
