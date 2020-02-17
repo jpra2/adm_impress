@@ -542,8 +542,16 @@ erro_v:
   data type: float
   sparse: True
   level: 0
+
 perpendicular_direction_flag:
   type: faces
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+vug:
+  type: volumes
   data size: 1
   data type: int
   sparse: True
