@@ -102,10 +102,13 @@ class IMPEC(DataManager):
 
         t0_internal_faces_prod = self.component_molar_fractions_faces * self.phase_molar_densities_faces * self.mobilities_faces
 
-        v = M.faces.bridge_adjacencies(self.all_wells,2,3).flatten()
-        self.mobilities_faces = np.copy(self.mobilities)
-        self.mobilities_faces[:,:,self.all_wells] = self.mobilities[self.all_wells]
-        self.mobilities_faces[:,:,] = self.mobilities_internal_faces
+        boundary_faces = M.faces.boundary
+        v1 = M.faces.bridge_adjacencies(boundary_faces,2,3).flatten() # ver se o índice 3 que ta errado -- o q isso significa
+        all_faces = M.faces.all
+        import pdb; pdb.set_trace() #VER O QUE ISSO VAI ME DAR
+        self.mobilities_faces = np.zeros([1,self.n_phases,all_faces])
+        self.mobilities_faces[:,:,self.internal_faces] = self.mobilities_internal_faces
+        self.mobilities_faces[:,:,boundary_faces] = self.mobilities[0,:,v1]
         # t0_vols_prod_all = fluid_properties.component_molar_fractions * fluid_properties.phase_molar_densities * self.mobilities
         # t0_vols_prod = t0_vols_prod_all[:,:,v0[:,0]]
         # t0_vols_prod_up = t0_vols_prod_all[:,:,v0[:,1]]
