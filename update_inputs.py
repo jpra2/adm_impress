@@ -35,4 +35,4 @@ def inputs_components_properties(data_loaded, n_volumes):
 def inputs_water_properties(data_loaded, fluid_properties):
     fluid_properties.rho_W = data_loaded['compositional_data']['water_data']['rho_W']
     fluid_properties.Mw_w = data_loaded['compositional_data']['water_data']['Mw_w']
-    fluid_properties.eta_W = fluid_properties.rho_W/fluid_properties.Mw_w
+    fluid_properties.ksi_W = fluid_properties.rho_W/fluid_properties.Mw_w

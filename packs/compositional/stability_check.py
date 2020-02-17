@@ -10,7 +10,7 @@ class StabilityCheck:
     """Check for stability of a thermodynamic equilibrium and returns the
     equilibrium phase compositions (perform the flash calculation)."""
 
-    def __init__(self, w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7):
+    def __init__(self, w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7, z):
         self.w = w
         self.Bin = Bin
         self.Mw = Mw
@@ -22,6 +22,7 @@ class StabilityCheck:
         self.P = P
         self.Nc = len(w)
         self.C7 = np.array(C7)
+        self.run(z)
         #StabilityCheck.TPD(self)
 
     def run(self, z):
@@ -43,8 +44,8 @@ class StabilityCheck:
                 self.K = self.y/self.x
 
         self.z = self.x * self.L + self.y * self.V
-        self.Mw_L, self.eta_L, self.rho_L = self.other_properties(self.x)
-        self.Mw_V, self.eta_V, self.rho_V = self.other_properties(self.y)
+        self.Mw_L, self.ksi_L, self.rho_L = self.other_properties(self.x)
+        self.Mw_V, self.ksi_V, self.rho_V = self.other_properties(self.y)
 
     def equilibrium_ratio_Wilson(self):
         self.K = np.exp(5.37 * (1 + self.w) * (1 - self.Tc / self.T)) * \
@@ -275,11 +276,11 @@ class StabilityCheck:
         A, B = self.coefficientsPR(l)
         ph = self.deltaG_molar(l, 1)
         Z = StabilityCheck.Z_PR(B, A, ph)
-        eta_phase = self.P / (Z * self.R * self.T)
+        ksi_phase = self.P / (Z * self.R * self.T)
         Mw_phase = sum(l * self.Mw)
-        rho_phase = eta_phase * sum(l * self.Mw)
+        rho_phase = ksi_phase * sum(l * self.Mw)
         # se precisar retornar mais coisa, entra aqui
-        return Mw_phase, eta_phase, rho_phase
+        return Mw_phase, ksi_phase, rho_phase
 
     def bubble_point_pressure(self):
         #Isso vem de uma junção da Lei de Dalton com a Lei de Raoult

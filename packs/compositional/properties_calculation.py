@@ -26,9 +26,9 @@ class PropertiesCalc(DataManager):
         fluid_properties.component_molar_fractions[0:fluid_properties.Nc,1,:] = fluid_properties.y
         fluid_properties.component_molar_fractions[fluid_properties.Nc,2,:] = 1 #water molar fraction in water component
 
-        fluid_properties.phase_molar_densities[0,0,:] = fluid_properties.eta_L
-        fluid_properties.phase_molar_densities[0,1,:] = fluid_properties.eta_V
-        fluid_properties.phase_molar_densities[0,2,:] = fluid_properties.eta_W
+        fluid_properties.phase_molar_densities[0,0,:] = fluid_properties.ksi_L
+        fluid_properties.phase_molar_densities[0,1,:] = fluid_properties.ksi_V
+        fluid_properties.phase_molar_densities[0,2,:] = fluid_properties.ksi_W
 
     def update_saturations(self, data_impress, wells, fluid_properties):
         fluid_properties.Sw = data_impress['saturation']
@@ -54,14 +54,14 @@ class PropertiesCalc(DataManager):
     def update_mole_numbers(self, data_impress, fluid_properties):
         self.update_phase_volumes(data_impress, fluid_properties)
         fluid_properties.phase_mole_numbers = np.zeros([1, self.n_phases, self.n_volumes])
-        fluid_properties.eta_o_and_g = np.ones([1, 2, self.n_volumes])
+        fluid_properties.ksi_o_and_g = np.ones([1, 2, self.n_volumes])
         V = np.ones([1, 2, self.n_volumes])
-        fluid_properties.eta_o_and_g[0,0,:] = fluid_properties.eta_V
-        fluid_properties.eta_o_and_g[0,1,:] = fluid_properties.eta_L
+        fluid_properties.ksi_o_and_g[0,0,:] = fluid_properties.ksi_V
+        fluid_properties.ksi_o_and_g[0,1,:] = fluid_properties.ksi_L
         V[0,0,:] = fluid_properties.Vg
         V[0,1,:] = fluid_properties.Vo
-        fluid_properties.mole_numbers_o_and_g = fluid_properties.eta_o_and_g * V
-        fluid_properties.mole_number_w = fluid_properties.eta_W * fluid_properties.Vw
+        fluid_properties.mole_numbers_o_and_g = fluid_properties.ksi_o_and_g * V
+        fluid_properties.mole_number_w = fluid_properties.ksi_W * fluid_properties.Vw
         fluid_properties.phase_mole_numbers[0,0:2,:] = fluid_properties.mole_numbers_o_and_g
         fluid_properties.phase_mole_numbers[0,2,:] = fluid_properties.mole_number_w
 

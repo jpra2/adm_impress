@@ -48,7 +48,7 @@ class PartialDerivatives:
         Nphase_allvolumes = fluid_properties.mole_numbers_o_and_g
         nkphase_allvolumes = fluid_properties.component_mole_numbers
         l_allvolumes = fluid_properties.component_molar_fractions
-        eta_j = fluid_properties.eta_o_and_g
+        ksi_j = fluid_properties.ksi_o_and_g
 
         n_vols = len(Nphase_allvolumes[0,0,:])
 
@@ -86,12 +86,12 @@ class PartialDerivatives:
                 dnij_dNk[k,k,0,b] = 1 - dnij_dNk[k,k,1,b]
 
         dvj_dnij = fluid_properties.R * fluid_properties.T / fluid_properties.P * dZj_dnij
-        dVj_dNk = np.sum(dnij_dNk * (1 / eta_j + Nphase[:,np.newaxis] * dvj_dnij), axis = 0)
+        dVj_dNk = np.sum(dnij_dNk * (1 / ksi_j + Nphase[:,np.newaxis] * dvj_dnij), axis = 0)
         dVt_dNk = np.sum(dVj_dNk, axis = 1)
 
         dvj_dP = fluid_properties.R * fluid_properties.T / fluid_properties.P * \
                 (dZj_dP - Zj / fluid_properties.P)
-        dVj_dP = np.sum(Nphase_allvolumes * dvj_dP + np.sum(dnij_dP * (1 / eta_j +
+        dVj_dP = np.sum(Nphase_allvolumes * dvj_dP + np.sum(dnij_dP * (1 / ksi_j +
                 Nphase[:,np.newaxis] * dvj_dnij), axis = 0),axis = 0)
         dVt_dP = np.sum(dVj_dP,axis = 0)
 
