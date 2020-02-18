@@ -15,7 +15,6 @@ class IMPEC(DataManager):
         self.n_volumes = data_impress.len_entities['volumes']
         self.n_components = fluid_properties.Nc + 1
         self.internal_faces = elements_lv0['internal_faces']
-        self.n_faces = len(self.internal_faces)
         self.all_wells = wells['all_wells'].astype(int)
         self.Vbulk = data_impress['volume']
         self.porosity = data_impress['poro']
@@ -77,42 +76,57 @@ class IMPEC(DataManager):
         dVwP = np.zeros(self.n_volumes)
         self.dVtP = dVtP + dVwP
 
-    def get_faces_properties_upwind(self, data_loaded, fluid_properties, v0):
+    def get_faces_properties_upwind(self, M, data_loaded, fluid_properties, v0):
         P_Pcap = fluid_properties.P + self.Pcap
-        Pj = P_Pcap[:,:,v0[:,0]]
-        Pj_up = P_Pcap[:,:,v0[:,1]]
+        Pj = P_Pcap[:,v0[:,0]]
+        Pj_up = P_Pcap[:,v0[:,1]]
 
-        self.mobilities_internal_faces = np.zeros([1,self.n_phases,self.n_faces])
+        self.mobilities_internal_faces = np.zeros([1,self.n_phases,len(self.internal_faces)])
         mobilities_vols = self.mobilities[:,:,v0[:,0]]
         mobilities_vols_up = self.mobilities[:,:,v0[:,1]]
-        self.mobilities_internal_faces[0,Pj_up[0,:,:] <= Pj[0,:,:]] = mobilities_vols[0,Pj_up[0,:,:] <= Pj[0,:,:]]
-        self.mobilities_internal_faces[0,Pj_up[0,:,:] > Pj[0,:,:]] = mobilities_vols_up[0,Pj_up[0,:,:] > Pj[0,:,:]]
+        self.mobilities_internal_faces[0,Pj_up <= Pj] = mobilities_vols[0,Pj_up <= Pj]
+        self.mobilities_internal_faces[0,Pj_up > Pj] = mobilities_vols_up[0,Pj_up > Pj]
 
-        self.phase_molar_densities_internal_faces = np.zeros([1,self.n_phases,self.n_faces])
+        self.phase_molar_densities_internal_faces = np.zeros([1,self.n_phases,len(self.internal_faces)])
         phase_molar_densities_vols = fluid_properties.phase_molar_densities[:,:,v0[:,0]]
         phase_molar_densities_vols_up = fluid_properties.phase_molar_densities[:,:,v0[:,1]]
-        self.phase_molar_densities_internal_faces[0,Pj_up[0,:,:] <= Pj[0,:,:]] = phase_molar_densities_vols[0,Pj_up[0,:,:] <= Pj[0,:,:]]
-        self.phase_molar_densities_internal_faces[0,Pj_up[0,:,:] > Pj[0,:,:]] = phase_molar_densities_vols_up[0,Pj_up[0,:,:] > Pj[0,:,:]]
+        self.phase_molar_densities_internal_faces[0,Pj_up <= Pj] = phase_molar_densities_vols[0,Pj_up <= Pj]
+        self.phase_molar_densities_internal_faces[0,Pj_up > Pj] = phase_molar_densities_vols_up[0,Pj_up > Pj]
 
-        self.component_molar_fractions_internal_faces = np.zeros([self.n_components,self.n_phases,self.n_faces])
+        self.component_molar_fractions_internal_faces = np.zeros([self.n_components,self.n_phases,len(self.internal_faces)])
         component_molar_fractions_vols = fluid_properties.component_molar_fractions[:,:,v0[:,0]]
         component_molar_fractions_vols_up = fluid_properties.component_molar_fractions[:,:,v0[:,1]]
-        self.component_molar_fractions_internal_faces[Pj_up <= Pj] = component_molar_fractions_vols[Pj_up <= Pj]
-        self.component_molar_fractions_internal_faces[Pj_up > Pj] = component_molar_fractions_vols_up[Pj_up > Pj]
+        self.component_molar_fractions_internal_faces[:,Pj_up <= Pj] = component_molar_fractions_vols[:,Pj_up <= Pj]
+        self.component_molar_fractions_internal_faces[:,Pj_up > Pj] = component_molar_fractions_vols_up[:,Pj_up > Pj]
 
-        t0_internal_faces_prod = self.component_molar_fractions_faces * self.phase_molar_densities_faces * self.mobilities_faces
+        t0_internal_faces_prod = self.component_molar_fractions_internal_faces * self.phase_molar_densities_internal_faces \
+                                * self.mobilities_internal_faces
 
         boundary_faces = M.faces.boundary
-        v1 = M.faces.bridge_adjacencies(boundary_faces,2,3).flatten() # ver se o índice 3 que ta errado -- o q isso significa
         all_faces = M.faces.all
-        import pdb; pdb.set_trace() #VER O QUE ISSO VAI ME DAR
-        self.mobilities_faces = np.zeros([1,self.n_phases,all_faces])
-        self.mobilities_faces[:,:,self.internal_faces] = self.mobilities_internal_faces
-        self.mobilities_faces[:,:,boundary_faces] = self.mobilities[0,:,v1]
+        norm = M.faces.normal[all_faces]
+        self.all_faces = all_faces[norm[:,0]!=0] #normal aponta na direção do escoamento
+        self.n_faces = len(self.all_faces)
+        aux = np.arange(self.n_faces)
+        internal_faces_index = np.asarray([np.where(self.all_faces == i)[0][0] for i in self.internal_faces])
+        boundary_faces = np.delete(self.all_faces, internal_faces_index)
+        boundary_faces_index = np.asarray([np.where(self.all_faces == i)[0][0] for i in boundary_faces])
+        v1 = M.faces.bridge_adjacencies(boundary_faces,2,3).flatten()
+        self.mobilities_faces = np.zeros([1, self.n_phases, len(self.all_faces)])
+        self.mobilities_faces[:,:,internal_faces_index] = self.mobilities_internal_faces
+        self.mobilities_faces[:,:,boundary_faces_index] = self.mobilities[:,:,v1]
+
+        self.component_molar_fractions_faces = np.zeros([self.n_components, self.n_phases, len(self.all_faces)])
+        self.component_molar_fractions_faces[:,:,internal_faces_index] = self.component_molar_fractions_internal_faces
+        self.component_molar_fractions_faces[:,:,boundary_faces_index] = fluid_properties.component_molar_fractions[:,:,v1]
+
+        self.phase_molar_densities_faces = np.zeros([1, self.n_phases, len(self.all_faces)])
+        self.phase_molar_densities_faces[:,:,internal_faces_index] = self.phase_molar_densities_internal_faces
+        self.phase_molar_densities_faces[:,:,boundary_faces_index] = fluid_properties.phase_molar_densities[:,:,v1]
         # t0_vols_prod_all = fluid_properties.component_molar_fractions * fluid_properties.phase_molar_densities * self.mobilities
         # t0_vols_prod = t0_vols_prod_all[:,:,v0[:,0]]
         # t0_vols_prod_up = t0_vols_prod_all[:,:,v0[:,1]]
-        # t0_face_prod = np.zeros([self.n_components, self.n_phases, self.n_faces])
+        # t0_face_prod = np.zeros([self.n_components, self.n_phases, self.n_internal_faces])
         # t0_face_prod[Pj_up <= Pj] = t0_vols_prod[Pj_up <= Pj]
         # t0_face_prod[Pj_up > Pj] = t0_vols_prod_up[Pj_up > Pj]
 
@@ -120,16 +134,16 @@ class IMPEC(DataManager):
 
     def update_transmissibility(self, M, data_impress, wells, data_loaded, elements_lv0, fluid_properties):
         v0 = elements_lv0['neig_internal_faces']
-        pretransmissibility_faces = M.data[M.data.variables_impress['pretransmissibility']]
-        self.pretransmissibility_internal_faces = pretransmissibility_faces[self.internal_faces]
+        self.pretransmissibility_faces = M.data[M.data.variables_impress['pretransmissibility']]
+        pretransmissibility_internal_faces = self.pretransmissibility_faces[self.internal_faces]
 
         ''' Using one-point upwind approximation '''
         dVtk = np.delete(self.dVtk, self.all_wells, axis = 1)
-        t0_face_prod = self.get_faces_properties_upwind(data_loaded, fluid_properties, v0)
+        t0_face_prod = self.get_faces_properties_upwind(M, data_loaded, fluid_properties, v0)
 
         ''' Transmissibility '''
         t0 = (dVtk * (t0_face_prod).sum(axis=1)).sum(axis=0)
-        t0 = t0 * self.pretransmissibility_internal_faces
+        t0 = t0 * pretransmissibility_internal_faces
 
         lines = np.array([v0[:, 0], v0[:, 1], v0[:, 0], v0[:, 1]]).flatten()
         cols = np.array([v0[:, 1], v0[:, 0], v0[:, 0], v0[:, 1]]).flatten()
@@ -156,7 +170,7 @@ class IMPEC(DataManager):
         # So, Sw, Sg = self.update_saturations_without_contours()
         # Pcow, Pcog = get_capillary_pressure(Sw, So, Sg)
 
-        self.Pcap = np.zeros([self.n_components,self.n_phases,self.n_volumes])
+        self.Pcap = np.zeros([self.n_phases,self.n_volumes])
         # Pcap[0,0,:] = Pcog
         # Pcap[0,1,:] = Pcow
 
@@ -204,11 +218,16 @@ class IMPEC(DataManager):
         v0 = elements_lv0['neig_internal_faces']
         deltaT = self.update_deltaT()
         P_Pcap = fluid_properties.P + self.Pcap
-        Pj = P_Pcap[:,:,v0[:,0]]
-        Pj_up = P_Pcap[:,:,v0[:,1]]
+        Pj = np.zeros([self.n_phases, self.n_faces]);Pj_up = np.copy(Pj)
+        Pj[:,1:self.n_faces-1] = P_Pcap[:,v0[:,0]]
+        Pj_up[:,0:self.n_faces-2] = P_Pcap[:,v0[:,1]]
+        Pj[:,0] = Pj_up[:,0]
+        Pj_up[:,self.n_faces-1] = Pj[:,self.n_faces-1]
 
-        total_flux = - np.sum(self.mobilities_internal_faces * self.pretransmissibility_internal_faces ,axis = 1) * (Pj_up[0,:,:] - Pj[0,:,:])
-        phase_flux = self.mobilities_internal_faces / np.sum(self.mobilities_internal_faces, axis = 1) * total_flux
+        pretransmissibility_faces = self.pretransmissibility_faces[self.all_faces]
+        import pdb; pdb.set_trace()
+        total_flux = - np.sum(self.mobilities_faces * pretransmissibility_faces ,axis = 1) * (Pj_up - Pj)
+        phase_flux = self.mobilities_faces / np.sum(self.mobilities_faces , axis = 1) * total_flux
 
         fluid_properties.component_mole_numbers = fluid_properties.component_mole_numbers + deltaT * (self.q +
-        np.sum(self.component_molar_fractions_faces * self.phase_molar_densities_faces * phase_flux, axis = 1))
+        # np.sum(self.component_molar_fractions_faces * self.phase_molar_densities_faces * phase_flux, axis = 1)) #corrigir
