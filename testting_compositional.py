@@ -25,7 +25,8 @@ update_inputs.inputs_water_properties(data_loaded, fluid_properties)
 PropertiesCalc(M, data_impress, wells, fluid_properties, elements_lv0, load)
 
 fluid_properties.P = P
-fluid_properties.component_mole_numbers = fluid_properties.component_molar_fractions * fluid_properties.phase_mole_numbers
+fluid_properties.component_phase_mole_numbers = fluid_properties.component_molar_fractions * fluid_properties.phase_mole_numbers
+fluid_properties.component_mole_numbers = np.sum(fluid_properties.component_phase_mole_numbers, axis = 1)
 
 t = 0
 tfinal = 1

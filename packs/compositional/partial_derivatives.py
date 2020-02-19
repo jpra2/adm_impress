@@ -46,7 +46,7 @@ class PartialDerivatives:
 
     def dVt_derivatives(self, fluid_properties):
         Nphase_allvolumes = fluid_properties.mole_numbers_o_and_g
-        nkphase_allvolumes = fluid_properties.component_mole_numbers
+        nkphase_allvolumes = fluid_properties.component_phase_mole_numbers
         l_allvolumes = fluid_properties.component_molar_fractions
         ksi_j = fluid_properties.ksi_o_and_g
 

@@ -22,6 +22,7 @@ class PropertiesCalc(DataManager):
         fluid_properties.component_molar_fractions = np.zeros([self.n_components, self.n_phases, self.n_volumes])
         fluid_properties.phase_molar_densities = np.zeros([1, self.n_phases, self.n_volumes])
 
+
         fluid_properties.component_molar_fractions[0:fluid_properties.Nc,0,:] = fluid_properties.x
         fluid_properties.component_molar_fractions[0:fluid_properties.Nc,1,:] = fluid_properties.y
         fluid_properties.component_molar_fractions[fluid_properties.Nc,2,:] = 1 #water molar fraction in water component
@@ -29,6 +30,7 @@ class PropertiesCalc(DataManager):
         fluid_properties.phase_molar_densities[0,0,:] = fluid_properties.ksi_L
         fluid_properties.phase_molar_densities[0,1,:] = fluid_properties.ksi_V
         fluid_properties.phase_molar_densities[0,2,:] = fluid_properties.ksi_W
+
 
     def update_saturations(self, data_impress, wells, fluid_properties):
         fluid_properties.Sw = data_impress['saturation']

@@ -41,12 +41,16 @@ class IMPEC(DataManager):
         T = self.update_transmissibility(M, data_impress, wells, data_loaded, elements_lv0, fluid_properties)
         D = self.update_independent_terms(fluid_properties, data_loaded, wells)
         IMPEC.update_pressure(T, D, data_impress, fluid_properties)
-        self.update_composition(M, fluid_properties, elements_lv0)
+        self.update_composition(M, fluid_properties)
 
     def solve_composition(self):
+        phase_molar_fractions = np.zeros([1, self.n_phases - 1, self.n_volumes])
+        phase_molar_fractions[0,0,:] = fluid_properties.L
+        phase_molar_fractions[0,1,:] = fluid_properties.V
         # self.component_mole_numbers = self.component_molar_fractions * self.phase_mole_numbers # em t = 0
         fluid_properties.component_mole_numbers = fluid_properties.component_mole_numbers + deltaT * (self.q +
         np.sum(fluid_properties.component_molar_fractions * fluid_properties.phase_molar_densities * phase_flux, axis = 1))
+        fluid_properties.component_phase_mole_numbers = fluid_properties.component_mole_numbers * fluid_properties.phase_molar_fractions
 
     def update_relative_permeabilities(self, fluid_properties):
         # So, Sw, Sg = self.update_saturations_without_contours()
@@ -216,37 +220,49 @@ class IMPEC(DataManager):
         fluid_properties.P = np.array(np.linalg.inv(T)*(D[:,np.newaxis])).ravel()
         data_impress['pressure'] = fluid_properties.P
 
-    def update_flux_internal(self, M, fluid_properties, elements_lv0):
-        v0 = elements_lv0['neig_internal_faces']
-        deltaT = self.update_deltaT()
+    def update_flux_internal_faces(self, M, fluid_properties, v0):
         P_Pcap = fluid_properties.P + self.Pcap
         Pj = P_Pcap[:,v0[:,0]]
         Pj_up = P_Pcap[:,v0[:,1]]
-        total_flux_internal_faces = - np.sum(self.mobilities_internal_faces * self.pretransmissibility_internal_faces ,axis = 1) * (Pj_up - Pj)
+        total_flux_internal_faces = - np.sum(self.mobilities_internal_faces * self.pretransmissibility_internal_faces * (Pj_up - Pj) ,axis = 1)
+        coord = M.volumes.center[v0[:,0]]
+        coord_up = M.volumes.center[v0[:,1]]
+        dif = coord - coord_up
+        total_flux_internal_faces = total_flux_internal_faces * np.sign(dif[dif!=0])
         phase_flux_internal_faces = self.mobilities_internal_faces / np.sum(self.mobilities_internal_faces, axis = 1) * total_flux_internal_faces
+
         # M.flux_faces[self.internal_faces] = total_flux_internal_faces * M.faces.normal[self.internal_faces].T
         return phase_flux_internal_faces
 
-    def update_composition(self, M, fluid_properties, elements_lv0):
-        phase_flux_internal_faces = self.update_flux_internal(M, fluid_properties, elements_lv0)
+    def update_composition(self, M, fluid_properties):
+        deltaT = self.update_deltaT()
+        v0 = M.faces.bridge_adjacencies(M.faces.internal,2,3)
+        phase_flux_internal_faces = self.update_flux_internal_faces(M, fluid_properties, v0)
         flux = np.sum(self.component_molar_fractions_internal_faces * self.phase_molar_densities_internal_faces * phase_flux_internal_faces, axis = 1)
-        import pdb; pdb.set_trace()
-        flux_volumes = np.zeros([self.n_components,self.n_volumes])
-        v0 = elements_lv0['neig_internal_faces']
-
-        flux_vols_faces = np.zeros([self.n_components,2,self.n_volumes])
-        flux_vols_faces[:,0,v0[:,0]] = -flux
-        flux_vols_faces[:,1,v0[:,0]] = flux
-        flux_volumes[:,v0[:,0]] = np.sum(flux_vols_faces[:,0,v0[:,0]],axis=1)
-        flux_volumes[:,v0[:,1]] np.sum(flux_vols_faces[:,0,v0[:,0]],axis=1)
-        #TERMINAR
 
 
 
+        flux_vols = np.zeros([self.n_components,2,self.n_volumes])
+        for i in range(2):
+            v0new, ind_faces0 = np.unique(v0[:,i], return_index = True)
+            v0_index = np.arange(len(v0[:,i]))
+            rep = np.setdiff1d(v0_index,ind_faces0)
+            flux_reshape = flux[:,ind_faces0]
+            ind_rep = [np.where(v0[:,i] == i) for i in v0[rep,i]]
+            ind_rep_vnew = [np.where(v0new == i) for i in v0[rep,i]]
+            flux_reshape[:,ind_rep_vnew] = flux[:,ind_rep] + flux_reshape[:,ind_rep_vnew]
+            flux_vols[:,i,v0new] = flux_reshape * (1 - 2*np.sign(i))
+        flux_vols_total = np.sum(flux_vols, axis = 0)
 
-        # flux_volumes[self.all_wells] =
+        # só ta funcionando pra 1d:
+        # flux_vols = np.zeros([self.n_components,2,self.n_volumes])
+        # flux_vols[:,0,v0[:,0]] = flux
+        # flux_vols[:,1,v0[:,1]] = -flux
+        # flux_vols_total = np.sum(flux_vols,axis = 0)
 
-
-
-        fluid_properties.component_mole_numbers = fluid_properties.component_mole_numbers + deltaT * (self.q +
-        np.sum(self.component_molar_fractions_faces * self.phase_molar_densities_faces * phase_flux, axis = 1))
+        # conec_vols_faces = np.asarray([np.intersect1d(M.volumes.adjacencies[i], M.faces.internal) for i in np.arange(self.n_volumes)])
+        #
+        # for i in range(self.n_volumes):
+        #     for j in range(len(conec_vols_faces[i])):
+        #         conec_vols_faces[i][j] = np.argwhere(conec_vols_faces[i][j] == self.internal_faces)
+        fluid_properties.component_mole_numbers = fluid_properties.component_mole_numbers + deltaT * (self.q + flux_vols_total)
