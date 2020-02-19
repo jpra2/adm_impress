@@ -40,40 +40,40 @@ Wells:
     - 0.0
     - 0.0
     p1:
-    - 1.0
-    - 27.0
-    - 27.0
+    - 20.0
+    - 450.0
+    - 90.0
     prescription: Q
     type: Injector
     type_region: box
-    value: 1000.0
+    value: 3000000.0
   P3:
     p0:
-    - 26.0
+    - 880.0
     - 0.0
     - 0.0
     p1:
-    - 27.0
-    - 27.0
-    - 27.0
+    - 900.0
+    - 450.0
+    - 90.0
     prescription: P
     type: Producer
     type_region: box
-    value: 4000.0
+    value: 40000.0
 _debug: true
 biphasic: true
 biphasic_data:
   Sor: 0.2
   Swc: 0.2
   cfl: 0.9
-  gama_o: 900.0
-  gama_w: 1000.0
+  gama_o: 85.0
+  gama_w: 95.0
   kro0: 1.0
   krw0: 1.0
   loop_maximo: null
   loops_para_gravar: 2
-  mi_o: 0.005
-  mi_w: 0.001
+  mi_o: 0.05
+  mi_w: 0.01
   n_o: 2.0
   n_w: 2.0
   relative_permeability: BrooksAndCorey
@@ -82,7 +82,7 @@ biphasic_data:
   - 0.1
   - 0.3
   - 0.5
-convert_english_to_SI: true
+convert_english_to_SI: false
 deletar_results: true
 file_name_permeability: spe10_perms_and_phi.npz
 get_correction_term: false
@@ -91,7 +91,7 @@ load_biphasic_data: false
 load_data: false
 load_multilevel_data: false
 load_operators: false
-mesh_name: mesh/27x27x27.msh
+mesh_name: mesh/45x45x45.msh
 monophasic: true
 monophasic_data:
   gama: 100.0

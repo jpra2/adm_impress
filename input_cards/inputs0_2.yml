@@ -1,5 +1,6 @@
-# mesh_name: mesh/45x45x45.msh
-mesh_name: mesh/27x27x27.msh
+mesh_name: mesh/45x45x45.msh
+# mesh_name: mesh/27x27x27.msh
+# mesh_name: mesh/27x27x27.msh
 n_test: 0
 state: 0
 type_of_solution: fine_scale
@@ -13,10 +14,8 @@ monophasic: true
 biphasic: true
 # biphasic: true
 load_biphasic_data: false
-
 deletar_results: false
 # deletar_results: false
-
 # multilevel_data: false
 multilevel_data: true
 load_multilevel_data: false
@@ -25,7 +24,6 @@ load_operators: false
 # load_operators: true
 get_correction_term: false
 n_levels: 2
-
 _debug: True
 
 Crs:
@@ -77,20 +75,20 @@ Saturation:
 Wells:
   P1:
     p0: [0.0, 0.0, 0.0]
-    p1: [1.0, 27.0, 27.0]
+    p1: [20.0, 450.0, 90.0]
     prescription: Q
     # prescription: P
     type: Injector
     type_region: box
-    # value: 1000000.0
-    value: 100.0
+    value: 3000000.0
+    # value: 10000.0
   P3:
-    p0: [26.0, 0.0, 0.0]
-    p1: [27.0, 27.0, 27.0]
+    p0: [880.0, 0.0, 0.0]
+    p1: [900.0, 450.0, 90.0]
     prescription: P
     type: Producer
     type_region: box
-    value: 4000.0
+    value: 40000.0
 
 monophasic_data:
   gama: 100.0
@@ -100,14 +98,14 @@ biphasic_data:
   Sor: 0.2
   Swc: 0.2
   cfl: 0.9
-  gama_o: 900.0
-  gama_w: 1000.0
+  gama_o: 85.0
+  gama_w: 95.0
   kro0: 1.0
   krw0: 1.0
   loop_maximo: null
   loops_para_gravar: 2
-  mi_o: 0.005
-  mi_w: 0.001
+  mi_o: 0.05
+  mi_w: 0.01
   n_o: 2.0
   n_w: 2.0
   relative_permeability: BrooksAndCorey

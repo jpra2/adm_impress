@@ -32,7 +32,10 @@ def initial_mesh():
         ml_data.load_tags()
 
     else:
-        from ..load.preprocessor0 import M
+        if load:
+            M = init_mesh('saves/initial_mesh.h5m')
+        else:
+            from ..load.preprocessor0 import M
         elements_lv0 = ElementsLv0(M, load=load)
         data_impress = Data(M, elements_lv0, load=load)
         if not load:
