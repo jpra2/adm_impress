@@ -5,20 +5,22 @@ def update_inputs():
     import os
     dd = InfoManager('input_cards/inputs0_2.yml', 'input_cards/inputs0.yml')
     # dd['load_data'] = True
+    dd['multilevel_data'] = False
     # dd['load_multilevel_data'] = True
     # dd['load_operators'] = True
     # dd['load_biphasic_data'] = True
+
 
     # dd['read_permeability'] = True
     # dd['set_permeability'] = False
     dd['n_levels'] = 1
 
-    dd['biphasic'] = False
+    dd['biphasic'] = True
 
     dd['deletar_results'] = True
-    # dd['gravity'] = True
+    dd['gravity'] = True
     # dd['get_correction_term'] = True
-    # dd['convert_english_to_SI'] = True
+    dd['convert_english_to_SI'] = True
     dd.save_obj()
 
     dd2 = InfoManager('input_cards/variable_adm.yml', 'input_cards/variable_input.yml')

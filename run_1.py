@@ -3,10 +3,10 @@ import os
 import numpy as np
 import update_inputs
 # os.system('python3 update_inputs.py')
-# os.system('python3 testting2_biphasic.py')
+os.system('python3 testting2_biphasic.py')
 # os.system('python3 testting1_monophasic_multilevel.py')
 # os.system('python3 testting3_adm_method.py')
-os.system('python3 testting4_adm_method_monophasic.py')
+# os.system('python3 testting4_adm_method_monophasic.py')
 # os.system('python3 testting5_correction_pms_monophasic.py')
 # os.system('python3 testting1_monophasic.py')
 

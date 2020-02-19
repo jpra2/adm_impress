@@ -11,10 +11,12 @@ import numpy as np
 
 # import pdb; pdb.set_trace()
 
-def initial_mesh(load=False, convert=False):
+def initial_mesh():
 
     global data_loaded
 
+    load = data_loaded['load_data']
+    convert = data_loaded['convert_english_to_SI']
     multilevel_data = data_loaded['multilevel_data']
     load_multilevel_data = data_loaded['load_multilevel_data']
 

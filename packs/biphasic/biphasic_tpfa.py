@@ -407,7 +407,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.data_impress['pressure'] = p
         self.get_flux_faces_and_volumes()
         self.run_2(save = save)
-        return T, b
+        # return T, b
 
     def run_2(self, save=False):
         ######

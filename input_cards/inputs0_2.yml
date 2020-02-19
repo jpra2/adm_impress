@@ -78,12 +78,12 @@ Wells:
   P1:
     p0: [0.0, 0.0, 0.0]
     p1: [1.0, 27.0, 27.0]
-    # prescription: Q
-    prescription: P
+    prescription: Q
+    # prescription: P
     type: Injector
     type_region: box
     # value: 1000000.0
-    value: 10000.0
+    value: 100.0
   P3:
     p0: [26.0, 0.0, 0.0]
     p1: [27.0, 27.0, 27.0]
@@ -93,15 +93,15 @@ Wells:
     value: 4000.0
 
 monophasic_data:
-  gama: 10.0
+  gama: 100.0
   mi: 1.0
 
 biphasic_data:
   Sor: 0.2
   Swc: 0.2
   cfl: 0.9
-  gama_o: 500000.0
-  gama_w: 500000.0
+  gama_o: 900.0
+  gama_w: 1000.0
   kro0: 1.0
   krw0: 1.0
   loop_maximo: null

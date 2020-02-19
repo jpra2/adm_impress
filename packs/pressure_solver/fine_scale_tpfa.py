@@ -10,7 +10,7 @@ class FineScaleTpfaPressureSolver(TpfaScheme, TpfaFlux):
         super().__init__(data_impress, elements_lv0, data_name=data_name, load=load)
         self.gravity = data_loaded['gravity']
         self.wells = wells
-        self.solver = SolverSp()
+        # self.solver = SolverSp()
 
     def get_RHS_term(self):
 
@@ -37,8 +37,8 @@ class FineScaleTpfaPressureSolver(TpfaScheme, TpfaFlux):
         ws_p = self.wells['ws_p']
 
         T = self['Tini'].tolil().copy()
-        T[ws_p] = np.zeros((len(ws_p), T.shape[0]))
-        T[ws_p, ws_p] = np.ones(len(ws_p))
+        T[ws_p] = 0
+        T[ws_p, ws_p] = 1.0
 
         return T.tocsc()
 

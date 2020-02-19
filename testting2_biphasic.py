@@ -4,9 +4,7 @@ from packs.utils.info_manager import InfoManager
 from packs.directories import data_loaded as dd
 import os
 
-load = dd['load_data']
-convert = dd['convert_english_to_SI']
-M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
+M, elements_lv0, data_impress, wells = initial_mesh()
 b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
 # b1.run()
 n = 2
@@ -15,6 +13,7 @@ loop = 0
 cont = 1
 cont2 = 1
 verif = True
+import pdb; pdb.set_trace()
 while verif:
     b1.run()
     print(f'\n loop: {b1.loop}\n')
