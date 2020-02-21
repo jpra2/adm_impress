@@ -26,7 +26,9 @@ class StabilityCheck:
         #StabilityCheck.TPD(self)
 
     def run(self, z):
+
         self.equilibrium_ratio_Wilson()
+
         if any(z <= 0):
             self.molar_properties(z)
         else:
@@ -99,11 +101,9 @@ class StabilityCheck:
                 2 ** (1/2)) * B) / (Z + (1 - 2 ** (1/2)) * B))
         return lnphi
 
-
-
     """------------------- Stability test calculation -----------------------"""
 
-    def StabilityTest(self,z):
+    def StabilityTest(self, z):
         ''' In the lnphi function: 0 stands for vapor phase and 1 for liquid '''
     #****************************INITIAL GUESS******************************#
     ## Both approaches bellow should be used in case the phase is in the critical region
@@ -119,7 +119,7 @@ class StabilityCheck:
             Yold = np.copy(Y)
             lnphiy = self.lnphi(y, 1)
             Y = np.exp(np.log(z) + lnphiz - lnphiy)
-            y = Y / sum(Y);
+            y = Y / sum(Y)
         stationary_point1 = sum(Y)
 
     #*****************************Test two**********************************#
@@ -141,8 +141,8 @@ class StabilityCheck:
 
     """-------------------- Biphasic flash calculations ---------------------"""
 
-    def molar_properties(self,z):
-        self.fv = 2 * np.ones(self.Nc); self.fl = np.ones(self.Nc) #entrar no primeiro loop
+    def molar_properties(self, z):
+        self.fv = 2 * self.fv #entrar no primeiro loop
         if self.Nc <= 2: self.molar_properties_Whitson(z)
         else: self.molar_properties_Yinghui(z)
 
@@ -155,7 +155,7 @@ class StabilityCheck:
 
     def lnphi_based_on_deltaG(self, l, ph):
         ph = self.deltaG_molar(l, ph)
-        return self.lnphi(l,ph)
+        return self.lnphi(l, ph)
 
     def solve_objective_function_Yinghui(self, z1, zi, z, K1, KNc, Ki):
 
@@ -204,11 +204,11 @@ class StabilityCheck:
         zi = np.delete(zi, indexNc)
 
         #starting x
-        self.x = np.zeros(self.Nc)
+        # self.x = np.zeros(self.Nc)
 
         """ Solution """
         if z1 != 0:
-            xi = self.solve_objective_function_Yinghui(z1, zi, z, K1, KNc, Ki)
+            xi = self.solve_objective_function_Yinghui(z1, zi, z, K1, KNc, Ki, i)
         else:
             '''Explicit Calculation of xi'''
             xi = (K1 - 1) * zi / (K1 - Ki)
@@ -217,12 +217,12 @@ class StabilityCheck:
             self.x[self.K == K1] = 1 - sum(xi) - sum(self.x)
 
         #ainda não sei como tirar esse for
-        for i in range(0, len(xi)):
-            self.x[self.K == Ki[i]] = xi[i]
+        for j in range(0, len(xi)):
+            self.x[self.K == Ki[j]] = xi[j]
 
         self.y = self.K * self.x
 
-    def molar_properties_Yinghui(self,z):
+    def molar_properties_Yinghui(self, z):
         #razao = fl/fv -> an arbitrary vector to enter in the iterative mode
         razao = np.ones(self.Nc)/2
         while max(abs(razao - 1)) > 1e-9:
@@ -273,10 +273,12 @@ class StabilityCheck:
 
     def other_properties(self, l):
         #l - any phase molar composition
-        A, B = self.coefficientsPR(l)
-        ph = self.deltaG_molar(l, 1)
-        Z = StabilityCheck.Z_PR(B, A, ph)
-        ksi_phase = self.P / (Z * self.R * self.T)
+        ksi_phase = np.zeros(len(l))
+        for i in range(len(l)):
+            A, B = self.coefficientsPR(l)
+            ph = self.deltaG_molar(l, 1)
+            Z = StabilityCheck.Z_PR(B, A, ph)
+            ksi_phase = self.P / (Z * self.R * self.T)
         Mw_phase = sum(l * self.Mw)
         rho_phase = ksi_phase * sum(l * self.Mw)
         # se precisar retornar mais coisa, entra aqui
@@ -284,7 +286,7 @@ class StabilityCheck:
 
     def bubble_point_pressure(self):
         #Isso vem de uma junção da Lei de Dalton com a Lei de Raoult
-        Pv = self.K*self.P
+        Pv = self.K * self.P
         self.Pbubble = sum(self.x * Pv)
 
     def TPD(self, z): #ainda não sei onde usar isso

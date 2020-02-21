@@ -17,7 +17,7 @@ if dd['deletar_results']:
         if f[-4:] == '.vtk':
             os.remove(os.path.join(results, f))
 
-def inputs_components_properties(data_loaded, n_volumes):
+def inputs_components_properties(data_loaded):
     w = np.array(data_loaded['compositional_data']['component_data']['w']).astype(float)
     Bin = np.array(data_loaded['compositional_data']['component_data']['Bin']).astype(float)
     R = np.array(data_loaded['compositional_data']['component_data']['R']).astype(float)
@@ -29,10 +29,15 @@ def inputs_components_properties(data_loaded, n_volumes):
     C7 = np.array(data_loaded['compositional_data']['component_data']['C7']).astype(float)
     Mw = np.array(data_loaded['compositional_data']['component_data']['Mw']).astype(float)
     z = np.array(data_loaded['compositional_data']['component_data']['z']).astype(float)
-    P = P * np.ones(n_volumes)
     return w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7, z
 
 def inputs_water_properties(data_loaded, fluid_properties):
     fluid_properties.rho_W = data_loaded['compositional_data']['water_data']['rho_W']
     fluid_properties.Mw_w = data_loaded['compositional_data']['water_data']['Mw_w']
     fluid_properties.ksi_W = fluid_properties.rho_W/fluid_properties.Mw_w
+
+def inputs_all_volumes(fluid_properties, n_volumes):
+    fluid_properties.P = fluid_properties.P * np.ones(n_volumes)
+    fluid_properties.z = fluid_properties.z * np.ones([fluid_properties.Nc, n_volumes])
+    fluid_properties.x = fluid_properties.x * np.ones([fluid_properties.Nc, n_volumes])
+    fluid_properties.y = fluid_properties.y * np.ones([fluid_properties.Nc, n_volumes])
