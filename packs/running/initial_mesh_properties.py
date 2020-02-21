@@ -33,6 +33,7 @@ def initial_mesh():
 
     else:
         if load:
+            from ..load.preprocessor_load import init_mesh
             M = init_mesh('saves/initial_mesh.h5m')
         else:
             from ..load.preprocessor0 import M
@@ -65,5 +66,6 @@ def initial_mesh():
         data_impress.update_variables_to_mesh()
         wells.export_all_datas_to_npz()
         M.save_variables('initial_mesh')
+        del data_impress['permeability']
 
     return M, elements_lv0, data_impress, wells

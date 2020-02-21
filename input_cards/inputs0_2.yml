@@ -75,7 +75,7 @@ Saturation:
 Wells:
   P1:
     p0: [0.0, 0.0, 0.0]
-    p1: [20.0, 450.0, 90.0]
+    p1: [20.0, 10.0, 90.0]
     prescription: Q
     # prescription: P
     type: Injector
@@ -83,7 +83,7 @@ Wells:
     value: 3000000.0
     # value: 10000.0
   P3:
-    p0: [880.0, 0.0, 0.0]
+    p0: [880.0, 440.0, 0.0]
     p1: [900.0, 450.0, 90.0]
     prescription: P
     type: Producer
@@ -98,8 +98,8 @@ biphasic_data:
   Sor: 0.2
   Swc: 0.2
   cfl: 0.9
-  gama_o: 85.0
-  gama_w: 95.0
+  gama_o: 90.0
+  gama_w: 100.0
   kro0: 1.0
   krw0: 1.0
   loop_maximo: null
