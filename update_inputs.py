@@ -17,27 +17,67 @@ if dd['deletar_results']:
         if f[-4:] == '.vtk':
             os.remove(os.path.join(results, f))
 
-def inputs_components_properties(data_loaded):
-    w = np.array(data_loaded['compositional_data']['component_data']['w']).astype(float)
-    Bin = np.array(data_loaded['compositional_data']['component_data']['Bin']).astype(float)
-    R = np.array(data_loaded['compositional_data']['component_data']['R']).astype(float)
-    Tc = np.array(data_loaded['compositional_data']['component_data']['Tc']).astype(float)
-    Pc = np.array(data_loaded['compositional_data']['component_data']['Pc']).astype(float)
-    Vc = np.array(data_loaded['compositional_data']['component_data']['Vc']).astype(float)
+def inputs_overall_properties(data_loaded):
+    z = np.array(data_loaded['compositional_data']['component_data']['z']).astype(float)
     T = np.array(data_loaded['Temperature']['r1']['value']).astype(float)
     P = np.array(data_loaded['Pressure']['r1']['value']).astype(float)
-    C7 = np.array(data_loaded['compositional_data']['component_data']['C7']).astype(float)
-    Mw = np.array(data_loaded['compositional_data']['component_data']['Mw']).astype(float)
-    z = np.array(data_loaded['compositional_data']['component_data']['z']).astype(float)
-    return w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7, z
+    Nc = len(z)
+    R = np.array(data_loaded['compositional_data']['component_data']['R']).astype(float)
+    return z, P, T, R, Nc
 
-def inputs_water_properties(data_loaded, fluid_properties):
-    fluid_properties.rho_W = data_loaded['compositional_data']['water_data']['rho_W']
-    fluid_properties.Mw_w = data_loaded['compositional_data']['water_data']['Mw_w']
-    fluid_properties.ksi_W = fluid_properties.rho_W/fluid_properties.Mw_w
+class ComponentProperties:
+    def __init__(self, data_loaded):
+        self.w = np.array(data_loaded['compositional_data']['component_data']['w']).astype(float)
+        self.Bin = np.array(data_loaded['compositional_data']['component_data']['Bin']).astype(float)
+        self.Tc = np.array(data_loaded['compositional_data']['component_data']['Tc']).astype(float)
+        self.Pc = np.array(data_loaded['compositional_data']['component_data']['Pc']).astype(float)
+        self.Vc = np.array(data_loaded['compositional_data']['component_data']['Vc']).astype(float)
+        self.Mw = np.array(data_loaded['compositional_data']['component_data']['Mw']).astype(float)
+        self.C7 = np.array(data_loaded['compositional_data']['component_data']['C7']).astype(float)
 
-def inputs_all_volumes(fluid_properties, n_volumes):
-    fluid_properties.P = fluid_properties.P * np.ones(n_volumes)
-    fluid_properties.z = fluid_properties.z * np.ones([fluid_properties.Nc, n_volumes])
-    fluid_properties.x = fluid_properties.x * np.ones([fluid_properties.Nc, n_volumes])
-    fluid_properties.y = fluid_properties.y * np.ones([fluid_properties.Nc, n_volumes])
+class FluidProperties:
+    def __init__(self, fp, data_loaded, n_volumes):
+        self.run_inputs(fp, data_loaded, n_volumes)
+
+    def run_inputs(self, fp, data_loaded, n_volumes):
+        self.inputs_water_properties(data_loaded, n_volumes)
+        self.inputs_all_volumes(fp,n_volumes)
+
+    def inputs_water_properties(self, data_loaded, n_volumes):
+        self.rho_W = data_loaded['compositional_data']['water_data']['rho_W'] * np.ones(n_volumes)
+        self.Mw_w = data_loaded['compositional_data']['water_data']['Mw_w'] * np.ones(n_volumes)
+        self.ksi_W = self.rho_W/self.Mw_w
+
+    def inputs_all_volumes(self, fp, n_volumes):
+        self.T = fp.T
+        self.R = fp.R
+        self.P = fp.P * np.ones(n_volumes)
+        self.Nc = len(fp.z)
+        self.z = fp.z * np.ones([fp.Nc, n_volumes])
+        self.x = fp.x * np.ones([fp.Nc, n_volumes])
+        self.y = fp.y * np.ones([fp.Nc, n_volumes])
+        self.L = fp.L * np.ones(n_volumes)
+        self.V = fp.V * np.ones(n_volumes)
+        self.Mw_L = fp.Mw_L * np.ones(n_volumes)
+        self.Mw_V = fp.Mw_V * np.ones(n_volumes)
+        self.ksi_L = fp.ksi_L * np.ones(n_volumes)
+        self.ksi_V = fp.ksi_V * np.ones(n_volumes)
+        self.rho_L = fp.rho_L * np.ones(n_volumes)
+        self.rho_V = fp.rho_V * np.ones(n_volumes)
+
+    def inputs_missing_properties(self):
+        self.component_phase_mole_numbers = self.component_molar_fractions * self.phase_mole_numbers
+        self.component_mole_numbers = np.sum(self.component_phase_mole_numbers, axis = 1)
+
+    def update_all_volumes(self, fp, i):
+        self.z[:,i] = fp.z
+        self.x[:,i] = fp.x
+        self.y[:,i] = fp.y
+        self.L[i] = fp.L
+        self.V[i] = fp.V
+        self.Mw_L[i] = fp.Mw_L
+        self.Mw_V[i] = fp.Mw_V
+        self.ksi_L[i] = fp.ksi_L
+        self.ksi_V[i] = fp.ksi_V
+        self.rho_L[i] = fp.rho_L
+        self.rho_V[i] = fp.rho_V

@@ -9,7 +9,7 @@ import numpy as np
 
 
 class IMPEC(DataManager):
-    def __init__(self, M, data_impress, wells, fluid_properties, load, data_name: str='CompositionalTPFA.npz'):
+    def __init__(self, M, data_impress, wells, fluid_properties, fp, kprop, load, data_name: str='CompositionalTPFA.npz'):
         super().__init__(data_name, load=load)
         self.n_phases = 3 #includding water
         self.n_volumes = data_impress.len_entities['volumes']
@@ -21,21 +21,21 @@ class IMPEC(DataManager):
         self.relative_permeability = getattr(relative_permeability2, data_loaded['compositional_data']['relative_permeability'])
         self.relative_permeability = self.relative_permeability()
         self.phase_viscosity = getattr(phase_viscosity, data_loaded['compositional_data']['phase_viscosity'])
-        self.phase_viscosity = self.phase_viscosity(self.n_volumes, fluid_properties)
+        self.phase_viscosity = self.phase_viscosity(self.n_volumes, fluid_properties, kprop)
 
         if not load:
             self.loop = 0
             self.vpi = 0.0
             self.t = 0.0
             self.contador_vtk = 0
-            self.run(M, data_loaded, data_impress, wells, fluid_properties)
+            self.run(M, data_loaded, data_impress, wells, fluid_properties, fp, kprop)
         else: self.load_infos()
 
-    def run(self, M, data_loaded, data_impress, wells, fluid_properties):
+    def run(self, M, data_loaded, data_impress, wells, fluid_properties, fp, kprop):
         self.update_relative_permeabilities(fluid_properties)
-        self.update_phase_viscosities(data_loaded, fluid_properties)
+        self.update_phase_viscosities(data_loaded, fluid_properties, kprop)
         self.update_mobilities()
-        self.dVt_derivatives(data_impress, fluid_properties)
+        self.dVt_derivatives(data_impress, fluid_properties, fp, kprop)
         Pcap = self.update_capillary_pressure(data_loaded)
         T = self.update_transmissibility(M, data_impress, wells, data_loaded, fluid_properties)
         D = self.update_independent_terms(fluid_properties, data_loaded, wells)
@@ -61,10 +61,10 @@ class IMPEC(DataManager):
         self.relative_permeabilities[0,1,:] = krg
         self.relative_permeabilities[0,2,:] = krw
 
-    def update_phase_viscosities(self, data_loaded, fluid_properties):
+    def update_phase_viscosities(self, data_loaded, fluid_properties, kprop):
         mi_W = data_loaded['compositional_data']['water_data']['mi_W']
         self.phase_viscosities = np.zeros(self.relative_permeabilities.shape)
-        self.phase_viscosities_oil_and_gas = self.phase_viscosity(fluid_properties)
+        self.phase_viscosities_oil_and_gas = self.phase_viscosity(fluid_properties, kprop)
         self.phase_viscosities[0,0,:] = self.phase_viscosities_oil_and_gas[0,0,:]
         self.phase_viscosities[0,1,:] = self.phase_viscosities_oil_and_gas[0,1,:]
         self.phase_viscosities[0,2,:] = mi_W
@@ -72,9 +72,9 @@ class IMPEC(DataManager):
     def update_mobilities(self):
         self.mobilities = self.relative_permeabilities / self.phase_viscosities
 
-    def dVt_derivatives(self, data_impress, fluid_properties):
+    def dVt_derivatives(self, data_impress, fluid_properties, fp, kprop):
         self.dVtk = np.zeros([fluid_properties.Nc + 1, self.n_volumes])
-        self.dVtk[0:fluid_properties.Nc,:], dVtP = PartialDerivatives().dVt_derivatives(fluid_properties)
+        self.dVtk[0:fluid_properties.Nc,:], dVtP = PartialDerivatives().dVt_derivatives(fluid_properties, fp, kprop)
         self.dVtk[fluid_properties.Nc,:] = 1 / fluid_properties.ksi_W
         dVwP = np.zeros(self.n_volumes)
         self.dVtP = dVtP + dVwP
@@ -239,28 +239,12 @@ class IMPEC(DataManager):
         lines = np.array([np.repeat(cx,len(v0[:,0])), np.repeat(cx,len(v0[:,1]))]).astype(int).flatten()
         cols = np.array([np.tile(v0[:,0],self.n_components),np.tile(v0[:,1], self.n_components)]).flatten()
         data = np.array([flux, - flux]).flatten()
-        source_term_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_components, self.n_volumes)).toarray()#.flatten()
-        # flux_vols = np.zeros([self.n_components,2,self.n_volumes])
-        # for i in range(2):
-        #     v0new, ind_faces0 = np.unique(v0[:,i], return_index = True)
-        #     v0_index = np.arange(len(v0[:,i]))
-        #     rep = np.setdiff1d(v0_index,ind_faces0)
-        #     flux_reshape = flux[:,ind_faces0]
-        #     ind_rep = [np.where(v0[:,i] == i) for i in v0[rep,i]]
-        #     ind_rep_vnew = [np.where(v0new == i) for i in v0[rep,i]]
-        #     flux_reshape[:,ind_rep_vnew] = np.sum(flux[:,ind_rep]) #+ flux_reshape[:,ind_rep_vnew]
-        #     flux_vols[:,i,v0new] = flux_reshape * (1 - 2*np.sign(i))
-        # flux_vols_total = np.sum(flux_vols, axis = 1)
+        flux_vols_total = sp.csc_matrix((data, (lines, cols)), shape=(self.n_components, self.n_volumes)).toarray()#.flatten()
 
         # só ta funcionando pra 1d:
-        flux_vols = np.zeros([self.n_components,2,self.n_volumes])
-        flux_vols[:,0,v0[:,0]] = flux
-        flux_vols[:,1,v0[:,1]] = -flux
-        flux_vols_total = np.sum(flux_vols,axis = 1)
-        import pdb; pdb.set_trace()
-        # conec_vols_faces = np.asarray([np.intersect1d(M.volumes.adjacencies[i], M.faces.internal) for i in np.arange(self.n_volumes)])
-        #
-        # for i in range(self.n_volumes):
-        #     for j in range(len(conec_vols_faces[i])):
-        #         conec_vols_faces[i][j] = np.argwhere(conec_vols_faces[i][j] == M.faces.internal)
+        #flux_vols = np.zeros([self.n_components,2,self.n_volumes])
+        #flux_vols[:,0,v0[:,0]] = flux
+        #flux_vols[:,1,v0[:,1]] = -flux
+        #flux_vols_total = np.sum(flux_vols,axis = 1)
+
         fluid_properties.component_mole_numbers = fluid_properties.component_mole_numbers + deltaT * (self.q + flux_vols_total)

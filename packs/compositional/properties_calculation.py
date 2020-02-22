@@ -1,24 +1,23 @@
 from ..directories import data_loaded
 from ..data_class.data_manager import DataManager
-from ..utils import relative_permeability2, phase_viscosity, capillary_pressure
 from .. import directories as direc
 import numpy as np
 
 
 class PropertiesCalc(DataManager):
-    def __init__(self, M, data_impress, wells, fluid_properties, elements_lv0, load, data_name: str='Compositional_data.npz'):
+    def __init__(self, M, data_impress, wells, fluid_properties, load, data_name: str='Compositional_data.npz'):
         super().__init__(data_name, load=load)
         self.n_phases = 3 #includding water
         self.n_volumes = data_impress.len_entities['volumes']
         self.n_components = fluid_properties.Nc + 1
-        self.run(data_loaded, data_impress, wells, fluid_properties, elements_lv0)
+        self.run(data_loaded, data_impress, wells, fluid_properties )
 
-    def run(self, data_loaded, data_impress, wells, fluid_properties, elements_lv0):
-        self.set_properties(fluid_properties, elements_lv0)
+    def run(self, data_loaded, data_impress, wells, fluid_properties):
+        self.set_properties(fluid_properties)
         self.update_saturations(data_impress, wells, fluid_properties)
         self.update_mole_numbers(data_impress, fluid_properties)
 
-    def set_properties(self, fluid_properties, elements_lv0):
+    def set_properties(self, fluid_properties):
         fluid_properties.component_molar_fractions = np.zeros([self.n_components, self.n_phases, self.n_volumes])
         fluid_properties.phase_molar_densities = np.zeros([1, self.n_phases, self.n_volumes])
 
@@ -34,12 +33,12 @@ class PropertiesCalc(DataManager):
 
     def update_saturations(self, data_impress, wells, fluid_properties):
         fluid_properties.Sw = data_impress['saturation']
-
-        if fluid_properties.V != 0:
-            fluid_properties.Sg = (1 - fluid_properties.Sw) * (fluid_properties.V / fluid_properties.rho_V) / \
-                (fluid_properties.V / fluid_properties.rho_V +
-                fluid_properties.L / fluid_properties.rho_L )
-        else: fluid_properties.Sg = np.zeros(self.n_volumes)
+        fluid_properties.Sg = np.zeros(fluid_properties.Sw.shape)
+        fluid_properties.Sg[fluid_properties.V!=0] = (1 - fluid_properties.Sw[fluid_properties.V!=0]) * \
+            (fluid_properties.V[fluid_properties.V!=0] / fluid_properties.rho_V[fluid_properties.V!=0]) / \
+            (fluid_properties.V[fluid_properties.V!=0] / fluid_properties.rho_V[fluid_properties.V!=0] +
+            fluid_properties.L[fluid_properties.V!=0] / fluid_properties.rho_L[fluid_properties.V!=0] )
+        fluid_properties.Sg[fluid_properties.V==0] = 0
         fluid_properties.So = 1 - fluid_properties.Sw - fluid_properties.Sg
 
     def update_phase_volumes(self, data_impress, fluid_properties):

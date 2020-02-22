@@ -6,45 +6,45 @@ class PartialDerivatives:
     def __init__(self):
         self.n_phases = 2
 
-    def d_dn_all_derivatives(self, fluid_properties, Nphase, nkphase, l):
+    def d_dn_all_derivatives(self, fp, Nphase, nkphase, kprop, l):
         delta = 0.0001
-        dlnf_dn = np.zeros([fluid_properties.Nc, fluid_properties.Nc, self.n_phases])
-        dZ_dn = np.zeros([fluid_properties.Nc, self.n_phases])
+        dlnf_dn = np.zeros([fp.Nc, fp.Nc, self.n_phases])
+        dZ_dn = np.zeros([fp.Nc, self.n_phases])
         for ph in range(self.n_phases):
             if Nphase[ph] != 0:
-                for i in range(0,fluid_properties.Nc):
+                for i in range(0,fp.Nc):
                     l_plus = np.copy(l[:,ph]); l_minus = np.copy(l[:,ph])
                     l_plus[i] = (nkphase[i,ph] + delta / 2) / Nphase[ph]
                     l_minus[i] = (nkphase[i,ph] - delta / 2) / Nphase[ph]
-                    dlnf_dn[:,i,ph] = (PartialDerivatives.lnf(fluid_properties, l_plus, ph)
-                     - PartialDerivatives.lnf(fluid_properties, l_minus, ph)) / delta
-                    dZ_dn[i,ph] = (self.Z(fluid_properties, l_plus, ph)
-                     - self.Z(fluid_properties, l_minus, ph)) / delta
+                    dlnf_dn[:,i,ph] = (PartialDerivatives.lnf(fp, kprop, l_plus, ph)
+                     - PartialDerivatives.lnf(fp, kprop, l_minus, ph)) / delta
+                    dZ_dn[i,ph] = (self.Z(fp, kprop, l_plus, ph)
+                     - self.Z(fp, kprop, l_minus, ph)) / delta
         return dlnf_dn, dZ_dn
 
-    def d_dP_all_derivatives(self, fluid_properties, Nphase, l, b):
+    def d_dP_all_derivatives(self, fp, Nphase, kprop, l, b):
         delta = 0.0001
         dZ_dP = np.zeros(self.n_phases)
-        dlnf_dP = np.zeros([fluid_properties.Nc, self.n_phases])
+        dlnf_dP = np.zeros([fp.Nc, self.n_phases])
         for ph in range(0, self.n_phases):
             if Nphase[ph] != 0:
-                fluid_properties.P = self.Pvolume + delta/2
-                Z_plus = self.Z(fluid_properties, l[:,ph], ph)
-                lnf_plus = PartialDerivatives.lnf(fluid_properties, l[:,ph], ph)
-                fluid_properties.P = self.Pvolume - delta / 2
-                dZ_dP[ph] = (Z_plus - self.Z(fluid_properties, l[:,ph], ph)) / delta
-                dlnf_dP[:,ph] = (lnf_plus - PartialDerivatives.lnf(fluid_properties, l[:,ph], ph)) / delta
+                fp.P = self.Pvolume + delta/2
+                Z_plus = self.Z(fp, kprop, l[:,ph], ph)
+                lnf_plus = PartialDerivatives.lnf(fp, kprop, l[:,ph], ph)
+                fp.P = self.Pvolume - delta / 2
+                dZ_dP[ph] = (Z_plus - self.Z(fp, kprop, l[:,ph], ph)) / delta
+                dlnf_dP[:,ph] = (lnf_plus - PartialDerivatives.lnf(fp, kprop, l[:,ph], ph)) / delta
         return dlnf_dP, dZ_dP
 
-    def lnf(fluid_properties, l, ph):
-        lnf = fluid_properties.lnphi(l, ph) + np.log(fluid_properties.P * l)
+    def lnf(fp, kprop, l, ph):
+        lnf = fp.lnphi(kprop, l, ph) + np.log(fp.P * l)
         return lnf
 
-    def Z(self, fluid_properties, l, ph):
-        A, B = fluid_properties.coefficientsPR(l)
+    def Z(self, fp, kprop, l, ph):
+        A, B = fp.coefficientsPR(kprop, l)
         return StabilityCheck.Z_PR(B, A, ph)
 
-    def dVt_derivatives(self, fluid_properties):
+    def dVt_derivatives(self, fluid_properties, fp, kprop):
         Nphase_allvolumes = fluid_properties.mole_numbers_o_and_g
         nkphase_allvolumes = fluid_properties.component_phase_mole_numbers
         l_allvolumes = fluid_properties.component_molar_fractions
@@ -53,8 +53,8 @@ class PartialDerivatives:
         n_vols = len(Nphase_allvolumes[0,0,:])
 
         """ Initializing dN derivatives """
-        dnij_dNk = np.zeros([fluid_properties.Nc, fluid_properties.Nc, self.n_phases, n_vols])
-        dZj_dnij = np.zeros([fluid_properties.Nc, self.n_phases, n_vols])
+        dnij_dNk = np.zeros([fp.Nc, fp.Nc, self.n_phases, n_vols])
+        dZj_dnij = np.zeros([fp.Nc, self.n_phases, n_vols])
 
         """ Initializing dP derivatives """
         dnij_dP = np.zeros([fluid_properties.Nc, self.n_phases, n_vols])
@@ -63,23 +63,23 @@ class PartialDerivatives:
         Zj = np.zeros([1,self.n_phases, n_vols])
         for b in range(n_vols):
             self.Pvolume = P[b]
-            fluid_properties.P = self.Pvolume
+            fp.P = self.Pvolume
             self.y = l_allvolumes[:,0,b]
             self.x = l_allvolumes[:,1,b]
-            l = np.zeros([fluid_properties.Nc, self.n_phases])
-            l[:,0] = self.y[0:fluid_properties.Nc]; l[:,1] = self.x[0:fluid_properties.Nc]
+            l = np.zeros([fp.Nc, self.n_phases])
+            l[:,0] = self.y[0:fp.Nc]; l[:,1] = self.x[0:fp.Nc]
             Nphase = Nphase_allvolumes[0,:,b]
             nkphase = nkphase_allvolumes[:,:,b]
-            dlnfij_dnij, dZj_dnij[:,:,b] = self.d_dn_all_derivatives(fluid_properties, Nphase, nkphase, l)
-            dlnfj_dP, dZj_dP[0,:,b] = self.d_dP_all_derivatives(fluid_properties, Nphase, l, b)
-            Zj[0,:,b] = np.array([self.Z(fluid_properties,self.y,0), self.Z(fluid_properties, self.x,1)])
+            dlnfij_dnij, dZj_dnij[:,:,b] = self.d_dn_all_derivatives(fp, Nphase, nkphase, kprop, l)
+            dlnfj_dP, dZj_dP[0,:,b] = self.d_dP_all_derivatives(fp, Nphase, kprop, l, b)
+            Zj[0,:,b] = np.array([self.Z(fp, kprop, self.y, 0), self.Z(fp, kprop, self.x, 1)])
             matrix = np.sum(dlnfij_dnij, axis = 2)
 
             dlnf_dP_vector = dlnfj_dP[:,0] - dlnfj_dP[:,1]
             dnij_dP[:,1,b] =  np.linalg.inv(matrix)@dlnf_dP_vector
             dnij_dP[:,0,b] = - dnij_dP[:,1,b]
 
-            for k in range(0, fluid_properties.Nc):
+            for k in range(0, fp.Nc):
                 dlnfl_dnk = dlnfij_dnij[:,k,1]
                 dnij_dNk[:,k,1,b] = np.linalg.inv(matrix)@dlnfl_dnk
                 dnij_dNk[:,k,0,b] = - dnij_dNk[:,k,1,b]
@@ -95,5 +95,5 @@ class PartialDerivatives:
                 Nphase[:,np.newaxis] * dvj_dnij), axis = 0),axis = 0)
         dVt_dP = np.sum(dVj_dP,axis = 0)
 
-        fluid_properties.P = P #comming back
+        #fluid_properties.P = P #comming back
         return dVt_dNk, dVt_dP

@@ -9,6 +9,7 @@ import numpy as np
 import time
 
 import update_inputs
+from update_inputs import FluidProperties, ComponentProperties
 
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
@@ -18,30 +19,27 @@ M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
 
 n_volumes = data_impress.len_entities['volumes']
 
-w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7, z = update_inputs.inputs_components_properties(data_loaded)
-fluid_properties = StabilityCheck(w, Bin, R, Tc, Pc, Vc, T, P, Mw, C7, z)
-update_inputs.inputs_all_volumes(fluid_properties, n_volumes)
-update_inputs.inputs_water_properties(data_loaded, fluid_properties)
-PropertiesCalc(M, data_impress, wells, fluid_properties, elements_lv0, load)
-
-fluid_properties.component_phase_mole_numbers = fluid_properties.component_molar_fractions * fluid_properties.phase_mole_numbers
-fluid_properties.component_mole_numbers = np.sum(fluid_properties.component_phase_mole_numbers, axis = 1)
+kprop = ComponentProperties(data_loaded)
+z, P, T, R, Nc = update_inputs.inputs_overall_properties(data_loaded)
+fp = StabilityCheck(z, P, T, R, Nc, kprop)
+fluid_properties = FluidProperties(fp, data_loaded, n_volumes)
+PropertiesCalc(M, data_impress, wells, fluid_properties, load)
+fluid_properties.inputs_missing_properties()
 
 t = 0
 tfinal = 1
 
 while t < tfinal:
     # fluid_properties.P = P
-    IMPEC( M, data_impress, wells, fluid_properties, load)
-    PropertiesCalc(M, data_impress, wells, fluid_properties, elements_lv0, load)
+    IMPEC( M, data_impress, wells, fluid_properties, fp, kprop, load)
+    PropertiesCalc(M, data_impress, wells, fluid_properties, load)
 
     for i in range(n_volumes):
-        fluid_properties.P = fluid_properties.P[i]
-        fluid_properties.z = fluid_properties.z[:,i]
-        fluid_properties.x = fluid_properties.x[:,i]
-        fluid_properties.y = fluid_properties.y[:,i]
-        fluid_properties.run(fluid_properties.z[:,i])
-    print(fluid_properties.z)
+        P = fluid_properties.P[i]
+        z = fluid_properties.z[:,i]
+        fp = StabilityCheck(z, P, T, R, Nc, kprop)
+        fluid_properties.update_all_volumes(fp, i)
+
     t = tfinal
     #check stability and perform flash calculation
 
