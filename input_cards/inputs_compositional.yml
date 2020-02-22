@@ -15,7 +15,7 @@ monophasic_data: false
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-  
+
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   #cfl: 0.9
@@ -92,4 +92,4 @@ Wells:
     prescription: P
     type: Producer
     type_region: box
-    value: 13.1
+    value: 13100000.

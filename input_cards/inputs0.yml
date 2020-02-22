@@ -40,7 +40,7 @@ Wells:
     prescription: P
     type: Producer
     type_region: box
-    value: 13.1
+    value: 13100000.0
 compositional: true
 compositional_data:
   Pf: 13.79E6
