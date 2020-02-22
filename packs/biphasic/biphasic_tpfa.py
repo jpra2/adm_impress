@@ -435,3 +435,14 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
 
         T, b = super().run()
         return T, b
+
+    def gama_volumes_average():
+        doc = "The gama_volumes_average property."
+        def fget(self):
+            gama_w = self.biphasic_data['gama_w']
+            gama_o = self.biphasic_data['gama_o']
+            lambda_w = self.data_impress['lambda_w']
+            lambda_o = self.data_impress['lambda_o']
+            return np.repeat(gama_w, len(lambda_w))*lambda_w + np.repeat(gama_o, len(lambda_o))*lambda_o
+        return locals()
+    gama_volumes_average = property(**gama_volumes_average())
