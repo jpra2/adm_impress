@@ -14,6 +14,7 @@ class TpfaFlux:
         if self.gravity:
 
             gamma = self.data_impress['gama']
+            gama_faces = self.data_impress['gama_faces']
 
             vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
             v0 = vols_viz_internal_faces
@@ -21,7 +22,8 @@ class TpfaFlux:
             t0 = transmissibility_internal_faces
             zs = centroids[:, 2]
 
-            source_term_internal_faces = -1*(zs[v0[:, 1]]*gamma[v0[:, 1]] - zs[v0[:, 0]]*gamma[v0[:, 0]])*t0
+            # source_term_internal_faces = -1*(zs[v0[:, 1]]*gamma[v0[:, 1]] - zs[v0[:, 0]]*gamma[v0[:, 0]])*t0
+            source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*t0*gama_faces[internal_faces]
             source_term_faces[internal_faces] = source_term_internal_faces
 
             lines = np.array([v0[:, 0], v0[:, 1]]).flatten()

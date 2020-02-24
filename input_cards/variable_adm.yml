@@ -135,6 +135,13 @@ pms_flux_faces:
   sparse: True
   level: 0
 
+gama_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
 # Volumes
 centroid_volumes:
   type: volumes

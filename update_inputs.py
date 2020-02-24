@@ -4,7 +4,7 @@ def update_inputs():
     from packs.utils.info_manager import InfoManager
     import os
     dd = InfoManager('input_cards/inputs0_2.yml', 'input_cards/inputs0.yml')
-    dd['load_data'] = True
+    # dd['load_data'] = True
     dd['multilevel_data'] = False
     # dd['load_multilevel_data'] = True
     # dd['load_operators'] = True
@@ -17,8 +17,8 @@ def update_inputs():
 
     dd['biphasic'] = True
 
-    # dd['deletar_results'] = True
-    dd['gravity'] = True
+    dd['deletar_results'] = True
+    # dd['gravity'] = True
     # dd['get_correction_term'] = True
     # dd['convert_english_to_SI'] = True
     dd.save_obj()

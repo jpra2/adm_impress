@@ -45,7 +45,9 @@ class FineScaleTpfaPressureSolver(TpfaScheme, TpfaFlux):
     def update_gama(self):
 
         gama = data_loaded['monophasic_data']['gama']
+
         self.data_impress['gama'] = np.repeat(gama, self.n_volumes)
+        self.data_impress['gama_faces'] = np.repeat(gama, len(self.elements_lv0['faces']))
 
     def run(self):
         self.update_gama()

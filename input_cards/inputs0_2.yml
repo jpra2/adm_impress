@@ -1,5 +1,5 @@
-mesh_name: mesh/45x45x45.msh
-# mesh_name: mesh/27x27x27.msh
+# mesh_name: mesh/45x45x45.msh
+mesh_name: mesh/27x27x27.msh
 # mesh_name: mesh/27x27x27.msh
 n_test: 0
 state: 0
@@ -75,16 +75,19 @@ Saturation:
 Wells:
   P1:
     p0: [0.0, 0.0, 0.0]
-    p1: [20.0, 10.0, 90.0]
+    # p1: [20.0, 10.0, 90.0]
+    p1: [1.0, 1.0, 27.0]
     prescription: Q
     # prescription: P
     type: Injector
     type_region: box
-    value: 3000000.0
-    # value: 10000.0
+    # value: 3000000.0
+    value: 10000.0
   P3:
-    p0: [880.0, 440.0, 0.0]
-    p1: [900.0, 450.0, 90.0]
+    # p0: [880.0, 440.0, 0.0]
+    # p1: [900.0, 450.0, 90.0]
+    p0: [26.0, 26.0, 0.0]
+    p1: [27.0, 27.0, 27.0]
     prescription: P
     type: Producer
     type_region: box
