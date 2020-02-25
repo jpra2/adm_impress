@@ -91,6 +91,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         gama_faces = np.zeros(len(self.data_impress['gama_faces']))
         gama = self.data_impress['gama']
         gama_internal_faces = gama_faces[internal_faces]
+        self._data['sw_faces_identificate_vols'] = np.full((len(internal_faces), 2), False, dtype=bool)
 
         ws_inj = self.wells['ws_inj']
 
@@ -117,6 +118,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         total_mobility_internal_faces[idv0] = lambda_t[v0[idv0]]
         total_mobility_internal_faces[idv1] = lambda_t[v1[idv1]]
         total_mobility_internal_faces[ids_fora] = (lambda_t[v0[ids_fora]] + lambda_t[v1[ids_fora]])/2
+        self._data['sw_faces_identificate_vols'][idv0, 0] = np.full(len(idv0), True, dtype=bool)
+        self._data['sw_faces_identificate_vols'][idv1, 1] = np.full(len(idv1), True, dtype=bool)
 
         fw_internal_faces[idv0] = fw_vol[v0[idv0]]
         fw_internal_faces[idv1] = fw_vol[v1[idv1]]
@@ -174,10 +177,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         data = np.array([flux_w_internal_faces, -flux_w_internal_faces]).flatten()
         flux_w_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
 
-        import pdb; pdb.set_trace()
-
-        flux_w_volumes[ws_prod] -= flux_volumes[ws_prod]*fw_vol[ws_prod]
-        flux_w_volumes[ws_inj] -= flux_volumes[ws_inj]*fw_vol[ws_inj]
+        # flux_w_volumes[ws_prod] -= flux_volumes[ws_prod]*fw_vol[ws_prod]
+        # flux_w_volumes[ws_inj] -= flux_volumes[ws_inj]*fw_vol[ws_inj]
 
         flux_o_internal_faces = total_flux_faces[internal_faces] - flux_w_internal_faces
 
@@ -370,11 +371,15 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         flux_internal_faces = flux_faces[internal_faces]
         gama = self.data_impress['gama']
         gama_faces = np.zeros(len(self.data_impress['gama_faces']))
+        # self._data['sw_faces_identificate_vols'] = np.full((len(internal_faces), 2), False, dtype=bool)
 
         ids = np.arange(len(internal_faces))
 
         fluxo_positivo = ids[flux_internal_faces <= 0]
         outros = np.setdiff1d(ids, fluxo_positivo)
+
+        # self._data['sw_faces_identificate_vols'][fluxo_positivo, 1] = np.full((len(fluxo_positivo), 2), True, dtype=bool)
+        # self._data['sw_faces_identificate_vols'][outros, 0] = np.full((len(outros), 2), True, dtype=bool)
 
         total_mobility_internal_faces = np.zeros(len(internal_faces))
         fw_internal_faces = total_mobility_internal_faces.copy()
@@ -421,12 +426,15 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
 
         self.all_biphasic_results.append(self.current_biphasic_results)
 
-    def save_infos(self):
-        self.export_current_biphasic_results()
-        self.export_all_biphasic_results()
-        self.data_impress.update_variables_to_mesh()
-        self.data_impress.export_all_datas_to_npz()
-        # self.mesh.core.print(file=self.mesh_name, extension='.h5m', config_input="input_cards/print_settings.yml")
+    def save_infos(self, save=False):
+        if save:
+            self.export_current_biphasic_results()
+            self.export_all_biphasic_results()
+            self.data_impress.update_variables_to_mesh()
+            self.data_impress.export_all_datas_to_npz()
+            # self.mesh.core.print(file=self.mesh_name, extension='.h5m', config_input="input_cards/print_settings.yml")
+        else:
+            pass
 
     def export_current_biphasic_results(self):
         np.save(self.name_current_biphasic_results, self.current_biphasic_results)
@@ -435,13 +443,14 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         np.save(self.name_all_biphasic_results + str(self.loop) + '.npy', np.array(self.all_biphasic_results))
         self.all_biphasic_results = self.get_empty_current_biphasic_results()
 
-    def run(self, save=False):
+    def run(self):
 
         T, b = super().run()
         p = self.solver.direct_solver(T, b)
+        del T, b
         self.data_impress['pressure'] = p
         self.get_flux_faces_and_volumes()
-        self.run_2(save = save)
+        # self.run_2(save = save)
         # return T, b
 
     def run_2(self, save=False):
@@ -464,7 +473,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.update_current_biphasic_results(dt)
 
         if save:
-            self.save_infos()
+            self.save_infos(save=save)
 
     def get_T_and_b(self):
 
