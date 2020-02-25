@@ -7,7 +7,7 @@ import time
 
 class Gtime:
     ident = 0
-    ts = [0, 0]
+    ts = [0, -1]
 
     def __call__(self):
         ident = self.__class__.ident
@@ -19,7 +19,7 @@ class Gtime:
 
     def dt(self):
         ts = self.__class__.ts
-        print(ts[1] - ts[0])
+        return ts[1] - ts[0]
 
 class BiphasicSfi(BiphasicTpfa):
 
@@ -36,6 +36,7 @@ class BiphasicSfi(BiphasicTpfa):
     def initialize_iter_erro(self):
         self.erro = 1
         self.iter = 1
+        self.dt = 0
         self.rodar = True
 
     def create_symbolic_variables(self):
@@ -152,16 +153,30 @@ class BiphasicSfi(BiphasicTpfa):
         return J, fx
 
     def run(self):
+        gt = Gtime()
+        gt()
         super().run()
         self.identificate_volumes_for_faces_upwind()
+        gt()
+        self.dt += gt.dt()
 
     def run_2(self, save=False):
 
+        gt = Gtime()
+        gt()
+
         if not self.rodar:
-            self.initialize_iter_erro()
+            self.update_t()
+            self.update_vpi()
+            self.update_loop()
+            gt()
+            self.dt += gt.dt()
+            self.update_current_biphasic_results(self.dt)
             if save:
                 self.save_infos()
+            self.initialize_iter_erro()
             return 0
+
 
         self.data_impress['saturation_last'] = self.data_impress['saturation'].copy()
         tol = self.tol_sat
@@ -192,6 +207,9 @@ class BiphasicSfi(BiphasicTpfa):
         self.update_mobilities()
         self.update_transmissibility()
         self.update_flux_w_and_o_volumes()
+
+        gt()
+        self.dt += gt.dt()
 
         return 1
 
