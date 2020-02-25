@@ -27,7 +27,6 @@ class BiphasicSfi(BiphasicTpfa):
         super().__init__(M, data_impress, elements_lv0, wells, data_name)
 
         self.create_symbolic_variables()
-        self.ni = 0
         self.tol_sat = 1e-5
         self.max_iter = 1000
         self.delta_t = 0.0003
@@ -176,7 +175,6 @@ class BiphasicSfi(BiphasicTpfa):
                 self.save_infos()
             self.initialize_iter_erro()
             return 0
-
 
         self.data_impress['saturation_last'] = self.data_impress['saturation'].copy()
         tol = self.tol_sat
