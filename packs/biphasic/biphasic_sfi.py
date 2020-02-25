@@ -27,17 +27,19 @@ class BiphasicSfi(BiphasicTpfa):
         super().__init__(M, data_impress, elements_lv0, wells, data_name)
 
         self.create_symbolic_variables()
-        self.tol_sat = 1e-5
+        self.tol_sat = 1e-3
         self.max_iter = 1000
-        self.delta_t = 0.0003
+        # self.delta_t = 0.0009
         self.initialize_iter_erro()
 
     def initialize_iter_erro(self):
+        self.n_print = 0
         self.erro = 1
         self.iter = 1
         self.dt = 0
         self.rodar = True
         self.update_saturation_last = True
+        self.ident_for_update_delta_t = True
 
     def create_symbolic_variables(self):
 
@@ -80,6 +82,11 @@ class BiphasicSfi(BiphasicTpfa):
         fws_vol = self.data_impress['fw_vol']
         flux_w_volumes = self.data_impress['flux_w_volumes']
 
+        # import pdb; pdb.set_trace()
+        #
+        # wsp = self.wells['ws_p']
+        # wsq = self.wells['ws_q']
+
         lines = []
         cols = []
         data = []
@@ -112,9 +119,12 @@ class BiphasicSfi(BiphasicTpfa):
         for i, face in enumerate(internal_faces):
             dfws[i] = (self.symbolic_dfw.subs(self.symbolic_saturation, sws_faces[i]))
 
+        # k1 = -1
+        k1 = 1
+
         lines.append(neig_internal_faces.flatten())
         cols.append(np.array([volumes_sw_face, volumes_sw_face]).T.flatten())
-        data.append(np.array([dfws*flux_internal_faces, -dfws*flux_internal_faces]).T.flatten())
+        data.append(np.array([k1*dfws*flux_internal_faces, -k1*dfws*flux_internal_faces]).T.flatten())
 
         qw = fws_vol*flux_volumes
 
@@ -135,7 +145,10 @@ class BiphasicSfi(BiphasicTpfa):
         #     cols.append(arrc)
         #     data.append(arrd)
 
-        indep_term = (1/self.delta_t)*(phis*vol_volumes)*(1 - sw)
+        # k0 = -1
+        k0 = 1
+
+        indep_term = k0*(1/self.delta_t)*(phis*vol_volumes)*(1 - sw)
         lines.append(volumes)
         cols.append(volumes)
         data.append(indep_term)
@@ -148,12 +161,19 @@ class BiphasicSfi(BiphasicTpfa):
 
         J = sp.csc_matrix((data, (lines, cols)), shape=(n, n))
 
-        if self.iter > 1:
-            import pdb; pdb.set_trace()
+        # if self.iter > 1:
+        #     import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
-        fx = -(1/self.delta_t)*(phis*vol_volumes)*(self.data_impress['saturation'] - self.data_impress['saturation_last']) - flux_w_volumes + qw
+        fx = k0*(1/self.delta_t)*(phis*vol_volumes)*(self.data_impress['saturation'] - self.data_impress['saturation_last']) - flux_w_volumes + qw
 
         return J, fx
+
+    def printar(self):
+        self.n_print = 0
+        self.data_impress.update_variables_to_mesh(['saturation'])
+        self.mesh.core.print(folder='results', file='test'+ str(self.n_print), extension='.vtk', config_input='input_cards/print_settings0.yml')
+        self.n_print += 1
 
     def run(self):
         if self.update_saturation_last:
@@ -173,6 +193,7 @@ class BiphasicSfi(BiphasicTpfa):
         gt()
 
         if not self.rodar:
+            self.update_flux_w_and_o_volumes()
             self.update_t()
             self.update_vpi()
             self.update_loop()
@@ -188,14 +209,17 @@ class BiphasicSfi(BiphasicTpfa):
         n_max_iter = 100
         verif = True
         self.update_flux_w_and_o_volumes()
-        # self.update_delta_t()
+        if self.ident_for_update_delta_t:
+            self.update_delta_t()
+            self.ident_for_update_delta_t = False
 
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         # self._data['sw_ni'] = self.data_impress['saturation'].copy()
         J, fx = self.get_jacobian_for_saturation()
         dx = self.solver.direct_solver(J, fx)
         self.data_impress['saturation'] += dx
+        import pdb; pdb.set_trace()
         # erro = np.absolute(self.data_impress['saturation'] - self._data['sw_ni']).max()
         self.erro = np.absolute(dx).max()
 
@@ -211,10 +235,12 @@ class BiphasicSfi(BiphasicTpfa):
         self.update_relative_permeability()
         self.update_mobilities()
         self.update_transmissibility()
-        self.update_flux_w_and_o_volumes()
 
         gt()
         self.dt += gt.dt()
+
+        self.printar()
+        import pdb; pdb.set_trace()
 
         return 1
 
