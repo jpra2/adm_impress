@@ -37,6 +37,7 @@ class BiphasicSfi(BiphasicTpfa):
         self.iter = 1
         self.dt = 0
         self.rodar = True
+        self.update_saturation_last = True
 
     def create_symbolic_variables(self):
 
@@ -147,11 +148,18 @@ class BiphasicSfi(BiphasicTpfa):
 
         J = sp.csc_matrix((data, (lines, cols)), shape=(n, n))
 
-        fx = (1/self.delta_t)*(phis*vol_volumes)*(self._data['saturation'] - self.data_impress['saturation_last']) - flux_w_volumes + qw
+        if self.iter > 1:
+            import pdb; pdb.set_trace()
+
+        fx = (1/self.delta_t)*(phis*vol_volumes)*(self.data_impress['saturation'] - self.data_impress['saturation_last']) - flux_w_volumes + qw
 
         return J, fx
 
     def run(self):
+        if self.update_saturation_last:
+            self.data_impress['saturation_last'] = self.data_impress['saturation'].copy()
+            self.update_saturation_last = False
+
         gt = Gtime()
         gt()
         super().run()
@@ -176,7 +184,6 @@ class BiphasicSfi(BiphasicTpfa):
             self.initialize_iter_erro()
             return 0
 
-        self.data_impress['saturation_last'] = self.data_impress['saturation'].copy()
         tol = self.tol_sat
         n_max_iter = 100
         verif = True
@@ -185,7 +192,7 @@ class BiphasicSfi(BiphasicTpfa):
 
         import pdb; pdb.set_trace()
 
-        self._data['sw_ni'] = self.data_impress['saturation'].copy()
+        # self._data['sw_ni'] = self.data_impress['saturation'].copy()
         J, fx = self.get_jacobian_for_saturation()
         dx = self.solver.direct_solver(J, fx)
         self.data_impress['saturation'] += dx
