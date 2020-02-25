@@ -151,7 +151,7 @@ class BiphasicSfi(BiphasicTpfa):
         if self.iter > 1:
             import pdb; pdb.set_trace()
 
-        fx = (1/self.delta_t)*(phis*vol_volumes)*(self.data_impress['saturation'] - self.data_impress['saturation_last']) - flux_w_volumes + qw
+        fx = -(1/self.delta_t)*(phis*vol_volumes)*(self.data_impress['saturation'] - self.data_impress['saturation_last']) - flux_w_volumes + qw
 
         return J, fx
 
