@@ -99,32 +99,32 @@ class BiphasicSfi(BiphasicTpfa):
         flux_internal_faces = flux_faces[internal_faces]
         dfws = np.zeros(len(internal_faces))
 
-        # for i, face in enumerate(internal_faces):
-        #     vs = neig_internal_faces[i]
-        #     ident = sw_faces_identificate_vols[i]
-        #     volume_sw_face = vs[ident][0]
-        #     sw_face = sw[volume_sw_face]
-        #     flux_face = flux_faces[face]
-        #     dfw = self.symbolic_dfw.subs(self.symbolic_saturation, sw_face)
-        #
-        #     arrl[:] = vs
-        #     arrc[:] = [volume_sw_face, volume_sw_face]
-        #     arrd[0] = dfw*flux_face
-        #     arrd[1] = -dfw*flux_face
-        #
-        #     lines.append(arrl)
-        #     cols.append(arrc)
-        #     data.append(arrd)
-
         for i, face in enumerate(internal_faces):
-            dfws[i] = (self.symbolic_dfw.subs(self.symbolic_saturation, sws_faces[i]))
+            vs = neig_internal_faces[i]
+            ident = sw_faces_identificate_vols[i]
+            volume_sw_face = vs[ident][0]
+            sw_face = sw[volume_sw_face]
+            flux_face = flux_faces[face]
+            dfw = self.symbolic_dfw.subs(self.symbolic_saturation, sw_face)
 
-        # k1 = -1
-        k1 = 1
+            arrl[:] = vs
+            arrc[:] = [volume_sw_face, volume_sw_face]
+            arrd[0] = dfw*flux_face
+            arrd[1] = -dfw*flux_face
 
-        lines.append(neig_internal_faces.flatten())
-        cols.append(np.array([volumes_sw_face, volumes_sw_face]).T.flatten())
-        data.append(np.array([k1*dfws*flux_internal_faces, -k1*dfws*flux_internal_faces]).T.flatten())
+            lines.append(arrl)
+            cols.append(arrc)
+            data.append(arrd)
+
+        # for i, face in enumerate(internal_faces):
+        #     dfws[i] = (self.symbolic_dfw.subs(self.symbolic_saturation, sws_faces[i]))
+        #
+        # # k1 = -1
+        # k1 = 1
+        #
+        # lines.append(neig_internal_faces.flatten())
+        # cols.append(np.array([volumes_sw_face, volumes_sw_face]).T.flatten())
+        # data.append(np.array([k1*dfws*flux_internal_faces, -k1*dfws*flux_internal_faces]).T.flatten())
 
         qw = fws_vol*flux_volumes
 
@@ -168,6 +168,9 @@ class BiphasicSfi(BiphasicTpfa):
         fx = k0*(1/self.delta_t)*(phis*vol_volumes)*(self.data_impress['saturation'] - self.data_impress['saturation_last']) - flux_w_volumes + qw
 
         return J, fx
+
+    def get_jacobian_for_pressure(self):
+        pass
 
     def printar(self):
         self.n_print = 0

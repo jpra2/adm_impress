@@ -121,6 +121,17 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self._data['sw_faces_identificate_vols'][idv0, 0] = np.full(len(idv0), True, dtype=bool)
         self._data['sw_faces_identificate_vols'][idv1, 1] = np.full(len(idv1), True, dtype=bool)
 
+        rr = self._data['sw_faces_identificate_vols']
+        # ids = rr[:, 0] ^ rr[:, 1]
+        # ids = ~ids
+        ids = ~(rr[:, 0] ^ rr[:, 1])
+        nn = ids.sum()
+        rr[ids, 0] = np.full(nn, True, dtype=bool)
+        rr[ids, 1] = np.full(nn, False, dtype=bool)
+
+        ids = rr[:,0] ^ rr[:, 1]
+        ids = ~ids
+
         fw_internal_faces[idv0] = fw_vol[v0[idv0]]
         fw_internal_faces[idv1] = fw_vol[v1[idv1]]
         gama_internal_faces[idv0] = gama[v0[idv0]]
