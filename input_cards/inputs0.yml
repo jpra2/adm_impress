@@ -78,7 +78,7 @@ compositional_data:
     Sorg: 1e-6
     Sorw: 1e-6
     Swr: 0.25
-  rock_compressibility: 7.25e-05
+  rock_compressibility: 7.25e-08
   tempo_maximo: null
   vpis_para_gravar_vtk:
   - 0.157

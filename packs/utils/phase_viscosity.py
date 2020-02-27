@@ -5,14 +5,14 @@ import numpy as np
 # Still going to add StoneII method so the user can choose
 class LorenzBrayClark:
 
-    def __init__(self, n_volumes, fluid_properties, kprop):
+    def __init__(self, n_volumes, fprop, kprop):
         self.n_volumes = n_volumes
-        self.P = 9.87E-6*fluid_properties.P
+        self.P = 9.87E-6*fprop.P
         self.Vc = 1e3*kprop.Vc
 
-    def component_viscosity(self, fluid_properties, kprop):
-        mi_components = np.zeros(fluid_properties.Nc)
-        Trs = fluid_properties.T / kprop.Tc
+    def component_viscosity(self, fprop, kprop):
+        mi_components = np.zeros(fprop.Nc)
+        Trs = fprop.T / kprop.Tc
         ind_Tr_lower = np.argwhere(Trs <= 1.5)
         ind_Tr_higher = np.argwhere(Trs > 1.5)
         self.pure_components_viscosity_parameters = kprop.Tc ** (1/6) \
@@ -24,12 +24,12 @@ class LorenzBrayClark:
         1.67) ** (5/8)) / self.pure_components_viscosity_parameters[ind_Tr_higher]
 
         mi_components = mi_components[:, np.newaxis, np.newaxis]
-        self.mi_components = np.ones([fluid_properties.Nc, 1, self.n_volumes]) * mi_components
+        self.mi_components = np.ones([fprop.Nc, 1, self.n_volumes]) * mi_components
 
-    def mixture_viscosity(self, fluid_properties, kprop):
-        self.component_molar_fractions = np.zeros([fluid_properties.Nc,2,self.n_volumes])
-        self.component_molar_fractions[:,0,:] = fluid_properties.x
-        self.component_molar_fractions[:,1,:] = fluid_properties.y
+    def mixture_viscosity(self, fprop, kprop):
+        self.component_molar_fractions = np.zeros([fprop.Nc,2,self.n_volumes])
+        self.component_molar_fractions[:,0,:] = fprop.x
+        self.component_molar_fractions[:,1,:] = fprop.y
 
         mi_mix = np.sum(self.component_molar_fractions * self.mi_components *
                 kprop.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0) \
@@ -38,13 +38,13 @@ class LorenzBrayClark:
 
         self.mi_mix = mi_mix[np.newaxis,:,:]
 
-    def phase_viscosity(self, fluid_properties, kprop):
+    def phase_viscosity(self, fprop, kprop):
         #include in the entry parameters the vc: component critical molar volume
         # mi_phase = np.zeros([1,2,self.n_volumes])
         a = np.array([0.1023, 0.023354, 0.058533, -0.040758, 0.0093324])
         self.phase_mass_densities = np.zeros([1, 2, self.n_volumes])
-        self.phase_mass_densities[0,0,:] = fluid_properties.rho_L
-        self.phase_mass_densities[0,1,:] = fluid_properties.rho_V
+        self.phase_mass_densities[0,0,:] = fprop.rho_L
+        self.phase_mass_densities[0,1,:] = fprop.rho_V
 
         phase_reduced_rho = self.phase_mass_densities * \
             np.sum(self.component_molar_fractions * kprop.Vc, axis = 0)
@@ -72,9 +72,9 @@ class LorenzBrayClark:
 
         return mi_phase
 
-    def __call__(self, fluid_properties, kprop):
-        T = fluid_properties.T
-        self.component_viscosity(fluid_properties, kprop)
-        self.mixture_viscosity(fluid_properties, kprop)
-        mi_phase = self.phase_viscosity(fluid_properties, kprop)
+    def __call__(self, fprop, kprop):
+        T = fprop.T
+        self.component_viscosity(fprop, kprop)
+        self.mixture_viscosity(fprop, kprop)
+        mi_phase = self.phase_viscosity(fprop, kprop)
         return mi_phase
