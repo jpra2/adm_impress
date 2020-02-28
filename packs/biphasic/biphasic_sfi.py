@@ -32,6 +32,40 @@ class BiphasicSfi(BiphasicTpfa):
         # self.delta_t = 0.0009
         self.initialize_iter_erro()
 
+    def newton_raphson_saturation(self, tol: 'tolerance'=0.0009, max_iter: 'max of iterations'=1000):
+        '''
+            J: Jacobian matrix
+        '''
+
+        erro = 100
+        verif = True
+        iter = 0
+
+        import pdb; pdb.set_trace()
+
+        while verif:
+
+            J, fx = self.get_jacobian_for_saturation()
+            dx = self.solver.direct_solver(J, fx)
+            self.data_impress['saturation'] += dx
+            erro = np.absolute(dx).max()
+
+            if erro <= tol:
+                verif = False
+
+            if iter > max_iter:
+                verif = False
+
+            if verif:
+                self.update_relative_permeability()
+                self.update_mobilities()
+                self.update_transmissibility()
+                self.update_flux_w_and_o_volumes()
+
+            iter += 1
+
+        return 0
+
     def initialize_iter_erro(self):
         self.n_print = 0
         self.erro = 1
@@ -99,32 +133,32 @@ class BiphasicSfi(BiphasicTpfa):
         flux_internal_faces = flux_faces[internal_faces]
         dfws = np.zeros(len(internal_faces))
 
-        for i, face in enumerate(internal_faces):
-            vs = neig_internal_faces[i]
-            ident = sw_faces_identificate_vols[i]
-            volume_sw_face = vs[ident][0]
-            sw_face = sw[volume_sw_face]
-            flux_face = flux_faces[face]
-            dfw = self.symbolic_dfw.subs(self.symbolic_saturation, sw_face)
-
-            arrl[:] = vs
-            arrc[:] = [volume_sw_face, volume_sw_face]
-            arrd[0] = dfw*flux_face
-            arrd[1] = -dfw*flux_face
-
-            lines.append(arrl)
-            cols.append(arrc)
-            data.append(arrd)
-
         # for i, face in enumerate(internal_faces):
-        #     dfws[i] = (self.symbolic_dfw.subs(self.symbolic_saturation, sws_faces[i]))
+        #     vs = neig_internal_faces[i]
+        #     ident = sw_faces_identificate_vols[i]
+        #     volume_sw_face = vs[ident][0]
+        #     sw_face = sw[volume_sw_face]
+        #     flux_face = flux_faces[face]
+        #     dfw = self.symbolic_dfw.subs(self.symbolic_saturation, sw_face)
         #
-        # # k1 = -1
-        # k1 = 1
+        #     arrl[:] = vs
+        #     arrc[:] = [volume_sw_face, volume_sw_face]
+        #     arrd[0] = dfw*flux_face
+        #     arrd[1] = -dfw*flux_face
         #
-        # lines.append(neig_internal_faces.flatten())
-        # cols.append(np.array([volumes_sw_face, volumes_sw_face]).T.flatten())
-        # data.append(np.array([k1*dfws*flux_internal_faces, -k1*dfws*flux_internal_faces]).T.flatten())
+        #     lines.append(arrl)
+        #     cols.append(arrc)
+        #     data.append(arrd)
+
+        for i, face in enumerate(internal_faces):
+            dfws[i] = (self.symbolic_dfw.subs(self.symbolic_saturation, sws_faces[i]))
+
+        # k1 = -1
+        k1 = 1
+
+        lines.append(neig_internal_faces.flatten())
+        cols.append(np.array([volumes_sw_face, volumes_sw_face]).T.flatten())
+        data.append(np.array([k1*dfws*flux_internal_faces, -k1*dfws*flux_internal_faces]).T.flatten())
 
         qw = fws_vol*flux_volumes
 
@@ -195,6 +229,8 @@ class BiphasicSfi(BiphasicTpfa):
         gt = Gtime()
         gt()
 
+        import pdb; pdb.set_trace()
+
         if not self.rodar:
             self.update_flux_w_and_o_volumes()
             self.update_t()
@@ -218,10 +254,9 @@ class BiphasicSfi(BiphasicTpfa):
 
         # import pdb; pdb.set_trace()
 
-        # self._data['sw_ni'] = self.data_impress['saturation'].copy()
-        J, fx = self.get_jacobian_for_saturation()
-        dx = self.solver.direct_solver(J, fx)
-        self.data_impress['saturation'] += dx
+        # J, fx = self.get_jacobian_for_saturation()
+        # new_saturation = self.newton_raphson(J, fx, self.data_impress['saturation'].copy(), 0.0001)
+        self.newton_raphson_saturation()
         import pdb; pdb.set_trace()
         # erro = np.absolute(self.data_impress['saturation'] - self._data['sw_ni']).max()
         self.erro = np.absolute(dx).max()
