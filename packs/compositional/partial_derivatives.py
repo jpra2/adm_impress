@@ -1,4 +1,6 @@
 import numpy as np
+import sympy
+from sympy.utilities import lambdify
 from .stability_check import StabilityCheck
 
 class PartialDerivatives:
@@ -97,3 +99,65 @@ class PartialDerivatives:
 
         #fprop.P = P #comming back
         return dVt_dNk, dVt_dP
+
+'''class PartialDerivativesSym:
+    def __init__(self):
+        self.n_phases = 2
+
+    def Z_PR_sym(B, A, ph):
+        Z = symbols('Z')
+        a = Z**3 - (1-B)*Z**2 + (A-2*B-3*B**2)*Z-(A*B-B**2-B**3)
+        coef = [1, -(1 - B), (A - 2*B - 3*B**2), -(A*B - B**2 - B**3)]
+        Za = solve(a,Z)
+        return Za
+
+    def lnphi_sym(self, nkphase, Nphase, ph):
+        if Nphase == 0:
+            lnphi = np.zeros(self.Nc)
+        else:
+            l = nkphase/Nphase
+            A, B = self.coefficientsPR(l)
+            Z = StabilityCheck.Z_PR_sym(B, A, ph)
+
+            lnphi1 =  self.b / self.bm * (Z[0] - 1) - sympy.log(Z[0] - B) - A / (2 * (2 ** (1/2))
+                        * B) * (2 * self.psi / self.aalpha - self.b / self.bm) * sympy.log((Z[0] + (1 +
+                        2 ** (1/2)) * B) / (Z[0] + (1 - 2 ** (1/2)) * B))
+            lnphi2 = self.b / self.bm * (Z[1] - 1) - sympy.log(Z[1] - B) - A / (2 * (2 ** (1/2))
+                        * B) * (2 * self.psi / self.aalpha - self.b / self.bm) * sympy.log((Z[1] + (1 +
+                        2 ** (1/2)) * B) / (Z[1] + (1 - 2 ** (1/2)) * B))
+            lnphi3 =  self.b / self.bm * (Z[2] - 1) - sympy.log(Z[2] - B) - A / (2 * (2 ** (1/2))
+                        * B) * (2 * self.psi / self.aalpha - self.b / self.bm) * sympy.log((Z[2] + (1 +
+                        2 ** (1/2)) * B) / (Z[2] + (1 - 2 ** (1/2)) * B))
+            lnphi = np.array([lnphi1,lnphi2,lnphi3])
+
+        return lnphi
+
+    def run_sym(self, z, ph):
+        nkphase = sympy.symarray('nkphase', len(z))
+        Nphaseaa = self.Nphase[0,:,0]
+        Nphase = Nphaseaa[ph]
+        if Nphase!=0:
+            lnphi_all = self.lnphi_sym(nkphase, Nphase, ph)
+            import pdb; pdb.set_trace()
+            A, B = self.coefficientsPR(z)
+            Z = np.array(StabilityCheck.Z_PR_sym(B, A, ph))
+            reais = np.full(len(Z), False, dtype=bool)
+            for r in range(0,len(Z)):
+                reais[r] = sympify(Z[r]).is_real
+
+            Z_reais = Z[reais]
+            Z_ans = min(Z_reais) * ph + max(Z_reais) * (1 - ph)
+            a = np.argwhere(Z == Z_ans)
+
+            lnphi = lnphi_all[a,:]
+            # lnphi = sympy.simplify(lnphi)
+            nkphase_value = z * Nphase
+
+            dlnphi_dn = sympy.diff(lnphi,nkphase[i])
+            func1 = lambdify(nkphase, dlnphi_dn,'numpy')
+            dlnphi_dnk = np.array(func1(*nkphase_value))
+            dlnphi_dnk_resh = dlnphi_dnk.T[:,0,0,:]
+
+        else: dlnphi_dnk_resh = np.zeros([self.Nc,self.Nc])
+
+        return dlnphi_dnk_resh '''
