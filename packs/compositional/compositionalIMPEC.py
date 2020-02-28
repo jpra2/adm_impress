@@ -8,9 +8,8 @@ import scipy.sparse as sp
 import numpy as np
 
 
-class CompositionalFVM(DataManager):
-    def __init__(self, M, data_impress, wells, fprop, fprop_block, kprop, load, deltaT, data_name: str='CompositionalFVM.npz'):
-        super().__init__(data_name, load=load)
+class CompositionalFVM:
+    def __init__(self, M, data_impress, wells, fprop, fprop_block, kprop, load, deltaT):
         self.n_phases = 3 #includding water
         self.n_volumes = data_impress.len_entities['volumes']
         self.n_components = fprop.Nc + 1
@@ -22,16 +21,9 @@ class CompositionalFVM(DataManager):
         self.relative_permeability = self.relative_permeability()
         self.phase_viscosity = getattr(phase_viscosity, data_loaded['compositional_data']['phase_viscosity'])
         self.phase_viscosity = self.phase_viscosity(self.n_volumes, fprop, kprop)
+        self.runIMPEC(M, data_loaded, data_impress, wells, fprop, fprop_block, kprop, deltaT)
 
-        if not load:
-            self.loop = 0
-            self.vpi = 0.0
-            self.t = 0.0
-            self.contador_vtk = 0
-            self.run(M, data_loaded, data_impress, wells, fprop, fprop_block, kprop, deltaT)
-        else: self.load_infos()
-
-    def run(self, M, data_loaded, data_impress, wells, fprop, fprop_block, kprop, deltaT):
+    def runIMPEC(self, M, data_loaded, data_impress, wells, fprop, fprop_block, kprop, deltaT):
         self.update_relative_permeabilities(fprop)
         self.update_phase_viscosities(data_loaded, fprop, kprop)
         self.update_mobilities()
@@ -121,7 +113,7 @@ class CompositionalFVM(DataManager):
         ''' Transmissibility diagonal term '''
         diag = np.diag(self.Vbulk * self.porosity * self.cf - self.dVtP)
         T += diag
-        self['Tini'] = T
+        # self['Tini'] = T
 
         ''' Includding contour conditions '''
         T[wells['ws_p'],:] = 0
@@ -194,9 +186,10 @@ class CompositionalFVM(DataManager):
 
         cx = np.arange(self.n_components)
         lines = np.array([np.repeat(cx,len(v0[:,0])), np.repeat(cx,len(v0[:,1]))]).astype(int).flatten()
-        cols = np.array([np.tile(v0[:,0],self.n_components),np.tile(v0[:,1], self.n_components)]).flatten()
-        data = np.array([flux, - flux]).flatten()
-        flux_vols_total = sp.csc_matrix((data, (lines, cols)), shape=(self.n_components, self.n_volumes)).toarray()#.flatten()
+        cols = np.array([np.tile(v0[:,0],self.n_components), np.tile(v0[:,1], self.n_components)]).flatten()
+        data = np.array([flux, -flux]).flatten()
+        flux_vols_total = sp.csc_matrix((data, (lines, cols)), shape = (self.n_components, self.n_volumes)).toarray() #.flatten()
+        # data_impress['flux_volumes'] = flux_vols_total
 
         # só ta funcionando pra 1d:
         #flux_vols = np.zeros([self.n_components,2,self.n_volumes])
