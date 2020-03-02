@@ -10,8 +10,17 @@ class TpfaFlux:
         transmissibility_faces = self.data_impress[self.data_impress.variables_impress['transmissibility']]
         source_term_faces = np.zeros(len(transmissibility_faces))
         internal_faces = self.elements_lv0['internal_faces']
+        areas_internal_faces = self.data_impress['area'][internal_faces]
+        k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
+        dh_internal_faces = self.data_impress['dist_cent'][internal_faces]
+
+        # upwind_grav = np.full((len(internal_faces), 2), False, dtype=bool)
+
+        # import pdb; pdb.set_trace()
 
         if self.gravity:
+
+            up_g = np.zeros(len(internal_faces), dtype=int)
 
             gamma = self.data_impress['gama']
             gama_faces = self.data_impress['gama_faces']
@@ -21,9 +30,16 @@ class TpfaFlux:
             transmissibility_internal_faces = transmissibility_faces[internal_faces]
             t0 = transmissibility_internal_faces
             zs = centroids[:, 2]
+            up_g[zs[v0[:, 1]] >= zs[v0[:, 0]]] = v0[zs[v0[:, 1]] >= zs[v0[:, 0]], 0]
+            up_g[zs[v0[:, 1]] < zs[v0[:, 0]]] = v0[zs[v0[:, 1]] < zs[v0[:, 0]], 1]
+            lambda_w_internal_faces = self.data_impress['lambda_w'][up_g]
+            lambda_o_internal_faces = self.data_impress['lambda_o'][up_g]
+            gama_w = self.biphasic_data['gama_w']
+            gama_o = self.biphasic_data['gama_o']
 
             # source_term_internal_faces = -1*(zs[v0[:, 1]]*gamma[v0[:, 1]] - zs[v0[:, 0]]*gamma[v0[:, 0]])*t0
-            source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*t0*gama_faces[internal_faces]
+            # source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*t0*gama_faces[internal_faces]
+            source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w + lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
             source_term_faces[internal_faces] = source_term_internal_faces
 
             lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
@@ -53,8 +69,8 @@ class TpfaFlux:
         ps0 = x[v0[:, 0]]
         ps1 = x[v0[:, 1]]
 
-        flux_internal_faces = -((ps1 - ps0) * t0 - self.data_impress['flux_grav_faces'][internal_faces])
-        # flux_internal_faces = -((ps1 - ps0) * t0)
+        # flux_internal_faces = -((ps1 - ps0) * t0 - self.data_impress['flux_grav_faces'][internal_faces])
+        flux_internal_faces = -((ps1 - ps0) * t0)
         velocity = (flux_internal_faces / a0).reshape([len(internal_faces), 1])
         velocity = velocity * u_normal[internal_faces]
         velocity_faces[internal_faces] = velocity

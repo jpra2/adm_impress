@@ -174,7 +174,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         data = np.array([flux_w_internal_faces, -flux_w_internal_faces]).flatten()
         flux_w_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
 
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         flux_w_volumes[ws_prod] -= flux_volumes[ws_prod]*fw_vol[ws_prod]
         flux_w_volumes[ws_inj] -= flux_volumes[ws_inj]*fw_vol[ws_inj]
@@ -268,7 +268,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         volumes = self.data_impress['volume']
         phis = self.data_impress['poro']
 
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         # ids_2 = ids[fw_volumes < 0]
         # if len(ids_2) > 0:

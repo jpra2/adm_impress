@@ -8,7 +8,7 @@ M, elements_lv0, data_impress, wells = initial_mesh()
 b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
 # b1.run()
 # import pdb; pdb.set_trace()
-n = 10
+n = 1
 n2 = 20
 n_for_save = 20
 cont_for_save = 1
@@ -31,6 +31,7 @@ while verif:
         name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
         M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
         # import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
     cont += 1
     loop += 1
     if loop > 200:

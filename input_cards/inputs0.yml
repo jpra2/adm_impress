@@ -46,7 +46,7 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: 10000.0
+    value: 10000000.0
   P3:
     p0:
     - 26.0
@@ -66,8 +66,8 @@ biphasic_data:
   Sor: 0.2
   Swc: 0.2
   cfl: 0.9
-  gama_o: 90.0
-  gama_w: 100.0
+  gama_o: 900.0
+  gama_w: 1000.0
   kro0: 1.0
   krw0: 1.0
   loop_maximo: null
@@ -88,7 +88,7 @@ file_name_permeability: spe10_perms_and_phi.npz
 get_correction_term: false
 gravity: true
 load_biphasic_data: false
-load_data: true
+load_data: false
 load_multilevel_data: false
 load_operators: false
 mesh_name: mesh/27x27x27.msh
