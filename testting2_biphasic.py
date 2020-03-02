@@ -26,6 +26,7 @@ while verif:
         b1.run_2()
         cont_for_save += 1
     print(f'\n loop: {b1.loop}\n')
+    import pdb; pdb.set_trace()
     if cont % n == 0:
         cont = 1
         data_impress.update_variables_to_mesh()
