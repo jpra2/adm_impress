@@ -165,9 +165,22 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         flux_volumes = self.data_impress['flux_volumes']
         ws_prod = self.wells['ws_prod']
         ws_inj = self.wells['ws_inj']
+        x = self.data_impress['pressure']
+        grav_source_term_water_volumes = self._data['grav_source_term_water_volumes']
+        lambda_w_internal_faces = self.data_impress['lambda_w'][v0[self._data['upwind_identificate']]]
+
+        areas_internal_faces = self.data_impress['area'][internal_faces]
+        k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
+        dh_internal_faces = self.data_impress['dist_cent'][internal_faces]
+
+        ps0 = x[v0[:, 0]]
+        ps1 = x[v0[:, 1]]
 
         flux_w_faces = fw_faces*total_flux_faces
         flux_w_internal_faces = flux_w_faces[internal_faces]
+        flux_w_internal_faces2 = -((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*lambda_w_internal_faces/dh_internal_faces - self._data['grav_source_term_water_internal_faces'])
+        verif = np.allclose(flux_w_internal_faces, flux_w_internal_faces2)
+        import pdb; pdb.set_trace()
 
         lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
         cols = np.repeat(0, len(lines))
@@ -368,24 +381,30 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         v1 = vols_viz_internal_faces[:, 1]
         flux_faces = self.data_impress['flux_faces']
         flux_internal_faces = flux_faces[internal_faces]
-        gama = self.data_impress['gama']
-        gama_faces = np.zeros(len(self.data_impress['gama_faces']))
+        # gama = self.data_impress['gama']
+        # gama_faces = np.zeros(len(self.data_impress['gama_faces']))
 
-        ids = np.arange(len(internal_faces))
+        # ids = np.arange(len(internal_faces))
+        #
+        # fluxo_positivo = ids[flux_internal_faces >= 0]
+        # outros = np.setdiff1d(ids, fluxo_positivo)
 
-        fluxo_positivo = ids[flux_internal_faces <= 0]
-        outros = np.setdiff1d(ids, fluxo_positivo)
+        # total_mobility_internal_faces = np.zeros(len(internal_faces))
+        # fw_internal_faces = total_mobility_internal_faces.copy()
 
-        total_mobility_internal_faces = np.zeros(len(internal_faces))
-        fw_internal_faces = total_mobility_internal_faces.copy()
+        # total_mobility_internal_faces[fluxo_positivo] = lambda_t[v1[fluxo_positivo]]
+        # total_mobility_internal_faces[outros] = lambda_t[v0[outros]]
 
-        total_mobility_internal_faces[fluxo_positivo] = lambda_t[v1[fluxo_positivo]]
-        total_mobility_internal_faces[outros] = lambda_t[v0[outros]]
+        total_mobility_internal_faces = lambda_t[vols_viz_internal_faces[self._data['upwind_identificate']]]
 
-        fw_internal_faces[fluxo_positivo] = fw_vol[v1[fluxo_positivo]]
-        fw_internal_faces[outros] = fw_vol[v0[outros]]
-        gama_faces[internal_faces[fluxo_positivo]] = gama[v1[fluxo_positivo]]
-        gama_faces[internal_faces[outros]] = gama[v0[outros]]
+        # fw_internal_faces[fluxo_positivo] = fw_vol[v1[fluxo_positivo]]
+        # fw_internal_faces[outros] = fw_vol[v0[outros]]
+
+        fw_internal_faces = fw_vol[vols_viz_internal_faces[self._data['upwind_identificate']]]
+
+
+        # gama_faces[internal_faces[fluxo_positivo]] = gama[v1[fluxo_positivo]]
+        # gama_faces[internal_faces[outros]] = gama[v0[outros]]
 
         total_mobility_faces = np.zeros(len(pretransmissibility))
         fw_faces = total_mobility_faces.copy()
@@ -395,14 +414,14 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
 
         fw_faces[internal_faces] = fw_internal_faces
         fw_faces[b_faces] = fw_vol[vols_viz_boundary_faces]
-        gama_faces[b_faces] = gama[vols_viz_boundary_faces]
+        # gama_faces[b_faces] = gama[vols_viz_boundary_faces]
 
         transmissibility = pretransmissibility*total_mobility_faces
 
         self.data_impress['transmissibility'] = transmissibility.copy()
         self.data_impress['lambda_t_faces'] = total_mobility_faces.copy()
         self.data_impress['fw_faces'] = fw_faces.copy()
-        self.data_impress['gama_faces'] = gama_faces.copy()
+        # self.data_impress['gama_faces'] = gama_faces.copy()
 
     def update_loop(self):
         self.loop += 1
