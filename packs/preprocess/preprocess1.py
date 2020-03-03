@@ -39,6 +39,10 @@ def set_saturation_regions(M, wells):
 
                 all_wells.append(wells)
                 all_values.append(np.repeat(value, len(wells)))
+            
+
+        else:
+            raise("Tipo não suportado, disponíveis: all, box, wells")
 
             all_wells = np.array(all_wells)
             all_values = np.array(all_values)
