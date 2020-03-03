@@ -72,8 +72,12 @@ class TpfaFlux:
         a0 = area_internal_faces
         velocity_faces = np.zeros(self.data_impress['velocity_faces'].shape)
         u_normal = self.data_impress['u_normal']
-        self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
+        # self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
         x = self.data_impress['pressure']
+
+        areas_internal_faces = self.data_impress['area'][internal_faces]
+        k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
+        dh_internal_faces = self.data_impress['dist_cent'][internal_faces]
 
         ps0 = x[v0[:, 0]]
         ps1 = x[v0[:, 1]]
@@ -87,10 +91,19 @@ class TpfaFlux:
 
         flux_faces[internal_faces] = flux_internal_faces
 
-        ident = flux_internal_faces >= 0
-        self._data['upwind_identificate'][ident, 0] = np.full(ident.sum(), True, dtype=bool)
-        ident = ~ident
-        self._data['upwind_identificate'][ident, 1] = np.full(ident.sum(), True, dtype=bool)
+        # lambda_w_internal_faces = self.data_impress['lambda_w'][v0[self._data['upwind_identificate']]]
+        # flux_w_internal_faces = -((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*lambda_w_internal_faces/dh_internal_faces - self._data['grav_source_term_water_internal_faces'])
+        #
+        # lambda_o_internal_faces = self.data_impress['lambda_o'][v0[self._data['upwind_identificate']]]
+        # flux_o_internal_faces = -((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*lambda_o_internal_faces/dh_internal_faces - (self.data_impress['flux_grav_faces'][internal_faces] - self._data['grav_source_term_water_internal_faces']))
+        #
+        # import pdb; pdb.set_trace()
+
+
+        # ident = flux_internal_faces >= 0
+        # self._data['upwind_identificate'][ident, 0] = np.full(ident.sum(), True, dtype=bool)
+        # ident = ~ident
+        # self._data['upwind_identificate'][ident, 1] = np.full(ident.sum(), True, dtype=bool)
 
         lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
         cols = np.repeat(0, len(lines))

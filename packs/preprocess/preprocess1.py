@@ -12,7 +12,6 @@ def set_saturation_regions(M, wells):
         d0 = direc.data_loaded[direc.names_data_loaded_lv0[4]][reg]
         tipo = d0['type']
         value = d0['value']
-        import pdb; pdb.set_trace()
 
         if tipo == direc.types_region_for_saturation[0]:
             tamanho_variavel = len(M.data[M.data.variables_impress['saturation']])
@@ -56,5 +55,3 @@ def set_saturation_regions(M, wells):
 
         else:
             raise NameError("Tipo não suportado, disponíveis: all, box, wells")
-
-    import pdb; pdb.set_trace()

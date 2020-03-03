@@ -22,6 +22,11 @@ class BrooksAndCorey:
 
     def calculate(self, saturations):
 
+        # import pdb; pdb.set_trace()
+        # name='results/test_1'
+        #
+        # M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+
         n = len(saturations)
         ids = np.arange(n)
         ids_fora = ids[(saturations < 0) | (saturations > 1)]
