@@ -142,6 +142,13 @@ gama_faces:
   sparse: True
   level: 0
 
+flux_cap_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
 # Volumes
 centroid_volumes:
   type: volumes
@@ -473,6 +480,13 @@ erro_pcorr_pdm:
   level: 0
 
 tpfa_pressure:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_cap_volumes:
   type: volumes
   data size: 1
   data type: float

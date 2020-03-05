@@ -172,3 +172,24 @@ def m3seg_to_bbldia(val=1.0):
     bbldia = m3s.to(ureg.bbl / ureg.day).magnitude
     return bbldia
     # return val/k8
+
+def atm_to_psi(val=1.0):
+
+    atm = val*ureg.atm
+    psi = atm.to(ureg.psi).magnitude
+    return psi
+
+def psi_to_atm(val=1.0):
+    psi = val*ureg.psi
+    atm = psi.to(ureg.atm).magnitude
+    return atm
+
+def atm_to_pa(val=1.0):
+    atm = val*(ureg.atm)
+    pa = atm.to(ureg.Pa).magnitude
+    return pa
+
+def pa_to_atm(val=1.0):
+    Pa = val*(ureg.Pa)
+    atm = Pa.to(ureg.atm).magnitude
+    return atm

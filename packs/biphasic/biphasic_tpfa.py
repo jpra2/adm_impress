@@ -7,6 +7,7 @@ from .. import directories as direc
 import numpy as np
 import scipy.sparse as sp
 import time
+from ..utils.capillary_pressure import capillaryPressureBiphasic
 
 class BiphasicTpfa(FineScaleTpfaPressureSolver):
 
@@ -26,6 +27,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.all_biphasic_results = self.get_empty_current_biphasic_results()
         self.mesh = M
         self.solver = SolverSp()
+        self.capillary_model = capillaryPressureBiphasic()
 
         if not load:
             self.loop = 0
@@ -504,7 +506,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
 
     def run(self, save=False):
 
-        T, b = super().run()
+        # T, b = super().run()
+        T, b = self.get_T_and_b()
         p = self.solver.direct_solver(T, b)
         self.data_impress['pressure'] = p
         self.get_flux_faces_and_volumes()
