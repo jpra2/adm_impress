@@ -8,6 +8,7 @@
 *.msh
 !27x27x27.msh
 *.txt
+!const_definitions.txt
 *.csv
 *.png
 *_tt.py

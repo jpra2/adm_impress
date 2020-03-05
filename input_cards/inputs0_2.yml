@@ -24,6 +24,7 @@ load_operators: false
 # load_operators: true
 get_correction_term: false
 n_levels: 2
+capillary_pressure: false
 _debug: True
 
 Crs:
