@@ -13,6 +13,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
 
     def __init__(self, M, data_impress, elements_lv0, wells, data_name: str='BiphasicTpfa.npz'):
         load = data_loaded['load_biphasic_data']
+        self.load = load
         super().__init__(data_impress, elements_lv0, wells, data_name=data_name, load=load)
         self.biphasic_data = data_loaded['biphasic_data']
         self.relative_permeability = getattr(relative_permeability, self.biphasic_data['relative_permeability'])
@@ -27,7 +28,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.all_biphasic_results = self.get_empty_current_biphasic_results()
         self.mesh = M
         self.solver = SolverSp()
-        self.capillary_model = capillaryPressureBiphasic()
+        # self.capillary_model = capillaryPressureBiphasic()
 
         if not load:
             self.loop = 0
@@ -540,6 +541,11 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
 
         T, b = super().run()
         return T, b
+
+    def print_test(self):
+        self.data_impress.update_variables_to_mesh()
+        name = 'results/test_'
+        self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
 
     def gama_volumes_average():
         doc = "The gama_volumes_average property."

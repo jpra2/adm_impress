@@ -486,6 +486,20 @@ tpfa_pressure:
   sparse: True
   level: 0
 
+capillary_pressure:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+water_pressure:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
 flux_cap_volumes:
   type: volumes
   data size: 1

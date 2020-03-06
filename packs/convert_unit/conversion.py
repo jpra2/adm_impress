@@ -12,7 +12,6 @@ class Conversion:
         '''
         converte as unidades do sistema americano para o SI
         '''
-        import pdb; pdb.set_trace()
         k0 = constants.psi_to_Pa()
         k1 = constants.bbldia_to_m3seg()
 
