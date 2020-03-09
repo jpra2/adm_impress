@@ -86,7 +86,7 @@ class capillaryPressureBiphasic:
         return gradient_cap_faces*areas*k_harm
 
     def get_flux_cap_volumes(self, vols_viz_faces, flux_cap_faces):
-        lines = np.concatenate(vols_viz_faces[:,0], vols_viz_faces[:,1])
+        lines = np.concatenate([vols_viz_faces[:,0], vols_viz_faces[:,1]])
         n = len(np.unique(lines))
         cols = np.zeros(len(lines), dtype=int)
         data = np.concatenate([flux_cap_faces, -flux_cap_faces])
@@ -113,17 +113,3 @@ class capillaryPressureBiphasic:
             flux_cap_faces = np.zeros(len(faces))
 
         return flux_cap_faces, flux_cap_volumes
-
-    def convert_capillary_pressure_to():
-        doc = "The convert_capillary_pressure_to property."
-        def fget(self):
-            return self._convert_capillary_pressure_to
-        def fset(self, value):
-            if value not in capillaryPressureBiphasic.names_pressure:
-                raise NameError(f'{value} nao esta listado.\nNomes validos: {capillaryPressureBiphasic.names_pressure}')
-            self._convert_capillary_pressure_to = value
-        def fdel(self):
-            # del self._convert_capillary_pressure_to
-            pass
-        return locals()
-    convert_capillary_pressure_to = property(**convert_capillary_pressure_to())

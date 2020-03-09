@@ -46,7 +46,7 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: 10000000.0
+    value: 10000000000.0
   P3:
     p0:
     - 26.0
@@ -82,8 +82,8 @@ biphasic_data:
   - 0.1
   - 0.3
   - 0.5
-capillary_pressure: false
-convert_capillary_pressure_to: psi
+capillary_pressure: true
+convert_capillary_pressure_to: Pa
 convert_english_to_SI: false
 deletar_results: true
 file_name_permeability: spe10_perms_and_phi.npz

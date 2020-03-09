@@ -8,8 +8,9 @@ import numpy as np
 import scipy.sparse as sp
 import time
 from ..utils.capillary_pressure import capillaryPressureBiphasic
+from .biphasic_properties import biphasicProperties
 
-class BiphasicTpfa(FineScaleTpfaPressureSolver):
+class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 
     def __init__(self, M, data_impress, elements_lv0, wells, data_name: str='BiphasicTpfa.npz'):
         load = data_loaded['load_biphasic_data']
@@ -71,10 +72,14 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
     def update_mobilities(self):
 
         n = self.n_volumes
-        lambda_w = self.data_impress['krw']/self.biphasic_data['mi_w']
-        lambda_o = self.data_impress['kro']/self.biphasic_data['mi_o']
-        lambda_t = lambda_w + lambda_o
-        fw_vol = lambda_w/lambda_t
+        # lambda_w = self.data_impress['krw']/self.biphasic_data['mi_w']
+        # lambda_o = self.data_impress['kro']/self.biphasic_data['mi_o']
+        # lambda_t = lambda_w + lambda_o
+        # fw_vol = lambda_w/lambda_t
+        lambda_w = self.lambda_w_volumes
+        lambda_o = self.lambda_o_volumes
+        lambda_t = self.lambda_t_volumes
+        fw_vol = self.fw_volumes
 
         self.data_impress['lambda_w'] = lambda_w
         self.data_impress['lambda_o'] = lambda_o
@@ -546,14 +551,3 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver):
         self.data_impress.update_variables_to_mesh()
         name = 'results/test_'
         self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
-
-    def gama_volumes_average():
-        doc = "The gama_volumes_average property."
-        def fget(self):
-            gama_w = self.biphasic_data['gama_w']
-            gama_o = self.biphasic_data['gama_o']
-            lambda_w = self.data_impress['lambda_w']
-            lambda_o = self.data_impress['lambda_o']
-            return np.repeat(gama_w, len(lambda_w))*lambda_w + np.repeat(gama_o, len(lambda_o))*lambda_o
-        return locals()
-    gama_volumes_average = property(**gama_volumes_average())

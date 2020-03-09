@@ -54,12 +54,13 @@ class TpfaFlux:
             # cols = np.zeros(len(lines), dtype=np.int32)
             data = np.array([grav_source_term_water_internal_faces, -grav_source_term_water_internal_faces]).flatten()
             self._data['grav_source_term_water_volumes'] = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
-            self._data['grav_source_term_water_internal_faces'] = grav_source_term_water_internal_faces
+            self._data['grav_source_term_water_faces'][internal_faces] = grav_source_term_water_internal_faces
 
         self.data_impress[self.data_impress.variables_impress['flux_grav_volumes']] = source_term_volumes.copy()
         self.data_impress[self.data_impress.variables_impress['flux_grav_faces']] = source_term_faces.copy()
 
     def get_flux_faces_and_volumes(self) -> None:
+
 
         vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
         v0 = vols_viz_internal_faces

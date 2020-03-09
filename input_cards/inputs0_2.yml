@@ -79,7 +79,7 @@ Wells:
     type: Injector
     type_region: box
     # value: 3000000.0
-    value: 10000000.0
+    value: 10000000000.0
   P3:
     # p0: [880.0, 440.0, 0.0]
     # p1: [900.0, 450.0, 90.0]
