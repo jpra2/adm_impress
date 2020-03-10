@@ -53,21 +53,21 @@ Porosity:
 Saturation:
   r1:
     type: all
-    value: 0.2
+    value: 0.8
 
-  # r2:
-  #   type: box
-  #   type1_well: null
-  #   type2_well: null
-  #   p0: [0.0, 0.0, 0.0]
-  #   p1: [27.0, 27.0, 13.0]
-  #   value: 0.2
+  r2:
+    type: box
+    type1_well: null
+    type2_well: null
+    p0: [0.0, 0.0, 0.0]
+    p1: [27.0, 27.0, 13.0]
+    value: 0.2
 
   r3:
     type: wells
     type1_well: Injector
     type2_well: null
-    value: 1.0
+    value: 0.8
 
 Wells:
   P1:

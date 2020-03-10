@@ -59,6 +59,9 @@ class TpfaFlux:
         self.data_impress[self.data_impress.variables_impress['flux_grav_volumes']] = source_term_volumes.copy()
         self.data_impress[self.data_impress.variables_impress['flux_grav_faces']] = source_term_faces.copy()
 
+        self.print_test()
+        import pdb; pdb.set_trace()
+
     def get_flux_faces_and_volumes(self) -> None:
 
 

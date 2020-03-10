@@ -27,12 +27,25 @@ Porosity:
 Saturation:
   r1:
     type: all
+    value: 0.8
+  r2:
+    p0:
+    - 0.0
+    - 0.0
+    - 0.0
+    p1:
+    - 27.0
+    - 27.0
+    - 13.0
+    type: box
+    type1_well: null
+    type2_well: null
     value: 0.2
   r3:
     type: wells
     type1_well: Injector
     type2_well: null
-    value: 1.0
+    value: 0.8
 Wells:
   P1:
     p0:
@@ -82,7 +95,7 @@ biphasic_data:
   - 0.1
   - 0.3
   - 0.5
-capillary_pressure: true
+capillary_pressure: false
 convert_capillary_pressure_to: Pa
 convert_english_to_SI: false
 deletar_results: true

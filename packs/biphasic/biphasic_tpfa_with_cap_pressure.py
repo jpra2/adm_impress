@@ -81,6 +81,11 @@ class biphasicTpfaCapPressure(BiphasicTpfa):
         # flux_w_faces = fw_faces*total_flux_faces
         # flux_w_internal_faces2 = flux_w_faces[internal_faces]
         flux_w_internal_faces = k0*((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*lambda_w_internal_faces/dh_internal_faces + k1*self._data['grav_source_term_water_faces'][internal_faces])
+
+        # x = self.data_impress['pressure']
+        # ps1 = x[v0[:, 1]]
+        # ps0 = x[v0[:, 0]]
+        # flux_o_internal_faces = k0*((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*lambda_o_internal_faces/dh_internal_faces + k1*(self.data_impress['flux_grav_faces'][internal_faces] - self._data['grav_source_term_water_faces'][internal_faces]))
         # flux_w_internal_faces = (total_flux_faces[internal_faces] + k_harm_internal_faces*areas_internal_faces*self.lambda_o_internal_faces*(ps1 - ps0)/dh_internal_fa
         # flux_w_internal_faces = fw_internal_faces*(total_flux_faces[internal_faces] - k_harm_internal_faces*areas_internal_faces*self.lambda_o_internal_faces*self.capillary_model.get_gradient_cap_presure(dh_internal_faces, cap_pressure))
         # flux_w_internal_faces = (total_flux_faces[internal_faces] + k_harm_internal_faces*areas_internal_faces*self.lambda_o_internal_faces*(ps1 - ps0)/dh_internal_faces)
@@ -136,6 +141,9 @@ class biphasicTpfaCapPressure(BiphasicTpfa):
         #
         # flux_w_faces = np.zeros(len(self.data_impress['flux_w_faces']))
         # flux_w_faces[internal_faces] = flux_w_internal_faces
+
+        import pdb; pdb.set_trace()
+
 
         self.data_impress['flux_w_faces'] = np.zeros(len(self.data_impress['flux_w_faces']))
         self.data_impress['flux_w_faces'][internal_faces] = flux_w_internal_faces

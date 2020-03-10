@@ -9,7 +9,7 @@ def update_inputs():
     # dd['load_multilevel_data'] = True
     # dd['load_operators'] = True
     # dd['load_biphasic_data'] = True
-    dd['capillary_pressure'] = True
+    # dd['capillary_pressure'] = True
 
 
     # dd['read_permeability'] = True
