@@ -13,6 +13,7 @@ class TpfaFlux:
         areas_internal_faces = self.data_impress['area'][internal_faces]
         k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
         dh_internal_faces = self.data_impress['dist_cent'][internal_faces]
+        u_normal_internal_faces = self.data_impress['u_normal'][internal_faces]
         self._data['grav_source_term_water_volumes'] = source_term_volumes.copy()
         self._data['grav_source_term_water_faces'] = source_term_faces.copy()
 
@@ -36,6 +37,8 @@ class TpfaFlux:
             up_g[zs[v0[:, 1]] < zs[v0[:, 0]]] = v0[zs[v0[:, 1]] < zs[v0[:, 0]], 1]
             lambda_w_internal_faces = self.data_impress['lambda_w'][up_g]
             lambda_o_internal_faces = self.data_impress['lambda_o'][up_g]
+            # lambda_w_internal_faces = self.data_impress['lambda_w'][v0[self._data['upwind_identificate']]]
+            # lambda_o_internal_faces = self.data_impress['lambda_o'][v0[self._data['upwind_identificate']]]
             gama_w = self.biphasic_data['gama_w']
             gama_o = self.biphasic_data['gama_o']
 
@@ -43,7 +46,9 @@ class TpfaFlux:
             # source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*t0*gama_faces[internal_faces]
             source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w + lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
             source_term_faces[internal_faces] = source_term_internal_faces
+
             grav_source_term_water_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
+            # grav_source_term_water_internal_faces = 1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
 
             lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
             cols = np.zeros(len(lines), dtype=np.int32)
@@ -59,8 +64,8 @@ class TpfaFlux:
         self.data_impress[self.data_impress.variables_impress['flux_grav_volumes']] = source_term_volumes.copy()
         self.data_impress[self.data_impress.variables_impress['flux_grav_faces']] = source_term_faces.copy()
 
-        self.print_test()
-        import pdb; pdb.set_trace()
+        self.data_impress['flux_grav_w_faces_vec'][internal_faces] = self._data['grav_source_term_water_faces'][internal_faces].reshape(len(internal_faces), 1)*u_normal_internal_faces
+        self.data_impress['flux_grav_o_faces_vec'][internal_faces] = (self.data_impress['flux_grav_faces'][internal_faces] - self._data['grav_source_term_water_faces'][internal_faces]).reshape(len(internal_faces), 1)*u_normal_internal_faces
 
     def get_flux_faces_and_volumes(self) -> None:
 

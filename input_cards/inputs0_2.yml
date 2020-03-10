@@ -48,7 +48,7 @@ Porosity:
   #   type: box
   #   p0: [0.0, 0.0, 0.0]
   #   p1: [20.0, 10.0, 54.0]
-  #   value: 0.1
+  #   value: 0.8
 
 Saturation:
   r1:
@@ -79,7 +79,9 @@ Wells:
     type: Injector
     type_region: box
     # value: 3000000.0
-    value: 10000000000.0
+    # value: 10000000000.0
+    value: 1.0
+    # value: 10000000.0
   P3:
     # p0: [880.0, 440.0, 0.0]
     # p1: [900.0, 450.0, 90.0]
@@ -98,13 +100,13 @@ biphasic_data:
   Sor: 0.2
   Swc: 0.2
   cfl: 0.9
-  gama_o: 900.0
+  gama_o: 1000.0
   gama_w: 1000.0
   kro0: 1.0
   krw0: 1.0
   loop_maximo: null
   loops_para_gravar: 2
-  mi_o: 0.05
+  mi_o: 0.01
   mi_w: 0.01
   n_o: 2.0
   n_w: 2.0

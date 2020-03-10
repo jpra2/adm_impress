@@ -46,7 +46,7 @@ def initial_mesh():
             ml_data.run()
             # ml_data.save_mesh()
 
-    wells = Wells(M, load=load)
+    wells = Wells(M, elements_lv0, load=load)
 
     biphasic = data_loaded['biphasic']
     load_biphasic_data = data_loaded['load_biphasic_data']

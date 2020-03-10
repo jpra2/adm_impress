@@ -172,18 +172,48 @@ flux_grav_faces:
   level: 0
   sparse: true
   type: faces
+flux_grav_o_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
 flux_grav_volumes:
   data size: 1
   data type: float
   level: 0
   sparse: true
   type: volumes
+flux_grav_w_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_o_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
 flux_o_volumes:
   data size: 1
   data type: float
   level: 0
   sparse: true
   type: volumes
+flux_press_o_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_press_w_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
 flux_volumes:
   data size: 1
   data type: float
@@ -198,6 +228,12 @@ flux_volumes_test:
   type: volumes
 flux_w_faces:
   data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_w_faces_vec:
+  data size: 3
   data type: float
   level: 0
   sparse: true

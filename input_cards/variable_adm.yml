@@ -21,6 +21,8 @@ centroid_nodes:
   sparse: True
   level: 0
 
+########################################################################################
+
 #edges
 centroid_edges:
   type: edges
@@ -28,6 +30,8 @@ centroid_edges:
   data type: float
   sparse: True
   level: 0
+
+########################################################################################
 
 # Faces
 flux:
@@ -148,6 +152,50 @@ flux_cap_faces:
   data type: float
   sparse: True
   level: 0
+
+flux_w_faces_vec:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+flux_o_faces_vec:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+flux_grav_w_faces_vec:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+flux_grav_o_faces_vec:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+flux_press_o_faces_vec:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+flux_press_w_faces_vec:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+#################################################################################
 
 # Volumes
 centroid_volumes:
