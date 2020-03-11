@@ -10,29 +10,65 @@ class TpfaFlux:
         transmissibility_faces = self.data_impress[self.data_impress.variables_impress['transmissibility']]
         source_term_faces = np.zeros(len(transmissibility_faces))
         internal_faces = self.elements_lv0['internal_faces']
+        areas_internal_faces = self.data_impress['area'][internal_faces]
+        k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
+        dh_internal_faces = self.data_impress['dist_cent'][internal_faces]
+        u_normal_internal_faces = self.data_impress['u_normal'][internal_faces]
+        self._data['grav_source_term_water_volumes'] = source_term_volumes.copy()
+        self._data['grav_source_term_water_faces'] = source_term_faces.copy()
+
+        # upwind_grav = np.full((len(internal_faces), 2), False, dtype=bool)
+
+        # import pdb; pdb.set_trace()
 
         if self.gravity:
 
+            up_g = np.zeros(len(internal_faces), dtype=int)
+
             gamma = self.data_impress['gama']
+            gama_faces = self.data_impress['gama_faces']
 
             vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
             v0 = vols_viz_internal_faces
             transmissibility_internal_faces = transmissibility_faces[internal_faces]
             t0 = transmissibility_internal_faces
             zs = centroids[:, 2]
+            up_g[zs[v0[:, 1]] >= zs[v0[:, 0]]] = v0[zs[v0[:, 1]] >= zs[v0[:, 0]], 0]
+            up_g[zs[v0[:, 1]] < zs[v0[:, 0]]] = v0[zs[v0[:, 1]] < zs[v0[:, 0]], 1]
+            lambda_w_internal_faces = self.data_impress['lambda_w'][up_g]
+            lambda_o_internal_faces = self.data_impress['lambda_o'][up_g]
+            # lambda_w_internal_faces = self.data_impress['lambda_w'][v0[self._data['upwind_identificate']]]
+            # lambda_o_internal_faces = self.data_impress['lambda_o'][v0[self._data['upwind_identificate']]]
+            gama_w = self.biphasic_data['gama_w']
+            gama_o = self.biphasic_data['gama_o']
 
-            source_term_internal_faces = -1*(zs[v0[:, 1]]*gamma[v0[:, 1]] - zs[v0[:, 0]]*gamma[v0[:, 0]])*t0
+            # source_term_internal_faces = -1*(zs[v0[:, 1]]*gamma[v0[:, 1]] - zs[v0[:, 0]]*gamma[v0[:, 0]])*t0
+            # source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*t0*gama_faces[internal_faces]
+            source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w + lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
             source_term_faces[internal_faces] = source_term_internal_faces
+
+            grav_source_term_water_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
+            # grav_source_term_water_internal_faces = 1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
 
             lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
             cols = np.zeros(len(lines), dtype=np.int32)
             data = np.array([source_term_internal_faces, -source_term_internal_faces]).flatten()
             source_term_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
 
+            # lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            # cols = np.zeros(len(lines), dtype=np.int32)
+            data = np.array([grav_source_term_water_internal_faces, -grav_source_term_water_internal_faces]).flatten()
+            self._data['grav_source_term_water_volumes'] = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
+            self._data['grav_source_term_water_faces'][internal_faces] = grav_source_term_water_internal_faces
+
         self.data_impress[self.data_impress.variables_impress['flux_grav_volumes']] = source_term_volumes.copy()
         self.data_impress[self.data_impress.variables_impress['flux_grav_faces']] = source_term_faces.copy()
 
+        self.data_impress['flux_grav_w_faces_vec'][internal_faces] = self._data['grav_source_term_water_faces'][internal_faces].reshape(len(internal_faces), 1)*u_normal_internal_faces
+        self.data_impress['flux_grav_o_faces_vec'][internal_faces] = (self.data_impress['flux_grav_faces'][internal_faces] - self._data['grav_source_term_water_faces'][internal_faces]).reshape(len(internal_faces), 1)*u_normal_internal_faces
+
     def get_flux_faces_and_volumes(self) -> None:
+
 
         vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
         v0 = vols_viz_internal_faces
@@ -45,8 +81,12 @@ class TpfaFlux:
         a0 = area_internal_faces
         velocity_faces = np.zeros(self.data_impress['velocity_faces'].shape)
         u_normal = self.data_impress['u_normal']
-
+        # self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
         x = self.data_impress['pressure']
+
+        areas_internal_faces = self.data_impress['area'][internal_faces]
+        k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
+        dh_internal_faces = self.data_impress['dist_cent'][internal_faces]
 
         ps0 = x[v0[:, 0]]
         ps1 = x[v0[:, 1]]
@@ -59,6 +99,20 @@ class TpfaFlux:
         flux_faces = np.zeros(len(self.data_impress['flux_faces']))
 
         flux_faces[internal_faces] = flux_internal_faces
+
+        # lambda_w_internal_faces = self.data_impress['lambda_w'][v0[self._data['upwind_identificate']]]
+        # flux_w_internal_faces = -((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*lambda_w_internal_faces/dh_internal_faces - self._data['grav_source_term_water_internal_faces'])
+        #
+        # lambda_o_internal_faces = self.data_impress['lambda_o'][v0[self._data['upwind_identificate']]]
+        # flux_o_internal_faces = -((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*lambda_o_internal_faces/dh_internal_faces - (self.data_impress['flux_grav_faces'][internal_faces] - self._data['grav_source_term_water_internal_faces']))
+        #
+        # import pdb; pdb.set_trace()
+
+
+        # ident = flux_internal_faces >= 0
+        # self._data['upwind_identificate'][ident, 0] = np.full(ident.sum(), True, dtype=bool)
+        # ident = ~ident
+        # self._data['upwind_identificate'][ident, 1] = np.full(ident.sum(), True, dtype=bool)
 
         lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
         cols = np.repeat(0, len(lines))
@@ -96,3 +150,11 @@ class TpfaFlux2:
 
         self.data_impress['flux_volumes'] = flux_volumes
         self.data_impress['velocity_faces'] = velocity_faces
+
+def get_flux_faces(p0: 'left side pressure',
+    p1: 'right side pressure',
+    t0: 'transmissibility faces',
+    flux_grav_faces: 'gravity flux of faces'
+):
+
+    return -((p1 - p0) * t0 - flux_grav_faces)

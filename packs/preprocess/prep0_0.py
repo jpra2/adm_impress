@@ -239,6 +239,25 @@ class Preprocess0:
         gama_mono = data_loaded['monophasic_data']['gama']
         M.data['gama'] = np.repeat(gama_mono, len(M.data['gama']))
 
+    def adj_matrix_volumes_volumes(self, M):
+
+        vols = self.elements_lv0['volumes']
+        n = len(vols)
+        vizs = M.volumes.bridge_adjacencies(vols, 2, 3)
+        adj_matrix = np.full((n, n), False, dtype=bool)
+        lines = []
+        cols = []
+        for v, viz in zip(vols, vizs):
+            n2 = len(viz)
+            lines.append(np.repeat(v, n2).astype(int))
+            cols.append(viz)
+
+        lines = np.concatenate(lines)
+        cols = np.concatenate(cols)
+        data = np.full(len(cols), True, dtype=bool)
+        adj_matrix[lines, cols] = data
+        self.elements_lv0['adj_matrix_volumes_volumes'] = adj_matrix
+
     def run(self, M):
         self.update_centroids_and_unormal(M)
         self.set_permeability_and_phi(M)
@@ -247,3 +266,4 @@ class Preprocess0:
         self.set_pretransmissibility(M)
         self.set_transmissibility_monophasic(M)
         self.initial_gama(M)
+        self.adj_matrix_volumes_volumes(M)

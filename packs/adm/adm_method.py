@@ -51,7 +51,7 @@ def solve_local_local_problem(solver, neigh_intern_faces, transmissibility, volu
     T = sp.csc_matrix((data, (lines, cols)), shape=(n, n))
     T = T.tolil()
 
-    T[indices_p2] = sp.lil_matrix((len(indices_p2), n))
+    T[indices_p2] = 0
     T[indices_p2, indices_p2] = np.ones(len(indices_p2))
 
     b = np.zeros(n)
@@ -126,19 +126,24 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.all_wells_ids = all_wells_ids
         self.n_levels = n_levels
         self.delta_sat_max = 0.1
-        # self.n_levels = 1
         self.data_impress = data_impress
         self.number_vols_in_levels = np.zeros(self.n_levels+1, dtype=int)
         gids_0 = self.data_impress['GID_0']
         self.data_impress['LEVEL_ID_0'] = gids_0.copy()
         self.solver = SolverSp()
 
+        from ..directories import data_loaded
+        self.get_correction_term = data_loaded['get_correction_term']
+
         self.adm_op_n = 'adm_prolongation_level_'
         self.adm_rest_n = 'adm_restriction_level_'
+        self.pcorr_n = 'pcorr_level_'
 
         self.n_cpu = mp.cpu_count()
         self.n_workers = self.n_cpu
-        self.so_nv1 = False
+        self._so_nv1 = False
+        if self.n_levels == 1:
+            self.so_nv1 = True
 
     def set_level_wells(self):
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
@@ -279,7 +284,7 @@ class AdmMethod(DataManager, TpfaFlux2):
     def restart_levels_2(self):
         self.data_impress['LEVEL'] = self.data_impress['INITIAL_LEVEL'].copy()
 
-    def organize_ops_adm(self, OP_AMS, OR_AMS, level):
+    def organize_ops_adm(self, OP_AMS, OR_AMS, level, _pcorr=None):
 
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
@@ -291,9 +296,10 @@ class AdmMethod(DataManager, TpfaFlux2):
         OP_AMS = OP_AMS.tolil()
 
         if level == 1:
-            OP_ADM, OR_ADM = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level)
+            OP_ADM, OR_ADM, pcorr = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
             self._data[self.adm_op_n + str(level)] = OP_ADM
             self._data[self.adm_rest_n + str(level)] = OR_ADM
+            self._data[self.pcorr_n+str(level-1)] = pcorr
             return 0
 
         n_adm = len(np.unique(level_id))
@@ -364,7 +370,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         return 0
 
-    def organize_ops_adm_level_1(self, OP_AMS, OR_AMS, level):
+    def organize_ops_adm_level_1(self, OP_AMS, OR_AMS, level, _pcorr=None):
 
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
@@ -407,7 +413,13 @@ class AdmMethod(DataManager, TpfaFlux2):
         data = np.ones(len(lines))
         OR_ADM = sp.csc_matrix((data,(lines,cols)),shape=(n1_adm,len(gid_0)))
 
-        return OP_ADM, OR_ADM
+        if self.get_correction_term:
+            pcorr = np.zeros(len(gid_0))
+            pcorr[levels>0] = _pcorr[levels>0]
+        else:
+            pcorr = np.array([False])
+
+        return OP_ADM, OR_ADM, pcorr
 
     def solve_multiscale_pressure(self, T: 'fine transmissibility matrix', b: 'fine source term'):
 
@@ -417,17 +429,26 @@ class AdmMethod(DataManager, TpfaFlux2):
         n_levels = self.n_levels
         for i in range(n_levels):
             level = i+1
-            # op_adm = self._data[self.adm_op_n + str(level)]
-            # rest_adm = self._data[self.adm_rest_n + str(level)]
-            T_adm = self._data[self.adm_rest_n + str(level)]*T_adm*self._data[self.adm_op_n + str(level)]
-            b_adm = self._data[self.adm_rest_n + str(level)]*b_adm
+            OP_adm = self._data[self.adm_op_n + str(level)]
+            OR_adm = self._data[self.adm_rest_n + str(level)]
+            if self.get_correction_term:
+                pcorr_adm = self._data[self.pcorr_n+str(level-1)]
+                b_adm = OR_adm*b_adm - OR_adm*T_adm*pcorr_adm
+            else:
+                b_adm = OR_adm*b_adm
+
+            T_adm = OR_adm*T_adm*OP_adm
 
         pms = self.solver.direct_solver(T_adm, b_adm)
         # p_adm = pms.copy()
 
         for i in range(n_levels):
             level = self.n_levels - i
-            pms = self._data[self.adm_op_n + str(level)]*pms
+            if self.get_correction_term:
+                pcorr_adm = self._data[self.pcorr_n+str(level-1)]
+                pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
+            else:
+                pms = self._data[self.adm_op_n + str(level)]*pms
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms
@@ -520,6 +541,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         neig_internal_faces = self.elements_lv0['neig_internal_faces']
         remaped_internal_faces = self.elements_lv0['remaped_internal_faces']
         flux_grav_faces = self.data_impress['flux_grav_faces']
+        flux_grav_volumes = self.data_impress['flux_grav_volumes']
 
         pcorr = np.zeros(len(pms))
         flux_faces = np.zeros(len(transmissibility))
@@ -546,6 +568,9 @@ class AdmMethod(DataManager, TpfaFlux2):
                 pressure_vertex = pms[vertex]
                 volumes = gid0[all_gids_coarse==gidc]
 
+                internal_volumes = np.setdiff1d(volumes, np.concatenate([intern_boundary_volumes, vertex]))
+                flux_grav_internal_volumes = flux_grav_volumes[internal_volumes]
+
                 neig_intersect_faces = neig_internal_faces[remaped_internal_faces[intersect_faces]]
                 v0 = neig_intersect_faces
                 transmissibility_intersect_faces = transmissibility[intersect_faces]
@@ -571,10 +596,18 @@ class AdmMethod(DataManager, TpfaFlux2):
                 t0 = transmissibility[intern_local_faces]
                 local_vertex = all_local_ids_coarse[vertex]
                 t0 = transmissibility[intern_local_faces]
+
+                local_id_internal_volumes = all_local_ids_coarse[internal_volumes]
+                indices_q2 = np.concatenate([local_intern_boundary_volumes, local_id_internal_volumes])
+                values_q2 = np.concatenate([values_q, flux_grav_internal_volumes])
+                # x = solve_local_local_problem(self.solver.direct_solver, local_neig_internal_local_faces, t0, local_id_volumes,
+                #     local_vertex, pressure_vertex, local_intern_boundary_volumes, values_q)
                 x = solve_local_local_problem(self.solver.direct_solver, local_neig_internal_local_faces, t0, local_id_volumes,
-                    local_vertex, pressure_vertex, local_intern_boundary_volumes, values_q)
+                    local_vertex, pressure_vertex, indices_q2, values_q2)
 
                 pcorr[volumes] = x
+                pressure_vols = self.data_impress['pms'][volumes]
+                import pdb; pdb.set_trace()
 
                 # neig_intersect_faces = neig_internal_faces[remaped_internal_faces[intersect_faces]]
                 # transmissibility_intersect_faces = transmissibility[intersect_faces]
@@ -871,8 +904,10 @@ class AdmMethod(DataManager, TpfaFlux2):
         levels = self.data_impress['LEVEL'].copy()
         gid1 = self.data_impress['GID_1']
         gid0 = self.data_impress['GID_0']
+        level_0_ini = set(gid0[levels==0])
         saturation = self.data_impress['saturation']
         all_wells = set(self.all_wells_ids)
+        gids_lv1_sat = set()
         gidsc = np.unique(gid1)
         for gidc in gidsc:
             gids0 = gid0[gid1==gidc]
@@ -882,6 +917,20 @@ class AdmMethod(DataManager, TpfaFlux2):
             dif = sats_local.max() - sats_local.min()
             if dif >= self.delta_sat_max:
                 levels[gids0] = np.repeat(0, len(gids0))
+                gids_lv1_sat.add(gidc)
+
+        cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(1)]
+        cids_level = self.ml_data['coarse_primal_id_level_'+str(1)]
+
+        for gidc in gids_lv1_sat:
+            vizs = cids_neigh[cids_level==gidc]
+            for viz in vizs:
+                if set([viz]) & gids_lv1_sat:
+                    continue
+                gids0 = gid0[gid1==gidc]
+                if set(gids0) & level_0_ini:
+                    continue
+                levels[gids0] = np.repeat(1, len(gids0))
 
         self.data_impress['LEVEL'] = levels.copy()
 
@@ -1069,3 +1118,16 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         self.data_impress.update_variables_to_mesh()
         self.data_impress.export_to_npz()
+
+    def so_nv1():
+        doc = "The so_nv1 property."
+        def fget(self):
+            return self._so_nv1
+        def fset(self, value):
+            self._so_nv1 = value
+            if self._so_nv1:
+                self.n_levels = 1
+        def fdel(self):
+            del self._so_nv1
+        return locals()
+    so_nv1 = property(**so_nv1())
