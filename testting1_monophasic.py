@@ -112,8 +112,6 @@ n = data_loaded['n_test']
 M, elements_lv0, data_impress, wells = initial_mesh()
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 T, b = tpfa_solver.run()
-solver = SolverSp()
-data_impress['pressure'] = solver.direct_solver(T, b)
 data_impress.update_variables_to_mesh()
 M.core.print(folder='results', file='test'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 

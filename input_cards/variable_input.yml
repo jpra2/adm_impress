@@ -200,7 +200,8 @@ flux_o_volumes:
   data size: 1
   data type: float
   level: 0
-  sparse: true
+
+phi:
   type: volumes
 flux_press_o_faces_vec:
   data size: 3
@@ -460,3 +461,95 @@ weight:
   level: 0
   sparse: true
   type: volumes
+
+swns:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+swn1s:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+k_eq:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+k_eq:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+id_fint:
+  type: faces
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+velocity:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+
+id_global:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+perm_x:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+perm_z:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+erro_p:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+erro_v:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+perpendicular_direction_flag:
+  type: faces
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+vug:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0

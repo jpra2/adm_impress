@@ -93,13 +93,25 @@ class Data(DataManager):
                 exec(command)
 
         else:
+            # import pdb; pdb.set_trace()
             for name in self._data.keys():
                 command = 'self.mesh.' + name + '[:] = ' + 'self._data["' + name + '"]'
                 try:
                     exec(command)
                 except:
-                    print(command)
-                    import pdb; pdb.set_trace()
+                    n=len(self._data[name])
+                    try:
+                        command_2 = 'self.mesh.' + name + '[0:n-1] = ' + 'self._data["' + name + '"][0:n-1]'
+                        exec(command_2)
+                        command_3 = 'self.mesh.' + name + '[n-1] = ' + 'self._data["' + name + '"][n-1]'
+                        exec(command_3)
+                    except:
+
+                        print(name)
+                        print(command)
+                        import pdb; pdb.set_trace()
+
+
 
             command = 'self.mesh.' + name + '.update_all()'
 
