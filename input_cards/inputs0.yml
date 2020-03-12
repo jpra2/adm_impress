@@ -43,6 +43,7 @@ Wells:
     value: 13100000.0
 compositional: true
 compositional_data:
+  CFL: 0.9
   Pf: 13.79E6
   capillary_pressure: Chang
   component_data:

@@ -2,6 +2,7 @@ import numpy as np
 import sympy
 from sympy.utilities import lambdify
 from .stability_check import StabilityCheck
+from .properties_calculation import PropertiesCalc
 
 class PartialDerivatives:
 
@@ -22,6 +23,7 @@ class PartialDerivatives:
                      - PartialDerivatives.lnf(fprop_block, kprop, l_minus, ph)) / delta
                     dZ_dn[i,ph] = (self.Z(fprop_block, kprop, l_plus, ph)
                      - self.Z(fprop_block, kprop, l_minus, ph)) / delta
+
         return dlnf_dn, dZ_dn
 
     def d_dP_all_derivatives(self, fprop_block, Nphase, kprop, l, b):
@@ -97,8 +99,86 @@ class PartialDerivatives:
                 Nphase[:,np.newaxis] * dvj_dnij), axis = 0),axis = 0)
         dVt_dP = np.sum(dVj_dP,axis = 0)
 
+        # dVt_dNk_ = self.dVt_deriv_all(data_impress, wells, fprop, kprop)
+        # import pdb; pdb.set_trace()
         #fprop.P = P #comming back
         return dVt_dNk, dVt_dP
+
+'''def dVt_deriv_all(self, data_impress, wells, fprop, kprop): #tentar fazer analítico
+        nk_allvolumes = fprop.component_mole_numbers
+        Nphase_allvolumes = fprop.mole_numbers_o_and_g
+        nkphase_allvolumes = fprop.component_phase_mole_numbers
+        #Vt = np.sum(fprop.phase_mole_numbers / fprop.phase_molar_densities, axis = 1).ravel()
+        Vt = fprop.Vt
+        delta = 0.001
+        n_vols = len(nk_allvolumes[0,:])
+        dVt_dNk = np.zeros([fprop.Nc,n_vols])
+        for k in range(fprop.Nc):
+            Nk_old = nk_allvolumes
+            Nk_new = nk_allvolumes
+            Nk_old[k,:] = nk_allvolumes[k,:]
+            Nk_new[k,:] = nk_allvolumes[k,:] + delta
+
+            nk_old = np.copy(nkphase_allvolumes)
+            nk_new = np.copy(nkphase_allvolumes)
+            nk_old[k,:,:] = nkphase_allvolumes[k,:,:]
+            nk_new[k,:,:] = nkphase_allvolumes[k,:,:] + delta/2
+
+            x_save = np.copy(fprop.x)
+            y_save = np.copy(fprop.y)
+            fprop.x = nk_old[0:fprop.Nc,1,:]/Nphase_allvolumes[0,1,:]
+            fprop.y = nk_old[0:fprop.Nc,0,:]/Nphase_allvolumes[0,0,:]
+            fprop.y[nk_old[0:fprop.Nc,0,:]==0] = 0
+
+            z_all = Nk_old/np.sum(Nk_old,axis=0)
+            for i in range(n_vols):
+                z = z_all[0:fprop.Nc,i]
+                P = fprop.P[i]
+                x = fprop.x[:,i]
+                y = fprop.y[:,i]
+
+                fprop_block = StabilityCheck(z, P, fprop.T, fprop.R, fprop.Nc, kprop)
+                fprop_block.L = fprop.L[i]
+                fprop_block.V = fprop.V[i]
+                fprop_block.z = z
+                fprop_block.x = x
+                fprop_block.y = y
+                fprop_block.Mw_L, fprop_block.ksi_L, fprop_block.rho_L = fprop_block.other_properties(kprop, x)
+                fprop_block.Mw_V, fprop_block.ksi_V, fprop_block.rho_V = fprop_block.other_properties(kprop, y)
+                fprop.update_all_volumes(fprop_block, i)
+            prop_old = PropertiesCalc(data_impress, wells, fprop)
+            prop_old.run_inside_loop(data_impress, wells, fprop)
+            Vt_old = fprop.Vt
+
+            fprop.x = nk_new[0:fprop.Nc,1,:]/Nphase_allvolumes[0,1,:]
+            fprop.y = nk_new[0:fprop.Nc,0,:]/Nphase_allvolumes[0,0,:]
+            fprop.y[nk_old[0:fprop.Nc,0,:]==0] = 0
+            z_all = Nk_new/np.sum(Nk_old,axis=0)
+            for i in range(n_vols):
+                z = z_all[0:fprop.Nc,i]
+                P = fprop.P[i]
+                x = fprop.x[:,i]
+                y = fprop.y[:,i]
+
+                fprop_block = StabilityCheck(z, P, fprop.T, fprop.R, fprop.Nc, kprop)
+                fprop_block.L = fprop.L[i]
+                fprop_block.V = fprop.V[i]
+                fprop_block.z = z
+                fprop_block.x = x
+                fprop_block.y = y
+                fprop_block.Mw_L, fprop_block.ksi_L, fprop_block.rho_L = fprop_block.other_properties(kprop, x)
+                fprop_block.Mw_V, fprop_block.ksi_V, fprop_block.rho_V = fprop_block.other_properties(kprop, y)
+                fprop.update_all_volumes(fprop_block, i)
+            prop_new = PropertiesCalc(data_impress, wells, fprop)
+            dVt_dNk = np.zeros([fprop.Nc,n_vols])
+
+            prop_new.run_inside_loop(data_impress, wells, fprop)
+            Vt_new = fprop.Vt
+            dVt_dNk[k,:] = (Vt_new - Vt_old)/delta
+            import pdb; pdb.set_trace()
+            fprop.x = x; fprop.y = y
+        return dVt_dNk'''
+
 
 '''class PartialDerivativesSym:
     def __init__(self):

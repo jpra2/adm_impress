@@ -15,7 +15,7 @@ class StabilityCheck:
         self.P = P
         self.R = R
         self.Nc = Nc
-        self.run(z, kprop)
+        # self.run(z, kprop)
         #StabilityCheck.TPD(self)
 
     def run(self, z, kprop):

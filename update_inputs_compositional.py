@@ -23,8 +23,9 @@ def update(M, data_impress, wells, load, data_loaded, n_volumes):
     kprop = ComponentProperties(data_loaded)
     z, P, T, R, Nc = inputs_overall_properties(data_loaded)
     fprop_block = StabilityCheck(z, P, T, R, Nc, kprop)
+    fprop_block.run(z, kprop)
     fprop = FluidProperties(fprop_block, data_loaded, n_volumes)
-    prop = PropertiesCalc(M, data_impress, wells, fprop, load)
+    prop = PropertiesCalc(data_impress, wells, fprop)
     prop.run_outside_loop(data_impress, wells, fprop)
     fprop.inputs_missing_properties()
     return fprop, fprop_block, kprop

@@ -4,9 +4,8 @@ from .. import directories as direc
 import numpy as np
 
 
-class PropertiesCalc(DataManager):
-    def __init__(self, M, data_impress, wells, fprop, load, data_name: str='Compositional_data.npz'):
-        super().__init__(data_name, load=load)
+class PropertiesCalc:
+    def __init__(self, data_impress, wells, fprop):
         self.n_phases = 3 #includding water
         self.n_volumes = data_impress.len_entities['volumes']
         self.n_components = fprop.Nc + 1
@@ -14,12 +13,12 @@ class PropertiesCalc(DataManager):
         self. update_porous_volume(data_impress, fprop)
 
     def run_outside_loop(self, data_impress, wells, fprop):
-        self.update_saturations(data_impress, wells, fprop)
+        self.update_saturations(data_impress, fprop)
         self.update_mole_numbers(fprop)
 
     def run_inside_loop(self, data_impress, wells, fprop):
         self.update_water_saturation(data_impress, fprop)
-        self.update_saturations(data_impress, wells, fprop)
+        self.update_saturations(data_impress, fprop)
         self.update_mole_numbers(fprop)
 
     def update_porous_volume(self, data_impress, fprop):
@@ -43,7 +42,7 @@ class PropertiesCalc(DataManager):
         fprop.phase_molar_densities[0,2,:] = fprop.ksi_W
 
 
-    def update_saturations(self, data_impress, wells, fprop):
+    def update_saturations(self, data_impress, fprop):
         fprop.Sw = data_impress['saturation']
         fprop.Sg = np.zeros(fprop.Sw.shape)
         fprop.Sg[fprop.V!=0] = (1 - fprop.Sw[fprop.V!=0]) * \
@@ -57,6 +56,7 @@ class PropertiesCalc(DataManager):
         fprop.Vo = fprop.Vp * fprop.So
         fprop.Vg = fprop.Vp * fprop.Sg
         fprop.Vw = fprop.Vp * fprop.Sw
+        fprop.Vt = fprop.Vo + fprop.Vg + fprop.Vw  #np.sum(fprop.phase_mole_numbers / fprop.phase_molar_densities, axis = 1).ravel()
 
     def update_mole_numbers(self, fprop):
         self.update_phase_volumes(fprop)

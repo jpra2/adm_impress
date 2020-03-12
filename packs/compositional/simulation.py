@@ -1,4 +1,5 @@
 import numpy as np
+from ..directories import data_loaded
 from .compositionalIMPEC import CompositionalFVM
 from .stability_check import StabilityCheck
 from .properties_calculation import PropertiesCalc
@@ -21,16 +22,17 @@ class run_simulation:
         self.t += self.deltaT
 
         ss = CompositionalFVM(M, data_impress, wells, fprop, fprop_block, kprop, load, self.deltaT)
-        prop = PropertiesCalc(M, data_impress, wells, fprop, load)
+        prop = PropertiesCalc(data_impress, wells, fprop)
         prop.run_inside_loop(data_impress, wells, fprop)
 
         for i in range(1, n_volumes):
             P = fprop.P[i]
             z = fprop.z[0:fprop.Nc,i] #água não entra
             fprop_block = StabilityCheck(z, P, fprop.T, fprop.R, fprop.Nc, kprop)
+            fprop_block.run(z, kprop)
             fprop.update_all_volumes(fprop_block, i)
 
-        self.deltaT = t_obj.update_deltaT(self.deltaT, fprop)#get deltaT with properties in t=n and t=n+1
+        self.deltaT = t_obj.update_deltaT(data_loaded, wells, self.deltaT, fprop)#get deltaT with properties in t=n and t=n+1
         self.update_loop()
         t1 = time.time()
         dt = t1 - t0

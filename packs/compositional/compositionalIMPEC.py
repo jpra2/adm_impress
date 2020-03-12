@@ -14,7 +14,7 @@ class CompositionalFVM:
         self.n_volumes = data_impress.len_entities['volumes']
         self.n_components = fprop.Nc + 1
         self.all_wells = wells['all_wells'].astype(int)
-        self.Vbulk = data_impress['volume']
+        fprop.Vbulk = data_impress['volume']
         self.porosity = data_impress['poro']
         self.cf = np.array(data_loaded['compositional_data']['rock_compressibility']).astype(float)
         self.relative_permeability = getattr(relative_permeability2, data_loaded['compositional_data']['relative_permeability'])
@@ -28,14 +28,14 @@ class CompositionalFVM:
         self.update_relative_permeabilities(fprop)
         self.update_phase_viscosities(data_loaded, fprop, kprop)
         self.update_mobilities()
-        self.dVt_derivatives(data_impress, fprop, fprop_block, kprop)
+        self.dVt_derivatives(fprop, fprop_block, kprop)
         Pcap = self.update_capillary_pressure(data_loaded)
-        self.get_faces_properties_upwind(M, data_loaded, fprop)
+        self.get_faces_properties_upwind(M, fprop)
         T = self.update_transmissibility(M, data_impress, wells, data_loaded, fprop)
         D = self.update_independent_terms(fprop, data_loaded, wells, deltaT)
         self.update_pressure(T, D, data_impress, fprop)
+        self.update_flux_internal_faces(M, fprop)
         self.update_composition(M, fprop, deltaT)
-        # tem que ter um update para umas propriedades aqui em n+1 antes de entrar em properties calculation dnv
 
     def update_relative_permeabilities(self, fprop):
         # So, Sw, Sg = self.update_saturations_without_contours()
@@ -58,14 +58,14 @@ class CompositionalFVM:
     def update_mobilities(self):
         self.mobilities = self.relative_permeabilities / self.phase_viscosities
 
-    def dVt_derivatives(self, data_impress, fprop, fprop_block, kprop):
+    def dVt_derivatives(self, fprop, fprop_block, kprop):
         self.dVtk = np.zeros([fprop.Nc + 1, self.n_volumes])
         self.dVtk[0:fprop.Nc,:], dVtP = PartialDerivatives().dVt_derivatives(fprop, fprop_block, kprop)
         self.dVtk[fprop.Nc,:] = 1 / fprop.ksi_W
         dVwP = np.zeros(self.n_volumes)
         self.dVtP = dVtP + dVwP
 
-    def get_faces_properties_upwind(self, M, data_loaded, fprop):
+    def get_mobilities_upwind(self, M, fprop):
         ''' Using one-point upwind approximation '''
         P_Pcap = fprop.P + self.Pcap
         Pj = P_Pcap[:,self.v0[:,0]]
@@ -76,6 +76,12 @@ class CompositionalFVM:
         mobilities_vols_up = self.mobilities[:,:,self.v0[:,1]]
         self.mobilities_internal_faces[0,Pj_up <= Pj] = mobilities_vols[0,Pj_up <= Pj]
         self.mobilities_internal_faces[0,Pj_up > Pj] = mobilities_vols_up[0,Pj_up > Pj]
+
+    def get_faces_properties_upwind(self, M, fprop):
+        self.get_mobilities_upwind(M, fprop)
+        P_Pcap = fprop.P + self.Pcap
+        Pj = P_Pcap[:,self.v0[:,0]]
+        Pj_up = P_Pcap[:,self.v0[:,1]]
 
         self.phase_molar_densities_internal_faces = np.zeros([1, self.n_phases, len(M.faces.internal)])
         phase_molar_densities_vols = fprop.phase_molar_densities[:,:,self.v0[:,0]]
@@ -99,7 +105,7 @@ class CompositionalFVM:
         self.pretransmissibility_internal_faces = pretransmissibility_faces[M.faces.internal]
 
         ''' Transmissibility '''
-        t0 = (self.t0_internal_faces_prod).sum(axis=1)  #.sum(axis=0)
+        t0 = (self.t0_internal_faces_prod).sum(axis = 1)
         t0 = t0 * self.pretransmissibility_internal_faces
         T = np.zeros([self.n_volumes, self.n_volumes, self.n_components])
 
@@ -111,12 +117,21 @@ class CompositionalFVM:
 
             Ta = sp.csc_matrix((data, (lines, cols)), shape = (self.n_volumes, self.n_volumes))
             T[:,:,i] = Ta.toarray()
-        T = (T * self.dVtk.T[:,np.newaxis, :]).sum(axis=2)
+
+        T = (T * self.dVtk.T[:,np.newaxis, :]).sum(axis = 2)
+
+        # Teste
+        t0 = np.sum(self.dVtk * t0, axis = 0)
+        lines = np.array([self.v0[:, 0], self.v0[:, 1], self.v0[:, 0], self.v0[:, 1]]).flatten()
+        cols = np.array([self.v0[:, 1], self.v0[:, 0], self.v0[:, 0], self.v0[:, 1]]).flatten()
+        data = np.array([t0, t0, -t0, -t0]).flatten()
+
+        Ttest = sp.csc_matrix((data, (lines, cols)), shape = (self.n_volumes, self.n_volumes))
+        import pdb; pdb.set_trace()
 
         ''' Transmissibility diagonal term '''
-        diag = np.diag(self.Vbulk * self.porosity * self.cf - self.dVtP)
+        diag = np.diag(fprop.Vbulk * self.porosity * self.cf - self.dVtP)
         T += diag
-        # self['Tini'] = T
 
         ''' Includding contour conditions '''
         T[wells['ws_p'],:] = 0
@@ -137,7 +152,7 @@ class CompositionalFVM:
         # Pcap[0,1,:] = Pcow
 
     def pressure_independent_term(self, fprop):
-        vector = self.Vbulk * self.porosity * self.cf - self.dVtP
+        vector = fprop.Vbulk * self.porosity * self.cf - self.dVtP
         pressure_term = vector * fprop.P
         return pressure_term
 
@@ -151,9 +166,7 @@ class CompositionalFVM:
                 lines = np.array([self.v0[:, 0], self.v0[:, 1], self.v0[:, 0], self.v0[:, 1]]).flatten()
                 cols = np.array([self.v0[:, 1], self.v0[:, 0], self.v0[:, 0], self.v0[:, 1]]).flatten()
                 data = np.array([t0[i,j,:], t0[i,j,:], -t0[i,j,:], -t0[i,j,:]]).flatten()
-
                 T = sp.csc_matrix((data, (lines, cols)), shape = (self.n_volumes, self.n_volumes))
-
                 cap[i,j,:] = T.toarray() @ self.Pcap[j,:]
 
         cap = cap.sum(axis = 1)
@@ -164,8 +177,6 @@ class CompositionalFVM:
         return capillary_term
 
     def volume_discrepancy_independent_term(self, fprop):
-        fprop.Vt = np.sum(np.sum(fprop.phase_mole_numbers / fprop.phase_molar_densities, axis = 0), axis = 0)
-        # the second sum is just for transform a 2D array with 1line into a 1D array
         volume_discrepancy_term = fprop.Vp - fprop.Vt
         return volume_discrepancy_term
 
@@ -185,7 +196,7 @@ class CompositionalFVM:
         return independent_terms
 
     def update_pressure(self, T, D, data_impress, fprop):
-        fprop.P = np.array(np.linalg.inv(T)*(D[:,np.newaxis])).ravel()
+        fprop.P = np.array(np.linalg.inv(T)@(D[:,np.newaxis])).ravel()
         data_impress['pressure'] = fprop.P
 
     def update_flux_internal_faces(self, M, fprop):
@@ -193,20 +204,20 @@ class CompositionalFVM:
         Pj = P_Pcap[:,self.v0[:,0]]
         Pj_up = P_Pcap[:,self.v0[:,1]]
         total_flux_internal_faces = - np.sum(self.mobilities_internal_faces * self.pretransmissibility_internal_faces * (Pj_up - Pj) ,axis = 1)
+        self.get_mobilities_upwind(M, fprop) # a mobilidade aqui é em n + 1
         phase_flux_internal_faces = self.mobilities_internal_faces / np.sum(self.mobilities_internal_faces, axis = 1) * total_flux_internal_faces
-
         # M.flux_faces[M.faces.internal] = total_flux_internal_faces * M.faces.normal[M.faces.internal].T
         return phase_flux_internal_faces
 
     def update_composition(self, M, fprop, deltaT):
         phase_flux_internal_faces = self.update_flux_internal_faces(M, fprop)
-        flux = np.sum(self.component_molar_fractions_internal_faces * self.phase_molar_densities_internal_faces * phase_flux_internal_faces, axis = 1)
+        component_flux = np.sum(self.component_molar_fractions_internal_faces * self.phase_molar_densities_internal_faces * phase_flux_internal_faces, axis = 1)
 
         cx = np.arange(self.n_components)
         lines = np.array([np.repeat(cx,len(self.v0[:,0])), np.repeat(cx,len(self.v0[:,1]))]).astype(int).flatten()
         cols = np.array([np.tile(self.v0[:,0],self.n_components), np.tile(self.v0[:,1], self.n_components)]).flatten()
-        data = np.array([flux, -flux]).flatten()
-        flux_vols_total = sp.csc_matrix((data, (lines, cols)), shape = (self.n_components, self.n_volumes)).toarray() #.flatten()
+        data = np.array([component_flux, -component_flux]).flatten()
+        fprop.component_flux_vols_total = sp.csc_matrix((data, (lines, cols)), shape = (self.n_components, self.n_volumes)).toarray()
 
         # só ta funcionando pra 1d:
         #flux_vols = np.zeros([self.n_components,2,self.n_volumes])
@@ -214,5 +225,5 @@ class CompositionalFVM:
         #flux_vols[:,1,self.v0[:,1]] = -flux
         #flux_vols_total = np.sum(flux_vols,axis = 1)
 
-        fprop.component_mole_numbers = fprop.component_mole_numbers + deltaT * (self.q + flux_vols_total)
+        fprop.component_mole_numbers = fprop.component_mole_numbers + deltaT * (self.q + fprop.component_flux_vols_total)
         fprop.z = fprop.component_mole_numbers[0:fprop.Nc,:] / np.sum(fprop.component_mole_numbers[0:fprop.Nc,:], axis = 0)

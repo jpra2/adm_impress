@@ -18,7 +18,7 @@ monophasic_data:
 
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  #cfl: 0.9
+  CFL: 0.9
   vpis_para_gravar_vtk: [0.157]
   tempo_maximo: null
   phase_viscosity: LorenzBrayClark

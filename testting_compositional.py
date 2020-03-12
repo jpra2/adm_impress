@@ -24,7 +24,7 @@ loop = 0
 tfinal = 0.2
 while t < tfinal and loop < loop_max:
 
-    sim.run( M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes)
+    sim.run(M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes)
     t = sim.t
     loop = sim.loop
 
