@@ -9,6 +9,7 @@ import scipy.sparse as sp
 from ....directories import data_loaded
 from ....errors.err import DualStructureError
 from ....adm.adm_method import get_levelantids_levelids
+from .paralell import create_dual_and_primal
 import time
 
 
@@ -52,6 +53,24 @@ class MultilevelData(DataManager):
         self.centroids_name = 'centroids_level_'
         self.volumes_without_grav = 'volumes_without_grav_level_'
 
+    def run(self):
+        M = self.mesh
+
+        assert not self._loaded
+
+        self.create_tags()
+        # self.set_primal_level_l_meshsets(M)
+        self.generate_dual_and_primal_any_D(M)
+        self.get_elements(M)
+        self.get_boundary_coarse_faces(M)
+        self.get_dual_structure()
+        self.set_volumes_without_gravity_source_term()
+        # self.get_elements_2(M)
+        self.export_to_npz()
+        self.loaded()
+
+        # if not self._carregar:
+        #     self.save_mesh(M)
     def create_tags(self):
         assert not self._loaded
         M = self.mesh
@@ -136,26 +155,7 @@ class MultilevelData(DataManager):
         assert not self._loaded
         self._loaded = True
 
-    def run(self):
-        M = self.mesh
-
-        assert not self._loaded
-
-        self.create_tags()
-        # self.set_primal_level_l_meshsets(M)
-        self.generate_dual_and_primal(M)
-        self.get_elements(M)
-        self.get_boundary_coarse_faces(M)
-        self.get_dual_structure()
-        self.set_volumes_without_gravity_source_term()
-        # self.get_elements_2(M)
-        self.export_to_npz()
-        self.loaded()
-
-        # if not self._carregar:
-        #     self.save_mesh(M)
-
-    def generate_dual_and_primal(self, M):
+    def generate_dual_and_primal_3D(self, M):
         assert not self._loaded
 
         def get_hs(M, coord_nodes):
@@ -281,8 +281,6 @@ class MultilevelData(DataManager):
         nc1 = 0
         nc2 = 0
 
-        # add_parent_child(self, parent_meshset, child_meshset, exceptions = ()):
-        ##-----------------------------------------------------------------
         for i in range(len(lx2) - 1):
             # t1=time.time()
             if i == len(lx2) - 2:
@@ -344,7 +342,7 @@ class MultilevelData(DataManager):
                     f1a2v3[posz] += 1
                     mb.tag_set_data(D2_tag, elem_por_L2, f1a2v3)
                     mb.tag_set_data(fine_to_primal2_classic_tag, elem_por_L2, np.repeat(nc2, len(elem_por_L2)))
-                    mb.add_parent_child(L2_meshset, l2_meshset)
+                    # mb.add_parent_child(L2_meshset, l2_meshset)
                     # sg = mb.get_entities_by_handle(l2_meshset)
                     # print(k, len(sg), time.time()-t1)
                     # t1=time.time()
@@ -394,130 +392,166 @@ class MultilevelData(DataManager):
                                                 np.repeat(nc1, len(elem_por_L1)))
                                 mb.tag_set_data(primal_id_tag1, l1_meshset, nc1)
                                 nc1 += 1
-                                mb.add_parent_child(l2_meshset, l1_meshset)
-        # -------------------------------------------------------------------------------
+                                # mb.add_parent_child(l2_meshset, l1_meshset)
+    def generate_dual_and_primal_any_D(self, M):
+        M1=M.core
+        M1.all_centroids=M.data["centroid_volumes"]
+        M1.primal_id_tag1=self.tags["PRIMAL_ID_1"]
+        M1.primal_id_tag2=self.tags["PRIMAL_ID_2"]
+        M1.fine_to_primal1_classic_tag=self.tags["FINE_TO_PRIMAL_CLASSIC_1"]
+        M1.fine_to_primal2_classic_tag=self.tags["FINE_TO_PRIMAL_CLASSIC_2"]
+        M1.D1_tag=self.tags["D1"]
+        M1.D2_tag=self.tags["D2"]
+        def get_hs(M, coord_nodes):
 
-        mv = M.core.root_set
-        n_reord = 0
-        interns = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags['D1']]),
-                                                  np.array([0]))
-        mb.tag_set_data(self.tags['reordered_id_1'], interns, np.arange(n_reord, n_reord + len(interns)))
-        n_reord += len(interns)
+            unis = np.array([np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])])
+            nos0 = M.volumes.bridge_adjacencies(0, 2, 0)[0]
+            n0 = coord_nodes[nos0[0]]
+            hs = np.zeros(3)
 
-        edges = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags['D1']]),
-                                                np.array([1]))
-        mb.tag_set_data(self.tags['reordered_id_1'], edges, np.arange(n_reord, n_reord + len(edges)))
-        n_reord += len(edges)
+            for i in range(1, len(nos0)):
+                n1 = coord_nodes[nos0[i]]
+                v = n0 - n1
+                norma = np.linalg.norm(v)
+                uni = np.absolute(v / norma)
+                if np.allclose(uni, unis[0]):
+                    hs[0] = norma
+                elif np.allclose(uni, unis[1]):
+                    hs[1] = norma
+                elif np.allclose(uni, unis[2]):
+                    hs[2] = norma
 
-        faces = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags['D1']]),
-                                                np.array([2]))
-        mb.tag_set_data(self.tags['reordered_id_1'], faces, np.arange(n_reord, n_reord + len(faces)))
-        n_reord += len(faces)
+            return hs
 
-        vertex = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags['D1']]),
-                                                 np.array([3]))
-        mb.tag_set_data(self.tags['reordered_id_1'], vertex, np.arange(n_reord, n_reord + len(vertex)))
-        n_reord += len(vertex)
+        cr1 = direc.data_loaded['Crs']['Cr1']
+        cr2 = direc.data_loaded['Crs']['Cr2']
 
-        # ids_cv_verts_ant = mb.tag_get_data(self.tags['FINE_TO_PRIMAL_CLASSIC_1'], vertex, flat=True)
-        # primal_id = 0
-        # for vert, primal_id_ant in zip(vertex, ids_cv_verts_ant):
-        #     coarse_volume = mb.get_entities_by_type_and_tag(mv, types.MBENTITYSET,
-        #         np.array([self.tags['PRIMAL_ID_1']]), np.array([primal_id_ant]))[0]
-        #     elements = mb.get_entities_by_handle(coarse_volume)
-        #     mb.tag_set_data(self.tags['FINE_TO_PRIMAL_CLASSIC_1'], elements, np.repeat(primal_id, len(elements)))
-        #     mb.tag_set_data(self.tags['PRIMAL_ID_1'], coarse_volume, primal_id)
-        #     primal_id += 1
+        coord_nodes = M.data['centroid_nodes']
 
-        # local_id_int_tag = self.tags['local_id_internos']
-        # local_id_fac_tag = self.tags['local_fac_internos']
-        # ID_reordenado_tag = self.tags['reordered_id_1']
-        # mb.tag_set_data(local_id_int_tag, all_volumes,np.repeat(len(all_volumes)+1,len(all_volumes)))
-        # mb.tag_set_data(local_id_fac_tag, all_volumes,np.repeat(len(all_volumes)+1,len(all_volumes)))
-        # sgids = 0
-        #
-        # intern_adjs_by_dual=[]
-        # faces_adjs_by_dual=[]
-        #
-        # for i in range(len(lxd1)-1):
-        #     x0=lxd1[i]
-        #     x1=lxd1[i+1]
-        #     box_x=np.array([[x0-0.01,ymin,zmin],[x1+0.01,ymax,zmax]])
-        #     inds_vols_x = get_box(centroids, box_x)
-        #     vols_x = all_volumes[inds_vols_x]
-        #     x_centroids = centroids[inds_vols_x]
-        #     map_x_centroids = dict(zip(range(len(x_centroids)), x_centroids))
-        #
-        #     for j in range(len(lyd1)-1):
-        #         y0=lyd1[j]
-        #         y1=lyd1[j+1]
-        #         box_y=np.array([[x0-0.01,y0-0.01,zmin],[x1+0.01,y1+0.01,zmax]])
-        #         inds_vols_y = get_box(x_centroids, box_y)
-        #         vols_y = vols_x[inds_vols_y]
-        #         y_centroids = np.array([map_x_centroids[k] for k in inds_vols_y])
-        #         map_y_centroids = dict(zip(range(len(y_centroids)), y_centroids))
-        #         for k in range(len(lzd1)-1):
-        #             z0=lzd1[k]
-        #             z1=lzd1[k+1]
-        #             box_dual_1=np.array([[x0-0.01,y0-0.01,z0-0.01],[x1+0.01,y1+0.01,z1+0.01]])
-        #             inds_vols = get_box(y_centroids, box_dual_1)
-        #             vols = vols_y[inds_vols]
-        #             tipo=mb.tag_get_data(D1_tag,vols,flat=True)
-        #             inter=rng.Range(np.array(vols)[np.where(tipo==0)[0]])
-        #
-        #             mb.tag_set_data(local_id_int_tag,inter,range(len(inter)))
-        #             add_topology(inter,local_id_int_tag,intern_adjs_by_dual, mb, mtu, ID_reordenado_tag)
-        #
-        #
-        #             fac=rng.Range(np.array(vols)[np.where(tipo==1)[0]])
-        #             fac_centroids = np.array([map_y_centroids[k] for k in inds_vols])
-        #             # fac_centroids=np.array([M1.mtu.get_average_position([f]) for f in fac])
-        #
-        #             box_faces_x=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x0+lx/2,y1+ly/2,z1+lz/2]])
-        #             box_faces_y=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y0+ly/2,z1+lz/2]])
-        #             box_faces_z=np.array([[x0-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z0+lz/2]])
-        #
-        #             inds_faces_x = get_box(fac_centroids, box_faces_x)
-        #             faces_x = fac[inds_faces_x]
-        #             # faces_x=get_box(fac, fac_centroids, box_faces_x, False)
-        #
-        #             inds_faces_y = get_box(fac_centroids, box_faces_y)
-        #             faces_y = fac[inds_faces_y]
-        #             # faces_y=get_box(fac, fac_centroids, box_faces_y, False)
-        #             f1=rng.unite(faces_x,faces_y)
-        #
-        #             inds_faces_z = get_box(fac_centroids, box_faces_z)
-        #             faces_z = fac[inds_faces_z]
-        #             # faces_z=get_box(fac, fac_centroids, box_faces_z, False)
-        #             f1=rng.unite(f1,faces_z)
-        #
-        #             if i==len(lxd1)-2:
-        #                 box_faces_x2=np.array([[x1-lx/2,y0-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-        #                 inds_faces_x2 = get_box(fac_centroids, box_faces_x2)
-        #                 faces_x2 = fac[inds_faces_x2]
-        #                 # faces_x2=get_box(fac, fac_centroids, box_faces_x2, False)
-        #                 f1=rng.unite(f1,faces_x2)
-        #
-        #             if j==len(lyd1)-2:
-        #                 box_faces_y2=np.array([[x0-lx/2,y1-ly/2,z0-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-        #                 inds_faces_y2 = get_box(fac_centroids, box_faces_y2)
-        #                 faces_y2 = fac[inds_faces_y2]
-        #                 # faces_y2=get_box(fac, fac_centroids, box_faces_y2, False)
-        #                 f1=rng.unite(f1,faces_y2)
-        #
-        #             if k==len(lzd1)-2:
-        #                 box_faces_z2=np.array([[x0-lx/2,y0-ly/2,z1-lz/2],[x1+lx/2,y1+ly/2,z1+lz/2]])
-        #                 inds_faces_z2 = get_box(fac_centroids, box_faces_z2)
-        #                 faces_z2 = fac[inds_faces_z2]
-        #                 # faces_z2=get_box(fac, fac_centroids, box_faces_z2, False)
-        #                 f1=rng.unite(f1,faces_z2)
-        #
-        #             sgids+=len(f1)
-        #             mb.tag_set_data(local_id_fac_tag,f1,range(len(f1)))
-        #             add_topology(f1,local_id_fac_tag,faces_adjs_by_dual, mb, mtu, ID_reordenado_tag)
-        #
-        # self['intern_adjs_by_dual'] = np.array(intern_adjs_by_dual)
-        # self['faces_adjs_by_dual'] = np.array(faces_adjs_by_dual)
+        mb = M.core.mb
+        mtu = M.core.mtu
+
+        Lx, Ly, Lz = coord_nodes.max(axis=0)
+        xmin, ymin, zmin = coord_nodes.min(axis=0)
+        xmax, ymax, zmax = Lx, Ly, Lz
+
+        # lx, ly, lz = get_hs(M, coord_nodes)
+        lx, ly, lz = M.data['hs'][0]
+
+        dx0 = lx
+        dy0 = ly
+        dz0 = lz
+
+        nx = int(round(Lx / lx))
+        ny = int(round(Ly / ly))
+        nz = int(round(Lz / lz))
+
+        l1 = [cr1[0] * lx, cr1[1] * ly, cr1[2] * lz]
+        l2 = [cr2[0] * lx, cr2[1] * ly, cr2[2] * lz]
+
+        x1 = nx * lx
+        y1 = ny * ly
+        z1 = nz * lz
+
+        L2_meshset = mb.create_meshset()
+        mb.tag_set_data(self.tags['L2_MESHSET'], M.core.root_set, L2_meshset)
+
+        lx2, ly2, lz2 = [], [], []
+        # O valor 0.01 é adicionado para corrigir erros de ponto flutuante
+        for i in range(int(round(Lx / l2[0]))):    lx2.append(xmin + i * l2[0])
+        for i in range(int(round(Ly / l2[1]))):    ly2.append(ymin + i * l2[1])
+        for i in range(int(round(Lz / l2[2]))):    lz2.append(zmin + i * l2[2])
+        lx2.append(Lx)
+        ly2.append(Ly)
+        lz2.append(Lz)
+
+        lx1, ly1, lz1 = [], [], []
+        for i in range(int(round(l2[0] / l1[0]))):   lx1.append(i * l1[0])
+        for i in range(int(round(l2[1] / l1[1]))):   ly1.append(i * l1[1])
+        for i in range(int(round(l2[2] / l1[2]))):   lz1.append(i * l1[2])
+
+        D_x = max(Lx - int(round(Lx / l1[0])) * l1[0], Lx - int(round(Lx / l2[0])) * l2[0])
+        D_y = max(Ly - int(round(Ly / l1[1])) * l1[1], Ly - int(round(Ly / l2[1])) * l2[1])
+        D_z = max(Lz - int(round(Lz / l1[2])) * l1[2], Lz - int(round(Lz / l2[2])) * l2[2])
+        nD_x = int((D_x + 0.001) / l1[0])
+        nD_y = int((D_y + 0.001) / l1[1])
+        nD_z = int((D_z + 0.001) / l1[2])
+
+        lxd1 = [xmin + dx0 / 100]
+        for i in range(int(round(Lx / l1[0])) - 2 - nD_x):
+            lxd1.append(l1[0] / 2 + (i + 1) * l1[0])
+        lxd1.append(xmin + Lx - dx0 / 100)
+
+        lyd1 = [ymin + dy0 / 100]
+        for i in range(int(round(Ly / l1[1])) - 2 - nD_y):
+            lyd1.append(l1[1] / 2 + (i + 1) * l1[1])
+        lyd1.append(ymin + Ly - dy0 / 100)
+
+        lzd1 = [zmin + dz0 / 100]
+
+        for i in range(int(round(Lz / l1[2])) - 2 - nD_z):
+            lzd1.append(l1[2] / 2 + (i + 1) * l1[2])
+        lzd1.append(xmin + Lz - dz0 / 100)
+
+        # print("definiu planos do nível 1")
+        lxd2 = [lxd1[0]]
+        for i in range(1, int(len(lxd1) * l1[0] / l2[0]) - 1):
+            lxd2.append(lxd1[int(i * l2[0] / l1[0] + 0.0001) + 1])
+        lxd2.append(lxd1[-1])
+
+        lyd2 = [lyd1[0]]
+        for i in range(1, int(len(lyd1) * l1[1] / l2[1]) - 1):
+            lyd2.append(lyd1[int(i * l2[1] / l1[1] + 0.00001) + 1])
+        lyd2.append(lyd1[-1])
+
+        lzd2 = [lzd1[0]]
+        for i in range(1, int(len(lzd1) * l1[2] / l2[2]) - 1):
+            lzd2.append(lzd1[int(i * l2[2] / l1[2] + 0.00001) + 1])
+        lzd2.append(lzd1[-1])
+
+        D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
+        D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])
+        D_z=max(Lz-int(Lz/l1[2])*l1[2],Lz-int(Lz/l2[2])*l2[2])
+        class input_dual():
+            def __init__(self):
+                self.l = l1, l2
+                self.L = Lx, Ly, Lz
+                self.d0 = dx0, dy0, dz0
+                self.ncs = 0, 0
+                self.lims = xmin, xmax, ymin, ymax, zmin, zmax
+                self.meshsets = L2_meshset
+                self.D = D_x, D_y, D_z
+
+        class partition():
+            def __init__(self):
+                self.l1 = lx1, ly1, lz1
+                self.ld1 = lxd1, lyd1, lzd1
+                self.l2 = lx2, ly2, lz2
+                self.ld2 = lxd2, lyd2, lzd2
+
+        class SubDomain(input_dual, partition):
+            def __init__(self, input_dual, partition):
+                self.input_dual_and_primal = input_dual
+                self.partition = partition
+                self.M1 = M1        
+        dual_primal = create_dual_and_primal.paralell_dual_and_primal(SubDomain(input_dual(),partition()),nworker=10,first=True)
+        primal_1=dual_primal.v1
+        primal_2=dual_primal.v2
+        prim1=[]
+        for p2 in primal_1:
+            for p1 in p2:
+                for p0 in p1:
+                    id1=M1.mb.tag_get_data(M1.fine_to_primal1_classic_tag,p0[0],flat=True)
+                    ms=M1.mb.create_meshset()
+                    M1.mb.add_entities(ms,p0)
+                    M1.mb.tag_set_data(M1.primal_id_tag1,ms,id1)
+
+                v2=np.concatenate(p1)
+                id2=M1.mb.tag_get_data(M1.fine_to_primal2_classic_tag,v2[0],flat=True)
+                ms=M1.mb.create_meshset()
+                M1.mb.add_entities(ms,v2)
+                M1.mb.tag_set_data(M1.primal_id_tag2,ms,id2)
+
 
     def get_elements(self, M):
         assert not self._loaded
@@ -612,6 +646,7 @@ class MultilevelData(DataManager):
                 primal_id = mb.tag_get_data(self.tags[primal_fine_name], vert, flat=True)[0]
                 centroid_vert = fine_centroids[dict_volumes[vert]]
                 centroids_coarse[primal_id] = centroid_vert
+
                 coarse_volume = \
                 mb.get_entities_by_type_and_tag(0, types.MBENTITYSET, np.array([self.tags[name_tag_c]]),
                                                 np.array([primal_id]))[0]
@@ -831,13 +866,6 @@ class MultilevelData(DataManager):
                 coarse_volumes_property.append(coarse_volume)
 
             self._coarse_volumes_property[level] = coarse_volumes_property
-
-    def save_mesh_dep0(self, M):
-
-        M.state = 2
-        np.save(direc.state_path, np.array([M.state]))
-        np.save(direc.path_local_last_file_name, np.array([direc.names_outfiles_steps[2]]))
-        M.core.print(file=direc.output_file + str(M.state))
 
     def get_dual_structure(self):
 

@@ -5,9 +5,9 @@ from packs.directories import data_loaded
 import scipy.sparse as sp
 import numpy as np
 import time
-
+from packs.adm.adm_method import AdmMethod
+'''
 def get_gids_and_primal_id(gids, primal_ids):
-
     gids2 = np.unique(gids)
     primal_ids2 = []
     for i in gids2:
@@ -15,10 +15,8 @@ def get_gids_and_primal_id(gids, primal_ids):
         if len(primal_id) > 1:
             raise ValueError('erro get_gids_and_primal_id')
         primal_ids2.append(primal_id[0])
-
     primal_ids2 = np.array(primal_ids2)
-
-    return gids2, primal_ids2
+    return gids2, primal_ids2'''
 
 def mostrar(i, data_impress, M, op1, rest1):
     l0 = np.concatenate(op1[:,i].toarray())
@@ -90,3 +88,33 @@ if load_operators:
 else:
     multilevel_operators.run(tpfa_solver['Tini'])
     # multilevel_operators.run_paralel(tpfa_solver['Tini'])
+mlo=multilevel_operators
+
+n_levels = int(data_loaded['n_levels'])
+
+adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
+T, b = tpfa_solver.run()
+adm_method.restart_levels()
+adm_method.set_level_wells()
+adm_method.set_adm_mesh()
+# adm_method.set_initial_mesh(mlo, T, b)
+
+adm_method.organize_ops_adm(mlo['prolongation_level_1'],
+                            mlo['restriction_level_1'],
+                            1)
+
+if n_levels > 1:
+    adm_method.organize_ops_adm(mlo['prolongation_level_2'],
+                                mlo['restriction_level_2'],
+                                2)
+
+adm_method.solve_multiscale_pressure(T, b)
+adm_method.set_pcorr()
+data_impress['pcorr'][data_impress['LEVEL']==0] = data_impress['pms'][data_impress['LEVEL']==0]
+
+data_impress['pressure'] = adm_method.solver.direct_solver(T, b)
+data_impress['erro'] = np.absolute((data_impress['pressure'] - data_impress['pms'])/data_impress['pms'])
+data_impress['erro_pcorr_pdm'] = np.absolute(data_impress['pcorr'] - data_impress['pms'])
+
+data_impress.update_variables_to_mesh()
+M.core.print(folder='results', file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')

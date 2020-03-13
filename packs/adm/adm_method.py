@@ -29,8 +29,7 @@ def get_levelantids_levelids(level_ids_ant, level_ids):
 
     return gids2, level_ids2
 
-def solve_local_local_problem(solver, neigh_intern_faces, transmissibility, volumes,
-                                        indices_p, values_p, indices_q=[], values_q=[]):
+def solve_local_local_problem(solver, neigh_intern_faces, transmissibility, volumes,indices_p, values_p, indices_q=[], values_q=[]):
 
     # t0 = transmissibility
     v02 = neigh_intern_faces
@@ -223,11 +222,9 @@ class AdmMethod(DataManager, TpfaFlux2):
                     nivel2 = True
                     level = 1
                     list_L1_ID[vols1] = np.repeat(n1, nn1)
-                    # list_L1_ID.append(np.repeat(n1, nn1))
                     list_L2_ID[vols1] = np.repeat(n2, nn1)
-                    # list_L2_ID.append(np.repeat(n2, nn1))
                     levels[vols1] = np.repeat(level, nn1)
-                    # list_L3_ID.append(np.repeat(level, nn1))
+
                     n1 += 1
                     n2 += 1
             #1
@@ -607,7 +604,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
                 pcorr[volumes] = x
                 pressure_vols = self.data_impress['pms'][volumes]
-                import pdb; pdb.set_trace()
+
 
                 # neig_intersect_faces = neig_internal_faces[remaped_internal_faces[intersect_faces]]
                 # transmissibility_intersect_faces = transmissibility[intersect_faces]

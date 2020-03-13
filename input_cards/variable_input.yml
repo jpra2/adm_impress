@@ -196,12 +196,19 @@ flux_o_faces_vec:
   level: 0
   sparse: true
   type: faces
+
 flux_o_volumes:
   data size: 1
   data type: float
   level: 0
+  sparse: False
+  type: volumes
 
 phi:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: False
   type: volumes
 flux_press_o_faces_vec:
   data size: 3
