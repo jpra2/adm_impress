@@ -17,11 +17,12 @@ M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
 n_volumes = data_impress.len_entities['volumes']
 fprop, fprop_block, kprop = update_inputs_compositional.update(M, data_impress, wells, load, data_loaded, n_volumes)
 
-sim = run_simulation()
+sim = run_simulation(fprop, data_impress)
 loop_max = 50
 t = 0
 loop = 0
-tfinal = 0.2
+tfinal = 1
+
 while t < tfinal and loop < loop_max:
 
     sim.run(M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes)
