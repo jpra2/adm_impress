@@ -8,20 +8,22 @@ import update_inputs_compositional
 import time
 
 class run_simulation:
-    def __init__(self):
+    def __init__(self, fprop, data_impress):
         self.name_current_compositional_results = 'flying/results_caso.npy'
         self.loop = 0
         self.vpi = 0.0
         self.t = 0.0
         self.contador_vtk = 0
-        self.deltaT = 0.002 # chute? talvez nao
+        fprop.Vbulk = data_impress['volume']
+        #self.CFL = data_loaded['compositional_data']['CFL']
+        self.deltaT = 0.001 #delta_time.update_CFL(self.CFL, fprop) # ver onde isso entra - ta faltando umas coisas
 
     def run(self, M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes):
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
         self.t += self.deltaT
 
-        ss = CompositionalFVM(M, data_impress, wells, fprop, fprop_block, kprop, load, self.deltaT)
+        CompositionalFVM(M, data_impress, wells, fprop, fprop_block, kprop, self.deltaT, load)
         prop = PropertiesCalc(data_impress, wells, fprop)
         prop.run_inside_loop(data_impress, wells, fprop)
 
@@ -32,7 +34,7 @@ class run_simulation:
             fprop_block.run(z, kprop)
             fprop.update_all_volumes(fprop_block, i)
 
-        self.deltaT = t_obj.update_deltaT(data_loaded, wells, self.deltaT, fprop)#get deltaT with properties in t=n and t=n+1
+        self.deltaT = t_obj.update_deltaT(self.deltaT, fprop)#get deltaT with properties in t=n and t=n+1
         self.update_loop()
         t1 = time.time()
         dt = t1 - t0

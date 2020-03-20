@@ -10,12 +10,14 @@ class delta_time:
         self.component_mole_numbers = fprop.component_mole_numbers
         #the initialization of this class is made in a different time step evaluation
 
-    def update_CFL(self, CFL, fprop, wells):
+    def update_CFL(deltaT, fprop):
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
-        deltaTcfl = CFL * (fprop.component_mole_numbers / fprop.Vbulk) / fprop.component_flux_vols_total #make nan
-        deltaTcfl = np.nanmin(abs(deltaTcfl), axis=1)
+        CFL = np.nanmax(deltaT * fprop.component_flux_vols_total / (fprop.component_mole_numbers / fprop.Vbulk))
+        if (CFL > 1): deltaT = deltaT / 2
+
+        #deltaTcfl = np.nanmin(CFL * (fprop.component_mole_numbers / fprop.Vbulk) / fprop.component_flux_vols_total, axis = 1) #make nan
         np.seterr(**old_settings)
-        return deltaTcfl
+        return deltaT
 
     def update_deltaTp(self, deltaT, fprop, deltaPlim):
         deltaPmax = max(np.abs(fprop.P - self.P) / fprop.P)
@@ -48,7 +50,7 @@ class delta_time:
         deltaTv = deltaT * deltaVlim / deltaVmax
         return deltaTv
 
-    def update_deltaT(self, data_loaded, wells, deltaT, fprop):
+    def update_deltaT(self, deltaT, fprop):
         """ the limit parameters would be given as data entry """
         deltaPlim = 1
         deltaSlim = 0.1
@@ -64,8 +66,4 @@ class delta_time:
         deltaTv = self.update_deltaTs(deltaT, fprop, deltaVlim)
 
         deltaT = min(deltaTp, deltaTs, deltaTn, deltaTv)
-        deltaTcfl = min(self.update_CFL(data_loaded['compositional_data']['CFL'], fprop, wells))
-
-        if deltaT > deltaTcfl: deltaT = deltaTcfl
-
         return deltaT
