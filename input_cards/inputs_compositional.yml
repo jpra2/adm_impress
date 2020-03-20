@@ -51,7 +51,7 @@ compositional_data:
     z: [1.]
     Tc: [617.7]
     Pc: [2103000.0]
-    Vc: [0.00428556]
+    vc: [0.0006097] #decane critical molar density is 1640 mol/m³
     R: [8.3144598]
     Mw: [142.28e-3]
     w: [0.4885]
