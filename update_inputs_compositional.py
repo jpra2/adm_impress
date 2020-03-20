@@ -44,7 +44,7 @@ class ComponentProperties:
         self.Bin = np.array(data_loaded['compositional_data']['component_data']['Bin']).astype(float)
         self.Tc = np.array(data_loaded['compositional_data']['component_data']['Tc']).astype(float)
         self.Pc = np.array(data_loaded['compositional_data']['component_data']['Pc']).astype(float)
-        self.Vc = np.array(data_loaded['compositional_data']['component_data']['Vc']).astype(float)
+        self.vc = np.array(data_loaded['compositional_data']['component_data']['vc']).astype(float)
         self.Mw = np.array(data_loaded['compositional_data']['component_data']['Mw']).astype(float)
         self.C7 = np.array(data_loaded['compositional_data']['component_data']['C7']).astype(float)
 
