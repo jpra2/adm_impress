@@ -94,9 +94,16 @@ n_levels = int(data_loaded['n_levels'])
 
 adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 T, b = tpfa_solver.run()
+
 adm_method.restart_levels()
 adm_method.set_level_wells()
-adm_method.set_adm_mesh()
+# adm_method.verificate_levels()
+# adm_method.set_adm_mesh()
+gids_0 = data_impress['GID_0']
+
+adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
+adm_method.print_test()
+import pdb; pdb.set_trace()
 # adm_method.set_initial_mesh(mlo, T, b)
 
 adm_method.organize_ops_adm(mlo['prolongation_level_1'],

@@ -275,6 +275,102 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.n1_adm = n1
         self.n2_adm = n2
 
+    def set_adm_mesh_non_nested(self, v0=[], v1=[]):
+
+        levels = np.repeat(-1, len(self.data_impress['LEVEL']))
+        gids_0 = self.data_impress['GID_0']
+        gids_1 = self.data_impress['GID_1']
+        gids_2 = self.data_impress['GID_2']
+        v2=np.setdiff1d(gids_0,np.concatenate([v0, v1]))
+
+        levels[v0]=np.repeat(0, len(v0))
+        levels[v1]=np.repeat(1, len(v1))
+        levels[v2]=np.repeat(2, len(v2))
+
+        all_wells = self.all_wells_ids
+        viz_face = np.setdiff1d(np.concatenate(self.mesh.volumes.bridge_adjacencies(all_wells, 2, 3)), all_wells)
+        levels[viz_face] = np.repeat(1, len(viz_face))
+
+        n1 = 0
+        n2 = 0
+        self.data_impress['LEVEL'] = levels.copy()
+
+        # vols_level_0 = gid_0[levels==0]
+        # for n_level in range(1, self.n_levels):
+        #     n = 0
+        #     self.data_impress['LEVEL_ID_'+str(n_level)][vols_level_0] = np.arange(len(vols_level_0))
+        #     n += len(vols_level_0)
+        #     if n_level > 1:
+        #         adm_ant_id = self.data_impress['LEVEL_ID_'+str(n_level-1)][levels<n_level & levels>0]
+        #         unique_adm_ant_id = np.unique(adm_ant_id)
+        #         for idd in unique_adm_ant_id:
+        #             gid = gid_0[self.data_impress['LEVEL_ID_'+str(n_level-1)]==idd]
+        #             self.data_impress['LEVEL_ID_'+str(n_level)][gid] = np.repeat(n, len(gid))
+        #             n += 1
+        #
+        #     all_ids_coarse_level = self.data_impress['GID_'+str(n_level)][levels>=n_level]
+        #     meshsets_ids = np.unique(all_ids_coarse_level)
+        #     # v_level = gids_0[levels>=n_level]
+        #     for id_coarse in meshsets_ids:
+        #         volumes_in_meshset = gid_0[all_ids_coarse_level == id_coarse]
+        #         # v_meshset_level=np.intersect1d(volumes_in_meshset,v_level)
+        #         self.data_impress['LEVEL_ID_'+str(n_level)][volumes_in_meshset] = np.repeat(n, len(volumes_in_meshset))
+        #         n += 1
+
+        n0 = len(levels)
+        list_L1_ID = np.repeat(-1, n0)
+        list_L2_ID = np.repeat(-1, n0)
+
+        list_L1_ID[v0] = np.arange(len(v0))
+        list_L2_ID[v0] = np.arange(len(v0))
+        n1+=len(v0)
+        n2+=len(v0)
+
+        ids_ms_2 = range(len(np.unique(gids_2)))
+
+
+        print('\n')
+        print("INICIOU GERACAO DA MALHA ADM")
+        print('\n')
+
+        for vol2 in ids_ms_2:
+            #1
+            # n_vols_l3 = 0
+            vols2 = gids_0[gids_2==vol2]
+            levels_vols_2 = levels[vols2]
+            vols_ms2_lv2 = vols2[levels_vols_2==2]
+            list_L2_ID[vols_ms2_lv2] = np.repeat(n2,len(vols_ms2_lv2))
+            if len(vols_ms2_lv2)>0:
+                n2+=1
+
+            # gids_1_1 = gids_1[gids_2==v2]
+            gids_1_1 = gids_1[vols2]
+            ids_ms_1 = np.unique(gids_1_1)
+
+            for vol1 in ids_ms_1:
+                #2
+                # elem_by_L1 = mb.get_entities_by_handle(m1)
+                vols1 = vols2[gids_1_1==vol1]
+                levels_vols_1 = levels_vols_2[gids_1_1==vol1]
+                vols_ms1_lv1 = vols1[levels_vols_1>=1]
+                list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
+                n1+=1
+
+                vols_ms2_lv1 = vols1[levels_vols_1==1]
+                if len(vols_ms2_lv1)>0:
+                    list_L2_ID[vols_ms2_lv1] = np.repeat(n2,len(vols_ms2_lv1))
+                    n2+=1
+
+
+        self.data_impress['LEVEL_ID_1'] = list_L1_ID
+        self.data_impress['LEVEL_ID_2'] = list_L2_ID
+
+        for i in range(self.n_levels+1):
+            self.number_vols_in_levels[i] = len(levels[levels==i])
+
+        self.n1_adm = n1
+        self.n2_adm = n2
+
     def restart_levels(self):
         self.data_impress['LEVEL'] = np.repeat(-1, len(self.data_impress['LEVEL']))
 
@@ -1128,3 +1224,8 @@ class AdmMethod(DataManager, TpfaFlux2):
             del self._so_nv1
         return locals()
     so_nv1 = property(**so_nv1())
+
+    def print_test(self):
+        self.data_impress.update_variables_to_mesh()
+        name = 'results/test_'
+        self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
