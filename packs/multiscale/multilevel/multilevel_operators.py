@@ -104,12 +104,12 @@ class MultilevelOperators(DataManager):
               (self.primal_id_n, t1),
               (self.dual_id_n, t1)]
 
-        for n in range(self.n_levels):
+        for n in range(1, self.n_levels):
 
-            gids = self.data_impress['GID_' + str(n)]
-            primal_ids = self.data_impress['GID_' + str(n+1)]
-            dual_ids = self.data_impress['DUAL_' + str(n+1)]
-            if n > 0:
+            gids = self.data_impress['GID_' + str(n-1)]
+            primal_ids = self.data_impress['GID_' + str(n)]
+            dual_ids = self.data_impress['DUAL_' + str(n)]
+            if n > 1:
                 gids, primal_ids, dual_ids = get_gids_primalids_dualids(gids, primal_ids, dual_ids)
             tam = len(gids)
             tam2 = len(np.unique(primal_ids))
@@ -117,19 +117,19 @@ class MultilevelOperators(DataManager):
             structured_array[self.gid_n] = gids
             structured_array[self.primal_id_n] = primal_ids
             structured_array[self.dual_id_n] = dual_ids
-            self._data[self.infos_level + str(n+1)] = structured_array
+            self._data[self.infos_level + str(n)] = structured_array
             data_r = np.ones(tam)
             lines = primal_ids
             cols = gids
             OR = sp.csc_matrix((data_r,(lines,cols)), shape=(tam2, tam))
-            self._data[self.restriction + str(n+1)] = OR
+            self._data[self.restriction + str(n)] = OR
 
     def get_operators(self, load=False):
 
         get_correction_term = self.get_correction_term
 
-        for n in range(self.n_levels):
-            level = n+1
+        for n in range(1, self.n_levels):
+            level = n
             infos = self._data[self.infos_level + str(level)]
             gid = infos[self.gid_n]
             primal_id = infos[self.primal_id_n]
@@ -160,13 +160,13 @@ class MultilevelOperators(DataManager):
         total_source_term: 'total fine source term'=None,
         q_grav: 'fine gravity source term'=None):
         T_ant = T.copy()
-        for n in range(self.n_levels):
-            level = n+1
+        for n in range(1, self.n_levels):
+            level = n
             if self.get_correction_term:
                 if level > 1:
                     total_source_term = OR*total_source_term
                     q_grav = OR*q_grav
-                volumes_without_grav = self.ml_data['volumes_without_grav_level_'+str(n)]
+                volumes_without_grav = self.ml_data['volumes_without_grav_level_'+str(n-1)]
                 B_matrix = mfc.get_B_matrix(total_source_term, q_grav)
                 Eps_matrix = mfc.get_Eps_matrix(np.arange(len(total_source_term)), volumes_without_grav)
             else:
@@ -183,7 +183,7 @@ class MultilevelOperators(DataManager):
             sp.save_npz(os.path.join('flying', self.prolongation + str(level) + '.npz'), OP)
             sp.save_npz(os.path.join('flying', self.restriction + str(level) + '.npz'), OR)
 
-            if level == self.n_levels:
+            if level == self.n_levels-1:
                 continue
 
             T_ant = OR*T_ant*OP
@@ -196,8 +196,8 @@ class MultilevelOperators(DataManager):
     def run_paralel(self, T: 'fine transmissibility without boundary conditions'):
         T_ant = T.copy()  #T(l-1)
 
-        for n in range(self.n_levels):
-            level = n+1
+        for n in range(1, self.n_levels):
+            level = n
             master = paralel_ams.MasterOP(T_ant, self.ml_data['dual_structure_level_'+str(level)], level)
             OP = master.run()
             del master
@@ -207,7 +207,7 @@ class MultilevelOperators(DataManager):
             sp.save_npz(os.path.join('flying', self.prolongation + str(level) + '.npz'), OP)
             sp.save_npz(os.path.join('flying', self.restriction + str(level) + '.npz'), OR)
 
-            if level == self.n_levels:
+            if level == self.n_levels-1:
                 continue
             T_ant = OR*T_ant*OP
             cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]

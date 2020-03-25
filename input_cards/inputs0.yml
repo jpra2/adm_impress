@@ -15,7 +15,7 @@ multilevel_data: true
 load_multilevel_data: false
 load_operators: false
 get_correction_term: false
-n_levels: 1
+n_levels: 3
 capillary_pressure: false
 convert_capillary_pressure_to: 'Pa'
 _debug: True

@@ -1,6 +1,7 @@
-from ..adm_method import AdmMethod
+from ..adm_method import AdmMethod, Jacobi
 import numpy as np
 import scipy.sparse as sp
+import time
 
 class AdmNonNested(AdmMethod):
 
@@ -12,98 +13,105 @@ class AdmNonNested(AdmMethod):
         gids_2 = self.data_impress['GID_2']
         v2=np.setdiff1d(gids_0,np.concatenate([v0, v1]))
 
-        levels[v0]=np.repeat(0, len(v0))
-        levels[v1]=np.repeat(1, len(v1))
-        levels[v2]=np.repeat(2, len(v2))
+        levels[v0]=0
+        levels[v1]=1
+        levels[v2]=2
 
         all_wells = self.all_wells_ids
         if self.so_nv1==True:
             v1=np.setdiff1d(np.arange(len(levels)),all_wells)
         else:
             v1 = np.setdiff1d(np.concatenate(self.mesh.volumes.bridge_adjacencies(all_wells, 2, 3)), all_wells)
-        levels[v1] = np.repeat(1, len(v1))
+        levels[v1] = 1
+        self.data_impress['LEVEL'] = levels.copy()
 
         n1 = 0
         n2 = 0
-        self.data_impress['LEVEL'] = levels.copy()
 
-        # vols_level_0 = gid_0[levels==0]
-        # for n_level in range(1, self.n_levels):
-        #     n = 0
-        #     self.data_impress['LEVEL_ID_'+str(n_level)][vols_level_0] = np.arange(len(vols_level_0))
-        #     n += len(vols_level_0)
-        #     if n_level > 1:
-        #         adm_ant_id = self.data_impress['LEVEL_ID_'+str(n_level-1)][levels<n_level & levels>0]
-        #         unique_adm_ant_id = np.unique(adm_ant_id)
-        #         for idd in unique_adm_ant_id:
-        #             gid = gid_0[self.data_impress['LEVEL_ID_'+str(n_level-1)]==idd]
-        #             self.data_impress['LEVEL_ID_'+str(n_level)][gid] = np.repeat(n, len(gid))
-        #             n += 1
+        vols_level_0 = v0
+        nv0 = len(vols_level_0)
+        vols_level_ant = vols_level_0
+        for n_level in range(1, self.n_levels):
+            n = 0
+            self.data_impress['LEVEL_ID_'+str(n_level)][vols_level_0] = np.arange(nv0)
+            self.data_impress['ADM_COARSE_ID_LEVEL_'+str(n_level)][vols_level_0] = np.arange(nv0)
+            n += nv0
+
+            if n_level > 1:
+                adm_ant_id = self.data_impress['LEVEL_ID_'+str(n_level-1)][(levels<n_level) & (levels>0)]
+                unique_adm_ant_id = np.unique(adm_ant_id)
+                for idd in unique_adm_ant_id:
+                    gid = gids_0[self.data_impress['LEVEL_ID_'+str(n_level-1)]==idd]
+                    self.data_impress['LEVEL_ID_'+str(n_level)][gid] = n
+                    self.data_impress['ADM_COARSE_ID_LEVEL_'+str(n_level)][gid] = n
+                    n += 1
+
+            all_ids_coarse_level = self.data_impress['GID_'+str(n_level)][levels>=n_level]
+            meshsets_ids = np.unique(all_ids_coarse_level)
+            # v_level = gids_0[levels>=n_level]
+            for id_coarse in meshsets_ids:
+                volumes_in_meshset = gids_0[self.data_impress['GID_'+str(n_level)] == id_coarse]
+                volumes_in_meshset = np.setdiff1d(volumes_in_meshset, vols_level_ant)
+                self.data_impress['LEVEL_ID_'+str(n_level)][volumes_in_meshset] = n
+                self.data_impress['ADM_COARSE_ID_LEVEL_'+str(n_level)][volumes_in_meshset] = n
+                n += 1
+            vols_level_ant = np.concatenate([vols_level_ant, gids_0[levels==n_level]])
+
+        # n0 = len(levels)
+        # list_L1_ID = np.repeat(-1, n0)
+        # list_L2_ID = np.repeat(-1, n0)
         #
-        #     all_ids_coarse_level = self.data_impress['GID_'+str(n_level)][levels>=n_level]
-        #     meshsets_ids = np.unique(all_ids_coarse_level)
-        #     # v_level = gids_0[levels>=n_level]
-        #     for id_coarse in meshsets_ids:
-        #         volumes_in_meshset = gid_0[all_ids_coarse_level == id_coarse]
-        #         # v_meshset_level=np.intersect1d(volumes_in_meshset,v_level)
-        #         self.data_impress['LEVEL_ID_'+str(n_level)][volumes_in_meshset] = np.repeat(n, len(volumes_in_meshset))
-        #         n += 1
-
-        n0 = len(levels)
-        list_L1_ID = np.repeat(-1, n0)
-        list_L2_ID = np.repeat(-1, n0)
-
-        list_L1_ID[v0] = np.arange(len(v0))
-        list_L2_ID[v0] = np.arange(len(v0))
-        n1+=len(v0)
-        n2+=len(v0)
-
-        ids_ms_2 = range(len(np.unique(gids_2)))
-
-
-        print('\n')
-        print("INICIOU GERACAO DA MALHA ADM")
-        print('\n')
-
-        for vol2 in ids_ms_2:
-            #1
-            # n_vols_l3 = 0
-            vols2 = gids_0[gids_2==vol2]
-            levels_vols_2 = levels[vols2]
-            vols_ms2_lv2 = vols2[levels_vols_2==2]
-            list_L2_ID[vols_ms2_lv2] = np.repeat(n2,len(vols_ms2_lv2))
-            self.data_impress['ADM_COARSE_ID_LEVEL_2'][vols2] = np.repeat(n2, len(vols2))
-            if len(vols_ms2_lv2)>0:
-                n2+=1
-
-            # gids_1_1 = gids_1[gids_2==v2]
-            gids_1_1 = gids_1[vols2]
-            ids_ms_1 = np.unique(gids_1_1)
-
-            for vol1 in ids_ms_1:
-                #2
-                # elem_by_L1 = mb.get_entities_by_handle(m1)
-                vols1 = vols2[gids_1_1==vol1]
-                levels_vols_1 = levels_vols_2[gids_1_1==vol1]
-                vols_ms1_lv1 = vols1[levels_vols_1>=1]
-                list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
-                self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(n1, len(vols1))
-                n1+=1
-
-                vols_ms2_lv1 = vols1[levels_vols_1==1]
-                if len(vols_ms2_lv1)>0:
-                    list_L2_ID[vols_ms2_lv1] = np.repeat(n2,len(vols_ms2_lv1))
-                    n2+=1
-
-
-        self.data_impress['LEVEL_ID_1'] = list_L1_ID
-        self.data_impress['LEVEL_ID_2'] = list_L2_ID
-
-        for i in range(self.n_levels+1):
+        # list_L1_ID[v0] = np.arange(len(v0))
+        # list_L2_ID[v0] = np.arange(len(v0))
+        # n1+=len(v0)
+        # n2+=len(v0)
+        #
+        # ids_ms_2 = range(len(np.unique(gids_2)))
+        #
+        #
+        # print('\n')
+        # print("INICIOU GERACAO DA MALHA ADM")
+        # print('\n')
+        #
+        # for vol2 in ids_ms_2:
+        #     #1
+        #     # n_vols_l3 = 0
+        #     vols2 = gids_0[gids_2==vol2]
+        #     levels_vols_2 = levels[vols2]
+        #     vols_ms2_lv2 = vols2[levels_vols_2==2]
+        #     list_L2_ID[vols_ms2_lv2] = np.repeat(n2,len(vols_ms2_lv2))
+        #     self.data_impress['ADM_COARSE_ID_LEVEL_2'][vols2] = np.repeat(n2, len(vols2))
+        #     if len(vols_ms2_lv2)>0:
+        #         n2+=1
+        #
+        #     # gids_1_1 = gids_1[gids_2==v2]
+        #     gids_1_1 = gids_1[vols2]
+        #     ids_ms_1 = np.unique(gids_1_1)
+        #
+        #     for vol1 in ids_ms_1:
+        #         #2
+        #         # elem_by_L1 = mb.get_entities_by_handle(m1)
+        #         vols1 = vols2[gids_1_1==vol1]
+        #         levels_vols_1 = levels_vols_2[gids_1_1==vol1]
+        #         vols_ms1_lv1 = vols1[levels_vols_1>=1]
+        #         list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
+        #         self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(n1, len(vols1))
+        #         n1+=1
+        #
+        #         vols_ms2_lv1 = vols1[levels_vols_1==1]
+        #         if len(vols_ms2_lv1)>0:
+        #             list_L2_ID[vols_ms2_lv1] = np.repeat(n2,len(vols_ms2_lv1))
+        #             n2+=1
+        #
+        #
+        # self.data_impress['LEVEL_ID_1'] = list_L1_ID
+        # self.data_impress['LEVEL_ID_2'] = list_L2_ID
+        #
+        for i in range(self.n_levels):
             self.number_vols_in_levels[i] = len(levels[levels==i])
-
-        self.n1_adm = n1
-        self.n2_adm = n2
+        #
+        # self.n1_adm = n1
+        # self.n2_adm = n2
 
     def organize_ops_adm(self, OP_AMS, OR_AMS, level, _pcorr=None):
 
@@ -242,6 +250,193 @@ class AdmNonNested(AdmMethod):
             pcorr = np.array([False])
 
         return OP_ADM, OR_ADM, pcorr
+
+    def set_initial_mesh(self, mlo, T, b):
+        M = self.mesh
+        iterar_mono = file_adm_mesh_def['iterar_mono']
+        refinar_nv2 = file_adm_mesh_def['refinar_nv2']
+        imprimir_a_cada_iteracao = file_adm_mesh_def['imprimir_a_cada_iteracao']
+        rel_v2 = file_adm_mesh_def['rel_v2']
+        TOL = file_adm_mesh_def['TOL']
+        tol_n2 = file_adm_mesh_def['tol_n2']
+        Ni = file_adm_mesh_def['Ni']
+        calc_tpfa = file_adm_mesh_def['calc_tpfa']
+        load_tpfa = file_adm_mesh_def['load_tpfa']
+        _dev = file_adm_mesh_def['_dev']
+        name = 'flying/SOL_TPFA.npy'
+        nfine_vols = len(self.data_impress['LEVEL'])
+        GID_0 = self.data_impress['GID_0']
+        GID_1 = self.data_impress['GID_1']
+        DUAL_1 = self.data_impress['DUAL_1']
+        solver = file_adm_mesh_def['solver']
+        load_adm_levels = file_adm_mesh_def['load_adm_levels']
+        set_initial_mesh = file_adm_mesh_def['set_initial_mesh']
+
+        if load_adm_levels:
+            return 0
+
+        if not set_initial_mesh:
+            self.restart_levels()
+            self.set_level_wells()
+            gid_0 = self.data_impress['GID_0'][self.data_impress['LEVEL']==0]
+            self.set_adm_mesh_non_nested(gid_0)
+            return 0
+
+        if calc_tpfa:
+            SOL_TPFA = self.solver.direct_solver(T, b)
+            print("\nresolveu TPFA\n")
+            np.save(name, SOL_TPFA)
+        elif load_tpfa:
+            try:
+                SOL_TPFA = np.load(name)
+            except:
+                raise FileNotFoundError('O aqruivo {} nao existe'.format(name))
+
+        if solver == 'direct':
+            solver = linalg.spsolve
+
+        self.restart_levels()
+        self.set_level_wells()
+        gid_0 = self.data_impress['GID_0'][self.data_impress['LEVEL']==0]
+        self.set_adm_mesh_non_nested(gid_0)
+
+        multilevel_meshes = []
+
+        active_nodes = []
+        perro = []
+        erro = []
+
+        Nmax = tol_n2*nfine_vols
+        finos = self.all_wells_ids.copy()
+
+        vertices = GID_0[DUAL_1==3]
+        primal_id_vertices = GID_1[vertices]
+        dt = [('vertices', np.dtype(int)), ('primal_vertices', np.dtype(int))]
+        structured_array = np.zeros(len(vertices), dtype=dt)
+        structured_array['vertices'] = vertices
+        structured_array['primal_vertices'] = primal_id_vertices
+        structured_array = np.sort(structured_array, order='primal_vertices')
+        vertices = structured_array['vertices']
+        primal_id_vertices = structured_array['primal_vertices']
+
+        nr = int(tol_n2*(len(vertices)-len(finos))/(Ni))
+        n1 = self.data_impress['LEVEL_ID_1'].max() + 1
+        n2 = self.data_impress['LEVEL_ID_2'].max() + 1
+        nr = 10
+
+        accum_levels = []
+
+        pseudo_erro=np.repeat(TOL+1,2) #iniciou pseudo_erro
+        t0=time.time()
+        cont=0
+        pos_new_inter=[]
+        interm=np.array([])
+        continuar = True
+
+
+        while (pseudo_erro.max()>TOL and n2<Nmax and iterar_mono and continuar) or cont==0:
+
+            if cont>0:
+                levels = self.data_impress['LEVEL'].copy()
+                n1_ant = self.data_impress['LEVEL_ID_1'].max() + 1
+                n2_ant = self.data_impress['LEVEL_ID_2'].max() + 1
+
+                lim=np.sort(psr)[len(psr)-nr-1]
+                positions=np.where(psr>lim)[0]
+                # nv_verts=levels[vertices]
+                # nv_positions=nv_verts[positions]
+                # pos_new_fines=positions[nv_positions==1]
+                # pos_new_inter=positions[nv_positions==2]
+
+                # pos_new_fines=positions
+                # interm=np.concatenate([interm,pos_new_inter]).astype(np.int)
+
+                interm = np.array([])
+                finos=np.concatenate([finos,positions]).astype(np.int)
+
+                # primal_id_interm = np.unique(GID_1[interm])
+                # interm = np.concatenate([GID_0[GID_1==k] for k in primal_id_interm])
+                # primal_id_finos = np.unique(GID_1[finos])
+                # finos = np.concatenate([GID_0[GID_1==k] for k in primal_id_finos])
+
+                self.restart_levels()
+                levels = self.data_impress['LEVEL'].copy()
+                levels[finos] = np.zeros(len(finos), dtype=int)
+                levels[interm] = np.ones(len(interm), dtype=int)
+                self.data_impress['LEVEL'] = levels.copy()
+                gid_0 = self.data_impress['GID_0'][self.data_impress['LEVEL']==0]
+                self.set_adm_mesh_non_nested(gid_0)
+                # self.set_adm_mesh()
+                n1 = self.data_impress['LEVEL_ID_1'].max() + 1
+                n2 = self.data_impress['LEVEL_ID_2'].max() + 1
+
+                if n1 == n1_ant and n2 == n2_ant:
+                    continuar = False
+
+                if _dev:
+                    print('\n',n1,n2,'n1 e n2\n')
+
+            self.organize_ops_adm(mlo['prolongation_level_1'],
+                                  mlo['restriction_level_1'],
+                                  1)
+
+            OP_ADM = self._data[self.adm_op_n + str(1)]
+            OR_ADM = self._data[self.adm_rest_n + str(1)]
+
+            if (len(pos_new_inter)>0 or cont==0) and refinar_nv2:
+                self.organize_ops_adm(mlo['prolongation_level_2'],
+                                      mlo['restriction_level_2'],
+                                      2)
+
+                OP_ADM_2 = self._data[self.adm_op_n + str(2)]
+                OR_ADM_2 = self._data[self.adm_rest_n + str(2)]
+
+                SOL_ADM=solver(OR_ADM_2*OR_ADM*T*OP_ADM*OP_ADM_2,OR_ADM_2*OR_ADM*b)
+                SOL_ADM_fina=OP_ADM*OP_ADM_2*SOL_ADM
+            else:
+                SOL_ADM=solver(OR_ADM*T*OP_ADM,OR_ADM*b)
+                SOL_ADM_fina=OP_ADM*SOL_ADM
+            self.data_impress['pressure'] = SOL_ADM_fina
+            x0=Jacobi(SOL_ADM_fina, T, b)
+            pseudo_erro=abs((SOL_ADM_fina-x0))
+
+            if calc_tpfa or load_tpfa:
+                erro.append(abs((SOL_TPFA-SOL_ADM_fina)/SOL_TPFA).max())
+            else:
+                erro.append(abs(pseudo_erro/x0).max())
+                SOL_TPFA=x0
+            OR_AMS = mlo['restriction_level_1']
+            psr=abs(pseudo_erro)
+            psr[finos]=0
+
+            perro.append(abs((SOL_ADM_fina-x0)/x0).max())
+            active_nodes.append(n2/nfine_vols)
+
+            if imprimir_a_cada_iteracao:
+                # M1.mb.tag_set_data(Pseudo_ERRO_tag,M1.all_volumes,abs(pseudo_erro/x0)[GIDs])
+                #
+                # M1.mb.tag_set_data(ERRO_tag,M1.all_volumes,abs((SOL_ADM_fina-SOL_TPFA)/SOL_TPFA)[GIDs])
+                # M1.mb.tag_set_data(P_ADM_tag,M1.all_volumes,SOL_ADM_fina[GIDs])
+                # M1.mb.tag_set_data(P_TPFA_tag,M1.all_volumes,SOL_TPFA[GIDs])
+                # ext_vtk = 'testes_MAD'  + str(cont) + '.vtk'
+                # M1.mb.write_file(ext_vtk,[av])
+                self.data_impress.update_variables_to_mesh(['LEVEL', 'pressure'])
+                M.core.print(folder='results', file='test'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
+            cont+=1
+
+            accum_levels.append(self.data_impress['LEVEL'].copy())
+
+
+        plt.plot(active_nodes,perro, marker='o')
+        plt.yscale('log')
+        plt.savefig('results/initial_adm_mesh/hist.png')
+
+        n = int(input('\nQual a malha adm que deseja utilizar?\nDigite o numero da iteracao.\n'))
+
+        self.data_impress['INITIAL_LEVEL'] = accum_levels[n]
+
+        self.data_impress.update_variables_to_mesh()
+        self.data_impress.export_to_npz()
 
     def plot_operator(self, OP_ADM, OP_AMS, v):
 

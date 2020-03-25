@@ -91,8 +91,6 @@ else:
     # multilevel_operators.run_paralel(tpfa_solver['Tini'])
 mlo=multilevel_operators
 
-n_levels = int(data_loaded['n_levels'])
-
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 T, b = tpfa_solver.run()

@@ -141,7 +141,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.n_cpu = mp.cpu_count()
         self.n_workers = self.n_cpu
         self._so_nv1 = False
-        if self.n_levels == 1:
+        if self.n_levels == 2:
             self.so_nv1 = True
 
     def set_level_wells(self):
@@ -269,7 +269,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['LEVEL_ID_2'] = list_L2_ID
         self.data_impress['LEVEL'] = levels
 
-        for i in range(self.n_levels+1):
+        for i in range(self.n_levels):
             self.number_vols_in_levels[i] = len(levels[levels==i])
 
         self.n1_adm = n1
@@ -424,12 +424,12 @@ class AdmMethod(DataManager, TpfaFlux2):
         b_adm = b.copy()
 
         n_levels = self.n_levels
-        for i in range(n_levels):
-            level = i+1
+        for i in range(1, n_levels):
+            level = i
             OP_adm = self._data[self.adm_op_n + str(level)]
             OR_adm = self._data[self.adm_rest_n + str(level)]
             if self.get_correction_term:
-                pcorr_adm = self._data[self.pcorr_n+str(level-1)]
+                pcorr_adm = self._data[self.pcorr_n+str(level)]
                 b_adm = OR_adm*b_adm - OR_adm*T_adm*pcorr_adm
             else:
                 b_adm = OR_adm*b_adm
@@ -439,10 +439,10 @@ class AdmMethod(DataManager, TpfaFlux2):
         pms = self.solver.direct_solver(T_adm, b_adm)
         # p_adm = pms.copy()
 
-        for i in range(n_levels):
+        for i in range(1, n_levels):
             level = self.n_levels - i
             if self.get_correction_term:
-                pcorr_adm = self._data[self.pcorr_n+str(level-1)]
+                pcorr_adm = self._data[self.pcorr_n+str(level)]
                 pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
             else:
                 pms = self._data[self.adm_op_n + str(level)]*pms
@@ -690,8 +690,8 @@ class AdmMethod(DataManager, TpfaFlux2):
         gids = self.data_impress['GID_0']
         nt_process = 0
 
-        for i in range(self.n_levels):
-            level = i+1
+        for i in range(1, self.n_levels):
+            level = i
             gids_lv = self.data_impress['GID_' + str(level)]
             gids_eng = np.unique(gids_lv[levels==level])
             nt_process += len(gids_eng)
@@ -1123,7 +1123,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         def fset(self, value):
             self._so_nv1 = value
             if self._so_nv1:
-                self.n_levels = 1
+                self.n_levels = 2
         def fdel(self):
             del self._so_nv1
         return locals()
