@@ -554,3 +554,17 @@ flux_cap_volumes:
   data type: float
   sparse: True
   level: 0
+
+ADM_COARSE_ID_LEVEL_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+ADM_COARSE_ID_LEVEL_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
