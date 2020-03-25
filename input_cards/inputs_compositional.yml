@@ -28,10 +28,13 @@ compositional_data:
   rock_compressibility: 7.25e-8
   Pf: 13.79E6
 
+  #rever isso de Cw=0 e Pw
   water_data:
     mi_W: 1e-3
     rho_W: 999.6
     Mw_w: 18.015e-3
+    Cw: 0
+    Pw: 13.79E6
 
   residual_saturations:
     Sorw: 1e-6
