@@ -46,9 +46,9 @@ class PropertiesCalc:
         fprop.Sw = data_impress['saturation']
         fprop.Sg = np.zeros(fprop.Sw.shape)
         fprop.Sg[fprop.V!=0] = (1 - fprop.Sw[fprop.V!=0]) * \
-            (fprop.V[fprop.V!=0] / fprop.rho_V[fprop.V!=0]) / \
-            (fprop.V[fprop.V!=0] / fprop.rho_V[fprop.V!=0] +
-            fprop.L[fprop.V!=0] / fprop.rho_L[fprop.V!=0] )
+            (fprop.V[fprop.V!=0] / fprop.ksi_V[fprop.V!=0]) / \
+            (fprop.V[fprop.V!=0] / fprop.ksi_V[fprop.V!=0] +
+            fprop.L[fprop.V!=0] / fprop.ksi_L[fprop.V!=0] )
         fprop.Sg[fprop.V==0] = 0
         fprop.So = 1 - fprop.Sw - fprop.Sg
 
@@ -76,4 +76,8 @@ class PropertiesCalc:
         # não faz sentido eu calcular ele sempre desse jeito, ele teria que vim como um dado de entrada em t=0 e depois
         # essa conta some
     def update_water_saturation(self, data_impress, fprop):
+        Pw = np.array(data_loaded['compositional_data']['water_data']['Pw']).astype(float)
+        Cw = np.array(data_loaded['compositional_data']['water_data']['Cw']).astype(float)
+        fprop.ksi_W = fprop.ksi_W0*(1 + Cw * (fprop.P - Pw))
+        fprop.rho_W = fprop.ksi_W*fprop.MW_w
         data_impress['saturation'] = fprop.component_mole_numbers[self.n_components-1,:] * (1 / fprop.ksi_W) / fprop.Vp
