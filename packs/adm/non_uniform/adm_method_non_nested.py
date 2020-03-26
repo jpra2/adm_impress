@@ -1,16 +1,19 @@
 from ..adm_method import AdmMethod, Jacobi
 import numpy as np
 import scipy.sparse as sp
+from scipy.sparse import linalg
 import time
+from ...directories import file_adm_mesh_def
+import matplotlib.pyplot as plt
 
 class AdmNonNested(AdmMethod):
 
     def set_adm_mesh_non_nested(self, v0=[], v1=[]):
 
+        print("\nINICIOU GERACAO DA MALHA ADM\n")
+
         levels = np.repeat(-1, len(self.data_impress['LEVEL']))
         gids_0 = self.data_impress['GID_0']
-        gids_1 = self.data_impress['GID_1']
-        gids_2 = self.data_impress['GID_2']
         v2=np.setdiff1d(gids_0,np.concatenate([v0, v1]))
 
         levels[v0]=0
@@ -36,7 +39,6 @@ class AdmNonNested(AdmMethod):
             self.data_impress['LEVEL_ID_'+str(n_level)][vols_level_0] = np.arange(nv0)
             self.data_impress['ADM_COARSE_ID_LEVEL_'+str(n_level)][vols_level_0] = np.arange(nv0)
             n += nv0
-
             if n_level > 1:
                 adm_ant_id = self.data_impress['LEVEL_ID_'+str(n_level-1)][(levels<n_level) & (levels>0)]
                 unique_adm_ant_id = np.unique(adm_ant_id)
@@ -46,16 +48,18 @@ class AdmNonNested(AdmMethod):
                     self.data_impress['ADM_COARSE_ID_LEVEL_'+str(n_level)][gid] = n
                     n += 1
 
-            all_ids_coarse_level = self.data_impress['GID_'+str(n_level)][levels>=n_level]
-            meshsets_ids = np.unique(all_ids_coarse_level)
-            # v_level = gids_0[levels>=n_level]
+            # all_ids_coarse_level = self.data_impress['GID_'+str(n_level)][levels>=n_level]
+            # meshsets_ids = np.unique(all_ids_coarse_level)
+            meshsets_ids = np.unique(self.data_impress['GID_'+str(n_level)][levels>=n_level])
             for id_coarse in meshsets_ids:
                 volumes_in_meshset = gids_0[self.data_impress['GID_'+str(n_level)] == id_coarse]
                 volumes_in_meshset = np.setdiff1d(volumes_in_meshset, vols_level_ant)
                 self.data_impress['LEVEL_ID_'+str(n_level)][volumes_in_meshset] = n
                 self.data_impress['ADM_COARSE_ID_LEVEL_'+str(n_level)][volumes_in_meshset] = n
                 n += 1
-            vols_level_ant = np.concatenate([vols_level_ant, gids_0[levels==n_level]])
+
+            if n_level < self.n_levels - 1:
+                vols_level_ant = np.concatenate([vols_level_ant, gids_0[levels==n_level]])
 
         # n0 = len(levels)
         # list_L1_ID = np.repeat(-1, n0)
@@ -252,6 +256,7 @@ class AdmNonNested(AdmMethod):
         return OP_ADM, OR_ADM, pcorr
 
     def set_initial_mesh(self, mlo, T, b):
+
         M = self.mesh
         iterar_mono = file_adm_mesh_def['iterar_mono']
         refinar_nv2 = file_adm_mesh_def['refinar_nv2']
@@ -271,6 +276,9 @@ class AdmNonNested(AdmMethod):
         solver = file_adm_mesh_def['solver']
         load_adm_levels = file_adm_mesh_def['load_adm_levels']
         set_initial_mesh = file_adm_mesh_def['set_initial_mesh']
+
+        OP_AMS_1 = mlo['prolongation_level_1']
+        OR_AMS_1 = mlo['restriction_level_1']
 
         if load_adm_levels:
             return 0
@@ -298,7 +306,8 @@ class AdmNonNested(AdmMethod):
         self.restart_levels()
         self.set_level_wells()
         gid_0 = self.data_impress['GID_0'][self.data_impress['LEVEL']==0]
-        self.set_adm_mesh_non_nested(gid_0)
+        gid_1 = self.data_impress['GID_0'][self.data_impress['LEVEL']==1]
+        self.set_adm_mesh_non_nested(gid_0, gid_1)
 
         multilevel_meshes = []
 
@@ -351,9 +360,8 @@ class AdmNonNested(AdmMethod):
                 # pos_new_fines=positions
                 # interm=np.concatenate([interm,pos_new_inter]).astype(np.int)
 
-                interm = np.array([])
                 finos=np.concatenate([finos,positions]).astype(np.int)
-
+                interm = np.setdiff1d(np.concatenate(M.volumes.bridge_adjacencies(finos, 2, 3)), finos)
                 # primal_id_interm = np.unique(GID_1[interm])
                 # interm = np.concatenate([GID_0[GID_1==k] for k in primal_id_interm])
                 # primal_id_finos = np.unique(GID_1[finos])
@@ -361,11 +369,12 @@ class AdmNonNested(AdmMethod):
 
                 self.restart_levels()
                 levels = self.data_impress['LEVEL'].copy()
-                levels[finos] = np.zeros(len(finos), dtype=int)
-                levels[interm] = np.ones(len(interm), dtype=int)
+                levels[finos] = 0
+                levels[interm] = 1
                 self.data_impress['LEVEL'] = levels.copy()
                 gid_0 = self.data_impress['GID_0'][self.data_impress['LEVEL']==0]
-                self.set_adm_mesh_non_nested(gid_0)
+                gid_1 = self.data_impress['GID_0'][self.data_impress['LEVEL']==1]
+                self.set_adm_mesh_non_nested(gid_0, gid_1)
                 # self.set_adm_mesh()
                 n1 = self.data_impress['LEVEL_ID_1'].max() + 1
                 n2 = self.data_impress['LEVEL_ID_2'].max() + 1
@@ -394,6 +403,7 @@ class AdmNonNested(AdmMethod):
                 SOL_ADM=solver(OR_ADM_2*OR_ADM*T*OP_ADM*OP_ADM_2,OR_ADM_2*OR_ADM*b)
                 SOL_ADM_fina=OP_ADM*OP_ADM_2*SOL_ADM
             else:
+                import pdb; pdb.set_trace()
                 SOL_ADM=solver(OR_ADM*T*OP_ADM,OR_ADM*b)
                 SOL_ADM_fina=OP_ADM*SOL_ADM
             self.data_impress['pressure'] = SOL_ADM_fina
@@ -430,6 +440,8 @@ class AdmNonNested(AdmMethod):
         plt.plot(active_nodes,perro, marker='o')
         plt.yscale('log')
         plt.savefig('results/initial_adm_mesh/hist.png')
+
+        import pdb; pdb.set_trace()
 
         n = int(input('\nQual a malha adm que deseja utilizar?\nDigite o numero da iteracao.\n'))
 
