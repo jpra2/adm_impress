@@ -7,6 +7,8 @@ import os
 from ...multiscale.operators.prolongation.AMS import paralel_ams
 from ...multiscale.ms_utils.matrices_for_correction import MatricesForCorrection as mfc
 
+from ..operators.prolongation.AMS.coupled_ams import OP_AMS
+
 def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
 
     gids2 = np.unique(gids)
@@ -59,6 +61,7 @@ class MultilevelOperators(DataManager):
     def __init__(self,
         n_levels,
         data_impress,
+        elements_lv0,
         ml_data,
         data_name='MultilevelOperators.npz',
         load=False,
@@ -72,6 +75,7 @@ class MultilevelOperators(DataManager):
         self.n_levels = n_levels
         self.data_impress = data_impress
         self.get_correction_term = get_correction_term
+        self.elements_lv0 = elements_lv0
 
         self.restriction = 'restriction_level_'
         self.prolongation = 'prolongation_level_'
@@ -85,7 +89,7 @@ class MultilevelOperators(DataManager):
         if load == False:
             self.get_initial_infos()
 
-        self.get_operators(load=load)
+        self.get_operators()
 
         if load == True:
             for n in range(n_levels):
@@ -193,7 +197,7 @@ class MultilevelOperators(DataManager):
 
         self.export_to_npz()
 
-    def run_paralel(self, T: 'fine transmissibility without boundary conditions'):
+    def run_paralel_dep0(self, T: 'fine transmissibility without boundary conditions'):
         T_ant = T.copy()  #T(l-1)
 
         for n in range(1, self.n_levels):
@@ -215,3 +219,32 @@ class MultilevelOperators(DataManager):
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
 
         self.export_to_npz()
+
+    def run_paralel(self, T):
+
+        T_ant = T.copy()  #T(l-1)
+
+        for n in range(1, self.n_levels):
+            level = n
+
+            OP = self.get_OP_paralel(level)
+            self._data[self.prolongation + str(level)] = OP
+            OR = self._data[self.restriction + str(level)]
+
+            sp.save_npz(os.path.join('flying', self.prolongation + str(level) + '.npz'), OP)
+            sp.save_npz(os.path.join('flying', self.restriction + str(level) + '.npz'), OR)
+
+            if level == self.n_levels-1:
+                continue
+            T_ant = OR*T_ant*OP
+            cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]
+            cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
+            T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
+
+    def get_OP_paralel(self, level):
+
+        # dual_structure = self.ml_data['dual_structure_level_'+str(level)]
+
+
+        OP = OP_AMS(self.data_impress, self.elements_lv0, self.elements_lv0['volumes']).OP
+        return OP

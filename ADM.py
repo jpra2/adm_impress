@@ -82,13 +82,14 @@ tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 T, b = tpfa_solver.run()
 # tpfa_solver.get_RHS_term()
 # tpfa_solver.get_transmissibility_matrix()
-multilevel_operators = MultilevelOperators(n_levels, data_impress, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
+multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 #
 if load_operators:
     pass
 else:
     multilevel_operators.run(tpfa_solver['Tini'])
     # multilevel_operators.run_paralel(tpfa_solver['Tini'])
+
 mlo=multilevel_operators
 
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)

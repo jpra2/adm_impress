@@ -5,6 +5,7 @@ from scipy.sparse import linalg
 import time
 from ...directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
+from pymoab import types
 
 class AdmNonNested(AdmMethod):
 
@@ -243,7 +244,7 @@ class AdmNonNested(AdmMethod):
         lines = np.concatenate([lines,l1])
         cols = np.concatenate([cols,ID_ADM1])
         data = np.concatenate([data,d1])
-            
+
         OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
 
         cols = gid_0
@@ -435,8 +436,9 @@ class AdmNonNested(AdmMethod):
                 # M1.mb.tag_set_data(P_TPFA_tag,M1.all_volumes,SOL_TPFA[GIDs])
                 # ext_vtk = 'testes_MAD'  + str(cont) + '.vtk'
                 # M1.mb.write_file(ext_vtk,[av])
-                self.plot_operator(OP_ADM, OP_AMS_1, 0)
                 self.data_impress.update_variables_to_mesh()
+                self.plot_operator(OP_ADM, OP_AMS_1, 0)
+                import pdb; pdb.set_trace()
                 M.core.print(folder='results', file='testt'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
             cont+=1
 
@@ -458,10 +460,30 @@ class AdmNonNested(AdmMethod):
 
     def plot_operator(self, OP_ADM, OP_AMS, v):
 
-        col = self.data_impress['GID_1'][self.all_wells_ids[v]]
-        fb_ms = OP_AMS[:, col].toarray()
-        corresp = self.data_impress['ADM_COARSE_ID_LEVEL_1'][self.all_wells_ids[v]]
-        fb_adm = OP_ADM[:, corresp].toarray()
-        self.data_impress['verif_po'] = fb_ms
-        self.data_impress['verif_rest'] = fb_adm
+        vertices = self.elements_lv0['volumes'][self.data_impress['DUAL_1']==3]
+        # primal_ids_vertices = self.data_impress['GID_1'][vertices]
+
+        tags_adm = []
+        tags_ams = []
+        for i, v in enumerate(vertices):
+            primal_id = self.data_impress['GID_1'][v]
+            corresp = self.data_impress['ADM_COARSE_ID_LEVEL_1'][v]
+
+            tags_ams.append(self.mesh.core.mb.tag_get_handle("OP_AMS"+str(i), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True))
+            tags_adm.append(self.mesh.core.mb.tag_get_handle("OP_ADM"+str(i), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True))
+
+            fb_ams = OP_AMS[:, primal_id].toarray()
+            fb_adm = OP_ADM[:, corresp].toarray()
+
+            self.mesh.core.mb.tag_set_data(tags_ams[i], self.mesh.core.all_volumes, fb_ams)
+            self.mesh.core.mb.tag_set_data(tags_adm[i], self.mesh.core.all_volumes, fb_adm)
+
+
+
+        # col = self.data_impress['GID_1'][self.all_wells_ids[v]]
+        # fb_ms = OP_AMS[:, col].toarray()
+        # corresp = self.data_impress['ADM_COARSE_ID_LEVEL_1'][self.all_wells_ids[v]]
+        # fb_adm = OP_ADM[:, corresp].toarray()
+        # self.data_impress['verif_po'] = fb_ms
+        # self.data_impress['verif_rest'] = fb_adm
         self.print_test()

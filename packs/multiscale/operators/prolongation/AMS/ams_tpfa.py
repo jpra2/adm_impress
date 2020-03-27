@@ -123,7 +123,7 @@ class AMSTpfa:
         Pf = -linalg.spsolve(As['Aff'].tocsc(),(As['Afe']*Pe).tocsc())
         Pi = -linalg.spsolve(As['Aii'].tocsc(),(As['Aif']*Pf).tocsc())
         op = sp.vstack([Pi,Pf,Pe,Pv])
-                
+
         return self.GT*op*self.G2
 
     def tpfalize(self, T_wire):

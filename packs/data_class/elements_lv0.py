@@ -34,5 +34,9 @@ class ElementsLv0(DataManager):
         remaped_boundary_faces[self._data['boundary_faces']] = np.arange(len(self._data['boundary_faces']))
         self._data['remaped_boundary_faces'] = remaped_boundary_faces
 
+        self._data['volumes_face_faces'] = self.mesh.volumes.bridge_adjacencies(self._data['volumes'], 2, 2)
+        self._data['faces_face_volumes'] = self.mesh.faces.bridge_adjacencies(self._data['faces'], 2, 3)
+        self._data['volumes_face_volumes'] = self.mesh.volumes.bridge_adjacencies(self._data['volumes'], 2, 3)
+
     def run(self):
         self.load_elements_from_mesh()
