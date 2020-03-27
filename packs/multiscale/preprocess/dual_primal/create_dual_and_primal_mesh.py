@@ -533,7 +533,7 @@ class MultilevelData(DataManager):
             def __init__(self, input_dual, partition):
                 self.input_dual_and_primal = input_dual
                 self.partition = partition
-                self.M1 = M1        
+                self.M1 = M1
         dual_primal = create_dual_and_primal.paralell_dual_and_primal(SubDomain(input_dual(),partition()),nworker=10,first=True)
         primal_1=dual_primal.v1
         primal_2=dual_primal.v2
@@ -985,7 +985,11 @@ class MultilevelData(DataManager):
                 vols_without_grav = np.setdiff1d(vols_without_grav, volumes[dual_id==3])
                 all_vols_without_grav.append(vols_without_grav)
 
-            all_vols_without_grav = np.unique(np.concatenate(all_vols_without_grav))
+            try:
+                all_vols_without_grav = np.unique(np.concatenate(all_vols_without_grav))
+            except Exception as e:
+                all_vols_without_grav = np.unique(all_vols_without_grav)
+
 
             self._data[self.volumes_without_grav + str(level-1)] = all_vols_without_grav
 

@@ -14,23 +14,26 @@ class AdmNonNested(AdmMethod):
 
         levels = np.repeat(-1, len(self.data_impress['LEVEL']))
         gids_0 = self.data_impress['GID_0']
+        gids_1 = self.data_impress['GID_1']
+        gids_2 = self.data_impress['GID_2']
         v2=np.setdiff1d(gids_0,np.concatenate([v0, v1]))
 
         levels[v0]=0
         levels[v1]=1
         levels[v2]=2
 
-        all_wells = self.all_wells_ids
+
         if self.so_nv1==True:
-            v1=np.setdiff1d(np.arange(len(levels)),all_wells)
+            v1=np.setdiff1d(np.arange(len(levels)),v0)
         else:
-            v1 = np.setdiff1d(np.concatenate(self.mesh.volumes.bridge_adjacencies(all_wells, 2, 3)), all_wells)
+            v1 = np.setdiff1d(np.concatenate(self.mesh.volumes.bridge_adjacencies(v0, 2, 3)), v0)
         levels[v1] = 1
         self.data_impress['LEVEL'] = levels.copy()
 
         n1 = 0
         n2 = 0
 
+        '''
         vols_level_0 = v0
         nv0 = len(vols_level_0)
         vols_level_ant = vols_level_0
@@ -60,62 +63,63 @@ class AdmNonNested(AdmMethod):
 
             if n_level < self.n_levels - 1:
                 vols_level_ant = np.concatenate([vols_level_ant, gids_0[levels==n_level]])
+        '''
 
-        # n0 = len(levels)
-        # list_L1_ID = np.repeat(-1, n0)
-        # list_L2_ID = np.repeat(-1, n0)
-        #
-        # list_L1_ID[v0] = np.arange(len(v0))
-        # list_L2_ID[v0] = np.arange(len(v0))
-        # n1+=len(v0)
-        # n2+=len(v0)
-        #
-        # ids_ms_2 = range(len(np.unique(gids_2)))
-        #
-        #
-        # print('\n')
-        # print("INICIOU GERACAO DA MALHA ADM")
-        # print('\n')
-        #
-        # for vol2 in ids_ms_2:
-        #     #1
-        #     # n_vols_l3 = 0
-        #     vols2 = gids_0[gids_2==vol2]
-        #     levels_vols_2 = levels[vols2]
-        #     vols_ms2_lv2 = vols2[levels_vols_2==2]
-        #     list_L2_ID[vols_ms2_lv2] = np.repeat(n2,len(vols_ms2_lv2))
-        #     self.data_impress['ADM_COARSE_ID_LEVEL_2'][vols2] = np.repeat(n2, len(vols2))
-        #     if len(vols_ms2_lv2)>0:
-        #         n2+=1
-        #
-        #     # gids_1_1 = gids_1[gids_2==v2]
-        #     gids_1_1 = gids_1[vols2]
-        #     ids_ms_1 = np.unique(gids_1_1)
-        #
-        #     for vol1 in ids_ms_1:
-        #         #2
-        #         # elem_by_L1 = mb.get_entities_by_handle(m1)
-        #         vols1 = vols2[gids_1_1==vol1]
-        #         levels_vols_1 = levels_vols_2[gids_1_1==vol1]
-        #         vols_ms1_lv1 = vols1[levels_vols_1>=1]
-        #         list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
-        #         self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(n1, len(vols1))
-        #         n1+=1
-        #
-        #         vols_ms2_lv1 = vols1[levels_vols_1==1]
-        #         if len(vols_ms2_lv1)>0:
-        #             list_L2_ID[vols_ms2_lv1] = np.repeat(n2,len(vols_ms2_lv1))
-        #             n2+=1
-        #
-        #
-        # self.data_impress['LEVEL_ID_1'] = list_L1_ID
-        # self.data_impress['LEVEL_ID_2'] = list_L2_ID
-        #
+        n0 = len(levels)
+        list_L1_ID = np.repeat(-1, n0)
+        list_L2_ID = np.repeat(-1, n0)
+
+        list_L1_ID[v0] = np.arange(len(v0))
+        list_L2_ID[v0] = np.arange(len(v0))
+        n1+=len(v0)
+        n2+=len(v0)
+
+        ids_ms_2 = range(len(np.unique(gids_2)))
+
+
+        print('\n')
+        print("INICIOU GERACAO DA MALHA ADM")
+        print('\n')
+
+        for vol2 in ids_ms_2:
+            #1
+            # n_vols_l3 = 0
+            vols2 = gids_0[gids_2==vol2]
+            levels_vols_2 = levels[vols2]
+            vols_ms2_lv2 = vols2[levels_vols_2==2]
+            list_L2_ID[vols_ms2_lv2] = np.repeat(n2,len(vols_ms2_lv2))
+            self.data_impress['ADM_COARSE_ID_LEVEL_2'][vols2] = np.repeat(n2, len(vols2))
+            if len(vols_ms2_lv2)>0:
+                n2+=1
+
+            # gids_1_1 = gids_1[gids_2==v2]
+            gids_1_1 = gids_1[vols2]
+            ids_ms_1 = np.unique(gids_1_1)
+
+            for vol1 in ids_ms_1:
+                #2
+                # elem_by_L1 = mb.get_entities_by_handle(m1)
+                vols1 = vols2[gids_1_1==vol1]
+                levels_vols_1 = levels_vols_2[gids_1_1==vol1]
+                vols_ms1_lv1 = vols1[levels_vols_1>=1]
+                list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
+                self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(n1, len(vols1))
+                n1+=1
+
+                vols_ms2_lv1 = vols1[levels_vols_1==1]
+                if len(vols_ms2_lv1)>0:
+                    list_L2_ID[vols_ms2_lv1] = np.repeat(n2,len(vols_ms2_lv1))
+                    n2+=1
+
+
+        self.data_impress['LEVEL_ID_1'] = list_L1_ID
+        self.data_impress['LEVEL_ID_2'] = list_L2_ID
+
         for i in range(self.n_levels):
             self.number_vols_in_levels[i] = len(levels[levels==i])
         #
-        # self.n1_adm = n1
-        # self.n2_adm = n2
+        self.n1_adm = n1
+        self.n2_adm = n2
 
     def organize_ops_adm(self, OP_AMS, OR_AMS, level, _pcorr=None):
 
@@ -239,7 +243,7 @@ class AdmNonNested(AdmMethod):
         lines = np.concatenate([lines,l1])
         cols = np.concatenate([cols,ID_ADM1])
         data = np.concatenate([data,d1])
-
+            
         OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
 
         cols = gid_0
@@ -403,7 +407,8 @@ class AdmNonNested(AdmMethod):
                 SOL_ADM=solver(OR_ADM_2*OR_ADM*T*OP_ADM*OP_ADM_2,OR_ADM_2*OR_ADM*b)
                 SOL_ADM_fina=OP_ADM*OP_ADM_2*SOL_ADM
             else:
-                import pdb; pdb.set_trace()
+
+                np.savetxt("results/OP_ADM.csv",OP_ADM.toarray(),delimiter=",")
                 SOL_ADM=solver(OR_ADM*T*OP_ADM,OR_ADM*b)
                 SOL_ADM_fina=OP_ADM*SOL_ADM
             self.data_impress['pressure'] = SOL_ADM_fina
@@ -430,8 +435,9 @@ class AdmNonNested(AdmMethod):
                 # M1.mb.tag_set_data(P_TPFA_tag,M1.all_volumes,SOL_TPFA[GIDs])
                 # ext_vtk = 'testes_MAD'  + str(cont) + '.vtk'
                 # M1.mb.write_file(ext_vtk,[av])
-                self.data_impress.update_variables_to_mesh(['LEVEL', 'pressure'])
-                M.core.print(folder='results', file='test'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
+                self.plot_operator(OP_ADM, OP_AMS_1, 0)
+                self.data_impress.update_variables_to_mesh()
+                M.core.print(folder='results', file='testt'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
             cont+=1
 
             accum_levels.append(self.data_impress['LEVEL'].copy())
@@ -452,9 +458,9 @@ class AdmNonNested(AdmMethod):
 
     def plot_operator(self, OP_ADM, OP_AMS, v):
 
-        col = self.data_impress['GID_1'][self.all_wells_ids[0]]
+        col = self.data_impress['GID_1'][self.all_wells_ids[v]]
         fb_ms = OP_AMS[:, col].toarray()
-        corresp = self.data_impress['ADM_COARSE_ID_LEVEL_1'][self.all_wells_ids[0]]
+        corresp = self.data_impress['ADM_COARSE_ID_LEVEL_1'][self.all_wells_ids[v]]
         fb_adm = OP_ADM[:, corresp].toarray()
         self.data_impress['verif_po'] = fb_ms
         self.data_impress['verif_rest'] = fb_adm

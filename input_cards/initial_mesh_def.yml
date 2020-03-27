@@ -3,7 +3,7 @@ load_adm_levels: false
 set_initial_mesh: true
 
 refinar_nv2: false
-imprimir_a_cada_iteracao: false
+imprimir_a_cada_iteracao: true
 rel_v2: 1.2
 TOL: 0.0
 tol_n2: 0.4
