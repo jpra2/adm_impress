@@ -87,8 +87,8 @@ multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0,
 if load_operators:
     pass
 else:
-    multilevel_operators.run(tpfa_solver['Tini'])
-    # multilevel_operators.run_paralel(tpfa_solver['Tini'])
+    # multilevel_operators.run(tpfa_solver['Tini'])
+    multilevel_operators.run_paralel(tpfa_solver['Tini'])
 
 mlo=multilevel_operators
 

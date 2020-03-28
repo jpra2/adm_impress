@@ -9,13 +9,12 @@ class DualDomain:
     def __init__(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
         self.local_couple=local_couple
         self.couple_bound=couple_bound
-
-        self.adjs, self.ks, self.ids_globais_vols, self.ns =  self.get_local_informations(data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True)
+        self.adjs, self.ks, self.ids_globais_vols, self.ns =  self.get_local_informations(data_impress, elements_lv0, volumes, local_couple=local_couple, couple_bound=couple_bound)
         self.Nvols=len(elements_lv0['volumes'])
-        self.Nvert = self.Nvert
+        self.Nvert = (data_impress['DUAL_1']==3).sum()
         self.coarse_ids = data_impress['GID_1'][self.vertices]
 
-    def get_local_informations(self, data_impress, elements_lv0, volumes, local_couple=0,           couple_bound=True):
+    def get_local_informations(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
         # viz=M.mtu.get_bridge_adjacencies(volumes,2,3)
         viz=np.unique(np.concatenate(elements_lv0['volumes_face_volumes'][volumes]))
         nv=len(volumes)
@@ -29,53 +28,57 @@ class DualDomain:
             so_viz_faces=np.unique(np.concatenate(elements_lv0['volumes_face_faces'][so_viz]))
             int_facs=np.setdiff1d(int_facs,so_viz_faces)
 
+        dual_id_volumes = data_impress['DUAL_1'][volumes]
         if local_couple>0:
-            dual_flags=M.mb.tag_get_data(M.D1_tag, np.array(volumes),flat=True)
+            # dual_flags=M.mb.tag_get_data(M.D1_tag, np.array(volumes),flat=True)
+            dual_flags=np.repeat(-1,len(elements_lv0["volumes"]))
+            dual_flags[volumes]=dual_id_volumes
             if couple_bound:
-                reduce_flag=np.repeat(True,len(volumes))
-                volumes_red=np.array(volumes)
-                volumes_red=np.array(volumes)[reduce_flag]
+                reduce_flag=volumes
+                volumes_red=volumes
                 dual_flags_red=dual_flags[reduce_flag]
-                dual_flags_red[dual_flags_red==2]-=1
+                dual_flags_red[dual_flags_red==2]=1
                 if local_couple==2:
-                    dual_flags_red[dual_flags_red==1]=2
-                    dual_flags_red[dual_flags_red==0]=2
+                    dual_flags_red[dual_flags_red==1]=0
+
 
                 # dual_flags[dual_flags!=3]=2
                 # dual_flags_red=dual_flags
 
             else:
-                M.mb.tag_set_data(M.local_id_dual_tag,np.array(volumes), np.arange(len(volumes)))
-                adjs=[M.mb.get_adjacencies(f,3) for f in int_facs]
-                adjs=np.array(adjs)
-                adjs=M.mb.tag_get_data(M.local_id_dual_tag,np.concatenate(adjs),flat=True).reshape(len(adjs),2)
+                # M.mb.tag_set_data(M.local_id_dual_tag,np.array(volumes), np.arange(len(volumes)))
+                # # adjs=[M.mb.get_adjacencies(f,3) for f in int_facs]
+                # adjs=[M.mb.get_adjacencies(f,3) for f in int_facs]
+                # adjs=np.array(adjs)
+                # adjs=M.mb.tag_get_data(M.local_id_dual_tag,np.concatenate(adjs),flat=True).reshape(len(adjs),2)
 
-                v0=adjs[:,0]<len(volumes)
-                v1=adjs[:,1]<len(volumes)
-                vv=v0&v1
+                # v0=adjs[:,0]<len(volumes)
+                # v1=adjs[:,1]<len(volumes)
+                # vv=v0&v1
+                reduce_flag = np.setdiff1d(volumes, np.concatenate(elements_lv0['volumes_face_volumes'][so_viz]))
+                #
+                # adjs=adjs[vv]
+                # adjs0=np.concatenate([adjs[:,0],adjs[:,1]])
+                # adjs1=np.concatenate([adjs[:,1],adjs[:,0]])
+                #
+                # T=csc_matrix((np.ones(len(adjs0)),(adjs0,adjs1)),shape=(len(volumes),len(volumes)))
+                # reduce_flag=np.array(T.sum(axis=1)==T.sum(axis=1).max()).T[0] & (dual_flags!=3)
 
-                adjs=adjs[vv]
-                adjs0=np.concatenate([adjs[:,0],adjs[:,1]])
-                adjs1=np.concatenate([adjs[:,1],adjs[:,0]])
+                volumes_red = reduce_flag
 
-                T=csc_matrix((np.ones(len(adjs0)),(adjs0,adjs1)),shape=(len(volumes),len(volumes)))
-                reduce_flag=np.array(T.sum(axis=1)==T.sum(axis=1).max()).T[0] & (dual_flags!=3)
-
-                volumes_red=np.array(volumes)[reduce_flag]
                 dual_flags_red=dual_flags[reduce_flag]
                 dual_flags_red[dual_flags_red==2]-=1
                 if local_couple==2:
-                    dual_flags_red[dual_flags_red==1]=2
-                    dual_flags_red[dual_flags_red==0]=2
+                    dual_flags_red[dual_flags_red==1]=0
 
 
-            M.mb.tag_set_data(M.D1_tag,volumes_red,dual_flags_red)
+            # M.mb.tag_set_data(M.D1_tag,volumes_red,dual_flags_red)
+            data_impress['DUAL_1'][volumes_red] = dual_flags_red
+            dual_id_volumes = data_impress['DUAL_1'][volumes]
 
         # ms=M.mb.create_meshset()
         # M.mb.add_entities(ms,volumes)
         # M.mb.write_file("results/test_couple.vtk",[ms])
-
-        dual_id_volumes = data_impress['DUAL_1'][volumes]
 
         # vertices=M.mb.get_entities_by_type_and_tag(ms, types.MBHEX, np.array([M.D1_tag]), np.array([3]))
         # edges=M.mb.get_entities_by_type_and_tag(ms, types.MBHEX, np.array([M.D1_tag]), np.array([2]))
@@ -93,7 +96,6 @@ class DualDomain:
         ni=len(internals)
         ns=[nv,ne,nf,ni]
 
-        self.Nvert = nv
         self.vertices = vertices
 
         # M.mb.tag_set_data(M.local_id_dual_tag,internals, np.arange(ni))
@@ -211,5 +213,5 @@ class OP_local:
 
 class OP_AMS:
     def __init__(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
-        dual_d=DualDomain(data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True)
+        dual_d=DualDomain(data_impress, elements_lv0, volumes, local_couple=local_couple, couple_bound=couple_bound)
         self.OP=OP_local(dual_d).OP
