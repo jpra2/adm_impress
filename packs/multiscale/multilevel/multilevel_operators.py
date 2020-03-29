@@ -1,10 +1,12 @@
 from ...data_class.data_manager import DataManager
-from ..operators.prolongation.AMS.ams_tpfa import AMSTpfa
+# from ..operators.prolongation.AMS.ams_tpfa import AMSTpfa
+from ..operators.prolongation.AMS.ams_tpfa_new0 import AMSTpfa
 from ..operators.prolongation.AMS.ams_mpfa import AMSMpfa
 import numpy as np
 import scipy.sparse as sp
 import os
-from ...multiscale.operators.prolongation.AMS import paralel_ams
+# from ...multiscale.operators.prolongation.AMS import paralel_ams
+from ...multiscale.operators.prolongation.AMS import paralel_ams_new0 as paralel_ams
 from ...multiscale.ms_utils.matrices_for_correction import MatricesForCorrection as mfc
 
 from ..operators.prolongation.AMS.coupled_ams import OP_AMS
@@ -65,8 +67,7 @@ class MultilevelOperators(DataManager):
         ml_data,
         data_name='MultilevelOperators.npz',
         load=False,
-        get_correction_term=False,
-    ):
+        get_correction_term=False):
 
         super().__init__(data_name=data_name, load=load)
         self.load = load
@@ -100,7 +101,8 @@ class MultilevelOperators(DataManager):
                 self._data[prol_name] = OP
                 self._data[rest_name] = OR
         else:
-            self.export_to_npz()
+            pass
+            # self.export_to_npz()
 
     def get_initial_infos(self):
         t1 = np.dtype(int)
@@ -150,11 +152,17 @@ class MultilevelOperators(DataManager):
                 operator = AMSTpfa
                 # tpfalizar = True
                 tpfalizar = False
-            self.operators[str(level)] = operator(interns,
-                                                 faces,
-                                                 edges,
-                                                 vertices,
-                                                 gid,
+            # self.operators[str(level)] = operator(interns,
+            #                                      faces,
+            #                                      edges,
+            #                                      vertices,
+            #                                      gid,
+            #                                      primal_id,
+            #                                      load=load,
+            #                                      tpfalizar=tpfalizar,
+            #                                      get_correction_term=get_correction_term)
+            self.operators[str(level)] = operator(gid,
+                                                 dual_id,
                                                  primal_id,
                                                  load=load,
                                                  tpfalizar=tpfalizar,
@@ -172,7 +180,7 @@ class MultilevelOperators(DataManager):
                     q_grav = OR*q_grav
                 volumes_without_grav = self.ml_data['volumes_without_grav_level_'+str(n-1)]
                 B_matrix = mfc.get_B_matrix(total_source_term, q_grav)
-                Eps_matrix = mfc.get_Eps_matrix(np.arange(len(total_source_term)), volumes_without_grav)
+                Eps_matrix = mfc.get_Eps_matrix(self.data_impress['GID_0'], volumes_without_grav)
             else:
                 B_matrix = None
                 Eps_matrix = None
@@ -181,7 +189,7 @@ class MultilevelOperators(DataManager):
             OP, pcorr = self.operators[str(level)].run(T_ant, total_source_term=total_source_term, B_matrix=B_matrix, Eps_matrix=Eps_matrix)
             # import pdb; pdb.set_trace()
             self._data[self.prolongation + str(level)] = OP
-            self._data[self.pcorr_n + str(level-1)] = pcorr
+            self._data[self.pcorr_n + str(level)] = pcorr
             OR = self._data[self.restriction + str(level)]
 
             sp.save_npz(os.path.join('flying', self.prolongation + str(level) + '.npz'), OP)
@@ -197,16 +205,39 @@ class MultilevelOperators(DataManager):
 
         self.export_to_npz()
 
-    def run_paralel_dep0(self, T: 'fine transmissibility without boundary conditions'):
+    def run_paralel_ant0(self, T: 'fine transmissibility without boundary conditions',
+        total_source_term: 'total fine source term'=None,
+        q_grav: 'fine gravity source term'=None):
+
+        data = DataManager(data_name = 'MultilevelOperators.npz', load = True)
+
         T_ant = T.copy()  #T(l-1)
 
         for n in range(1, self.n_levels):
             level = n
-            master = paralel_ams.MasterOP(T_ant, self.ml_data['dual_structure_level_'+str(level)], level)
-            OP = master.run()
+            if self.get_correction_term:
+                if level > 1:
+                    total_source_term = OR*total_source_term
+                    q_grav = OR*q_grav
+                volumes_without_grav = self.ml_data['volumes_without_grav_level_'+str(n-1)]
+                B_matrix = mfc.get_B_matrix(total_source_term, q_grav)
+                Eps_matrix = mfc.get_Eps_matrix(np.arange(len(total_source_term)), volumes_without_grav)
+            else:
+                B_matrix = None
+                Eps_matrix = None
+                total_source_term = None
+
+            master = paralel_ams.MasterOP(T_ant, self.ml_data['dual_structure_level_'+str(level)], level,
+                    get_correction_term=self.get_correction_term, total_source_term=total_source_term,
+                    B_matrix=B_matrix, Eps_matrix=Eps_matrix)
+            OP, pcorr = master.run()
             del master
             self._data[self.prolongation + str(level)] = OP
+            self._data[self.pcorr_n + str(level)] = pcorr
             OR = self._data[self.restriction + str(level)]
+
+            pcorr2 = data[self.pcorr_n+str(level)]
+            import pdb; pdb.set_trace()
 
             sp.save_npz(os.path.join('flying', self.prolongation + str(level) + '.npz'), OP)
             sp.save_npz(os.path.join('flying', self.restriction + str(level) + '.npz'), OR)

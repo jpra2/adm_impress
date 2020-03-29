@@ -4,7 +4,7 @@ mesh_name: mesh/9x9x9.msh
 n_test: 0
 state: 0
 type_of_solution: fine_scale
-gravity: false
+gravity: true
 load_data: false
 convert_english_to_SI: false
 monophasic: true
@@ -14,7 +14,7 @@ deletar_results: true
 multilevel_data: true
 load_multilevel_data: false
 load_operators: false
-get_correction_term: false
+get_correction_term: true
 n_levels: 2
 capillary_pressure: false
 convert_capillary_pressure_to: 'Pa'
