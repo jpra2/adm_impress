@@ -29,7 +29,7 @@ class CompositionalFVM:
         self.update_phase_viscosities(data_loaded, fprop, kprop)
         self.update_mobilities()
         self.dVt_derivatives(fprop, fprop_block, kprop)
-        Pcap = self.update_capillary_pressure(data_loaded)
+        Pcap = self.update_capillary_pressure(data_loaded, data_impress, fprop)
         self.get_faces_properties_upwind(M, fprop)
         T = self.update_transmissibility(M, data_impress, wells, data_loaded, fprop)
         D = self.update_independent_terms(fprop, data_loaded, wells, deltaT)
@@ -137,14 +137,12 @@ class CompositionalFVM:
         return T
 
 
-    def update_capillary_pressure(self, data_loaded):
+    def update_capillary_pressure(self, data_loaded, data_impress, fprop):
         """ not working yet"""
-        # get_capillary_pressure = getattr(capillary_pressure, data_loaded['compositional_data']['capillary_pressure'])
-        # get_capillary_pressure = get_capillary_pressure(data_loaded, self.phase_molar_densities, self.component_molar_fractions,
-        #                         self.pretransmissibility_internal_faces)
-        # So, Sw, Sg = self.update_saturations_without_contours()
-        # Pcow, Pcog = get_capillary_pressure(Sw, So, Sg)
-
+        #get_capillary_pressure = getattr(capillary_pressure, data_loaded['compositional_data']['capillary_pressure'])
+        #get_capillary_pressure = get_capillary_pressure(data_loaded, data_impress, fprop.phase_molar_densities, fprop.component_molar_fractions)
+        #Pcow, Pcog = get_capillary_pressure(data_loaded, fprop.Sw, fprop.So, fprop.Sg)
+        
         self.Pcap = np.zeros([self.n_phases,self.n_volumes])
         # Pcap[0,0,:] = Pcog
         # Pcap[0,1,:] = Pcow
