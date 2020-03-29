@@ -79,5 +79,5 @@ class PropertiesCalc:
         Pw = np.array(data_loaded['compositional_data']['water_data']['Pw']).astype(float)
         Cw = np.array(data_loaded['compositional_data']['water_data']['Cw']).astype(float)
         fprop.ksi_W = fprop.ksi_W0*(1 + Cw * (fprop.P - Pw))
-        fprop.rho_W = fprop.ksi_W*fprop.MW_w
+        fprop.rho_W = fprop.ksi_W * fprop.Mw_w
         data_impress['saturation'] = fprop.component_mole_numbers[self.n_components-1,:] * (1 / fprop.ksi_W) / fprop.Vp
