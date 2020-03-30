@@ -34,7 +34,7 @@ class CompositionalFVM:
         T = self.update_transmissibility(M, data_impress, wells, data_loaded, fprop)
 
         r = 1/2# enter the while loop
-        while (r!=1):
+        while (r!=1.):
             D = self.update_independent_terms(fprop, data_loaded, wells, deltaT)
             self.update_pressure(T, D, data_impress, fprop)
             self.update_flux_internal_faces(M, fprop)

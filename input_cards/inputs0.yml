@@ -44,8 +44,8 @@ Wells:
 compositional: true
 compositional_data:
   CFL: 0.9
-  Cpc: 16.125
-  Epc: 1.1
+  Cpc: 62052.84
+  Epc: 2
   Pf: 13.79E6
   capillary_pressure: Chang
   component_data:
