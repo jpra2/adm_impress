@@ -32,16 +32,21 @@ class CompositionalFVM:
         Pcap = self.update_capillary_pressure(data_loaded, data_impress, fprop)
         self.get_faces_properties_upwind(M, fprop)
         T = self.update_transmissibility(M, data_impress, wells, data_loaded, fprop)
-        D = self.update_independent_terms(fprop, data_loaded, wells, deltaT)
-        self.update_pressure(T, D, data_impress, fprop)
-        self.update_flux_internal_faces(M, fprop)
-        self.update_flux_volumes(fprop)
-        # For the composition calculation the time step may be different because it treats
-        #composition explicitly and this explicit models are conditionally stable - wich can
-        #be based on the CFL parameter.
-        deltaTc = delta_time.update_CFL(deltaT, fprop)
-        for i in range(int(deltaT/deltaTc)):
-            self.update_composition(M, fprop, deltaTc)
+
+        r = 1/2# enter the while loop
+        while (r!=1):
+            D = self.update_independent_terms(fprop, data_loaded, wells, deltaT)
+            self.update_pressure(T, D, data_impress, fprop)
+            self.update_flux_internal_faces(M, fprop)
+            self.update_flux_volumes(fprop)
+            # For the composition calculation the time step may be different because it treats
+            #composition explicitly and this explicit models are conditionally stable - wich can
+            #be based on the CFL parameter.
+            deltaTcfl = delta_time.update_CFL(deltaT, fprop)
+            r = deltaTcfl/deltaT
+            deltaT = deltaTcfl
+
+        self.update_composition(M, fprop, deltaT)
 
 
     def update_relative_permeabilities(self, fprop):
@@ -142,7 +147,7 @@ class CompositionalFVM:
         #get_capillary_pressure = getattr(capillary_pressure, data_loaded['compositional_data']['capillary_pressure'])
         #get_capillary_pressure = get_capillary_pressure(data_loaded, data_impress, fprop.phase_molar_densities, fprop.component_molar_fractions)
         #Pcow, Pcog = get_capillary_pressure(data_loaded, fprop.Sw, fprop.So, fprop.Sg)
-        
+
         self.Pcap = np.zeros([self.n_phases,self.n_volumes])
         # Pcap[0,0,:] = Pcog
         # Pcap[0,1,:] = Pcow
