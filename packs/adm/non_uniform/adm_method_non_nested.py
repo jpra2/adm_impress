@@ -6,6 +6,7 @@ import time
 from ...directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 from pymoab import types
+from .paralel_neuman import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):
 
@@ -457,6 +458,11 @@ class AdmNonNested(AdmMethod):
 
         self.data_impress.update_variables_to_mesh()
         self.data_impress.export_to_npz()
+
+    def set_pms_flux(self, T_witout, wells):
+
+        master = masterNeumanNonNested(self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, T_witout, wells)
+        dados = master.run()
 
     def plot_operator(self, OP_ADM, OP_AMS, v):
 

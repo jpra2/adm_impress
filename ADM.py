@@ -97,12 +97,12 @@ adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, element
 T, b = tpfa_solver.run()
 
 adm_method.restart_levels()
-# adm_method.set_level_wells()
+adm_method.set_level_wells()
 # adm_method.verificate_levels()
 # adm_method.set_adm_mesh()
 gids_0 = data_impress['GID_0']
 
-# adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
+adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
 # adm_method.set_initial_mesh(mlo, T, b)
 
 adm_method.organize_ops_adm(mlo['prolongation_level_1'],
@@ -115,11 +115,11 @@ if n_levels > 2:
                                 mlo['restriction_level_2'],
                                 2)
 
-adm_method.set_initial_mesh(mlo, T, b)
-import pdb; pdb.set_trace()
+# adm_method.set_initial_mesh(mlo, T, b)
 
 adm_method.solve_multiscale_pressure(T, b)
-adm_method.set_pcorr()
+# adm_method.set_pcorr()
+adm_method.set_pms_flux()
 data_impress['pcorr'][data_impress['LEVEL']==0] = data_impress['pms'][data_impress['LEVEL']==0]
 
 data_impress['pressure'] = adm_method.solver.direct_solver(T, b)
