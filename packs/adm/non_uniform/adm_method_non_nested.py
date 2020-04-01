@@ -141,6 +141,8 @@ class AdmNonNested(AdmMethod):
             self._data[self.pcorr_n+str(level-1)] = pcorr
             return 0
 
+        import pdb; pdb.set_trace()
+
         n_adm = len(np.unique(level_id))
         n_adm_ant = len(np.unique(level_id_ant))
         n1_adm = n_adm_ant

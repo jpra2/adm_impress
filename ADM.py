@@ -119,7 +119,8 @@ if n_levels > 2:
 
 adm_method.solve_multiscale_pressure(T, b)
 # adm_method.set_pcorr()
-adm_method.set_pms_flux()
+adm_method.set_pms_flux(tpfa_solver['Tini'], wells)
+import pdb; pdb.set_trace()
 data_impress['pcorr'][data_impress['LEVEL']==0] = data_impress['pms'][data_impress['LEVEL']==0]
 
 data_impress['pressure'] = adm_method.solver.direct_solver(T, b)

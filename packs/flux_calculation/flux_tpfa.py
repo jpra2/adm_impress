@@ -82,8 +82,6 @@ class TpfaFlux:
 
     def get_gravity_source_term_mono(self):
 
-        import pdb; pdb.set_trace()
-
         centroids = self.data_impress['centroid_volumes']
         source_term_volumes = np.zeros(len(centroids))
         transmissibility_faces = self.data_impress[self.data_impress.variables_impress['transmissibility']]
@@ -104,6 +102,8 @@ class TpfaFlux:
 
             gamma = self.data_impress['gama']
             gama_faces = self.data_impress['gama_faces']
+
+            import pdb; pdb.set_trace()
 
             vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
             v0 = vols_viz_internal_faces
