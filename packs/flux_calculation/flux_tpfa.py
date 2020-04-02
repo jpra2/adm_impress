@@ -82,7 +82,7 @@ class TpfaFlux:
 
     def get_gravity_source_term_mono(self):
 
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         centroids = self.data_impress['centroid_volumes']
         source_term_volumes = np.zeros(len(centroids))

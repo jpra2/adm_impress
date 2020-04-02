@@ -13,6 +13,7 @@ class DualDomain:
         self.Nvols=len(elements_lv0['volumes'])
         self.Nvert = (data_impress['DUAL_1']==3).sum()
         self.coarse_ids = data_impress['GID_1'][self.vertices]
+        self.A_b_t=[]
 
     def get_local_informations(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
         # viz=M.mtu.get_bridge_adjacencies(volumes,2,3)
@@ -42,27 +43,9 @@ class DualDomain:
                     dual_flags_red[dual_flags_red==1]=0
 
 
-                # dual_flags[dual_flags!=3]=2
-                # dual_flags_red=dual_flags
-
             else:
-                # M.mb.tag_set_data(M.local_id_dual_tag,np.array(volumes), np.arange(len(volumes)))
-                # # adjs=[M.mb.get_adjacencies(f,3) for f in int_facs]
-                # adjs=[M.mb.get_adjacencies(f,3) for f in int_facs]
-                # adjs=np.array(adjs)
-                # adjs=M.mb.tag_get_data(M.local_id_dual_tag,np.concatenate(adjs),flat=True).reshape(len(adjs),2)
 
-                # v0=adjs[:,0]<len(volumes)
-                # v1=adjs[:,1]<len(volumes)
-                # vv=v0&v1
                 reduce_flag = np.setdiff1d(volumes, np.concatenate(elements_lv0['volumes_face_volumes'][so_viz]))
-                #
-                # adjs=adjs[vv]
-                # adjs0=np.concatenate([adjs[:,0],adjs[:,1]])
-                # adjs1=np.concatenate([adjs[:,1],adjs[:,0]])
-                #
-                # T=csc_matrix((np.ones(len(adjs0)),(adjs0,adjs1)),shape=(len(volumes),len(volumes)))
-                # reduce_flag=np.array(T.sum(axis=1)==T.sum(axis=1).max()).T[0] & (dual_flags!=3)
 
                 volumes_red = reduce_flag
 
@@ -75,15 +58,6 @@ class DualDomain:
             # M.mb.tag_set_data(M.D1_tag,volumes_red,dual_flags_red)
             data_impress['DUAL_1'][volumes_red] = dual_flags_red
             dual_id_volumes = data_impress['DUAL_1'][volumes]
-
-        # ms=M.mb.create_meshset()
-        # M.mb.add_entities(ms,volumes)
-        # M.mb.write_file("results/test_couple.vtk",[ms])
-
-        # vertices=M.mb.get_entities_by_type_and_tag(ms, types.MBHEX, np.array([M.D1_tag]), np.array([3]))
-        # edges=M.mb.get_entities_by_type_and_tag(ms, types.MBHEX, np.array([M.D1_tag]), np.array([2]))
-        # faces=M.mb.get_entities_by_type_and_tag(ms, types.MBHEX, np.array([M.D1_tag]), np.array([1]))
-        # internals=M.mb.get_entities_by_type_and_tag(ms, types.MBHEX, np.array([M.D1_tag]), np.array([0]))
 
         vertices = volumes[dual_id_volumes==3]
         edges = volumes[dual_id_volumes==2]
@@ -98,16 +72,6 @@ class DualDomain:
 
         self.vertices = vertices
 
-        # M.mb.tag_set_data(M.local_id_dual_tag,internals, np.arange(ni))
-        # M.mb.tag_set_data(M.local_id_dual_tag,faces, np.arange(ni,ni+nf))
-        # M.mb.tag_set_data(M.local_id_dual_tag,edges, np.arange(ni+nf,ni+nf+ne))
-        # M.mb.tag_set_data(M.local_id_dual_tag,vertices, np.arange(ni+nf+ne,ni+nf+ne+nv))
-
-        # adjs=[M.mb.get_adjacencies(f,3) for f in int_facs]
-        # adjs=np.array(adjs)
-        #
-        # adjs=M.mb.tag_get_data(M.local_id_dual_tag,np.concatenate(adjs),flat=True).reshape(len(adjs),2)
-
         adjs = elements_lv0['faces_face_volumes'][int_facs]
         adjs = np.concatenate(adjs).reshape((adjs.shape[0], 2))
 
@@ -119,13 +83,7 @@ class DualDomain:
 
         adjs_l0=map_l[adjs[:,0]]
         adjs_l1=map_l[adjs[:,1]]
-        # import pdb; pdb.set_trace()
-        # adjs0=adjs[:,0]
-        # adjs1=adjs[:,1]
-        #
-        # v0=adjs0<len(volumes)
-        # v1=adjs1<len(volumes)
-        # vv=v0&v1
+
         adjs=np.array([adjs_l0, adjs_l1]).T
         # ks=M.mb.tag_get_data(M.k_eq_tag,np.uint64(int_facs)[vv],flat=True)
         ks=data_impress['transmissibility'][int_facs]
@@ -169,8 +127,7 @@ class OP_local:
         ne=ns[1]
         nf=ns[2]
         ni=ns[3]
-        # vertex_global_ids=ids_globais_vols[sub_d.vertices]
-        # vertex_global_ids=sub_d.vertices
+
         adjs0=adjs[:,0]
         adjs1=adjs[:,1]
 
@@ -191,13 +148,23 @@ class OP_local:
         EV=self.get_submatrix(adjs0, adjs1, ks, (ni+nf, ni+nf+ne, ni+nf+ne, ni+nf+ne+nv))
 
         Pv=scipy.sparse.identity(nv)
+        t0=time.time()
         Pe=-linalg.spsolve(EE,EV*Pv)
+        self.A_b_t.append([EV.shape[0], nv,time.time()-t0])
         if sub_d.local_couple==0:
+            t0=time.time()
             Pf=-linalg.spsolve(FF,FE*Pe)
+            self.A_b_t.append([FE.shape[0], nv,time.time()-t0])
+            t0=time.time()
             Pi=-linalg.spsolve(II,IF*Pf)
+            self.A_b_t.append([IF.shape[0], nv,time.time()-t0])
         else:
+            t0=time.time()
             Pf=-linalg.spsolve(FF,FE*Pe+FV)
+            self.A_b_t.append([FE.shape[0], nv,time.time()-t0])
+            t0=time.time()
             Pi=-linalg.spsolve(II,IF*Pf+IE*Pe+IV)
+            self.A_b_t.append([IE.shape[0], nv,time.time()-t0])
 
         OP=vstack([Pi,Pf,Pe,Pv])
 
@@ -212,6 +179,16 @@ class OP_local:
         return OP
 
 class OP_AMS:
-    def __init__(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
+    def __init__(self, data_impress, elements_lv0, all_conjs_duais, local_couple=0, couple_bound=True):
+        all_subds = [DualDomain(data_impress, elements_lv0, all_conjs_duais[i], local_couple=local_couple, \
+        couple_bound = couple_bound) for i in range(len(all_conjs_duais))]
+        partitioned_subds = self.partitionate_subds(all_subds, nworker=1)
+        import pdb; pdb.set_trace()
         dual_d=DualDomain(data_impress, elements_lv0, volumes, local_couple=local_couple, couple_bound=couple_bound)
         self.OP=OP_local(dual_d).OP
+
+    def partitionate_subds(self, all_subds, nworker=1):
+        n_A = [np.array(subd.ns) for subd in all_subds]
+        n_b = [subd.ns[0] for subd in all_subds]
+        partitioned_subds=all_subds
+        

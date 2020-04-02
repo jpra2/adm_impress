@@ -280,14 +280,16 @@ class MultilevelOperators(DataManager):
         dual_volumes = rr + dual_volumes[2:]
         local_couple = 2
         couple_bound = False
-        for dd in dual_volumes:
-            try:
-                OP += OP_AMS(self.data_impress, self.elements_lv0, dd, local_couple=local_couple, couple_bound=couple_bound).OP
-            except:
-                OP = OP_AMS(self.data_impress, self.elements_lv0, dd, local_couple=local_couple, couple_bound=couple_bound).OP
-        diag=np.array(1/OP.sum(axis=1))[:,0]
-        l=range(len(diag))
-        c=l
-        mult=sp.csc_matrix((diag,(l,c)),shape=(len(diag), len(diag)))
-        OP=mult*OP
+        OP = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound).OP
+        import pdb; pdb.set_trace()
+        # for dd in dual_volumes:
+        #     try:
+        #         OP += OP_AMS(self.data_impress, self.elements_lv0, dd, local_couple=local_couple, couple_bound=couple_bound).OP
+        #     except:
+        #         OP = OP_AMS(self.data_impress, self.elements_lv0, dd, local_couple=local_couple, couple_bound=couple_bound).OP
+        # diag=np.array(1/OP.sum(axis=1))[:,0]
+        # l=range(len(diag))
+        # c=l
+        # mult=sp.csc_matrix((diag,(l,c)),shape=(len(diag), len(diag)))
+        # OP=mult*OP
         return OP
