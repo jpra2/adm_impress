@@ -150,21 +150,21 @@ class OP_local:
         Pv=scipy.sparse.identity(nv)
         t0=time.time()
         Pe=-linalg.spsolve(EE,EV*Pv)
-        self.A_b_t.append([EV.shape[0], nv,time.time()-t0])
+        sub_d.A_b_t.append([EE.shape[0], nv,time.time()-t0])
         if sub_d.local_couple==0:
             t0=time.time()
             Pf=-linalg.spsolve(FF,FE*Pe)
-            self.A_b_t.append([FE.shape[0], nv,time.time()-t0])
+            sub_d.A_b_t.append([FF.shape[0], nv,time.time()-t0])
             t0=time.time()
             Pi=-linalg.spsolve(II,IF*Pf)
-            self.A_b_t.append([IF.shape[0], nv,time.time()-t0])
+            sub_d.A_b_t.append([II.shape[0], nv,time.time()-t0])
         else:
             t0=time.time()
             Pf=-linalg.spsolve(FF,FE*Pe+FV)
-            self.A_b_t.append([FE.shape[0], nv,time.time()-t0])
+            sub_d.A_b_t.append([FF.shape[0], nv,time.time()-t0])
             t0=time.time()
             Pi=-linalg.spsolve(II,IF*Pf+IE*Pe+IV)
-            self.A_b_t.append([IE.shape[0], nv,time.time()-t0])
+            sub_d.A_b_t.append([II.shape[0], nv,time.time()-t0])
 
         OP=vstack([Pi,Pf,Pe,Pv])
 
@@ -183,12 +183,146 @@ class OP_AMS:
         all_subds = [DualDomain(data_impress, elements_lv0, all_conjs_duais[i], local_couple=local_couple, \
         couple_bound = couple_bound) for i in range(len(all_conjs_duais))]
         partitioned_subds = self.partitionate_subds(all_subds, nworker=1)
-        import pdb; pdb.set_trace()
-        dual_d=DualDomain(data_impress, elements_lv0, volumes, local_couple=local_couple, couple_bound=couple_bound)
-        self.OP=OP_local(dual_d).OP
+        self.OP=self.get_OP(partitioned_subds)
+        self.coefs=[]
+        A_b_t=np.zeros((1,3))
+        for subd in all_subds:
+            A_b_t=np.vstack([A_b_t,np.array(subd.A_b_t)])
+        A_b_t=A_b_t[1:,:]
+        try:
+            Abt=np.load("flying/A_b_t.npy")
+            A_b_t=np.vstack([A_b_t,Abt])
+            np.save("flying/A_b_t.npy",A_b_t)
+        except:
+            np.save("flying/A_b_t.npy",A_b_t)
+        xs=A_b_t[:,0]
+        ys=A_b_t[:,1]
+        zs=A_b_t[:,2]
+        print(len(A_b_t))
+        # x1=np.random.rand(200,2)
+        # xs=x1[:,0]
+        # ys=x1[:,1]
+        # zs=1*xs+2*ys+3*xs*xs+4*xs*ys+5*ys*ys+6
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure()
+        name="A_b_t"
+        # self.imprima3d(xs, ys, zs, name)
+        self.imprima3d2(xs, ys,zs, fig)
+        self.reg3(xs, ys, zs, fig)
+        plt.close('all')
+
 
     def partitionate_subds(self, all_subds, nworker=1):
         n_A = [np.array(subd.ns) for subd in all_subds]
         n_b = [subd.ns[0] for subd in all_subds]
+
         partitioned_subds=all_subds
-        
+        return partitioned_subds
+
+    def get_OP(self,partitioned_subds):
+        for dual_d in partitioned_subds:
+            try:
+                OP+=OP_local(dual_d).OP
+            except:
+                OP=OP_local(dual_d).OP
+        return OP
+
+    def imprima3d(self,xs, ys, zs, name):
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+
+        import matplotlib.pyplot as plt
+        from matplotlib import cm
+        from matplotlib.ticker import LinearLocator, FormatStrFormatter
+        import numpy as np
+
+
+
+        ax = fig.gca(projection='3d')
+
+
+        nn=int(xs.shape[0])
+
+        surf = ax.plot_surface(xs.reshape(nn,1), ys.reshape(nn,1), zs.reshape(nn,1), cmap=cm.coolwarm,
+                        linewidth=0, antialiased=False)
+
+        ax.set_zlim(zs.min()-1, zs.max()+1)
+        ax.zaxis.set_major_locator(LinearLocator(10))
+        ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+
+
+        # Add a color bar which maps values to colors.
+        fig.colorbar(surf, shrink=0.5, aspect=5)
+        plt.savefig("results/"+name+".png")
+
+    def imprima3d2(self, xs, ys, zs, fig):
+        # This import registers the 3D projection, but is otherwise unused.
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+
+
+        ax = fig.add_subplot(111, projection='3d')
+
+        n = 100
+        m="o"
+
+        ax.scatter(xs, ys, zs, marker=m)
+
+        ax.set_xlabel('A')
+        ax.set_ylabel('b')
+        ax.set_zlabel('time_to_solve (s)')
+        plt.savefig("results/teste_scatter3d.png")
+
+    def reg3(self, xs, ys, zs, fig):
+        from sklearn.preprocessing import PolynomialFeatures
+        from sklearn.linear_model import LinearRegression
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+        import matplotlib.pyplot as plt
+        import sympy
+        # x1=np.random.rand(10,2)
+        # z1=1*x1[:,0]+2*x1[:,1]+3*x1[:,0]**2+4*x1[:,0]*x1[:,1]+5*x1[:,1]**2+6
+        xx=np.array([xs])
+        dx2=(abs(xx.T-xx)**2).sum(axis=1)
+
+        yy=np.array([ys])
+        dy2=(abs(yy.T-yy)**2).sum(axis=1)
+        d2=dx2+dy2
+        d=d2**0.5
+        pesos=d/d.sum()
+
+
+        degree=1
+        poly = PolynomialFeatures(degree=degree)
+        X_t = poly.fit_transform(np.array([xs,ys]).T,pesos)
+
+        # X_t = poly.fit_transform(x1)
+        clf = LinearRegression()
+        clf.fit(X_t, zs)
+        # clf.fit(X_t, z1)
+        print(np.array(clf.coef_)[1:])
+
+        print(clf.intercept_)
+
+        self.coefs = np.concatenate([np.array(clf.coef_)[1:],np.array([clf.intercept_])])
+        x, y = sympy.symbols('x y')
+
+        coefs=np.array(clf.coef_)[1:]
+        intercept=clf.intercept_
+        if degree==2:
+            syms=np.array([x, y, x*x, x*y, y*y])
+        if degree==1:
+            syms=np.array([x, y])
+        func=(coefs*syms).sum()+intercept
+
+        ax = fig.add_subplot(111, projection='3d')
+        m="o"
+        ax.scatter(xs, ys, zs, marker=m)
+        ax.set_xlabel('A')
+        ax.set_ylabel('b')
+        ax.set_zlabel('time_to_solve (s)')
+        plt.show()
+        sympy.plotting.plot3d(func, (x, xs.min(), xs.max()), (y, ys.min(), ys.max()))
+        plt.savefig("results/sym_surface2.png")

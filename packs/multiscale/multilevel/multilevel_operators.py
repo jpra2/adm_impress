@@ -276,12 +276,41 @@ class MultilevelOperators(DataManager):
 
         dual_structure = self.ml_data['dual_structure_level_'+str(level)]
         dual_volumes = [dd['volumes'] for dd in dual_structure]
-        rr = [np.unique(np.concatenate(dual_volumes[0:2]))]
-        dual_volumes = rr + dual_volumes[2:]
-        local_couple = 2
-        couple_bound = False
-        OP = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound).OP
+
+        rr = [np.unique(np.concatenate(dual_volumes[0:3]))]
+        dual_volumes = rr + dual_volumes[3:]
+        local_couple = 1
+        couple_bound = True
+        #######################################
+        lcs=[0, 1, 2]
+        cbs=[True, False]
+        inds=range(1,len(dual_volumes)-1)
+        nrep=3
+        coefs=[]
+        for r in range(nrep):
+            for local_couple in lcs:
+                for couple_bound in cbs:
+                    dual_volumes = [dd['volumes'] for dd in dual_structure]
+                    for i in inds:
+                        print(r, local_couple, couple_bound, i,"repetition, local_couple, couple_bound, ncoupled")
+                        rr = [np.unique(np.concatenate(dual_volumes[0:i]))]
+                        dual_volumes = rr + dual_volumes[i:]
+                        result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound)
+                        OP=result.OP
+                        coefs.append(result.coefs)
+
+        coefs=np.vstack(coefs)
+        import matplotlib.pyplot as plt
+        x=range(len(coefs))
+
+        plt.yscale('symlog')
+        plt.plot(x,coefs[:,0])
+        plt.plot(x,coefs[:,1])
+        plt.plot(x,coefs[:,2])
+
+        plt.savefig("results/coefs.png")
         import pdb; pdb.set_trace()
+        OP = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound).OP
         # for dd in dual_volumes:
         #     try:
         #         OP += OP_AMS(self.data_impress, self.elements_lv0, dd, local_couple=local_couple, couple_bound=couple_bound).OP
