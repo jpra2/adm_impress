@@ -27,7 +27,7 @@ def update(M, data_impress, wells, load, data_loaded, n_volumes):
     fprop = FluidProperties(fprop_block, data_loaded, n_volumes)
     prop = PropertiesCalc(data_impress, wells, fprop)
     prop.run_outside_loop(data_impress, wells, fprop)
-    fprop.inputs_missing_properties()
+    fprop.inputs_missing_properties(kprop)
     return fprop, fprop_block, kprop
 
 def inputs_overall_properties(data_loaded):
@@ -47,6 +47,7 @@ class ComponentProperties:
         self.vc = np.array(data_loaded['compositional_data']['component_data']['vc']).astype(float)
         self.Mw = np.array(data_loaded['compositional_data']['component_data']['Mw']).astype(float)
         self.C7 = np.array(data_loaded['compositional_data']['component_data']['C7']).astype(float)
+        self.SG = np.array(data_loaded['compositional_data']['component_data']['SG']).astype(float)
 
 class FluidProperties:
     def __init__(self, fprop_block, data_loaded, n_volumes):
@@ -79,7 +80,13 @@ class FluidProperties:
         self.rho_L = fprop_block.rho_L * np.ones(n_volumes)
         self.rho_V = fprop_block.rho_V * np.ones(n_volumes)
 
-    def inputs_missing_properties(self):
+
+    def inputs_missing_properties(self, kprop):
+        #coef_vc7 = np.array([21.573, 0.015122, -27.6563, 0.070615])
+        #kprop.vc[kprop.C7 == 1] =  coef_vc7[0] + coef_vc7[1] * np.mean(kprop.Mw[kprop.C7 == 1]) + \
+                            #coef_vc7[2] * np.mean([kprop.SG[kprop.C7 == 1]]) + coef_vc7[3] \
+                            #* np.mean(kprop.Mw[kprop.C7 == 1]) * np.mean([kprop.SG[kprop.C7 == 1]])
+
         self.component_phase_mole_numbers = self.component_molar_fractions * self.phase_mole_numbers
         self.component_mole_numbers = np.sum(self.component_phase_mole_numbers, axis = 1)
 

@@ -41,6 +41,7 @@ class StabilityCheck:
         self.z = self.x * self.L + self.y * self.V
         self.Mw_L, self.ksi_L, self.rho_L = self.other_properties(kprop, self.x)
         self.Mw_V, self.ksi_V, self.rho_V = self.other_properties(kprop, self.y)
+        if self.V == 0: self.ksi_V = self.V * self.ksi_V; self.rho_V = self.V * self.ksi_V
 
     def equilibrium_ratio_Wilson(self, kprop):
         self.K = np.exp(5.37 * (1 + kprop.w) * (1 - kprop.Tc / self.T)) * \

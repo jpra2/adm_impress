@@ -21,9 +21,9 @@ sim = run_simulation(fprop, data_impress)
 loop_max = 50
 t = 0
 loop = 0
-tfinal = 1
+tmax = 5*86400 #seg
 
-while t < tfinal and loop < loop_max:
+while t < tmax and loop < loop_max:
 
     sim.run(M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes)
     t = sim.t

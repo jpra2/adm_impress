@@ -15,7 +15,7 @@ monophasic_data: false
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-
+# Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.9
@@ -43,28 +43,29 @@ compositional_data:
   residual_saturations:
     Sorw: 1e-6
     Sorg: 1e-6
-    Swr: 0.25
+    Swr: 0.2
     Sgr: 0
 
   relative_permeability_data:
-    krw0: 1.0
+    krw0: 0.4
     krg0: 1.0
     kro0: 1.0
     n_o: 2.
     n_g: 2.
-    n_w: 2.
+    n_w: 3.
 
 #decane critical molar density is 1640 mol/m3
   component_data:
     z: [1.]
-    Tc: [617.7]
-    Pc: [2103000.0]
-    vc: [0.0006097]
+    Tc: [619.28]
+    Pc: [2109795.73]
+    vc: [0.0006031]
     R: [8.3144598]
     Mw: [142.28e-3]
-    w: [0.4885]
+    w: [0.4890]
     Bin: [0]
     C7: [1]
+    SG: [0.7342]
 
 #water saturation data
 Saturation:

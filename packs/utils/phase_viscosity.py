@@ -7,9 +7,10 @@ class LorenzBrayClark:
 
     def __init__(self, n_volumes, fprop, kprop):
         self.n_volumes = n_volumes
-        self.P = 9.87E-6*fprop.P
-        self.Mw = 1e3*kprop.Mw #grams/mole
-        self.Pc = kprop.Pc / 101325
+        self.phase_molar_densities = fprop.phase_molar_densities #* 10**(-6) # mole/m³ to mole/cm³
+        self.Mw =  kprop.Mw * 10**(3)  # Kg/mole to grams/mole
+        self.Pc = kprop.Pc / 101325 # Pa to atm
+        self.vc = kprop.vc #* 10 ** 6 # m³/mole to cm³/mole
 
     def component_viscosity(self, fprop, kprop):
         mi_components = np.zeros(fprop.Nc)
@@ -20,13 +21,13 @@ class LorenzBrayClark:
         # in this formula, the component molecular weight is in grams/mole. and
         # the pressure is in atm.
         # kprop.Mw and kprop.Pc are in kg/mole and Pa, respectively.
-        self.pure_components_viscosity_parameters = kprop.Tc ** (1/6) \
+        pure_components_viscosity_parameters = kprop.Tc ** (1/6) \
                  / ((self.Mw) ** (1/2) * (self.Pc) ** (2/3))
 
         mi_components[ind_Tr_lower] = 3.4e-4 * Trs[ind_Tr_lower] ** 0.94 / \
-                        self.pure_components_viscosity_parameters[ind_Tr_lower]
+                        pure_components_viscosity_parameters[ind_Tr_lower]
         mi_components[ind_Tr_higher] = (1.778e-4 * (4.58 * Trs[ind_Tr_higher] -
-        1.67) ** (5/8)) / self.pure_components_viscosity_parameters[ind_Tr_higher]
+        1.67) ** (5/8)) / pure_components_viscosity_parameters[ind_Tr_higher]
 
         self.mi_components = mi_components[:, np.newaxis, np.newaxis]
         #self.mi_components = np.ones([fprop.Nc, 1, self.n_volumes]) * mi_components
@@ -37,9 +38,9 @@ class LorenzBrayClark:
         self.component_molar_fractions[:,1,:] = fprop.y
 
         self.mi_atm = np.sum(self.component_molar_fractions * self.mi_components *
-                kprop.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0) \
+                self.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0) \
                 /np.sum(self.component_molar_fractions *
-                kprop.Mw[:, np.newaxis, np.newaxis] ** (1/2) , axis = 0)
+                self.Mw[:, np.newaxis, np.newaxis] ** (1/2) , axis = 0)
 
         self.mi_atm = self.mi_atm[np.newaxis,:,:]
 
@@ -47,23 +48,24 @@ class LorenzBrayClark:
         #include in the entry parameters the vc: component critical molar volume
         # mi_phase = np.zeros([1,2,self.n_volumes])
         a = np.array([0.1023, 0.023364, 0.058533, -0.40758, 0.0093324])
-        self.phase_molar_densities = np.zeros([1, 2, self.n_volumes])
-        self.phase_molar_densities[0,0,:] = fprop.phase_molar_densities[:,0,:]
-        self.phase_molar_densities[0,1,:] = fprop.phase_molar_densities[:,1,:]
+        #self.phase_molar_densities = np.zeros([1, 2, self.n_volumes])
+        #self.phase_molar_densities[0,0,:] = fprop.phase_molar_densities[:,0,:]
+        #self.phase_molar_densities[0,1,:] = fprop.phase_molar_densities[:,1,:]
 
-        phase_reduced_molar_density = self.phase_molar_densities * \
-            np.sum(self.component_molar_fractions * kprop.vc, axis = 0) #where vc is in m³/mole
+        phase_reduced_molar_density = self.phase_molar_densities[:,0:2,:] * \
+            np.sum(self.component_molar_fractions * self.vc, axis = 0)
 
         # ind_lower = np.argwhere(phase_reduced_molar_density <= 0.18)
         # ind_higher = np.argwhere(phase_reduced_molar_density > 0.18)
 
         Xs = a[0]+ a[1] * phase_reduced_molar_density + a[2] * \
-            phase_reduced_molar_density ** 2 - a[3] * \
+            phase_reduced_molar_density ** 2 + a[3] * \
             phase_reduced_molar_density ** 3 + a[4] * \
             phase_reduced_molar_density ** 4
 
+        # parametro de viscosidade para mistura
         neta = (np.sum(self.component_molar_fractions *
-                kprop.Tc[:,np.newaxis,np.newaxis] , axis = 0)) \
+                kprop.Tc[:,np.newaxis,np.newaxis] , axis = 0)) ** (1/6) \
                 / (np.sum(self.component_molar_fractions *
                 self.Mw[:,np.newaxis,np.newaxis], axis = 0) ** (1/2)
                 * np.sum(self.component_molar_fractions *

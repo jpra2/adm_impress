@@ -66,6 +66,7 @@ class CompositionalFVM:
         self.phase_viscosities[0,0,:] = self.phase_viscosities_oil_and_gas[0,0,:]
         self.phase_viscosities[0,1,:] = self.phase_viscosities_oil_and_gas[0,1,:]
         self.phase_viscosities[0,2,:] = mi_W
+        import pdb; pdb.set_trace()
 
     def update_mobilities(self):
         self.mobilities = self.relative_permeabilities / self.phase_viscosities
