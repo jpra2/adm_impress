@@ -7,10 +7,10 @@ class LorenzBrayClark:
 
     def __init__(self, n_volumes, fprop, kprop):
         self.n_volumes = n_volumes
-        self.phase_molar_densities = fprop.phase_molar_densities #* 10**(-6) # mole/m³ to mole/cm³
+        self.phase_molar_densities = fprop.phase_molar_densities * 10**(-6) # mole/m³ to mole/cm³
         self.Mw =  kprop.Mw * 10**(3)  # Kg/mole to grams/mole
         self.Pc = kprop.Pc / 101325 # Pa to atm
-        self.vc = kprop.vc #* 10 ** 6 # m³/mole to cm³/mole
+        self.vc = kprop.vc * 10 ** 6 # m³/mole to cm³/mole
 
     def component_viscosity(self, fprop, kprop):
         mi_components = np.zeros(fprop.Nc)
@@ -47,7 +47,7 @@ class LorenzBrayClark:
     def phase_viscosity(self, fprop, kprop):
         #include in the entry parameters the vc: component critical molar volume
         # mi_phase = np.zeros([1,2,self.n_volumes])
-        a = np.array([0.1023, 0.023364, 0.058533, -0.40758, 0.0093324])
+        a = np.array([0.1023, 0.023364, 0.058533, -0.040758, 0.0093324])
         #self.phase_molar_densities = np.zeros([1, 2, self.n_volumes])
         #self.phase_molar_densities[0,0,:] = fprop.phase_molar_densities[:,0,:]
         #self.phase_molar_densities[0,1,:] = fprop.phase_molar_densities[:,1,:]
