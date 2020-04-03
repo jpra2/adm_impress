@@ -11,8 +11,6 @@ class DualDomain:
         self.local_couple=local_couple
         self.couple_bound=couple_bound
         self.adjs, self.ks, self.ids_globais_vols, self.ns =  self.get_local_informations(data_impress, elements_lv0, volumes, local_couple=local_couple, couple_bound=couple_bound)
-        self.Nvols=len(elements_lv0['volumes'])
-        self.Nvert = (data_impress['DUAL_1']==3).sum()
         self.coarse_ids = data_impress['GID_1'][self.vertices]
         self.A_b_t=[]
 
@@ -94,8 +92,8 @@ class DualDomain:
 
 class OP_local:
     def __init__(self, sub_d):
-        self.Nvols=sub_d.Nvols
-        self.Nverts=sub_d.Nvert
+        # self.Nvols=sub_d.Nvols
+        # self.Nverts=sub_d.Nvert
         self.OP = self.get_OP(sub_d)
 
     def get_submatrix(self,id0, id1, ks, slice):
@@ -170,14 +168,10 @@ class OP_local:
         OP=vstack([Pi,Pf,Pe,Pv])
 
         lcd=scipy.sparse.find(OP)
-        lines=ids_globais_vols[np.array(lcd[0])]
-        # cols=vertex_global_ids[np.array(lcd[1])]-ni-nf-ne
-        cols = sub_d.coarse_ids[lcd[1]]
+        lines=ids_globais_vols[np.array(lcd[0])].astype(int)
+        cols = sub_d.coarse_ids[lcd[1]].astype(int)
         data=np.array(lcd[2])
-        OP=scipy.sparse.csc_matrix((data,(lines,cols)), shape=(self.Nvols,self.Nverts))
-        print(OP.sum(axis=1).max(),OP.sum(axis=1).min())
-
-        return OP
+        return lines, cols, data
 
 class Partitioner:
     def __init__(self,all_subds, nworker, regression_degree):
@@ -241,19 +235,32 @@ class OP_AMS:
     def __init__(self, data_impress, elements_lv0, all_conjs_duais, local_couple=0, couple_bound=True):
         all_subds = [DualDomain(data_impress, elements_lv0, all_conjs_duais[i], local_couple=local_couple, \
         couple_bound = couple_bound) for i in range(len(all_conjs_duais))]
+        Nvols=len(elements_lv0['volumes'])
+        Nverts = (data_impress['DUAL_1']==3).sum()
         regression_degree=2
         nworker=3
-        partitioned_subds = all_subds
-        self.OP=self.get_OP(partitioned_subds)
+        # partitioned_subds = all_subds
+        # self.OP=self.get_OP(partitioned_subds)
+
         partitioned_subds=Partitioner(all_subds, nworker, regression_degree).partitioned_subds
-        self.get_OP(partitioned_subds[0])
-        import pdb; pdb.set_trace()
+        lcd=np.zeros([3,1])
+        lines=[]
+        cols=[]
+        data=[]
+        for partitioned_subd in partitioned_subds:
+            l, c, d = self.get_OP(partitioned_subd)
+            lines.append(l)
+            cols.append(c)
+            data.append(d)
+
+        lines=np.concatenate(lines).astype(int)
+        cols=np.concatenate(cols).astype(int)
+        data=np.concatenate(data)
+        self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
 
 
     def get_OP(self,partitioned_subds):
+        lcd=np.zeros((3,1))
         for dual_d in partitioned_subds:
-            try:
-                OP+=OP_local(dual_d).OP
-            except:
-                OP=OP_local(dual_d).OP
-        return OP
+            lcd=np.hstack([lcd,OP_local(dual_d).OP])
+        return lcd
