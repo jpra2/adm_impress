@@ -15,28 +15,32 @@ class biphasicProperties:
     def lambda_w_internal_faces():
         doc = "The lambda_w_internal_faces property."
         def fget(self):
-            return self.data_impress['lambda_w'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            # return self.data_impress['lambda_w'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            return self.lambda_w_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
         return locals()
     lambda_w_internal_faces = property(**lambda_w_internal_faces())
 
     def lambda_o_internal_faces():
         doc = "The lambda_o_internal_faces property."
         def fget(self):
-            return self.data_impress['lambda_o'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            # return self.data_impress['lambda_o'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            return self.lambda_o_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
         return locals()
     lambda_o_internal_faces = property(**lambda_o_internal_faces())
 
     def lambda_t_internal_faces():
         doc = "The lambda_t_internal_faces property."
         def fget(self):
-            return self.data_impress['lambda_t'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            # return self.data_impress['lambda_t'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            return self.lambda_t_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
         return locals()
     lambda_t_internal_faces = property(**lambda_t_internal_faces())
 
     def fw_internal_faces():
         doc = "The fw_internal_faces property."
         def fget(self):
-            return self.data_impress['fw_vol'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            # return self.data_impress['fw_vol'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            return self.fw_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
         return locals()
     fw_internal_faces = property(**fw_internal_faces())
 

@@ -7,8 +7,8 @@ type_of_solution: fine_scale
 gravity: false
 load_data: false
 convert_english_to_SI: false
-monophasic: true
-biphasic: false
+monophasic: false
+biphasic: true
 load_biphasic_data: false
 deletar_results: true
 multilevel_data: true
@@ -53,15 +53,15 @@ Porosity:
 Saturation:
   r1:
     type: all
-    value: 0.8
-
-  r2:
-    type: box
-    type1_well: null
-    type2_well: null
-    p0: [0.0, 0.0, 0.0]
-    p1: [27.0, 27.0, 13.0]
     value: 0.2
+
+  # r2:
+  #   type: box
+  #   type1_well: null
+  #   type2_well: null
+  #   p0: [0.0, 0.0, 0.0]
+  #   p1: [27.0, 27.0, 13.0]
+  #   value: 0.2
 
   r3:
     type: wells

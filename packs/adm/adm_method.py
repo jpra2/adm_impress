@@ -913,7 +913,7 @@ class AdmMethod(DataManager, TpfaFlux2):
             sats_local = saturation[gids0]
             dif = sats_local.max() - sats_local.min()
             if dif >= self.delta_sat_max:
-                levels[gids0] = np.repeat(0, len(gids0))
+                levels[gids0] = 0
                 gids_lv1_sat.add(gidc)
 
         cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(1)]

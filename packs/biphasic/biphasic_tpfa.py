@@ -257,7 +257,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         self.data_impress['flux_w_faces_vec'][internal_faces] = flux_w_vec_internal_faces
         self.data_impress['flux_o_faces_vec'][internal_faces] = flux_o_vec_internal_faces
 
-
     def update_delta_t_dep0(self):
         ###
         ## de acordo com o fluxo nos volumes
@@ -395,7 +394,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 
         #############
         ## teste variacao maxima de saturacao
-        test = ids2[delta_sat > self.delta_sat_max]
+        test = ids2[delta_sat > self.delta_sat_max+0.0001]
         if len(test) > 0:
             return 1
         del test
