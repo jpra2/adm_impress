@@ -1,3 +1,4 @@
+import time
 from ...data_class.data_manager import DataManager
 # from ..operators.prolongation.AMS.ams_tpfa import AMSTpfa
 from ..operators.prolongation.AMS.ams_tpfa_new0 import AMSTpfa
@@ -282,22 +283,22 @@ class MultilevelOperators(DataManager):
         local_couple = 1
         couple_bound = True
         #######################################
-        lcs=[0, 1, 2]
-        cbs=[True, False]
-
-        nrep=1
-        coefs=[]
-        for r in range(nrep):
-            for local_couple in lcs:
-                for couple_bound in cbs:
-                    dual_volumes = [dd['volumes'] for dd in dual_structure]
-                    inds=range(1,len(dual_volumes)-1)
-                    for i in inds:
-                        print(r, local_couple, couple_bound, i,"repetition, local_couple, couple_bound, ncoupled")
-                        rr = [np.unique(np.concatenate(dual_volumes[0:i]))]
-                        dual_volumes = rr + dual_volumes[i:]
-                        result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound)
-                        OP=result.OP
+        # lcs=[0, 1, 2]
+        # cbs=[True, False]
+        #
+        # nrep=1
+        # coefs=[]
+        # for r in range(nrep):
+        #     for local_couple in lcs:
+        #         for couple_bound in cbs:
+        #             dual_volumes = [dd['volumes'] for dd in dual_structure]
+        #             inds=range(1,len(dual_volumes)-1)
+        #             for i in inds:
+        #                 print(r, local_couple, couple_bound, i,"repetition, local_couple, couple_bound, ncoupled")
+        #                 rr = [np.unique(np.concatenate(dual_volumes[0:i]))]
+        #                 dual_volumes = rr + dual_volumes[i:]
+        #                 result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound)
+        #                 OP=result.OP
                         # coefs.append(result.coefs)
 
 
@@ -308,6 +309,15 @@ class MultilevelOperators(DataManager):
         # plt.plot(x,coefs[:,2])
         #
         # plt.savefig("results/coefs.png")
+        t0=time.time()
+        result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound)
+        OP=result.OP
+        diag=np.array(1/OP.sum(axis=1))[:,0]
+        l=range(len(diag))
+        c=l
+        mult=sp.csc_matrix((diag,(l,c)),shape=(len(diag), len(diag)))
+        OP=mult*OP
+        print("tempo total para cálculo do OP {} segundos".format(time.time()-t0))
         import pdb; pdb.set_trace()
         OP = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound).OP
         # for dd in dual_volumes:

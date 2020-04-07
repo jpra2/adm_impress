@@ -43,9 +43,10 @@ class DualDomain:
 
 
             else:
-
-                reduce_flag = np.setdiff1d(volumes, np.concatenate(elements_lv0['volumes_face_volumes'][so_viz]))
-
+                try:
+                    reduce_flag = np.setdiff1d(volumes, np.concatenate(elements_lv0['volumes_face_volumes'][so_viz]))
+                except:
+                    reduce_flag = volumes
                 volumes_red = reduce_flag
 
                 dual_flags_red=dual_flags[reduce_flag]
@@ -175,7 +176,7 @@ class OP_local:
 
 class Partitioner:
     def __init__(self,all_subds, nworker, regression_degree):
-        calibrate_partitioning_parameters()
+
         estimated_time_by_subd = self.get_estimated_time_by_subd(all_subds,regression_degree)
         partitioned_subds = self.balance_processes(all_subds, estimated_time_by_subd, nworker=nworker)
         self.partitioned_subds = partitioned_subds
@@ -220,7 +221,7 @@ class Partitioner:
             for p in posics:
                 worker_id=np.arange(nworker)[parts.sum(axis=1)==parts.sum(axis=1).min()][0]
                 parts[worker_id,p]=estimated_time_by_subd[p]
-        if (parts>0).sum(axis=0).min()!=1 or (parts>0).sum(axis=0).min()!=1:
+        if (parts!=0).sum(axis=0).min()!=1 or (parts>0).sum(axis=0).min()!=1:
             print("verificar particionamento")
             import pdb; pdb.set_trace()
         print(parts.sum(axis=1), (parts>0).sum(axis=1),len(all_subds),"aqui")
@@ -233,34 +234,88 @@ class Partitioner:
 
 class OP_AMS:
     def __init__(self, data_impress, elements_lv0, all_conjs_duais, local_couple=0, couple_bound=True):
+        t0=time.time()
+        calibrate_partitioning_parameters()
+        print("Time to calibrate partitioning parameters: {} segundos".format(time.time()-t0))
+        t0=time.time()
         all_subds = [DualDomain(data_impress, elements_lv0, all_conjs_duais[i], local_couple=local_couple, \
         couple_bound = couple_bound) for i in range(len(all_conjs_duais))]
+        print("Time to calibrate partitionate subdomains: {} segundos".format(time.time()-t0))
         Nvols=len(elements_lv0['volumes'])
         Nverts = (data_impress['DUAL_1']==3).sum()
         regression_degree=2
         nworker=3
-        # partitioned_subds = all_subds
-        # self.OP=self.get_OP(partitioned_subds)
 
         partitioned_subds=Partitioner(all_subds, nworker, regression_degree).partitioned_subds
-        lcd=np.zeros([3,1])
-        lines=[]
-        cols=[]
-        data=[]
-        for partitioned_subd in partitioned_subds:
-            l, c, d = self.get_OP(partitioned_subd)
-            lines.append(l)
-            cols.append(c)
-            data.append(d)
 
-        lines=np.concatenate(lines).astype(int)
-        cols=np.concatenate(cols).astype(int)
-        data=np.concatenate(data)
+        lines, cols, data = self.get_OP_paralell(partitioned_subds)
         self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
+        '''
+        #To test bugs on serial, use this###############################
+        lines, cols, data = self.get_OP(all_subds, paralell=False)
+        self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
+        #######################################
+        '''
 
 
-    def get_OP(self,partitioned_subds):
+    def get_OP(self,partitioned_subd, paralell=True):
+        print("process {} started".format(partitioned_subd[-1].id))
+        t0=time.time()
+        # Processes imputs
+        ################################
         lcd=np.zeros((3,1))
-        for dual_d in partitioned_subds:
+        for dual_d in partitioned_subd:
             lcd=np.hstack([lcd,OP_local(dual_d).OP])
-        return lcd
+        ###################################
+        print("process {} finished after {}".format(partitioned_subd[-1].id, time.time()-t0))
+
+        # Send results to master process
+        ###################################################
+        if paralell:
+            master=dual_d.master
+            master.send(lcd)
+            #############################################
+        else:
+            return lcd
+
+    def get_OP_paralell(self, partitioned_subds):
+        nworker = len(partitioned_subds)
+        print("calculating prolongation operator with {} processes".format(nworker))
+
+        # Setup communication structure
+        #########################################
+        master2worker = [mp.Pipe() for p in range(nworker)]
+        m2w, w2m = list(zip(*master2worker))
+        for i in range(len(partitioned_subds)):
+            partitioned_subds[i][-1].master = w2m[i]
+            partitioned_subds[i][-1].id = i
+        ########################################
+
+        # Creates & start processes
+        #########################################
+        procs = [mp.Process(target=self.get_OP, args=[s]) for s in partitioned_subds]
+        for p in procs:
+            p.start()
+        #########################################
+
+        # Get processed output & kill subprocesses
+        #################################
+        l=[]
+        c=[]
+        d=[]
+        for m in m2w:
+            msg=m.recv()
+            l.append(msg[0])
+            c.append(msg[1])
+            d.append(msg[2])
+
+        l=np.concatenate(l)
+        c=np.concatenate(c)
+        d=np.concatenate(d)
+        for p in procs:
+            p.join()
+        ###############################################
+        lines=l.astype(int)
+        cols=c.astype(int)
+        data=d
+        return lines, cols, data
