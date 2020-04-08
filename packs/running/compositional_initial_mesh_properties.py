@@ -23,6 +23,7 @@ def initial_mesh(load=False, convert=False):
         if not load:
             Preprocess0(M, elements_lv0)
         wells = Wells(M, load=load)
+        set_saturation_regions(M, wells)
         #fluid_properties = FluidProperties()
 
     return M,elements_lv0, data_impress, wells #fluid_properties
