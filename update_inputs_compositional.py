@@ -19,17 +19,6 @@ if dd['deletar_results']:
         if f[-4:] == '.vtk':
             os.remove(os.path.join(results, f))
 
-def update(M, data_impress, wells, load, data_loaded, n_volumes):
-    kprop = ComponentProperties(data_loaded)
-    z, P, T, R, Nc = inputs_overall_properties(data_loaded)
-    fprop_block = StabilityCheck(z, P, T, R, Nc, kprop)
-    fprop_block.run(z, kprop)
-    fprop = FluidProperties(fprop_block, data_loaded, n_volumes)
-    prop = PropertiesCalc(data_impress, wells, fprop)
-    prop.run_outside_loop(data_impress, wells, fprop)
-    fprop.inputs_missing_properties(kprop)
-    return fprop, fprop_block, kprop
-
 def inputs_overall_properties(data_loaded):
     z = np.array(data_loaded['compositional_data']['component_data']['z']).astype(float)
     T = np.array(data_loaded['Temperature']['r1']['value']).astype(float)
@@ -62,6 +51,7 @@ class FluidProperties:
         self.Mw_w = data_loaded['compositional_data']['water_data']['Mw_w'] * np.ones(n_volumes)
         self.ksi_W0 = self.rho_W/self.Mw_w
         self.ksi_W = self.ksi_W0
+        #self.Sw = data_loaded['Saturation']['r1']['value'] * np.ones(n_volumes)
 
     def inputs_all_volumes(self, fprop_block, n_volumes):
         self.T = fprop_block.T
