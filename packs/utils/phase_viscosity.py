@@ -37,10 +37,10 @@ class LorenzBrayClark:
         self.component_molar_fractions[:,0,:] = fprop.x
         self.component_molar_fractions[:,1,:] = fprop.y
 
-        self.mi_atm = np.sum(self.component_molar_fractions * self.mi_components *
-                self.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0) \
-                /np.sum(self.component_molar_fractions *
-                self.Mw[:, np.newaxis, np.newaxis] ** (1/2) , axis = 0)
+        self.mi_atm = np.sum(self.component_molar_fractions[0:fprop.Nc,0:2,:] * self.mi_components *
+                                self.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0) \
+                        /np.sum(self.component_molar_fractions *
+                                self.Mw[:, np.newaxis, np.newaxis] ** (1/2) , axis = 0)
 
         self.mi_atm = self.mi_atm[np.newaxis,:,:]
 
@@ -48,12 +48,9 @@ class LorenzBrayClark:
         #include in the entry parameters the vc: component critical molar volume
         # mi_phase = np.zeros([1,2,self.n_volumes])
         a = np.array([0.1023, 0.023364, 0.058533, -0.040758, 0.0093324])
-        #self.phase_molar_densities = np.zeros([1, 2, self.n_volumes])
-        #self.phase_molar_densities[0,0,:] = fprop.phase_molar_densities[:,0,:]
-        #self.phase_molar_densities[0,1,:] = fprop.phase_molar_densities[:,1,:]
 
         phase_reduced_molar_density = self.phase_molar_densities[:,0:2,:] * \
-            np.sum(self.component_molar_fractions * self.vc, axis = 0)
+            np.sum(self.component_molar_fractions * self.vc[:,np.newaxis,np.newaxis], axis = 0)
 
         # ind_lower = np.argwhere(phase_reduced_molar_density <= 0.18)
         # ind_higher = np.argwhere(phase_reduced_molar_density > 0.18)
@@ -77,7 +74,7 @@ class LorenzBrayClark:
         #                         /(1e4*neta[ind_higher])
 
         mi_phase = (self.mi_atm + (Xs ** 4 - 1e-4) / neta) * 1e-3 #return in Pa.s
-
+        
         return mi_phase
 
     def __call__(self, fprop, kprop):
