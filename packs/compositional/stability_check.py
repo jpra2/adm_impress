@@ -5,6 +5,7 @@ import math
 # import matplotlib.pyplot as plt
 ## Encontrar os pontos estacionarios. Estes correspondem aos pontos nos quais a derivada de g com respeito a Y é 0
 ## Todas as equações foram confirmadas pelo livro do Dandekar e a biblioteca do thermo
+# ph=0 - vapor. ph=1 - liquid.
 
 class StabilityCheck:
     """Check for stability of a thermodynamic equilibrium and returns the
@@ -39,9 +40,9 @@ class StabilityCheck:
                 self.K = self.y/self.x
 
         self.z = self.x * self.L + self.y * self.V
-        self.Mw_L, self.ksi_L, self.rho_L = self.other_properties(kprop, self.x)
-        self.Mw_V, self.ksi_V, self.rho_V = self.other_properties(kprop, self.y)
-        if self.V == 0: self.ksi_V = self.V * self.ksi_V; self.rho_V = self.V * self.ksi_V
+        self.Mw_L, self.ksi_L, self.rho_L = self.other_properties(kprop, self.x, 1)
+        self.Mw_V, self.ksi_V, self.rho_V = self.other_properties(kprop, self.y, 0)
+        #if self.V == 0: self.ksi_V = self.V * self.ksi_V; self.rho_V = self.V * self.ksi_V
 
     def equilibrium_ratio_Wilson(self, kprop):
         self.K = np.exp(5.37 * (1 + kprop.w) * (1 - kprop.Tc / self.T)) * \
@@ -265,10 +266,10 @@ class StabilityCheck:
                               where = self.fv != 0)
             self.K = razao * self.K
 
-    def other_properties(self, kprop, l):
+    def other_properties(self, kprop, l, ph):
         #l - any phase molar composition
         A, B = self.coefficientsPR(kprop, l)
-        ph = self.deltaG_molar(kprop, l, 1)
+        ph = self.deltaG_molar(kprop, l, ph)
         Z = StabilityCheck.Z_PR(B, A, ph)
         ksi_phase = self.P / (Z * self.R * self.T)
         Mw_phase = sum(l * kprop.Mw)
