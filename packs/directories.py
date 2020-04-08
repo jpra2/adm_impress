@@ -71,4 +71,4 @@ with open('input_cards/variable_inputs_compositional.yml', 'r') as f:
     variables_loaded = yaml.safe_load(f)
 
 name_load = os.path.join(flying, 'load.npy')
-name_hist = os.path.join(flying, 'current_biphasic_results.npy')
+name_hist = os.path.join(flying, 'current_compositional_results.npy')
