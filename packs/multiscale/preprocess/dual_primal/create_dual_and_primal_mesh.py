@@ -880,7 +880,7 @@ class MultilevelData(DataManager):
             gid_level = self.data_impress['GID_'+str(level-1)]
             coarse_id_level = self.data_impress['GID_'+str(level)]
             dual_ids = self.data_impress['DUAL_'+str(level)]
-            set_interns = set(gids[dual_ids==0])
+            set_interns = set(gids[dual_ids==dual_ids.min()])
 
             while set_interns:
 
@@ -890,7 +890,7 @@ class MultilevelData(DataManager):
 
                 while dif & set_interns:
 
-                    intern0 = np.setdiff1d(inter, gids[dual_ids!=0])
+                    intern0 = np.setdiff1d(inter, gids[dual_ids!=dual_ids.min()])
                     inter = np.unique(np.concatenate(M.volumes.bridge_adjacencies(intern0, 0, 3)))
                     dif = set(inter) - set(intern0)
 

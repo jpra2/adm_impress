@@ -115,9 +115,46 @@ if n_levels > 2:
                                 mlo['restriction_level_2'],
                                 2)
 
-adm_method.set_initial_mesh(mlo, T, b)
-import pdb; pdb.set_trace()
 
+adm_method.set_initial_mesh(mlo, T, b)
+############################teste#################################
+OP_AMS=mlo['prolongation_level_1']
+OR_AMS=mlo['restriction_level_1']
+Tc=OR_AMS*T*OP_AMS
+bc=OR_AMS*b
+from scipy.sparse import linalg
+pc=linalg.spsolve(Tc,bc)
+pf=linalg.spsolve(T,b)
+pms=OP_AMS*pc
+OP_ADM = adm_method['adm_prolongation_level_1']
+OR_ADM = adm_method['adm_restriction_level_1']
+Tcadm=OR_ADM*T*OP_ADM
+bcadm = OR_ADM*b
+pcadm=linalg.spsolve(Tcadm,bcadm)
+padm=OP_ADM*pcadm
+
+eadm=np.linalg.norm(abs(padm-pf))/np.linalg.norm(pf)
+eams=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
+print("erro_adm: {}, erro_ams: {}".format(eadm,eams))
+# import pdb; pdb.set_trace()
+# adm_method.organize_ops_adm_level_1( OP_AMS, OR_AMS, level, _pcorr=None)
+#########################################################################
+Tc2=Tc.copy()
+Tc2.setdiag(0)
+DTc=np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
+MTc=Tc2.min(axis=1).toarray().T[0]
+netasams=abs(MTc/DTc)
+
+Tcadm2=Tcadm.copy()
+Tcadm2.setdiag(0)
+DTcadm=np.array(Tcadm[range(Tcadm.shape[0]),range(Tcadm.shape[0])])[0]
+MTcadm=Tcadm2.min(axis=1).toarray().T[0]
+netasadm=abs(MTcadm/DTcadm)
+# np.set_printoptions(precision=0)
+# print(Tc.toarray())
+# M.multilevel_data._data['adm_prolongation_level_1']
+print("netamax: adm: {}, ams: {}".format(netasadm.max(), netasams.max()))
+import pdb; pdb.set_trace()
 adm_method.solve_multiscale_pressure(T, b)
 adm_method.set_pcorr()
 data_impress['pcorr'][data_impress['LEVEL']==0] = data_impress['pms'][data_impress['LEVEL']==0]

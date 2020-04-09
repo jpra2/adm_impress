@@ -72,6 +72,7 @@ class MultilevelOperators(DataManager):
 
         super().__init__(data_name=data_name, load=load)
         self.load = load
+
         self.ml_data = ml_data
 
         self.n_levels = n_levels
@@ -278,10 +279,28 @@ class MultilevelOperators(DataManager):
         dual_structure = self.ml_data['dual_structure_level_'+str(level)]
         dual_volumes = [dd['volumes'] for dd in dual_structure]
 
+        ###################################
+        juntar=np.array([2,3, 10, 11])
+        todos=np.arange(len(dual_volumes))
+        keep_dual=np.setdiff1d(todos,juntar[1:])
+
+        dual_volumes=np.array(dual_volumes)
+        dual_volumes2=dual_volumes[keep_dual]
+
+        new_volume=np.unique(np.hstack(dual_volumes[juntar]))
+        dual_volumes2[juntar[0]]=new_volume
+        dual_volumes=dual_volumes2
+        # import pdb; pdb.set_trace()
+        #
+        # ###########################################
         # rr = [np.unique(np.concatenate(dual_volumes[0:3]))]
         # dual_volumes = rr + dual_volumes[3:]
-        local_couple = 1
-        couple_bound = True
+        import yaml
+        with open('input_cards/partial_decoupling_options.yml', 'r') as f:
+            variables_loaded = yaml.safe_load(f)
+
+        local_couple = variables_loaded['local_couple']
+        couple_bound = variables_loaded['couple_bound']
         #######################################
         # lcs=[0, 1, 2]
         # cbs=[True, False]
@@ -301,14 +320,6 @@ class MultilevelOperators(DataManager):
         #                 OP=result.OP
                         # coefs.append(result.coefs)
 
-
-        # x=range(len(coefs))
-        #
-        # plt.plot(x,coefs[:,0])
-        # plt.plot(x,coefs[:,1])
-        # plt.plot(x,coefs[:,2])
-        #
-        # plt.savefig("results/coefs.png")
         t0=time.time()
         result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound)
         OP=result.OP
@@ -318,7 +329,7 @@ class MultilevelOperators(DataManager):
         mult=sp.csc_matrix((diag,(l,c)),shape=(len(diag), len(diag)))
         OP=mult*OP
         print("tempo total para cálculo do OP {} segundos".format(time.time()-t0))
-        
+
         # OP = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound).OP
         # for dd in dual_volumes:
         #     try:

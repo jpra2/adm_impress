@@ -203,6 +203,7 @@ class AdmNonNested(AdmMethod):
         OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(n1_adm,n2_adm))
         OR_ADM = sp.csc_matrix((data_or,(lines_or,cols_or)),shape=(n2_adm,n1_adm))
 
+
         self._data[self.adm_op_n + str(level)] = OP_ADM
         self._data[self.adm_rest_n + str(level)] = OR_ADM
 
@@ -440,7 +441,7 @@ class AdmNonNested(AdmMethod):
                 self.data_impress.update_variables_to_mesh()
                 self.plot_operator(OP_ADM, OP_AMS_1, 0)
                 # import pdb; pdb.set_trace()
-                # M.core.print(folder='results', file='testt'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
+                M.core.print(file='testt'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
             cont+=1
 
             accum_levels.append(self.data_impress['LEVEL'].copy())
@@ -450,10 +451,10 @@ class AdmNonNested(AdmMethod):
         plt.yscale('log')
         plt.savefig('results/initial_adm_mesh/hist.png')
 
-        import pdb; pdb.set_trace()
+
 
         # n = int(input('\nQual a malha adm que deseja utilizar?\nDigite o numero da iteracao.\n'))
-
+        n=0
         self.data_impress['INITIAL_LEVEL'] = accum_levels[n]
 
         self.data_impress.update_variables_to_mesh()

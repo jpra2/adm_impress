@@ -194,6 +194,7 @@ class Partitioner:
 
     def get_estimated_time_by_subd(self, all_subds, regression_degree = 2):
         n_A = [np.array(subd.ns) for subd in all_subds]
+        
         n_b = [subd.ns[0] for subd in all_subds]
         n_A=np.array(n_A)[:,1:]
         n_b=np.array(n_b)
@@ -235,7 +236,7 @@ class Partitioner:
 class OP_AMS:
     def __init__(self, data_impress, elements_lv0, all_conjs_duais, local_couple=0, couple_bound=True):
         t0=time.time()
-        calibrate_partitioning_parameters()
+        # calibrate_partitioning_parameters()
         print("Time to calibrate partitioning parameters: {} segundos".format(time.time()-t0))
         t0=time.time()
         all_subds = [DualDomain(data_impress, elements_lv0, all_conjs_duais[i], local_couple=local_couple, \
