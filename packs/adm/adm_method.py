@@ -153,6 +153,15 @@ class AdmMethod(DataManager, TpfaFlux2):
             self.data_impress['LEVEL'] = np.ones(len(self.data_impress['GID_0']), dtype=int)
             self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids), dtype=int)
 
+    def set_level_wells_2(self):
+        self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
+
+        # so_nv1 = self.so_nv1
+        #
+        # if so_nv1:
+        #     self.data_impress['LEVEL'] = np.ones(len(self.data_impress['GID_0']), dtype=int)
+        #     self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids), dtype=int)
+
     def set_adm_mesh(self):
 
         levels = self.data_impress['LEVEL']

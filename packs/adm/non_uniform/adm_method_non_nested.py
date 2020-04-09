@@ -78,11 +78,6 @@ class AdmNonNested(AdmMethod):
 
         ids_ms_2 = range(len(np.unique(gids_2)))
 
-
-        print('\n')
-        print("INICIOU GERACAO DA MALHA ADM")
-        print('\n')
-
         for vol2 in ids_ms_2:
             #1
             # n_vols_l3 = 0
@@ -169,7 +164,7 @@ class AdmNonNested(AdmMethod):
 
         self.data_impress['LEVEL'] = levels.copy()
 
-    def set_saturation_level_new(self):
+    def set_saturation_level_new0(self):
 
         levels = self.data_impress['LEVEL'].copy()
         gid1 = self.data_impress['GID_1']

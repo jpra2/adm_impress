@@ -141,12 +141,17 @@ while verif:
     # adm_method.restart_levels_2()
     # adm_method.set_level_wells()
     adm_method.restart_levels()
-    adm_method.set_level_wells()
-    adm_method.set_saturation_level()
+    adm_method.set_level_wells_2()
+    adm_method.set_saturation_level_new0()
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
 
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1)
+
+    b1.print_test()
+    import pdb; pdb.set_trace()
+
+
 
     # n=0
     # data_impress.update_variables_to_mesh()
