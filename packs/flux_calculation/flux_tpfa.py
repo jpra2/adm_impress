@@ -44,8 +44,8 @@ class TpfaFlux:
             transmissibility_internal_faces = transmissibility_faces[internal_faces]
             t0 = transmissibility_internal_faces
             zs = centroids[:, 2]
-            up_g[zs[v0[:, 1]] >= zs[v0[:, 0]]] = v0[zs[v0[:, 1]] >= zs[v0[:, 0]], 0]
-            up_g[zs[v0[:, 1]] < zs[v0[:, 0]]] = v0[zs[v0[:, 1]] < zs[v0[:, 0]], 1]
+            up_g[zs[v0[:, 1]] >= zs[v0[:, 0]]] = v0[zs[v0[:, 1]] >= zs[v0[:, 0]], 1]
+            up_g[zs[v0[:, 1]] < zs[v0[:, 0]]] = v0[zs[v0[:, 1]] < zs[v0[:, 0]], 0]
             lambda_w_internal_faces = self.data_impress['lambda_w'][up_g]
             lambda_o_internal_faces = self.data_impress['lambda_o'][up_g]
             # lambda_w_internal_faces = self.data_impress['lambda_w'][v0[self._data['upwind_identificate']]]

@@ -24,11 +24,11 @@ class AdmNonNested(AdmMethod):
         levels[v1]=1
         levels[v2]=2
 
-
         if self.so_nv1==True:
             v1=np.setdiff1d(np.arange(len(levels)),v0)
         else:
-            v1 = np.setdiff1d(np.concatenate(self.mesh.volumes.bridge_adjacencies(v0, 2, 3)), v0)
+            # v1 = np.setdiff1d(np.concatenate(self.mesh.volumes.bridge_adjacencies(v0, 2, 3)), v0)
+            pass
         levels[v1] = 1
         self.data_impress['LEVEL'] = levels.copy()
 
@@ -122,6 +122,89 @@ class AdmNonNested(AdmMethod):
         #
         self.n1_adm = n1
         self.n2_adm = n2
+
+    def set_saturation_level(self):
+
+        levels = self.data_impress['LEVEL'].copy()
+        gid1 = self.data_impress['GID_1']
+        gid0 = self.data_impress['GID_0']
+        level_0_ini = set(gid0[levels==0])
+        saturation = self.data_impress['saturation']
+        all_wells = set(self.all_wells_ids)
+        gids_lv1_sat = set()
+        gidsc = np.unique(gid1)
+        internal_faces = self.elements_lv0['internal_faces']
+        v0 = self.elements_lv0['neig_internal_faces']
+
+        ds = saturation[v0]
+        ds = np.absolute(ds[:,1] - ds[:,0])
+
+        inds = ds >= self.delta_sat_max
+        levels[v0[inds][:,0]] = 0
+        levels[v0[inds][:,1]] = 0
+
+        all_lv0 = set(gid0[levels==0])
+
+        for gidc in gidsc:
+            gids0 = gid0[gid1==gidc]
+            if set(gids0) & all_lv0:
+                gids_fora = np.array(list(set(gids0) - all_lv0))
+                levels[gids_fora] = 1
+                gids_lv1_sat.add(gidc)
+
+        cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(1)]
+        cids_level = self.ml_data['coarse_primal_id_level_'+str(1)]
+
+        for gidc in gids_lv1_sat:
+            vizs = cids_neigh[cids_level==gidc][0]
+            for viz in vizs:
+                if set([viz]) & gids_lv1_sat:
+                    continue
+                gids0 = gid0[gid1==viz]
+                if set(gids0) & all_lv0:
+                    gids_fora = np.array(list(set(gids0) - all_lv0))
+                    levels[gids_fora] = 1
+                else:
+                    levels[gids0] = 1
+
+        self.data_impress['LEVEL'] = levels.copy()
+
+    def set_saturation_level_new(self):
+
+        levels = self.data_impress['LEVEL'].copy()
+        gid1 = self.data_impress['GID_1']
+        gid0 = self.data_impress['GID_0']
+        level_0_ini = set(gid0[levels==0])
+        saturation = self.data_impress['saturation']
+        all_wells = set(self.all_wells_ids)
+        gids_lv1_sat = set()
+        gidsc = np.unique(gid1)
+
+        for gidc in gidsc:
+            gids0 = gid0[gid1==gidc]
+            sats_local = saturation[gids0]
+            dif = sats_local.max() - sats_local.min()
+            if dif >= self.delta_sat_max:
+                levels[gids0] = 0
+                gids_lv1_sat.add(gidc)
+
+        cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(1)]
+        cids_level = self.ml_data['coarse_primal_id_level_'+str(1)]
+
+        all_lv0 = set(gid0[levels==0])
+
+        for gidc in gids_lv1_sat:
+            vizs = cids_neigh[cids_level==gidc][0]
+            for viz in vizs:
+                if set([viz]) & gids_lv1_sat:
+                    continue
+                gids0 = gid0[gid1==viz]
+                if set(gids0) & all_lv0:
+                    continue
+                else:
+                    levels[gids0] = 1
+
+        self.data_impress['LEVEL'] = levels.copy()
 
     def organize_ops_adm(self, OP_AMS, OR_AMS, level, _pcorr=None):
 

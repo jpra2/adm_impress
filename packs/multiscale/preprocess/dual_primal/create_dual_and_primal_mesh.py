@@ -71,6 +71,7 @@ class MultilevelData(DataManager):
 
         # if not self._carregar:
         #     self.save_mesh(M)
+
     def create_tags(self):
         assert not self._loaded
         M = self.mesh
@@ -393,6 +394,7 @@ class MultilevelData(DataManager):
                                 mb.tag_set_data(primal_id_tag1, l1_meshset, nc1)
                                 nc1 += 1
                                 # mb.add_parent_child(l2_meshset, l1_meshset)
+
     def generate_dual_and_primal_any_D(self, M):
         M1=M.core
         M1.all_centroids=M.data["centroid_volumes"]
@@ -551,7 +553,6 @@ class MultilevelData(DataManager):
                 ms=M1.mb.create_meshset()
                 M1.mb.add_entities(ms,v2)
                 M1.mb.tag_set_data(M1.primal_id_tag2,ms,id2)
-
 
     def get_elements(self, M):
         assert not self._loaded

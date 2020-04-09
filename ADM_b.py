@@ -106,6 +106,12 @@ gids_0 = data_impress['GID_0']
 adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
 # adm_method.set_initial_mesh(mlo, T, b)
 
+meshset_volumes = M.core.mb.create_meshset()
+M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
+
+nn = 20
+cont = 1
+
 verif = True
 while verif:
 
@@ -119,14 +125,18 @@ while verif:
     adm_method.set_pms_flux(b1['Tini'], wells)
     b1.get_velocity_faces()
     b1.get_flux_volumes()
-    b1.print_test()
+    # b1.print_test()
     # p2 = adm_method.solver.direct_solver(T, b)
     # data_impress['pressure'] = p2
     # data_impress['erro'] = np.absolute((p2-data_impress['pms']))
 
     b1.run_2()
+    data_impress.update_variables_to_mesh()
 
-    import pdb; pdb.set_trace()
+    M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
+
+    if cont % nn == 0:
+        import pdb; pdb.set_trace()
 
     # adm_method.restart_levels_2()
     # adm_method.set_level_wells()
@@ -144,4 +154,4 @@ while verif:
 
     T, b = b1.get_T_and_b()
 
-    import pdb; pdb.set_trace()
+    cont += 1

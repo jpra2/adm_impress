@@ -3,6 +3,7 @@ import scipy.sparse as sp
 from ...common_files.common_infos import CommonInfos
 import multiprocessing as mp
 from ...solvers.solvers_scipy.solver_sp import SolverSp
+import time
 
 class masterNeumanNonNested:
 
@@ -20,7 +21,7 @@ class masterNeumanNonNested:
         if self.one_worker:
             n_cpu = 1
         else:
-            n_cpu = mp.cpu_count()
+            n_cpu = mp.cpu_count()//2 - 1
 
         self.n_workers = n_cpu
         list_of_process_per_cpu = []

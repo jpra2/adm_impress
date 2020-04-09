@@ -8,6 +8,7 @@ from ..preprocess.prep0_0 import Preprocess0
 from ..directories import data_loaded
 from ..multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 import numpy as np
+import os
 
 # import pdb; pdb.set_trace()
 
@@ -67,5 +68,11 @@ def initial_mesh():
         wells.export_all_datas_to_npz()
         M.save_variables('initial_mesh')
         del data_impress['permeability']
+
+    if data_loaded['deletar_results'] == True:
+        results_file = 'results'
+        for arq in os.listdir(results_file):
+            if arq.endswith('.vtk'):
+                os.remove(os.path.join(results_file, arq))
 
     return M, elements_lv0, data_impress, wells
