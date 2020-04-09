@@ -357,6 +357,7 @@ class AdmNonNested(AdmMethod):
 
                 lim=np.sort(psr)[len(psr)-nr-1]
                 positions=np.where(psr>lim)[0]
+
                 # nv_verts=levels[vertices]
                 # nv_positions=nv_verts[positions]
                 # pos_new_fines=positions[nv_positions==1]
@@ -438,8 +439,8 @@ class AdmNonNested(AdmMethod):
                 # M1.mb.write_file(ext_vtk,[av])
                 self.data_impress.update_variables_to_mesh()
                 self.plot_operator(OP_ADM, OP_AMS_1, 0)
-                import pdb; pdb.set_trace()
-                M.core.print(folder='results', file='testt'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
+                # import pdb; pdb.set_trace()
+                # M.core.print(folder='results', file='testt'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
             cont+=1
 
             accum_levels.append(self.data_impress['LEVEL'].copy())
@@ -451,7 +452,7 @@ class AdmNonNested(AdmMethod):
 
         import pdb; pdb.set_trace()
 
-        n = int(input('\nQual a malha adm que deseja utilizar?\nDigite o numero da iteracao.\n'))
+        # n = int(input('\nQual a malha adm que deseja utilizar?\nDigite o numero da iteracao.\n'))
 
         self.data_impress['INITIAL_LEVEL'] = accum_levels[n]
 
@@ -486,4 +487,5 @@ class AdmNonNested(AdmMethod):
         # fb_adm = OP_ADM[:, corresp].toarray()
         # self.data_impress['verif_po'] = fb_ms
         # self.data_impress['verif_rest'] = fb_adm
+
         self.print_test()

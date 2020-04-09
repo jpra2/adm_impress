@@ -1131,5 +1131,5 @@ class AdmMethod(DataManager, TpfaFlux2):
 
     def print_test(self):
         self.data_impress.update_variables_to_mesh()
-        name = 'results/test_'
+        name = 'test_'
         self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")

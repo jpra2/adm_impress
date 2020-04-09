@@ -240,7 +240,7 @@ class OP_AMS:
         t0=time.time()
         all_subds = [DualDomain(data_impress, elements_lv0, all_conjs_duais[i], local_couple=local_couple, \
         couple_bound = couple_bound) for i in range(len(all_conjs_duais))]
-        print("Time to calibrate partitionate subdomains: {} segundos".format(time.time()-t0))
+        print("Time to partitionate subdomains: {} segundos".format(time.time()-t0))
         Nvols=len(elements_lv0['volumes'])
         Nverts = (data_impress['DUAL_1']==3).sum()
         regression_degree=2
@@ -251,7 +251,7 @@ class OP_AMS:
         lines, cols, data = self.get_OP_paralell(partitioned_subds)
         self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
         '''
-        #To test bugs on serial, use this###############################
+        # To test bugs on serial, use this###############################
         lines, cols, data = self.get_OP(all_subds, paralell=False)
         self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
         #######################################

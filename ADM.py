@@ -52,10 +52,10 @@ def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     data_impress['verif_po'] = l2
     data_impress['verif_rest'] = el2
     data_impress.update_variables_to_mesh(['verif_po', 'verif_rest'])
-    M.core.print(file='results/test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    # M.core.print(file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
     import pdb; pdb.set_trace()
 
-def dados_unitarios(data_impress):
+# def dados_unitarios(data_impress):
     data_impress['hs'] = np.ones(len(data_impress['hs'])*3).reshape([len(data_impress['hs']), 3])
     data_impress['volume'] = np.ones(len(data_impress['volume']))
     data_impress['area'] = np.ones(len(data_impress['area']))
@@ -127,4 +127,4 @@ data_impress['erro'] = np.absolute((data_impress['pressure'] - data_impress['pms
 data_impress['erro_pcorr_pdm'] = np.absolute(data_impress['pcorr'] - data_impress['pms'])
 
 data_impress.update_variables_to_mesh()
-M.core.print(folder='results', file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
+# M.core.print(folder='results' file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')

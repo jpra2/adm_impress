@@ -318,8 +318,8 @@ class MultilevelOperators(DataManager):
         mult=sp.csc_matrix((diag,(l,c)),shape=(len(diag), len(diag)))
         OP=mult*OP
         print("tempo total para cálculo do OP {} segundos".format(time.time()-t0))
-        import pdb; pdb.set_trace()
-        OP = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound).OP
+        
+        # OP = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound).OP
         # for dd in dual_volumes:
         #     try:
         #         OP += OP_AMS(self.data_impress, self.elements_lv0, dd, local_couple=local_couple, couple_bound=couple_bound).OP
