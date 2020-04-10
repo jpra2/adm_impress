@@ -281,29 +281,18 @@ class MultilevelOperators(DataManager):
 
         ###################################
         # juntar=np.array([2,3, 10, 11,34,35, 42, 43, 50,51, 58, 59, 14,15])
-        juntar=np.array([2, 10, 34, 42,  50, 58, 14])
-        juntares=np.array([[2,3], [10, 11], [14,15], [34,35], [42, 43], [50,51], [58, 59]])
-        # for juntar in juntares:
-        #     todos=np.arange(len(dual_volumes))
-        #     keep_dual=np.setdiff1d(todos,juntar[1:])
+        # # juntar=np.array([2, 10, 34, 42,  50, 58, 14])
         #
-        #     dual_volumes=np.array(dual_volumes)
-        #     dual_volumes2=dual_volumes[keep_dual]
         #
-        #     new_volume=np.unique(np.hstack(dual_volumes[juntar]))
-        #     dual_volumes2[juntar[0]]=new_volume
-        #     dual_volumes=dual_volumes2
-        #     juntares-=1
-
-        todos=np.arange(len(dual_volumes))
-        keep_dual=np.setdiff1d(todos,juntar[1:])
-
-        dual_volumes=np.array(dual_volumes)
-        dual_volumes2=dual_volumes[keep_dual]
-
-        new_volume=np.unique(np.hstack(dual_volumes[juntar]))
-        dual_volumes2[juntar[0]]=new_volume
-        dual_volumes=dual_volumes2
+        # todos=np.arange(len(dual_volumes))
+        # keep_dual=np.setdiff1d(todos,juntar[1:])
+        #
+        # dual_volumes=np.array(dual_volumes)
+        # dual_volumes2=dual_volumes[keep_dual]
+        #
+        # new_volume=np.unique(np.hstack(dual_volumes[juntar]))
+        # dual_volumes2[juntar[0]]=new_volume
+        # dual_volumes=dual_volumes2
 
         # import pdb; pdb.set_trace()
         #
@@ -338,6 +327,29 @@ class MultilevelOperators(DataManager):
         t0=time.time()
         result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound)
         OP=result.OP
+
+        juntares=np.array([[2,3], [10, 11], [14,15], [34,35], [42, 43], [50,51], [58, 59]])
+        # # juntares=np.array([[2], [10], [14], [34], [42], [50], [58]])
+        # juntares=np.array([[2,10,14,34,42,50,58],[3,11,15,35,43,51,59],[2,3], [10, 11], [14,15], [34,35], [42, 43], [50,51], [58, 59]])
+        juntares=np.array([[2,3, 10, 11,34,35, 42, 43, 50,51, 58, 59, 14,15]])
+        dv=[]
+        for juntar in juntares:
+            todos=np.arange(len(dual_volumes))
+            keep_dual=np.setdiff1d(todos,juntar[1:])
+
+            dual_volumes=np.array(dual_volumes)
+            dual_volumes2=dual_volumes[keep_dual]
+
+            new_volume=np.unique(np.hstack(dual_volumes[juntar]))
+            dv.append(new_volume)
+
+
+        result_par = OP_AMS(self.data_impress, self.elements_lv0, dv, local_couple=local_couple, couple_bound=couple_bound)
+        OP_par=result_par.OP
+        lins_par=np.unique(np.concatenate(dv))
+
+        OP[lins_par]=OP_par[lins_par]
+
         diag=np.array(1/OP.sum(axis=1))[:,0]
         l=range(len(diag))
         c=l

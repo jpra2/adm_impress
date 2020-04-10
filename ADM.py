@@ -177,11 +177,11 @@ pe1=padm[adjs_e1]
 dpe=abs(pe0-pe1)
 
 lines=np.concatenate([adjs_e0,adjs_e1])
-cols=np.concatenate([adjs_e0,adjs_e0])
+cols=np.concatenate([adjs_e1,adjs_e0])
 data=np.concatenate([dpe,dpe])
 from scipy.sparse import csc_matrix
 sums=csc_matrix((data,(lines,cols)),shape=(len(M.volumes.all),len(M.volumes.all)))
-sums=sums[:,M.volumes.all[data_impress["DUAL_1"]>=2]]
+sums=sums[:,M.volumes.all[data_impress["DUAL_1"]<2]]
 ss=np.array(sums.sum(axis=1)).T[0]
 # np.where(ss>100)
 # ss[data_impress["DUAL_1"]<2]=0

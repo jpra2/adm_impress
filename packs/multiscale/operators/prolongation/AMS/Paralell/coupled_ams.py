@@ -194,7 +194,7 @@ class Partitioner:
 
     def get_estimated_time_by_subd(self, all_subds, regression_degree = 2):
         n_A = [np.array(subd.ns) for subd in all_subds]
-        
+
         n_b = [subd.ns[0] for subd in all_subds]
         n_A=np.array(n_A)[:,1:]
         n_b=np.array(n_b)
@@ -251,6 +251,7 @@ class OP_AMS:
 
         lines, cols, data = self.get_OP_paralell(partitioned_subds)
         self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
+        
         '''
         # To test bugs on serial, use this###############################
         lines, cols, data = self.get_OP(all_subds, paralell=False)
