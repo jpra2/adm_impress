@@ -574,3 +574,10 @@ ADM_COARSE_ID_LEVEL_2:
   data type: int
   sparse: True
   level: 0
+
+velocity_projection:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0

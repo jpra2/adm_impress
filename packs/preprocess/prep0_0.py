@@ -26,7 +26,7 @@ def set_permeability_and_phi_spe10(M):
     M.data[M.data.variables_impress['permeability']] = ks[ee] #permeabilidade
     M.data[M.data.variables_impress['perm_z']] = ks[ee][:,-1]
     M.data[M.data.variables_impress['perm_x']] = ks[ee][:,0]
-    
+
     M.data[M.data.variables_impress['poro']] = phi[ee]  #porosidade
 
 class Preprocess0:
@@ -145,8 +145,9 @@ class Preprocess0:
                 points = np.array([np.array(p0), np.array(p1)])
                 indices = get_box(centroids, points)
                 n_volumes = len(indices)
-                M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
 
+                M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
+                np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
     def set_phi_regions(self, M):
         # TODO: atualizar essa funcao
         centroids = M.data['centroid_volumes']

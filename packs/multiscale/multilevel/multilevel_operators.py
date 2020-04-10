@@ -280,7 +280,21 @@ class MultilevelOperators(DataManager):
         dual_volumes = [dd['volumes'] for dd in dual_structure]
 
         ###################################
-        juntar=np.array([2,3, 10, 11])
+        # juntar=np.array([2,3, 10, 11,34,35, 42, 43, 50,51, 58, 59, 14,15])
+        juntar=np.array([2, 10, 34, 42,  50, 58, 14])
+        juntares=np.array([[2,3], [10, 11], [14,15], [34,35], [42, 43], [50,51], [58, 59]])
+        # for juntar in juntares:
+        #     todos=np.arange(len(dual_volumes))
+        #     keep_dual=np.setdiff1d(todos,juntar[1:])
+        #
+        #     dual_volumes=np.array(dual_volumes)
+        #     dual_volumes2=dual_volumes[keep_dual]
+        #
+        #     new_volume=np.unique(np.hstack(dual_volumes[juntar]))
+        #     dual_volumes2[juntar[0]]=new_volume
+        #     dual_volumes=dual_volumes2
+        #     juntares-=1
+
         todos=np.arange(len(dual_volumes))
         keep_dual=np.setdiff1d(todos,juntar[1:])
 
@@ -290,6 +304,7 @@ class MultilevelOperators(DataManager):
         new_volume=np.unique(np.hstack(dual_volumes[juntar]))
         dual_volumes2[juntar[0]]=new_volume
         dual_volumes=dual_volumes2
+
         # import pdb; pdb.set_trace()
         #
         # ###########################################

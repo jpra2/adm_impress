@@ -91,12 +91,28 @@ else:
     multilevel_operators.run_paralel(tpfa_solver['Tini'])
 
 mlo=multilevel_operators
+###########################################
+perms=np.load("flying/permeability.npy")
+perms_xx=perms[:,0]
+vv1=np.array([  0,   8,   9,  10,  37,  64,  91, 116, 117, 118, 145, 172, 197,
+       198, 199, 226, 253, 278, 279, 280, 307, 334, 359, 360, 361, 388,
+       440, 441, 728])
+# finos=np.concatenate([np.arange(len(M.volumes.all))[perms_xx<0.5],wells['all_wells']])
+# finos=np.concatenate([vv1,wells['all_wells']])
+finos=wells['all_wells']
+data_impress.update_variables_to_mesh()
+################################
 
+adm_method = AdmNonNested(finos, n_levels, M, data_impress, elements_lv0)
+# adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
+adm_method.set_initial_mesh(mlo, T, b)
+############################teste#################################
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
-adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
+
+
 T, b = tpfa_solver.run()
 
-adm_method.restart_levels()
+# adm_method.restart_levels()
 # adm_method.set_level_wells()
 # adm_method.verificate_levels()
 # adm_method.set_adm_mesh()
@@ -115,9 +131,6 @@ if n_levels > 2:
                                 mlo['restriction_level_2'],
                                 2)
 
-
-adm_method.set_initial_mesh(mlo, T, b)
-############################teste#################################
 OP_AMS=mlo['prolongation_level_1']
 OR_AMS=mlo['restriction_level_1']
 Tc=OR_AMS*T*OP_AMS
@@ -154,14 +167,51 @@ netasadm=abs(MTcadm/DTcadm)
 # print(Tc.toarray())
 # M.multilevel_data._data['adm_prolongation_level_1']
 print("netamax: adm: {}, ams: {}".format(netasadm.max(), netasams.max()))
-import pdb; pdb.set_trace()
+v_edges=M.volumes.all[data_impress["DUAL_1"]>=2]
+f_edges=np.intersect1d(M.faces.internal,np.unique(np.concatenate(M.volumes.bridge_adjacencies(v_edges, 2, 2))))
+adjs_e=M.faces.bridge_adjacencies(f_edges, 2, 3)
+adjs_e0=adjs_e[:,0]
+adjs_e1=adjs_e[:,1]
+pe0=padm[adjs_e0]
+pe1=padm[adjs_e1]
+dpe=abs(pe0-pe1)
+
+lines=np.concatenate([adjs_e0,adjs_e1])
+cols=np.concatenate([adjs_e0,adjs_e0])
+data=np.concatenate([dpe,dpe])
+from scipy.sparse import csc_matrix
+sums=csc_matrix((data,(lines,cols)),shape=(len(M.volumes.all),len(M.volumes.all)))
+sums=sums[:,M.volumes.all[data_impress["DUAL_1"]>=2]]
+ss=np.array(sums.sum(axis=1)).T[0]
+# np.where(ss>100)
+# ss[data_impress["DUAL_1"]<2]=0
+data_impress["velocity_projection"]=ss
+adjs=M.faces.bridge_adjacencies(M.faces.internal, 2, 3)
+adjs0=adjs[:,0]
+adjs1=adjs[:,1]
+p0=padm[adjs0]
+p1=padm[adjs1]
+dp=abs(p0-p1)
+
+p0f=pf[adjs0]
+p1f=pf[adjs1]
+dpf=abs(p0f-p1f)
+
+ed=abs(dp-dpf)
+
+perms=np.load("flying/permeability.npy")
+perms_xx=perms[:,0]
+data_impress["perm_x"]=perms_xx
 adm_method.solve_multiscale_pressure(T, b)
 adm_method.set_pcorr()
 data_impress['pcorr'][data_impress['LEVEL']==0] = data_impress['pms'][data_impress['LEVEL']==0]
 
-data_impress['pressure'] = adm_method.solver.direct_solver(T, b)
+data_impress['pressure'] = padm
+data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
 data_impress['erro'] = np.absolute((data_impress['pressure'] - data_impress['pms'])/data_impress['pms'])
 data_impress['erro_pcorr_pdm'] = np.absolute(data_impress['pcorr'] - data_impress['pms'])
 
 data_impress.update_variables_to_mesh()
-# M.core.print(folder='results' file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
+
+M.core.print(file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
+import pdb; pdb.set_trace()
