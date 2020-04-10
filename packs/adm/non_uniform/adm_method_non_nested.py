@@ -10,27 +10,28 @@ from .paralel_neuman import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):
 
-    def set_adm_mesh_non_nested(self, v0=[], v1=[]):
+    def set_adm_mesh_non_nested(self, v0=[], v1=[], pare=False):
 
         print("\nINICIOU GERACAO DA MALHA ADM\n")
 
-        levels = np.repeat(-1, len(self.data_impress['LEVEL']))
+        # levels = np.repeat(-1, len(self.data_impress['LEVEL']))
+        levels = self.data_impress['LEVEL'].copy()
         gids_0 = self.data_impress['GID_0']
         gids_1 = self.data_impress['GID_1']
         gids_2 = self.data_impress['GID_2']
-        v2=np.setdiff1d(gids_0,np.concatenate([v0, v1]))
+        # v2=np.setdiff1d(gids_0,np.concatenate([v0, v1]))
 
-        levels[v0]=0
-        levels[v1]=1
-        levels[v2]=2
+        # levels[v0]=0
+        # levels[v1]=1
+        # levels[v2]=2
 
-        if self.so_nv1==True:
-            v1=np.setdiff1d(np.arange(len(levels)),v0)
-        else:
-            # v1 = np.setdiff1d(np.concatenate(self.mesh.volumes.bridge_adjacencies(v0, 2, 3)), v0)
-            pass
-        levels[v1] = 1
-        self.data_impress['LEVEL'] = levels.copy()
+        # if self.so_nv1==True:
+        #     v1=np.setdiff1d(np.arange(len(levels)),v0)
+        # else:
+        #     # v1 = np.setdiff1d(np.concatenate(self.mesh.volumes.bridge_adjacencies(v0, 2, 3)), v0)
+        #     pass
+        # levels[v1] = 1
+        # self.data_impress['LEVEL'] = levels.copy()
 
         n1 = 0
         n2 = 0
@@ -78,6 +79,9 @@ class AdmNonNested(AdmMethod):
 
         ids_ms_2 = range(len(np.unique(gids_2)))
 
+        # if pare:
+        #     import pdb; pdb.set_trace()
+
         for vol2 in ids_ms_2:
             #1
             # n_vols_l3 = 0
@@ -115,8 +119,45 @@ class AdmNonNested(AdmMethod):
         for i in range(self.n_levels):
             self.number_vols_in_levels[i] = len(levels[levels==i])
         #
-        self.n1_adm = n1
+        self.n1_adm = n1 
         self.n2_adm = n2
+
+    def equalize_levels(self):
+        levels = self.data_impress['LEVEL'].copy()
+        gid0 = self.data_impress['GID_0']
+        gids_with_level = gid0[levels >= 0]
+
+        for level in range(1, self.n_levels):
+            cids_level = self.data_impress['GID_'+str(level)]
+            all_cids = np.unique(cids_level[levels == level])
+
+            for cid in all_cids:
+                gids_coarse = gid0[cids_level==cid]
+                n0 = gids_coarse.shape[0]
+                gids_coarse_without_level = np.setdiff1d(gids_coarse, gids_with_level)
+                n1 = gids_coarse_without_level.shape[0]
+                if n1 == n0:
+                    continue
+                elif n1 == 0:
+                    continue
+                else:
+                    # n1 < n0:
+                    levels_gids_coarse = levels[gids_coarse]
+                    gids_coarse_with_level = np.setdiff1d(gids_coarse, gids_coarse_without_level)
+                    levels_gids_coarse_with_level = levels[gids_coarse_with_level]
+                    for llevel in np.unique(levels_gids_coarse_with_level):
+                        if llevel == self.n_levels-1:
+                            continue
+                        vols = gids_coarse_with_level[levels_gids_coarse_with_level==llevel]
+                        neig_vols = np.unique(np.concatenate(self.elements_lv0['volumes_face_volumes'][vols]))
+                        levels_neig_vols = levels[neig_vols]
+                        vols_without_level = neig_vols[levels_neig_vols < 0]
+                        n3 = vols_without_level.shape[0]
+                        if n3 > 0:
+                            levels[vols_without_level] = llevel + 1
+
+        levels[levels < 0] = self.n_levels-1
+        self.data_impress['LEVEL'] = levels
 
     def set_saturation_level(self):
 
