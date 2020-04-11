@@ -5,6 +5,8 @@ from packs.directories import data_loaded
 import scipy.sparse as sp
 import numpy as np
 import time
+from pymoab import types
+from scipy.sparse import csc_matrix, find
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 '''
@@ -66,6 +68,17 @@ def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     data_impress['pretransmissibility'] = data_impress['transmissibility'].copy()
     data_impress.export_to_npz()
 
+def plot_operator(OP_AMS, v):
+    vertices = elements_lv0['volumes'][data_impress['DUAL_1']==3]
+    tags_ams = []
+    for i, v in enumerate(vertices):
+        primal_id = data_impress['GID_1'][v]
+        corresp = data_impress['ADM_COARSE_ID_LEVEL_1'][v]
+        tags_ams.append(M.core.mb.tag_get_handle("OP_AMS_"+str(i), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True))
+        fb_ams = OP_AMS[:, primal_id].toarray()
+        # fb_adm = OP_ADM[:, corresp].toarray()
+        M.core.mb.tag_set_data(tags_ams[i], M.core.all_volumes, fb_ams)
+
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 n = data_loaded['n_test']
@@ -108,7 +121,13 @@ adm_method = AdmNonNested(finos, n_levels, M, data_impress, elements_lv0)
 adm_method.set_initial_mesh(mlo, T, b)
 ############################teste#################################
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
-
+##################
+# import pdb; pdb.set_trace()
+# multilevel_operators2 = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
+# # mlo2=multilevel_operators2
+# multilevel_operators2.run_paralel(tpfa_solver['Tini'])
+# OP_AMS2=multilevel_operators2['prolongation_level_1']
+# plot_operator(OP_AMS2,np.arange(OP_AMS2.shape[1]))
 
 T, b = tpfa_solver.run()
 
@@ -134,6 +153,37 @@ if n_levels > 2:
 OP_AMS=mlo['prolongation_level_1']
 OR_AMS=mlo['restriction_level_1']
 Tc=OR_AMS*T*OP_AMS
+Tc2=Tc.copy()
+Tc2.setdiag(0)
+DTc=1/np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
+lines=np.arange(Tc.shape[0])
+dia=csc_matrix((DTc,(lines,lines)),shape=Tc.shape)
+netas=dia*Tc2
+fn=find(netas)
+dn=fn[2]
+nsp=fn[2][dn>0]
+i=fn[1][dn>0]
+j=fn[0][dn>0]
+
+internal_faces=M.faces.internal
+adjs=M.faces.bridge_adjacencies(internal_faces,2,3)
+adjs0=adjs[:,0]
+adjs1=adjs[:,1]
+ii=data_impress['GID_1'][adjs0]
+jj=data_impress['GID_1'][adjs1]
+
+
+for k in range(len(nsp)):
+
+    _non = (ii==i[k]) & (jj==j[k]) | (ii==j[k]) & (jj==i[k])
+    ad0=adjs0[_non]
+    ad1=adjs1[_non]
+    value=nsp[k]
+    setar=np.concatenate([ad0,ad1])
+    data_impress["non_physical_value"][setar]=np.repeat(value,len(setar))
+
+
+# import pdb; pdb.set_trace()
 bc=OR_AMS*b
 from scipy.sparse import linalg
 pc=linalg.spsolve(Tc,bc)

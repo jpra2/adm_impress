@@ -325,13 +325,17 @@ class MultilevelOperators(DataManager):
                         # coefs.append(result.coefs)
 
         t0=time.time()
-        result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound)
+        result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=0, couple_bound=False)
         OP=result.OP
 
-        juntares=np.array([[2,3], [10, 11], [14,15], [34,35], [42, 43], [50,51], [58, 59]])
+        # juntares=np.array([[2,3], [10, 11], [14,15], [34,35], [42, 43], [50,51], [58, 59]])
         # # juntares=np.array([[2], [10], [14], [34], [42], [50], [58]])
-        # juntares=np.array([[2,10,14,34,42,50,58],[3,11,15,35,43,51,59],[2,3], [10, 11], [14,15], [34,35], [42, 43], [50,51], [58, 59]])
-        juntares=np.array([[2,3, 10, 11,34,35, 42, 43, 50,51, 58, 59, 14,15]])
+        juntar=np.array([2,3, 10, 11,34,35, 42, 43, 50,51, 58, 59, 14,15])
+        juntares=np.array([[2,10,14,34,42,50, 58, 14],[3,11,15,35,43,51, 59,15]])
+        juntares=np.array([[2,10,14,34,42,50, 58],[3,11,15,35,43,51, 59]])
+        juntares=np.array([[2,10,34,42,50,58],[3,11,35,43,51,59]])
+        # juntares=np.array([[2,3, 10, 11,34,35, 42, 43, 50,51, 58, 59, 14,15]])
+        # juntares=np.array([[2],[3], [10], [11],[34],[35], [42], [43], [50],[51], [58], [59], [14],[15]])
         dv=[]
         for juntar in juntares:
             todos=np.arange(len(dual_volumes))
