@@ -119,10 +119,11 @@ class AdmNonNested(AdmMethod):
         for i in range(self.n_levels):
             self.number_vols_in_levels[i] = len(levels[levels==i])
         #
-        self.n1_adm = n1 
+        self.n1_adm = n1
         self.n2_adm = n2
 
     def equalize_levels(self):
+
         levels = self.data_impress['LEVEL'].copy()
         gid0 = self.data_impress['GID_0']
         gids_with_level = gid0[levels >= 0]

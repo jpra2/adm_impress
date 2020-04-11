@@ -25,6 +25,7 @@ while verif:
         b1.run()
         cont_for_save += 1
     print(f'\n loop: {b1.loop}\n')
+    
     if cont % n == 0:
         cont = 1
         data_impress.update_variables_to_mesh()

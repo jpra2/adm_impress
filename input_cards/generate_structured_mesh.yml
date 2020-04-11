@@ -1,0 +1,9 @@
+
+# tamanho de cada bloco da malha fina
+block_size: [1.0, 1.0, 1.0]
+
+# tamanho total da malha
+mesh_size: [9.0, 9.0, 9.0]
+
+# nome da malha para salvar
+mesh_name: '9x9x9.h5m'

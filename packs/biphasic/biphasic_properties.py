@@ -1,3 +1,4 @@
+import numpy as np
 
 class biphasicProperties:
 
@@ -12,6 +13,22 @@ class biphasicProperties:
         return locals()
     gama_volumes_average = property(**gama_volumes_average())
 
+    def mobi_w_times_gama_w_internal_faces():
+        doc = "The mobi_w_times_gama_w_internal_faces property."
+        def fget(self):
+            gama_w = self.biphasic_data['gama_w']
+            return self.lambda_w_internal_faces*gama_w
+        return locals()
+    mobi_w_times_gama_w_internal_faces = property(**mobi_w_times_gama_w_internal_faces())
+
+    def mobi_o_times_gama_o_internal_faces():
+        doc = "The mobi_o_times_gama_o_internal_faces property."
+        def fget(self):
+            gama_o = self.biphasic_data['gama_o']
+            return self.lambda_o_internal_faces*gama_o
+        return locals()
+    mobi_o_times_gama_o_internal_faces = property(**mobi_o_times_gama_o_internal_faces())
+
     def lambda_w_internal_faces():
         doc = "The lambda_w_internal_faces property."
         def fget(self):
@@ -24,7 +41,7 @@ class biphasicProperties:
         doc = "The lambda_o_internal_faces property."
         def fget(self):
             # return self.data_impress['lambda_o'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
-            return self.lambda_o_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            return self.lambda_o_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate_o']]]
         return locals()
     lambda_o_internal_faces = property(**lambda_o_internal_faces())
 
@@ -32,7 +49,8 @@ class biphasicProperties:
         doc = "The lambda_t_internal_faces property."
         def fget(self):
             # return self.data_impress['lambda_t'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
-            return self.lambda_t_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            # return self.lambda_t_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            return self.lambda_w_internal_faces + self.lambda_o_internal_faces
         return locals()
     lambda_t_internal_faces = property(**lambda_t_internal_faces())
 
@@ -40,7 +58,8 @@ class biphasicProperties:
         doc = "The fw_internal_faces property."
         def fget(self):
             # return self.data_impress['fw_vol'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
-            return self.fw_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            # return self.fw_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            return self.lambda_w_internal_faces/self.lambda_t_internal_faces
         return locals()
     fw_internal_faces = property(**fw_internal_faces())
 
@@ -71,3 +90,20 @@ class biphasicProperties:
             return self.lambda_w_volumes/self.lambda_t_volumes
         return locals()
     fw_volumes = property(**fw_volumes())
+
+    def flux_w_faces():
+        doc = "The flux_w_faces property."
+        def fget(self):
+            return self.data_impress['flux_w_faces']
+        return locals()
+    flux_w_faces = property(**flux_w_faces())
+
+    def flux_o_faces():
+        doc = "The flux_o_faces property."
+        def fget(self):
+            return np.linalg.norm(self.data_impress['flux_o_faces_vec'], axis=1)
+        return locals()
+    flux_o_faces = property(**flux_o_faces())
+
+    def change_upwind_o(self):
+        self._data['upwind_identificate_o'] = ~self._data['upwind_identificate_o']

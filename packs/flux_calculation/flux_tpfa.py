@@ -53,12 +53,21 @@ class TpfaFlux:
             gama_w = self.biphasic_data['gama_w']
             gama_o = self.biphasic_data['gama_o']
 
+            # import pdb; pdb.set_trace()
+
             # source_term_internal_faces = -1*(zs[v0[:, 1]]*gamma[v0[:, 1]] - zs[v0[:, 0]]*gamma[v0[:, 0]])*t0
             # source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*t0*gama_faces[internal_faces]
-            source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w + lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
+            # source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w + lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
+            gg = zs[v0[:, 1]] - zs[v0[:, 0]]
+            # gg[np.absolute(gg) < 1e-4] = 0
+            # gg = np.rint(gg)
+            # dh_internal_faces[np.absolute(gg) > 0] = 2
+            source_term_internal_faces = -1*(gg)*(lambda_w_internal_faces*gama_w + lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
+            source_term_internal_faces = np.rint(source_term_internal_faces)
             source_term_faces[internal_faces] = source_term_internal_faces
 
-            grav_source_term_water_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
+            # grav_source_term_water_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
+            grav_source_term_water_internal_faces = -1*(gg)*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
             # grav_source_term_water_internal_faces = 1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
 
             lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
