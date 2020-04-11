@@ -6,7 +6,7 @@ import scipy.sparse as sp
 import numpy as np
 import time
 from pymoab import types
-from scipy.sparse import csc_matrix, find
+from scipy.sparse import csc_matrix, find, csgraph
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 '''
@@ -161,9 +161,10 @@ dia=csc_matrix((DTc,(lines,lines)),shape=Tc.shape)
 netas=dia*Tc2
 fn=find(netas)
 dn=fn[2]
-nsp=fn[2][dn>0]
-i=fn[1][dn>0]
-j=fn[0][dn>0]
+neta_lim=1.0
+nsp=fn[2][dn>neta_lim]
+i=fn[1][dn>neta_lim]
+j=fn[0][dn>neta_lim]
 
 internal_faces=M.faces.internal
 adjs=M.faces.bridge_adjacencies(internal_faces,2,3)
@@ -172,9 +173,52 @@ adjs1=adjs[:,1]
 ii=data_impress['GID_1'][adjs0]
 jj=data_impress['GID_1'][adjs1]
 
+dual_structure = M.multilevel_data['dual_structure_level_1']
+dual_volumes = [dd['volumes'] for dd in dual_structure]
+dual_lines = [np.repeat(i,len(dual_structure[i]['volumes'])) for i in range(len(dual_structure))]
+for dvv in range(len(dual_volumes)):
+    data_impress["perm_z"][dual_volumes[dvv]]=dual_lines[dvv]
+dvs=np.concatenate(dual_volumes)
+
+pvs=data_impress['GID_1'][dvs]
+dls=np.concatenate(dual_lines)
+data=np.repeat(1,len(pvs))
+dp=csc_matrix((data,(dls,pvs)),shape=(dls.max()+1, pvs.max()+1))
+dp[dp>1]=1
+
+
+# dp[:,zero_columns]=0
+cds=[]
+for k in range(len(i)):
+    ddp_i=dp[:,i[k]]
+    ddp_j=dp[:,j[k]]
+    ddp=(ddp_i.sum(axis=1)>0) & (ddp_j.sum(axis=1)>0)
+    duais_coup=np.arange(len(ddp))[np.array(ddp).T[0]]
+    if len(duais_coup)==1:
+        duais_coup=np.repeat(duais_coup[0],2)
+    cds.append(duais_coup)
+cds=np.array(cds)
+if len(cds)>0:
+    values=np.unique(np.concatenate(cds))
+    mapd=np.arange(len(dual_volumes))
+    mapd[values]=np.arange(len(values))
+
+    lines=np.concatenate([mapd[cds[:,0]],mapd[cds[:,1]]])
+    cols=np.concatenate([mapd[cds[:,1]],mapd[cds[:,0]]])
+
+    data=np.ones(len(lines))
+    graph=csc_matrix((data,(lines,cols)),shape=(len(values),len(values)))
+
+    n_l,labels=csgraph.connected_components(graph,connection='strong')
+    groups=[]
+    for k in range(n_l):
+        groups.append(values[labels==k])
+
+
+# len(np.arange(len(dual_volumes))[np.array(ddp.sum(axis=1)>2).T[0]])
+# np.arange(len(dual_volumes))[np.array(dp.sum(axis=1)>3).T[0]]
 
 for k in range(len(nsp)):
-
     _non = (ii==i[k]) & (jj==j[k]) | (ii==j[k]) & (jj==i[k])
     ad0=adjs0[_non]
     ad1=adjs1[_non]
