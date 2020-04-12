@@ -12,7 +12,7 @@ names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeab
 
 names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
 
-types_region_data_loaded = ['all', 'box']
+types_region_data_loaded = ['all', 'box', 'ring']
 types_region_for_saturation = ['all', 'wells']
 types_presc = ['dirichlet', 'neumann']
 types_wells = ['injector', 'producer']

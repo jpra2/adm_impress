@@ -78,7 +78,7 @@ class DataManager:
     def __contains__(self, key):
         return key in self._data
 
-    def __del__(self):
+    def __del__(self):        
         del DataManager.all_datas[self.name]
 
 

@@ -253,14 +253,14 @@ class MultilevelOperators(DataManager):
 
         self.export_to_npz()
 
-    def run_paralel(self, T):
+    def run_paralel(self, T,dual_volumes, local_couple, couple_bound):
 
         T_ant = T.copy()  #T(l-1)
 
         for n in range(1, self.n_levels):
             level = n
 
-            OP = self.get_OP_paralel(level)
+            OP = self.get_OP_paralel(level,dual_volumes, local_couple, couple_bound)
             self._data[self.prolongation + str(level)] = OP
             OR = self._data[self.restriction + str(level)]
 
@@ -274,10 +274,10 @@ class MultilevelOperators(DataManager):
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
 
-    def get_OP_paralel(self, level):
-
-        dual_structure = self.ml_data['dual_structure_level_'+str(level)]
-        dual_volumes = [dd['volumes'] for dd in dual_structure]
+    def get_OP_paralel(self, level,dual_volumes, local_couple, couple_bound):
+        #
+        # dual_structure = self.ml_data['dual_structure_level_'+str(level)]
+        # dual_volumes = [dd['volumes'] for dd in dual_structure]
 
         ###################################
         # juntar=np.array([2,3, 10, 11,34,35, 42, 43, 50,51, 58, 59, 14,15])
@@ -299,62 +299,16 @@ class MultilevelOperators(DataManager):
         # ###########################################
         # rr = [np.unique(np.concatenate(dual_volumes[0:3]))]
         # dual_volumes = rr + dual_volumes[3:]
-        import yaml
-        with open('input_cards/partial_decoupling_options.yml', 'r') as f:
-            variables_loaded = yaml.safe_load(f)
-
-        local_couple = variables_loaded['local_couple']
-        couple_bound = variables_loaded['couple_bound']
-        #######################################
-        # lcs=[0, 1, 2]
-        # cbs=[True, False]
+        # import yaml
+        # with open('input_cards/partial_decoupling_options.yml', 'r') as f:
+        #     variables_loaded = yaml.safe_load(f)
         #
-        # nrep=1
-        # coefs=[]
-        # for r in range(nrep):
-        #     for local_couple in lcs:
-        #         for couple_bound in cbs:
-        #             dual_volumes = [dd['volumes'] for dd in dual_structure]
-        #             inds=range(1,len(dual_volumes)-1)
-        #             for i in inds:
-        #                 print(r, local_couple, couple_bound, i,"repetition, local_couple, couple_bound, ncoupled")
-        #                 rr = [np.unique(np.concatenate(dual_volumes[0:i]))]
-        #                 dual_volumes = rr + dual_volumes[i:]
-        #                 result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound)
-        #                 OP=result.OP
-                        # coefs.append(result.coefs)
+        # local_couple = variables_loaded['local_couple']
+        # couple_bound = variables_loaded['couple_bound']
 
         t0=time.time()
-        result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=0, couple_bound=False)
+        result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound)
         OP=result.OP
-
-        # juntares=np.array([[2,3], [10, 11], [14,15], [34,35], [42, 43], [50,51], [58, 59]])
-        # # juntares=np.array([[2], [10], [14], [34], [42], [50], [58]])
-        juntar=np.array([2,3, 10, 11,34,35, 42, 43, 50,51, 58, 59, 14,15])
-        juntares=np.array([[2,10,14,34,42,50, 58, 14],[3,11,15,35,43,51, 59,15]])
-        juntares=np.array([[2,10,14,34,42,50, 58],[3,11,15,35,43,51, 59]])
-        juntares=np.array([[2,10,34,42,50,58],[3,11,35,43,51,59]])
-        juntares=np.array([[ 2,  3, 10, 11, 34, 35, 42, 43, 50, 51, 58, 59]])
-        juntares=np.array([[ 2, 10, 34, 42, 50, 58], [ 3, 11, 35, 43, 51, 59], [16, 17, 24, 25, 36, 37, 44, 45, 52, 53, 61, 63]])
-        # juntares=np.array([[2,3, 10, 11,34,35, 42, 43, 50,51, 58, 59, 14,15]])
-        # juntares=np.array([[2],[3], [10], [11],[34],[35], [42], [43], [50],[51], [58], [59], [14],[15]])
-        dv=[]
-        for juntar in juntares:
-            todos=np.arange(len(dual_volumes))
-            keep_dual=np.setdiff1d(todos,juntar[1:])
-
-            dual_volumes=np.array(dual_volumes)
-            dual_volumes2=dual_volumes[keep_dual]
-
-            new_volume=np.unique(np.hstack(dual_volumes[juntar]))
-            dv.append(new_volume)
-
-
-        result_par = OP_AMS(self.data_impress, self.elements_lv0, dv, local_couple=local_couple, couple_bound=couple_bound)
-        OP_par=result_par.OP
-        lins_par=np.unique(np.concatenate(dv))
-
-        OP[lins_par]=OP_par[lins_par]
 
         diag=np.array(1/OP.sum(axis=1))[:,0]
         l=range(len(diag))
@@ -363,15 +317,4 @@ class MultilevelOperators(DataManager):
         OP=mult*OP
         print("tempo total para cálculo do OP {} segundos".format(time.time()-t0))
 
-        # OP = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound).OP
-        # for dd in dual_volumes:
-        #     try:
-        #         OP += OP_AMS(self.data_impress, self.elements_lv0, dd, local_couple=local_couple, couple_bound=couple_bound).OP
-        #     except:
-        #         OP = OP_AMS(self.data_impress, self.elements_lv0, dd, local_couple=local_couple, couple_bound=couple_bound).OP
-        # diag=np.array(1/OP.sum(axis=1))[:,0]
-        # l=range(len(diag))
-        # c=l
-        # mult=sp.csc_matrix((diag,(l,c)),shape=(len(diag), len(diag)))
-        # OP=mult*OP
         return OP

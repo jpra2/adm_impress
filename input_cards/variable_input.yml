@@ -588,3 +588,10 @@ non_physical_value:
   data type: float
   sparse: True
   level: 0
+
+non_physical_value_post:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
