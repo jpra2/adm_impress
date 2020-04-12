@@ -12,6 +12,7 @@ from ..utils.capillary_pressure import capillaryPressureBiphasic
 from .biphasic_properties import biphasicProperties
 import math
 from ..errors.err import MaxLoopIterationError
+from ..data_class.structured_mesh_properties import StructuredMeshProperties
 
 class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 

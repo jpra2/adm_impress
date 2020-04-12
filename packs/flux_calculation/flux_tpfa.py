@@ -34,20 +34,21 @@ class TpfaFlux:
 
         if self.gravity:
 
-            up_g = np.zeros(len(internal_faces), dtype=int)
+            # up_g = np.zeros(len(internal_faces), dtype=int)
+            up_g = self.up_g
 
-            gamma = self.data_impress['gama']
-            gama_faces = self.data_impress['gama_faces']
+            # gamma = self.data_impress['gama']
+            # gama_faces = self.data_impress['gama_faces']
 
             vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
             v0 = vols_viz_internal_faces
             transmissibility_internal_faces = transmissibility_faces[internal_faces]
             t0 = transmissibility_internal_faces
-            zs = centroids[:, 2]
-            up_g[zs[v0[:, 1]] >= zs[v0[:, 0]]] = v0[zs[v0[:, 1]] >= zs[v0[:, 0]], 1]
-            up_g[zs[v0[:, 1]] < zs[v0[:, 0]]] = v0[zs[v0[:, 1]] < zs[v0[:, 0]], 0]
-            lambda_w_internal_faces = self.data_impress['lambda_w'][up_g]
-            lambda_o_internal_faces = self.data_impress['lambda_o'][up_g]
+            # zs = centroids[:, 2]
+            # up_g[zs[v0[:, 1]] >= zs[v0[:, 0]]] = v0[zs[v0[:, 1]] >= zs[v0[:, 0]], 1]
+            # up_g[zs[v0[:, 1]] < zs[v0[:, 0]]] = v0[zs[v0[:, 1]] < zs[v0[:, 0]], 0]
+            lambda_w_internal_faces = self.lambda_w_volumes[up_g]
+            lambda_o_internal_faces = self.lambda_o_volumes[up_g]
             # lambda_w_internal_faces = self.data_impress['lambda_w'][v0[self._data['upwind_identificate']]]
             # lambda_o_internal_faces = self.data_impress['lambda_o'][v0[self._data['upwind_identificate']]]
             gama_w = self.biphasic_data['gama_w']
@@ -58,16 +59,20 @@ class TpfaFlux:
             # source_term_internal_faces = -1*(zs[v0[:, 1]]*gamma[v0[:, 1]] - zs[v0[:, 0]]*gamma[v0[:, 0]])*t0
             # source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*t0*gama_faces[internal_faces]
             # source_term_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w + lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
-            gg = zs[v0[:, 1]] - zs[v0[:, 0]]
+            # gg = zs[v0[:, 1]] - zs[v0[:, 0]]
+            # gg2 = gg/dh_internal_faces
+            # grad_1 = self.grad_z_internal_faces
+
             # gg[np.absolute(gg) < 1e-4] = 0
             # gg = np.rint(gg)
             # dh_internal_faces[np.absolute(gg) > 0] = 2
-            source_term_internal_faces = -1*(gg)*(lambda_w_internal_faces*gama_w + lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
-            source_term_internal_faces = np.rint(source_term_internal_faces)
+            # source_term_internal_faces = -1*(gg)*(lambda_w_internal_faces*gama_w + lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
+            source_term_internal_faces = -1*(self.grad_z_internal_faces)*(lambda_w_internal_faces*gama_w + lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces
+            # source_term_internal_faces = np.rint(source_term_internal_faces)
             source_term_faces[internal_faces] = source_term_internal_faces
 
             # grav_source_term_water_internal_faces = -1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
-            grav_source_term_water_internal_faces = -1*(gg)*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
+            grav_source_term_water_internal_faces = -1*(self.grad_z_internal_faces)*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces
             # grav_source_term_water_internal_faces = 1*(zs[v0[:, 1]] - zs[v0[:, 0]])*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces/dh_internal_faces
 
             lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
