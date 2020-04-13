@@ -1,6 +1,6 @@
 # mesh_name: mesh/45x45x45.msh
 # mesh_name: mesh/9x3x1.msh
-mesh_name: mesh/isotropic/100x100x1.msh
+mesh_name: mesh/isotropic/99x99x1.msh
 # mesh_name: mesh/27x27x27.msh
 n_test: 0
 state: 0
@@ -50,7 +50,7 @@ Permeability:
     c0: [50,50,0.5]
     r0: 45
     r1: 46
-    value: [0.00001, 0.0, 0.0, 0.0, 0.00001, 0.0, 0.0, 0.0, 0.00001]
+    value: [0.001, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0, 0.001]
 
   r6:
     type: box
@@ -63,7 +63,12 @@ Permeability:
     p0: [60.0, 86.0, 0.0]
     p1: [99.0, 87.0, 1.0]
     value: [100.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 100.0]
-
+  r8:
+    type: ring
+    c0: [50,50,0.5]
+    r0: 0
+    r1: 30
+    value: [0.001, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0, 0.001]
 
 set_porosity: true
 Porosity:

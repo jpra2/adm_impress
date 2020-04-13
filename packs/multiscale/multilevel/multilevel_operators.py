@@ -309,8 +309,10 @@ class MultilevelOperators(DataManager):
         t0=time.time()
         result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound)
         OP=result.OP
-
-        diag=np.array(1/OP.sum(axis=1))[:,0]
+        diag=np.ones(OP.shape[0])
+        sums=np.array(OP.sum(axis=1)).T[0]
+        
+        diag[sums>0]=np.array(1/OP.sum(axis=1)[sums>0])[:,0]
         l=range(len(diag))
         c=l
         mult=sp.csc_matrix((diag,(l,c)),shape=(len(diag), len(diag)))

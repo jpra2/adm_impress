@@ -20,6 +20,7 @@ def get_box(conjunto, all_centroids, limites, return_inds):
 
 class dual_and_primal:
     def __init__(self, subDomain):
+
         M1 = subDomain.M1
         input_dual = subDomain.input_dual_and_primal
         partition = subDomain.partition
@@ -157,7 +158,10 @@ class dual_and_primal:
 
                                 centroid_p1=np.array([M1.mtu.get_average_position([np.uint64(v)]) for v in elem_por_L1])
                                 cx,cy,cz=centroid_p1[:,0],centroid_p1[:,1],centroid_p1[:,2]
-                                posx=(abs(cx-lxd1[a])<=dx0/2)
+                                try:
+                                    posx=(abs(cx-lxd1[a])<=dx0/2)
+                                except:
+                                    import pdb; pdb.set_trace()
                                 posy=(abs(cy-lyd1[b])<=dy0/2)
                                 posz=(abs(cz-lzd1[c])<=dz0/2)
                                 f1a2v3=np.zeros(len(elem_por_L1),dtype=int)
@@ -240,7 +244,7 @@ class paralell_dual_and_primal:
                 ld2 = xd2, lyd2, lzd2
                 sub_partition = SubD(l1,l2,ld1,ld2)
                 subDomains.append(SubDomain(input_dual,sub_partition, M1, w2m[i], i))
-
+            
             procs = [mp.Process(target=dual_and_primal, args=[s]) for s in subDomains]
             tp=time.time()
             for p in procs:

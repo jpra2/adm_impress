@@ -170,6 +170,19 @@ def get_coupled_dual_volumes(mlo, neta_lim=0.0,posterior=False):
     else:
         return []
 
+def get_dual_subdomains(groups):
+    juntares=groups
+    dv=[]
+    for juntar in juntares:
+        todos=np.arange(len(dual_volumes))
+        keep_dual=np.setdiff1d(todos,juntar[1:])
+
+        # dual_volumes = np.array(dual_volumes)
+        dual_volumes2=dual_volumes[keep_dual]
+
+        new_volume=np.unique(np.hstack(dual_volumes[juntar]))
+        dv.append(new_volume)
+    return(dv)
 
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
@@ -199,21 +212,12 @@ else:
     multilevel_operators.run_paralel(tpfa_solver['Tini'],dual_volumes, 0, False)
 
 
-
+neta_lim=1.0
 OP_AMS=mlo['prolongation_level_1'].copy()
 
-groups = get_coupled_dual_volumes(mlo,0.0)
-juntares=groups
-dv=[]
-for juntar in juntares:
-    todos=np.arange(len(dual_volumes))
-    keep_dual=np.setdiff1d(todos,juntar[1:])
+groups = get_coupled_dual_volumes(mlo,neta_lim)
 
-    dual_volumes=np.array(dual_volumes)
-    dual_volumes2=dual_volumes[keep_dual]
-
-    new_volume=np.unique(np.hstack(dual_volumes[juntar]))
-    dv.append(new_volume)
+dv=get_dual_subdomains(groups)
 
 multilevel_operators.run_paralel(tpfa_solver['Tini'],dv,1,False)
 
@@ -224,6 +228,39 @@ lins_par=np.unique(np.concatenate(dv))
 OP_AMS[lins_par]=OP_AMS_groups[lins_par]
 mlo['prolongation_level_1']=OP_AMS
 multilevel_operators=mlo
+#############################
+groups2 = get_coupled_dual_volumes(mlo,neta_lim)
+ngs=[]
+for i in range(len(groups)):
+    ngs.append(np.repeat(i,len(groups[i])))
+    i+=1
+ngs=np.concatenate(ngs)
+gs1=np.concatenate(groups)
+groups_to_2=[]
+for g2 in groups2:
+    gs2=np.repeat(False,len(gs1))
+    for g in g2:
+        gs2=gs2 | gs1==g
+    try:
+        groups_to_2.append(np.concatenate(np.array(groups)[ngs[gs2]]))
+    except:
+        a=1
+
+
+
+dv=get_dual_subdomains(groups_to_2)
+
+multilevel_operators.run_paralel(tpfa_solver['Tini'],dv,1,False)
+
+OP_AMS_groups=mlo['prolongation_level_1']
+
+lins_par=np.unique(np.concatenate(dv))
+
+OP_AMS[lins_par]=OP_AMS_groups[lins_par]
+mlo['prolongation_level_1']=OP_AMS
+multilevel_operators=mlo
+
+
 ###########################################
 perms=np.load("flying/permeability.npy")
 perms_xx=perms[:,0]
