@@ -86,7 +86,6 @@ def get_coupled_dual_volumes(mlo, neta_lim=0.0,posterior=False):
     Tc2=Tc.copy()
     Tc2.setdiag(0)
     DTc=1/np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
-    DTc[DTc>0]=-abs(DTc).max()
     print(" ")
     print(" ")
     print(" ")
@@ -96,6 +95,7 @@ def get_coupled_dual_volumes(mlo, neta_lim=0.0,posterior=False):
     print(" ")
     print(" ")
     print(" ")
+    DTc[DTc>0]=-abs(DTc).max()
     lines=np.arange(Tc.shape[0])
     dia=csc_matrix((DTc,(lines,lines)),shape=Tc.shape)
     netas=dia*Tc2
@@ -149,14 +149,17 @@ def get_coupled_dual_volumes(mlo, neta_lim=0.0,posterior=False):
         duais_coup=np.arange(len(ddp))[np.array(ddp).T[0]]
         if len(duais_coup)==1:
             duais_coup=np.repeat(duais_coup[0],2)
-        cds.append(duais_coup)
+        if len(duais_coup)==2:
+            cds.append(duais_coup)
     cds=np.array(cds)
     if len(cds)>0:
         values=np.unique(np.concatenate(cds))
         mapd=np.arange(len(dual_volumes))
         mapd[values]=np.arange(len(values))
-
-        lines=np.concatenate([mapd[cds[:,0]],mapd[cds[:,1]]])
+        try:
+            lines=np.concatenate([mapd[cds[:,0]],mapd[cds[:,1]]])
+        except:
+            import pdb; pdb.set_trace()
         cols=np.concatenate([mapd[cds[:,1]],mapd[cds[:,0]]])
 
         data=np.ones(len(lines))
@@ -249,16 +252,16 @@ for g2 in groups2:
 
 
 dv=get_dual_subdomains(groups_to_2)
+if len(dv)>0:
+    multilevel_operators.run_paralel(tpfa_solver['Tini'],dv,1,False)
 
-multilevel_operators.run_paralel(tpfa_solver['Tini'],dv,1,False)
+    OP_AMS_groups=mlo['prolongation_level_1']
 
-OP_AMS_groups=mlo['prolongation_level_1']
+    lins_par=np.unique(np.concatenate(dv))
 
-lins_par=np.unique(np.concatenate(dv))
-
-OP_AMS[lins_par]=OP_AMS_groups[lins_par]
-mlo['prolongation_level_1']=OP_AMS
-multilevel_operators=mlo
+    OP_AMS[lins_par]=OP_AMS_groups[lins_par]
+    mlo['prolongation_level_1']=OP_AMS
+    multilevel_operators=mlo
 
 
 ###########################################

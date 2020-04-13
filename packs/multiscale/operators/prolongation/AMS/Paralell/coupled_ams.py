@@ -176,10 +176,12 @@ class OP_local:
 
 class Partitioner:
     def __init__(self,all_subds, nworker, regression_degree):
-
-        estimated_time_by_subd = self.get_estimated_time_by_subd(all_subds,regression_degree)
-        partitioned_subds = self.balance_processes(all_subds, estimated_time_by_subd, nworker=nworker)
-        self.partitioned_subds = partitioned_subds
+        if len(all_subds)>0:
+            estimated_time_by_subd = self.get_estimated_time_by_subd(all_subds,regression_degree)
+            partitioned_subds = self.balance_processes(all_subds, estimated_time_by_subd, nworker=nworker)
+            self.partitioned_subds = partitioned_subds
+        else:
+            self.partitioned_subds=[]
         # A_b_t=np.zeros((1,3))
         # for subd in all_subds:
         #     A_b_t=np.vstack([A_b_t,np.array(subd.A_b_t)])
@@ -196,7 +198,10 @@ class Partitioner:
         n_A = [np.array(subd.ns) for subd in all_subds]
 
         n_b = [subd.ns[0] for subd in all_subds]
-        n_A=np.array(n_A)[:,1:]
+        try:
+            n_A=np.array(n_A)[:,1:]
+        except:
+            import pdb; pdb.set_trace()
         n_b=np.array(n_b)
         if regression_degree==1:
             print("linear")
@@ -251,7 +256,7 @@ class OP_AMS:
 
         lines, cols, data = self.get_OP_paralell(partitioned_subds)
         self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
-        
+
         '''
         # To test bugs on serial, use this###############################
         lines, cols, data = self.get_OP(all_subds, paralell=False)

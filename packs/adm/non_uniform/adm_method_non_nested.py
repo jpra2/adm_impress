@@ -349,7 +349,7 @@ class AdmNonNested(AdmMethod):
         continuar = True
 
 
-        while (pseudo_erro.max()>TOL and n2<Nmax and iterar_mono and continuar) or cont==0:
+        while (pseudo_erro.max()>TOL and n2<Nmax and iterar_mono and continuar) and cont==0:
 
             if cont>0:
                 levels = self.data_impress['LEVEL'].copy()

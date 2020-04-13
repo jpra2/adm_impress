@@ -10,6 +10,8 @@ from ....directories import data_loaded
 from ....errors.err import DualStructureError
 from ....adm.adm_method import get_levelantids_levelids
 from .paralell import create_dual_and_primal
+from packs.multiscale.preprocess.dual_primal.paralell import paralell_dual_and_primal
+
 import time
 
 
@@ -427,6 +429,7 @@ class MultilevelData(DataManager):
         cr2 = direc.data_loaded['Crs']['Cr2']
 
         coord_nodes = M.data['centroid_nodes']
+        cent_volumes = M.data['centroid_volumes']
 
         mb = M.core.mb
         mtu = M.core.mtu
@@ -535,24 +538,29 @@ class MultilevelData(DataManager):
                 self.partition = partition
                 self.M1 = M1
 
-        dual_primal = create_dual_and_primal.paralell_dual_and_primal(SubDomain(input_dual(),partition()),nworker=10,first=True)
-        primal_1=dual_primal.v1
-        primal_2=dual_primal.v2
-        prim1=[]
-        for p2 in primal_1:
-            for p1 in p2:
-                for p0 in p1:
-                    id1=M1.mb.tag_get_data(M1.fine_to_primal1_classic_tag,p0[0],flat=True)
-                    ms=M1.mb.create_meshset()
-                    M1.mb.add_entities(ms,p0)
-                    M1.mb.tag_set_data(M1.primal_id_tag1,ms,id1)
-
-                v2=np.concatenate(p1)
-                id2=M1.mb.tag_get_data(M1.fine_to_primal2_classic_tag,v2[0],flat=True)
-                ms=M1.mb.create_meshset()
-                M1.mb.add_entities(ms,v2)
-                M1.mb.tag_set_data(M1.primal_id_tag2,ms,id2)
-
+        # dual_primal = create_dual_and_primal.paralell_dual_and_primal(SubDomain(input_dual(),partition()),nworker=10,first=True)
+        t0=time.time()
+        print("creating dual mesh")
+        paralell_dual_and_primal.DualPrimal(M1, coord_nodes, cent_volumes, external_vertex_on_boundary=True)
+        print(time.time()-t0,"tempo para criar a dual")
+        #
+        # primal_1=dual_primal.v1
+        # primal_2=dual_primal.v2
+        # prim1=[]
+        # for p2 in primal_1:
+        #     for p1 in p2:
+        #         for p0 in p1:
+        #             id1=M1.mb.tag_get_data(M1.fine_to_primal1_classic_tag,p0[0],flat=True)
+        #             ms=M1.mb.create_meshset()
+        #             M1.mb.add_entities(ms,p0)
+        #             M1.mb.tag_set_data(M1.primal_id_tag1,ms,id1)
+        #
+        #         v2=np.concatenate(p1)
+        #         id2=M1.mb.tag_get_data(M1.fine_to_primal2_classic_tag,v2[0],flat=True)
+        #         ms=M1.mb.create_meshset()
+        #         M1.mb.add_entities(ms,v2)
+        #         M1.mb.tag_set_data(M1.primal_id_tag2,ms,id2)
+        #
 
     def get_elements(self, M):
         assert not self._loaded
@@ -771,7 +779,8 @@ class MultilevelData(DataManager):
             faces_boundary = mb.get_entities_by_handle(faces_boundary)
             faces_boundary = np.array([d_faces[k] for k in faces_boundary])
             self._data[self.faces_boundary_meshset_level + str(i+1)] = faces_boundary
-            self._data[self.neig_intersect_faces+str(level)] = M.faces.bridge_adjacencies(faces_boundary, 2, 3)
+            if len(faces_boundary)>0:
+                self._data[self.neig_intersect_faces+str(level)] = M.faces.bridge_adjacencies(faces_boundary, 2, 3)
 
 
             coarse_faces = []
