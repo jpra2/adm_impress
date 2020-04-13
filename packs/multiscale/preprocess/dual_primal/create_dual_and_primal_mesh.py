@@ -9,7 +9,7 @@ import scipy.sparse as sp
 from ....directories import data_loaded
 from ....errors.err import DualStructureError
 from ....adm.adm_method import get_levelantids_levelids
-from .paralell import create_dual_and_primal
+
 from packs.multiscale.preprocess.dual_primal.paralell import paralell_dual_and_primal
 
 import time
@@ -404,163 +404,15 @@ class MultilevelData(DataManager):
         M1.fine_to_primal2_classic_tag=self.tags["FINE_TO_PRIMAL_CLASSIC_2"]
         M1.D1_tag=self.tags["D1"]
         M1.D2_tag=self.tags["D2"]
-        def get_hs(M, coord_nodes):
-
-            unis = np.array([np.array([1, 0, 0]), np.array([0, 1, 0]), np.array([0, 0, 1])])
-            nos0 = M.volumes.bridge_adjacencies(0, 2, 0)[0]
-            n0 = coord_nodes[nos0[0]]
-            hs = np.zeros(3)
-
-            for i in range(1, len(nos0)):
-                n1 = coord_nodes[nos0[i]]
-                v = n0 - n1
-                norma = np.linalg.norm(v)
-                uni = np.absolute(v / norma)
-                if np.allclose(uni, unis[0]):
-                    hs[0] = norma
-                elif np.allclose(uni, unis[1]):
-                    hs[1] = norma
-                elif np.allclose(uni, unis[2]):
-                    hs[2] = norma
-
-            return hs
-
-        cr1 = direc.data_loaded['Crs']['Cr1']
-        cr2 = direc.data_loaded['Crs']['Cr2']
 
         coord_nodes = M.data['centroid_nodes']
         cent_volumes = M.data['centroid_volumes']
 
-        mb = M.core.mb
-        mtu = M.core.mtu
-
-        Lx, Ly, Lz = coord_nodes.max(axis=0)
-        xmin, ymin, zmin = coord_nodes.min(axis=0)
-        xmax, ymax, zmax = Lx, Ly, Lz
-
-        # lx, ly, lz = get_hs(M, coord_nodes)
-        lx, ly, lz = M.data['hs'][0]
-
-        dx0 = lx
-        dy0 = ly
-        dz0 = lz
-
-        nx = int(round(Lx / lx))
-        ny = int(round(Ly / ly))
-        nz = int(round(Lz / lz))
-
-        l1 = [cr1[0] * lx, cr1[1] * ly, cr1[2] * lz]
-        l2 = [cr2[0] * lx, cr2[1] * ly, cr2[2] * lz]
-
-        x1 = nx * lx
-        y1 = ny * ly
-        z1 = nz * lz
-
-        L2_meshset = mb.create_meshset()
-        mb.tag_set_data(self.tags['L2_MESHSET'], M.core.root_set, L2_meshset)
-
-        lx2, ly2, lz2 = [], [], []
-        # O valor 0.01 é adicionado para corrigir erros de ponto flutuante
-        for i in range(int(round(Lx / l2[0]))):    lx2.append(xmin + i * l2[0])
-        for i in range(int(round(Ly / l2[1]))):    ly2.append(ymin + i * l2[1])
-        for i in range(int(round(Lz / l2[2]))):    lz2.append(zmin + i * l2[2])
-        lx2.append(Lx)
-        ly2.append(Ly)
-        lz2.append(Lz)
-
-        lx1, ly1, lz1 = [], [], []
-        for i in range(int(round(l2[0] / l1[0]))):   lx1.append(i * l1[0])
-        for i in range(int(round(l2[1] / l1[1]))):   ly1.append(i * l1[1])
-        for i in range(int(round(l2[2] / l1[2]))):   lz1.append(i * l1[2])
-
-        D_x = max(Lx - int(round(Lx / l1[0])) * l1[0], Lx - int(round(Lx / l2[0])) * l2[0])
-        D_y = max(Ly - int(round(Ly / l1[1])) * l1[1], Ly - int(round(Ly / l2[1])) * l2[1])
-        D_z = max(Lz - int(round(Lz / l1[2])) * l1[2], Lz - int(round(Lz / l2[2])) * l2[2])
-        nD_x = int((D_x + 0.001) / l1[0])
-        nD_y = int((D_y + 0.001) / l1[1])
-        nD_z = int((D_z + 0.001) / l1[2])
-
-        lxd1 = [xmin + dx0 / 100]
-        for i in range(int(round(Lx / l1[0])) - 2 - nD_x):
-            lxd1.append(l1[0] / 2 + (i + 1) * l1[0])
-        lxd1.append(xmin + Lx - dx0 / 100)
-
-        lyd1 = [ymin + dy0 / 100]
-        for i in range(int(round(Ly / l1[1])) - 2 - nD_y):
-            lyd1.append(l1[1] / 2 + (i + 1) * l1[1])
-        lyd1.append(ymin + Ly - dy0 / 100)
-
-        lzd1 = [zmin + dz0 / 100]
-
-        for i in range(int(round(Lz / l1[2])) - 2 - nD_z):
-            lzd1.append(l1[2] / 2 + (i + 1) * l1[2])
-        lzd1.append(xmin + Lz - dz0 / 100)
-
-        # print("definiu planos do nível 1")
-        lxd2 = [lxd1[0]]
-        for i in range(1, int(len(lxd1) * l1[0] / l2[0]) - 1):
-            lxd2.append(lxd1[int(i * l2[0] / l1[0] + 0.0001) + 1])
-        lxd2.append(lxd1[-1])
-
-        lyd2 = [lyd1[0]]
-        for i in range(1, int(len(lyd1) * l1[1] / l2[1]) - 1):
-            lyd2.append(lyd1[int(i * l2[1] / l1[1] + 0.00001) + 1])
-        lyd2.append(lyd1[-1])
-
-        lzd2 = [lzd1[0]]
-        for i in range(1, int(len(lzd1) * l1[2] / l2[2]) - 1):
-            lzd2.append(lzd1[int(i * l2[2] / l1[2] + 0.00001) + 1])
-        lzd2.append(lzd1[-1])
-
-        D_x=max(Lx-int(Lx/l1[0])*l1[0],Lx-int(Lx/l2[0])*l2[0])
-        D_y=max(Ly-int(Ly/l1[1])*l1[1],Ly-int(Ly/l2[1])*l2[1])
-        D_z=max(Lz-int(Lz/l1[2])*l1[2],Lz-int(Lz/l2[2])*l2[2])
-        class input_dual():
-            def __init__(self):
-                self.l = l1, l2
-                self.L = Lx, Ly, Lz
-                self.d0 = dx0, dy0, dz0
-                self.ncs = 0, 0
-                self.lims = xmin, xmax, ymin, ymax, zmin, zmax
-                self.meshsets = L2_meshset
-                self.D = D_x, D_y, D_z
-
-        class partition():
-            def __init__(self):
-                self.l1 = lx1, ly1, lz1
-                self.ld1 = lxd1, lyd1, lzd1
-                self.l2 = lx2, ly2, lz2
-                self.ld2 = lxd2, lyd2, lzd2
-
-        class SubDomain(input_dual, partition):
-            def __init__(self, input_dual, partition):
-                self.input_dual_and_primal = input_dual
-                self.partition = partition
-                self.M1 = M1
-
-        # dual_primal = create_dual_and_primal.paralell_dual_and_primal(SubDomain(input_dual(),partition()),nworker=10,first=True)
         t0=time.time()
         print("creating dual mesh")
         paralell_dual_and_primal.DualPrimal(M1, coord_nodes, cent_volumes, external_vertex_on_boundary=True)
         print(time.time()-t0,"tempo para criar a dual")
-        #
-        # primal_1=dual_primal.v1
-        # primal_2=dual_primal.v2
-        # prim1=[]
-        # for p2 in primal_1:
-        #     for p1 in p2:
-        #         for p0 in p1:
-        #             id1=M1.mb.tag_get_data(M1.fine_to_primal1_classic_tag,p0[0],flat=True)
-        #             ms=M1.mb.create_meshset()
-        #             M1.mb.add_entities(ms,p0)
-        #             M1.mb.tag_set_data(M1.primal_id_tag1,ms,id1)
-        #
-        #         v2=np.concatenate(p1)
-        #         id2=M1.mb.tag_get_data(M1.fine_to_primal2_classic_tag,v2[0],flat=True)
-        #         ms=M1.mb.create_meshset()
-        #         M1.mb.add_entities(ms,v2)
-        #         M1.mb.tag_set_data(M1.primal_id_tag2,ms,id2)
-        #
+
 
     def get_elements(self, M):
         assert not self._loaded
