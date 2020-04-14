@@ -201,6 +201,9 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         # flux_w_faces = fw_faces*total_flux_faces
         # flux_w_internal_faces2 = flux_w_faces[internal_faces]
         flux_w_internal_faces = -((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*self.lambda_w_internal_faces/dh_internal_faces - self._data['grav_source_term_water_faces'][internal_faces])
+        f1 = flux_w_internal_faces
+        f2 = self.flux_w_internal_faces
+        flux_w_internal_faces = -((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*self.lambda_w_internal_faces/dh_internal_faces - self._data['grav_source_term_water_faces'][internal_faces])
 
         self.data_impress['flux_press_w_faces_vec'][internal_faces] = (-((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*self.lambda_w_internal_faces/dh_internal_faces)).reshape(len(internal_faces), 1)*u_normal_internal_faces
 
@@ -563,8 +566,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self.data_impress['pressure'] = p
         self.get_flux_faces_and_volumes()
         self.test_flux_volumes(self['Tini'], p, self.data_impress['flux_grav_volumes'], -self.data_impress['flux_volumes'])
-
-        import pdb; pdb.set_trace()
         self.run_2(save = save)
         # return T, b
 
