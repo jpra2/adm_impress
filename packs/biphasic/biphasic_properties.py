@@ -101,6 +101,55 @@ class biphasicProperties(StructuredMeshProperties):
         return locals()
     flux_press_o_internal_faces = property(**flux_press_o_internal_faces())
 
+    def flux_grav_w_faces():
+        doc = "The flux_grav_w_faces property."
+        def fget(self):
+            flux_grav_w_faces = np.zeros(len(self.elements_lv0['faces']))
+            if self.gravity:
+                pass
+            else:
+                return flux_grav_w_faces
+            internal_faces = self.elements_lv0['internal_faces']
+            areas_internal_faces = self.data_impress['area'][internal_faces]
+            k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
+            up_g = self.up_g
+            lambda_w_internal_faces = self.lambda_w_volumes[up_g]
+            gama_w = self.biphasic_data['gama_w']
+
+            flux_grav_w_internal_faces = -1*(self.grad_z_internal_faces)*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces
+            flux_grav_w_faces[internal_faces] = flux_grav_w_internal_faces
+            return flux_grav_w_faces
+        return locals()
+    flux_grav_w_faces = property(**flux_grav_w_faces())
+
+    def flux_grav_o_faces():
+        doc = "The flux_grav_o_faces property."
+        def fget(self):
+            flux_grav_o_faces = np.zeros(len(self.elements_lv0['faces']))
+            if self.gravity:
+                pass
+            else:
+                return flux_grav_o_faces
+            internal_faces = self.elements_lv0['internal_faces']
+            areas_internal_faces = self.data_impress['area'][internal_faces]
+            k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
+            up_g = self.up_g
+            lambda_o_internal_faces = self.lambda_o_volumes[up_g]
+            gama_o = self.biphasic_data['gama_o']
+
+            flux_grav_o_internal_faces = -1*(self.grad_z_internal_faces)*(lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces
+            flux_grav_o_faces[internal_faces] = flux_grav_o_internal_faces
+            return flux_grav_o_faces
+        return locals()
+    flux_grav_o_faces = property(**flux_grav_o_faces())
+
+    def flux_grav_total_faces():
+        doc = "The flux_grav_total_faces property."
+        def fget(self):
+            return self.flux_grav_w_faces + self.flux_grav_o_faces
+        return locals()
+    flux_grav_total_faces = property(**flux_grav_total_faces())
+
     def flux_grav_w_internal_faces():
         doc = "The flux_grav_w_internal_faces property."
         def fget(self):

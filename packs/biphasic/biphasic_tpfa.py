@@ -8,13 +8,13 @@ from .. import directories as direc
 import numpy as np
 import scipy.sparse as sp
 import time
-from ..utils.capillary_pressure import capillaryPressureBiphasic
 from .biphasic_properties import biphasicProperties
 import math
 from ..errors.err import MaxLoopIterationError
 from ..data_class.structured_mesh_properties import StructuredMeshProperties
+from .tests_general import testsGeneral
 
-class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
+class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral):
 
     def __init__(self, M, data_impress, elements_lv0, wells, data_name: str='BiphasicTpfa.npz'):
         load = data_loaded['load_biphasic_data']
@@ -34,7 +34,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         self.mesh = M
         self.solver = SolverSp()
         # self.solver = solverTril()
-        # self.capillary_model = capillaryPressureBiphasic()
 
         if not load:
             self.loop = 0
@@ -560,8 +559,12 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         # self.update_gama()
         T, b = self.get_T_and_b()
         p = self.solver.direct_solver(T, b)
+        self.test_rhs_term(T, b, p)
         self.data_impress['pressure'] = p
         self.get_flux_faces_and_volumes()
+        self.test_flux_volumes(self['Tini'], p, self.data_impress['flux_grav_volumes'], -self.data_impress['flux_volumes'])
+
+        import pdb; pdb.set_trace()
         self.run_2(save = save)
         # return T, b
 

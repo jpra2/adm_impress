@@ -45,14 +45,48 @@ class StructuredMeshProperties:
         return locals()
     grad_p_internal_faces = property(**grad_p_internal_faces())
 
+    def rmap_internal_faces():
+        doc = "The rmap_internal_faces property."
+        def fget(self, value):
+            resp = self.elements_lv0['remaped_internal_faces'][value]
+            if isinstance(value, int):
+                if set([-1]) & set([resp]):
+                    raise ValueError(f'{value} is not an internal face')
+            elif set([-1]) & set(resp):
+                raise ValueError(f'the entry may be an array of internal faces only')
+            return resp
+        return locals()
+    rmap_internal_faces = property(**rmap_internal_faces())
+
     def up_g():
-        doc = "The up_g property. Upwind de gravidade"
+        doc = "The up_g property."
         def fget(self):
-            internal_faces = self.elements_lv0['internal_faces']
-            v0 = self.elements_lv0['neig_internal_faces']
-            up_g = np.zeros(len(internal_faces), dtype=int)
-            up_g[self.delta_z_internal_faces >= 0] = v0[self.delta_z_internal_faces >= 0, 1]
-            up_g[self.delta_z_internal_faces < 0] = v0[self.delta_z_internal_faces < 0, 0]
-            return up_g
+            try:
+                if self._verificate_up_g:
+                    return self._up_g
+                else:
+                    internal_faces = self.elements_lv0['internal_faces']
+                    v0 = self.elements_lv0['neig_internal_faces']
+                    up_g = np.zeros(len(internal_faces), dtype=int)
+                    delta_z_internal_faces = self.delta_z_internal_faces
+                    up1 = delta_z_internal_faces >= 0
+                    up0 = delta_z_internal_faces < 0
+                    up_g[up1] = v0[up1, 1]
+                    up_g[up0] = v0[up0, 0]
+                    self._up_g = up_g
+                    self._verificate_up_g = True
+                    return self._up_g
+            except AttributeError:
+                internal_faces = self.elements_lv0['internal_faces']
+                v0 = self.elements_lv0['neig_internal_faces']
+                up_g = np.zeros(len(internal_faces), dtype=int)
+                delta_z_internal_faces = self.delta_z_internal_faces
+                up1 = delta_z_internal_faces >= 0
+                up0 = delta_z_internal_faces < 0
+                up_g[up1] = v0[up1, 1]
+                up_g[up0] = v0[up0, 0]
+                self._up_g = up_g
+                self._verificate_up_g = True
+                return self._up_g
         return locals()
     up_g = property(**up_g())
