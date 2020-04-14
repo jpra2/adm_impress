@@ -4,7 +4,7 @@ from packs.compositional.stability_check import StabilityCheck
 import numpy as np
 import os
 
-dd = InfoManager('input_cards/inputs_compositional.yml', 'input_cards/inputs0.yml')
+dd = InfoManager('input_cards/inputs_compositional_monophasic.yml', 'input_cards/inputs0.yml')
 dd2 = InfoManager('input_cards/variable_inputs_compositional.yml','input_cards/variable_input.yml')
 dd['load_data'] = True
 dd.save_obj()
@@ -20,31 +20,42 @@ if dd['deletar_results']:
             os.remove(os.path.join(results, f))
 
 def inputs_overall_properties(data_loaded):
-    z = np.array(data_loaded['compositional_data']['component_data']['z']).astype(float)
     T = np.array(data_loaded['Temperature']['r1']['value']).astype(float)
     P = np.array(data_loaded['Pressure']['r1']['value']).astype(float)
-    Nc = len(z)
-    R = np.array(data_loaded['compositional_data']['component_data']['R']).astype(float)
-    return z, P, T, R, Nc
+    return P,T
+
 
 class ComponentProperties:
     def __init__(self, data_loaded):
-        self.w = np.array(data_loaded['compositional_data']['component_data']['w']).astype(float)
-        self.Bin = np.array(data_loaded['compositional_data']['component_data']['Bin']).astype(float)
-        self.Tc = np.array(data_loaded['compositional_data']['component_data']['Tc']).astype(float)
-        self.Pc = np.array(data_loaded['compositional_data']['component_data']['Pc']).astype(float)
-        self.vc = np.array(data_loaded['compositional_data']['component_data']['vc']).astype(float)
-        self.Mw = np.array(data_loaded['compositional_data']['component_data']['Mw']).astype(float)
-        self.C7 = np.array(data_loaded['compositional_data']['component_data']['C7']).astype(float)
-        self.SG = np.array(data_loaded['compositional_data']['component_data']['SG']).astype(float)
+        self.load_k = data_loaded['hidrocarbon_components']
+        self.load_w = data_loaded['water_component']
+        self.n_phases = 2 * self.load_k + 1 * self.load_w
+
+        if self.load_k:
+            self.w = np.array(data_loaded['compositional_data']['component_data']['w']).astype(float)
+            self.Bin = np.array(data_loaded['compositional_data']['component_data']['Bin']).astype(float)
+            self.Tc = np.array(data_loaded['compositional_data']['component_data']['Tc']).astype(float)
+            self.Pc = np.array(data_loaded['compositional_data']['component_data']['Pc']).astype(float)
+            self.vc = np.array(data_loaded['compositional_data']['component_data']['vc']).astype(float)
+            self.Mw = np.array(data_loaded['compositional_data']['component_data']['Mw']).astype(float)
+            self.C7 = np.array(data_loaded['compositional_data']['component_data']['C7']).astype(float)
+            self.SG = np.array(data_loaded['compositional_data']['component_data']['SG']).astype(float)
+            self.R = np.array(data_loaded['compositional_data']['component_data']['R']).astype(float)
+            self.z = np.array(data_loaded['compositional_data']['component_data']['z']).astype(float)
+            self.Nc = len(self.z)
+        else: self.Nc = 0; self.z = []
+        self.n_components = self.Nc + 1 * self.load_w
 
 class FluidProperties:
-    def __init__(self, fprop_block, data_loaded, n_volumes):
-        self.run_inputs(fprop_block, data_loaded, n_volumes)
+    def __init__(self, kprop):
+        self.z = kprop.z
 
-    def run_inputs(self, fprop_block, data_loaded, n_volumes):
+    def run_inputs_k(self, fprop_block, kprop, n_volumes):
+        self.inputs_all_volumes_k(fprop_block, kprop, n_volumes)
+
+    def run_inputs_w(self, T, P, data_loaded, n_volumes):
+        self.inputs_all_volumes(T, P, n_volumes)
         self.inputs_water_properties(data_loaded, n_volumes)
-        self.inputs_all_volumes(fprop_block, n_volumes)
 
     def inputs_water_properties(self, data_loaded, n_volumes):
         self.rho_W = data_loaded['compositional_data']['water_data']['rho_W'] * np.ones(n_volumes)
@@ -53,14 +64,17 @@ class FluidProperties:
         self.ksi_W = self.ksi_W0
         #self.Sw = data_loaded['Saturation']['r1']['value'] * np.ones(n_volumes)
 
-    def inputs_all_volumes(self, fprop_block, n_volumes):
+    def inputs_all_volumes(self, T, P, n_volumes):
+        self.T = T
+        self.P = P * np.ones(n_volumes)
+
+    def inputs_all_volumes_k(self, fprop_block, kprop, n_volumes):
         self.T = fprop_block.T
         self.R = fprop_block.R
         self.P = fprop_block.P * np.ones(n_volumes)
-        self.Nc = len(fprop_block.z)
-        self.z = fprop_block.z * np.ones([fprop_block.Nc, n_volumes])
-        self.x = fprop_block.x * np.ones([fprop_block.Nc, n_volumes])
-        self.y = fprop_block.y * np.ones([fprop_block.Nc, n_volumes])
+        self.z = fprop_block.z * np.ones([kprop.Nc, n_volumes])
+        self.x = fprop_block.x * np.ones([kprop.Nc, n_volumes])
+        self.y = fprop_block.y * np.ones([kprop.Nc, n_volumes])
         self.L = fprop_block.L * np.ones(n_volumes)
         self.V = fprop_block.V * np.ones(n_volumes)
         self.Mw_L = fprop_block.Mw_L * np.ones(n_volumes)

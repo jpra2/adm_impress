@@ -85,7 +85,7 @@ class Wells(DataManager):
             type_region = well['type_region']
             tipo = well['type']
             prescription = well['prescription']
-            value = well['value']
+            value = np.array(well['value']).astype(float)
 
             if type_region == direc.types_region_data_loaded[1]: #box
 

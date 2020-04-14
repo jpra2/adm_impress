@@ -11,18 +11,23 @@ class StabilityCheck:
     """Check for stability of a thermodynamic equilibrium and returns the
     equilibrium phase compositions (perform the flash calculation)."""
 
-    def __init__(self, z, P, T, R, Nc, kprop):
+    def __init__(self, P, T, kprop):
         self.T = T
         self.P = P
-        self.R = R
-        self.Nc = Nc
         # self.run(z, kprop)
         #StabilityCheck.TPD(self)
 
     def run(self, z, kprop):
-
+        #if all(z==0):
+        #    self.x = np.zeros(kprop.Nc); self.y = np.zeros(kprop.Nc); self.L = 0.; self.V = 0.; self.K = 1.;
+        #    self.Mw_L = 0; self.Mw_V = 0.; self.rho_L = 0.; self.rho_V = 0; self.ksi_L = 0; self.ksi_V = 0
+        #    self.z = np.zeros(kprop.Nc)
+        self.R = kprop.R
         self.equilibrium_ratio_Wilson(kprop)
 
+        #if sum(z < 0):
+        #    self.x = np.zeros(kprop.Nc); self.y = np.zeros(kprop.Nc); self.L = -1; self.V = -1
+        #else:
         if any(z <= 0):
             self.molar_properties(kprop, z)
         else:
@@ -39,9 +44,11 @@ class StabilityCheck:
                 self.fl = np.exp(lnphil) * (self.x * self.P)
                 self.K = self.y/self.x
 
+
         self.z = self.x * self.L + self.y * self.V
         self.Mw_L, self.ksi_L, self.rho_L = self.other_properties(kprop, self.x, 1)
         self.Mw_V, self.ksi_V, self.rho_V = self.other_properties(kprop, self.y, 0)
+
         #if self.V == 0: self.ksi_V = self.V * self.ksi_V; self.rho_V = self.V * self.ksi_V
 
     def equilibrium_ratio_Wilson(self, kprop):
@@ -57,18 +64,17 @@ class StabilityCheck:
             PR_kC7[3] * kprop.w ** 3) * kprop.C7 + (PR_k[0] + PR_k[1] * kprop.w - \
             PR_k[2] * kprop.w ** 2) * (1 - kprop.C7)
         alpha = (1 + k * (1 - (self.T / kprop.Tc) ** (1 / 2))) ** 2
-        aalpha_i = 0.45724 * (self.R * kprop.Tc) ** 2 / kprop.Pc * alpha
-        self.b = 0.07780 * self.R * kprop.Tc / kprop.Pc
-        aalpha_i_reshape = np.ones((self.Nc,self.Nc)) * aalpha_i[:,np.newaxis]
+        aalpha_i = 0.45724 * (kprop.R* kprop.Tc) ** 2 / kprop.Pc * alpha
+        self.b = 0.07780 * kprop.R* kprop.Tc / kprop.Pc
+        aalpha_i_reshape = np.ones((kprop.Nc,kprop.Nc)) * aalpha_i[:,np.newaxis]
         aalpha_ij = np.sqrt(aalpha_i_reshape.T * aalpha_i[:,np.newaxis]) \
                         * (1 - kprop.Bin)
         self.bm = sum(l * self.b)
-        B = self.bm * self.P / (self.R * self.T)
+        B = self.bm * self.P / (kprop.R* self.T)
         l_reshape = np.ones((aalpha_ij).shape) * l[:, np.newaxis]
         self.aalpha = (l_reshape.T * l[:,np.newaxis] * aalpha_ij).sum()
-        A = self.aalpha * self.P / (self.R * self.T) ** 2
+        A = self.aalpha * self.P / (kprop.R* self.T) ** 2
         self.psi = (l_reshape * aalpha_ij).sum(axis = 0)
-
         return A, B
 
 
@@ -138,7 +144,7 @@ class StabilityCheck:
 
     def molar_properties(self, kprop, z):
         self.fv = 2 * np.ones(len(z)); self.fl = np.ones(len(z)) #entrar no primeiro loop
-        if self.Nc <= 2: self.molar_properties_Whitson(kprop, z)
+        if kprop.Nc<= 2: self.molar_properties_Whitson(kprop, z)
         else: self.molar_properties_Yinghui(kprop, z)
 
     def deltaG_molar(self, kprop, l, ph):
@@ -199,7 +205,7 @@ class StabilityCheck:
         zi = np.delete(zi, indexNc)
 
         #starting x
-        # self.x = np.zeros(self.Nc)
+        # self.x = np.zeros(kprop.Nc)
 
         """ Solution """
         if z1 != 0:
@@ -219,7 +225,7 @@ class StabilityCheck:
 
     def molar_properties_Yinghui(self, kprop, z):
         #razao = fl/fv -> an arbitrary vector to enter in the iterative mode
-        razao = np.ones(self.Nc)/2
+        razao = np.ones(kprop.Nc)/2
         while max(abs(razao - 1)) > 1e-9:
             self.Yinghui_method(z)
             lnphil = self.lnphi_based_on_deltaG(kprop, self.x, 1)
@@ -255,7 +261,7 @@ class StabilityCheck:
         self.y = self.K * self.x
 
     def molar_properties_Whitson(self, kprop, z):
-        razao = np.ones(self.Nc)/2
+        razao = np.ones(kprop.Nc)/2
         while max(abs(self.fv / self.fl - 1)) > 1e-9:
             self.solve_objective_function_Whitson(z)
             lnphil = self.lnphi_based_on_deltaG(kprop, self.x, 1)
@@ -271,7 +277,7 @@ class StabilityCheck:
         A, B = self.coefficientsPR(kprop, l)
         ph = self.deltaG_molar(kprop, l, ph)
         Z = StabilityCheck.Z_PR(B, A, ph)
-        ksi_phase = self.P / (Z * self.R * self.T)
+        ksi_phase = self.P / (Z * kprop.R* self.T)
         Mw_phase = sum(l * kprop.Mw)
         rho_phase = ksi_phase * sum(l * kprop.Mw)
         # se precisar retornar mais coisa, entra aqui
@@ -294,9 +300,9 @@ class StabilityCheck:
             lnphiz = self.lnphi(z, 1) #original phase
 
             #x = np.array([1-t[i],t[i]]) #new phase composition (1-t e t) - apenas válido para Nc=2 acredito eu.
-            for k in range(0, self.Nc - 1):
-                x[k] = (1 - t[i]) / (self.Nc - 1)
-                x[self.Nc - 1] = t[i]
+            for k in range(0, kprop.Nc- 1):
+                x[k] = (1 - t[i]) / (kprop.Nc- 1)
+                x[kprop.Nc- 1] = t[i]
 
             '''O modo que x varia implica no formato de TPD. No presente exemplo,
             a fração molar do segundo componente de x varia direto com t, que é a
@@ -306,7 +312,7 @@ class StabilityCheck:
             for j in range(0,self.Nc):
                 fix = math.exp(lnphix[j]) * x[j] * self.P
                 fiz = math.exp(lnphiz[j]) * z[j] * self.P
-                aux = aux + x[j] * self.R * self.T * (math.log(fix / fiz))
+                aux = aux + x[j] * kprop.R* self.T * (math.log(fix / fiz))
                 TPD[i] = aux
 
         plt.figure(0)

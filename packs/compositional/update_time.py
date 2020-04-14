@@ -10,22 +10,30 @@ class delta_time:
         self.component_mole_numbers = fprop.component_mole_numbers
         #the initialization of this class is made in a different time step evaluation
 
-    def update_CFL(deltaT, fprop):
+    def update_CFL(delta_t, fprop):
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
-        CFL = np.nanmax(deltaT * fprop.component_flux_vols_total[fprop.component_mole_numbers!=0] /
-        fprop.component_mole_numbers[fprop.component_mole_numbers!=0])
-        if (CFL > 1): deltaT = deltaT / 2
-
-        #deltaTcfl = np.nanmin(CFL * (fprop.component_mole_numbers / fprop.Vbulk) / fprop.component_flux_vols_total, axis = 1) #make nan
+        CFL = delta_t * 1 / (np.nanmin(fprop.component_mole_numbers /
+                   abs(fprop.component_flux_vols_total)))
+        if (CFL > 1): delta_t = delta_t / 2
+        print('cfl: ', CFL)
+        #delta_tcfl = np.nanmin(CFL * (fprop.component_mole_numbers) / fprop.component_flux_vols_total, axis = 1) #make nan
         np.seterr(**old_settings)
-        return deltaT
+        return delta_t
 
-    def update_deltaTp(self, deltaT, fprop, deltaPlim):
+    def update_delta_tcfl(self, delta_t, fprop):
+         CFL = 0.5
+         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
+         delta_tcfl = CFL * np.nanmin(fprop.component_mole_numbers /
+                    abs(fprop.component_flux_vols_total)) #make nan
+         np.seterr(**old_settings)
+         return delta_tcfl
+
+    def update_delta_tp(self, delta_t, fprop, deltaPlim):
         deltaPmax = max(np.abs(fprop.P - self.P) / fprop.P)
-        deltaTp = deltaT * deltaPlim / deltaPmax
-        return deltaTp
+        delta_tp = delta_t * deltaPlim / deltaPmax
+        return delta_tp
 
-    def update_deltaTs(self, deltaT, fprop, deltaSlim):
+    def update_delta_ts(self, delta_t, fprop, deltaSlim):
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
         deltaSo = np.abs(fprop.So - self.So) / fprop.So
         deltaSg = np.abs(fprop.Sg - self.Sg) / fprop.Sg
@@ -35,36 +43,37 @@ class delta_time:
         deltaSmax = np.nanmax(deltasS)
         np.seterr(**old_settings)
 
-        deltaTs = deltaT * deltaSlim / deltaSmax
-        return deltaTs
+        delta_ts = delta_t * deltaSlim / deltaSmax
+        return delta_ts
 
-    def update_deltaTn(self, deltaT, fprop, deltaNlim):
+    def update_delta_tn(self, delta_t, fprop, deltaNlim):
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
         deltaNmax = max(np.nanmax(np.abs(fprop.component_mole_numbers - self.component_mole_numbers)
                         / fprop.component_mole_numbers, axis =1))
         np.seterr(**old_settings)
-        deltaTn = deltaT * deltaNlim / deltaNmax
-        return deltaTn
+        delta_tn = delta_t * deltaNlim / deltaNmax
 
-    def update_deltaTv(self, deltaT, fprop, deltaVlim):
+        return delta_tn
+
+    def update_delta_tv(self, delta_t, fprop, deltaVlim):
+        old_settings = np.seterr(all = 'ignore', divide = 'ignore')
         deltaVmax = max(np.abs(fprop.Vt - fprop.Vp) / fprop.Vp)
-        deltaTv = deltaT * deltaVlim / deltaVmax
-        return deltaTv
+        delta_tv = delta_t * deltaVlim / deltaVmax
+        np.seterr(**old_settings)
+        return delta_tv
 
-    def update_deltaT(self, deltaT, fprop):
-        """ the limit parameters would be given as data entry """
-        deltaPlim = 1
-        deltaSlim = 0.1
+    def update_delta_t(self, delta_t, fprop):
+        """ the limit parameters would be given as data entry -its different for each simulation """
+        deltaPlim = 0.001 * 6894.76
+        deltaSlim = 0.01
         deltaNlim = 0.01
-        deltaVlim = 0.01
+        deltaVlim = 1.e-15
 
-        ''' Still confused of how I will calculate this maximum deltas if they
-        depend of the new time step, who depends of deltaT...'''
+        delta_tp = self.update_delta_tp(delta_t, fprop, deltaPlim)
+        delta_ts = self.update_delta_ts(delta_t, fprop, deltaSlim)
+        delta_tn = self.update_delta_tn(delta_t, fprop, deltaNlim)
+        delta_tv = self.update_delta_tv(delta_t, fprop, deltaVlim)
 
-        deltaTp = self.update_deltaTp(deltaT, fprop, deltaPlim)
-        deltaTs = self.update_deltaTs(deltaT, fprop, deltaSlim)
-        deltaTn = self.update_deltaTs(deltaT, fprop, deltaNlim)
-        deltaTv = self.update_deltaTs(deltaT, fprop, deltaVlim)
-
-        deltaT = min(deltaTp, deltaTs, deltaTn, deltaTv)
-        return deltaT
+        #delta_t = min(delta_tp, delta_ts, delta_tn, delta_tv)
+        delta_t = self.update_delta_tcfl(delta_t, fprop)
+        return delta_t

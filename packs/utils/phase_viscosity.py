@@ -8,12 +8,12 @@ class LorenzBrayClark:
     def __init__(self, n_volumes, fprop, kprop):
         self.n_volumes = n_volumes
         self.phase_molar_densities = fprop.phase_molar_densities * 10**(-6) # mole/m³ to mole/cm³
-        self.Mw =  kprop.Mw * 10**(3)  # Kg/mole to grams/mole
+        self.Mw = kprop.Mw * 10**(3)  # Kg/mole to grams/mole
         self.Pc = kprop.Pc / 101325 # Pa to atm
         self.vc = kprop.vc * 10 ** 6 # m³/mole to cm³/mole
 
     def component_viscosity(self, fprop, kprop):
-        mi_components = np.zeros(fprop.Nc)
+        mi_components = np.zeros(kprop.Nc)
         Trs = fprop.T / kprop.Tc
         ind_Tr_lower = np.argwhere(Trs <= 1.5)
         ind_Tr_higher = np.argwhere(Trs > 1.5)
@@ -21,8 +21,9 @@ class LorenzBrayClark:
         # in this formula, the component molecular weight is in grams/mole. and
         # the pressure is in atm.
         # kprop.Mw and kprop.Pc are in kg/mole and Pa, respectively.
+        pure_components_viscosity_parameters = np.zeros([kprop.Nc, self.n_volumes])
         pure_components_viscosity_parameters = kprop.Tc ** (1/6) \
-                 / ((self.Mw) ** (1/2) * (self.Pc) ** (2/3))
+                 / ((self.Mw[self.Mw!=0]) ** (1/2) * (self.Pc) ** (2/3))
 
         mi_components[ind_Tr_lower] = 3.4e-4 * Trs[ind_Tr_lower] ** 0.94 / \
                         pure_components_viscosity_parameters[ind_Tr_lower]
@@ -30,14 +31,14 @@ class LorenzBrayClark:
         1.67) ** (5/8)) / pure_components_viscosity_parameters[ind_Tr_higher]
 
         self.mi_components = mi_components[:, np.newaxis, np.newaxis]
-        #self.mi_components = np.ones([fprop.Nc, 1, self.n_volumes]) * mi_components
+        #self.mi_components = np.ones([kprop.Nc, 1, self.n_volumes]) * mi_components
 
     def phase_viscosity_atm(self, fprop, kprop):
-        self.component_molar_fractions = np.zeros([fprop.Nc,2,self.n_volumes])
+        self.component_molar_fractions = np.zeros([kprop.Nc,2,self.n_volumes])
         self.component_molar_fractions[:,0,:] = fprop.x
         self.component_molar_fractions[:,1,:] = fprop.y
 
-        self.mi_atm = np.sum(self.component_molar_fractions[0:fprop.Nc,0:2,:] * self.mi_components *
+        self.mi_atm = np.sum(self.component_molar_fractions[0:kprop.Nc,0:2,:] * self.mi_components *
                                 self.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0) \
                         /np.sum(self.component_molar_fractions *
                                 self.Mw[:, np.newaxis, np.newaxis] ** (1/2) , axis = 0)
@@ -74,11 +75,12 @@ class LorenzBrayClark:
         #                         /(1e4*neta[ind_higher])
 
         mi_phase = (self.mi_atm + (Xs ** 4 - 1e-4) / neta) * 1e-3 #return in Pa.s
-        
         return mi_phase
 
     def __call__(self, fprop, kprop):
+
         self.component_viscosity(fprop, kprop)
         self.phase_viscosity_atm(fprop, kprop)
         mi_phase = self.phase_viscosity(fprop, kprop)
+
         return mi_phase
