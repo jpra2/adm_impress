@@ -7,7 +7,7 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary):
     crs = [cr1, cr2]
     Lx, Ly, Lz = coord_nodes.max(axis=0)-coord_nodes.min(axis=0)
     min_x, min_y, min_z = coord_nodes.min(axis=0)
-    max_x, max_y, max_z = Lx, Ly, Lz
+    max_x, max_y, max_z = min_x+Lx, min_y+Ly, min_z+Lz
     min_j=[min_x, min_y, min_z]
     max_j=[max_x, max_y, max_z]
 
@@ -15,7 +15,6 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary):
     d_y=Ly/(len(np.unique(np.round(coord_nodes[:,1])))-1)
     d_z=Lz/(len(np.unique(np.round(coord_nodes[:,2])))-1)
     d_j=[d_x, d_y, d_z]
-
     P=[]
     D=[]
     for i in range(len(crs)):
@@ -24,7 +23,7 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary):
         for j in range(3):
             Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
             Pij[-1] = max_j[j]
-            Dij = (Pij[1:]+Pij[:-1])/2
+            Dij = (Pij[1:]+Pij[:-1])/2            
             if external_vertex_on_boundary and len(Dij)>1:
                 Dij[0] = min_j[j]+d_j[j]/2
                 Dij[-1] = max_j[j]-d_j[j]/2

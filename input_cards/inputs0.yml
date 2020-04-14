@@ -1,6 +1,8 @@
 # mesh_name: mesh/45x45x45.msh
-# mesh_name: mesh/9x3x1.msh
-mesh_name: mesh/isotropic/90x90x1.msh
+mesh_name: mesh/9x3x1.msh
+mesh_name: mesh/9x27x1.msh
+# mesh_name: mesh/isotropic/90x90x1.msh
+mesh_name: mesh/60x220x1L85.msh
 # mesh_name: mesh/isotropic/27x27x27.msh
 n_test: 0
 state: 0
@@ -22,12 +24,12 @@ convert_capillary_pressure_to: 'Pa'
 _debug: True
 
 Crs:
-  Cr1: [5, 5, 1]
-  Cr2: [15, 15, 1]
+  Cr1: [5, 10, 1]
+  Cr2: [15, 30, 1]
 
-read_permeability: false
+read_permeability: True
 file_name_permeability: spe10_perms_and_phi.npz
-set_permeability: true
+set_permeability: False
 Permeability:
   r1:
     type: all
@@ -103,27 +105,40 @@ Saturation:
 
 Wells:
   P1:
-    p0: [0.0, 0.0, 0.0]
-    # p1: [20.0, 10.0, 90.0]
-    # p1: [20, 10.0, 2.0]
-    p1: [1.0, 1.0, 1.0]
+    p0: [500.0, 1050.0, 168.0]
+    p1: [600.0, 1060.0, 170.0]
     prescription: Q
-    # prescription: P
     type: Injector
     type_region: box
-    # value: 3000000.0
-    # value: 10000000000.0
     value: 1000.0
-    # value: 10000000.0
+
+  P2:
+    p0: [0.0, 0.0, 168.0]
+    p1: [20.0, 10.0, 170.0]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 1.0
+
   P3:
-    # p0: [880.0, 440.0, 0.0]
-    # p1: [900.0, 450.0, 90.0]
-    # p0: [160.0, 80.0, 0.0]
-    # p1: [180.0, 90.0, 2.0]
-    # p0: [89.0, 89.0, 0.0]
-    # p1: [90.0, 90.0, 1.0]
-    p0: [89.0, 89.0, 0.0]
-    p1: [90.0, 90.0, 1.0]
+    p0: [1180.0, 0.0, 168.0]
+    p1: [1200.0, 10.0, 170.0]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 1.0
+
+  P4:
+    p0: [0.0, 2190.0, 168.0]
+    p1: [20.0, 2200.0, 170.0]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 1.0
+
+  P5:
+    p0: [1180.0, 2190.0, 168.0]
+    p1: [1200.0, 2200.0, 170.0]
     prescription: P
     type: Producer
     type_region: box

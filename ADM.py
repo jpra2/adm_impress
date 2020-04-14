@@ -86,22 +86,19 @@ def get_coupled_dual_volumes(mlo, neta_lim=0.0,posterior=False):
     Tc2=Tc.copy()
     Tc2.setdiag(0)
     DTc=1/np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
-    print(" ")
-    print(" ")
-    print(" ")
-    print((DTc>0).sum(),"diagonais positivas !!!!!!!!!!!")
-    print(" ")
-    print(" ")
-    print(" ")
-    print(" ")
-    print(" ")
-    DTc[DTc>0]=-abs(DTc).max()
+    if (DTc>0).sum()>0 and abs(Tc[DTc>0].sum())<0.01:
+        print((DTc>0).sum(),"diagonais positivas !!!!!!!!!!!")
+        import pdb; pdb.set_trace()
+        DTc[DTc>0]=-abs(DTc).max()
+
     lines=np.arange(Tc.shape[0])
     dia=csc_matrix((DTc,(lines,lines)),shape=Tc.shape)
     netas=dia*Tc2
     fn=find(netas)
+
     # import pdb; pdb.set_trace()
     superates_tol=fn[2]>neta_lim
+    # import pdb; pdb.set_trace()
     nsp=fn[2][superates_tol]
     i=fn[1][superates_tol]
     j=fn[0][superates_tol]
@@ -116,23 +113,33 @@ def get_coupled_dual_volumes(mlo, neta_lim=0.0,posterior=False):
     nsp_all=fn[2][positives]
     i_all=fn[1][positives]
     j_all=fn[0][positives]
-
     for k in range(len(nsp_all)):
         _non = (ii==i_all[k]) & (jj==j_all[k]) | (ii==j_all[k]) & (jj==i_all[k])
         ad0=adjs0[_non]
         ad1=adjs1[_non]
-        value=nsp_all[k]
+        neta_p=nsp_all[k]
         setar=np.concatenate([ad0,ad1])
+
         if posterior:
-            data_impress["non_physical_value_post"][setar]=np.repeat(value,len(setar))
+            vals_set=data_impress["non_physical_value_post"][setar[data_impress["DUAL_1"][setar]==2]] #Evita que I, J sobreponha J, I
+            try:
+                neta_p=max(neta_p,vals_set.max())
+            except:
+                neta_p=max(neta_p,vals_set)
+            data_impress["non_physical_value_post"][setar]=np.repeat(neta_p,len(setar))
         else:
-            data_impress["non_physical_value"][setar]=np.repeat(value,len(setar))
+            vals_set=data_impress["non_physical_value"][setar[data_impress["DUAL_1"][setar]==2]] #Evita que I, J sobreponha J, I
+            try:
+                neta_p=max(neta_p,vals_set.max())
+            except:
+                neta_p=max(neta_p,vals_set)
+            data_impress["non_physical_value"][setar]=np.repeat(neta_p,len(setar))
 
     dual_structure = M.multilevel_data['dual_structure_level_1']
     dual_volumes = [dd['volumes'] for dd in dual_structure]
     dual_lines = [np.repeat(i,len(dual_structure[i]['volumes'])) for i in range(len(dual_structure))]
-    for dvv in range(len(dual_volumes)):
-        data_impress["perm_z"][dual_volumes[dvv]]=dual_lines[dvv]
+    # for dvv in range(len(dual_volumes)): #id_dual
+    #     data_impress["perm_z"][dual_volumes[dvv]]=dual_lines[dvv]
     dvs=np.concatenate(dual_volumes)
 
     pvs=data_impress['GID_1'][dvs]
@@ -140,26 +147,26 @@ def get_coupled_dual_volumes(mlo, neta_lim=0.0,posterior=False):
     data=np.repeat(1,len(pvs))
     dp=csc_matrix((data,(dls,pvs)),shape=(dls.max()+1, pvs.max()+1))
     dp[dp>1]=1
-
     cds=[]
     for k in range(len(i)):
         ddp_i=dp[:,i[k]]
         ddp_j=dp[:,j[k]]
         ddp=(ddp_i.sum(axis=1)>0) & (ddp_j.sum(axis=1)>0)
         duais_coup=np.arange(len(ddp))[np.array(ddp).T[0]]
+        if len(duais_coup)>2:
+            import pdb; pdb.set_trace()
         if len(duais_coup)==1:
             duais_coup=np.repeat(duais_coup[0],2)
         if len(duais_coup)==2:
             cds.append(duais_coup)
+
     cds=np.array(cds)
     if len(cds)>0:
         values=np.unique(np.concatenate(cds))
         mapd=np.arange(len(dual_volumes))
         mapd[values]=np.arange(len(values))
-        try:
-            lines=np.concatenate([mapd[cds[:,0]],mapd[cds[:,1]]])
-        except:
-            import pdb; pdb.set_trace()
+
+        lines=np.concatenate([mapd[cds[:,0]],mapd[cds[:,1]]])
         cols=np.concatenate([mapd[cds[:,1]],mapd[cds[:,0]]])
 
         data=np.ones(len(lines))
@@ -215,60 +222,61 @@ else:
     multilevel_operators.run_paralel(tpfa_solver['Tini'],dual_volumes, 0, False)
 
 
-neta_lim=1.0
+neta_lim=500000000000000000
 OP_AMS=mlo['prolongation_level_1'].copy()
-
 groups = get_coupled_dual_volumes(mlo,neta_lim)
 
 dv=get_dual_subdomains(groups)
-
-multilevel_operators.run_paralel(tpfa_solver['Tini'],dv,1,False)
-
-OP_AMS_groups=mlo['prolongation_level_1']
-
-lins_par=np.unique(np.concatenate(dv))
-
-OP_AMS[lins_par]=OP_AMS_groups[lins_par]
-mlo['prolongation_level_1']=OP_AMS
-multilevel_operators=mlo
-#############################
-groups2 = get_coupled_dual_volumes(mlo,neta_lim)
-ngs=[]
-for i in range(len(groups)):
-    ngs.append(np.repeat(i,len(groups[i])))
-    i+=1
-ngs=np.concatenate(ngs)
-gs1=np.concatenate(groups)
-groups_to_2=[]
-for g2 in groups2:
-    gs2=np.repeat(False,len(gs1))
-    for g in g2:
-        gs2=gs2 | gs1==g
-    try:
-        groups_to_2.append(np.concatenate(np.array(groups)[ngs[gs2]]))
-    except:
-        a=1
-
-
-
-dv=get_dual_subdomains(groups_to_2)
 if len(dv)>0:
     multilevel_operators.run_paralel(tpfa_solver['Tini'],dv,1,False)
-
     OP_AMS_groups=mlo['prolongation_level_1']
-
     lins_par=np.unique(np.concatenate(dv))
-
     OP_AMS[lins_par]=OP_AMS_groups[lins_par]
     mlo['prolongation_level_1']=OP_AMS
     multilevel_operators=mlo
+# # #############################
+# groups2 = get_coupled_dual_volumes(mlo,neta_lim)
+# ngs=[]
+# for i in range(len(groups)):
+#     ngs.append(np.repeat(i,len(groups[i])))
+# if len(ngs)>0:
+#     ngs=np.concatenate(ngs)
+#     gs1=np.concatenate(groups)
+#     groups_to_2=[]
+#     for g2 in groups2:
+#         gs2=np.repeat(False,len(gs1))
+#         for g in g2:
+#             gs2=gs2 | gs1==g
+#         try:
+#             groups_to_2.append(np.concatenate(np.array(groups)[ngs[gs2]]))
+#         except:
+#             a=1
+#     dv=get_dual_subdomains(groups_to_2)
 
-
-###########################################
-perms=np.load("flying/permeability.npy")
-perms_xx=perms[:,0]
+# if len(dv)>0:
+#     multilevel_operators.run_paralel(tpfa_solver['Tini'],dv,1,False)
+#     OP_AMS_groups=mlo['prolongation_level_1']
+#     lins_par=np.unique(np.concatenate(dv))
+#     OP_AMS[lins_par]=OP_AMS_groups[lins_par]
+#     mlo['prolongation_level_1']=OP_AMS
+#     multilevel_operators=mlo
+# if len(groups2)>0:
+#     try:
+#         lins_par=np.unique(np.concatenate(np.array(dual_volumes)[groups2]))
+#     except:
+#         import pdb; pdb.set_trace()
+# else:
+#     lins_par=[]
+# ###########################################
+# perms=np.load("flying/permeability.npy")
+# perms_xx=perms[:,0]
 
 finos=wells['all_wells']
+# p0=M.volumes.all[(data_impress['GID_1']==0) |  (data_impress['GID_1']==5)]
+# finos=np.concatenate([finos,p0])
+# if len(lins_par)>0:
+#     finos=np.concatenate([finos,lins_par])
+
 data_impress.update_variables_to_mesh()
 ################################
 
@@ -382,7 +390,7 @@ ed=abs(dp-dpf)
 
 perms=np.load("flying/permeability.npy")
 perms_xx=perms[:,0]
-data_impress["perm_x"]=perms_xx
+# data_impress["perm_x"]=perms_xx
 adm_method.solve_multiscale_pressure(T, b)
 adm_method.set_pcorr()
 data_impress['pcorr'][data_impress['LEVEL']==0] = data_impress['pms'][data_impress['LEVEL']==0]
@@ -392,9 +400,8 @@ data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
 data_impress['erro'] = np.absolute((data_impress['pressure'] - data_impress['pms'])/data_impress['pms'])
 data_impress['erro_pcorr_pdm'] = np.absolute(data_impress['pcorr'] - data_impress['pms'])
 
-get_coupled_dual_volumes(mlo, neta_lim=0.0,posterior=True)
+get_coupled_dual_volumes(mlo, neta_lim=neta_lim,posterior=True)
 data_impress.update_variables_to_mesh()
-
 M.core.print(file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
 import pdb; pdb.set_trace()

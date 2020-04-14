@@ -34,38 +34,6 @@ class AdmNonNested(AdmMethod):
         n1 = 0
         n2 = 0
 
-        '''
-        vols_level_0 = v0
-        nv0 = len(vols_level_0)
-        vols_level_ant = vols_level_0
-        for n_level in range(1, self.n_levels):
-            n = 0
-            self.data_impress['LEVEL_ID_'+str(n_level)][vols_level_0] = np.arange(nv0)
-            self.data_impress['ADM_COARSE_ID_LEVEL_'+str(n_level)][vols_level_0] = np.arange(nv0)
-            n += nv0
-            if n_level > 1:
-                adm_ant_id = self.data_impress['LEVEL_ID_'+str(n_level-1)][(levels<n_level) & (levels>0)]
-                unique_adm_ant_id = np.unique(adm_ant_id)
-                for idd in unique_adm_ant_id:
-                    gid = gids_0[self.data_impress['LEVEL_ID_'+str(n_level-1)]==idd]
-                    self.data_impress['LEVEL_ID_'+str(n_level)][gid] = n
-                    self.data_impress['ADM_COARSE_ID_LEVEL_'+str(n_level)][gid] = n
-                    n += 1
-
-            # all_ids_coarse_level = self.data_impress['GID_'+str(n_level)][levels>=n_level]
-            # meshsets_ids = np.unique(all_ids_coarse_level)
-            meshsets_ids = np.unique(self.data_impress['GID_'+str(n_level)][levels>=n_level])
-            for id_coarse in meshsets_ids:
-                volumes_in_meshset = gids_0[self.data_impress['GID_'+str(n_level)] == id_coarse]
-                volumes_in_meshset = np.setdiff1d(volumes_in_meshset, vols_level_ant)
-                self.data_impress['LEVEL_ID_'+str(n_level)][volumes_in_meshset] = n
-                self.data_impress['ADM_COARSE_ID_LEVEL_'+str(n_level)][volumes_in_meshset] = n
-                n += 1
-
-            if n_level < self.n_levels - 1:
-                vols_level_ant = np.concatenate([vols_level_ant, gids_0[levels==n_level]])
-        '''
-
         n0 = len(levels)
         list_L1_ID = np.repeat(-1, n0)
         list_L2_ID = np.repeat(-1, n0)
@@ -83,8 +51,6 @@ class AdmNonNested(AdmMethod):
         print('\n')
 
         for vol2 in ids_ms_2:
-            #1
-            # n_vols_l3 = 0
             vols2 = gids_0[gids_2==vol2]
             levels_vols_2 = levels[vols2]
             vols_ms2_lv2 = vols2[levels_vols_2==2]
@@ -93,32 +59,28 @@ class AdmNonNested(AdmMethod):
             if len(vols_ms2_lv2)>0:
                 n2+=1
 
-            # gids_1_1 = gids_1[gids_2==v2]
             gids_1_1 = gids_1[vols2]
             ids_ms_1 = np.unique(gids_1_1)
-
             for vol1 in ids_ms_1:
-                #2
-                # elem_by_L1 = mb.get_entities_by_handle(m1)
                 vols1 = vols2[gids_1_1==vol1]
                 levels_vols_1 = levels_vols_2[gids_1_1==vol1]
                 vols_ms1_lv1 = vols1[levels_vols_1>=1]
-                list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
-                self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(n1, len(vols1))
-                n1+=1
+                # list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
 
+                self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(n1, len(vols1))
+                # n1+=1
                 vols_ms2_lv1 = vols1[levels_vols_1==1]
                 if len(vols_ms2_lv1)>0:
                     list_L2_ID[vols_ms2_lv1] = np.repeat(n2,len(vols_ms2_lv1))
+                    list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
+                    n1+=1
                     n2+=1
-
 
         self.data_impress['LEVEL_ID_1'] = list_L1_ID
         self.data_impress['LEVEL_ID_2'] = list_L2_ID
 
         for i in range(self.n_levels):
             self.number_vols_in_levels[i] = len(levels[levels==i])
-        #
         self.n1_adm = n1
         self.n2_adm = n2
 
@@ -245,7 +207,7 @@ class AdmNonNested(AdmMethod):
         lines = np.concatenate([lines,l1])
         cols = np.concatenate([cols,ID_ADM1])
         data = np.concatenate([data,d1])
-
+        
         OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
 
         cols = gid_0
@@ -455,6 +417,7 @@ class AdmNonNested(AdmMethod):
 
         # n = int(input('\nQual a malha adm que deseja utilizar?\nDigite o numero da iteracao.\n'))
         n=0
+
         self.data_impress['INITIAL_LEVEL'] = accum_levels[n]
 
         self.data_impress.update_variables_to_mesh()
