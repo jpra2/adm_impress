@@ -1,7 +1,7 @@
-mesh_name: mesh/100x1x1_b.msh
+mesh_name: mesh/100x1x1_m.msh
 n_test: 0
 compositional: True
-hidrocarbon_components: True
+hidrocarbon_components: False
 water_component: True
 
 load_compositional_data: False
@@ -19,17 +19,18 @@ set_permeability: True
 monophasic_data:
   gama: 10000.0
   mi: 1.0
+
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.5
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   tempo_maximo: null
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
 
-  rock_compressibility: 7.25e-8
+  rock_compressibility: 0
+  #7.25e-8
   Pf: 13.79E6
 
   #capillary pressure data - not ok with this
@@ -38,8 +39,8 @@ compositional_data:
 
   #rever isso de Cw=0 e Pw
   water_data:
-    mi_W: 1e-3
-    rho_W: 999.6
+    mi_W: 0.249e-3
+    rho_W: 716.67
     Mw_w: 18.015e-3
     Cw: 0
     Pw: 13.79E6
@@ -47,17 +48,17 @@ compositional_data:
   residual_saturations:
     Sorw: 0
     Sorg: 0
-    Swr: 0.2
+    Swr: 0.3
     Sgr: 0
-    Sor: -1
+    Sor: 0
 
   relative_permeability_data:
-    krw0: 0.4
-    krg0: 0
-    kro0: 1.0
+    krw0: 1.0
+    krg0: 0.
+    kro0: 0
     n_o: 2.
     n_g: 0
-    n_w: 3.
+    n_w: 1.
 
 #decane critical molar density is 1640 mol/m3
   component_data:
@@ -76,34 +77,56 @@ compositional_data:
 Saturation:
   r1:
     type: all
-    value: 0.2
+    value: 1.
 
 Porosity:
   r1:
     type: all
-    value: 0.2
+    value: 0.20
 
 #Permeability in m^2
 Permeability:
   r1:
-    type: all
-    value: [5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13, 5e-13]
+    type: box
+    p0: [0.0, 0.0, 0.0]
+    p1: [0.24384, 0.03048, 0.03048]
+    value: [0.9869e-13, 0.9869e-13, 0.9869e-13, 0.9869e-13, 0.9869e-13, 0.9869e-13, 0.9869e-13, 0.9869e-13, 0.9869e-13]
+
+  r2:
+    type: box
+    p0: [0.24384, 0.0, 0.0]
+    p1: [0.42672, 0.03048, 0.03048]
+    value: [4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13]
+
+  r3:
+    type: box
+    p0: [0.42672, 0.0, 0.0]
+    p1: [0.6096, 0.03048, 0.03048]
+    value: [8.8823e-13, 8.8823e-13, 8.8823e-13, 8.8823e-13, 8.8823e-13, 8.8823e-13, 8.8823e-13, 8.8823e-13, 8.8823e-13]
 
 Pressure:
   r1:
     type: all
-    value: 13.79E6 #confirmar
+    value: 0 #13.78951458E6
 
 Temperature:
   r1:
     type: all
-    value: 366.33
+    value: 288.71
 
 Wells:
   P1:
     p0: [0.0, 0.0, 0.0]
-    p1: [6.096, 3.048, 3.048]
+    p1: [0.006096, 0.03048, 0.03048]
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: -0.0005214
+
+  P2:
+    p0: [0.603504, 0.0, 0.0]
+    p1: [0.6096, 0.03048, 0.03048]
     prescription: P
     type: Producer
     type_region: box
-    value: 13100000.
+    value: 13.78951458E6

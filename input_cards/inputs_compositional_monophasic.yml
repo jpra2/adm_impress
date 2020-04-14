@@ -93,7 +93,7 @@ Permeability:
 Pressure:
   r1:
     type: all
-    value: 13.78951458E6
+    value: 0
 
 Temperature:
   r1:
