@@ -213,7 +213,7 @@ else:
     multilevel_operators.run_paralel(tpfa_solver['Tini'],dual_volumes, 0, False)
 
 
-neta_lim=1
+neta_lim=0.1
 OP_AMS=mlo['prolongation_level_1'].copy()
 groups = get_coupled_dual_volumes(mlo,neta_lim, ind=0)
 
@@ -362,7 +362,7 @@ ss=np.array(sums.sum(axis=1)).T[0]
 # ss[data_impress["DUAL_1"]<2]=0
 data_impress["velocity_projection"]=ss
 
-superam_tol_for_v=data_impress["GID_1"][M.volumes.all[ss>1]]
+superam_tol_for_v=data_impress["GID_1"][M.volumes.all[ss>10]]
 vsup=[]
 for v in superam_tol_for_v:
     vsup.append(M.volumes.all[data_impress["GID_1"]==v])
