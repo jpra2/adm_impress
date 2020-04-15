@@ -65,9 +65,10 @@ class AdmNonNested(AdmMethod):
                 vols1 = vols2[gids_1_1==vol1]
                 levels_vols_1 = levels_vols_2[gids_1_1==vol1]
                 vols_ms1_lv1 = vols1[levels_vols_1>=1]
-                self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(n1, len(vols1))
+
                 if len(vols_ms1_lv1)>0:
                     list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
+                    self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(n1, len(vols1))
 
                     n1+=1
 
@@ -206,8 +207,11 @@ class AdmNonNested(AdmMethod):
 
         lines = np.concatenate([lines,l1])
         cols = np.concatenate([cols,ID_ADM1])
-        data = np.concatenate([data,d1])        
-        OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
+        data = np.concatenate([data,d1])
+        try:
+            OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
+        except:
+            import pdb; pdb.set_trace()
 
         cols = gid_0
         lines = level_id
@@ -310,7 +314,7 @@ class AdmNonNested(AdmMethod):
         continuar = True
 
 
-        while (pseudo_erro.max()>TOL and n2<Nmax and iterar_mono and continuar) and cont==0:
+        while ((pseudo_erro.max()>TOL and n2<Nmax and iterar_mono and continuar) or cont==0) and cont<1:
 
             if cont>0:
                 levels = self.data_impress['LEVEL'].copy()
@@ -417,7 +421,10 @@ class AdmNonNested(AdmMethod):
         # n = int(input('\nQual a malha adm que deseja utilizar?\nDigite o numero da iteracao.\n'))
         n=0
 
-        self.data_impress['INITIAL_LEVEL'] = accum_levels[n]
+        if len(accum_levels)>0:
+            self.data_impress['INITIAL_LEVEL'] = accum_levels[n]
+        else:
+            self.data_impress['INITIAL_LEVEL'] = self.data_impress['LEVEL'].copy()
 
         self.data_impress.update_variables_to_mesh()
         self.data_impress.export_to_npz()
