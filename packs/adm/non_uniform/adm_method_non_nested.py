@@ -105,13 +105,13 @@ class AdmNonNested(AdmMethod):
                 vols_ms1_lv1 = vols1[levels_vols_1>=1]
                 # list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
                 self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(n1, len(vols1))
-                # n1+=1
+                if len(vols_ms1_lv1)>0:
+                    list_L1_ID[vols_ms1_lv1] = n1
+                    n1+=1
 
                 vols_ms2_lv1 = vols1[levels_vols_1==1]
                 if len(vols_ms2_lv1)>0:
                     list_L2_ID[vols_ms2_lv1] = n2
-                    list_L1_ID[vols_ms1_lv1] = n1
-                    n1+=1
                     n2+=1
 
 
