@@ -103,13 +103,15 @@ class AdmNonNested(AdmMethod):
                 vols1 = vols2[gids_1_1==vol1]
                 levels_vols_1 = levels_vols_2[gids_1_1==vol1]
                 vols_ms1_lv1 = vols1[levels_vols_1>=1]
-                list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
+                # list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
                 self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(n1, len(vols1))
-                n1+=1
+                # n1+=1
 
                 vols_ms2_lv1 = vols1[levels_vols_1==1]
                 if len(vols_ms2_lv1)>0:
-                    list_L2_ID[vols_ms2_lv1] = np.repeat(n2,len(vols_ms2_lv1))
+                    list_L2_ID[vols_ms2_lv1] = n2
+                    list_L1_ID[vols_ms1_lv1] = n1
+                    n1+=1
                     n2+=1
 
 
@@ -119,12 +121,17 @@ class AdmNonNested(AdmMethod):
         for i in range(self.n_levels):
             self.number_vols_in_levels[i] = len(levels[levels==i])
         #
-        self.n1_adm = n1 
+        self.n1_adm = n1
         self.n2_adm = n2
 
     def equalize_levels(self):
         levels = self.data_impress['LEVEL'].copy()
         gid0 = self.data_impress['GID_0']
+        # ############
+        # coarse_id_wells = np.unique(self.data_impress['GID_1'][self.all_wells_ids])
+        # for cid in coarse_id_wells:
+        #     levels[self.data_impress['GID_1']==cid] = 0
+        # ############
         gids_with_level = gid0[levels >= 0]
 
         for level in range(1, self.n_levels):
@@ -185,7 +192,8 @@ class AdmNonNested(AdmMethod):
             gids0 = gid0[gid1==gidc]
             if set(gids0) & all_lv0:
                 gids_fora = np.array(list(set(gids0) - all_lv0))
-                levels[gids_fora] = 1
+                if len(gids_fora) > 0:
+                    levels[gids_fora] = 1
                 gids_lv1_sat.add(gidc)
 
         cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(1)]
@@ -580,9 +588,9 @@ class AdmNonNested(AdmMethod):
         self.data_impress.update_variables_to_mesh()
         self.data_impress.export_to_npz()
 
-    def set_pms_flux(self, T_witout, wells):
+    def set_pms_flux(self, T_witout, wells, pare=False):
 
-        master = masterNeumanNonNested(self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, T_witout, wells)
+        master = masterNeumanNonNested(self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, T_witout, wells, pare=pare)
         ms_flux_faces, pcorr = master.run()
         del master
         self.data_impress['flux_faces'] = ms_flux_faces

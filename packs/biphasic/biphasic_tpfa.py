@@ -21,7 +21,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         self.relative_permeability = self.relative_permeability()
         self.V_total = (data_impress['volume']*data_impress['poro']).sum()
         self.max_contador_vtk = len(self.biphasic_data['vpis_para_gravar_vtk'])
-        self.delta_sat_max = 0.4
+        self.delta_sat_max = 0.2
         self.lim_flux_w = 9e-8
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
@@ -418,24 +418,25 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 
         ########################
         # import pdb; pdb.set_trace()
-        test = ids[(saturations < 0) | (saturations > 1)]
-        if len(test) > 0:
-            self.data_impress['saturation'] = saturations
-            self.data_impress.update_variables_to_mesh()
-            self.mesh.core.print(file='results/test_', extension='.vtk', config_input="input_cards/print_settings0.yml")
-            import pdb; pdb.set_trace()
-
-            raise ValueError(f'valor errado da saturacao {saturations[test]}')
-        del test
+        # test = ids[(saturations < 0) | (saturations > 1)]
+        # if len(test) > 0:
+        #     self.data_impress['saturation'] = saturations
+        #     self.data_impress.update_variables_to_mesh()
+        #     self.mesh.core.print(file='results/test_', extension='.vtk', config_input="input_cards/print_settings0.yml")
+        #     import pdb; pdb.set_trace()
+        #
+        #     raise ValueError(f'valor errado da saturacao {saturations[test]}')
+        # del test
         #########################
-
-        self.data_impress['saturation'] = saturations
 
         min_sat = saturations.min()
         max_sat = saturations.max()
 
         if min_sat < self.biphasic_data['Swc'] or max_sat > 1-self.biphasic_data['Sor']:
-            raise ValueError(f'\nprint max_sat: {max_sat} ; min_sat: {min_sat}\n')
+            return 1
+            # raise ValueError(f'\nprint max_sat: {max_sat} ; min_sat: {min_sat}\n')
+
+        self.data_impress['saturation'] = saturations
 
         return 0
 

@@ -112,10 +112,11 @@ adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
 meshset_volumes = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 
-nn = 20
+nn = 50
 cont = 1
 
 verif = True
+pare = False
 while verif:
 
     for level in range(1, n_levels):
@@ -124,15 +125,18 @@ while verif:
                                     mlo['restriction_level_'+str(level)],
                                     level)
 
+    # op1 = adm_method['adm_prolongation_level_1']
+    # or1 = adm_method['adm_restriction_level_1']
+    # import pdb; pdb.set_trace()
+
     adm_method.solve_multiscale_pressure(T, b)
-    adm_method.set_pms_flux(b1['Tini'], wells)
+    adm_method.set_pms_flux(b1['Tini'], wells, pare=pare)
     b1.get_velocity_faces()
     b1.get_flux_volumes()
     # b1.print_test()
     # p2 = adm_method.solver.direct_solver(T, b)
     # data_impress['pressure'] = p2
     # data_impress['erro'] = np.absolute((p2-data_impress['pms']))
-
     b1.run_2()
     data_impress.update_variables_to_mesh()
 
@@ -145,15 +149,13 @@ while verif:
     # adm_method.set_level_wells()
     adm_method.restart_levels()
     adm_method.set_level_wells_2()
-    adm_method.set_saturation_level_new0()
+    adm_method.set_saturation_level()
     adm_method.equalize_levels()
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
 
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
     b1.print_test()
-
-    import pdb; pdb.set_trace()
 
     # n=0
     # data_impress.update_variables_to_mesh()

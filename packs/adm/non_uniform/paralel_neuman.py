@@ -7,13 +7,14 @@ import time
 
 class masterNeumanNonNested:
 
-    def __init__(self, data_impress, elements_lv0, ml_data, n_levels, T_without, wells):
+    def __init__(self, data_impress, elements_lv0, ml_data, n_levels, T_without, wells, pare=False):
         self.data_impress = data_impress
         self.elements_lv0 = elements_lv0
         self.ml_data = ml_data
         self.n_levels = n_levels
         self.T_without = T_without
         self.wells = wells
+        self.pare = pare
         self.one_worker = True
 
     def get_n_workers(self, list_of_subdomains):
@@ -70,8 +71,13 @@ class masterNeumanNonNested:
         pms = self.data_impress['pms']
         remaped_internal_faces = self.elements_lv0['remaped_internal_faces']
         neig_internal_faces = self.elements_lv0['neig_internal_faces']
+        gid0 = self.data_impress['GID_0']
         n_volumes = len(levels)
+        volumes_pcorr_falt = []
+        pcorr_falt = []
 
+        if self.pare:
+            import pdb; pdb.set_trace()
 
         for level in range(1, self.n_levels):
             str_level = str(level)
@@ -86,6 +92,7 @@ class masterNeumanNonNested:
             all_fine_vertex = self.ml_data['fine_vertex_coarse_volumes_level_'+ str_level]
             coarse_ids = self.ml_data['coarse_primal_id_level_'+ str_level]
             gids_level = np.unique(all_gids_coarse[levels==level])
+            volumes_coarse_falt_level = np.setdiff1d(np.unique(all_gids_coarse), gids_level)
 
             for gidc in gids_level:
 
@@ -183,6 +190,32 @@ class masterNeumanNonNested:
                     val_diric = pms[vertex]
                     list_of_subdomains.append(Subdomain(volumes, ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, self.T_without))
 
+
+            if len(volumes_coarse_falt_level) > 0:
+                for gidc in volumes_coarse_falt_level:
+                    intern_local_faces = all_intern_faces[coarse_ids==gidc][0] # faces internas
+                    adj_intern_local_faces = neig_internal_faces[remaped_internal_faces[intern_local_faces]]
+                    v0 = adj_intern_local_faces
+                    volumes = self.elements_lv0['volumes'][all_gids_coarse==gidc]
+
+                    pms0 = pms[v0[:,0]]
+                    pms1 = pms[v0[:,1]]
+                    t0 = self.data_impress['transmissibility'][intern_local_faces]
+                    pms_flux_faces_local = get_flux_faces(pms1, pms0, t0)
+                    pms_flux_faces[intern_local_faces] = pms_flux_faces_local
+                    volumes_pcorr_falt.append(volumes)
+                    pcorr_falt.append(pms[volumes])
+
+
+
+        # import pdb; pdb.set_trace()
+        try:
+            self.volumes_pcorr_falt = np.concatenate(volumes_pcorr_falt)
+            self.pcorr_falt = np.concatenate(pcorr_falt)
+        except ValueError:
+            self.volumes_pcorr_falt = []
+            self.pcorr_falt = []
+
         return list_of_subdomains, pms_flux_faces
 
     def preprocess(self):
@@ -197,6 +230,10 @@ class masterNeumanNonNested:
         procs = [mp.Process(target=run_thing, args=[LocalSolution(obj, comm)]) for obj, comm in zip(list_of_process_per_cpu, w2m)]
         del list_of_process_per_cpu
         global_pcorr = np.zeros(len(self.data_impress['GID_0']))
+        if len(self.volumes_pcorr_falt) > 0:
+            global_pcorr[self.volumes_pcorr_falt] = self.pcorr_falt
+        del self.volumes_pcorr_falt
+        del self.pcorr_falt
 
         for proc in procs:
         	proc.start()
