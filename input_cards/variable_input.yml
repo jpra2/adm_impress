@@ -582,14 +582,49 @@ velocity_projection:
   sparse: True
   level: 0
 
-non_physical_value:
+non_physical_value_0:
   type: volumes
   data size: 1
   data type: float
   sparse: True
   level: 0
 
-non_physical_value_post:
+non_physical_value_1:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_2:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_3:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_4:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_5:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_999:
   type: volumes
   data size: 1
   data type: float

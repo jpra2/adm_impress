@@ -1,6 +1,6 @@
 # mesh_name: mesh/45x45x45.msh
-mesh_name: mesh/9x3x1.msh
-mesh_name: mesh/9x27x1.msh
+# mesh_name: mesh/9x3x1.msh
+# mesh_name: mesh/9x27x1.msh
 # mesh_name: mesh/isotropic/90x90x1.msh
 mesh_name: mesh/60x220x1L85.msh
 # mesh_name: mesh/isotropic/27x27x27.msh
