@@ -150,11 +150,15 @@ class masterNeumanNonNested:
                     ind_neum += list(intern_boundary_volumes_new)
                     val_neum += list(presc_flux_intern_boundary_volumes)
 
-                if set(vertex) & set(ind_diric):
-                    pass
-                else:
-                    ind_diric += list(vertex)
-                    val_diric += list(pressure_vertex)
+                if len(ind_diric) == 0:
+                    if set(vertex) & set(ind_neum):
+                        candidatos = set(volumes) - set(ind_neum)
+                        vol = candidatos.pop()
+                        ind_diric += [vol]
+                        val_diric += [psm[vol]]
+                    else:
+                        ind_diric += list(vertex)
+                        val_diric += list(pressure_vertex)
 
                 list_of_subdomains.append(Subdomain(volumes, ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, self.T_without))
 
