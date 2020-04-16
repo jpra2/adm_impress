@@ -232,7 +232,7 @@ else:
 print("Time to construct prolongation operator: {} seconds".format(time.time()-t0))
 print("Adapting reduced boundary conditions")
 t0=time.time()
-neta_lim=0.1
+neta_lim=1.0
 OP_AMS=mlo['prolongation_level_1'].copy()
 groups = get_coupled_dual_volumes(mlo,neta_lim, ind=0)
 
