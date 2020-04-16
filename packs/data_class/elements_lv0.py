@@ -26,16 +26,16 @@ class ElementsLv0(DataManager):
         self._data['all_edges'] = self.mesh.core.all_edges
         self._data['all_nodes'] = self.mesh.core.all_nodes
 
-        # remaped_internal_faces = np.repeat(-1, len(self._data['faces'])).astype(np.dtype(int))
-        # remaped_boundary_faces = remaped_internal_faces.copy()
-        # remaped_internal_faces[self._data['internal_faces']] = np.arange(len(self._data['internal_faces']))
-        # self._data['remaped_internal_faces'] = remaped_internal_faces
+        remaped_internal_faces = np.repeat(-1, len(self._data['faces'])).astype(np.dtype(int))
+        remaped_boundary_faces = remaped_internal_faces.copy()
+        remaped_internal_faces[self._data['internal_faces']] = np.arange(len(self._data['internal_faces']))
+        self._data['remaped_internal_faces'] = remaped_internal_faces
         # remaped_boundary_faces[self._data['boundary_faces']] = np.arange(len(self._data['boundary_faces']))
         # self._data['remaped_boundary_faces'] = remaped_boundary_faces
         #
         self._data['volumes_face_faces'] = self.mesh.volumes.bridge_adjacencies(self._data['volumes'], 2, 2)
         self._data['faces_face_volumes'] = self.mesh.faces.bridge_adjacencies(self._data['faces'], 2, 3)
         self._data['volumes_face_volumes'] = self.mesh.volumes.bridge_adjacencies(self._data['volumes'], 2, 3)
-        
+
     def run(self):
         self.load_elements_from_mesh()

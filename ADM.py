@@ -246,7 +246,7 @@ if len(dv)>0:
     multilevel_operators=mlo
 ######################### # #############################
 old_groups=groups.copy()
-for ind in range(1,6):
+for ind in range(1,1):
     groups2 = get_coupled_dual_volumes(mlo,neta_lim, ind=ind)
     # neta_lim/=2
     lgs=[np.repeat(i,len(old_groups[i])) for i in range(len(old_groups))]
@@ -282,6 +282,11 @@ for ind in range(1,6):
 
 groups = get_coupled_dual_volumes(mlo,neta_lim, ind=5)
 finos=wells['all_wells']
+gid_coarse_wells = np.unique(data_impress['GID_1'][finos])
+finos2 = np.concatenate([data_impress['GID_0'][data_impress['GID_1']==gidc] for gidc in gid_coarse_wells])
+# wells_prim=np.concatenate([M.volumes.all[data_impress["GID_1"]==w] for w in wells])
+finos=np.concatenate([finos,finos2])
+
 if len(groups)>0:
     dv=np.concatenate(get_dual_subdomains(groups))
     finos=np.concatenate([finos,dv])

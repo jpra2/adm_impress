@@ -155,7 +155,7 @@ class masterNeumanNonNested:
                         candidatos = set(volumes) - set(ind_neum)
                         vol = candidatos.pop()
                         ind_diric += [vol]
-                        val_diric += [psm[vol]]
+                        val_diric += [pms[vol]]
                     else:
                         ind_diric += list(vertex)
                         val_diric += list(pressure_vertex)

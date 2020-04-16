@@ -10,46 +10,24 @@ from pymoab import types
 from .paralel_neuman_new0 import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):
-
     def set_adm_mesh_non_nested(self, v0=[], v1=[], pare=False):
-
-        print("\nINICIOU GERACAO DA MALHA ADM\n")
-
-        # levels = np.repeat(-1, len(self.data_impress['LEVEL']))
         levels = self.data_impress['LEVEL'].copy()
         gids_0 = self.data_impress['GID_0']
         gids_1 = self.data_impress['GID_1']
         gids_2 = self.data_impress['GID_2']
-        # v2=np.setdiff1d(gids_0,np.concatenate([v0, v1]))
-
-        # levels[v0]=0
-        # levels[v1]=1
-        # levels[v2]=2
-
-        # if self.so_nv1==True:
-        #     v1=np.setdiff1d(np.arange(len(levels)),v0)
-        # else:
-        #     # v1 = np.setdiff1d(np.concatenate(self.mesh.volumes.bridge_adjacencies(v0, 2, 3)), v0)
-        #     pass
-        # levels[v1] = 1
-        # self.data_impress['LEVEL'] = levels.copy()
-
         n1 = 0
         n2 = 0
-
         n0 = len(levels)
         list_L1_ID = np.repeat(-1, n0)
         list_L2_ID = np.repeat(-1, n0)
-
         list_L1_ID[v0] = np.arange(len(v0))
         list_L2_ID[v0] = np.arange(len(v0))
+        self.data_impress['ADM_COARSE_ID_LEVEL_2'][:] = -1
+        self.data_impress['ADM_COARSE_ID_LEVEL_1'][:] = -1
+
         n1+=len(v0)
         n2+=len(v0)
-
         ids_ms_2 = range(len(np.unique(gids_2)))
-
-        # if pare:
-        #     import pdb; pdb.set_trace()
 
         for vol2 in ids_ms_2:
             vols2 = gids_0[gids_2==vol2]
@@ -59,7 +37,6 @@ class AdmNonNested(AdmMethod):
             self.data_impress['ADM_COARSE_ID_LEVEL_2'][vols2] = np.repeat(n2, len(vols2))
             if len(vols_ms2_lv2)>0:
                 n2+=1
-
             gids_1_1 = gids_1[vols2]
             ids_ms_1 = np.unique(gids_1_1)
             for vol1 in ids_ms_1:
@@ -70,8 +47,11 @@ class AdmNonNested(AdmMethod):
                 if len(vols_ms1_lv1)>0:
                     list_L1_ID[vols_ms1_lv1] = np.repeat(n1,len(vols_ms1_lv1))
                     self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(n1, len(vols1))
-
                     n1+=1
+                else:
+                    vertex = vols1[self.data_impress['DUAL_1'][vols1]==3]
+                    gid1_vertex = self.data_impress['GID_1'][vertex]
+                    self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(gid1_vertex, len(vols1))
 
                 vols_ms2_lv1 = vols1[levels_vols_1==1]
                 if len(vols_ms2_lv1)>0:
@@ -212,6 +192,16 @@ class AdmNonNested(AdmMethod):
 
         self.data_impress['LEVEL'] = levels.copy()
 
+    def set_level_wells_3(self):
+        self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
+        gid0 = self.data_impress['GID_0']
+        gid1 = self.data_impress['GID_1']
+
+        gids_wells = np.unique(gid1[self.all_wells_ids])
+        for gid in gids_wells:
+            volumes = gid0[gid1==gid]
+            self.data_impress['LEVEL'][volumes] = 0
+
     def organize_ops_adm(self, OP_AMS, OR_AMS, level, _pcorr=None):
 
         gid_0 = self.data_impress['GID_0']
@@ -339,6 +329,8 @@ class AdmNonNested(AdmMethod):
         data = np.concatenate([data,d1])
         try:
             OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
+            np.savetxt("results/OP.csv",OP_ADM.toarray(),delimiter=",")
+            import pdb; pdb.set_trace()
         except:
             import pdb; pdb.set_trace()
 

@@ -211,7 +211,12 @@ class Partitioner:
             cx2, cxy, cy2 = 0, 0, 0
         else:
             print("quadrático")
-            cx, cy, cx2, cxy, cy2, intercept= np.load("flying/partitioning_coeffitients_bx_cy_dx2_exy_fy2_intercept.npy")
+            try:
+                cx, cy, cx2, cxy, cy2, intercept= np.load("flying/partitioning_coeffitients_bx_cy_dx2_exy_fy2_intercept.npy")
+            except:
+                calibrate_partitioning_parameters()
+                cx, cy, cx2, cxy, cy2, intercept= np.load("flying/partitioning_coeffitients_bx_cy_dx2_exy_fy2_intercept.npy")
+
         x=n_A
         y=np.array([n_b]).T
         estimated_time_by_subd=(cx*x+cy*y+cx2*x*x+cxy*x*y+cy2*y*y+intercept).sum(axis=1)
@@ -243,7 +248,7 @@ class Partitioner:
 class OP_AMS:
     def __init__(self, data_impress, elements_lv0, all_conjs_duais, local_couple=0, couple_bound=True):
         t0=time.time()
-        # calibrate_partitioning_parameters()
+
         print("Time to calibrate partitioning parameters: {} segundos".format(time.time()-t0))
         t0=time.time()
         all_subds = [DualDomain(data_impress, elements_lv0, all_conjs_duais[i], local_couple=local_couple, \

@@ -90,7 +90,7 @@ if load_operators:
     pass
 else:
     # multilevel_operators.run(tpfa_solver['Tini'])
-    multilevel_operators.run_paralel(b1['Tini'])
+    multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
 
 mlo=multilevel_operators
 
@@ -99,7 +99,8 @@ adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, element
 
 adm_method.restart_levels()
 # adm_method.set_level_wells()
-adm_method.set_level_wells_2()
+# adm_method.set_level_wells_2()
+adm_method.set_level_wells_3()
 adm_method.equalize_levels()
 
 # adm_method.verificate_levels()
@@ -148,7 +149,8 @@ while verif:
     # adm_method.restart_levels_2()
     # adm_method.set_level_wells()
     adm_method.restart_levels()
-    adm_method.set_level_wells_2()
+    # adm_method.set_level_wells_2()
+    adm_method.set_level_wells_3()
     adm_method.set_saturation_level()
     adm_method.equalize_levels()
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
