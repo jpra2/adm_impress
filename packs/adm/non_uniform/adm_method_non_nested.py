@@ -6,30 +6,33 @@ import time
 from ...directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 from pymoab import types
+# from .paralel_neuman import masterNeumanNonNested
+from .paralel_neuman_new0 import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):
 
-    def set_adm_mesh_non_nested(self, v0=[], v1=[]):
+    def set_adm_mesh_non_nested(self, v0=[], v1=[], pare=False):
 
         print("\nINICIOU GERACAO DA MALHA ADM\n")
 
-        levels = np.repeat(-1, len(self.data_impress['LEVEL']))
+        # levels = np.repeat(-1, len(self.data_impress['LEVEL']))
+        levels = self.data_impress['LEVEL'].copy()
         gids_0 = self.data_impress['GID_0']
         gids_1 = self.data_impress['GID_1']
         gids_2 = self.data_impress['GID_2']
-        v2=np.setdiff1d(gids_0,np.concatenate([v0, v1]))
+        # v2=np.setdiff1d(gids_0,np.concatenate([v0, v1]))
 
-        levels[v0]=0
-        levels[v1]=1
-        levels[v2]=2
+        # levels[v0]=0
+        # levels[v1]=1
+        # levels[v2]=2
 
-
-        if self.so_nv1==True:
-            v1=np.setdiff1d(np.arange(len(levels)),v0)
-        else:
-            v1 = np.setdiff1d(np.concatenate(self.mesh.volumes.bridge_adjacencies(v0, 2, 3)), v0)
-        levels[v1] = 1
-        self.data_impress['LEVEL'] = levels.copy()
+        # if self.so_nv1==True:
+        #     v1=np.setdiff1d(np.arange(len(levels)),v0)
+        # else:
+        #     # v1 = np.setdiff1d(np.concatenate(self.mesh.volumes.bridge_adjacencies(v0, 2, 3)), v0)
+        #     pass
+        # levels[v1] = 1
+        # self.data_impress['LEVEL'] = levels.copy()
 
         n1 = 0
         n2 = 0
@@ -45,10 +48,8 @@ class AdmNonNested(AdmMethod):
 
         ids_ms_2 = range(len(np.unique(gids_2)))
 
-
-        print('\n')
-        print("INICIOU GERACAO DA MALHA ADM")
-        print('\n')
+        # if pare:
+        #     import pdb; pdb.set_trace()
 
         for vol2 in ids_ms_2:
             vols2 = gids_0[gids_2==vol2]
@@ -74,7 +75,7 @@ class AdmNonNested(AdmMethod):
 
                 vols_ms2_lv1 = vols1[levels_vols_1==1]
                 if len(vols_ms2_lv1)>0:
-                    list_L2_ID[vols_ms2_lv1] = np.repeat(n2,len(vols_ms2_lv1))
+                    list_L2_ID[vols_ms2_lv1] = n2
                     n2+=1
 
         self.data_impress['LEVEL_ID_1'] = list_L1_ID
@@ -84,6 +85,132 @@ class AdmNonNested(AdmMethod):
             self.number_vols_in_levels[i] = len(levels[levels==i])
         self.n1_adm = n1
         self.n2_adm = n2
+
+    def equalize_levels(self):
+        levels = self.data_impress['LEVEL'].copy()
+        gid0 = self.data_impress['GID_0']
+        # ############
+        # coarse_id_wells = np.unique(self.data_impress['GID_1'][self.all_wells_ids])
+        # for cid in coarse_id_wells:
+        #     levels[self.data_impress['GID_1']==cid] = 0
+        # ############
+        gids_with_level = gid0[levels >= 0]
+
+        for level in range(1, self.n_levels):
+            cids_level = self.data_impress['GID_'+str(level)]
+            all_cids = np.unique(cids_level[levels == level])
+
+            for cid in all_cids:
+                gids_coarse = gid0[cids_level==cid]
+                n0 = gids_coarse.shape[0]
+                gids_coarse_without_level = np.setdiff1d(gids_coarse, gids_with_level)
+                n1 = gids_coarse_without_level.shape[0]
+                if n1 == n0:
+                    continue
+                elif n1 == 0:
+                    continue
+                else:
+                    # n1 < n0:
+                    levels_gids_coarse = levels[gids_coarse]
+                    gids_coarse_with_level = np.setdiff1d(gids_coarse, gids_coarse_without_level)
+                    levels_gids_coarse_with_level = levels[gids_coarse_with_level]
+                    for llevel in np.unique(levels_gids_coarse_with_level):
+                        if llevel == self.n_levels-1:
+                            continue
+                        vols = gids_coarse_with_level[levels_gids_coarse_with_level==llevel]
+                        neig_vols = np.unique(np.concatenate(self.elements_lv0['volumes_face_volumes'][vols]))
+                        levels_neig_vols = levels[neig_vols]
+                        vols_without_level = neig_vols[levels_neig_vols < 0]
+                        n3 = vols_without_level.shape[0]
+                        if n3 > 0:
+                            levels[vols_without_level] = llevel + 1
+
+        levels[levels < 0] = self.n_levels-1
+        self.data_impress['LEVEL'] = levels
+
+    def set_saturation_level(self):
+
+        levels = self.data_impress['LEVEL'].copy()
+        gid1 = self.data_impress['GID_1']
+        gid0 = self.data_impress['GID_0']
+        level_0_ini = set(gid0[levels==0])
+        saturation = self.data_impress['saturation']
+        all_wells = set(self.all_wells_ids)
+        gids_lv1_sat = set()
+        gidsc = np.unique(gid1)
+        internal_faces = self.elements_lv0['internal_faces']
+        v0 = self.elements_lv0['neig_internal_faces']
+
+        ds = saturation[v0]
+        ds = np.absolute(ds[:,1] - ds[:,0])
+
+        inds = ds >= self.delta_sat_max
+        levels[v0[inds][:,0]] = 0
+        levels[v0[inds][:,1]] = 0
+
+        all_lv0 = set(gid0[levels==0])
+
+        for gidc in gidsc:
+            gids0 = gid0[gid1==gidc]
+            if set(gids0) & all_lv0:
+                gids_fora = np.array(list(set(gids0) - all_lv0))
+                if len(gids_fora) > 0:
+                    levels[gids_fora] = 1
+                gids_lv1_sat.add(gidc)
+
+        cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(1)]
+        cids_level = self.ml_data['coarse_primal_id_level_'+str(1)]
+
+        for gidc in gids_lv1_sat:
+            vizs = cids_neigh[cids_level==gidc][0]
+            for viz in vizs:
+                if set([viz]) & gids_lv1_sat:
+                    continue
+                gids0 = gid0[gid1==viz]
+                if set(gids0) & all_lv0:
+                    gids_fora = np.array(list(set(gids0) - all_lv0))
+                    levels[gids_fora] = 1
+                else:
+                    levels[gids0] = 1
+
+        self.data_impress['LEVEL'] = levels.copy()
+
+    def set_saturation_level_new0(self):
+
+        levels = self.data_impress['LEVEL'].copy()
+        gid1 = self.data_impress['GID_1']
+        gid0 = self.data_impress['GID_0']
+        level_0_ini = set(gid0[levels==0])
+        saturation = self.data_impress['saturation']
+        all_wells = set(self.all_wells_ids)
+        gids_lv1_sat = set()
+        gidsc = np.unique(gid1)
+
+        for gidc in gidsc:
+            gids0 = gid0[gid1==gidc]
+            sats_local = saturation[gids0]
+            dif = sats_local.max() - sats_local.min()
+            if dif >= self.delta_sat_max:
+                levels[gids0] = 0
+                gids_lv1_sat.add(gidc)
+
+        cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(1)]
+        cids_level = self.ml_data['coarse_primal_id_level_'+str(1)]
+
+        all_lv0 = set(gid0[levels==0])
+
+        for gidc in gids_lv1_sat:
+            vizs = cids_neigh[cids_level==gidc][0]
+            for viz in vizs:
+                if set([viz]) & gids_lv1_sat:
+                    continue
+                gids0 = gid0[gid1==viz]
+                if set(gids0) & all_lv0:
+                    continue
+                else:
+                    levels[gids0] = 1
+
+        self.data_impress['LEVEL'] = levels.copy()
 
     def organize_ops_adm(self, OP_AMS, OR_AMS, level, _pcorr=None):
 
@@ -102,6 +229,8 @@ class AdmNonNested(AdmMethod):
             self._data[self.adm_rest_n + str(level)] = OR_ADM
             self._data[self.pcorr_n+str(level-1)] = pcorr
             return 0
+
+        import pdb; pdb.set_trace()
 
         n_adm = len(np.unique(level_id))
         n_adm_ant = len(np.unique(level_id_ant))
@@ -428,6 +557,14 @@ class AdmNonNested(AdmMethod):
 
         self.data_impress.update_variables_to_mesh()
         self.data_impress.export_to_npz()
+
+    def set_pms_flux(self, T_witout, wells, pare=False):
+
+        master = masterNeumanNonNested(self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, T_witout, wells, pare=pare)
+        ms_flux_faces, pcorr = master.run()
+        del master
+        self.data_impress['flux_faces'] = ms_flux_faces
+        self.data_impress['pcorr'] = pcorr
 
     def plot_operator(self, OP_ADM, OP_AMS, v):
 

@@ -124,7 +124,8 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.ml_data = M.multilevel_data
         self.all_wells_ids = all_wells_ids
         self.n_levels = n_levels
-        self.delta_sat_max = 0.1
+        self.delta_sat_max = 0.05
+        # self.delta_sat_max = 2.0
         self.data_impress = data_impress
         self.number_vols_in_levels = np.zeros(self.n_levels+1, dtype=int)
         gids_0 = self.data_impress['GID_0']
@@ -152,6 +153,15 @@ class AdmMethod(DataManager, TpfaFlux2):
         if so_nv1:
             self.data_impress['LEVEL'] = np.ones(len(self.data_impress['GID_0']), dtype=int)
             self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids), dtype=int)
+
+    def set_level_wells_2(self):
+        self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
+
+        # so_nv1 = self.so_nv1
+        #
+        # if so_nv1:
+        #     self.data_impress['LEVEL'] = np.ones(len(self.data_impress['GID_0']), dtype=int)
+        #     self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids), dtype=int)
 
     def set_adm_mesh(self):
 
@@ -449,6 +459,11 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms
+        # ##########################
+        # p2 = self.solver.direct_solver(T, b)
+        # self.data_impress['pressure'] = p2
+        # self.data_impress['pms'] = p2
+        # ##############################
         self.T = T
 
     def set_pms_flux_intersect_faces_dep0(self):
@@ -913,7 +928,7 @@ class AdmMethod(DataManager, TpfaFlux2):
             sats_local = saturation[gids0]
             dif = sats_local.max() - sats_local.min()
             if dif >= self.delta_sat_max:
-                levels[gids0] = np.repeat(0, len(gids0))
+                levels[gids0] = 0
                 gids_lv1_sat.add(gidc)
 
         cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(1)]

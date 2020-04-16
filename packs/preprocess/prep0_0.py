@@ -180,6 +180,7 @@ class Preprocess0:
             if tipo == direc.types_region_data_loaded[0]:
                 n_volumes = M.data.len_entities['volumes']
                 M.data[M.data.variables_impress['poro']] = np.repeat(value, n_volumes)
+                M.data['poro'] = np.repeat(value, n_volumes)
 
             elif tipo == direc.types_region_data_loaded[1]:
                 p0 = d0[direc.names_data_loaded_lv2[2]]

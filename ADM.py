@@ -325,7 +325,7 @@ T, b = tpfa_solver.run()
 # adm_method.set_adm_mesh()
 gids_0 = data_impress['GID_0']
 
-# adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
+adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
 # adm_method.set_initial_mesh(mlo, T, b)
 
 adm_method.organize_ops_adm(mlo['prolongation_level_1'],
