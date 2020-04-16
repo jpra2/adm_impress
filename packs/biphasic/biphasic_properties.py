@@ -10,8 +10,8 @@ class biphasicProperties(StructuredMeshProperties):
         def fget(self):
             gama_w = self.biphasic_data['gama_w']
             gama_o = self.biphasic_data['gama_o']
-            lambda_w = self.data_impress['lambda_w']
-            lambda_o = self.data_impress['lambda_o']
+            lambda_w = self.lambda_w_volumes
+            lambda_o = self.lambda_o_volumes
             return np.repeat(gama_w, len(lambda_w))*lambda_w + np.repeat(gama_o, len(lambda_o))*lambda_o
         return locals()
     gama_volumes_average = property(**gama_volumes_average())
