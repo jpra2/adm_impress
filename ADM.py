@@ -87,7 +87,7 @@ def plot_operator(OP_AMS, v):
 def get_coupled_dual_volumes(mlo, neta_lim=0.0, ind=0):
     OP_AMS=mlo['prolongation_level_1']
     OR_AMS=mlo['restriction_level_1']
-    Tc=OR_AMS*tpfa_solver['Tini']*OP_AMS
+    Tc=OR_AMS*T*OP_AMS
     Tc2=Tc.copy()
     Tc2.setdiag(0)
     DTc=1/np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
@@ -232,7 +232,7 @@ else:
 print("Time to construct prolongation operator: {} seconds".format(time.time()-t0))
 print("Adapting reduced boundary conditions")
 t0=time.time()
-neta_lim=1
+neta_lim=0.1
 OP_AMS=mlo['prolongation_level_1'].copy()
 groups = get_coupled_dual_volumes(mlo,neta_lim, ind=0)
 
@@ -301,7 +301,7 @@ print("Time to adapt RBC: {} seconds".format(time.time()-t0))
 # if len(lins_par)>0:
 #     finos=np.concatenate([finos,lins_par])
 
-# data_impress.update_variables_to_mesh()
+data_impress.update_variables_to_mesh()
 ################################
 
 adm_method = AdmNonNested(finos, n_levels, M, data_impress, elements_lv0)
@@ -398,12 +398,12 @@ ss=np.array(sums.sum(axis=1)).T[0]
 # np.where(ss>100)
 # ss[data_impress["DUAL_1"]<2]=0
 data_impress["velocity_projection"]=ss
-'''
+
 superam_tol_for_v=data_impress["GID_1"][M.volumes.all[ss>1]]
 vsup=[]
 for v in superam_tol_for_v:
     vsup.append(M.volumes.all[data_impress["GID_1"]==v])
-
+'''
 if len(vsup)>0:
     vsup=np.concatenate(vsup)
     finos=np.concatenate([finos,vsup])
