@@ -62,20 +62,7 @@ class StructuredMeshProperties:
         doc = "The up_g property."
         def fget(self):
             try:
-                if self._verificate_up_g:
-                    return self._up_g
-                else:
-                    internal_faces = self.elements_lv0['internal_faces']
-                    v0 = self.elements_lv0['neig_internal_faces']
-                    up_g = np.zeros(len(internal_faces), dtype=int)
-                    delta_z_internal_faces = self.delta_z_internal_faces
-                    up1 = delta_z_internal_faces >= 0
-                    up0 = delta_z_internal_faces < 0
-                    up_g[up1] = v0[up1, 1]
-                    up_g[up0] = v0[up0, 0]
-                    self._up_g = up_g
-                    self._verificate_up_g = True
-                    return self._up_g
+                return self._up_g
             except AttributeError:
                 internal_faces = self.elements_lv0['internal_faces']
                 v0 = self.elements_lv0['neig_internal_faces']
@@ -86,7 +73,6 @@ class StructuredMeshProperties:
                 up_g[up1] = v0[up1, 1]
                 up_g[up0] = v0[up0, 0]
                 self._up_g = up_g
-                self._verificate_up_g = True
                 return self._up_g
         return locals()
     up_g = property(**up_g())
