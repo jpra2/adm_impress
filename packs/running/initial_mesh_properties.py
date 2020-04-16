@@ -21,30 +21,59 @@ def initial_mesh():
     load_multilevel_data = data_loaded['load_multilevel_data']
 
     if multilevel_data and load_multilevel_data:
+        t0=time.time()
+        print("creating M")
         from ..load.preprocessor_load import init_mesh
         # M = init_mesh('flying/multilevel_data-all.h5m')
+        import time
+
         M = init_mesh('saves/initial_mesh.h5m')
+        print("time to create M: {} seconds".format(time.time()-t0))
+        t0=time.time()
         elements_lv0 = ElementsLv0(M, load=load)
+        print("time_to_create elements_lv0: {}".format(time.time()-t0))
+        print("creating data impress")
         data_impress = Data(M, elements_lv0, load=load)
+        print("time_to_create data_impress: {}".format(time.time()-t0))
+        print("creating ml_data")
+        t0=time.time()
         if not load:
+            print("preprocess0")
+            t0=time.time()
             Preprocess0(M, elements_lv0)
+            print(time.time()-t0,"preprocess0")
         ml_data = MultilevelData(data_impress, M, load=load_multilevel_data)
         ml_data.load_tags()
+        print("time_to_create ml_data: {}".format(time.time()-t0))
 
     else:
         if load:
+            import time
+            print("creating M")
+            t0=time.time()
             from ..load.preprocessor_load import init_mesh
             M = init_mesh('saves/initial_mesh.h5m')
+            print("time to create M: {} seconds".format(time.time()-t0))
         else:
+            import time
+            print("creating M")
+            t0=time.time()
             from ..load.preprocessor0 import M
+            print("time to create M: {} seconds".format(time.time()-t0))
+        t0=time.time()
         elements_lv0 = ElementsLv0(M, load=load)
+        print("time_to_create elements_lv0: {}".format(time.time()-t0))
+        t0=time.time()
         data_impress = Data(M, elements_lv0, load=load)
+        print("time_to_create elements_data_impress: {}".format(time.time()-t0))
+        t0=time.time()
         if not load:
             Preprocess0(M, elements_lv0)
         if multilevel_data:
             ml_data = MultilevelData(data_impress, M)
             ml_data.run()
             # ml_data.save_mesh()
+        print("time_to_create ml_data: {}".format(time.time()-t0))
 
     wells = Wells(M, elements_lv0, load=load)
 

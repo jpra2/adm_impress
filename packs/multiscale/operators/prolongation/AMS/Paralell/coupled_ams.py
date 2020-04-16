@@ -165,8 +165,10 @@ class OP_local:
             t0=time.time()
             Pi=-linalg.spsolve(II,IF*Pf+IE*Pe+IV)
             sub_d.A_b_t.append([II.shape[0], nv,time.time()-t0])
-
-        OP=vstack([Pi,Pf,Pe,Pv])
+        try:
+            OP=vstack([Pi,Pf,Pe,Pv])
+        except:
+            import pdb; pdb.set_trace()
 
         lcd=scipy.sparse.find(OP)
         lines=ids_globais_vols[np.array(lcd[0])].astype(int)
@@ -257,16 +259,17 @@ class OP_AMS:
         lines, cols, data = self.get_OP_paralell(partitioned_subds)
         self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
 
-        '''
-        # To test bugs on serial, use this###############################
-        lines, cols, data = self.get_OP(all_subds, paralell=False)
-        self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
+
+        # # To test bugs on serial, use this###############################
+        # lines, cols, data = self.get_OP(all_subds, paralell=False)
+        # self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
         #######################################
-        '''
+
 
 
     def get_OP(self,partitioned_subd, paralell=True):
-        print("process {} started".format(partitioned_subd[-1].id))
+        if paralell:
+            print("process {} started".format(partitioned_subd[-1].id))
         t0=time.time()
         # Processes imputs
         ################################
@@ -274,11 +277,11 @@ class OP_AMS:
         for dual_d in partitioned_subd:
             lcd=np.hstack([lcd,OP_local(dual_d).OP])
         ###################################
-        print("process {} finished after {}".format(partitioned_subd[-1].id, time.time()-t0))
 
         # Send results to master process
         ###################################################
         if paralell:
+            print("process {} finished after {}".format(partitioned_subd[-1].id, time.time()-t0))
             master=dual_d.master
             master.send(lcd)
             #############################################

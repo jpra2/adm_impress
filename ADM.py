@@ -1,3 +1,7 @@
+import time
+t0=time.time()
+print("importing packs")
+
 from packs.running.initial_mesh_properties import initial_mesh
 from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
@@ -9,6 +13,7 @@ from pymoab import types
 from scipy.sparse import csc_matrix, find, csgraph
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
+print("time to import packs: {} seconds".format(time.time()-t0))
 '''
 def get_gids_and_primal_id(gids, primal_ids):
     gids2 = np.unique(gids)
@@ -82,7 +87,7 @@ def plot_operator(OP_AMS, v):
 def get_coupled_dual_volumes(mlo, neta_lim=0.0, ind=0):
     OP_AMS=mlo['prolongation_level_1']
     OR_AMS=mlo['restriction_level_1']
-    Tc=OR_AMS*T*OP_AMS
+    Tc=OR_AMS*tpfa_solver['Tini']*OP_AMS
     Tc2=Tc.copy()
     Tc2.setdiag(0)
     DTc=1/np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
@@ -126,9 +131,10 @@ def get_coupled_dual_volumes(mlo, neta_lim=0.0, ind=0):
             neta_p=max(neta_p,vals_set)
         data_impress["non_physical_value_"+str(ind)][setar]=np.repeat(neta_p,len(setar))
 
-    dual_structure = M.multilevel_data['dual_structure_level_1']
-    dual_volumes = [dd['volumes'] for dd in dual_structure]
-    dual_lines = [np.repeat(i,len(dual_structure[i]['volumes'])) for i in range(len(dual_structure))]
+    dual_volumes = M.multilevel_data['dual_structure_level_1']
+    # dual_volumes = [dd['volumes'] for dd in dual_structure]
+
+    dual_lines = [np.repeat(i,len(dual_volumes[i])) for i in range(len(dual_volumes))]
     # for dvv in range(len(dual_volumes)): #id_dual
     #     data_impress["perm_z"][dual_volumes[dvv]]=dual_lines[dvv]
     dvs=np.concatenate(dual_volumes)
@@ -185,6 +191,8 @@ def get_dual_subdomains(groups):
         dv.append(new_volume)
     return(dv)
 
+print("Preprocessing finescale mesh")
+t0=time.time()
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 n = data_loaded['n_test']
@@ -192,17 +200,27 @@ load_operators = data_loaded['load_operators']
 get_correction_term = data_loaded['get_correction_term']
 n_levels = int(data_loaded['n_levels'])
 _debug = data_loaded['_debug']
-
+t1=time.time()
 M, elements_lv0, data_impress, wells = initial_mesh()
-
+print("Time to preprocess finescale mesh: {}, {} seconds".format(time.time()-t0, time.time()-t1))
+print("")
+print("STARTING MULTILEVEL")
+print("")
+print("")
+tml=time.time()
 ######################
+print("Creating finescale system")
+t0=time.time()
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 # tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
 T, b = tpfa_solver.run()
+print("Time to create finescale system: {} seconds".format(time.time()-t0))
 # tpfa_solver.get_RHS_term()
 # tpfa_solver.get_transmissibility_matrix()
+print("Constructing operators")
+t0=time.time()
 dual_structure = M.multilevel_data['dual_structure_level_1']
-dual_volumes = np.array([dd['volumes'] for dd in dual_structure])
+dual_volumes = np.array([dd for dd in dual_structure])
 
 multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 mlo=multilevel_operators
@@ -211,8 +229,9 @@ if load_operators:
 else:
     # multilevel_operators.run(tpfa_solver['Tini'])
     multilevel_operators.run_paralel(tpfa_solver['Tini'],dual_volumes, 0, False)
-
-
+print("Time to construct prolongation operator: {} seconds".format(time.time()-t0))
+print("Adapting reduced boundary conditions")
+t0=time.time()
 neta_lim=1
 OP_AMS=mlo['prolongation_level_1'].copy()
 groups = get_coupled_dual_volumes(mlo,neta_lim, ind=0)
@@ -260,13 +279,29 @@ for ind in range(1,6):
         mlo['prolongation_level_1']=OP_AMS
         multilevel_operators=mlo
     old_groups=atualized_groups.copy()
+
+groups = get_coupled_dual_volumes(mlo,neta_lim, ind=5)
 finos=wells['all_wells']
+if len(groups)>0:
+    dv=np.concatenate(get_dual_subdomains(groups))
+    finos=np.concatenate([finos,dv])
+
+print("Time to adapt RBC: {} seconds".format(time.time()-t0))
+# from packs.utils.utils_old import get_box
+# dx=20
+# dy=10
+# dz=2
+# #60 220
+# bx=np.array([[dx*0,dy*53,dz*84],[dx*3,dy*63,dz*85]])
+# vols=get_box(M.data['centroid_volumes'],bx)
+# if len(vols)>0:
+#     finos=np.concatenate([finos,vols])
 # p0=M.volumes.all[(data_impress['GID_1']==0) |  (data_impress['GID_1']==5)]
 # finos=np.concatenate([finos,p0])
 # if len(lins_par)>0:
 #     finos=np.concatenate([finos,lins_par])
 
-data_impress.update_variables_to_mesh()
+# data_impress.update_variables_to_mesh()
 ################################
 
 adm_method = AdmNonNested(finos, n_levels, M, data_impress, elements_lv0)
@@ -315,7 +350,7 @@ Tc=OR_AMS*T*OP_AMS
 bc=OR_AMS*b
 from scipy.sparse import linalg
 pc=linalg.spsolve(Tc,bc)
-pf=linalg.spsolve(T,b)
+
 pms=OP_AMS*pc
 OP_ADM = adm_method['adm_prolongation_level_1']
 OR_ADM = adm_method['adm_restriction_level_1']
@@ -323,7 +358,9 @@ Tcadm=OR_ADM*T*OP_ADM
 bcadm = OR_ADM*b
 pcadm=linalg.spsolve(Tcadm,bcadm)
 padm=OP_ADM*pcadm
+print("FINISHED MULTILEVEL WITH: {} SECONDS".format(time.time()-tml))
 
+pf=linalg.spsolve(T,b)
 eadm=np.linalg.norm(abs(padm-pf))/np.linalg.norm(pf)
 eams=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
 print("erro_adm: {}, erro_ams: {}".format(eadm,eams))
@@ -434,13 +471,14 @@ perms_xx=perms[:,0]
 # data_impress["perm_x"]=perms_xx
 adm_method.solve_multiscale_pressure(T, b)
 adm_method.set_pcorr()
+'''
 data_impress['pcorr'][data_impress['LEVEL']==0] = data_impress['pms'][data_impress['LEVEL']==0]
 
 data_impress['pressure'] = padm
 data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
-data_impress['erro'] = np.absolute((data_impress['pressure'] - data_impress['pms'])/data_impress['pms'])
+# data_impress['erro'] = np.absolute((data_impress['pressure'] - data_impress['pms'])/data_impress['pms'])
 data_impress['erro_pcorr_pdm'] = np.absolute(data_impress['pcorr'] - data_impress['pms'])
-'''
+
 get_coupled_dual_volumes(mlo, neta_lim=neta_lim, ind=999)
 data_impress.update_variables_to_mesh()
 M.core.print(file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
