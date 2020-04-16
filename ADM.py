@@ -358,6 +358,7 @@ pc=linalg.spsolve(Tc,bc)
 
 pms=OP_AMS*pc
 OP_ADM = adm_method['adm_prolongation_level_1']
+
 OR_ADM = adm_method['adm_restriction_level_1']
 Tcadm=OR_ADM*T*OP_ADM
 bcadm = OR_ADM*b

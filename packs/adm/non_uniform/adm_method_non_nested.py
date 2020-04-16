@@ -22,6 +22,9 @@ class AdmNonNested(AdmMethod):
         list_L2_ID = np.repeat(-1, n0)
         list_L1_ID[v0] = np.arange(len(v0))
         list_L2_ID[v0] = np.arange(len(v0))
+
+        self.data_impress['LEVEL_ID_1'][v0] = list_L1_ID[v0]
+        self.data_impress['LEVEL_ID_2'][v0] = list_L2_ID[v0]
         self.data_impress['ADM_COARSE_ID_LEVEL_2'][:] = -1
         self.data_impress['ADM_COARSE_ID_LEVEL_1'][:] = -1
 
@@ -50,7 +53,7 @@ class AdmNonNested(AdmMethod):
                     n1+=1
                 else:
                     vertex = vols1[self.data_impress['DUAL_1'][vols1]==3]
-                    gid1_vertex = self.data_impress['GID_1'][vertex]
+                    gid1_vertex = self.data_impress['LEVEL_ID_1'][vertex]
                     self.data_impress['ADM_COARSE_ID_LEVEL_1'][vols1] = np.repeat(gid1_vertex, len(vols1))
 
                 vols_ms2_lv1 = vols1[levels_vols_1==1]
@@ -292,7 +295,6 @@ class AdmNonNested(AdmMethod):
         return 0
 
     def organize_ops_adm_level_1(self, OP_AMS, OR_AMS, level, _pcorr=None):
-
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
         gid_ant = self.data_impress['GID_' + str(level-1)]
@@ -305,7 +307,7 @@ class AdmNonNested(AdmMethod):
 
         AMS_TO_ADM = np.arange(len(gid_level[vertices]))
         AMS_TO_ADM[gid_level[vertices]] = level_adm_coarse_id[vertices]
-
+        
         nivel_0 = gid_0[levels==0]
         ID_global1 = nivel_0
         OP_AMS[nivel_0] = 0
@@ -330,7 +332,8 @@ class AdmNonNested(AdmMethod):
         try:
             OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
             np.savetxt("results/OP.csv",OP_ADM.toarray(),delimiter=",")
-            import pdb; pdb.set_trace()
+            # plot_operator(self, OP_ADM, np.arange())
+            # import pdb; pdb.set_trace()
         except:
             import pdb; pdb.set_trace()
 
@@ -516,7 +519,7 @@ class AdmNonNested(AdmMethod):
             perro.append(abs((SOL_ADM_fina-x0)/x0).max())
             active_nodes.append(n2/nfine_vols)
 
-            # if imprimir_a_cada_iteracao:
+            if imprimir_a_cada_iteracao:
             #     # M1.mb.tag_set_data(Pseudo_ERRO_tag,M1.all_volumes,abs(pseudo_erro/x0)[GIDs])
             #     #
             #     # M1.mb.tag_set_data(ERRO_tag,M1.all_volumes,abs((SOL_ADM_fina-SOL_TPFA)/SOL_TPFA)[GIDs])
@@ -524,8 +527,9 @@ class AdmNonNested(AdmMethod):
             #     # M1.mb.tag_set_data(P_TPFA_tag,M1.all_volumes,SOL_TPFA[GIDs])
             #     # ext_vtk = 'testes_MAD'  + str(cont) + '.vtk'
             #     # M1.mb.write_file(ext_vtk,[av])
-            #     self.data_impress.update_variables_to_mesh()
-            #     self.plot_operator(OP_ADM, OP_AMS_1, 0)
+
+                self.plot_operator(OP_ADM, OP_AMS_1, 0)
+                self.data_impress.update_variables_to_mesh()
             #     # import pdb; pdb.set_trace()
             #     M.core.print(file='testt'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
             cont+=1
