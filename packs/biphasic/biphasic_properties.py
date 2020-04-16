@@ -1,5 +1,7 @@
 import numpy as np
+import scipy.sparse as sp
 from ..data_class.structured_mesh_properties import StructuredMeshProperties
+
 
 class biphasicProperties(StructuredMeshProperties):
 
@@ -174,16 +176,23 @@ class biphasicProperties(StructuredMeshProperties):
     def flux_w_internal_faces():
         doc = "The flux_w_internal_faces property."
         def fget(self):
-            return self.flux_press_w_internal_faces - self.flux_grav_w_internal_faces
+            return self.flux_press_w_internal_faces + self.flux_grav_w_internal_faces
         return locals()
     flux_w_internal_faces = property(**flux_w_internal_faces())
 
     def flux_o_internal_faces():
         doc = "The flux_o_internal_faces property."
         def fget(self):
-            return self.flux_press_o_internal_faces - self.flux_grav_o_internal_faces
+            return self.flux_press_o_internal_faces + self.flux_grav_o_internal_faces
         return locals()
     flux_o_internal_faces = property(**flux_o_internal_faces())
+
+    def flux_internal_faces():
+        doc = "The flux_internal_faces property."
+        def fget(self):
+            return self.flux_w_internal_faces + self.flux_o_internal_faces
+        return locals()
+    flux_internal_faces = property(**flux_internal_faces())
 
     def flux_o_faces():
         doc = "The flux_o_faces property."
@@ -205,6 +214,68 @@ class biphasicProperties(StructuredMeshProperties):
         return locals()
     flux_w_faces = property(**flux_w_faces())
 
+    def flux_faces():
+        doc = "The flux_faces property."
+        def fget(self):
+            return self.flux_w_faces + self.flux_o_faces
+        return locals()
+    flux_faces = property(**flux_faces())
+
+    def flux_volumes():
+        doc = "The flux_volumes property."
+        def fget(self):
+            flux_internal_faces = self.flux_internal_faces
+            v0 = self.elements_lv0['neig_internal_faces']
+            n_volumes = len(self.data_impress['GID_0'])
+            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            cols = np.repeat(0, len(lines))
+            data = np.array([flux_internal_faces, -flux_internal_faces]).flatten()
+            flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
+            return flux_volumes
+        return locals()
+    flux_volumes = property(**flux_volumes())
+
+    def flux_w_volumes():
+        doc = "The flux_w_volumes property."
+        def fget(self):
+            v0 = self.elements_lv0['neig_internal_faces']
+            n_volumes = len(self.data_impress['GID_0'])
+            flux_w_internal_faces = self.flux_w_internal_faces
+            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            cols = np.repeat(0, len(lines))
+            data = np.array([flux_w_internal_faces, -flux_w_internal_faces]).flatten()
+            flux_w_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
+            ws_prod = self.wells['ws_prod']
+            ws_inj = self.wells['ws_inj']
+            flux_volumes = self.flux_volumes
+
+            if len(ws_prod) > 0:
+                flux_w_volumes[ws_prod] -= flux_volumes[ws_prod]*self.fw_volumes[ws_prod]
+
+            if len(ws_inj) > 0:
+                flux_w_volumes[ws_inj] -= flux_volumes[ws_inj]*self.fw_volumes[ws_inj]
+
+            return flux_w_volumes
+        return locals()
+    flux_w_volumes = property(**flux_w_volumes())
+
+    def flux_o_volumes():
+        doc = "The flux_o_volumes property."
+        def fget(self):
+            v0 = self.elements_lv0['neig_internal_faces']
+            n_volumes = len(self.data_impress['GID_0'])
+            flux_volumes = self.flux_volumes
+            flux_o_internal_faces = self.flux_o_internal_faces
+            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            cols = np.repeat(0, len(lines))
+            data = np.array([flux_o_internal_faces, -flux_o_internal_faces]).flatten()
+            flux_o_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
+            ws_prod = self.wells['ws_prod']
+            flux_o_volumes[ws_prod] -= flux_volumes[ws_prod]*(1 - self.fw_volumes[ws_prod])
+            return flux_o_volumes
+        return locals()
+    flux_o_volumes = property(**flux_o_volumes())
+
     def velocity_w_faces():
         doc = "The velocity_w_faces property."
         def fget(self):
@@ -221,6 +292,13 @@ class biphasicProperties(StructuredMeshProperties):
         return locals()
     velocity_o_faces = property(**velocity_o_faces())
 
+    def velocity_faces():
+        doc = "The velocity_faces property."
+        def fget(self):
+            return self.velocity_w_faces + self.velocity_o_faces
+        return locals()
+    velocity_faces = property(**velocity_faces())
+
     def velocity_w_faces_vec():
         doc = "The velocity_w_faces_vec property."
         def fget(self):
@@ -236,6 +314,29 @@ class biphasicProperties(StructuredMeshProperties):
             return self.velocity_o_faces.reshape([len(self.elements_lv0['faces']), 1]) * u_normal
         return locals()
     velocity_o_faces_vec = property(**velocity_o_faces_vec())
+
+    def velocity_faces_vec():
+        doc = "The velocity_faces_vec property."
+        def fget(self):
+            return self.velocity_w_faces_vec + self.velocity_o_faces_vec
+        return locals()
+    velocity_faces_vec = property(**velocity_faces_vec())
+
+    def flux_w_faces_vec():
+        doc = "The flux_w_faces_vec property."
+        def fget(self):
+            areas = self.data_impress['area'].reshape(len(self.data_impress['area']), 1)
+            return self.velocity_w_faces_vec*areas
+        return locals()
+    flux_w_faces_vec = property(**flux_w_faces_vec())
+
+    def flux_o_faces_vec():
+        doc = "The flux_o_faces_vec property."
+        def fget(self):
+            areas = self.data_impress['area'].reshape(len(self.data_impress['area']), 1)
+            return self.velocity_o_faces_vec*areas
+        return locals()
+    flux_o_faces_vec = property(**flux_o_faces_vec())
 
     def change_upwind_o(self):
         self._data['upwind_identificate_o'] = ~self._data['upwind_identificate_o']

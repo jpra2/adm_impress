@@ -41,7 +41,8 @@ class StructuredMeshProperties:
     def grad_p_internal_faces():
         doc = "The delta_p_internal_faces property."
         def fget(self):
-            self.delta_p_internal_faces/self.delta_h_internal_faces
+
+            return self.delta_p_internal_faces/self.delta_h_internal_faces
         return locals()
     grad_p_internal_faces = property(**grad_p_internal_faces())
 
