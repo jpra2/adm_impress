@@ -6,7 +6,8 @@ import time
 from ...directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 from pymoab import types
-from .paralel_neuman import masterNeumanNonNested
+# from .paralel_neuman import masterNeumanNonNested
+from .paralel_neuman_new0 import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):
 
