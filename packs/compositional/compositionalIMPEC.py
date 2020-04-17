@@ -56,7 +56,7 @@ class CompositionalFVM:
         if kprop.load_w:
             self.dVtk[kprop.n_components-1,:] = 1 / fprop.ksi_W
             kprop.Cw = np.array(data_loaded['compositional_data']['water_data']['Cw']).astype(float)
-            dVwP = fprop.component_mole_numbers[kprop.Nc,:] * fprop.ksi_W0 * kprop.Cw / fprop.ksi_W**2
+            dVwP = -fprop.component_mole_numbers[kprop.Nc,:] * fprop.ksi_W0 * kprop.Cw / fprop.ksi_W**2
         else: dVwP = np.zeros(self.n_volumes)
 
         self.dVtP = dVtP + dVwP
