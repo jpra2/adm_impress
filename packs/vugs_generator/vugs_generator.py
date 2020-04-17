@@ -1,10 +1,10 @@
 import random
 class GenarateVugs:
     def __init__(self,M):
-        centro=[300,500,700]
-        abc=[1,3,2]
+        centro=[0,0,0]
+        abc=[8,3,4]
         self.get_comparation_parameters(M,centro,abc)
-        centers, abcs=self.get_aleatory_parameters(10,[1,3])
+        centers, abcs=self.get_aleatory_parameters(30,[2,6])
         for i in range(len(centers)):
             self.get_comparation_parameters(M,centers[i],abcs[i])
 
@@ -25,6 +25,7 @@ class GenarateVugs:
             +(y-centro[1])*(y-centro[1])/(params[1]*params[1])\
             +(z-centro[2])*(z-centro[2])/(params[2]*params[2])<1
         M.vug[vugs]=1
+
     def get_aleatory_parameters(self,n,lim_abc):
         xmin=self.x.min()
         xmax=self.x.max()

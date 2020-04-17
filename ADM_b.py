@@ -83,6 +83,7 @@ if biphasic:
 
 multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 mlo = multilevel_operators
+
 T, b = b1.get_T_and_b()
 
 
@@ -107,6 +108,7 @@ adm_method.equalize_levels()
 # adm_method.set_adm_mesh()
 gids_0 = data_impress['GID_0']
 
+
 adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
 # adm_method.set_initial_mesh(mlo, T, b)
 
@@ -119,9 +121,10 @@ cont = 1
 verif = True
 pare = False
 while verif:
-
     for level in range(1, n_levels):
-
+        multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
+        mlo = multilevel_operators
+        # import pdb; pdb.set_trace()
         adm_method.organize_ops_adm(mlo['prolongation_level_'+str(level)],
                                     mlo['restriction_level_'+str(level)],
                                     level)

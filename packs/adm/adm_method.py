@@ -57,6 +57,7 @@ def solve_local_local_problem(solver, neigh_intern_faces, transmissibility, volu
     b[indices_p] = values_p
     b[indices_q] += values_q
     x = solver(T.tocsc(), b)
+
     return x
 
 def set_boundary_conditions(T: 'transmissibility matrix',
@@ -447,6 +448,7 @@ class AdmMethod(DataManager, TpfaFlux2):
             T_adm = OR_adm*T_adm*OP_adm
 
         pms = self.solver.direct_solver(T_adm, b_adm)
+
         # p_adm = pms.copy()
 
         for i in range(1, n_levels):
@@ -456,6 +458,9 @@ class AdmMethod(DataManager, TpfaFlux2):
                 pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
             else:
                 pms = self._data[self.adm_op_n + str(level)]*pms
+                # pms = self.solver.direct_solver(T,b)
+                # import pdb; pdb.set_trace()
+
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms
@@ -839,6 +844,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         master2worker = [mp.Pipe() for _ in range(self.n_workers)]
         m2w, w2m = list(zip(*master2worker))
+
         procs = [mp.Process(target=f, args=[obj, comm]) for obj, comm in zip(list_objects, w2m)]
 
         for proc in procs:

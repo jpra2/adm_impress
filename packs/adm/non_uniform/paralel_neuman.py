@@ -166,6 +166,19 @@ class masterNeumanNonNested:
                             ind_diric = [escolhido]
                             val_diric = [pms[escolhido]]
 
+                    if len(ind_diric)==0:
+                        import pdb; pdb.set_trace()
+
+
+
+                    ind_diric=[]
+                    val_diric=[]
+                    # if volumes.min()!=0 and volumes.max()!=80:
+                    #     ind_diric=volumes[self.data_impress['DUAL_1'][volumes]==3]
+                    #     val_diric=pms[ind_diric]
+                    self.data_impress['val_neum'][ind_neum]=abs(np.array(val_neum))
+                    self.data_impress['val_diric'][ind_diric]=abs(np.array(val_diric))
+
                     list_of_subdomains.append(Subdomain(volumes, ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, self.T_without))
 
                 else:
@@ -188,6 +201,13 @@ class masterNeumanNonNested:
                     val_neum = presc_flux_intern_boundary_volumes
                     ind_diric = vertex
                     val_diric = pms[vertex]
+                    ind_diric=[]
+                    val_diric=[]
+                    # if volumes.min()!=0 and volumes.max()!=80:
+                    #     ind_diric=volumes[self.data_impress['DUAL_1'][volumes]==3]
+                    #     val_diric=pms[ind_diric]
+                    self.data_impress['val_neum'][ind_neum]=abs(np.array(val_neum))
+                    self.data_impress['val_diric'][ind_diric]=abs(np.array(val_diric))
                     list_of_subdomains.append(Subdomain(volumes, ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, self.T_without))
 
 
@@ -227,6 +247,7 @@ class masterNeumanNonNested:
         list_of_process_per_cpu = self.preprocess()
         master2worker = [mp.Pipe() for _ in range(self.n_workers)]
         m2w, w2m = list(zip(*master2worker))
+
         procs = [mp.Process(target=run_thing, args=[LocalSolution(obj, comm)]) for obj, comm in zip(list_of_process_per_cpu, w2m)]
         del list_of_process_per_cpu
         global_pcorr = np.zeros(len(self.data_impress['GID_0']))
@@ -280,6 +301,7 @@ class Subdomain(CommonInfos):
         self.adjs_intern_faces = adjs_intern_faces
         self.map_gid_in_lid = np.repeat(-1, volumes.max()+1)
         self.map_gid_in_lid[volumes] = self.ids_local
+        # np.set_printoptions(precision=0)
 
 class LocalSolution:
 
@@ -295,6 +317,7 @@ class LocalSolution:
         solver = SolverSp()
 
         for subd in self.subdomains:
+
             volumes = subd.volumes
             T_local = subd.T_local
             ids_local = subd.ids_local
@@ -310,6 +333,8 @@ class LocalSolution:
             T_local_2 = T_local.copy()
             T_local_2[ind_diric_local] = 0
             T_local_2[ind_diric_local, ind_diric_local] = 1
+            # from scipy.sparse import find
+            # print(find(T_local_2)[2])
 
             b = np.zeros(len(volumes))
 
@@ -317,8 +342,11 @@ class LocalSolution:
             b[map_gid_in_lid[ind_diric]] = val_diric
 
             T_local_2 = T_local_2.tocsc()
-
-            x = solver.direct_solver(T_local_2, b)
+            from packs.solvers.solvers_trilinos.solvers_tril import solverTril
+            # x = solver.direct_solver(T_local_2, b)
+            a=solverTril()
+            x = a.solve_linear_problem(T_local_2, b)
+            print((x*T_local_2-b).max(),"ajkksssppppppppppppppppp")
             # print('\n')
             # print('pcorr')
             # print(x)
@@ -330,6 +358,10 @@ class LocalSolution:
             t0 = T_local[map_gid_in_lid[adjs_intern_faces[:,0]], map_gid_in_lid[adjs_intern_faces[:,1]]].toarray().flatten()
             p0 = x[map_gid_in_lid[adjs_intern_faces[:,0]]]
             p1 = x[map_gid_in_lid[adjs_intern_faces[:,1]]]
+            # p0_ant=p0.copy()
+            # p1_ant=p1.copy()
+            # p0=p0[p0_ant>p1_ant]
+            # p1=p1[p1_ant>p0_ant]
             ms_flux = get_flux_faces(p1, p0, t0)
 
             sarray = np.zeros(len(intern_faces), dtype=dt)

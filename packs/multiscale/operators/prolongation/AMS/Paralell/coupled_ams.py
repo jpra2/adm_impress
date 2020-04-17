@@ -12,6 +12,7 @@ class DualDomain:
         self.couple_bound=couple_bound
         self.adjs, self.ks, self.ids_globais_vols, self.ns =  self.get_local_informations(data_impress, elements_lv0, volumes, local_couple=local_couple, couple_bound=couple_bound)
         self.coarse_ids = data_impress['GID_1'][self.vertices]
+        self.all_coarse_ids = data_impress['GID_1'][volumes]
         self.A_b_t=[]
 
     def get_local_informations(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
@@ -165,10 +166,12 @@ class OP_local:
             t0=time.time()
             Pi=-linalg.spsolve(II,IF*Pf+IE*Pe+IV)
             sub_d.A_b_t.append([II.shape[0], nv,time.time()-t0])
-        try:
-            OP=vstack([Pi,Pf,Pe,Pv])
-        except:
-            import pdb; pdb.set_trace()
+
+        OP=vstack([Pi,Pf,Pe,Pv])
+
+        # TL=self.get_submatrix(adjs0, adjs1, ks, (0, ni+nf+ne+nv, 0, ni+nf+ne+nv))
+        # (TL*OP).sum(axis=0)
+
 
         lcd=scipy.sparse.find(OP)
         lines=ids_globais_vols[np.array(lcd[0])].astype(int)
@@ -265,10 +268,11 @@ class OP_AMS:
         self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
 
 
-        # # To test bugs on serial, use this###############################
+        # To test bugs on serial, use this###############################
         # lines, cols, data = self.get_OP(all_subds, paralell=False)
         # self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
-        #######################################
+        # import pdb; pdb.set_trace()
+        ######################################
 
 
 

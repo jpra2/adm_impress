@@ -21,7 +21,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         self.relative_permeability = self.relative_permeability()
         self.V_total = (data_impress['volume']*data_impress['poro']).sum()
         self.max_contador_vtk = len(self.biphasic_data['vpis_para_gravar_vtk'])
-        self.delta_sat_max = 0.2
+        self.delta_sat_max = 0.8
         self.lim_flux_w = 9e-8
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
@@ -405,7 +405,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 
         #############
         ## teste variacao maxima de saturacao
-        test = ids2[delta_sat > self.delta_sat_max+0.000001]
+        test = ids2[delta_sat > self.delta_sat_max+0.001]
         if len(test) > 0:
             return 1
         del test
@@ -432,7 +432,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         min_sat = saturations.min()
         max_sat = saturations.max()
 
-        if min_sat < self.biphasic_data['Swc'] or max_sat > 1-self.biphasic_data['Sor']:
+        if min_sat < self.biphasic_data['Swc']-0.001 or max_sat > 1-self.biphasic_data['Sor']+0.001:
             return 1
             # raise ValueError(f'\nprint max_sat: {max_sat} ; min_sat: {min_sat}\n')
 

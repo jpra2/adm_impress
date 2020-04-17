@@ -487,6 +487,6 @@ data_impress['erro_pcorr_pdm'] = np.absolute(data_impress['pcorr'] - data_impres
 
 get_coupled_dual_volumes(mlo, neta_lim=neta_lim, ind=999)
 data_impress.update_variables_to_mesh()
-M.core.print(file='test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
+M.core.print(file='results/test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
 import pdb; pdb.set_trace()

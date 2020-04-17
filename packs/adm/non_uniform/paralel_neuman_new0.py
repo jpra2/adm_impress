@@ -159,7 +159,8 @@ class masterNeumanNonNested:
                     else:
                         ind_diric += list(vertex)
                         val_diric += list(pressure_vertex)
-
+                if len(ind_diric)>1:
+                    import pdb; pdb.set_trace()
                 list_of_subdomains.append(Subdomain(volumes, ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, self.T_without))
 
         return list_of_subdomains, pms_flux_faces

@@ -6,8 +6,8 @@ import time
 from ...directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 from pymoab import types
-# from .paralel_neuman import masterNeumanNonNested
-from .paralel_neuman_new0 import masterNeumanNonNested
+from .paralel_neuman import masterNeumanNonNested
+# from .paralel_neuman_new0 import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):
     def set_adm_mesh_non_nested(self, v0=[], v1=[], pare=False):
@@ -111,9 +111,11 @@ class AdmNonNested(AdmMethod):
         levels[levels < 0] = self.n_levels-1
         self.data_impress['LEVEL'] = levels
 
+
     def set_saturation_level(self):
 
         levels = self.data_impress['LEVEL'].copy()
+
         gid1 = self.data_impress['GID_1']
         gid0 = self.data_impress['GID_0']
         level_0_ini = set(gid0[levels==0])
@@ -159,7 +161,6 @@ class AdmNonNested(AdmMethod):
         self.data_impress['LEVEL'] = levels.copy()
 
     def set_saturation_level_new0(self):
-
         levels = self.data_impress['LEVEL'].copy()
         gid1 = self.data_impress['GID_1']
         gid0 = self.data_impress['GID_0']
@@ -192,7 +193,7 @@ class AdmNonNested(AdmMethod):
                     continue
                 else:
                     levels[gids0] = 1
-
+        import pdb; pdb.set_trace()
         self.data_impress['LEVEL'] = levels.copy()
 
     def set_level_wells_3(self):
@@ -307,7 +308,7 @@ class AdmNonNested(AdmMethod):
 
         AMS_TO_ADM = np.arange(len(gid_level[vertices]))
         AMS_TO_ADM[gid_level[vertices]] = level_adm_coarse_id[vertices]
-        
+
         nivel_0 = gid_0[levels==0]
         ID_global1 = nivel_0
         OP_AMS[nivel_0] = 0
@@ -467,6 +468,7 @@ class AdmNonNested(AdmMethod):
                 levels = self.data_impress['LEVEL'].copy()
                 levels[finos] = 0
                 levels[interm] = 1
+
                 self.data_impress['LEVEL'] = levels.copy()
                 gid_0 = self.data_impress['GID_0'][self.data_impress['LEVEL']==0]
                 gid_1 = self.data_impress['GID_0'][self.data_impress['LEVEL']==1]
