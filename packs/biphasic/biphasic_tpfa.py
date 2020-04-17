@@ -25,7 +25,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self.relative_permeability = self.relative_permeability()
         self.V_total = (data_impress['volume']*data_impress['poro']).sum()
         self.max_contador_vtk = len(self.biphasic_data['vpis_para_gravar_vtk'])
-        self.delta_sat_max = 0.4
+        self.delta_sat_max = 0.1
         self.lim_flux_w = 9e-8
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
@@ -33,6 +33,11 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self.all_biphasic_results = self.get_empty_current_biphasic_results()
         self.mesh = M
         self.solver = SolverSp()
+        self.meshset_volumes = M.core.mb.create_meshset()
+        M.core.mb.add_entities(self.meshset_volumes, M.core.all_volumes)
+        self.meshset_faces = M.core.mb.create_meshset()
+        M.core.mb.add_entities(self.meshset_faces, M.core.all_faces)
+
         # self.solver = solverTril()
 
         if not load:
@@ -201,14 +206,14 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         # flux_w_faces = fw_faces*total_flux_faces
         # flux_w_internal_faces2 = flux_w_faces[internal_faces]
         # flux_w_internal_faces = -((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*self.lambda_w_internal_faces/dh_internal_faces - self._data['grav_source_term_water_faces'][internal_faces])
-        flux_w_internal_faces = self.flux_w_internal_faces
+        # flux_w_internal_faces = self.flux_w_internal_faces
 
         # self.data_impress['flux_press_w_faces_vec'][internal_faces] = (-((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*self.lambda_w_internal_faces/dh_internal_faces)).reshape(len(internal_faces), 1)*u_normal_internal_faces
         self.data_impress['flux_press_w_faces_vec'][internal_faces] = self.flux_press_w_internal_faces.reshape(len(internal_faces), 1)*u_normal_internal_faces
 
         # lambda_o_internal_faces = self.data_impress['lambda_o'][v0[self._data['upwind_identificate']]]
         # flux_o_internal_faces = -((ps1 - ps0)*areas_internal_faces*k_harm_internal_faces*self.lambda_o_internal_faces/dh_internal_faces - (self.data_impress['flux_grav_faces'][internal_faces] - self._data['grav_source_term_water_faces'][internal_faces]))
-        flux_o_internal_faces = self.flux_o_internal_faces
+        # flux_o_internal_faces = self.flux_o_internal_faces
 
         self.data_impress['flux_press_o_faces_vec'][internal_faces] = self.flux_press_o_internal_faces.reshape(len(internal_faces), 1)*u_normal_internal_faces
 
@@ -465,37 +470,37 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         flux_total_inj = np.absolute(self.data_impress['flux_volumes'][self.wells['ws_inj']])
         self.vpi += (flux_total_inj.sum()*self.delta_t)/self.V_total
 
-    def update_transmissibility(self):
+    def update_upwind_phases(self):
 
-        pretransmissibility = self.data_impress['pretransmissibility'].copy()
+        pos = self.flux_w_internal_faces >= 0
         internal_faces = self.elements_lv0['internal_faces']
-        b_faces = self.elements_lv0['boundary_faces']
-        t_internal = pretransmissibility[internal_faces]
-        vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
-        vols_viz_boundary_faces = self.elements_lv0['neig_boundary_faces'].flatten()
-        fw_vol = self.data_impress['fw_vol']
-        lambda_t = self.data_impress['lambda_t']
-        v0 = vols_viz_internal_faces[:, 0]
-        v1 = vols_viz_internal_faces[:, 1]
-        flux_faces = self.data_impress['flux_faces']
-        flux_internal_faces = flux_faces[internal_faces]
         self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
-        self._data['upwind_identificate_o'] = self._data['upwind_identificate'].copy()
-        # gama = self.data_impress['gama']
-        # gama_faces = np.zeros(len(self.data_impress['gama_faces']))
-
-        # ids = np.arange(len(internal_faces))
-        #
-        pos = self.flux_w_faces[internal_faces] >= 0
-        # outros = np.setdiff1d(ids, fluxo_positivo)
         self._data['upwind_identificate'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
         pos = ~pos
         self._data['upwind_identificate'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
 
-        pos = self.flux_o_faces[internal_faces] >= 0
+        pos = self.flux_o_internal_faces >= 0
+        self._data['upwind_identificate_o'] = np.full((len(internal_faces), 2), False, dtype=bool)
         self._data['upwind_identificate_o'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
         pos = ~pos
         self._data['upwind_identificate_o'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
+
+    def update_transmissibility(self):
+
+        pretransmissibility = self.data_impress['pretransmissibility'].copy()
+        internal_faces = self.elements_lv0['internal_faces']
+        # b_faces = self.elements_lv0['boundary_faces']
+        # t_internal = pretransmissibility[internal_faces]
+        # vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
+        # vols_viz_boundary_faces = self.elements_lv0['neig_boundary_faces'].flatten()
+        # fw_vol = self.data_impress['fw_vol']
+        # lambda_t = self.data_impress['lambda_t']
+        # v0 = vols_viz_internal_faces[:, 0]
+        # v1 = vols_viz_internal_faces[:, 1]
+        # flux_faces = self.data_impress['flux_faces']
+        # flux_internal_faces = flux_faces[internal_faces]
+
+
 
         # total_mobility_internal_faces = np.zeros(len(internal_faces))
         # fw_internal_faces = total_mobility_internal_faces.copy()
@@ -503,31 +508,25 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         # total_mobility_internal_faces[fluxo_positivo] = lambda_t[v1[fluxo_positivo]]
         # total_mobility_internal_faces[outros] = lambda_t[v0[outros]]
 
-        total_mobility_internal_faces = self.lambda_t_internal_faces
+        # total_mobility_internal_faces = self.lambda_t_internal_faces
 
         # fw_internal_faces[fluxo_positivo] = fw_vol[v1[fluxo_positivo]]
         # fw_internal_faces[outros] = fw_vol[v0[outros]]
 
-        fw_internal_faces = self.fw_internal_faces
+        # fw_internal_faces = self.fw_internal_faces
 
         # gama_faces[internal_faces[fluxo_positivo]] = gama[v1[fluxo_positivo]]
         # gama_faces[internal_faces[outros]] = gama[v0[outros]]
 
-        total_mobility_faces = np.zeros(len(pretransmissibility))
-        fw_faces = total_mobility_faces.copy()
-
-        total_mobility_faces[internal_faces] = total_mobility_internal_faces
-        total_mobility_faces[b_faces] = self.lambda_t_volumes[vols_viz_boundary_faces]
-
-        fw_faces[internal_faces] = fw_internal_faces
-        fw_faces[b_faces] = self.fw_volumes[vols_viz_boundary_faces]
+        total_mobility_faces = self.lambda_t_faces
+        # fw_faces = self.fw_faces
         # gama_faces[b_faces] = gama[vols_viz_boundary_faces]
 
         transmissibility = pretransmissibility*total_mobility_faces
 
-        self.data_impress['transmissibility'] = transmissibility.copy()
-        self.data_impress['lambda_t_faces'] = total_mobility_faces.copy()
-        self.data_impress['fw_faces'] = fw_faces.copy()
+        self.data_impress['transmissibility'] = transmissibility
+        self.data_impress['lambda_t_faces'] = total_mobility_faces
+        self.data_impress['fw_faces'] = self.fw_faces
         # self.data_impress['gama_faces'] = gama_faces.copy()
 
     def update_loop(self):
@@ -583,11 +582,12 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self.update_flux_w_and_o_volumes()
         self.update_delta_t()
         self.update_saturation()
-        self.update_t()
-        self.update_vpi()
         self.update_relative_permeability()
         self.update_mobilities()
+        self.update_upwind_phases()
         self.update_transmissibility()
+        self.update_t()
+        self.update_vpi()
         self.update_loop()
         t1 = time.time()
         dt = t1-t0
@@ -603,11 +603,13 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
     def print_test(self):
         self.data_impress.update_variables_to_mesh()
-        name = 'results/test_'
-        self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+        name = 'results/test_volumes_'+str(self.loop)+'.vtk'
+        self.mesh.core.mb.write_file(name, [self.meshset_volumes])
+        # self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
 
     def print_test_faces(self):
 
         self.data_impress.update_variables_to_mesh()
-        name = 'results/test_faces'
-        self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings1.yml")
+        name = 'results/test_faces_'+str(self.loop)+'.vtk'
+        self.mesh.core.mb.write_file(name, [self.meshset_faces])
+        # self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings1.yml")

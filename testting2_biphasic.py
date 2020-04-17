@@ -35,9 +35,13 @@ while verif:
     #     M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
     #     # import pdb; pdb.set_trace()
 
-    M.core.mb.write_file('results/test_'+str(b1.loop)+'.vtk', [meshset])
+    b1.print_test()
+    b1.print_test_faces()
 
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
+
+    if cont % n2 == 0:
+        import pdb; pdb.set_trace()
     cont += 1
     loop += 1
     if loop > 200:
@@ -45,7 +49,7 @@ while verif:
             cont2 = 1
             data_impress.update_variables_to_mesh()
             name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
-            M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+            # M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
             # import pdb; pdb.set_trace()
 
         cont2 += 1

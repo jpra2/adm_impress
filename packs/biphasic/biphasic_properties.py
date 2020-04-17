@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.sparse as sp
 from ..data_class.structured_mesh_properties import StructuredMeshProperties
+from ..directories import data_loaded
 
 
 class biphasicProperties(StructuredMeshProperties):
@@ -48,7 +49,17 @@ class biphasicProperties(StructuredMeshProperties):
         doc = "The lambda_w_internal_faces property."
         def fget(self):
             # return self.data_impress['lambda_w'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
-            return self.lambda_w_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            lambda_w_internal_faces = self.lambda_w_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
+            faces_normal_with_z = self.faces_normal_with_z
+            if len(faces_normal_with_z) > 0:
+                internal_faces = self.elements_lv0['internal_faces']
+                faces_with_lambda = np.intersect1d(faces_normal_with_z, internal_faces)
+                remaped_faces_with_lambda = self.rmap_internal_faces(faces_with_lambda)
+                lambda_w_internal_faces2 = np.zeros(len(internal_faces))
+                lambda_w_internal_faces2[remaped_faces_with_lambda] = lambda_w_internal_faces[remaped_faces_with_lambda]
+                lambda_w_internal_faces = lambda_w_internal_faces2
+
+            return lambda_w_internal_faces
         return locals()
     lambda_w_internal_faces = property(**lambda_w_internal_faces())
 
@@ -56,7 +67,17 @@ class biphasicProperties(StructuredMeshProperties):
         doc = "The lambda_o_internal_faces property."
         def fget(self):
             # return self.data_impress['lambda_o'][self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate']]]
-            return self.lambda_o_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate_o']]]
+            lambda_o_internal_faces = self.lambda_o_volumes[self.elements_lv0['neig_internal_faces'][self._data['upwind_identificate_o']]]
+            faces_normal_with_z = self.faces_normal_with_z
+            if len(faces_normal_with_z) > 0:
+                internal_faces = self.elements_lv0['internal_faces']
+                faces_with_lambda = np.intersect1d(faces_normal_with_z, internal_faces)
+                remaped_faces_with_lambda = self.rmap_internal_faces(faces_with_lambda)
+                lambda_o_internal_faces2 = np.zeros(len(internal_faces))
+                lambda_o_internal_faces2[remaped_faces_with_lambda] = lambda_o_internal_faces[remaped_faces_with_lambda]
+                lambda_o_internal_faces = lambda_o_internal_faces2
+
+            return lambda_o_internal_faces
         return locals()
     lambda_o_internal_faces = property(**lambda_o_internal_faces())
 
@@ -78,13 +99,54 @@ class biphasicProperties(StructuredMeshProperties):
         return locals()
     fw_internal_faces = property(**fw_internal_faces())
 
+    def lambda_w_faces():
+        doc = "The lambda_w_faces property."
+        def fget(self):
+            b_faces = self.elements_lv0['boundary_faces']
+            neig_b_faces = self.elements_lv0['neig_boundary_faces']
+            internal_faces = self.elements_lv0['internal_faces']
+            n_faces = len(self.elements_lv0['faces'])
+            lambda_w_faces = np.zeros(n_faces)
+            lambda_w_faces[internal_faces] = self.lambda_w_internal_faces
+            lambda_w_faces[b_faces] = self.lambda_w_volumes[neig_b_faces]
+            return lambda_w_faces
+        return locals()
+    lambda_w_faces = property(**lambda_w_faces())
+
+    def lambda_o_faces():
+        doc = "The lambda_o_faces property."
+        def fget(self):
+            b_faces = self.elements_lv0['boundary_faces']
+            neig_b_faces = self.elements_lv0['neig_boundary_faces']
+            internal_faces = self.elements_lv0['internal_faces']
+            n_faces = len(self.elements_lv0['faces'])
+            lambda_o_faces = np.zeros(n_faces)
+            lambda_o_faces[internal_faces] = self.lambda_o_internal_faces
+            lambda_o_faces[b_faces] = self.lambda_o_volumes[neig_b_faces]
+            return lambda_o_faces
+        return locals()
+    lambda_o_faces = property(**lambda_o_faces())
+
+    def lambda_t_faces():
+        doc = "The lambda_t_faces property."
+        def fget(self):
+            return self.lambda_w_faces + self.lambda_o_faces
+        return locals()
+    lambda_t_faces = property(**lambda_t_faces())
+
+    def fw_faces():
+        doc = "The fw_faces property."
+        def fget(self):
+            return self.lambda_w_faces/self.lambda_t_faces
+        return locals()
+    fw_faces = property(**fw_faces())
+
     def flux_press_w_internal_faces():
         doc = "The flux_press_w_internal_faces property."
         def fget(self):
             internal_faces = self.elements_lv0['internal_faces']
             areas_internal_faces = self.data_impress['area'][internal_faces]
             k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
-
             flux_press_w_internal_faces = -self.grad_p_internal_faces*areas_internal_faces*k_harm_internal_faces*self.lambda_w_internal_faces
 
             return flux_press_w_internal_faces
@@ -340,3 +402,24 @@ class biphasicProperties(StructuredMeshProperties):
 
     def change_upwind_o(self):
         self._data['upwind_identificate_o'] = ~self._data['upwind_identificate_o']
+
+    def faces_normal_with_z():
+        doc = "The faces_normal_with_z property."
+        def fget(self):
+            # import pdb; pdb.set_trace()
+            test = data_loaded['test_segregation']
+            if test == True:
+                try:
+                    return self._faces_normal_with_z
+                except AttributeError:
+                    faces = self.elements_lv0['faces']
+                    u_normal_faces = self.data_impress['u_normal']
+                    tt = np.absolute(u_normal_faces[:,2])==1
+                    faces_normal_with_z = faces[tt]
+                    self._faces_normal_with_z = faces_normal_with_z
+                    return self._faces_normal_with_z
+            else:
+                return np.array([], dtype=int)
+
+        return locals()
+    faces_normal_with_z = property(**faces_normal_with_z())

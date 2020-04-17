@@ -45,18 +45,15 @@ class StructuredMeshProperties:
         return locals()
     grad_p_internal_faces = property(**grad_p_internal_faces())
 
-    def rmap_internal_faces():
-        doc = "The rmap_internal_faces property."
-        def fget(self, value):
-            resp = self.elements_lv0['remaped_internal_faces'][value]
-            if isinstance(value, int):
-                if set([-1]) & set([resp]):
-                    raise ValueError(f'{value} is not an internal face')
-            elif set([-1]) & set(resp):
-                raise ValueError(f'the entry may be an array of internal faces only')
-            return resp
-        return locals()
-    rmap_internal_faces = property(**rmap_internal_faces())
+    def rmap_internal_faces(self, value):
+
+        resp = self.elements_lv0['remaped_internal_faces'][value]
+        if isinstance(value, int):
+            if set([-1]) & set([resp]):
+                raise ValueError(f'{value} is not an internal face')
+        elif set([-1]) & set(resp):
+            raise ValueError(f'the entry may be an array of internal faces only')
+        return resp
 
     def up_g():
         doc = "The up_g property."
