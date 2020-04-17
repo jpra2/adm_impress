@@ -23,6 +23,7 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
+  CFL: 0.5
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   tempo_maximo: null
   phase_viscosity: LorenzBrayClark
@@ -31,7 +32,7 @@ compositional_data:
 
   rock_compressibility: 0
     #7.25e-8
-  Pf: 13.79E6
+  Pf: 0
 
   #capillary pressure data - not ok with this
   Cpc: 62052.84
@@ -43,7 +44,7 @@ compositional_data:
     rho_W: 716.67
     Mw_w: 18.015e-3
     Cw: 1e-10
-    Pw: 13.79E6
+    Pw: 0
 
   residual_saturations:
     Sorw: 0
