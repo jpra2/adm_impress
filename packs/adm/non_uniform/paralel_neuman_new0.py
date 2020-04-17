@@ -7,7 +7,7 @@ import time
 
 class masterNeumanNonNested:
 
-    def __init__(self, data_impress, elements_lv0, ml_data, n_levels, T_without, wells, pare=False):
+    def __init__(self,M, data_impress, elements_lv0, ml_data, n_levels, T_without, wells, pare=False):
         self.data_impress = data_impress
         self.elements_lv0 = elements_lv0
         self.ml_data = ml_data
@@ -16,6 +16,7 @@ class masterNeumanNonNested:
         self.wells = wells
         self.pare = pare
         self.one_worker = True
+        self.mesh = M
 
     def get_n_workers(self, list_of_subdomains):
 
@@ -73,6 +74,7 @@ class masterNeumanNonNested:
         neig_internal_faces = self.elements_lv0['neig_internal_faces']
         gid0 = self.data_impress['GID_0']
         n_volumes = len(levels)
+        vols_lv0 = set(gid0[levels==0])
 
         if self.pare:
             import pdb; pdb.set_trace()
@@ -123,6 +125,16 @@ class masterNeumanNonNested:
                         intersect_faces_new = intersect_faces_new[inds]
                         intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
 
+                volumes_dirichlet_2 = (set(volumes) & vols_lv0) - set(self.wells['ws_p'])
+                if volumes_dirichlet_2:
+                    for v in volumes_dirichlet_2:
+                        ind_diric.append(v)
+                        val_diric.append(pms[v])
+                        inds = ~((v0_new[:,0]==v) | (v0_new[:,1]==v))
+                        v0_new = v0_new[inds]
+                        intersect_faces_new = intersect_faces_new[inds]
+                        intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
+
                 if volumes_neuman:
                     ind_neum += list(volumes_neuman)
                     for v in ind_neum:
@@ -139,7 +151,7 @@ class masterNeumanNonNested:
                     pms1 = pms[v0[:,1]]
                     t0 = self.data_impress['transmissibility'][intersect_faces_new]
                     pms_flux_faces_local = get_flux_faces(pms1, pms0, t0)
-                    pms_flux_faces[intersect_faces] = pms_flux_faces_local
+                    pms_flux_faces[intersect_faces_new] = pms_flux_faces_local
 
                     lines = np.concatenate([v0[:, 0], v0[:, 1]])
                     cols = np.repeat(0, len(lines))

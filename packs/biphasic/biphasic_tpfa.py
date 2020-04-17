@@ -29,6 +29,11 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         self.all_biphasic_results = self.get_empty_current_biphasic_results()
         self.mesh = M
         self.solver = SolverSp()
+        self.meshset_volumes = M.core.mb.create_meshset()
+        M.core.mb.add_entities(self.meshset_volumes, M.core.all_volumes)
+        self.meshset_faces = M.core.mb.create_meshset()
+        M.core.mb.add_entities(self.meshset_faces, M.core.all_faces)
+
         # self.capillary_model = capillaryPressureBiphasic()
 
         if not load:
@@ -467,7 +472,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         v1 = vols_viz_internal_faces[:, 1]
         flux_faces = self.data_impress['flux_faces']
         flux_internal_faces = flux_faces[internal_faces]
-        self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
         # gama = self.data_impress['gama']
         # gama_faces = np.zeros(len(self.data_impress['gama_faces']))
 
@@ -475,6 +479,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         #
         pos = flux_internal_faces >= 0
         # outros = np.setdiff1d(ids, fluxo_positivo)
+        self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
         self._data['upwind_identificate'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
         pos = ~pos
         self._data['upwind_identificate'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
@@ -584,11 +589,13 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 
     def print_test(self):
         self.data_impress.update_variables_to_mesh()
-        name = 'results/test_'
-        self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+        name = 'results/test_volumes_'+str(self.loop)+'.vtk'
+        # self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+        self.mesh.core.mb.write_file(name, [self.meshset_volumes])
 
     def print_test_faces(self):
 
         self.data_impress.update_variables_to_mesh()
-        name = 'results/test_faces'
-        self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings1.yml")
+        name = 'results/test_faces_'+str(self.loop)+'.vtk'
+        self.mesh.core.mb.write_file(name, [self.meshset_faces])
+        # self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings1.yml")

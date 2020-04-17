@@ -109,11 +109,11 @@ gids_0 = data_impress['GID_0']
 
 adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
 # adm_method.set_initial_mesh(mlo, T, b)
+#
+# meshset_volumes = M.core.mb.create_meshset()
+# M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 
-meshset_volumes = M.core.mb.create_meshset()
-M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
-
-nn = 50
+nn = 20
 cont = 1
 
 verif = True
@@ -141,7 +141,11 @@ while verif:
     b1.run_2()
     data_impress.update_variables_to_mesh()
 
-    M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
+    # M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
+    b1.print_test()
+    b1.print_test_faces()
+
+    import pdb; pdb.set_trace()
 
     if cont % nn == 0:
         import pdb; pdb.set_trace()

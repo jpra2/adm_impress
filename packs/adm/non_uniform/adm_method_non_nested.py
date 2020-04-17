@@ -6,8 +6,8 @@ import time
 from ...directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 from pymoab import types
-# from .paralel_neuman import masterNeumanNonNested
-from .paralel_neuman_new0 import masterNeumanNonNested
+from .paralel_neuman import masterNeumanNonNested
+# from .paralel_neuman_new0 import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):
     def set_adm_mesh_non_nested(self, v0=[], v1=[], pare=False):
@@ -307,7 +307,7 @@ class AdmNonNested(AdmMethod):
 
         AMS_TO_ADM = np.arange(len(gid_level[vertices]))
         AMS_TO_ADM[gid_level[vertices]] = level_adm_coarse_id[vertices]
-        
+
         nivel_0 = gid_0[levels==0]
         ID_global1 = nivel_0
         OP_AMS[nivel_0] = 0
@@ -556,7 +556,7 @@ class AdmNonNested(AdmMethod):
 
     def set_pms_flux(self, T_witout, wells, pare=False):
 
-        master = masterNeumanNonNested(self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, T_witout, wells, pare=pare)
+        master = masterNeumanNonNested(self.mesh, self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, T_witout, wells, pare=pare)
         ms_flux_faces, pcorr = master.run()
         del master
         self.data_impress['flux_faces'] = ms_flux_faces
