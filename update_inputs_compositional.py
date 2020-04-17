@@ -61,7 +61,7 @@ class FluidProperties:
         self.rho_W = data_loaded['compositional_data']['water_data']['rho_W'] * np.ones(n_volumes)
         self.Mw_w = data_loaded['compositional_data']['water_data']['Mw_w'] * np.ones(n_volumes)
         self.ksi_W0 = self.rho_W/self.Mw_w
-        self.ksi_W = self.ksi_W0
+        self.ksi_W = self.ksi_W0 #* (1 + fprop.Cw * (self.P - Pw))
         #self.Sw = data_loaded['Saturation']['r1']['value'] * np.ones(n_volumes)
 
     def inputs_all_volumes(self, T, P, n_volumes):
