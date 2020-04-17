@@ -10,9 +10,10 @@ class DualDomain:
     def __init__(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
         self.local_couple=local_couple
         self.couple_bound=couple_bound
-        self.adjs, self.ks, self.ids_globais_vols, self.ns =  self.get_local_informations(data_impress, elements_lv0, volumes, local_couple=local_couple, couple_bound=couple_bound)
+        self.adjs, self.ks, self.ids_globais_vols, self.ns, self.map_l =  self.get_local_informations(data_impress, elements_lv0, volumes, local_couple=local_couple, couple_bound=couple_bound)
         self.coarse_ids = data_impress['GID_1'][self.vertices]
         self.all_coarse_ids = data_impress['GID_1'][volumes]
+        # import pdb; pdb.set_trace()
         self.A_b_t=[]
 
     def get_local_informations(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
@@ -41,7 +42,6 @@ class DualDomain:
                 dual_flags_red[dual_flags_red==2]=1
                 if local_couple==2:
                     dual_flags_red[dual_flags_red==1]=0
-
 
             else:
                 try:
@@ -90,7 +90,7 @@ class DualDomain:
         ks=data_impress['transmissibility'][int_facs]
         # ids_globais_vols=M.mb.tag_get_data(M.ID_reordenado_tag,np.concatenate([np.uint64(internals),np.uint64(faces), np.uint64(edges),vertices]),flat=True)
         ids_globais_vols=np.concatenate([np.uint64(internals),np.uint64(faces), np.uint64(edges),vertices])
-        return adjs, ks, ids_globais_vols, ns
+        return adjs, ks, ids_globais_vols, ns, map_l[volumes]
 
 class OP_local:
     def __init__(self, sub_d):
@@ -169,8 +169,21 @@ class OP_local:
 
         OP=vstack([Pi,Pf,Pe,Pv])
 
-        # TL=self.get_submatrix(adjs0, adjs1, ks, (0, ni+nf+ne+nv, 0, ni+nf+ne+nv))
-        # (TL*OP).sum(axis=0)
+        TL=self.get_submatrix(adjs0, adjs1, ks, (0, ni+nf+ne+nv, 0, ni+nf+ne+nv))
+        cid=sub_d.all_coarse_ids
+        sub_d.coarse_ids
+        map_p=np.arange(sub_d.coarse_ids.max()+1)
+        map_p[sub_d.coarse_ids]=np.arange(len(sub_d.coarse_ids))
+        lcid=map_p[cid]
+        lines=lcid
+        cols=sub_d.map_l
+        data=np.ones(len(lines))
+        OR=csc_matrix((data,(lines,cols)),shape=(nv, ni+nf+ne+nv))
+        MM=OR*TL*OP
+        ii=MM[range(4),range(4)]
+        if (ii.max()-ii.min())<0.001:
+
+            import pdb; pdb.set_trace()
 
 
         lcd=scipy.sparse.find(OP)
@@ -264,14 +277,13 @@ class OP_AMS:
 
         partitioned_subds=Partitioner(all_subds, nworker, regression_degree).partitioned_subds
 
-        lines, cols, data = self.get_OP_paralell(partitioned_subds)
-        self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
-
-
-        # To test bugs on serial, use this###############################
-        # lines, cols, data = self.get_OP(all_subds, paralell=False)
+        # lines, cols, data = self.get_OP_paralell(partitioned_subds)
         # self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
-        # import pdb; pdb.set_trace()
+
+
+        #########To test bugs on serial, use this###############################
+        lines, cols, data = self.get_OP(all_subds, paralell=False)
+        self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
         ######################################
 
 
