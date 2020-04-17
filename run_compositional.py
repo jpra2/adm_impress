@@ -11,8 +11,8 @@ import update_inputs_compositional
 import os
 import time
 
-def initialize(load, convert):
-    M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
+def initialize(load, convert, mesh):
+    M, elements_lv0, data_impress, wells = initial_mesh(mesh, load=load, convert=convert)
     n_volumes = data_impress.len_entities['volumes']
     fprop, fprop_block, kprop = get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes)
     return M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes
@@ -35,9 +35,9 @@ def get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes)
 
 class run_simulation:
 
-    def __init__(self, delta_t_initial, data_impress, fprop):
-        self.name_current_compositional_results = 'flying/results_caso_m2.npy'
-        self.name_all_compositional_results = os.path.join(direc.flying, 'all_compositional_m2_results_')
+    def __init__(self, delta_t_initial, data_impress, fprop, name_current, name_all):
+        self.name_current_compositional_results =os.path.join(direc.flying, name_current + '.npy')
+        self.name_all_compositional_results = os.path.join(direc.flying, name_all)
         self.loop = 0
         self.vpi = 0.0
         self.t = 0.0
@@ -49,7 +49,7 @@ class run_simulation:
         self.all_compositional_results = self.get_empty_current_compositional_results()
 
     def run(self, M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes):
-        
+
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
 
@@ -69,11 +69,11 @@ class run_simulation:
                 fprop_block.run(z, kprop)
                 fprop.update_all_volumes(fprop_block, i)
 
-        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop)#get delta_t with properties in t=n and t=n+1
+        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, kprop.load_k)#get delta_t with properties in t=n and t=n+1
         self.update_loop()
         t1 = time.time()
         dt = t1 - t0
-        self.update_current_compositional_results(wells, fprop, dt) #ver quem vou salvar
+        self.update_current_compositional_results(M, wells, fprop, dt) #ver quem vou salvar
 
     def update_loop(self):
         self.loop += 1
@@ -85,13 +85,16 @@ class run_simulation:
 
     def get_empty_current_compositional_results(self):
 
-        return [np.array(['loop', 'delta_t [s]', 'simulation_time [s]', 't [s]', 'pressure [Pa]', 'flux_vols'])]
+        return [np.array(['loop', 'delta_t [s]', 'simulation_time [s]', 't [s]', 'pressure [Pa]', 'flux_faces', 'flux_faces_vector'])]
 
-    def update_current_compositional_results(self, wells, fprop, simulation_time: float = 0.0):
+    def update_current_compositional_results(self, M, wells, fprop, simulation_time: float = 0.0):
 
-         self.current_compositional_results = np.array([self.loop, self.delta_t, simulation_time, self.t, fprop.P, fprop.component_flux_vols_total])
+        total_flux_internal_faces = fprop.total_flux_internal_faces.ravel() #* M.faces.normal[M.faces.internal]
+        total_flux_internal_faces_vector = fprop.total_flux_internal_faces.T * np.abs(M.faces.normal[M.faces.internal])
 
-         self.all_compositional_results.append(self.current_compositional_results)
+        self.current_compositional_results = np.array([self.loop, self.delta_t, simulation_time, self.t, fprop.P, fprop.total_flux_internal_faces,
+                                        total_flux_internal_faces_vector])
+        self.all_compositional_results.append(self.current_compositional_results)
 
     def export_current_compositional_results(self):
          np.save(self.name_current_compositional_results, self.current_compositional_results)

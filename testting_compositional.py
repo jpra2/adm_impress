@@ -10,23 +10,27 @@ from packs.compositional.update_time import delta_time
 import matplotlib.pyplot as plt
 import update_inputs_compositional
 
-load = data_loaded['load_data']
-convert = data_loaded['convert_english_to_SI']
+""" --------------------------For user to fill------------------------------ """
 
+name_current = 'current_compositional_mono_comp_results_'
+name_all = 'all_compositional_mono_comp_results_'
+mesh = 'mesh/100x1x1_m.msh'
 
-#M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
-#n_volumes = data_impress.len_entities['volumes']
-#fprop, fprop_block, kprop = update_inputs_compositional.update(M, data_impress, wells, load, data_loaded, n_volumes)
-
-delta_t_initial = 100
+delta_t_initial = 5
 loop_max = 20
 t = 0
 loop = 0
-tmax = 0.01*86400 #422693.9470089848 #seg #0.01* 86400
+tmax = 0.01* 86400 #422693.9470089848 #seg #0.01* 86400
 
-M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes = run_compositional.initialize(load, convert)
 
-sim = run_simulation(delta_t_initial, data_impress, fprop)
+""" ----------------------------- RUN CODE --------------------------------- """
+
+load = data_loaded['load_data']
+convert = data_loaded['convert_english_to_SI']
+
+M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes = run_compositional.initialize(load, convert, mesh)
+
+sim = run_simulation(delta_t_initial, data_impress, fprop, name_current, name_all)
 
 while t < tmax: # and loop < loop_max:
 
@@ -39,8 +43,6 @@ while t < tmax: # and loop < loop_max:
     print(sim.t)
 
 sim.save_infos(data_impress, M)
-
-print(fprop.P)
 
 '''
 calculate the time of this test to compare results:

@@ -11,13 +11,13 @@ from impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh as msh
 import pdb
 import numpy as np
 
-def initial_mesh(load=False, convert=False):
+def initial_mesh (mesh, load=False, convert=False):
 
     compositional = data_loaded['compositional_data']
     load_compositional_data = data_loaded['load_data']
 
     if compositional and not load_compositional_data:
-        M = msh('mesh/100x1x1_m.msh', dim = 3)
+        M = msh(mesh, dim = 3)
         elements_lv0 = ElementsLv0(M, load=load)
         data_impress = Data(M, elements_lv0, load=load)
         if not load:
