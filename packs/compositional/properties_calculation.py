@@ -130,8 +130,8 @@ class PropertiesCalc:
     def update_water_saturation(self, data_impress, fprop, kprop):
         Pw = np.array(data_loaded['compositional_data']['water_data']['Pw']).astype(float)
         fprop.Cw = np.array(data_loaded['compositional_data']['water_data']['Cw']).astype(float)
-        fprop.ksi_W = fprop.ksi_W0*(1 + fprop.Cw * (fprop.P - Pw))
+        fprop.ksi_W = fprop.ksi_W0 * (1 + fprop.Cw * (fprop.P - Pw))
         fprop.rho_W = fprop.ksi_W * fprop.Mw_w
-        #self.Sw = fprop.component_mole_numbers[kprop.n_components-1,:] * (1 / fprop.ksi_W) / fprop.Vp
+
         data_impress['saturation'] = fprop.component_mole_numbers[kprop.n_components-1,:] * (1 / fprop.ksi_W) / fprop.Vp
-        #if kprop.load_w and not kprop.load_k: data_impress['saturation'] = np.ones()
+        #if kprop.load_w and not kprop.load_k: data_impress['saturation'] = np.ones(self.n_volumes)
