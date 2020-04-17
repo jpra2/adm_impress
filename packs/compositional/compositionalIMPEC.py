@@ -6,6 +6,7 @@ from .partial_derivatives import PartialDerivatives
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 from .. import directories as direc
 import scipy.sparse as sp
+from scipy import linalg
 from .update_time import delta_time
 import numpy as np
 
@@ -31,7 +32,7 @@ class CompositionalFVM:
             T = self.update_transmissibility( M, wells, fprop, kprop, delta_t)
             D = self.update_independent_terms(fprop, kprop, wells, delta_t)
             self.update_pressure(T, D, data_impress, fprop)
-            self.update_flux_internal_faces(fprop, kprop)
+            self.update_flux_internal_faces(M, fprop, kprop)
             self.update_flux_volumes(fprop, kprop)
             # For the composition calculation the time step may be different because it treats
             #composition explicitly and this explicit models are conditionally stable - wich can
@@ -187,28 +188,33 @@ class CompositionalFVM:
         #p = SolverSp().direct_solver(T, D)
         data_impress['pressure'] = fprop.P
 
-    def update_flux_internal_faces(self, fprop, kprop):
+    def update_flux_internal_faces(self, M, fprop, kprop):
+
         P_Pcap = fprop.P + self.Pcap #para isso, Pcapj = Pj - P
-        Pj = P_Pcap[:,self.v0[:,0]]
-        Pj_up = P_Pcap[:,self.v0[:,1]]
-        total_flux_internal_faces = - np.sum(self.mobilities_internal_faces * self.pretransmissibility_internal_faces * (Pj_up - Pj) ,axis = 1)
-        self.get_mobilities_upwind(fprop, kprop) # a mobilidade aqui é em n + 1
-        self.phase_flux_internal_faces = self.mobilities_internal_faces / np.sum(self.mobilities_internal_faces, axis = 1) * total_flux_internal_faces
+        Pot_hidj = P_Pcap[:,self.v0[:,0]]
+        Pot_hidj_up = P_Pcap[:,self.v0[:,1]]
+
+        fprop.total_flux_internal_faces = - np.sum(self.mobilities_internal_faces * self.pretransmissibility_internal_faces
+                                         * (Pot_hidj_up - Pot_hidj), axis = 1)
+        self.get_mobilities_upwind(fprop, kprop) # a mobilidade aqui e em n + 1
+        frj = self.mobilities_internal_faces / np.sum(self.mobilities_internal_faces, axis = 1)
+        self.phase_flux_internal_faces = frj * fprop.total_flux_internal_faces #- frj * np.sum(self.mobilities_internal_faces
+                                        #* self.pretransmissibility_internal_faces * (Pot_hidj_up - Pot_hidj) ,axis = 1)
         # M.flux_faces[M.faces.internal] = total_flux_internal_faces * M.faces.normal[M.faces.internal].T
 
     def update_flux_volumes(self, fprop, kprop):
-        component_flux = np.sum(self.component_molar_fractions_internal_faces * self.phase_molar_densities_internal_faces *
+        component_flux_internal_faces = np.sum(self.component_molar_fractions_internal_faces * self.phase_molar_densities_internal_faces *
                                 self.phase_flux_internal_faces, axis = 1)
-
         cx = np.arange(kprop.n_components)
         lines = np.array([np.repeat(cx,len(self.v0[:,0])), np.repeat(cx,len(self.v0[:,1]))]).astype(int).flatten()
         cols = np.array([np.tile(self.v0[:,0],kprop.n_components), np.tile(self.v0[:,1], kprop.n_components)]).flatten()
-        data = np.array([component_flux, -component_flux]).flatten()
+        data = np.array([-component_flux_internal_faces, component_flux_internal_faces]).flatten()
         fprop.component_flux_vols_total = sp.csc_matrix((data, (lines, cols)), shape = (kprop.n_components, self.n_volumes)).toarray()
+
         # só ta funcionando pra 1d:
         #flux_vols = np.zeros([kprop.n_components,2,self.n_volumes])
-        #flux_vols[:,0,self.v0[:,0]] = component_flux
-        #flux_vols[:,1,self.v0[:,1]] = -component_flux
+        #flux_vols[:,0,self.v0[:,0]] = -component_flux_internal_faces
+        #flux_vols[:,1,self.v0[:,1]] = component_flux_internal_faces
         #flux_vols_total = np.sum(flux_vols,axis = 1)
 
     def update_flux_wells(self, fprop, kprop, wells, delta_t):
@@ -221,7 +227,7 @@ class CompositionalFVM:
             C = np.diag(np.ones(kprop.n_components))
             C[1:,0] = -mob_k[1:] / mob_k[0]
             C[0,:] = self.dVtk[:,wp].T
-            self.q[:,wp] = np.linalg.solve(C,well_term)
+            self.q[:,wp] = -np.linalg.solve(C,well_term)
         else: self.q[:,wp] = well_term[0,0] / self.dVtk[:,wp]
         self.q[:,wells['ws_q']] = wells['values_q']
         #wq = wells['ws_q']
@@ -230,7 +236,6 @@ class CompositionalFVM:
         #if kprop.load_w and not kprop.load_k: self.q[:,wp] = self.q[:,wells['ws_q']]
 
     def update_composition(self, fprop, kprop, wells, delta_t):
-        if kprop.load_k:
-            self.update_flux_wells(fprop, kprop, wells, delta_t)
-            fprop.component_mole_numbers = fprop.component_mole_numbers + delta_t * (self.q + fprop.component_flux_vols_total)
+        self.update_flux_wells(fprop, kprop, wells, delta_t)
+        fprop.component_mole_numbers = fprop.component_mole_numbers + delta_t * (self.q + fprop.component_flux_vols_total)
         fprop.z = fprop.component_mole_numbers[0:kprop.Nc,:] / np.sum(fprop.component_mole_numbers[0:kprop.Nc,:], axis = 0)
