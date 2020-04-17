@@ -49,7 +49,7 @@ compositional_data:
     Sorg: 0
     Swr: 0.2
     Sgr: 0
-    Sor: -1
+    Sor: 0
 
   relative_permeability_data:
     krw0: 0.4

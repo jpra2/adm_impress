@@ -42,7 +42,7 @@ compositional_data:
     mi_W: 0.249e-3
     rho_W: 716.67
     Mw_w: 18.015e-3
-    Cw: 0
+    Cw: 1e-10
     Pw: 13.79E6
 
   residual_saturations:
@@ -93,7 +93,7 @@ Permeability:
 Pressure:
   r1:
     type: all
-    value: 13.78951458E6
+    value: 0
 
 Temperature:
   r1:

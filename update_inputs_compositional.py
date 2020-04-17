@@ -4,7 +4,7 @@ from packs.compositional.stability_check import StabilityCheck
 import numpy as np
 import os
 
-dd = InfoManager('input_cards/inputs_compositional_monophasic.yml', 'input_cards/inputs0.yml')
+dd = InfoManager('input_cards/inputs_compositional_monophasic_comp.yml', 'input_cards/inputs0.yml')
 dd2 = InfoManager('input_cards/variable_inputs_compositional.yml','input_cards/variable_input.yml')
 dd['load_data'] = True
 dd.save_obj()
