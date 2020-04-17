@@ -2,15 +2,15 @@ Permeability:
   r1:
     type: all
     value:
-    - 5e-13
-    - 5e-13
-    - 5e-13
-    - 5e-13
-    - 5e-13
-    - 5e-13
-    - 5e-13
-    - 5e-13
-    - 5e-13
+    - 4.9346e-13
+    - 4.9346e-13
+    - 4.9346e-13
+    - 4.9346e-13
+    - 4.9346e-13
+    - 4.9346e-13
+    - 4.9346e-13
+    - 4.9346e-13
+    - 4.9346e-13
 Porosity:
   r1:
     type: all
@@ -18,15 +18,15 @@ Porosity:
 Pressure:
   r1:
     type: all
-    value: 13.79E6
+    value: 0
 Saturation:
   r1:
     type: all
-    value: 0.2
+    value: 1.0
 Temperature:
   r1:
     type: all
-    value: 366.33
+    value: 288.71
 Wells:
   P1:
     p0:
@@ -34,16 +34,28 @@ Wells:
     - 0.0
     - 0.0
     p1:
-    - 6.096
-    - 3.048
-    - 3.048
+    - 0.006096
+    - 0.03048
+    - 0.03048
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: -0.0005214
+  P2:
+    p0:
+    - 0.603504
+    - 0.0
+    - 0.0
+    p1:
+    - 0.6096
+    - 0.03048
+    - 0.03048
     prescription: P
     type: Producer
     type_region: box
-    value: 13100000.0
+    value: 13.78951458E6
 compositional: true
 compositional_data:
-  CFL: 0.9
   Cpc: 62052.84
   Epc: 2
   Pf: 13.79E6
@@ -72,34 +84,38 @@ compositional_data:
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   relative_permeability_data:
-    krg0: 1.0
-    kro0: 1.0
-    krw0: 0.4
-    n_g: 2.0
+    krg0: 0.0
+    kro0: 0
+    krw0: 1.0
+    n_g: 0
     n_o: 2.0
-    n_w: 3.0
+    n_w: 1.0
   residual_saturations:
     Sgr: 0
-    Sorg: 1e-6
-    Sorw: 1e-6
-    Swr: 0.2
-  rock_compressibility: 7.25e-08
+    Sor: 0
+    Sorg: 0
+    Sorw: 0
+    Swr: 0.3
+  rock_compressibility: 0
   tempo_maximo: null
   vpis_para_gravar_vtk:
-  - 0.157
+  - 0.1
+  - 0.3
+  - 0.5
   water_data:
-    Cw: 0
+    Cw: 1e-10
     Mw_w: 0.018015
     Pw: 13.79E6
-    mi_W: 1e-3
-    rho_W: 999.6
+    mi_W: 0.000249
+    rho_W: 716.67
 convert_english_to_SI: false
 deletar_results: false
 gravity: false
+hidrocarbon_components: false
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: mesh/100x1x1.msh
+mesh_name: mesh/100x1x1_m.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
@@ -107,3 +123,4 @@ n_test: 0
 read_permeability: false
 set_permeability: true
 set_porosity: true
+water_component: true
