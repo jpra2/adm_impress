@@ -40,3 +40,15 @@ class ElementsLv0(DataManager):
 
     def run(self):
         self.load_elements_from_mesh()
+
+    def nfaces():
+        doc = "The nfaces property."
+        def fget(self):
+            try:
+                return self._nfaces
+            except AttributeError:
+                nfaces = len(self._data['faces'])
+                self._nfaces = nfaces
+                return nfaces
+        return locals()
+    nfaces = property(**nfaces())

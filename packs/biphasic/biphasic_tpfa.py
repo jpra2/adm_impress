@@ -471,53 +471,46 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         flux_total_inj = np.absolute(self.data_impress['flux_volumes'][self.wells['ws_inj']])
         self.vpi += (flux_total_inj.sum()*self.delta_t)/self.V_total
 
+    def update_upwind_phases_old0(self):
+
+        internal_faces = self.elements_lv0['internal_faces']
+        flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
+        flux_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
+
+        pos = flux_w_internal_faces >= 0
+        self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
+        self._data['upwind_identificate'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
+        pos = ~pos
+        self._data['upwind_identificate'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
+
+        pos = self.flux_o_internal_faces >= 0
+        self._data['upwind_identificate_o'] = np.full((len(internal_faces), 2), False, dtype=bool)
+        self._data['upwind_identificate_o'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
+        pos = ~pos
+        self._data['upwind_identificate_o'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
+
     def update_upwind_phases(self):
 
         internal_faces = self.elements_lv0['internal_faces']
-        flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
+        # flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
         flux_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
+        q_sigma_internal_faces = self.flux_sigma_internal_faces
+        ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
 
-        pos = flux_w_internal_faces >= 0
+        pos_sigma = q_sigma_internal_faces > 0
+        pos_w = flux_w_internal_faces > 0
+        and_pos = pos_w & pos_sigma
         self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
-        self._data['upwind_identificate'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
-        pos = ~pos
-        self._data['upwind_identificate'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
+        self._data['upwind_identificate'][pos_w & pos_sigma, 0] = True
+        self._data['upwind_identificate'][~(pos_w & pos_sigma), 1] = True
+        self._data['upwind_identificate_o'] = self._data['upwind_identificate'].copy()
 
-        pos = self.flux_o_internal_faces >= 0
-        self._data['upwind_identificate_o'] = np.full((len(internal_faces), 2), False, dtype=bool)
-        self._data['upwind_identificate_o'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
-        pos = ~pos
-        self._data['upwind_identificate_o'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
+        flux_w_internal_faces = -(self.grad_p_internal_faces*ak*self.lambda_w_internal_faces - self.flux_grav_w_internal_faces)
+        flux_o_internal_faces = -(self.grad_p_internal_faces*ak*self.lambda_o_internal_faces - self.flux_grav_o_internal_faces)
 
-    def update_upwind_phases_new0(self):
-
-        internal_faces = self.elements_lv0['internal_faces']
-        flux_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
-        flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
-
-        pos = flux_w_internal_faces >= 0
-        pos_n = ~pos
-        ######
-        ## escolhendo primeiro o oleo
-        self._data['upwind_identificate_o'] = np.full((len(internal_faces), 2), False, dtype=bool)
-        self._data['upwind_identificate_o'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
-        self._data['upwind_identificate_o'][pos_n, 1] = np.full(pos.sum(), True, dtype=bool)
-
-
-
-
-
-
-        self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
-        self._data['upwind_identificate'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
-        pos = ~pos
-        self._data['upwind_identificate'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
-
-        pos = self.flux_o_internal_faces >= 0
-        self._data['upwind_identificate_o'] = np.full((len(internal_faces), 2), False, dtype=bool)
-        self._data['upwind_identificate_o'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
-        pos = ~pos
-        self._data['upwind_identificate_o'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
+        flux_total = flux_w_internal_faces + flux_o_internal_faces
+        pos_flux_total = flux_total > 0
+        self._data['upwind_identificate_o'][~(pos_flux_total & pos_sigma)] = ~self._data['upwind_identificate_o'][~(pos_flux_total & pos_sigma)]
 
     def update_transmissibility(self):
 
@@ -602,6 +595,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         p = self.solver.direct_solver(T, b)
         self.test_rhs_term(T, b, p)
         self.data_impress['pressure'] = p
+        # self.get_total_flux_faces()
         self.get_flux_faces_and_volumes()
         self.test_flux_volumes(self['Tini'], p, self.data_impress['flux_grav_volumes'], -self.data_impress['flux_volumes'])
         self.run_2(save = save)

@@ -17,6 +17,21 @@ class biphasicProperties(StructuredMeshProperties):
         return locals()
     gama_volumes_average = property(**gama_volumes_average())
 
+    def gama_w():
+        doc = "The gama_w property."
+        def fget(self):
+            gama_w = self.biphasic_data['gama_w']
+            return gama_w
+        return locals()
+    gama_w = property(**gama_w())
+
+    def gama_o():
+        doc = "The gama_o property."
+        def fget(self):
+            gama_o = self.biphasic_data['gama_o']
+        return locals()
+    gama_o = property(**gama_o())
+
     def lambda_w_volumes():
         doc = "The lambda_w_volumes property."
         def fget(self):
@@ -173,8 +188,9 @@ class biphasicProperties(StructuredMeshProperties):
                 return np.zeros(len(internal_faces))
             areas_internal_faces = self.data_impress['area'][internal_faces]
             k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
-            up_g = self.up_g
-            lambda_w_internal_faces = self.lambda_w_volumes[up_g]
+            # up_g = self.up_g
+            # lambda_w_internal_faces = self.lambda_w_volumes[up_g]
+            lambda_w_internal_faces = self.lambda_w_internal_faces
             gama_w = self.biphasic_data['gama_w']
 
             flux_grav_w_internal_faces = -1*(self.grad_z_internal_faces)*(lambda_w_internal_faces*gama_w)*areas_internal_faces*k_harm_internal_faces
@@ -190,14 +206,22 @@ class biphasicProperties(StructuredMeshProperties):
                 return np.zeros(len(internal_faces))
             areas_internal_faces = self.data_impress['area'][internal_faces]
             k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
-            up_g = self.up_g
-            lambda_o_internal_faces = self.lambda_o_volumes[up_g]
+            # up_g = self.up_g
+            # lambda_o_internal_faces = self.lambda_o_volumes[up_g]
+            lambda_o_internal_faces = self.lambda_o_internal_faces
             gama_o = self.biphasic_data['gama_o']
 
             flux_grav_o_internal_faces = -1*(self.grad_z_internal_faces)*(lambda_o_internal_faces*gama_o)*areas_internal_faces*k_harm_internal_faces
             return flux_grav_o_internal_faces
         return locals()
     flux_grav_o_internal_faces = property(**flux_grav_o_internal_faces())
+
+    def flux_grav_total_internal_faces():
+        doc = "The flux_grav_total_internal_faces property."
+        def fget(self):
+            return self.flux_grav_o_internal_faces + self.flux_grav_w_internal_faces
+        return locals()
+    flux_grav_total_internal_faces = property(**flux_grav_total_internal_faces())
 
     def flux_grav_w_faces():
         doc = "The flux_grav_w_faces property."
@@ -400,8 +424,18 @@ class biphasicProperties(StructuredMeshProperties):
         return locals()
     flux_o_faces_vec = property(**flux_o_faces_vec())
 
+    def flux_faces_vec():
+        doc = "The flux_faces_vec property."
+        def fget(self):
+            return self.flux_w_faces_vec + self.flux_o_faces_vec
+        return locals()
+    flux_faces_vec = property(**flux_faces_vec())
+
     def change_upwind_o(self):
         self._data['upwind_identificate_o'] = ~self._data['upwind_identificate_o']
+
+    def change_upwind_w(self):
+        self._data['upwind_identificate'] = ~self._data['upwind_identificate']
 
     def faces_normal_with_z():
         doc = "The faces_normal_with_z property."
@@ -423,3 +457,34 @@ class biphasicProperties(StructuredMeshProperties):
 
         return locals()
     faces_normal_with_z = property(**faces_normal_with_z())
+
+    def flux_sigma_internal_faces():
+        doc = "The flux_sigma_internal_faces property."
+        def fget(self):
+            internal_faces = self.elements_lv0['internal_faces']
+            area_int = self.data_impress['area'][internal_faces]
+            k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
+            f1 = -(self.grad_p_internal_faces*area_int*k_harm_internal_faces*self.lambda_t_internal_faces - self.flux_grav_total_internal_faces)
+            return f1
+        return locals()
+    flux_sigma_internal_faces = property(**flux_sigma_internal_faces())
+
+    def upwind_w():
+        doc = "The upwind_w property."
+        def fget(self):
+            v0 = self.elements_lv0['neig_internal_faces']
+            upwind_w = self._data['upwind_identificate']
+            upwind_w = v0[upwind_w]
+            return upwind_w
+        return locals()
+    upwind_w = property(**upwind_w())
+
+    def upwind_o():
+        doc = "The upwind_o property."
+        def fget(self):
+            v0 = self.elements_lv0['neig_internal_faces']
+            upwind_o = self._data['upwind_identificate_o']
+            upwind_o = v0[upwind_w]
+            return upwind_o
+        return locals()
+    upwind_o = property(**upwind_o())
