@@ -549,7 +549,7 @@ erro_v:
 
 flux_o_faces:
   type: faces
-  data size: 3
+  data size: 1
   data type: float
   sparse: True
   level: 0
