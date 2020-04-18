@@ -547,6 +547,13 @@ erro_v:
   sparse: True
   level: 0
 
+flux_o_faces:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
 perpendicular_direction_flag:
   type: faces
   data size: 1
