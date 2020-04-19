@@ -1111,17 +1111,17 @@ class AdmMethod(DataManager, TpfaFlux2):
             perro.append(abs((SOL_ADM_fina-x0)/x0).max())
             active_nodes.append(n2/nfine_vols)
 
-            if imprimir_a_cada_iteracao:
-                # M1.mb.tag_set_data(Pseudo_ERRO_tag,M1.all_volumes,abs(pseudo_erro/x0)[GIDs])
-                #
-                # M1.mb.tag_set_data(ERRO_tag,M1.all_volumes,abs((SOL_ADM_fina-SOL_TPFA)/SOL_TPFA)[GIDs])
-                # M1.mb.tag_set_data(P_ADM_tag,M1.all_volumes,SOL_ADM_fina[GIDs])
-                # M1.mb.tag_set_data(P_TPFA_tag,M1.all_volumes,SOL_TPFA[GIDs])
-                # ext_vtk = 'testes_MAD'  + str(cont) + '.vtk'
-                # M1.mb.write_file(ext_vtk,[av])
-                self.data_impress.update_variables_to_mesh(['LEVEL', 'pressure'])
-                M.core.print(folder='results', file='test'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
-            cont+=1
+            # if imprimir_a_cada_iteracao:
+            #     # M1.mb.tag_set_data(Pseudo_ERRO_tag,M1.all_volumes,abs(pseudo_erro/x0)[GIDs])
+            #     #
+            #     # M1.mb.tag_set_data(ERRO_tag,M1.all_volumes,abs((SOL_ADM_fina-SOL_TPFA)/SOL_TPFA)[GIDs])
+            #     # M1.mb.tag_set_data(P_ADM_tag,M1.all_volumes,SOL_ADM_fina[GIDs])
+            #     # M1.mb.tag_set_data(P_TPFA_tag,M1.all_volumes,SOL_TPFA[GIDs])
+            #     # ext_vtk = 'testes_MAD'  + str(cont) + '.vtk'
+            #     # M1.mb.write_file(ext_vtk,[av])
+            #     self.data_impress.update_variables_to_mesh(['LEVEL', 'pressure'])
+            #     M.core.print(folder='results', file='test'+ str(cont), extension='.vtk', config_input='input_cards/print_settings0.yml')
+            # cont+=1
 
             accum_levels.append(self.data_impress['LEVEL'].copy())
 

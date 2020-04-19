@@ -5,9 +5,11 @@ import multiprocessing as mp
 from scipy.sparse import csc_matrix,csr_matrix, linalg, vstack, find
 import time
 from packs.multiscale.operators.prolongation.AMS.Paralell.partitionating_parameters import calibrate_partitioning_parameters
+import yaml
 
 class DualDomain:
-    def __init__(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
+    def __init__(self, data_impress, elements_lv0, volumes, id_dual, local_couple=0, couple_bound=True):
+        self.id_dual=id_dual
         self.local_couple=local_couple
         self.couple_bound=couple_bound
         self.adjs, self.ks, self.ids_globais_vols, self.ns, self.map_l =  self.get_local_informations(data_impress, elements_lv0, volumes, local_couple=local_couple, couple_bound=couple_bound)
@@ -93,10 +95,11 @@ class DualDomain:
         return adjs, ks, ids_globais_vols, ns, map_l[volumes]
 
 class OP_local:
-    def __init__(self, sub_d):
-        # self.Nvols=sub_d.Nvols
-        # self.Nverts=sub_d.Nvert
-        self.OP = self.get_OP(sub_d)
+    def __init__(self, sub_d, return_netas, neta_lim):
+        if return_netas:
+            self.lcd_OP_local, self.netas = self.get_OP(sub_d, return_netas, neta_lim) #ordem IJN
+        else:
+            self.lcd_OP_local = self.get_OP(sub_d)
 
     def get_submatrix(self,id0, id1, ks, slice):
         id0, id1, ks= np.concatenate([id0,id1]), np.concatenate([id1,id0]), np.concatenate([ks, ks])
@@ -122,7 +125,7 @@ class OP_local:
         submatrix=csc_matrix((d,(l,c)),shape=(xs-xi,ys-yi))
         return(submatrix)
 
-    def get_OP(self, sub_d):
+    def get_OP(self, sub_d, return_netas = False, neta_lim=10):
         adjs, ks, ids_globais_vols, ns = sub_d.adjs, sub_d.ks, sub_d.ids_globais_vols, sub_d.ns
         nv=ns[0]
         ne=ns[1]
@@ -168,7 +171,21 @@ class OP_local:
             sub_d.A_b_t.append([II.shape[0], nv,time.time()-t0])
 
         OP=vstack([Pi,Pf,Pe,Pv])
+        lcd=scipy.sparse.find(OP)
+        lines=ids_globais_vols[np.array(lcd[0])].astype(int)
+        cols = sub_d.coarse_ids[lcd[1]].astype(int)
+        data=np.array(lcd[2])
+        if return_netas:
+            IJN = self.get_netas(sub_d, OP, neta_lim)
+            return (lines, cols, data), IJN
+        else:
+            return (lines, cols, data)
 
+    def get_netas(self, sub_d, OP, neta_lim=0):
+        adjs, ks, ids_globais_vols, ns = sub_d.adjs, sub_d.ks, sub_d.ids_globais_vols, sub_d.ns
+        nv, ne, nf, ni = ns
+        adjs0=adjs[:,0]
+        adjs1=adjs[:,1]
         TL=self.get_submatrix(adjs0, adjs1, ks, (0, ni+nf+ne+nv, 0, ni+nf+ne+nv))
         cid=sub_d.all_coarse_ids
         sub_d.coarse_ids
@@ -179,18 +196,32 @@ class OP_local:
         cols=sub_d.map_l
         data=np.ones(len(lines))
         OR=csc_matrix((data,(lines,cols)),shape=(nv, ni+nf+ne+nv))
+
         MM=OR*TL*OP
-        ii=MM[range(4),range(4)]
-        if (ii.max()-ii.min())<0.001:
+        ii=np.array(MM[range(nv),range(nv)])[0]
+        inv_ii=1/ii
+        lc=np.arange(nv)
+        d_inv_ii=csc_matrix((inv_ii, (lc,lc)),shape=(nv,nv))
+        MM2=MM.copy()
+        MM2.setdiag(0)
+        netas=d_inv_ii*MM2
+        # with open('input_cards/saves_test_cases.yml', 'r') as f:
+        #     data_loaded = yaml.safe_load(f)
+        # folder_=data_loaded['directory']
+        # file_=folder=data_loaded['file']
+        # np.save(folder_+'/'+file_+str(sub_d.id_dual)+'.npy',MM.toarray())
 
-            import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
+        if netas.max()>neta_lim:
+            fn=find(netas>neta_lim)
+            i=sub_d.coarse_ids[fn[0]]
+            j=sub_d.coarse_ids[fn[1]]
+            n=np.array(netas[netas>neta_lim])[0]
+            return np.concatenate([i, j, n,np.repeat(sub_d.id_dual,len(i))])
 
-        lcd=scipy.sparse.find(OP)
-        lines=ids_globais_vols[np.array(lcd[0])].astype(int)
-        cols = sub_d.coarse_ids[lcd[1]].astype(int)
-        data=np.array(lcd[2])
-        return lines, cols, data
+        else:
+            return []
 
 class Partitioner:
     def __init__(self,all_subds, nworker, regression_degree):
@@ -199,7 +230,7 @@ class Partitioner:
             partitioned_subds = self.balance_processes(all_subds, estimated_time_by_subd, nworker=nworker)
             self.partitioned_subds = partitioned_subds
         else:
-            self.partitioned_subds=[]
+            self.partitioned_subds=np.array([[],[],[]])
         # A_b_t=np.zeros((1,3))
         # for subd in all_subds:
         #     A_b_t=np.vstack([A_b_t,np.array(subd.A_b_t)])
@@ -267,26 +298,34 @@ class OP_AMS:
 
         print("Time to calibrate partitioning parameters: {} segundos".format(time.time()-t0))
         t0=time.time()
-        all_subds = [DualDomain(data_impress, elements_lv0, all_conjs_duais[i], local_couple=local_couple, \
+        all_subds = [DualDomain(data_impress, elements_lv0, all_conjs_duais[i], i, local_couple=local_couple, \
         couple_bound = couple_bound) for i in range(len(all_conjs_duais))]
         print("Time to partitionate subdomains: {} segundos".format(time.time()-t0))
+
         Nvols=len(elements_lv0['volumes'])
         Nverts = (data_impress['DUAL_1']==3).sum()
         regression_degree=2
         nworker=3
 
         partitioned_subds=Partitioner(all_subds, nworker, regression_degree).partitioned_subds
-
-        # lines, cols, data = self.get_OP_paralell(partitioned_subds)
+        print("started OP")
+        t0=time.time()
+        (lines, cols, data), IJN = self.get_OP_paralell(partitioned_subds)
+        IJN=np.hstack([ijn.reshape(4,round(len(ijn)/4)) for ijn in IJN]).T
+        IJ=IJN[:,0:2].astype(int)
+        N=IJN[:,2]
+        ID=IJN[:,3].astype(int)
+        import pdb; pdb.set_trace()
         # self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
+        # print("finished OP after {} seconds",time.time()-t0 )
 
+        # #########To test bugs on serial, use this###############################
 
-        #########To test bugs on serial, use this###############################
-        lines, cols, data = self.get_OP(all_subds, paralell=False)
+        # (lines, cols, data), IJN = self.get_OP(all_subds, paralell=False)
+
         self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
-        ######################################
 
-
+        # ######################################
 
     def get_OP(self,partitioned_subd, paralell=True):
         if paralell:
@@ -295,8 +334,14 @@ class OP_AMS:
         # Processes imputs
         ################################
         lcd=np.zeros((3,1))
+        IJN=[]
         for dual_d in partitioned_subd:
-            lcd=np.hstack([lcd,OP_local(dual_d).OP])
+            OP = OP_local(dual_d, return_netas=True, neta_lim=0)
+            lcd_OP_local, netas = OP.lcd_OP_local, OP.netas
+            lcd=np.hstack([lcd,lcd_OP_local])
+            if len(netas)>0:
+                IJN.append(netas)
+
         ###################################
 
         # Send results to master process
@@ -304,10 +349,10 @@ class OP_AMS:
         if paralell:
             print("process {} finished after {}".format(partitioned_subd[-1].id, time.time()-t0))
             master=dual_d.master
-            master.send(lcd)
+            master.send([lcd, IJN])
             #############################################
         else:
-            return lcd
+            return lcd, IJN
 
     def get_OP_paralell(self, partitioned_subds):
         nworker = len(partitioned_subds)
@@ -334,12 +379,15 @@ class OP_AMS:
         l=[]
         c=[]
         d=[]
+        IJN=[]
         for m in m2w:
-            msg=m.recv()
+            ms=m.recv()
+            msg=ms[0]
+            IJN.append(ms[1])
             l.append(msg[0])
             c.append(msg[1])
             d.append(msg[2])
-
+        IJN=np.concatenate(IJN)
         l=np.concatenate(l)
         c=np.concatenate(c)
         d=np.concatenate(d)
@@ -349,4 +397,4 @@ class OP_AMS:
         lines=l.astype(int)
         cols=c.astype(int)
         data=d
-        return lines, cols, data
+        return (lines, cols, data), IJN

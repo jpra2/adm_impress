@@ -1,7 +1,7 @@
 import time
 t0=time.time()
 print("importing packs")
-
+import yaml
 from packs.running.initial_mesh_properties import initial_mesh
 from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
@@ -73,21 +73,21 @@ def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     data_impress['pretransmissibility'] = data_impress['transmissibility'].copy()
     data_impress.export_to_npz()
 
-def plot_operator(OP_AMS, v):
-    vertices = elements_lv0['volumes'][data_impress['DUAL_1']==3]
-    tags_ams = []
-    for i, v in enumerate(vertices):
-        primal_id = data_impress['GID_1'][v]
-        corresp = data_impress['ADM_COARSE_ID_LEVEL_1'][v]
-        tags_ams.append(M.core.mb.tag_get_handle("OP_AMS_"+str(i), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True))
-        fb_ams = OP_AMS[:, primal_id].toarray()
-        # fb_adm = OP_ADM[:, corresp].toarray()
-        M.core.mb.tag_set_data(tags_ams[i], M.core.all_volumes, fb_ams)
+# def plot_operator(OP_AMS, v):
+#     vertices = elements_lv0['volumes'][data_impress['DUAL_1']==3]
+#     tags_ams = []
+#     for i, v in enumerate(vertices):
+#         primal_id = data_impress['GID_1'][v]
+#         corresp = data_impress['ADM_COARSE_ID_LEVEL_1'][v]
+#         tags_ams.append(M.core.mb.tag_get_handle("OP_AMS_"+str(i), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True))
+#         fb_ams = OP_AMS[:, primal_id].toarray()
+#         # fb_adm = OP_ADM[:, corresp].toarray()
+#         M.core.mb.tag_set_data(tags_ams[i], M.core.all_volumes, fb_ams)
 
 def get_coupled_dual_volumes(mlo, neta_lim=0.0, ind=0):
     OP_AMS=mlo['prolongation_level_1']
     OR_AMS=mlo['restriction_level_1']
-    Tc=OR_AMS*T*OP_AMS
+    Tc=OR_AMS*tpfa_solver['Tini']*OP_AMS
     Tc2=Tc.copy()
     Tc2.setdiag(0)
     DTc=1/np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
@@ -232,7 +232,7 @@ else:
 print("Time to construct prolongation operator: {} seconds".format(time.time()-t0))
 print("Adapting reduced boundary conditions")
 t0=time.time()
-neta_lim=1.0
+neta_lim=999999999991.0
 OP_AMS=mlo['prolongation_level_1'].copy()
 groups = get_coupled_dual_volumes(mlo,neta_lim, ind=0)
 
@@ -246,7 +246,13 @@ if len(dv)>0:
     multilevel_operators=mlo
 ######################### # #############################
 old_groups=groups.copy()
-for ind in range(1,1):
+if len(old_groups)==0:
+    nref=0
+else:
+    nref=6
+
+for ind in range(1,nref):
+
     groups2 = get_coupled_dual_volumes(mlo,neta_lim, ind=ind)
     # neta_lim/=2
     lgs=[np.repeat(i,len(old_groups[i])) for i in range(len(old_groups))]
@@ -279,19 +285,20 @@ for ind in range(1,1):
         mlo['prolongation_level_1']=OP_AMS
         multilevel_operators=mlo
     old_groups=atualized_groups.copy()
+'''
+# groups = get_coupled_dual_volumes(mlo,neta_lim, ind=5)
+#
+# gid_coarse_wells = np.unique(data_impress['GID_1'][finos])
+# finos2 = np.concatenate([data_impress['GID_0'][data_impress['GID_1']==gidc] for gidc in gid_coarse_wells])
+# # wells_prim=np.concatenate([M.volumes.all[data_impress["GID_1"]==w] for w in wells])
+# finos=np.concatenate([finos,finos2])
 
-groups = get_coupled_dual_volumes(mlo,neta_lim, ind=5)
-finos=wells['all_wells']
-gid_coarse_wells = np.unique(data_impress['GID_1'][finos])
-finos2 = np.concatenate([data_impress['GID_0'][data_impress['GID_1']==gidc] for gidc in gid_coarse_wells])
-# wells_prim=np.concatenate([M.volumes.all[data_impress["GID_1"]==w] for w in wells])
-finos=np.concatenate([finos,finos2])
-
-if len(groups)>0:
-    dv=np.concatenate(get_dual_subdomains(groups))
-    finos=np.concatenate([finos,dv])
-
+# if len(groups)>0:
+#     dv=np.concatenate(get_dual_subdomains(groups))
+#     finos=np.concatenate([finos,dv])
+'''
 print("Time to adapt RBC: {} seconds".format(time.time()-t0))
+finos=wells['all_wells']
 # from packs.utils.utils_old import get_box
 # dx=20
 # dy=10
@@ -305,37 +312,30 @@ print("Time to adapt RBC: {} seconds".format(time.time()-t0))
 # finos=np.concatenate([finos,p0])
 # if len(lins_par)>0:
 #     finos=np.concatenate([finos,lins_par])
-
+t0=time.time()
 data_impress.update_variables_to_mesh()
 ################################
-
+ta=time.time()
 adm_method = AdmNonNested(finos, n_levels, M, data_impress, elements_lv0)
+print(time.time()-ta,"adm")
 # adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
+t99=time.time()
 adm_method.set_initial_mesh(mlo, T, b)
-############################teste#################################
-# adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
-##################
-# import pdb; pdb.set_trace()
-# multilevel_operators2 = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
-# # mlo2=multilevel_operators2
-# multilevel_operators2.run_paralel(tpfa_solver['Tini'])
-# OP_AMS2=multilevel_operators2['prolongation_level_1']
-# plot_operator(OP_AMS2,np.arange(OP_AMS2.shape[1]))
-
+print(time.time()-t99,"INITIAL_ mesh")
+t1=time.time()
 T, b = tpfa_solver.run()
+print(time.time()-t1,"tpfa")
 
-# adm_method.restart_levels()
-# adm_method.set_level_wells()
-# adm_method.verificate_levels()
-# adm_method.set_adm_mesh()
 gids_0 = data_impress['GID_0']
-
+t3=time.time()
 adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
+print(time.time()-t3,"non mesh")
 # adm_method.set_initial_mesh(mlo, T, b)
-
+t4=time.time()
 adm_method.organize_ops_adm(mlo['prolongation_level_1'],
                             mlo['restriction_level_1'],
                             1)
+print(time.time()-t4, "organize")
 # adm_method.plot_operator(adm_method[adm_method.adm_op_n+'1'], mlo['prolongation_level_1'], 0)
 
 if n_levels > 2:
@@ -343,10 +343,10 @@ if n_levels > 2:
                                 mlo['restriction_level_2'],
                                 2)
 
-
+print(time.time()-t0,"b1")
 # len(np.arange(len(dual_volumes))[np.array(ddp.sum(axis=1)>2).T[0]])
 # np.arange(len(dual_volumes))[np.array(dp.sum(axis=1)>3).T[0]]
-
+t0=time.time()
 
 # import pdb; pdb.set_trace()
 OP_AMS=mlo['prolongation_level_1']
@@ -370,9 +370,11 @@ pf=linalg.spsolve(T,b)
 eadm=np.linalg.norm(abs(padm-pf))/np.linalg.norm(pf)
 eams=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
 print("erro_adm: {}, erro_ams: {}".format(eadm,eams))
+print(time.time()-t0,"t2")
 # import pdb; pdb.set_trace()
 # adm_method.organize_ops_adm_level_1( OP_AMS, OR_AMS, level, _pcorr=None)
 #########################################################################
+t0=time.time()
 Tc2=Tc.copy()
 Tc2.setdiag(0)
 DTc=np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
@@ -384,31 +386,32 @@ Tcadm2.setdiag(0)
 DTcadm=np.array(Tcadm[range(Tcadm.shape[0]),range(Tcadm.shape[0])])[0]
 MTcadm=Tcadm2.min(axis=1).toarray().T[0]
 netasadm=abs(MTcadm/DTcadm)
+print(time.time()-t0,"t3")
 print("netamax: adm: {}, ams: {}".format(netasadm.max(), netasams.max()))
-v_edges=M.volumes.all[data_impress["DUAL_1"]>=2]
-f_edges=np.intersect1d(M.faces.internal,np.unique(np.concatenate(M.volumes.bridge_adjacencies(v_edges, 2, 2))))
-adjs_e=M.faces.bridge_adjacencies(f_edges, 2, 3)
-adjs_e0=adjs_e[:,0]
-adjs_e1=adjs_e[:,1]
-pe0=padm[adjs_e0]
-pe1=padm[adjs_e1]
-dpe=abs(pe0-pe1)
-
-lines=np.concatenate([adjs_e0,adjs_e1])
-cols=np.concatenate([adjs_e1,adjs_e0])
-data=np.concatenate([dpe,dpe])
-from scipy.sparse import csc_matrix
-sums=csc_matrix((data,(lines,cols)),shape=(len(M.volumes.all),len(M.volumes.all)))
-sums=sums[:,M.volumes.all[data_impress["DUAL_1"]<2]]
-ss=np.array(sums.sum(axis=1)).T[0]
-# np.where(ss>100)
-# ss[data_impress["DUAL_1"]<2]=0
-data_impress["velocity_projection"]=ss
-
-superam_tol_for_v=data_impress["GID_1"][M.volumes.all[ss>1]]
-vsup=[]
-for v in superam_tol_for_v:
-    vsup.append(M.volumes.all[data_impress["GID_1"]==v])
+# v_edges=M.volumes.all[data_impress["DUAL_1"]>=2]
+# f_edges=np.intersect1d(M.faces.internal,np.unique(np.concatenate(M.volumes.bridge_adjacencies(v_edges, 2, 2))))
+# adjs_e=M.faces.bridge_adjacencies(f_edges, 2, 3)
+# adjs_e0=adjs_e[:,0]
+# adjs_e1=adjs_e[:,1]
+# pe0=padm[adjs_e0]
+# pe1=padm[adjs_e1]
+# dpe=abs(pe0-pe1)
+#
+# lines=np.concatenate([adjs_e0,adjs_e1])
+# cols=np.concatenate([adjs_e1,adjs_e0])
+# data=np.concatenate([dpe,dpe])
+# from scipy.sparse import csc_matrix
+# sums=csc_matrix((data,(lines,cols)),shape=(len(M.volumes.all),len(M.volumes.all)))
+# sums=sums[:,M.volumes.all[data_impress["DUAL_1"]<2]]
+# ss=np.array(sums.sum(axis=1)).T[0]
+# # np.where(ss>100)
+# # ss[data_impress["DUAL_1"]<2]=0
+# data_impress["velocity_projection"]=ss
+#
+# superam_tol_for_v=data_impress["GID_1"][M.volumes.all[ss>1]]
+# vsup=[]
+# for v in superam_tol_for_v:
+#     vsup.append(M.volumes.all[data_impress["GID_1"]==v])
 '''
 if len(vsup)>0:
     vsup=np.concatenate(vsup)
@@ -472,21 +475,29 @@ dpf=abs(p0f-p1f)
 
 ed=abs(dp-dpf)
 
-perms=np.load("flying/permeability.npy")
-perms_xx=perms[:,0]
-# data_impress["perm_x"]=perms_xx
+
 adm_method.solve_multiscale_pressure(T, b)
 adm_method.set_pcorr()
 '''
+perms=np.load("flying/permeability.npy")
+perms_xx=perms[:,0]
+data_impress["perm_x"]=perms_xx
 data_impress['pcorr'][data_impress['LEVEL']==0] = data_impress['pms'][data_impress['LEVEL']==0]
+
 
 data_impress['pressure'] = padm
 data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
-# data_impress['erro'] = np.absolute((data_impress['pressure'] - data_impress['pms'])/data_impress['pms'])
+data_impress['erro'] = np.absolute((padm - pf))
 data_impress['erro_pcorr_pdm'] = np.absolute(data_impress['pcorr'] - data_impress['pms'])
 
 get_coupled_dual_volumes(mlo, neta_lim=neta_lim, ind=999)
 data_impress.update_variables_to_mesh()
 M.core.print(file='results/test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
+with open('input_cards/saves_test_cases.yml', 'r') as f:
+    data_loaded = yaml.safe_load(f)
+folder_=data_loaded['directory']
+file_=folder=data_loaded['file']
+
+M.core.print(file=folder_+'/'+file_, extension='.vtk', config_input='input_cards/print_settings0.yml')
 import pdb; pdb.set_trace()

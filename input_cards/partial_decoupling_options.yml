@@ -3,3 +3,4 @@ local_couple_initial: 0
 couple_bound_initial: False
 local_couple: 0
 couple_bound: False
+neta_lim: 5.0

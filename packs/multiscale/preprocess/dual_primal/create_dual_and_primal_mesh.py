@@ -282,8 +282,9 @@ class MultilevelData(DataManager):
                 neigs = []
                 neigs_ids = []
                 primal_id = mb.tag_get_data(self.tags[primal_fine_name], vert, flat=True)[0]
-                centroid_vert = fine_centroids[dict_volumes[vert]]
+                centroid_vert = fine_centroids[dict_volumes[vert]]                
                 centroids_coarse[primal_id] = centroid_vert
+
 
                 coarse_volume = \
                 mb.get_entities_by_type_and_tag(0, types.MBENTITYSET, np.array([self.tags[name_tag_c]]),
@@ -305,7 +306,10 @@ class MultilevelData(DataManager):
                     gids = np.unique(mb.tag_get_data(self.tags[tags_fine[1] + str(n-1)], elems_in_meshset, flat=True))
                 elems_fora = mtu.get_bridge_adjacencies(elems_in_meshset, 2, 3)
                 elems_fora = rng.subtract(elems_fora, elems_in_meshset)
-                ids_meshsets_vizinhos = np.unique(mb.tag_get_data(self.tags[primal_fine_name], elems_fora, flat=True))
+                try:
+                    ids_meshsets_vizinhos = np.unique(mb.tag_get_data(self.tags[primal_fine_name], elems_fora, flat=True))
+                except:
+                    import pdb; pdb.set_trace()
                 for j in ids_meshsets_vizinhos:
                     m2 = mb.get_entities_by_type_and_tag(M.core.root_set, types.MBENTITYSET, np.array([self.tags[name_tag_c]]), np.array([j]))[0]
                     neigs.append(m2)
@@ -625,7 +629,7 @@ class MultilevelData(DataManager):
             from scipy.sparse import csc_matrix, csgraph
             graph=csc_matrix((data,(lines,cols)),shape=(len(interns),len(interns)))
             n_l,labels=csgraph.connected_components(graph,connection='strong')
-            conjs_interns=[interns[labels==l] for l in range(n_l)]    
+            conjs_interns=[interns[labels==l] for l in range(n_l)]
             structure = [np.unique(np.concatenate(M.volumes.bridge_adjacencies(intern0, 0, 3))) for intern0 in conjs_interns]
             self._data[self.dual_structure+str(level)]=structure
 

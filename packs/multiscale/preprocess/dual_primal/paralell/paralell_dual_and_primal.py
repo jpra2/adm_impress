@@ -1,7 +1,7 @@
 from packs import directories as direc
 import numpy as np
 
-def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary):
+def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_dual=False):
     cr1 = direc.data_loaded['Crs']['Cr1']
     cr2 = direc.data_loaded['Crs']['Cr2']
     crs = [cr1, cr2]
@@ -21,9 +21,19 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary):
         P_i = []
         D_i = []
         for j in range(3):
-            Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
+            if uniform_dual:
+                if (max_j[j]-min_j[j])<=crs[i][j]*d_j[j]+1e-10:
+                    Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
+                else:
+                    Pij=np.array([min_j[j]])
+                    dmin=(int(crs[i][j]/2)+1)*d_j[j]
+                    dmax=dmin+round(max_j[j])+d_j[j]
+                    Pij=np.append(Pij,np.arange(dmin,dmax,crs[i][j]*d_j[j]))
+            else:
+                Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
+
             Pij[-1] = max_j[j]
-            Dij = (Pij[1:]+Pij[:-1])/2            
+            Dij = (Pij[1:]+Pij[:-1])/2
             if external_vertex_on_boundary and len(Dij)>1:
                 Dij[0] = min_j[j]+d_j[j]/2
                 Dij[-1] = max_j[j]-d_j[j]/2
@@ -31,7 +41,7 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary):
             D_i.append(Dij)
         P.append(P_i)
         D.append(D_i)
-    # import pdb; pdb.set_trace()
+
     return P, D, min_j, max_j, d_j
 
 def distribute_reservoir_partitions(P_all, D_all, nworker):
@@ -118,9 +128,11 @@ def create_dual_and_primal(subP, subD, min_j, max_j, d_j, cent_volumes):
                 primal_2.append(vz)
 
                 ################### Creates dual flags lv2###############
-                lxd2 = Lxd2[(Lxd2>=Lx2[i]) & (Lxd2<=Lx2[i+1])]
-                lyd2 = Lyd2[(Lyd2>=Ly2[j]) & (Lyd2<=Ly2[j+1])]
-                lzd2 = Lzd2[(Lzd2>=Lz2[k]) & (Lzd2<=Lz2[k+1])]
+                lxd2 = Lxd2[(Lxd2>=Lx2[i]) & (Lxd2<Lx2[i+1])]
+                lyd2 = Lyd2[(Lyd2>=Ly2[j]) & (Lyd2<Ly2[j+1])]
+                lzd2 = Lzd2[(Lzd2>=Lz2[k]) & (Lzd2<Lz2[k+1])]
+                lzd2=np.unique(lzd2)
+
                 ld2=[lxd2, lyd2, lzd2]
                 dual_flag=np.zeros(len(vz))
                 for d in range(3):
@@ -153,10 +165,12 @@ def create_dual_and_primal(subP, subD, min_j, max_j, d_j, cent_volumes):
                             lxd1 = Lxd1[(Lxd1>=lx1[l]) & (Lxd1<=lx1[l+1])]
                             lyd1 = Lyd1[(Lyd1>=ly1[m]) & (Lyd1<=ly1[m+1])]
                             lzd1 = Lzd1[(Lzd1>=lz1[n]) & (Lzd1<=lz1[n+1])]
+                            lzd1 = np.unique(lzd1)
                             ld1=[lxd1, lyd1, lzd1]
                             dual_flag=np.zeros(len(vz1))
                             for d in range(3):
                                 dual_flag += (cent_volumes[vz1,d] > ld1[d]-d_j[d]/2) & (cent_volumes[vz1,d] < ld1[d]+d_j[d]/2)
+
                             dual_flag_1.append(dual_flag)
     return primal_1, primal_2, dual_flag_1, dual_flag_2
 
@@ -187,7 +201,8 @@ def set_tags(M1, primal_1, primal_2, dual_flag_1, dual_flag_2):
 
 class DualPrimal:
     def __init__(self, M1, coord_nodes, cent_volumes, external_vertex_on_boundary=True):
-        P, D, min_j, max_j, d_j = get_reservoir_partitions(coord_nodes, external_vertex_on_boundary)
+        P, D, min_j, max_j, d_j = get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_dual=False)
+
         # import pdb; pdb.set_trace()
         # subP, subD = distribute_reservoir_partitions(P, D, nworker=3)
         primal_1, primal_2, dual_flag_1, dual_flag_2 = create_dual_and_primal(P, D, min_j, max_j, d_j, cent_volumes)
