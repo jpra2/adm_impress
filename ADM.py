@@ -158,6 +158,7 @@ def get_coupled_dual_volumes(mlo, neta_lim=0.0, ind=0):
             cds.append(duais_coup)
 
     cds=np.array(cds)
+
     if len(cds)>0:
         values=np.unique(np.concatenate(cds))
         mapd=np.arange(len(dual_volumes))
@@ -173,6 +174,7 @@ def get_coupled_dual_volumes(mlo, neta_lim=0.0, ind=0):
         groups=[]
         for k in range(n_l):
             groups.append(values[labels==k])
+        import pdb; pdb.set_trace()
         return groups
     else:
         return []
@@ -232,7 +234,7 @@ else:
 print("Time to construct prolongation operator: {} seconds".format(time.time()-t0))
 print("Adapting reduced boundary conditions")
 t0=time.time()
-neta_lim=999999999991.0
+neta_lim=999999999999999991.0
 OP_AMS=mlo['prolongation_level_1'].copy()
 groups = get_coupled_dual_volumes(mlo,neta_lim, ind=0)
 

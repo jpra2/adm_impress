@@ -2,7 +2,7 @@ from pymoab import rng, types
 import scipy
 import numpy as np
 import multiprocessing as mp
-from scipy.sparse import csc_matrix,csr_matrix, linalg, vstack, find
+from scipy.sparse import csc_matrix,csr_matrix, linalg, vstack, find, csgraph
 import time
 from packs.multiscale.operators.prolongation.AMS.Paralell.partitionating_parameters import calibrate_partitioning_parameters
 import yaml
@@ -294,38 +294,93 @@ class Partitioner:
 
 class OP_AMS:
     def __init__(self, data_impress, elements_lv0, all_conjs_duais, local_couple=0, couple_bound=True):
-        t0=time.time()
+        neta_lim=1.0
+        groups=all_conjs_duais
+        LCD=[]
+        while len(groups)>0:
+            t0=time.time()
+            all_subds = [DualDomain(data_impress, elements_lv0, groups[i], i, local_couple=local_couple, \
+            couple_bound = couple_bound) for i in range(len(groups))]
+            print("Time to partitionate subdomains: {} segundos".format(time.time()-t0))
+            Nvols=len(elements_lv0['volumes'])
+            Nverts = (data_impress['DUAL_1']==3).sum()
+            regression_degree=2
+            nworker=3
+            groups=all_conjs_duais
+            partitioned_subds=Partitioner(all_subds, nworker, regression_degree).partitioned_subds
+            print("started OP")
+            t0=time.time()
+            # lcd, IJN = self.get_OP_paralell(partitioned_subds)
+            lcd, IJN = self.get_OP(all_subds, paralell=False)
 
-        print("Time to calibrate partitioning parameters: {} segundos".format(time.time()-t0))
-        t0=time.time()
-        all_subds = [DualDomain(data_impress, elements_lv0, all_conjs_duais[i], i, local_couple=local_couple, \
-        couple_bound = couple_bound) for i in range(len(all_conjs_duais))]
-        print("Time to partitionate subdomains: {} segundos".format(time.time()-t0))
-
-        Nvols=len(elements_lv0['volumes'])
-        Nverts = (data_impress['DUAL_1']==3).sum()
-        regression_degree=2
-        nworker=3
-
-        partitioned_subds=Partitioner(all_subds, nworker, regression_degree).partitioned_subds
-        print("started OP")
-        t0=time.time()
-        (lines, cols, data), IJN = self.get_OP_paralell(partitioned_subds)
-        IJN=np.hstack([ijn.reshape(4,round(len(ijn)/4)) for ijn in IJN]).T
-        IJ=IJN[:,0:2].astype(int)
-        N=IJN[:,2]
-        ID=IJN[:,3].astype(int)
-        import pdb; pdb.set_trace()
-        # self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
-        # print("finished OP after {} seconds",time.time()-t0 )
+            if len(IJN)>0:
+                groups = self.get_dual_index(IJN,1.0)
+                groups=[np.unique(np.concatenate(all_conjs_duais[g])) for g in groups]
+                IJN2=np.hstack([ijn.reshape(4,round(len(ijn)/4)) for ijn in IJN]).T
+                ID=np.unique(IJN2[:,3].astype(int)[IJN2[:,2]>neta_lim])
+                LCD.append(lcd[np.setdiff1d(np.arange(len(groups)),ID)])
+            else:
+                groups=[]
+        LCD=np.concatenate(LCD)
+        lines=np.concatenate(LCD[:,0])
+        cols=np.concatenate(LCD[:,1])
+        data=np.concatenate(LCD[:,2])
+        # import pdb; pdb.set_trace()
+        self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
+        print("finished OP after {} seconds",time.time()-t0 )
 
         # #########To test bugs on serial, use this###############################
-
-        # (lines, cols, data), IJN = self.get_OP(all_subds, paralell=False)
-
+        # all_subds = [DualDomain(data_impress, elements_lv0, groups[i], i, local_couple=local_couple, \
+        # couple_bound = couple_bound) for i in range(len(groups))]
+        # lcd, IJN = self.get_OP(all_subds, paralell=False)
+        # import pdb; pdb.set_trace()
         self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
 
         # ######################################
+    def get_dual_index(self,IJN,neta_lim):
+        IJN=np.hstack([ijn.reshape(4,round(len(ijn)/4)) for ijn in IJN]).T
+        NS=IJN[:,2]>neta_lim
+        IJ=IJN[:,0:2].astype(int)[NS]
+        N=IJN[:,2][NS]
+        ID=IJN[:,3].astype(int)[NS]
+        pvs=np.concatenate([IJ[:,0],IJ[:,1]])
+        dls=np.concatenate([ID, ID])
+        data=np.repeat(1,len(pvs))
+        dp=csc_matrix((data,(dls,pvs)),shape=(dls.max()+1, pvs.max()+1))
+        dp[dp>1]=1
+        i=IJ[:,0]
+        j=IJ[:,1]
+        k=N
+        cds=[]
+        for k in range(len(i)):
+            ddp_i=dp[:,i[k]]
+            ddp_j=dp[:,j[k]]
+            ddp=(ddp_i.sum(axis=1)>0) & (ddp_j.sum(axis=1)>0)
+            duais_coup=np.arange(len(ddp))[np.array(ddp).T[0]]
+            if len(duais_coup)>2:
+                import pdb; pdb.set_trace()
+            if len(duais_coup)==1:
+                duais_coup=np.repeat(duais_coup[0],2)
+            if len(duais_coup)==2:
+                cds.append(duais_coup)
+
+        cds=np.array(cds)
+        if len(cds)>0:
+            values=np.unique(ID)
+            mapd=np.arange(ID.max()+1)
+            mapd[values]=np.arange(len(values))
+
+            lines=np.concatenate([mapd[cds[:,0]],mapd[cds[:,1]]])
+            cols=np.concatenate([mapd[cds[:,1]],mapd[cds[:,0]]])
+
+            data=np.ones(len(lines))
+            graph=csc_matrix((data,(lines,cols)),shape=(len(values),len(values)))
+
+            n_l,labels=csgraph.connected_components(graph,connection='strong')
+            groups=[]
+            for k in range(n_l):
+                groups.append(values[labels==k])
+        return(groups)
 
     def get_OP(self,partitioned_subd, paralell=True):
         if paralell:
@@ -333,21 +388,23 @@ class OP_AMS:
         t0=time.time()
         # Processes imputs
         ################################
-        lcd=np.zeros((3,1))
+        lcd=[]
         IJN=[]
         for dual_d in partitioned_subd:
             OP = OP_local(dual_d, return_netas=True, neta_lim=0)
             lcd_OP_local, netas = OP.lcd_OP_local, OP.netas
-            lcd=np.hstack([lcd,lcd_OP_local])
+            lcd.append(lcd_OP_local)
             if len(netas)>0:
                 IJN.append(netas)
-
+        lcd=np.array(lcd)
         ###################################
 
         # Send results to master process
         ###################################################
         if paralell:
             print("process {} finished after {}".format(partitioned_subd[-1].id, time.time()-t0))
+            # if len(np.array(IJN).shape)==1:
+            #     IJN=[IJN]
             master=dual_d.master
             master.send([lcd, IJN])
             #############################################
@@ -376,25 +433,36 @@ class OP_AMS:
 
         # Get processed output & kill subprocesses
         #################################
-        l=[]
-        c=[]
-        d=[]
+        lcd=[]
         IJN=[]
         for m in m2w:
-            ms=m.recv()
-            msg=ms[0]
-            IJN.append(ms[1])
-            l.append(msg[0])
-            c.append(msg[1])
-            d.append(msg[2])
-        IJN=np.concatenate(IJN)
-        l=np.concatenate(l)
-        c=np.concatenate(c)
-        d=np.concatenate(d)
+            msg=m.recv()
+            lcd.append(msg[0])
+            IJN.append(msg[1])
+        try:
+            IJN=np.concatenate(np.array(IJN))
+            lcd=np.concatenate(np.array(lcd))
+        except:
+            ls=np.array([len(np.array(ijn).shape) for ijn in IJN])
+            inds=np.arange(len(ls))[ls==2]
+            for i in inds:
+                IJN[i]=np.concatenate(IJN[i]), np.array([])
+            IJN=np.concatenate(np.array(IJN))
+            ls=np.array([len(ijn) for ijn in IJN])
+            IJN=IJN[ls>0]
+
+            lcd=np.concatenate(np.array(lcd))
+
+
+
+
+        # l=np.concatenate(np.array(l))
+        # c=np.concatenate(c)
+        # d=np.concatenate(d)
         for p in procs:
             p.join()
         ###############################################
-        lines=l.astype(int)
-        cols=c.astype(int)
-        data=d
-        return (lines, cols, data), IJN
+        # lines=l
+        # cols=c
+        # data=d
+        return lcd, IJN
