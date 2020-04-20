@@ -512,6 +512,27 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         pos_flux_total = flux_total > 0
         self._data['upwind_identificate_o'][~(pos_flux_total & pos_sigma)] = ~self._data['upwind_identificate_o'][~(pos_flux_total & pos_sigma)]
 
+    def update_upwind_phases_new0(self):
+
+        internal_faces = self.elements_lv0['internal_faces']
+        flux_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
+        q_sigma_internal_faces = self.flux_sigma_internal_faces
+        ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
+
+        pos_sigma = q_sigma_internal_faces >= 0
+        pos_w = flux_w_internal_faces >= 0
+        self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
+        self._data['upwind_identificate'][pos_w & pos_sigma, 0] = True
+        self._data['upwind_identificate'][~(pos_w & pos_sigma), 1] = True
+        self._data['upwind_identificate_o'] = self._data['upwind_identificate'].copy()
+
+        qw = self.fw_internal_faces*(q_sigma_internal_faces - self.lambda_o_internal_faces*ak*(self.g_w_internal_faces - self.g_o_internal_faces))
+        qo = (1 - self.fw_internal_faces)*(q_sigma_internal_faces + self.lambda_w_internal_faces*ak*(self.g_w_internal_faces - self.g_o_internal_faces))
+
+        q_total = qw + qo
+        pos_flux_total = q_total >= 0
+        self._data['upwind_identificate_o'][~(pos_flux_total & pos_sigma)] = ~self._data['upwind_identificate_o'][~(pos_flux_total & pos_sigma)]
+
     def update_transmissibility(self):
 
         pretransmissibility = self.data_impress['pretransmissibility'].copy()

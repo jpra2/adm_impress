@@ -1,5 +1,6 @@
 # mesh_name: mesh/45x45x45.msh
-mesh_name: mesh/9x9x9.h5m
+# mesh_name: mesh/9x9x9.h5m
+mesh_name: mesh/9x9x1.h5m
 # mesh_name: mesh/27x27x27.msh
 n_test: 0
 state: 0
