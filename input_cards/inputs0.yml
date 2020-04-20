@@ -1,8 +1,8 @@
 # mesh_name: mesh/45x45x45.msh
 # mesh_name: mesh/9x9x9.msh
 # mesh_name: mesh/isotropic/27x27x1.msh
-mesh_name: mesh/60x220x1L85.msh
-# mesh_name: mesh/isotropic/6x6x1.msh
+# mesh_name: mesh/60x220x1L85.msh
+mesh_name: mesh/isotropic/6x6x1.msh
 n_test: 0
 state: 0
 type_of_solution: fine_scale
@@ -23,24 +23,24 @@ convert_capillary_pressure_to: 'Pa'
 _debug: True
 
 Crs:
-  Cr1: [3, 7, 1]
-  Cr2: [9, 21, 1]
+  Cr1: [3, 3, 1]
+  Cr2: [6, 6, 1]
 
-read_permeability: true
+read_permeability: false
 file_name_permeability: spe10_perms_and_phi.npz
-set_permeability: false
+set_permeability: true
 Permeability:
   r1:
     type: all
-    value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+    value: [1.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 1.0]
 
   r2:
     type: box
-    p0: [4.0, 0.0, 0.0]
-    p1: [5.0, 3.0, 1.0]
+    p0: [0.0, 1.0, 0.0]
+    p1: [6.0, 2.0, 1.0]
     # value: [0.00001, 0.0, 0.0, 0.0, 0.000001, 0.0, 0.0, 0.0, 0.00001]
     # value: [100000.0, 0.0, 0.0, 0.0, 100000.0, 0.0, 0.0, 0.0, 100000.0]
-    value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+    value: [1e-1, 0.0, 0.0, 0.0, 1e-1, 0.0, 0.0, 0.0, 1.0]
 
   # r2:
   #   type: box
@@ -117,48 +117,48 @@ Saturation:
 
 Wells:
   P1:
-    # p0: [0.0, 0.0, 0.0]
-    # p1: [1.0, 1.0, 1.0]
-    p0: [560.0, 1080.0, 168.0]
-    p1: [580.0, 1090.0, 170.0]
+    p0: [0.0, 0.0, 0.0]
+    p1: [1.0, 1.0, 1.0]
+    # p0: [560.0, 1080.0, 168.0]
+    # p1: [580.0, 1090.0, 170.0]
     prescription: Q
     type: Injector
     type_region: box
     value: 10000.0
 
   P2:
-    # p0: [5.0, 5.0, 0.0]
-    # p1: [6.0, 6.0, 1.0]
-    p0: [0.0, 0.0, 168.0]
-    p1: [20.0, 10.0, 170.0]
+    p0: [5.0, 5.0, 0.0]
+    p1: [6.0, 6.0, 1.0]
+    # p0: [0.0, 0.0, 168.0]
+    # p1: [20.0, 10.0, 170.0]
     prescription: P
     type: Producer
     type_region: box
     value: 1.0
 
-  P3:
-    p0: [1180.0, 0.0, 168.0]
-    p1: [1200.0, 10.0, 170.0]
-    prescription: P
-    type: Producer
-    type_region: box
-    value: 1.0
-
-  P4:
-    p0: [0.0, 2190.0, 168.0]
-    p1: [20.0, 2200.0, 170.0]
-    prescription: P
-    type: Producer
-    type_region: box
-    value: 1.0
-
-  P5:
-    p0: [1180.0, 2190.0, 168.0]
-    p1: [1200.0, 2200.0, 170.0]
-    prescription: P
-    type: Producer
-    type_region: box
-    value: 1.0
+  # P3:
+  #   p0: [1180.0, 0.0, 168.0]
+  #   p1: [1200.0, 10.0, 170.0]
+  #   prescription: P
+  #   type: Producer
+  #   type_region: box
+  #   value: 1.0
+  #
+  # P4:
+  #   p0: [0.0, 2190.0, 168.0]
+  #   p1: [20.0, 2200.0, 170.0]
+  #   prescription: P
+  #   type: Producer
+  #   type_region: box
+  #   value: 1.0
+  #
+  # P5:
+  #   p0: [1180.0, 2190.0, 168.0]
+  #   p1: [1200.0, 2200.0, 170.0]
+  #   prescription: P
+  #   type: Producer
+  #   type_region: box
+  #   value: 1.0
 
 monophasic_data:
   gama: 100.0

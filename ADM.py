@@ -13,6 +13,7 @@ from pymoab import types
 from scipy.sparse import csc_matrix, find, csgraph
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
+from matplotlib.colors import LinearSegmentedColormap
 print("time to import packs: {} seconds".format(time.time()-t0))
 '''
 def get_gids_and_primal_id(gids, primal_ids):
@@ -191,6 +192,23 @@ def get_dual_subdomains(groups):
         dv.append(new_volume)
     return(dv)
 
+def plot_matrix(matrix,name,plot_values=False):
+    import matplotlib.pyplot as plt
+    matrix[matrix == 0] = np.nan
+    colors = [(1, 0, 0), (0, 0, 0), (0, 0, 1)]  # R -> G -> B
+    n_bin = 2
+    cmap_name = 'my_list'
+    cm = LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bin)
+    plt.matshow(matrix, cmap=cm, vmin=-1,vmax=1)
+    # locs, labels = plt.xticks()
+    # plt.xticks(grids)
+    # plt.yticks(grids)
+    # plt.grid()
+    if plot_values:
+        for (i, j), z in np.ndenumerate(matrix):
+            plt.text(j, i, '{:0.1f}'.format(z), fontsize=20, ha='center', va='center', bbox=dict(boxstyle='round', facecolor='white', edgecolor='0.9'))
+    plt.savefig(name+".png")
+
 print("Preprocessing finescale mesh")
 t0=time.time()
 load = data_loaded['load_data']
@@ -232,7 +250,7 @@ else:
 print("Time to construct prolongation operator: {} seconds".format(time.time()-t0))
 print("Adapting reduced boundary conditions")
 t0=time.time()
-neta_lim=999999999991.0
+neta_lim=9999999999999999999999999991.0
 OP_AMS=mlo['prolongation_level_1'].copy()
 groups = get_coupled_dual_volumes(mlo,neta_lim, ind=0)
 
@@ -347,7 +365,7 @@ print(time.time()-t0,"b1")
 # len(np.arange(len(dual_volumes))[np.array(ddp.sum(axis=1)>2).T[0]])
 # np.arange(len(dual_volumes))[np.array(dp.sum(axis=1)>3).T[0]]
 t0=time.time()
-
+plot_matrix(T.toarray(), "finescale")
 # import pdb; pdb.set_trace()
 OP_AMS=mlo['prolongation_level_1']
 OR_AMS=mlo['restriction_level_1']
@@ -374,6 +392,7 @@ print(time.time()-t0,"t2")
 # import pdb; pdb.set_trace()
 # adm_method.organize_ops_adm_level_1( OP_AMS, OR_AMS, level, _pcorr=None)
 #########################################################################
+Tc=OR_AMS*tpfa_solver['Tini']*OP_AMS
 t0=time.time()
 Tc2=Tc.copy()
 Tc2.setdiag(0)
@@ -498,6 +517,31 @@ with open('input_cards/saves_test_cases.yml', 'r') as f:
     data_loaded = yaml.safe_load(f)
 folder_=data_loaded['directory']
 file_=folder=data_loaded['file']
+alpha=np.array([1.00,2.0,3.0,4.0,4.5,5.0, 10.0, 20.0, 50.0, 200.0, 1000.0, 10000.0])
+neta= np.array([0.00,0.0,0.0,0.0,0.022,0.0416, 0.136, 0.190, 0.225, 0.2437, 0.249, 0.250])
 
+kb=np.array([1e1,1e2, 1e3, 1e4, 1e5, 1e6])
+netab=np.array([0.08,0.086,0.088, 0.088, 0.088, 0.088]) #x de 0 a 1 e y de 1 a 2
+netac=np.array([0.15, 0.95, 1.18, 1.20, 1.21, 1.21]) # x de o a 3 y de 1 a 2
+kd=np.array([1e1,1e2, 1e3, 1e4, 1e5, 1e6,1e12])
+netad=np.array([0.04, 8.67, 95.23, 960.82, 9616.68, 96174,14782938413]) #x de 0 a 3 y de 0 a 1
+netae=np.array([0.83, 9.23, 93.22, 933,9355, 93359]) #x de 0 a 1 t de 0 a 1
+netaf=np.array([0.05, 0.78, 0.97, 1.0, 1.0, 1.0]) #x de 0 a 6 t de 1 a 2
+
+import matplotlib.pyplot as plt
+plt.close("all")
+# plt.plot(alpha,neta)
+plt.plot(kb,netab)
+plt.plot(kb,netac)
+plt.plot(kd[:-1],netad[:-1])
+plt.plot(kb,netae)
+plt.plot(kb,netaf)
+plt.xscale("log")
+plt.yscale("log")
+plt.legend()
+plt.grid(True)
+plt.ylabel("Neta")
+plt.xlabel("Anisotropy (Kyy/Kxx)")
+plt.savefig("log_alpha_versus_neta.png")
 M.core.print(file=folder_+'/'+file_, extension='.vtk', config_input='input_cards/print_settings0.yml')
 import pdb; pdb.set_trace()

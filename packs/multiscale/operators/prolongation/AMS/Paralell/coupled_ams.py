@@ -6,6 +6,8 @@ from scipy.sparse import csc_matrix,csr_matrix, linalg, vstack, find
 import time
 from packs.multiscale.operators.prolongation.AMS.Paralell.partitionating_parameters import calibrate_partitioning_parameters
 import yaml
+import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 
 class DualDomain:
     def __init__(self, data_impress, elements_lv0, volumes, id_dual, local_couple=0, couple_bound=True):
@@ -92,7 +94,9 @@ class DualDomain:
         ks=data_impress['transmissibility'][int_facs]
         # ids_globais_vols=M.mb.tag_get_data(M.ID_reordenado_tag,np.concatenate([np.uint64(internals),np.uint64(faces), np.uint64(edges),vertices]),flat=True)
         ids_globais_vols=np.concatenate([np.uint64(internals),np.uint64(faces), np.uint64(edges),vertices])
+
         return adjs, ks, ids_globais_vols, ns, map_l[volumes]
+
 
 class OP_local:
     def __init__(self, sub_d, return_netas, neta_lim):
@@ -205,13 +209,32 @@ class OP_local:
         MM2=MM.copy()
         MM2.setdiag(0)
         netas=d_inv_ii*MM2
-        # with open('input_cards/saves_test_cases.yml', 'r') as f:
-        #     data_loaded = yaml.safe_load(f)
-        # folder_=data_loaded['directory']
-        # file_=folder=data_loaded['file']
-        # np.save(folder_+'/'+file_+str(sub_d.id_dual)+'.npy',MM.toarray())
+        with open('input_cards/saves_test_cases.yml', 'r') as f:
+            data_loaded = yaml.safe_load(f)
+        folder_=data_loaded['directory']
+        file_=folder=data_loaded['file']
+        np.save(folder_+'/'+file_+str(sub_d.id_dual)+'.npy',MM.toarray())
+        np.save(folder_+'/'+file_+str(sub_d.id_dual)+'TL'+'.npy',TL.toarray())
+        WM=TL.toarray()
+        d0=np.zeros(nf)
+        d1=WM[nf:nf+ne,0:nf].sum(axis=1)
+        d2=WM[nf+ne:nf+ne+nv,:nf+ne].sum(axis=1)
+        dd=np.concatenate([d0, d1, d2])+1
+        WM[range(len(dd)),range(len(dd))]+=dd
 
-        # import pdb; pdb.set_trace()
+        WM[nf:,0:nf]=0
+        WM[nf+ne:,0:nf+ne]=0
+        grids=np.array([0, ni+nf, ni+nf+ne, ni+nf+ne+nv])-0.5
+        lims=np.array([min(WM.min(), MM.min(),TL.min()),max(WM.max(), MM.max(),TL.max())])
+
+        self.plot_matrix(TL.toarray(),"W",grids, lims)
+        self.plot_matrix(WM,"WM",grids, lims)
+        grids=np.arange(0,nv)-0.5
+
+        self.plot_matrix(MM.toarray(),"Coarse",grids,lims, plot_values=True)
+        ns=netas.copy()
+        ns[netas<0]=0
+        self.plot_matrix(ns.toarray(),"Netas",grids,lims, plot_values=True)
 
         if netas.max()>neta_lim:
             fn=find(netas>neta_lim)
@@ -222,6 +245,24 @@ class OP_local:
 
         else:
             return []
+    def plot_matrix(self,matrix,name,grids,lims,plot_values=False):
+        import matplotlib.pyplot as plt
+        matrix[matrix == 0] = np.nan
+        colors = [(1, 0, 0), (0, 0, 0), (0, 0, 1)]  # R -> G -> B
+        n_bin = 2
+        cmap_name = 'my_list'
+        cm = LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bin)
+        plt.matshow(matrix, cmap=cm, vmin=-1,vmax=1)
+        locs, labels = plt.xticks()
+        plt.xticks(grids)
+        plt.yticks(grids)
+        plt.grid()
+        if plot_values:
+            for (i, j), z in np.ndenumerate(matrix):
+                if z<np.inf:
+                    plt.text(j, i, '{:0.1f}'.format(z), fontsize=20, ha='center', va='center', bbox=dict(boxstyle='round', facecolor='white', edgecolor='0.9'))
+        plt.savefig(name+".png")
+
 
 class Partitioner:
     def __init__(self,all_subds, nworker, regression_degree):
@@ -307,21 +348,21 @@ class OP_AMS:
         regression_degree=2
         nworker=3
 
-        partitioned_subds=Partitioner(all_subds, nworker, regression_degree).partitioned_subds
-        print("started OP")
-        t0=time.time()
-        (lines, cols, data), IJN = self.get_OP_paralell(partitioned_subds)
-        IJN=np.hstack([ijn.reshape(4,round(len(ijn)/4)) for ijn in IJN]).T
-        IJ=IJN[:,0:2].astype(int)
-        N=IJN[:,2]
-        ID=IJN[:,3].astype(int)
-        import pdb; pdb.set_trace()
+        # partitioned_subds=Partitioner(all_subds, nworker, regression_degree).partitioned_subds
+        # print("started OP")
+        # t0=time.time()
+        # (lines, cols, data), IJN = self.get_OP_paralell(partitioned_subds)
+        # IJN=np.hstack([ijn.reshape(4,round(len(ijn)/4)) for ijn in IJN]).T
+        # IJ=IJN[:,0:2].astype(int)
+        # N=IJN[:,2]
+        # ID=IJN[:,3].astype(int)
+
         # self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
         # print("finished OP after {} seconds",time.time()-t0 )
 
         # #########To test bugs on serial, use this###############################
 
-        # (lines, cols, data), IJN = self.get_OP(all_subds, paralell=False)
+        (lines, cols, data), IJN = self.get_OP(all_subds, paralell=False)
 
         self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
 
