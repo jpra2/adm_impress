@@ -103,7 +103,7 @@ class OP_local:
         if return_netas:
             self.lcd_OP_local, self.netas = self.get_OP(sub_d, return_netas, neta_lim) #ordem IJN
         else:
-            self.lcd_OP_local = self.get_OP(sub_d)
+            self.lcd_OP_local, self.netas = self.get_OP(sub_d),[]
 
     def get_submatrix(self,id0, id1, ks, slice):
         id0, id1, ks= np.concatenate([id0,id1]), np.concatenate([id1,id0]), np.concatenate([ks, ks])
@@ -348,10 +348,10 @@ class OP_AMS:
         regression_degree=2
         nworker=3
 
-        # partitioned_subds=Partitioner(all_subds, nworker, regression_degree).partitioned_subds
-        # print("started OP")
-        # t0=time.time()
-        # (lines, cols, data), IJN = self.get_OP_paralell(partitioned_subds)
+        partitioned_subds=Partitioner(all_subds, nworker, regression_degree).partitioned_subds
+        print("started OP")
+        t0=time.time()
+        (lines, cols, data), IJN = self.get_OP_paralell(partitioned_subds)
         # IJN=np.hstack([ijn.reshape(4,round(len(ijn)/4)) for ijn in IJN]).T
         # IJ=IJN[:,0:2].astype(int)
         # N=IJN[:,2]
@@ -362,7 +362,7 @@ class OP_AMS:
 
         # #########To test bugs on serial, use this###############################
 
-        (lines, cols, data), IJN = self.get_OP(all_subds, paralell=False)
+        # (lines, cols, data), IJN = self.get_OP(all_subds, paralell=False)
 
         self.OP=csc_matrix((data,(lines,cols)),shape=(Nvols,Nverts))
 
@@ -377,7 +377,7 @@ class OP_AMS:
         lcd=np.zeros((3,1))
         IJN=[]
         for dual_d in partitioned_subd:
-            OP = OP_local(dual_d, return_netas=True, neta_lim=0)
+            OP = OP_local(dual_d, return_netas=False, neta_lim=0)
             lcd_OP_local, netas = OP.lcd_OP_local, OP.netas
             lcd=np.hstack([lcd,lcd_OP_local])
             if len(netas)>0:
