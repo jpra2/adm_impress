@@ -201,9 +201,10 @@ def plot_matrix(matrix,name,plot_values=False):
     cm = LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bin)
     plt.matshow(matrix, cmap=cm, vmin=-1,vmax=1)
     # locs, labels = plt.xticks()
-    # plt.xticks(grids)
-    # plt.yticks(grids)
-    # plt.grid()
+    grids=np.arange(len(matrix))-0.5
+    plt.xticks(grids)
+    plt.yticks(grids)
+    plt.grid()
     if plot_values:
         for (i, j), z in np.ndenumerate(matrix):
             plt.text(j, i, '{:0.1f}'.format(z), fontsize=20, ha='center', va='center', bbox=dict(boxstyle='round', facecolor='white', edgecolor='0.9'))
@@ -250,7 +251,7 @@ else:
 print("Time to construct prolongation operator: {} seconds".format(time.time()-t0))
 print("Adapting reduced boundary conditions")
 t0=time.time()
-neta_lim=9999999999999999991.0
+neta_lim=1.0
 OP_AMS=mlo['prolongation_level_1'].copy()
 groups = get_coupled_dual_volumes(mlo,neta_lim, ind=0)
 
@@ -376,7 +377,7 @@ plot_matrix((OR_ADM*T*OP_ADM).toarray(), "adm")
 Tc=OR_AMS*T*OP_AMS
 bc=OR_AMS*b
 from scipy.sparse import linalg
-pc=linalg.spsolve(Tc,bc)
+pc=linalg.spsolve(OR_AMS*T*OP_AMS,bc)
 
 pms=OP_AMS*pc
 
@@ -452,10 +453,12 @@ a1=adjs[:,1]
 vadm=t_f*((padm[a0]-padm[a1])/dc)
 vams=t_f*((pms[a0]-pms[a1])/dc)
 vf=t_f*((pf[a0]-pf[a1])/dc)
+
 l2_v_adm=np.linalg.norm(vadm-vf)/np.linalg.norm(vf)
 l2_v_ams=np.linalg.norm(vams-vf)/np.linalg.norm(vf)
 linf_v_adm=(abs(vadm-vf)/abs(vf)).max()
 linf_v_ams=(abs(vams-vf)/abs(vf)).max()
+linf_p_adm=(abs(padm-pf)[pf>0]/abs(pf)[pf>0]).max()
 
 padm=padm/padm[wells['all_wells']].max()
 poco_min_p=wells['all_wells'][padm[wells['all_wells']]==padm[wells['all_wells']].min()]
@@ -496,17 +499,37 @@ ev_l2_adm =l2_v_adm
 ev_l2_ams =l2_v_ams
 ev_linf_adm =linf_v_adm
 ev_linf_ams =linf_v_ams
+neta_lim=neta_lim
+eadm=eadm
+eams=eams
+result=np.array([[kcruz],[neta_adm],[neta_ams],[ev_l2_adm],[ev_l2_ams],[ev_linf_adm],[ev_linf_ams],[neta_lim],[eadm],[eams]])
+cruz_r=np.load("cruz_results.npy")
+def plot_graf(abcissa,ordenadas,file_name,xl='x',yl='y'):
+    plt.close("all")
+    cols=cruz_r[7,:]==1
+    import pdb; pdb.set_trace()
+    plt.plot(cruz_r[abcissa][cols],cruz_r[ordenadas][cols])
+    plt.xscale("log")
+    plt.xlabel("xl")
+    plt.ylabel("yl")
+    plt.savefig(file+".png")
+import matplotlib.pyplot as plt
+plot_graf(0,np.array([3,4]),"ev")
+plot_graf(0,np.array([8,9]),"ep")
 
 
-try:
-    cruz_r=np.load("cruz_results.npy")
-    cruz_r=np.concatenate(cruz_r,np.array([[kcruz],[neta_adm],[neta_ams],[ev_l2_adm],[ev_l2_ams],[ev_linf_adm],[ev_linf_ams]]))
-except:
-    cruz_r=np.array([[kcruz],[neta_adm],[neta_ams],[ev_l2_adm],[ev_l2_ams],[ev_linf_adm],[ev_linf_ams]])
-np.save("cruz_results.npy",cruz_r)
-kcruz=[]
-netacruz=[]
-normal2_cruz=[]
+# import pdb; pdb.set_trace()
+# try:
+#     cruz_r=np.load("cruz_results.npy")
+#
+#     cruz_r=np.hstack([cruz_r,result])
+# except:
+#     cruz_r=result
+# print(cruz_r)
+# np.save("cruz_results.npy",cruz_r)
+# kcruz=[]
+# netacruz=[]
+# normal2_cruz=[]
 
 
 # import matplotlib.pyplot as plt
