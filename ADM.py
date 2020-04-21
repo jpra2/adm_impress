@@ -94,7 +94,7 @@ def get_coupled_dual_volumes(mlo, neta_lim=0.0, ind=0):
     DTc=1/np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
     if (DTc>0).sum()>0 and abs(Tc[DTc>0].sum())<0.01:
         print((DTc>0).sum(),"diagonais positivas !!!!!!!!!!!")
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         DTc[DTc>0]=-abs(DTc).max()
 
     lines=np.arange(Tc.shape[0])
@@ -240,25 +240,30 @@ print("Constructing operators")
 t0=time.time()
 dual_structure = M.multilevel_data['dual_structure_level_1']
 dual_volumes = np.array([dd for dd in dual_structure])
-
+t1=time.time()
 multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 mlo=multilevel_operators
 if load_operators:
     pass
 else:
-    # multilevel_operators.run(tpfa_solver['Tini'])
     multilevel_operators.run_paralel(tpfa_solver['Tini'],dual_volumes, 0, False)
+t_OP_orig=time.time()-t0
 print("Time to construct prolongation operator: {} seconds".format(time.time()-t0))
 print("Adapting reduced boundary conditions")
 t0=time.time()
-neta_lim=1.0
+neta_lim=np.load('flying/neta_lim.npy')[0]
+print("NETA LIMITE: ",neta_lim)
 OP_AMS=mlo['prolongation_level_1'].copy()
+OP_AMS_orig=OP_AMS.copy()
 groups = get_coupled_dual_volumes(mlo,neta_lim, ind=0)
 
 dv=get_dual_subdomains(groups)
+t_recalc_op=0
 if len(dv)>0:
+    t1=time.time()
     multilevel_operators.run_paralel(tpfa_solver['Tini'],dv,1,False)
     OP_AMS_groups=mlo['prolongation_level_1']
+    t_recalc_op+=time.time()-t1
     lins_par=np.unique(np.concatenate(dv))
     OP_AMS[lins_par]=OP_AMS_groups[lins_par]
     mlo['prolongation_level_1']=OP_AMS
@@ -297,8 +302,10 @@ for ind in range(1,nref):
     print(ind,len(old_groups), len(atualized_groups),len(np.concatenate(atualized_groups)),"dsjjjjjja")
     dv=get_dual_subdomains(new_groups)
     if len(dv)>0:
+        t1=time.time()
         multilevel_operators.run_paralel(tpfa_solver['Tini'],dv,1,False)
         OP_AMS_groups=mlo['prolongation_level_1']
+        t_recalc_op+=time.time()-t1
         lins_par=np.unique(np.concatenate(dv))
         OP_AMS[lins_par]=OP_AMS_groups[lins_par]
         mlo['prolongation_level_1']=OP_AMS
@@ -370,16 +377,19 @@ OP_AMS=mlo['prolongation_level_1']
 OR_AMS=mlo['restriction_level_1']
 OP_ADM = adm_method['adm_prolongation_level_1']
 OR_ADM = adm_method['adm_restriction_level_1']
-plot_matrix((OR_AMS*tpfa_solver['Tini']*OP_AMS).toarray(), "finescale")
-plot_matrix((OR_ADM*T*OP_ADM).toarray(), "adm")
+# plot_matrix((OR_AMS*tpfa_solver['Tini']*OP_AMS).toarray(), "finescale")
+# plot_matrix((OR_ADM*T*OP_ADM).toarray(), "adm")
 # import pdb; pdb.set_trace()
 
-Tc=OR_AMS*T*OP_AMS
+Tc=OR_AMS*T*OP_AMS_orig
+Tc_old=OR_AMS*T*OP_AMS
 bc=OR_AMS*b
 from scipy.sparse import linalg
-pc=linalg.spsolve(OR_AMS*T*OP_AMS,bc)
+pc=linalg.spsolve(OR_AMS*T*OP_AMS_orig,bc)
+pc_old=linalg.spsolve(OR_AMS*T*OP_AMS,bc)
 
-pms=OP_AMS*pc
+pms=OP_AMS_orig*pc
+pms_old=OP_AMS*pc_old
 
 Tcadm=OR_ADM*T*OP_ADM
 bcadm = OR_ADM*b
@@ -391,6 +401,9 @@ pf=linalg.spsolve(T,b)
 eadm=np.linalg.norm(abs(padm-pf))/np.linalg.norm(pf)
 eams=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
 print("erro_adm: {}, erro_ams: {}".format(eadm,eams))
+
+
+
 print(time.time()-t0,"t2")
 # import pdb; pdb.set_trace()
 # adm_method.organize_ops_adm_level_1( OP_AMS, OR_AMS, level, _pcorr=None)
@@ -437,7 +450,8 @@ print("netamax: adm: {}, ams: {}".format(netasadm.max(), netasams.max()))
 
 perms=np.load("flying/permeability.npy")
 perms_xx=perms[:,0]
-data_impress["perm_x"]=perms_xx
+data_impress["perm_x"]=perms_xx.copy()
+
 data_impress['pcorr'][data_impress['LEVEL']==0] = data_impress['pms'][data_impress['LEVEL']==0]
 
 faces=M.faces.internal
@@ -452,13 +466,59 @@ a1=adjs[:,1]
 
 vadm=t_f*((padm[a0]-padm[a1])/dc)
 vams=t_f*((pms[a0]-pms[a1])/dc)
+vams_old=t_f*((pms_old[a0]-pms_old[a1])/dc)
 vf=t_f*((pf[a0]-pf[a1])/dc)
+r_adm=T*padm-b
+r_ams=T*pms-b
+r_ams_old=T*pms_old-b
 
-l2_v_adm=np.linalg.norm(vadm-vf)/np.linalg.norm(vf)
-l2_v_ams=np.linalg.norm(vams-vf)/np.linalg.norm(vf)
-linf_v_adm=(abs(vadm-vf)/abs(vf)).max()
-linf_v_ams=(abs(vams-vf)/abs(vf)).max()
-linf_p_adm=(abs(padm-pf)[pf>0]/abs(pf)[pf>0]).max()
+names=np.array(['neta_lim', 'neta_max', 'l2_pf', 'linf_pf', 'l2_vf', 'linf_vf', \
+                'l2_pf_padm','linf_pf_padm', 'l2_pf_pams', 'linf_pf_pams' , 'l2_pf_pams_old', 'linf_pf_pams_old',\
+                'l2_vf_vadm','linf_vf_vadm', 'l2_vf_vams', 'linf_vf_vams' , 'l2_vf_vams_old', 'linf_vf_vams_old',\
+                'l2_radm','linf_radm', 'l2_rams', 'linf_rams', 'l2_rams_old', 'linf_rams_old','t_OP_orig','t_recalc_op'])
+
+neta_lim=neta_lim
+neta_max=netasadm.max()
+l2_pf=np.linalg.norm(pf)
+linf_pf=abs(pf).max()
+l2_vf=np.linalg.norm(vf)
+linf_vf=abs(vf).max()
+
+l2_pf_padm=np.linalg.norm(pf-padm)
+linf_pf_padm=abs(pf-padm).max()
+l2_pf_pams=np.linalg.norm(pf-pms)
+linf_pf_pams=abs(pf-pms).max()
+l2_pf_pams_old=np.linalg.norm(pf-pms_old)
+linf_pf_pams_old=abs(pf-pms_old).max()
+
+l2_vf_vadm=np.linalg.norm(vf-vadm)
+linf_vf_vadm=abs(vf-vadm).max()
+l2_vf_vams=np.linalg.norm(vf-vams)
+linf_vf_vams=abs(vf-vams).max()
+l2_vf_vams_old=np.linalg.norm(vf-vams_old)
+linf_vf_vams_old=abs(vf-vams_old).max()
+
+l2_radm=np.linalg.norm(r_adm)
+linf_radm=abs(r_adm).max()
+l2_rams=np.linalg.norm(r_ams)
+linf_rams=abs(r_ams).max()
+l2_rams_old=np.linalg.norm(r_ams_old)
+linf_rams_old=abs(r_ams_old).max()
+
+
+values=np.array([neta_lim, neta_max, l2_pf, linf_pf, l2_vf, linf_vf, \
+                l2_pf_padm,linf_pf_padm, l2_pf_pams, linf_pf_pams , l2_pf_pams_old, linf_pf_pams_old,\
+                l2_vf_vadm,linf_vf_vadm, l2_vf_vams, linf_vf_vams , l2_vf_vams_old, linf_vf_vams_old,\
+                l2_radm,linf_radm, l2_rams, linf_rams, l2_rams_old, linf_rams_old, t_OP_orig, t_recalc_op])
+
+try:
+    spe_bottom_r=np.load("spe_bottom_results.npy")
+    spe_bottom_r=np.vstack([spe_bottom_r,values])
+except:
+    spe_bottom_r=values
+print(spe_bottom_r)
+np.save("spe_bottom_results.npy",spe_bottom_r)
+np.savetxt("spe_bottom_results.csv",spe_bottom_r,delimiter=',')
 
 padm=padm/padm[wells['all_wells']].max()
 poco_min_p=wells['all_wells'][padm[wells['all_wells']]==padm[wells['all_wells']].min()]
@@ -469,7 +529,6 @@ pf[poco_min_p]=0
 data_impress['pressure'] = padm
 data_impress['tpfa_pressure'] = pf
 data_impress['erro'] = np.absolute((padm - pf))[pf>0]/pf[pf>0]
-# data_impress['erro_pcorr_pdm'] = np.absolute(data_impress['pcorr'] - data_impress['pms'])
 
 get_coupled_dual_volumes(mlo, neta_lim=neta_lim, ind=999)
 data_impress.update_variables_to_mesh()
@@ -490,62 +549,6 @@ netad=np.array([0.04, 8.67, 95.23, 960.82, 9616.68, 96174,14782938413]) #x de 0 
 netae=np.array([0.83, 9.23, 93.22, 933,9355, 93359]) #x de 0 a 1 t de 0 a 1
 netaf=np.array([0.05, 0.78, 0.97, 1.0, 1.0, 1.0]) #x de 0 a 6 t de 1 a 2
 
-#cruz_global_tests
-
-kcruz=perms[perms>0].min()
-neta_adm = netasadm.max()
-neta_ams = netasams.max()
-ev_l2_adm =l2_v_adm
-ev_l2_ams =l2_v_ams
-ev_linf_adm =linf_v_adm
-ev_linf_ams =linf_v_ams
-neta_lim=neta_lim
-eadm=eadm
-eams=eams
-result=np.array([[kcruz],[neta_adm],[neta_ams],[ev_l2_adm],[ev_l2_ams],[ev_linf_adm],[ev_linf_ams],[neta_lim],[eadm],[eams]])
-cruz_r=np.load("cruz_results.npy")
-def plot_graf(abcissa,ordenadas,file_name,xl='x',yl='y'):
-    plt.close("all")
-    cols=cruz_r[7,:]==1
-    import pdb; pdb.set_trace()
-    plt.plot(cruz_r[abcissa][cols],cruz_r[ordenadas][cols])
-    plt.xscale("log")
-    plt.xlabel("xl")
-    plt.ylabel("yl")
-    plt.savefig(file+".png")
-import matplotlib.pyplot as plt
-plot_graf(0,np.array([3,4]),"ev")
-plot_graf(0,np.array([8,9]),"ep")
-
-
-# import pdb; pdb.set_trace()
-# try:
-#     cruz_r=np.load("cruz_results.npy")
-#
-#     cruz_r=np.hstack([cruz_r,result])
-# except:
-#     cruz_r=result
-# print(cruz_r)
-# np.save("cruz_results.npy",cruz_r)
-# kcruz=[]
-# netacruz=[]
-# normal2_cruz=[]
-
-
-# import matplotlib.pyplot as plt
-# plt.close("all")
-# # plt.plot(alpha,neta)
-# plt.plot(kb,netab)
-# plt.plot(kb,netac)
-# plt.plot(kd[:-1],netad[:-1])
-# plt.plot(kb,netae)
-# plt.plot(kb,netaf)
-# plt.xscale("log")
-# plt.yscale("log")
-# plt.legend()
-# plt.grid(True)
-# plt.ylabel("Neta")
-# plt.xlabel("Anisotropy (Kyy/Kxx)")
-# plt.savefig("log_alpha_versus_neta.png")
-M.core.print(file=folder_+'/'+file_, extension='.vtk', config_input='input_cards/print_settings0.yml')
-# import pdb; pdb.set_trace()
+print("T_OP_orig:",t_OP_orig)
+print("t_recalc_OP:",t_recalc_op)
+# M.core.print(file=folder_+'/'+file_, extension='.vtk', config_input='input_cards/print_settings0.yml')

@@ -119,6 +119,7 @@ class Preprocess0:
 
         if read:
             set_permeability_and_phi_spe10(M)
+            np.save("flying/permeability",M.data[M.data.variables_impress['permeability']])
         if set_perm:
             self.set_permeability_regions(M)
         if set_phi:

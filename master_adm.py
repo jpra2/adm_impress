@@ -1,16 +1,9 @@
 import os
 import yaml
+import numpy as np
 
 
-with open('input_cards/inputs0.yml', 'r') as f:data_loaded = yaml.safe_load(f)
-value=float(data_loaded['Permeability']['r2']['value'][0])
-import pdb; pdb.set_trace()
-while value<10:
-    value=10*value
-    data_loaded['Permeability']['r2']['value'][0]=value
-    data_loaded['Permeability']['r2']['value'][4]=value
-    data_loaded['Permeability']['r3']['value'][0]=value
-    data_loaded['Permeability']['r3']['value'][4]=value
-    with open('input_cards/inputs0.yml', 'w') as file:
-        documents = yaml.dump(data_loaded, file, default_flow_style=False)
+netas_limite=np.array([1000000000.0, 10.0, 5.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1,0.05,0.025,0.0])
+for neta in netas_limite:
+    np.save('flying/neta_lim.npy',np.array([neta]))
     os.system('python ADM.py')

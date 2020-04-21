@@ -180,12 +180,12 @@ class OP_local:
         cols = sub_d.coarse_ids[lcd[1]].astype(int)
         data=np.array(lcd[2])
         if return_netas:
-            IJN = self.get_netas(sub_d, OP, neta_lim)
-            return (lines, cols, data), IJN
+            # IJN = self.get_netas(sub_d, OP, neta_lim)
+            return (lines, cols, data), []
         else:
             return (lines, cols, data)
 
-    def get_netas(self, sub_d, OP, neta_lim=0):
+    def get_netas(self, sub_d, OP, neta_lim=99999999):
         adjs, ks, ids_globais_vols, ns = sub_d.adjs, sub_d.ks, sub_d.ids_globais_vols, sub_d.ns
         nv, ne, nf, ni = ns
         adjs0=adjs[:,0]
@@ -209,42 +209,42 @@ class OP_local:
         MM2=MM.copy()
         MM2.setdiag(0)
         netas=d_inv_ii*MM2
-        with open('input_cards/saves_test_cases.yml', 'r') as f:
-            data_loaded = yaml.safe_load(f)
-        folder_=data_loaded['directory']
-        file_=folder=data_loaded['file']
-        np.save(folder_+'/'+file_+str(sub_d.id_dual)+'.npy',MM.toarray())
-        np.save(folder_+'/'+file_+str(sub_d.id_dual)+'TL'+'.npy',TL.toarray())
-        WM=TL.toarray()
-        d0=np.zeros(nf)
-        d1=WM[nf:nf+ne,0:nf].sum(axis=1)
-        d2=WM[nf+ne:nf+ne+nv,:nf+ne].sum(axis=1)
-        dd=np.concatenate([d0, d1, d2])+1
-        WM[range(len(dd)),range(len(dd))]+=dd
+        # with open('input_cards/saves_test_cases.yml', 'r') as f:
+        #     data_loaded = yaml.safe_load(f)
+        # folder_=data_loaded['directory']
+        # file_=folder=data_loaded['file']
+        # np.save(folder_+'/'+file_+str(sub_d.id_dual)+'.npy',MM.toarray())
+        # np.save(folder_+'/'+file_+str(sub_d.id_dual)+'TL'+'.npy',TL.toarray())
+        # WM=TL.toarray()
+        # d0=np.zeros(nf)
+        # d1=WM[nf:nf+ne,0:nf].sum(axis=1)
+        # d2=WM[nf+ne:nf+ne+nv,:nf+ne].sum(axis=1)
+        # dd=np.concatenate([d0, d1, d2])+1
+        # WM[range(len(dd)),range(len(dd))]+=dd
 
-        WM[nf:,0:nf]=0
-        WM[nf+ne:,0:nf+ne]=0
-        grids=np.array([0, ni+nf, ni+nf+ne, ni+nf+ne+nv])-0.5
-        lims=np.array([min(WM.min(), MM.min(),TL.min()),max(WM.max(), MM.max(),TL.max())])
+        # WM[nf:,0:nf]=0
+        # WM[nf+ne:,0:nf+ne]=0
+        # grids=np.array([0, ni+nf, ni+nf+ne, ni+nf+ne+nv])-0.5
+        # lims=np.array([min(WM.min(), MM.min(),TL.min()),max(WM.max(), MM.max(),TL.max())])
 
-        self.plot_matrix(TL.toarray(),"W",grids, lims)
-        self.plot_matrix(WM,"WM",grids, lims)
-        grids=np.arange(0,nv)-0.5
+        # self.plot_matrix(TL.toarray(),"W",grids, lims)
+        # self.plot_matrix(WM,"WM",grids, lims)
+        # grids=np.arange(0,nv)-0.5
+        #
+        # self.plot_matrix(MM.toarray(),"Coarse",grids,lims, plot_values=True)
+        # ns=netas.copy()
+        # ns[netas<0]=0
+        # self.plot_matrix(ns.toarray(),"Netas",grids,lims, plot_values=True)
 
-        self.plot_matrix(MM.toarray(),"Coarse",grids,lims, plot_values=True)
-        ns=netas.copy()
-        ns[netas<0]=0
-        self.plot_matrix(ns.toarray(),"Netas",grids,lims, plot_values=True)
-
-        if netas.max()>neta_lim:
-            fn=find(netas>neta_lim)
-            i=sub_d.coarse_ids[fn[0]]
-            j=sub_d.coarse_ids[fn[1]]
-            n=np.array(netas[netas>neta_lim])[0]
-            return np.concatenate([i, j, n,np.repeat(sub_d.id_dual,len(i))])
-
-        else:
-            return []
+        # if netas.max()>neta_lim:
+        #     fn=find(netas>neta_lim)
+        #     i=sub_d.coarse_ids[fn[0]]
+        #     j=sub_d.coarse_ids[fn[1]]
+        #     n=np.array(netas[netas>neta_lim])[0]
+        #     return np.concatenate([i, j, n,np.repeat(sub_d.id_dual,len(i))])
+        #
+        # else:
+        #     return []
     def plot_matrix(self,matrix,name,grids,lims,plot_values=False):
         import matplotlib.pyplot as plt
         matrix[matrix == 0] = np.nan
