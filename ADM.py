@@ -251,7 +251,8 @@ t_OP_orig=time.time()-t0
 print("Time to construct prolongation operator: {} seconds".format(time.time()-t0))
 print("Adapting reduced boundary conditions")
 t0=time.time()
-neta_lim=np.load('flying/neta_lim.npy')[0]
+# neta_lim=np.load('flying/neta_lim.npy')[0]
+neta_lim=1.0
 print("NETA LIMITE: ",neta_lim)
 OP_AMS=mlo['prolongation_level_1'].copy()
 OP_AMS_orig=OP_AMS.copy()
@@ -468,6 +469,9 @@ vadm=t_f*((padm[a0]-padm[a1])/dc)
 vams=t_f*((pms[a0]-pms[a1])/dc)
 vams_old=t_f*((pms_old[a0]-pms_old[a1])/dc)
 vf=t_f*((pf[a0]-pf[a1])/dc)
+
+data_impress['velocity_finescale'][faces]=np.array([vf]).T*(ca[:,0]-ca[:,1])
+data_impress['velocity_finescale'][M.faces.boundary][:]=np.array([0.00000000000000000001,0.0,0.0])
 r_adm=T*padm-b
 r_ams=T*pms-b
 r_ams_old=T*pms_old-b
@@ -512,13 +516,13 @@ values=np.array([neta_lim, neta_max, l2_pf, linf_pf, l2_vf, linf_vf, \
                 l2_radm,linf_radm, l2_rams, linf_rams, l2_rams_old, linf_rams_old, t_OP_orig, t_recalc_op])
 
 try:
-    spe_bottom_r=np.load("spe_bottom_results.npy")
-    spe_bottom_r=np.vstack([spe_bottom_r,values])
+    ring_r=np.load("ring_results.npy")
+    ring_r=np.vstack([ring_r,values])
 except:
-    spe_bottom_r=values
-print(spe_bottom_r)
-np.save("spe_bottom_results.npy",spe_bottom_r)
-np.savetxt("spe_bottom_results.csv",spe_bottom_r,delimiter=',')
+    ring_r=values
+print(ring_r)
+np.save("ring_results.npy",ring_r)
+np.savetxt("ring_results.csv",ring_r,delimiter=',')
 
 padm=padm/padm[wells['all_wells']].max()
 poco_min_p=wells['all_wells'][padm[wells['all_wells']]==padm[wells['all_wells']].min()]
@@ -530,25 +534,27 @@ data_impress['pressure'] = padm
 data_impress['tpfa_pressure'] = pf
 data_impress['erro'] = np.absolute((padm - pf))[pf>0]/pf[pf>0]
 
-get_coupled_dual_volumes(mlo, neta_lim=neta_lim, ind=999)
+# get_coupled_dual_volumes(mlo, neta_lim=neta_lim, ind=999)
+print("T_OP_orig:",t_OP_orig)
+print("t_recalc_OP:",t_recalc_op)
 data_impress.update_variables_to_mesh()
 M.core.print(file='results/test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
-with open('input_cards/saves_test_cases.yml', 'r') as f:
-    data_loaded = yaml.safe_load(f)
-folder_=data_loaded['directory']
-file_=folder=data_loaded['file']
-alpha=np.array([1.00,2.0,3.0,4.0,4.5,5.0, 10.0, 20.0, 50.0, 200.0, 1000.0, 10000.0])
-neta= np.array([0.00,0.0,0.0,0.0,0.022,0.0416, 0.136, 0.190, 0.225, 0.2437, 0.249, 0.250])
+import pdb; pdb.set_trace()
+# with open('input_cards/saves_test_cases.yml', 'r') as f:
+#     data_loaded = yaml.safe_load(f)
+# folder_=data_loaded['directory']
+# file_=folder=data_loaded['file']
+# alpha=np.array([1.00,2.0,3.0,4.0,4.5,5.0, 10.0, 20.0, 50.0, 200.0, 1000.0, 10000.0])
+# neta= np.array([0.00,0.0,0.0,0.0,0.022,0.0416, 0.136, 0.190, 0.225, 0.2437, 0.249, 0.250])
+#
+# kb=np.array([1e1,1e2, 1e3, 1e4, 1e5, 1e6])
+# netab=np.array([0.08,0.086,0.088, 0.088, 0.088, 0.088]) #x de 0 a 1 e y de 1 a 2
+# netac=np.array([0.15, 0.95, 1.18, 1.20, 1.21, 1.21]) # x de o a 3 y de 1 a 2
+# kd=np.array([1e1,1e2, 1e3, 1e4, 1e5, 1e6,1e12])
+# netad=np.array([0.04, 8.67, 95.23, 960.82, 9616.68, 96174,14782938413]) #x de 0 a 3 y de 0 a 1
+# netae=np.array([0.83, 9.23, 93.22, 933,9355, 93359]) #x de 0 a 1 t de 0 a 1
+# netaf=np.array([0.05, 0.78, 0.97, 1.0, 1.0, 1.0]) #x de 0 a 6 t de 1 a 2
+#
 
-kb=np.array([1e1,1e2, 1e3, 1e4, 1e5, 1e6])
-netab=np.array([0.08,0.086,0.088, 0.088, 0.088, 0.088]) #x de 0 a 1 e y de 1 a 2
-netac=np.array([0.15, 0.95, 1.18, 1.20, 1.21, 1.21]) # x de o a 3 y de 1 a 2
-kd=np.array([1e1,1e2, 1e3, 1e4, 1e5, 1e6,1e12])
-netad=np.array([0.04, 8.67, 95.23, 960.82, 9616.68, 96174,14782938413]) #x de 0 a 3 y de 0 a 1
-netae=np.array([0.83, 9.23, 93.22, 933,9355, 93359]) #x de 0 a 1 t de 0 a 1
-netaf=np.array([0.05, 0.78, 0.97, 1.0, 1.0, 1.0]) #x de 0 a 6 t de 1 a 2
-
-print("T_OP_orig:",t_OP_orig)
-print("t_recalc_OP:",t_recalc_op)
 # M.core.print(file=folder_+'/'+file_, extension='.vtk', config_input='input_cards/print_settings0.yml')

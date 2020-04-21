@@ -644,3 +644,10 @@ val_neum:
   data type: float
   sparse: True
   level: 0
+
+velocity_finescale:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
