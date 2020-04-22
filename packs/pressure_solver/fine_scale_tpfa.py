@@ -26,8 +26,11 @@ class FineScaleTpfaPressureSolver(TpfaScheme, TpfaFlux):
         ws_q = self.wells['ws_q']  # pocos de vazao prescrita
         values_q = self.wells['values_q']  # valor da vazao prescrita
 
-        b[ws_q] += values_q
-        b[ws_p] = values_p
+        if len(ws_q) > 0:
+            b[ws_q] += values_q
+
+        if len(ws_p) > 0:
+            b[ws_p] = values_p
 
         return b
 

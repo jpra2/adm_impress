@@ -10,7 +10,7 @@ b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
 # import pdb; pdb.set_trace()
 n = 1
 n2 = 20
-n_for_save = 20
+n_for_save = 30
 cont_for_save = 1
 loop = 0
 cont = 1
@@ -37,8 +37,6 @@ while verif:
 
     b1.print_test()
     b1.print_test_faces()
-
-    # import pdb; pdb.set_trace()
 
     if cont % n2 == 0:
         import pdb; pdb.set_trace()

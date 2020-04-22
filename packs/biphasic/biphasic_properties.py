@@ -223,7 +223,8 @@ class biphasicProperties(StructuredMeshProperties):
             if not self.gravity:
                 return np.zeros(len(internal_faces))
             gama_w = self.biphasic_data['gama_w']
-            return -(self.grad_z_internal_faces)*gama_w
+            # return -(self.grad_z_internal_faces)*gama_w
+            return -self.lambda_w_internal_faces*gama_w
         return locals()
     g_w_internal_faces = property(**g_w_internal_faces())
 
@@ -234,9 +235,145 @@ class biphasicProperties(StructuredMeshProperties):
             if not self.gravity:
                 return np.zeros(len(internal_faces))
             gama_o = self.biphasic_data['gama_o']
-            return -(self.grad_z_internal_faces)*gama_o
+            # return -(self.grad_z_internal_faces)*gama_o
+            return -self.lambda_o_internal_faces*gama_o
         return locals()
     g_o_internal_faces = property(**g_o_internal_faces())
+
+    def g_total_internal_faces():
+        doc = "The g_total_internal_faces property."
+        def fget(self):
+            return self.g_o_internal_faces + self.g_w_internal_faces
+        return locals()
+    g_total_internal_faces = property(**g_total_internal_faces())
+
+    def g_w_volumes():
+        doc = "The g_w_volumes property."
+        def fget(self):
+            g_w_internal_faces = self.g_w_internal_faces
+            data2 = g_w_internal_faces
+            v0 = self.elements_lv0['neig_internal_faces']
+            n_volumes = len(self.data_impress['GID_0'])
+            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            cols = np.repeat(0, len(lines))
+            data = np.array([data2, -data2]).flatten()
+            flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+            return flux_volumes
+        return locals()
+    g_w_volumes = property(**g_w_volumes())
+
+    def g_o_volumes():
+        doc = "The g_o_volumes property."
+        def fget(self):
+            g_o_internal_faces = self.g_o_internal_faces
+            data2 = g_o_internal_faces
+            v0 = self.elements_lv0['neig_internal_faces']
+            n_volumes = len(self.data_impress['GID_0'])
+            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            cols = np.repeat(0, len(lines))
+            data = np.array([data2, -data2]).flatten()
+            flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+            return flux_volumes
+        return locals()
+    g_o_volumes = property(**g_o_volumes())
+
+    def g_total_volumes():
+        doc = "The g_total_volumes property."
+        def fget(self):
+            g_total_internal_faces = self.g_total_internal_faces
+            data2 = g_total_internal_faces
+            v0 = self.elements_lv0['neig_internal_faces']
+            n_volumes = len(self.data_impress['GID_0'])
+            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            cols = np.repeat(0, len(lines))
+            data = np.array([data2, -data2]).flatten()
+            flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+            return flux_volumes
+        return locals()
+    g_total_volumes = property(**g_total_volumes())
+
+    def flux_sigma_internal_faces():
+        doc = "The flux_sigma_internal_faces property."
+        def fget(self):
+            internal_faces = self.elements_lv0['internal_faces']
+            area_int = self.data_impress['area'][internal_faces]
+            k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
+            # f1 = -(self.grad_p_internal_faces*area_int*k_harm_internal_faces*self.lambda_t_internal_faces - self.flux_grav_total_internal_faces)
+            f1 = -(self.grad_p_internal_faces*area_int*k_harm_internal_faces*self.lambda_t_internal_faces + self.g_total_internal_faces)
+            return f1
+        return locals()
+    flux_sigma_internal_faces = property(**flux_sigma_internal_faces())
+
+    def q_w_internal_faces():
+        doc = "The q_w_internal_faces property."
+        def fget(self):
+            '''
+                w = 2 no paper
+            '''
+            internal_faces = self.elements_lv0['internal_faces']
+            ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
+            f = self.lambda_w_internal_faces*(self.flux_sigma_internal_faces - self.lambda_o_internal_faces*ak*(self.g_o_internal_faces - self.g_w_internal_faces))
+            return f
+        return locals()
+    q_w_internal_faces = property(**q_w_internal_faces())
+
+    def q_o_internal_faces():
+        doc = "The q_o_internal_faces property."
+        def fget(self):
+            '''
+                o = 1 no paper
+            '''
+            internal_faces = self.elements_lv0['internal_faces']
+            ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
+            f = self.lambda_o_internal_faces*(self.flux_sigma_internal_faces + self.lambda_w_internal_faces*ak*(self.g_o_internal_faces - self.g_w_internal_faces))
+            return f
+        return locals()
+    q_o_internal_faces = property(**q_o_internal_faces())
+
+    def q_w_volumes():
+        doc = "The q_w_volumes property."
+        def fget(self):
+            q_w_internal_faces = self.q_w_internal_faces
+            data2 = q_w_internal_faces
+            v0 = self.elements_lv0['neig_internal_faces']
+            n_volumes = len(self.data_impress['GID_0'])
+            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            cols = np.repeat(0, len(lines))
+            data = np.array([data2, -data2]).flatten()
+            flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+            return flux_volumes
+        return locals()
+    q_w_volumes = property(**q_w_volumes())
+
+    def q_o_volumes():
+        doc = "The q_o_volumes property."
+        def fget(self):
+            q_o_internal_faces = self.q_o_internal_faces
+            data2 = q_o_internal_faces
+            v0 = self.elements_lv0['neig_internal_faces']
+            n_volumes = len(self.data_impress['GID_0'])
+            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            cols = np.repeat(0, len(lines))
+            data = np.array([data2, -data2]).flatten()
+            flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+            return flux_volumes
+        return locals()
+    q_o_volumes = property(**q_o_volumes())
+
+    def flux_sigma_volumes():
+        doc = "The flux_sigma_volumes property."
+        def fget(self):
+            q_sigma_internal_faces = self.flux_sigma_internal_faces
+            data2 = q_sigma_internal_faces
+            v0 = self.elements_lv0['neig_internal_faces']
+            n_volumes = len(self.data_impress['GID_0'])
+            lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+            cols = np.repeat(0, len(lines))
+            data = np.array([data2, -data2]).flatten()
+            flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+            return flux_volumes
+        return locals()
+    flux_sigma_volumes = property(**flux_sigma_volumes())
 
     def flux_grav_total_internal_faces():
         doc = "The flux_grav_total_internal_faces property."
@@ -479,17 +616,6 @@ class biphasicProperties(StructuredMeshProperties):
 
         return locals()
     faces_normal_with_z = property(**faces_normal_with_z())
-
-    def flux_sigma_internal_faces():
-        doc = "The flux_sigma_internal_faces property."
-        def fget(self):
-            internal_faces = self.elements_lv0['internal_faces']
-            area_int = self.data_impress['area'][internal_faces]
-            k_harm_internal_faces = self.data_impress['k_harm'][internal_faces]
-            f1 = -(self.grad_p_internal_faces*area_int*k_harm_internal_faces*self.lambda_t_internal_faces - self.flux_grav_total_internal_faces)
-            return f1
-        return locals()
-    flux_sigma_internal_faces = property(**flux_sigma_internal_faces())
 
     def upwind_w():
         doc = "The upwind_w property."
