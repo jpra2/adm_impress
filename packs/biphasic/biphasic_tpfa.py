@@ -495,6 +495,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         # flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
         flux_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
         q_sigma_internal_faces = self.flux_sigma_internal_faces
+        # q_sigma_internal_faces = self.data_impress['flux_faces'][internal_faces]
         ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
 
         pos_sigma = q_sigma_internal_faces > 0
