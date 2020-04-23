@@ -224,7 +224,7 @@ class biphasicProperties(StructuredMeshProperties):
                 return np.zeros(len(internal_faces))
             gama_w = self.biphasic_data['gama_w']
             # return -(self.grad_z_internal_faces)*gama_w
-            return -self.lambda_w_internal_faces*gama_w
+            return -np.absolute(self.grad_z_internal_faces)*self.lambda_w_internal_faces*gama_w
         return locals()
     g_w_internal_faces = property(**g_w_internal_faces())
 
@@ -236,7 +236,7 @@ class biphasicProperties(StructuredMeshProperties):
                 return np.zeros(len(internal_faces))
             gama_o = self.biphasic_data['gama_o']
             # return -(self.grad_z_internal_faces)*gama_o
-            return -self.lambda_o_internal_faces*gama_o
+            return -np.absolute(self.grad_z_internal_faces)*self.lambda_o_internal_faces*gama_o
         return locals()
     g_o_internal_faces = property(**g_o_internal_faces())
 
@@ -312,7 +312,7 @@ class biphasicProperties(StructuredMeshProperties):
             '''
             internal_faces = self.elements_lv0['internal_faces']
             ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
-            f = self.lambda_w_internal_faces*(self.flux_sigma_internal_faces - self.lambda_o_internal_faces*ak*(self.g_o_internal_faces - self.g_w_internal_faces))
+            f = self.lambda_w_internal_faces*(self.flux_sigma_internal_faces + self.lambda_o_internal_faces*ak*(self.g_w_internal_faces - self.g_o_internal_faces))
             return f
         return locals()
     q_w_internal_faces = property(**q_w_internal_faces())
@@ -325,7 +325,7 @@ class biphasicProperties(StructuredMeshProperties):
             '''
             internal_faces = self.elements_lv0['internal_faces']
             ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
-            f = self.lambda_o_internal_faces*(self.flux_sigma_internal_faces + self.lambda_w_internal_faces*ak*(self.g_o_internal_faces - self.g_w_internal_faces))
+            f = self.lambda_o_internal_faces*(self.flux_sigma_internal_faces - self.lambda_w_internal_faces*ak*(self.g_w_internal_faces - self.g_o_internal_faces))
             return f
         return locals()
     q_o_internal_faces = property(**q_o_internal_faces())
