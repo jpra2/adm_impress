@@ -12,15 +12,15 @@ import update_inputs_compositional
 
 """ --------------------------For user to fill------------------------------ """
 
-name_current = 'current_compositional_mono_comp_results_'
-name_all = 'all_compositional_mono_comp_results_'
-mesh = 'mesh/100x1x1_m.msh'
+name_current = 'current_compositional_b1_teste_results_'
+name_all = 'all_compositional_b1_teste_results_'
+mesh = 'mesh/100x1x1_b.msh'
 
-delta_t_initial = 5
+delta_t_initial = 10
 loop_max = 20
 t = 0
 loop = 0
-tmax = 0.01* 86400 #422693.9470089848 #seg #0.01* 86400
+tmax = 426996.93 #365*86400#422693.9470089848 #seg #0.01* 86400
 
 
 """ ----------------------------- RUN CODE --------------------------------- """
@@ -39,8 +39,10 @@ while t < tmax: # and loop < loop_max:
     loop = sim.loop
     if (t + sim.delta_t) > tmax:
         sim.delta_t = tmax - t;
+
     #print(loop)
     print(sim.t)
+print(fprop.P)
 
 sim.save_infos(data_impress, M)
 

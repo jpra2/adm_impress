@@ -52,7 +52,7 @@ class LorenzBrayClark:
 
         phase_reduced_molar_density = self.phase_molar_densities[:,0:2,:] * \
             np.sum(self.component_molar_fractions * self.vc[:,np.newaxis,np.newaxis], axis = 0)
-
+            
         # ind_lower = np.argwhere(phase_reduced_molar_density <= 0.18)
         # ind_higher = np.argwhere(phase_reduced_molar_density > 0.18)
 

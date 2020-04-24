@@ -58,7 +58,7 @@ class StabilityCheck:
     def coefficientsPR(self, kprop, l):
         #l - any phase molar composition
         PR_kC7 = np.array([0.379642, 1.48503, 0.1644, 0.016667])
-        PR_k = np.array([0.37464, 1.5422, 0.26992])
+        PR_k = np.array([0.37464, 1.54226, 0.26992])
 
         k = (PR_kC7[0] + PR_kC7[1] * kprop.w - PR_kC7[2] * kprop.w ** 2 + \
             PR_kC7[3] * kprop.w ** 3) * kprop.C7 + (PR_k[0] + PR_k[1] * kprop.w - \
@@ -273,10 +273,12 @@ class StabilityCheck:
             self.K = razao * self.K
 
     def other_properties(self, kprop, l, ph):
+        s = 0.085
         #l - any phase molar composition
         A, B = self.coefficientsPR(kprop, l)
         ph = self.deltaG_molar(kprop, l, ph)
         Z = StabilityCheck.Z_PR(B, A, ph)
+        #v = Z*kprop.R*self.T/self.P - s*self.b
         ksi_phase = self.P / (Z * kprop.R* self.T)
         Mw_phase = sum(l * kprop.Mw)
         rho_phase = ksi_phase * sum(l * kprop.Mw)

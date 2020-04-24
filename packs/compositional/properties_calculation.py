@@ -100,7 +100,8 @@ class PropertiesCalc:
             fprop.phase_mole_numbers[0,kprop.n_phases-1,:] = fprop.mole_number_w
         else: fprop.mole_number_w = [] * np.zeros(self.n_volumes)
 
-
+        #fprop.component_mole_numbers = np.sum(fprop.phase_mole_numbers*fprop.component_molar_fractions,axis=1)
+        #fprop.phase_mole_numbers = np.sum(fprop.component_mole_numbers/fprop.component_molar_fractions, axis=  0)
         #saem como um vetor em  função dos blocos - rever isso daqui. Se eu atualizo o número de moles do componente,
         # não faz sentido eu calcular ele sempre desse jeito, ele teria que vim como um dado de entrada em t=0 e depois
         # essa conta some
@@ -111,7 +112,6 @@ class PropertiesCalc:
         # saturations = np.array([So, Sg, Sw])
         saturations = np.array([fprop.So, fprop.Sg, fprop.Sw])
         kro,krg,krw = self.relative_permeability(saturations)
-
         fprop.relative_permeabilities = np.zeros([1, kprop.n_phases, self.n_volumes])
         if kprop.load_k:
             fprop.relative_permeabilities[0,0,:] = kro

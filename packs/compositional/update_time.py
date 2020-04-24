@@ -49,9 +49,9 @@ class delta_time:
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
         deltaNmax = max(np.nanmax(np.abs(fprop.component_mole_numbers - self.component_mole_numbers)
                         / fprop.component_mole_numbers, axis =1))
-        np.seterr(**old_settings)
-        delta_tn = delta_t * deltaNlim / deltaNmax
 
+        delta_tn = delta_t * deltaNlim / deltaNmax
+        np.seterr(**old_settings)
         return delta_tn
 
     def update_delta_tv(self, delta_t, fprop, deltaVlim):
@@ -61,18 +61,21 @@ class delta_time:
         np.seterr(**old_settings)
         return delta_tv
 
-    def update_delta_t(self, delta_t, fprop, load_k):
+    def update_delta_t(self, delta_t, fprop, load_k, loop):
+
         """ the limit parameters would be given as data entry -its different for each simulation """
         deltaPlim = 0.001 * 6894.76
-        deltaSlim = 0.01
-        deltaNlim = 0.1
-        deltaVlim = 1.e-15
+        deltaSlim = 0.0001
+        deltaNlim = 0.0001
+        deltaVlim = 0.0001
 
         delta_tp = self.update_delta_tp(delta_t, fprop, deltaPlim)
         delta_ts = self.update_delta_ts(delta_t, fprop, deltaSlim)
         delta_tn = self.update_delta_tn(delta_t, fprop, deltaNlim)
         delta_tv = self.update_delta_tv(delta_t, fprop, deltaVlim)
 
-        if load_k: delta_t = min(delta_tp, delta_ts, delta_tn, delta_tv)
-        else: delta_t = self.update_delta_tcfl(delta_t, fprop)
+        if fprop.Cw == 0 and not load_k: delta_t = self.update_delta_tcfl(delta_t, fprop)
+        else: delta_t = min(delta_tp, delta_ts, delta_tn, delta_tv)
+        #if loop<5:
+        #    delta_t = 0.1
         return delta_t

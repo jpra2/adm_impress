@@ -54,22 +54,22 @@ class run_simulation:
         t_obj = delta_time(fprop) #get wanted properties in t=n
 
         self.t += self.delta_t
-
         FVM = CompositionalFVM(M, data_impress, wells, fprop, fprop_block, kprop, self.delta_t, load)
 
         self.delta_t = FVM.delta_t # if the CFL condition is broken, delta_t is changed
-        prop = PropertiesCalc(n_volumes)
-        prop.run_inside_loop(data_impress, wells, fprop, kprop)
 
         if kprop.load_k:
-            for i in range(1, n_volumes):
+            for i in range(0, n_volumes):
                 P = fprop.P[i]
                 z = fprop.z[0:kprop.Nc,i] #água não entra
                 fprop_block = StabilityCheck(P, fprop.T, kprop)
                 fprop_block.run(z, kprop)
                 fprop.update_all_volumes(fprop_block, i)
 
-        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, kprop.load_k)#get delta_t with properties in t=n and t=n+1
+        prop = PropertiesCalc(n_volumes)
+        prop.run_inside_loop(data_impress, wells, fprop, kprop)
+        import pdb; pdb.set_trace()
+        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, kprop.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         self.update_loop()
         t1 = time.time()
         dt = t1 - t0
@@ -85,15 +85,14 @@ class run_simulation:
 
     def get_empty_current_compositional_results(self):
 
-        return [np.array(['loop', 'delta_t [s]', 'simulation_time [s]', 't [s]', 'pressure [Pa]', 'flux_faces', 'flux_faces_vector'])]
+        return [np.array(['loop', 'delta_t [s]', 'simulation_time [s]', 't [s]', 'pressure [Pa]'])]
 
     def update_current_compositional_results(self, M, wells, fprop, simulation_time: float = 0.0):
 
-        total_flux_internal_faces = fprop.total_flux_internal_faces.ravel() #* M.faces.normal[M.faces.internal]
-        total_flux_internal_faces_vector = fprop.total_flux_internal_faces.T * np.abs(M.faces.normal[M.faces.internal])
+        #total_flux_internal_faces = fprop.total_flux_internal_faces.ravel() #* M.faces.normal[M.faces.internal]
+        #total_flux_internal_faces_vector = fprop.total_flux_internal_faces.T * np.abs(M.faces.normal[M.faces.internal])
 
-        self.current_compositional_results = np.array([self.loop, self.delta_t, simulation_time, self.t, fprop.P, fprop.total_flux_internal_faces,
-                                        total_flux_internal_faces_vector])
+        self.current_compositional_results = np.array([self.loop, self.delta_t, simulation_time, self.t, fprop.P])
         self.all_compositional_results.append(self.current_compositional_results)
 
     def export_current_compositional_results(self):

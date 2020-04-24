@@ -4,7 +4,7 @@ from packs.compositional.stability_check import StabilityCheck
 import numpy as np
 import os
 
-dd = InfoManager('input_cards/inputs_compositional_monophasic_comp.yml', 'input_cards/inputs0.yml')
+dd = InfoManager('input_cards/inputs_compositional.yml', 'input_cards/inputs0.yml')
 dd2 = InfoManager('input_cards/variable_inputs_compositional.yml','input_cards/variable_input.yml')
 dd['load_data'] = True
 dd.save_obj()
@@ -63,6 +63,8 @@ class FluidProperties:
         self.ksi_W0 = self.rho_W/self.Mw_w
         self.ksi_W = self.ksi_W0 #* (1 + fprop.Cw * (self.P - Pw))
         #self.Sw = data_loaded['Saturation']['r1']['value'] * np.ones(n_volumes)
+
+    #def convert_well_term():
 
     def inputs_all_volumes(self, T, P, n_volumes):
         self.T = T
