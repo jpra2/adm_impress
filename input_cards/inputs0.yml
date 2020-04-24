@@ -1,4 +1,5 @@
 # mesh_name: mesh/45x45x45.msh
+# mesh_name: mesh/9x9x9.h5m
 mesh_name: mesh/9x1x9.h5m
 # mesh_name: mesh/9x9x1.h5m
 # mesh_name: mesh/27x27x27.msh
@@ -6,7 +7,7 @@ n_test: 0
 state: 0
 type_of_solution: fine_scale
 gravity: true
-test_segregation: true
+test_segregation: false
 load_data: false
 convert_english_to_SI: false
 monophasic: false
@@ -88,7 +89,7 @@ Wells:
     # p0: [880.0, 440.0, 0.0]
     # p1: [900.0, 450.0, 90.0]
     p0: [0.0, 0.0, 8.0]
-    p1: [9.0, 1.0, 9.0]
+    p1: [9.0, 9.0, 9.0]
     prescription: P
     type: Producer
     type_region: box

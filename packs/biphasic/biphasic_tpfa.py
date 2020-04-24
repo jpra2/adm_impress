@@ -391,7 +391,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         deltas_t.append(self.update_delta_t_for_delta_sat_max())
         deltas_t.append(self.update_delta_t_dep0())
         deltas_t.append(self.update_delta_t_new())
-        import pdb; pdb.set_trace()
+
 
         self.delta_t = min(deltas_t)
 
@@ -399,7 +399,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         # self.delta_t = (self.biphasic_data['cfl']*(volume*phis)/flux_volumes).min()
 
     def update_delta_t_for_delta_sat_max(self):
-        import pdb; pdb.set_trace()
+
         flux_w_volumes = self.data_impress['flux_w_volumes']
         phis = self.data_impress['poro']
         volume = self.data_impress['volume']
@@ -428,6 +428,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         dists_int = dists[internal_faces]
         vel_internal_faces = np.linalg.norm(velocity_faces[internal_faces], axis=1)
+        poro0 = phis[viz_int[:, 0]]
+        poro1 = phis[viz_int[:, 1]]
 
         v0 = viz_int[:, 0]
         v1 = viz_int[:, 1]
@@ -440,8 +442,13 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         vel_internal_faces = vel_internal_faces[ids_2]
         df = df[ids_2]
         ds = ds[ids_2]
+        poro0 = poro0[ids_2]
+        poro1 = poro1[ids_2]
         dfds = df/ds
-        delta_t = (self.biphasic_data['cfl']*(dists_int/(vel_internal_faces*dfds))).min()
+        delta_t0 = (self.biphasic_data['cfl']*((dists_int*poro0)/(vel_internal_faces*dfds))).min()
+        delta_t1 = (self.biphasic_data['cfl']*((dists_int*poro1)/(vel_internal_faces*dfds))).min()
+        delta_t = min(delta_t0, delta_t1)
+        import pdb; pdb.set_trace()
         return delta_t
 
     def update_saturation(self):
@@ -617,7 +624,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         #     raise ValueError(f'fluxo negativo de agua {fw_volumes[test]}')
         # ##########################
 
-
         ids_var = ids[np.absolute(fw_volumes) > self.lim_flux_w]
 
         ###################
@@ -665,7 +671,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         min_sat = saturations.min()
         max_sat = saturations.max()
 
-        if min_sat < self.biphasic_data['Swc'] or max_sat > 1-self.biphasic_data['Sor']:
+        delta = 0.000001
+        if min_sat < self.biphasic_data['Swc'] - delta or max_sat > 1-self.biphasic_data['Sor'] + delta:
             return 1
             # raise ValueError(f'\nprint max_sat: {max_sat} ; min_sat: {min_sat}\n')
 
@@ -877,6 +884,15 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self.update_flux_w_and_o_volumes()
         self.print_test()
         self.print_test_faces()
+        # fo = self.data_impress['flux_o_volumes']
+        # fw = self.data_impress['flux_w_volumes']
+        # ft2 = fo + fw
+        # ft = self.data_impress['flux_volumes']
+        # fw_faces = self.data_impress['flux_w_faces']
+        # fo_faces = self.data_impress['flux_o_faces']
+        # ft2_faces = fw_faces + fo_faces
+        # ft_faces = self.data_impress['flux_faces']
+        # import pdb; pdb.set_trace()
         import pdb; pdb.set_trace()
         self.update_delta_t()
         self.update_saturation()
