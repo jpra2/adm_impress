@@ -6,6 +6,7 @@ import time
 from ...directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 from pymoab import types
+from scipy.sparse import csc_matrix, csgraph
 # from .paralel_neuman import masterNeumanNonNested
 from .paralel_neuman_new0 import masterNeumanNonNested
 
@@ -128,10 +129,88 @@ class AdmNonNested(AdmMethod):
         ds = np.absolute(ds[:,1] - ds[:,0])
 
         inds = ds >= self.delta_sat_max
+
         levels[v0[inds][:,0]] = 0
         levels[v0[inds][:,1]] = 0
 
         all_lv0 = set(gid0[levels==0])
+
+        for gidc in gidsc:
+            gids0 = gid0[gid1==gidc]
+            if set(gids0) & all_lv0:
+                gids_fora = np.array(list(set(gids0) - all_lv0))
+                if len(gids_fora) > 0:
+                    levels[gids_fora] = 1
+                gids_lv1_sat.add(gidc)
+
+        cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(1)]
+        cids_level = self.ml_data['coarse_primal_id_level_'+str(1)]
+
+        for gidc in gids_lv1_sat:
+            vizs = cids_neigh[cids_level==gidc][0]
+            for viz in vizs:
+                if set([viz]) & gids_lv1_sat:
+                    continue
+                gids0 = gid0[gid1==viz]
+                if set(gids0) & all_lv0:
+                    gids_fora = np.array(list(set(gids0) - all_lv0))
+                    levels[gids_fora] = 1
+                else:
+                    levels[gids0] = 1
+
+        self.data_impress['LEVEL'] = levels.copy()
+
+    def set_saturation_level_imposed_joined_coarse(self):
+
+        levels = self.data_impress['LEVEL'].copy()
+        gid1 = self.data_impress['GID_1']
+        gid0 = self.data_impress['GID_0']
+        level_0_ini = set(gid0[levels==0])
+        saturation = self.data_impress['saturation']
+        all_wells = set(self.all_wells_ids)
+        gids_lv1_sat = set()
+        gidsc = np.unique(gid1)
+        internal_faces = self.elements_lv0['internal_faces']
+        v0 = self.elements_lv0['neig_internal_faces']
+
+        ds = saturation[v0]
+        ds = np.absolute(ds[:,1] - ds[:,0])
+
+        inds = ds >= self.delta_sat_max
+
+        levels[v0[inds][:,0]] = 0
+        levels[v0[inds][:,1]] = 0
+
+        all_lv0 = set(gid0[levels==0])
+        for gidc in gidsc:
+            gids0 = gid0[gid1==gidc]
+            if (levels[gids0].max()-levels[gids0].min())>0:
+                facs=np.unique(np.concatenate(self.elements_lv0['volumes_face_faces'][gids0]))
+                facs=np.intersect1d(facs,internal_faces)
+                ad=np.vstack(self.elements_lv0['faces_face_volumes'][facs])
+                ad0=ad[:,0]
+                ad1=ad[:,1]
+                l0=levels[ad0]
+                l1=levels[ad1]
+                map_lid=-np.ones(max(gid0)+1)
+                map_lid[gids0]=np.arange(len(gids0))
+                l0[map_lid[ad0]<0]=-1
+                l1[map_lid[ad1]<0]=-1
+                fadj1=l0+l1>=0
+                # import pdb; pdb.set_trace()
+                lines=map_lid[ad0[fadj1]].astype(int)
+                cols=map_lid[ad1[fadj1]].astype(int)
+                data=np.ones(len(lines))
+                graph=csc_matrix((data,(lines,cols)),shape=(len(gids0),len(gids0)))
+                n_l,labels=csgraph.connected_components(graph,connection='weak')
+                groups=[gids0[labels==k] for k in range(n_l)]
+                ls=np.array([len(g) for g in groups])
+                print(ls.max())
+                if ls.max()>1:
+                    vols_nv1=np.array(groups)[ls==ls.max()][0]
+                    levels[np.setdiff1d(gids0,vols_nv1)]=0
+                # import pdb; pdb.set_trace()
+
 
         for gidc in gidsc:
             gids0 = gid0[gid1==gidc]
@@ -307,7 +386,7 @@ class AdmNonNested(AdmMethod):
 
         AMS_TO_ADM = np.arange(len(gid_level[vertices]))
         AMS_TO_ADM[gid_level[vertices]] = level_adm_coarse_id[vertices]
-        
+
         nivel_0 = gid_0[levels==0]
         ID_global1 = nivel_0
         OP_AMS[nivel_0] = 0

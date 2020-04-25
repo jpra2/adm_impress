@@ -630,3 +630,17 @@ non_physical_value_999:
   data type: float
   sparse: True
   level: 0
+
+val_diric:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+val_neum:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0

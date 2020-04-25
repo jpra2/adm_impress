@@ -165,7 +165,14 @@ class masterNeumanNonNested:
                             escolhido = candidatos.pop()
                             ind_diric = [escolhido]
                             val_diric = [pms[escolhido]]
-
+                    if len(ind_diric)>1:
+                        import pdb; pdb.set_trace()
+                    ind_diric=vertex
+                    val_diric=pms[vertex]
+                    # ind_diric=[]
+                    # val_diric=[]
+                    self.data_impress['val_diric'][ind_diric]=val_diric
+                    self.data_impress['val_neum'][ind_neum]=val_neum
                     list_of_subdomains.append(Subdomain(volumes, ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, self.T_without))
 
                 else:
@@ -188,6 +195,10 @@ class masterNeumanNonNested:
                     val_neum = presc_flux_intern_boundary_volumes
                     ind_diric = vertex
                     val_diric = pms[vertex]
+                    self.data_impress['val_diric'][ind_diric]=val_diric
+                    self.data_impress['val_neum'][ind_neum]=val_neum
+                    if len(ind_diric)>1:
+                        import pdb; pdb.set_trace()
                     list_of_subdomains.append(Subdomain(volumes, ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, self.T_without))
 
 
@@ -308,8 +319,9 @@ class LocalSolution:
 
             ind_diric_local = map_gid_in_lid[ind_diric]
             T_local_2 = T_local.copy()
-            T_local_2[ind_diric_local] = 0
-            T_local_2[ind_diric_local, ind_diric_local] = 1
+            if len(ind_diric_local)>0:
+                T_local_2[ind_diric_local] = 0
+                T_local_2[ind_diric_local, ind_diric_local] = 1
 
             b = np.zeros(len(volumes))
 

@@ -111,7 +111,9 @@ adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
 # adm_method.set_initial_mesh(mlo, T, b)
 
 meshset_volumes = M.core.mb.create_meshset()
+meshset_faces = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
+M.core.mb.add_entities(meshset_faces, M.core.all_faces)
 
 nn = 50
 cont = 1
@@ -119,7 +121,9 @@ cont = 1
 verif = True
 pare = False
 while verif:
-
+    multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
+    multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
+    mlo = multilevel_operators
     for level in range(1, n_levels):
 
         adm_method.organize_ops_adm(mlo['prolongation_level_'+str(level)],
@@ -142,6 +146,7 @@ while verif:
     data_impress.update_variables_to_mesh()
 
     M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
+    M.core.mb.write_file('results/testt_f'+str(cont)+'.vtk', [meshset_faces])
 
     if cont % nn == 0:
         import pdb; pdb.set_trace()
@@ -151,7 +156,8 @@ while verif:
     adm_method.restart_levels()
     # adm_method.set_level_wells_2()
     adm_method.set_level_wells_3()
-    adm_method.set_saturation_level()
+    # adm_method.set_saturation_level()
+    adm_method.set_saturation_level_imposed_joined_coarse()
     adm_method.equalize_levels()
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]

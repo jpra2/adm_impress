@@ -3,6 +3,8 @@ import scipy.sparse as sp
 from ...common_files.common_infos import CommonInfos
 import multiprocessing as mp
 from ...solvers.solvers_scipy.solver_sp import SolverSp
+
+from ...solvers.solvers_trilinos.solvers_tril import solverTril
 import time
 
 class masterNeumanNonNested:
@@ -76,7 +78,8 @@ class masterNeumanNonNested:
 
         if self.pare:
             import pdb; pdb.set_trace()
-
+        self.data_impress['val_diric'][:]=0
+        self.data_impress['val_neum'][:]=0
         for level in range(1, self.n_levels):
             str_level = str(level)
             set_level = set([level])
@@ -133,7 +136,6 @@ class masterNeumanNonNested:
                         intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
 
                 if len(intern_boundary_volumes_new) > 0:
-
                     v0 = v0_new
                     pms0 = pms[v0[:,0]]
                     pms1 = pms[v0[:,1]]
@@ -159,10 +161,62 @@ class masterNeumanNonNested:
                     else:
                         ind_diric += list(vertex)
                         val_diric += list(pressure_vertex)
+                        
+                # ind_diric=volumes[level_volumes==1]
+                # if len(ind_diric)>0:
+                #
+                #     ind_diric=np.setdiff1d(ind_diric,intern_boundary_volumes_new)
+                #     if len(ind_diric)>0:
+                #         ind_diric=ind_diric[0]
+                #     else:
+                #         ind_diric=vertex
+                # else:
+                #     ind_diric=vertex
+                # val_diric=pms[ind_diric]
 
+                self.data_impress['val_diric'][ind_diric]=val_diric
+                self.data_impress['val_neum'][ind_neum]=val_neum
                 list_of_subdomains.append(Subdomain(volumes, ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, self.T_without))
 
         return list_of_subdomains, pms_flux_faces
+
+    def get_subdomains_2(self):
+        '''
+            ordem de envio:
+
+                volumes: global id dos volumes locais
+                ind_diric: indice dos volumes com pressao prescrita
+                ind_neum: indice dos volumes com vazao prescrita
+                val_diric: valores de pressao prescrita
+                val_neum: valores de vazao prescrita
+                local_transm: transmissibilidade local
+
+                all_faces: todas faces do coarse volume
+                intern_faces: faces internas do coarse volume
+                intersect_faces: faces na interseccao
+        '''
+        list_of_subdomains = []
+        pms_flux_faces = np.zeros(len(self.elements_lv0['faces']))
+        levels = self.data_impress['LEVEL']
+        pms = self.data_impress['pms']
+        remaped_internal_faces = self.elements_lv0['remaped_internal_faces']
+        neig_internal_faces = self.elements_lv0['neig_internal_faces']
+        gid0 = self.data_impress['GID_0']
+        n_volumes = len(gid0)
+        for level in range(1, self.n_levels):
+            str_level = str(level)
+            set_level = set([level])
+
+            all_gids_coarse = self.data_impress['GID_'+ str_level]
+            all_intern_boundary_volumes = self.ml_data['internal_boundary_fine_volumes_level_'+ str_level]
+            all_intersect_faces = self.ml_data['coarse_intersect_faces_level_'+ str_level]
+            all_intern_faces = self.ml_data['coarse_internal_faces_level_'+ str_level]
+            all_faces = self.ml_data['coarse_faces_level_'+ str_level]
+            all_fine_vertex = self.ml_data['fine_vertex_coarse_volumes_level_'+ str_level]
+            coarse_ids = self.ml_data['coarse_primal_id_level_'+ str_level]
+            gids_level = np.unique(all_gids_coarse)
+
+            import pdb; pdb.set_trace()
 
     def preprocess(self):
         list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains()
@@ -233,7 +287,7 @@ class LocalSolution:
         data = []
         dt = [('faces', int), ('ms_flux_faces', float)]
         dt_vol = [('volumes', int), ('pcorr', float)]
-        solver = SolverSp()
+        solver = solverTril()
 
         for subd in self.subdomains:
             volumes = subd.volumes
@@ -258,8 +312,9 @@ class LocalSolution:
             b[map_gid_in_lid[ind_diric]] = val_diric
 
             T_local_2 = T_local_2.tocsc()
+            x = solver.solve_linear_problem(T_local_2,b)
 
-            x = solver.direct_solver(T_local_2, b)
+            # x=a.solve(b)
             # print('\n')
             # print('pcorr')
             # print(x)
