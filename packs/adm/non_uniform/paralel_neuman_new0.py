@@ -161,7 +161,7 @@ class masterNeumanNonNested:
                     else:
                         ind_diric += list(vertex)
                         val_diric += list(pressure_vertex)
-                        
+                
                 # ind_diric=volumes[level_volumes==1]
                 # if len(ind_diric)>0:
                 #

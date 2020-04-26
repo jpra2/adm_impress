@@ -157,7 +157,9 @@ while verif:
     # adm_method.set_level_wells_2()
     adm_method.set_level_wells_3()
     # adm_method.set_saturation_level()
-    adm_method.set_saturation_level_imposed_joined_coarse()
+    # adm_method.set_saturation_level_imposed_joined_coarse()
+    adm_method.set_saturation_level_imposed_bound_level_continuity()
+    # adm_method.set_saturation_level_original()
     adm_method.equalize_levels()
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
