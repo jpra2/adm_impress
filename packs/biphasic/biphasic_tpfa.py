@@ -13,6 +13,7 @@ import math
 from ..errors.err import MaxLoopIterationError
 from ..data_class.structured_mesh_properties import StructuredMeshProperties
 from .tests_general import testsGeneral
+from ..utils.utils_old import get_box
 
 class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral):
 
@@ -26,7 +27,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self.V_total = (data_impress['volume']*data_impress['poro']).sum()
         self.max_contador_vtk = len(self.biphasic_data['vpis_para_gravar_vtk'])
         self.delta_sat_max = 0.1
-        self.lim_flux_w = 9e-8
+        self.lim_flux_w = 9e-9
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
         self.mesh_name = os.path.join(direc.flying, 'biphasic_')
@@ -110,6 +111,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         pos = ~pos
         self._data['upwind_identificate'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
         self._data['upwind_identificate_o'] = ~self._data['upwind_identificate'].copy()
+
+        self.visualize_upwind_vec()
 
         # ws_inj = self.wells['ws_inj']
         #
@@ -490,6 +493,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self._data['upwind_identificate_o'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
 
     def update_upwind_phases(self):
+        d1 = 0
 
         internal_faces = self.elements_lv0['internal_faces']
         # flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
@@ -498,8 +502,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         # q_sigma_internal_faces = self.data_impress['flux_faces'][internal_faces]
         ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
 
-        pos_sigma = q_sigma_internal_faces > 0
-        pos_w = flux_w_internal_faces > 0
+        pos_sigma = q_sigma_internal_faces > 0 - d1
+        pos_w = flux_w_internal_faces > 0 - d1
         and_pos = pos_w & pos_sigma
         self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
         self._data['upwind_identificate'][pos_w & pos_sigma, 0] = True
@@ -510,8 +514,10 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         flux_o_internal_faces = -(self.grad_p_internal_faces*ak*self.lambda_o_internal_faces - self.flux_grav_o_internal_faces)
 
         flux_total = flux_w_internal_faces + flux_o_internal_faces
-        pos_flux_total = flux_total > 0
+        pos_flux_total = flux_total > 0 - d1
         self._data['upwind_identificate_o'][~(pos_flux_total & pos_sigma)] = ~self._data['upwind_identificate_o'][~(pos_flux_total & pos_sigma)]
+
+        self.visualize_upwind_vec()
 
     def update_upwind_phases_new0(self):
 
@@ -630,6 +636,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         t0 = time.time()
         self.update_flux_w_and_o_volumes()
+        self.test_flux_faces()
         self.update_delta_t()
         self.update_saturation()
         self.update_relative_permeability()
@@ -663,3 +670,50 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         name = 'results/test_faces_'+str(self.loop)+'.vtk'
         self.mesh.core.mb.write_file(name, [self.meshset_faces])
         # self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings1.yml")
+
+    def test_flux_faces(self):
+
+        if data_loaded['_debug'] == False:
+            return 0
+        fo = self.data_impress['flux_o_faces']
+        fw = self.data_impress['flux_w_faces']
+        ft = self.data_impress['flux_faces']
+        u_normal = self.data_impress['u_normal']
+        ft = ft.reshape(len(ft), 1)
+        self.data_impress['flux_faces_vec'] = u_normal*ft
+
+        fo2 = fo[abs(fo) > 0]
+        fw2 = fw[abs(fw) > 0]
+
+    def visualize_upwind_vec(self):
+
+        if data_loaded['_debug'] == False:
+            return 0
+        internal_faces = self.elements_lv0['internal_faces']
+        u_normal_internal_faces = self.data_impress['u_normal'][internal_faces]
+        internal_faces = self.elements_lv0['internal_faces']
+        centroid_volumes = self.data_impress['centroid_volumes']
+        v0 = self.elements_lv0['neig_internal_faces']
+        c0 = centroid_volumes[v0[:,0]]
+        c1 = centroid_volumes[v0[:,1]]
+        dc = c1-c0
+        norm = np.linalg.norm(dc, axis=1).reshape(dc.shape[0], 1)
+        dcu = dc/norm
+        upwind = np.zeros((len(internal_faces), 3), dtype=int)
+        upwind[self._data['upwind_identificate'][:,0]] = dcu[self._data['upwind_identificate'][:,0]].astype(int)
+        upwind[self._data['upwind_identificate'][:,1]] = -dcu[self._data['upwind_identificate'][:,1]].astype(int)
+        self.data_impress['upwind_w_faces_vec'][internal_faces] = upwind
+        upwind = np.zeros((len(internal_faces), 3), dtype=int)
+        upwind[self._data['upwind_identificate_o'][:,0]] = dcu[self._data['upwind_identificate_o'][:,0]].astype(int)
+        upwind[self._data['upwind_identificate_o'][:,1]] = -dcu[self._data['upwind_identificate_o'][:,1]].astype(int)
+        self.data_impress['upwind_o_faces_vec'][internal_faces] = upwind
+
+        faces = self.elements_lv0['faces']
+        ctfaces = self.data_impress['centroid_faces']
+
+        f1 = get_box(ctfaces, np.array([[0.0, 0.0, 6.0 - 0.1], [9.0, 9.0, 6.0+0.1]]))
+
+        flux = self.data_impress['flux_faces'][f1]
+        upw = self.data_impress['upwind_w_faces_vec'][f1]
+
+        import pdb; pdb.set_trace()

@@ -166,6 +166,24 @@ flux_faces:
   level: 0
   sparse: true
   type: faces
+flux_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+upwind_w_faces_vec:
+  data size: 3
+  data type: int
+  level: 0
+  sparse: true
+  type: faces
+upwind_o_faces_vec:
+  data size: 3
+  data type: int
+  level: 0
+  sparse: true
+  type: faces
 flux_grav_faces:
   data size: 1
   data type: float
