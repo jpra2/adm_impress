@@ -2,12 +2,14 @@ from packs.running.initial_mesh_properties import initial_mesh
 from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.directories import data_loaded
+from packs.multiscale.operators.prolongation.AMS.Paralell.group_dual_volumes import group_dual_volumes_and_get_OP
 import scipy.sparse as sp
 import numpy as np
 import time
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 from packs.biphasic.biphasic_tpfa import BiphasicTpfa
+
 '''
 def get_gids_and_primal_id(gids, primal_ids):
     gids2 = np.unique(gids)
@@ -93,7 +95,10 @@ else:
     multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
 
 mlo=multilevel_operators
+tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
+tpfa_solver.run()
 
+OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver)
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 
