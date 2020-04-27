@@ -1,6 +1,7 @@
 # mesh_name: mesh/45x45x45.msh
 # mesh_name: mesh/9x9x9.msh
-mesh_name: mesh/isotropic/21x21x1.msh
+# mesh_name: mesh/isotropic/21x21x1.msh
+mesh_name: mesh/27x27x1.msh
 # mesh_name: mesh/27x27x27.msh
 n_test: 0
 state: 0
@@ -23,7 +24,7 @@ _debug: True
 
 Crs:
   Cr1: [5, 5, 1]
-  Cr2: [21, 21, 1]
+  Cr2: [27, 27, 1]
 
 read_permeability: true
 file_name_permeability: spe10_perms_and_phi.npz
@@ -105,7 +106,7 @@ Wells:
   P1:
     p0: [0.0, 0.0, 0.0]
     # p1: [20.0, 10.0, 2.0]
-    p1: [1.0, 1.0, 1.0]
+    p1: [20.0, 10.0, 2.0]
     prescription: Q
     type: Injector
     type_region: box
@@ -118,8 +119,8 @@ Wells:
     # p1: [900.0, 450.0, 90.0]
     # p0: [160.0, 80.0, 16.0]
     # p1: [180.0, 90.0, 18.0]
-    p0: [20.0, 20.0, 0.0]
-    p1: [21.0, 21.0, 1.0]
+    p0: [520.0, 260.0, 0.0]
+    p1: [540.0, 270.0, 2.0]
     prescription: P
     type: Producer
     type_region: box

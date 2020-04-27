@@ -274,7 +274,6 @@ class AdmNonNested(AdmMethod):
         all_lv0 = set(gid0[levels==0])
         # for gidc in gidsc:
         #     gids0 = gid0[gid1==gidc]
-        #
 
 
 
@@ -340,7 +339,7 @@ class AdmNonNested(AdmMethod):
             ds = saturation[gids0].max()-saturation[gids0].min()
             if ds >= self.delta_sat_max:
                 print("aqui",gidc, gids0)
-                levels[gids0]=0
+                levels[gids0[dual_flag[gids0]>1]]=0
 
         # for gidc in gidsc:
         #     gids0 = gid0[gid1==gidc]
@@ -406,13 +405,13 @@ class AdmNonNested(AdmMethod):
 
     def set_level_wells_3(self):
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
-        gid0 = self.data_impress['GID_0']
-        gid1 = self.data_impress['GID_1']
-
-        gids_wells = np.unique(gid1[self.all_wells_ids])
-        for gid in gids_wells:
-            volumes = gid0[gid1==gid]
-            self.data_impress['LEVEL'][volumes] = 0
+        # gid0 = self.data_impress['GID_0']
+        # gid1 = self.data_impress['GID_1']
+        #
+        # gids_wells = np.unique(gid1[self.all_wells_ids])
+        # for gid in gids_wells:
+        #     volumes = gid0[gid1==gid]
+        #     self.data_impress['LEVEL'][volumes] = 0
 
     def organize_ops_adm(self, OP_AMS, OR_AMS, level, _pcorr=None):
 

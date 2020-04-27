@@ -120,10 +120,11 @@ cont = 1
 
 verif = True
 pare = False
+np.save('results/jac_iterarion.npy',np.array([0]))
 while verif:
-    multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
-    multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
-    mlo = multilevel_operators
+    # multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
+    # multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
+    # mlo = multilevel_operators
     for level in range(1, n_levels):
 
         adm_method.organize_ops_adm(mlo['prolongation_level_'+str(level)],
@@ -133,6 +134,11 @@ while verif:
     # op1 = adm_method['adm_prolongation_level_1']
     # or1 = adm_method['adm_restriction_level_1']
     # import pdb; pdb.set_trace()
+    adm_method.restart_levels()
+    # adm_method.set_level_wells_2()
+    adm_method.set_level_wells_3()
+    adm_method.set_saturation_level()
+    adm_method.equalize_levels()
 
     adm_method.solve_multiscale_pressure(T, b)
     adm_method.set_pms_flux(b1['Tini'], wells, pare=pare)
@@ -153,12 +159,12 @@ while verif:
 
     # adm_method.restart_levels_2()
     # adm_method.set_level_wells()
-    adm_method.restart_levels()
-    # adm_method.set_level_wells_2()
-    adm_method.set_level_wells_3()
-    # adm_method.set_saturation_level()
+    #### adm_method.restart_levels()
+    #### # adm_method.set_level_wells_2()
+    #### adm_method.set_level_wells_3()
+    #### adm_method.set_saturation_level()
     # adm_method.set_saturation_level_imposed_joined_coarse()
-    adm_method.set_saturation_level_imposed_bound_level_continuity()
+    # adm_method.set_saturation_level_imposed_bound_level_continuity()
     # adm_method.set_saturation_level_original()
     adm_method.equalize_levels()
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]

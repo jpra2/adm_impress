@@ -9,6 +9,8 @@ from. obj_infos import InfosForProcess
 from ..directories import data_loaded
 from ..errors.err import ConservativeVolumeError, PmsFluxFacesError
 from scipy.sparse import linalg
+from scipy.sparse.linalg import spsolve
+from scipy.sparse import csc_matrix
 from ..directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 import time
@@ -124,7 +126,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.ml_data = M.multilevel_data
         self.all_wells_ids = all_wells_ids
         self.n_levels = n_levels
-        self.delta_sat_max = 0.1
+        self.delta_sat_max = 0.4
         # self.delta_sat_max = 2.0
         self.data_impress = data_impress
         self.number_vols_in_levels = np.zeros(self.n_levels+1, dtype=int)
@@ -438,6 +440,7 @@ class AdmMethod(DataManager, TpfaFlux2):
             level = i
             OP_adm = self._data[self.adm_op_n + str(level)]
             OR_adm = self._data[self.adm_rest_n + str(level)]
+            # OR_adm=OP_adm.T
             if self.get_correction_term:
                 pcorr_adm = self._data[self.pcorr_n+str(level)]
                 b_adm = OR_adm*b_adm - OR_adm*T_adm*pcorr_adm
@@ -446,16 +449,17 @@ class AdmMethod(DataManager, TpfaFlux2):
 
             T_adm = OR_adm*T_adm*OP_adm
 
-        pms = self.solver.direct_solver(T_adm, b_adm)
-        # p_adm = pms.copy()
+        # pms = self.solver.direct_solver(T_adm, b_adm)
 
-        for i in range(1, n_levels):
-            level = self.n_levels - i
-            if self.get_correction_term:
-                pcorr_adm = self._data[self.pcorr_n+str(level)]
-                pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
-            else:
-                pms = self._data[self.adm_op_n + str(level)]*pms
+        pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
+        # import pdb; pdb.set_trace()
+        # for i in range(1, n_levels):
+        #     level = self.n_levels - i
+        #     if self.get_correction_term:
+        #         pcorr_adm = self._data[self.pcorr_n+str(level)]
+        #         pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
+        #     else:
+        #         pms = self._data[self.adm_op_n + str(level)]*pms
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms
@@ -465,6 +469,62 @@ class AdmMethod(DataManager, TpfaFlux2):
         # self.data_impress['pms'] = p2
         # ##############################
         self.T = T
+    def smoother_jacobi(self, R, T, P, b, print_errors=False):
+
+        pv=self.data_impress['pms']
+        dt=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
+        dt1=1/dt
+        lc=np.arange(len(dt))
+        pl=csc_matrix((dt1,(lc,lc)),shape=T.shape)
+        ap=np.zeros((3,1))
+        try:
+            ji=np.load("results/jac_iterarion.npy")[0]
+        except:
+            np.save('results/jac_iterarion.npy',np.array([0]))
+            ji=0
+        if ji==0:
+            nite=5
+        else:
+            nite=1
+        for i in range(nite):
+            pv12 = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
+            pv = pv12+pl*(b-T*pv12)
+            # pv += pl*(b-T*pv)
+            if print_errors:
+                if i==0:
+                    pf = self.solver.direct_solver(T, b)
+                ep_l2=np.linalg.norm(pf-pv)/np.linalg.norm(pf)
+                adjs=self.elements_lv0['neig_internal_faces']
+                internal_faces=self.elements_lv0['internal_faces']
+                ts=self.data_impress['transmissibility'][internal_faces]
+                hs=self.data_impress['u_normal'][internal_faces].max(axis=1)
+                a0=adjs[:,0]
+                a1=adjs[:,1]
+                vf=ts*(pf[a0]-pf[a1])/hs
+                vms=ts*(pv[a0]-pv[a1])/hs
+                ev_l2=np.linalg.norm(vf-vms)/np.linalg.norm(vf)
+                ap=np.hstack([ap,np.array([[ji+i+1],[ep_l2],[ev_l2]])])
+
+
+            np.save('results/jac_iterarion.npy',np.array([ji+i+1]))
+        pv = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
+        # plt.plot(ap[0,1:],ap[1,1:])
+        plt.yscale('log')
+        plt.scatter(ap[0,1:],ap[2,1:])
+        plt.savefig("results/notms.png")
+
+        # if print_errors:
+        #     try:
+        #         jac = np.load('flying/jacobi_smooter.npy')
+        #         i_ant = jac[0,-1]
+        #         jac.hstack(jac,ap)
+        #     except:
+        #         jac = np.save('flying/jacobi_smooter.npy')
+        #         import pdb; pdb.set_trace()
+
+        return pv
+
+
 
     def set_pms_flux_intersect_faces_dep0(self):
 

@@ -161,7 +161,7 @@ class masterNeumanNonNested:
                     else:
                         ind_diric += list(vertex)
                         val_diric += list(pressure_vertex)
-                
+
                 # ind_diric=volumes[level_volumes==1]
                 # if len(ind_diric)>0:
                 #
@@ -173,9 +173,9 @@ class masterNeumanNonNested:
                 # else:
                 #     ind_diric=vertex
                 # val_diric=pms[ind_diric]
-
                 self.data_impress['val_diric'][ind_diric]=val_diric
                 self.data_impress['val_neum'][ind_neum]=val_neum
+
                 list_of_subdomains.append(Subdomain(volumes, ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, self.T_without))
 
         return list_of_subdomains, pms_flux_faces
