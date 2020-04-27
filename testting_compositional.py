@@ -14,7 +14,7 @@ import update_inputs_compositional
 
 name_current = 'current_compositional_b1_teste_results_'
 name_all = 'all_compositional_b1_teste_results_'
-mesh = 'mesh/100x1x1_b.msh'
+mesh = 'mesh/100x1x1_m.msh'
 
 delta_t_initial = 10
 loop_max = 20
@@ -39,7 +39,7 @@ while t < tmax: # and loop < loop_max:
     loop = sim.loop
     if (t + sim.delta_t) > tmax:
         sim.delta_t = tmax - t;
-
+    import pdb; pdb.set_trace()
     #print(loop)
     print(sim.t)
 print(fprop.P)

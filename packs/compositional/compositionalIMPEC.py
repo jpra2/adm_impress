@@ -49,6 +49,7 @@ class CompositionalFVM:
 
     def dVt_derivatives(self, fprop, fprop_block, kprop):
         """ REVER DERIVADAS PARA OS COMPONENTES OLEO """
+
         self.dVtk = np.zeros([kprop.n_components, self.n_volumes])
         if kprop.load_k:
             self.dVtk[0:kprop.Nc,:], dVtP = PartialDerivatives().dVt_derivatives(fprop, fprop_block, kprop)
