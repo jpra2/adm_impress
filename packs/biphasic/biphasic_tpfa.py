@@ -493,6 +493,9 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self._data['upwind_identificate_o'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
 
     def update_upwind_phases(self):
+        '''
+            paper Starnoni
+        '''
         d1 = 0
 
         internal_faces = self.elements_lv0['internal_faces']
@@ -516,6 +519,112 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         flux_total = flux_w_internal_faces + flux_o_internal_faces
         pos_flux_total = flux_total > 0 - d1
         self._data['upwind_identificate_o'][~(pos_flux_total & pos_sigma)] = ~self._data['upwind_identificate_o'][~(pos_flux_total & pos_sigma)]
+
+        self.visualize_upwind_vec()
+
+    def update_upwind_phases_new2(self):
+        d1 = 0
+
+        internal_faces = self.elements_lv0['internal_faces']
+        # flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
+        flux_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
+        flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
+
+        # q_sigma_internal_faces = self.data_impress['flux_faces'][internal_faces]
+        ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
+
+        pos_o = flux_o_internal_faces > 0 - d1
+        pos_w = flux_w_internal_faces > 0 - d1
+        self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
+        self._data['upwind_identificate_o'] = self._data['upwind_identificate'].copy()
+        self._data['upwind_identificate'][pos_w , 0] = True
+        self._data['upwind_identificate'][~pos_w , 1] = True
+        self._data['upwind_identificate_o'][pos_o, 0] = True
+        self._data['upwind_identificate_o'][~pos_o , 1] = True
+
+        self.visualize_upwind_vec()
+
+    def update_upwind_phases_new1(self):
+        d1 = 0
+        d2 = 0
+
+        internal_faces = self.elements_lv0['internal_faces']
+        # flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
+        flux_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
+        flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
+        q_sigma_internal_faces = self.flux_sigma_internal_faces
+        # q_sigma_internal_faces = self.data_impress['flux_faces'][internal_faces]
+        ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
+
+        pos_sigma = q_sigma_internal_faces > 0 + d1
+        pos_w = flux_w_internal_faces > 0 + d1
+        pos_o = flux_o_internal_faces > 0 + d1
+        and_pos_w = pos_w & pos_sigma
+        and_pos_o = pos_o & pos_sigma
+
+        pos_sigma_2 = q_sigma_internal_faces < 0 + d2
+        pos_w_2 = flux_w_internal_faces < 0 + d2
+        pos_o_2 = flux_o_internal_faces < 0 + d2
+        and_pos_w_2 = pos_w_2 & pos_sigma_2
+        and_pos_o_2 = pos_o_2 & pos_sigma_2
+
+        # import pdb; pdb.set_trace()
+
+        ids = np.arange(len(internal_faces))
+        # import pdb; pdb.set_trace()
+        self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
+        self._data['upwind_identificate_o'] = np.full((len(internal_faces), 2), False, dtype=bool)
+
+        self._data['upwind_identificate'][and_pos_w, 0] = True
+        self._data['upwind_identificate_o'][and_pos_o, 0] = True
+        self._data['upwind_identificate'][and_pos_w_2, 1] = True
+        self._data['upwind_identificate_o'][and_pos_o_2, 1] = True
+
+        self._data['upwind_identificate_o'][and_pos_w, 0] = True
+        self._data['upwind_identificate'][and_pos_o, 0] = True
+        self._data['upwind_identificate_o'][and_pos_w_2, 1] = True
+        self._data['upwind_identificate'][and_pos_o_2, 1] = True
+
+        verif1 = self._data['upwind_identificate'][:,0] ^ self._data['upwind_identificate'][:,1]
+        verif2 = self._data['upwind_identificate_o'][:,0] ^ self._data['upwind_identificate_o'][:,1]
+        verif1 = ~verif1
+        verif2 = ~verif2
+
+        self._data['upwind_identificate'][verif1, 0] = True
+        self._data['upwind_identificate_o'][verif2, 0] = True
+
+        flux_w_internal_faces = -(self.grad_p_internal_faces*ak*self.lambda_w_internal_faces - self.flux_grav_w_internal_faces)
+        flux_o_internal_faces = -(self.grad_p_internal_faces*ak*self.lambda_o_internal_faces - self.flux_grav_o_internal_faces)
+
+        flux_total = flux_w_internal_faces + flux_o_internal_faces
+        pos_flux_total = flux_total > 0 + d1
+        pos_flux_total_2 = flux_total < 0 + d2
+        and_flux_sigma = pos_flux_total & pos_sigma
+        and_flux_sigma_2 = pos_sigma_2 & pos_flux_total_2
+
+        t1 = and_pos_w & pos_flux_total
+        if not np.allclose(t1, and_pos_w):
+            t1 = t1 ^ and_pos_w
+            self._data['upwind_identificate_o'][t1] = np.full((t1.sum(), 2), False, dtype=bool)
+            self._data['upwind_identificate_o'][t1, 1] = True
+
+        t2 = and_pos_o & pos_flux_total
+        if not np.allclose(t1, and_pos_w):
+            t2 = t2 ^ and_pos_w
+            self._data['upwind_identificate'][t2] = np.full((t2.sum(), 2), False, dtype=bool)
+            self._data['upwind_identificate'][t2, 1] = True
+
+        t3 = and_pos_w_2 & pos_flux_total_2
+        if not np.allclose(t3, and_pos_w_2):
+            t3 = t3 ^ and_pos_w_2
+            self._data['upwind_identificate_o'][t3] = np.full((t3.sum(), 2), False, dtype=bool)
+            self._data['upwind_identificate_o'][t3, 0] = True
+
+        t4 = and_pos_o_2 & pos_flux_total_2
+        if not np.allclose(t4, and_pos_w_2):
+            t4 = t4 ^ and_pos_w_2
+            self._data['upwind_identificate'][t4] = np.full((t4.sum(), 2), False, dtype=bool)
+            self._data['upwind_identificate'][t4, 0] = True
 
         self.visualize_upwind_vec()
 
@@ -715,5 +824,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         flux = self.data_impress['flux_faces'][f1]
         upw = self.data_impress['upwind_w_faces_vec'][f1]
+
+        self.print_test_faces()
 
         import pdb; pdb.set_trace()
