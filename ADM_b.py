@@ -6,10 +6,11 @@ from packs.multiscale.operators.prolongation.AMS.Paralell.group_dual_volumes imp
 import scipy.sparse as sp
 import numpy as np
 import time
+import matplotlib.pyplot as plt
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 from packs.biphasic.biphasic_tpfa import BiphasicTpfa
-
+plt.close('all')
 '''
 def get_gids_and_primal_id(gids, primal_ids):
     gids2 = np.unique(gids)
@@ -120,7 +121,7 @@ meshset_faces = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 M.core.mb.add_entities(meshset_faces, M.core.all_faces)
 
-nn = 20
+nn = 50
 cont = 1
 
 verif = True
@@ -156,7 +157,7 @@ while verif:
     b1.run_2()
     data_impress.update_variables_to_mesh()
 
-    # M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
+    M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
     # M.core.mb.write_file('results/testt_f'+str(cont)+'.vtk', [meshset_faces])
 
     if cont % nn == 0:

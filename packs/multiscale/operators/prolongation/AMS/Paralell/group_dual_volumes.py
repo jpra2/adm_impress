@@ -126,7 +126,11 @@ def group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim
         multilevel_operators=mlo
     ######################### # #############################
     old_groups=groups.copy()
-    for ind in range(1,3):
+    if len(old_groups)==0:
+        val=1
+    else:
+        val=3
+    for ind in range(1,val):
         groups2 = get_coupled_dual_volumes(mlo,T,M,data_impress,neta_lim, ind=ind)
         # neta_lim/=2
         lgs=[np.repeat(i,len(old_groups[i])) for i in range(len(old_groups))]
