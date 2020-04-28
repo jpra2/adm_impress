@@ -126,7 +126,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.ml_data = M.multilevel_data
         self.all_wells_ids = all_wells_ids
         self.n_levels = n_levels
-        self.delta_sat_max = 0.05
+        self.delta_sat_max = 0.1
         # self.delta_sat_max = 2.0
         self.data_impress = data_impress
         self.number_vols_in_levels = np.zeros(self.n_levels+1, dtype=int)
@@ -306,6 +306,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         if level == 1:
             OP_ADM, OR_ADM, pcorr = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
+
             self._data[self.adm_op_n + str(level)] = OP_ADM
             self._data[self.adm_rest_n + str(level)] = OR_ADM
             self._data[self.pcorr_n+str(level-1)] = pcorr
@@ -373,7 +374,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(n1_adm,n2_adm))
         OR_ADM = sp.csc_matrix((data_or,(lines_or,cols_or)),shape=(n2_adm,n1_adm))
-
+        import pdb; pdb.set_trace()
         self._data[self.adm_op_n + str(level)] = OP_ADM
         self._data[self.adm_rest_n + str(level)] = OR_ADM
 
@@ -452,14 +453,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         # pms = self.solver.direct_solver(T_adm, b_adm)
 
         pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
-        # import pdb; pdb.set_trace()
-        # for i in range(1, n_levels):
-        #     level = self.n_levels - i
-        #     if self.get_correction_term:
-        #         pcorr_adm = self._data[self.pcorr_n+str(level)]
-        #         pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
-        #     else:
-        #         pms = self._data[self.adm_op_n + str(level)]*pms
+
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms
@@ -470,6 +464,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         # ##############################
         self.T = T
     def smoother_jacobi(self, R, T, P, b, print_errors=False):
+
         # try:
         #     pv=np.load('flying/pms.npy')
         # except:
@@ -492,11 +487,12 @@ class AdmMethod(DataManager, TpfaFlux2):
         if ji==0:
             nite=5
         else:
-            nite=2
+            pv=np.load('flying/pms.npy')
+            nite=1
         mant=np.inf
 
         for i in range(nite):
-            pv12 = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
+            pv12 = pv + (P*spsolve(csc_matrix(P.T*T*P),P.T.tocsc()*(b-T*pv)))
             pv = pl*b-J*pv12
             # pv += pl*(b-T*pv)
             if print_errors:
