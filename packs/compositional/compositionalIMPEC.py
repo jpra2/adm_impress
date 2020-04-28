@@ -2,7 +2,7 @@ from ..directories import data_loaded
 from ..data_class.data_manager import DataManager
 from packs.compositional.properties_calculation import PropertiesCalc
 from ..utils import relative_permeability2, phase_viscosity, capillary_pressure
-from .partial_derivatives import PartialDerivatives
+from .partial_derivatives_new import PartialDerivatives
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 from .. import directories as direc
 import scipy.sparse as sp
@@ -49,10 +49,12 @@ class CompositionalFVM:
 
     def dVt_derivatives(self, fprop, fprop_block, kprop):
         """ REVER DERIVADAS PARA OS COMPONENTES OLEO """
+        fprop.component_phase_mole_numbers = fprop.component_molar_fractions * fprop.phase_mole_numbers
 
         self.dVtk = np.zeros([kprop.n_components, self.n_volumes])
         if kprop.load_k:
-            self.dVtk[0:kprop.Nc,:], dVtP = PartialDerivatives().dVt_derivatives(fprop, fprop_block, kprop)
+            self.dVtk[0:kprop.Nc,:], dVtP = PartialDerivatives(fprop).get_all_derivatives(kprop, fprop)
+            #self.dVtk[0:kprop.Nc,:], dVtP = PartialDerivatives().dVt_derivatives(fprop, fprop_block, kprop)
         else: dVtP = np.zeros(self.n_volumes)
         if kprop.load_w:
             self.dVtk[kprop.n_components-1,:] = 1 / fprop.ksi_W

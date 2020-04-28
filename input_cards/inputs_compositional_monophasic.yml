@@ -22,6 +22,7 @@ monophasic_data:
 
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
+  CFL: 0.5
   #  Pensar em um jeito de reorganizar isso
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   tempo_maximo: null
@@ -42,8 +43,8 @@ compositional_data:
     mi_W: 0.249e-3
     rho_W: 716.67
     Mw_w: 18.015e-3
-    Cw: 0
-    Pw: 13.79E6
+    Cw: 1e-5
+    Pw: 0
 
   residual_saturations:
     Sorw: 0
@@ -88,17 +89,18 @@ Porosity:
 Permeability:
   r1:
     type: all
-    value: [4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13, 4.9346e-13]
+    value: [4.9346e-13, 0, 0, 0, 4.9346e-13, 0, 0, 0, 4.9346e-13]
 
 Pressure:
   r1:
     type: all
-    value: 13.78951458E6
+    value: 0
 
 Temperature:
   r1:
     type: all
     value: 288.71
+
 
 Wells:
   P1:
@@ -107,7 +109,7 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: -0.0005214
+    value: -0.00052153
 
   P2:
     p0: [0.603504, 0.0, 0.0]
