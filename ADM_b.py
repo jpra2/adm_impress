@@ -98,7 +98,7 @@ mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
 
-OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver)
+OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=0.3)
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 
@@ -120,7 +120,7 @@ meshset_faces = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 M.core.mb.add_entities(meshset_faces, M.core.all_faces)
 
-nn = 50
+nn = 20
 cont = 1
 
 verif = True
@@ -156,8 +156,8 @@ while verif:
     b1.run_2()
     data_impress.update_variables_to_mesh()
 
-    M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
-    M.core.mb.write_file('results/testt_f'+str(cont)+'.vtk', [meshset_faces])
+    # M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
+    # M.core.mb.write_file('results/testt_f'+str(cont)+'.vtk', [meshset_faces])
 
     if cont % nn == 0:
         import pdb; pdb.set_trace()

@@ -110,9 +110,9 @@ def get_dual_subdomains(groups):
         dv.append(new_volume)
     return(dv)
 
-def group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver):
+def group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim):
     t0=time.time()
-    neta_lim=0.3
+
     OP_AMS=mlo['prolongation_level_1'].copy().tolil()
     groups = get_coupled_dual_volumes(mlo,T,M,data_impress,neta_lim, ind=0)
 
@@ -126,7 +126,7 @@ def group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver):
         multilevel_operators=mlo
     ######################### # #############################
     old_groups=groups.copy()
-    for ind in range(1,1):
+    for ind in range(1,3):
         groups2 = get_coupled_dual_volumes(mlo,T,M,data_impress,neta_lim, ind=ind)
         # neta_lim/=2
         lgs=[np.repeat(i,len(old_groups[i])) for i in range(len(old_groups))]

@@ -483,11 +483,12 @@ class AdmMethod(DataManager, TpfaFlux2):
             np.save('results/jac_iterarion.npy',np.array([0]))
             ji=0
         if ji==0:
-            nite=5
+            nite=3
         else:
-            nite=1
+            nite=2
+        mant=np.inf
         for i in range(nite):
-            pv12 = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
+            pv12 = pv + (P*spsolve(csc_matrix(P.T*T*P),P.T.tocsc()*(b-T*pv)))
             pv = pv12+pl*(b-T*pv12)
             # pv += pl*(b-T*pv)
             if print_errors:
@@ -504,10 +505,14 @@ class AdmMethod(DataManager, TpfaFlux2):
                 vms=ts*(pv[a0]-pv[a1])/hs
                 ev_l2=np.linalg.norm(vf-vms)/np.linalg.norm(vf)
                 ap=np.hstack([ap,np.array([[ji+i+1],[ep_l2],[ev_l2]])])
-
-
+                if ev_l2>mant:
+                    print("divergiu")
+                    import pdb; pdb.set_trace()
+                else:
+                    mant=ev_l2
             np.save('results/jac_iterarion.npy',np.array([ji+i+1]))
         pv = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
+
         # plt.plot(ap[0,1:],ap[1,1:])
         plt.yscale('log')
         plt.scatter(ap[0,1:],ap[2,1:])
