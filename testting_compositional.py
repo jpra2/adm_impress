@@ -14,9 +14,9 @@ import update_inputs_compositional
 
 name_current = 'current_compositional_b1_teste_results_'
 name_all = 'all_compositional_b1_teste_results_'
-mesh = 'mesh/100x1x1_m.msh'
+mesh = 'mesh/100x1x1_b.msh'
 
-delta_t_initial = 10
+delta_t_initial = 1000
 loop_max = 20
 t = 0
 loop = 0
@@ -28,18 +28,18 @@ tmax = 426996.93 #365*86400#422693.9470089848 #seg #0.01* 86400
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 
-M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes = run_compositional.initialize(load, convert, mesh)
+M, data_impress, prop, wells, fprop, fprop_block, kprop, load, n_volumes = run_compositional.initialize(load, convert, mesh)
 
 sim = run_simulation(delta_t_initial, data_impress, fprop, name_current, name_all)
 
 while t < tmax: # and loop < loop_max:
 
-    sim.run(M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes)
+    sim.run(M, data_impress, prop, wells, fprop, fprop_block, kprop, load, n_volumes)
     t = sim.t
     loop = sim.loop
     if (t + sim.delta_t) > tmax:
-        sim.delta_t = tmax - t;
-    import pdb; pdb.set_trace()
+        sim.delta_t = tmax - t
+    
     #print(loop)
     print(sim.t)
 print(fprop.P)

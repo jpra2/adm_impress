@@ -12,8 +12,6 @@ class PartialDerivatives:
     def __init__(self, fprop):
         self.n_phases = 2
         self.T = fprop.T
-        self.P = fprop.P
-
     def coefficientsPR(self, kprop, l):
         #l - any phase molar composition
         PR_kC7 = np.array([0.379642, 1.48503, 0.1644, 0.016667])
@@ -34,7 +32,7 @@ class PartialDerivatives:
         return bm, aalpha
 
     def PR_EOS(self, P, kprop, Sj, xkj, Nk, ph, bm ,a):
-        C = np.array([P*(Sj*xkj/Nk)**3, (bm - kprop.R*self.T)*(Sj*xkj/Nk)**2, (a - 3*bm**2 - 2*kprop.R*self.T*bm)*(Sj*xkj/Nk), P*bm**3 + kprop.R*self.T*bm**2 - a*bm])
+        C = np.array([P*(Sj*xkj/Nk)**3, (bm*P - kprop.R*self.T)*(Sj*xkj/Nk)**2, (a - 3*P*bm**2 - 2*kprop.R*self.T*bm)*(Sj*xkj/Nk), P*bm**3 + kprop.R*self.T*bm**2 - a*bm])
         Vt = np.roots(C)
         roots = np.isreal(Vt)
         Vt_reais = np.real(Vt[roots]) #Saving the real roots
@@ -55,6 +53,25 @@ class PartialDerivatives:
             dVt_dNk[nc] = (Vt_plus - Vt_minus)/delta
         return dVt_dNk
 
+    def get_dVt_dNk_analytically(self, P, kprop, Vt, Sj, xkj, Nk):
+        bm, a = self.coefficientsPR(kprop, xkj)
+        C = np.array([P*(Sj*xkj)**3, (bm*P - kprop.R*self.T)*(Sj*xkj)**2, (a - 3*P*bm**2 - 2*kprop.R*self.T*bm)*(Sj*xkj)])
+        Num = 3*Vt**3/(Nk**4)*C[0] + 2*Vt**2/(Nk**3)*C[1] + Vt/(Nk**2)*C[2]
+        Den = 3*Vt**2/(Nk**3)*C[0] + 2*Vt/(Nk**2)*C[1] + 1/Nk*C[2]
+
+        dVt_dNk = Num/Den
+        return dVt_dNk
+
+    def get_dVt_dP_analytically(self, P, kprop, Vt, Sj, xkj, Nk):
+        bm, a = self.coefficientsPR(kprop, xkj)
+        C = np.array([(Sj*xkj/Nk)**3, (Sj*xkj/Nk)**2, (a - 3*bm**2 - 2*kprop.R*self.T*bm)*(Sj*xkj/Nk), bm**3])
+
+        Num = -( Vt**3*C[0] + bm**3 + Vt**2*bm*C[1] - 3*bm**2*Vt*Sj*xkj/Nk)
+        Den = 3*Vt**2*P*C[0] - 2*Vt*kprop.R*self.T*C[1] + C[2]
+
+        dVt_dP = Num/Den
+        return dVt_dP
+
     def get_dVt_dP(self, P, kprop, Sj, xkj, Nk, ph):
         delta = 0.0001
         P_plus = P + delta/2
@@ -67,13 +84,6 @@ class PartialDerivatives:
         dVt_dP = (Vt_plus - Vt_minus)/delta
         return dVt_dP
 
-    def PR_EOS_sym(self, P, kprop, Sj, xkj, Nk, bm, a):
-        C = np.array([P*(Sj*xkj/Nk)**3, (bm - kprop.R*self.T)*(Sj*xkj/Nk)**2, (a - 3*bm**2 - 2*kprop.R*self.T*bm)*(Sj*xkj/Nk), P*bm**3 + kprop.R*self.T*bm**2 - a*bm])
-        Vt = sympy.symbols('Vt')
-        a = C[0]*Vt**3 + C[1]*Vt**2 + C[2]*Vt + C[3]
-        Vt_a = sympy.solve(a,Vt)
-        return Vt_a
-
     def get_all_derivatives(self, kprop, fprop):
         n_blocks = len(fprop.P)
         dVt_dP = np.zeros(n_blocks)
@@ -81,11 +91,22 @@ class PartialDerivatives:
         for b in range(n_blocks):
             P = fprop.P[b]
             So = fprop.So[b]
+            Vt = fprop.Vt[b]
             xkj = fprop.component_molar_fractions[0:kprop.Nc,0,b]
             Nk = fprop.component_mole_numbers[0:kprop.Nc,b]
-            dVt_dNk[:,b] = self.get_dVt_dNk(P, kprop, So, xkj, Nk, 1)
-            dVt_dP[b] = self.get_dVt_dP(P, kprop, So, xkj, Nk, 1)
+            dVt_dNk[:,b] = self.get_dVt_dNk_analytically(P, kprop, Vt, So, xkj, Nk)
+            #dVt_dNkk = self.get_dVt_dNk(P, kprop, So, xkj, Nk, 1)
+            dVt_dP[b] = self.get_dVt_dP_analytically(P, kprop, Vt, So, xkj, Nk)
+            #dVt_dPp = self.get_dVt_dP(P, kprop, So, xkj, Nk, 1)
+            
         return dVt_dNk, dVt_dP
+
+    def PR_EOS_sym(self, P, kprop, Sj, xkj, Nk, bm, a):
+        C = np.array([P*(Sj*xkj/Nk)**3, (bm - kprop.R*self.T)*(Sj*xkj/Nk)**2, (a - 3*bm**2 - 2*kprop.R*self.T*bm)*(Sj*xkj/Nk), P*bm**3 + kprop.R*self.T*bm**2 - a*bm])
+        Vt = sympy.symbols('Vt')
+        a = C[0]*Vt**3 + C[1]*Vt**2 + C[2]*Vt + C[3]
+        Vt_a = sympy.solve(a,Vt)
+        return Vt_a
 
     def get_dVt_dNk_symbolic(self, P, kprop, Sj, xkj, Nk, bm, am):
 

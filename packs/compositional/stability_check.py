@@ -44,7 +44,6 @@ class StabilityCheck:
                 self.fl = np.exp(lnphil) * (self.x * self.P)
                 self.K = self.y/self.x
 
-
         self.z = self.x * self.L + self.y * self.V
         self.Mw_L, self.ksi_L, self.rho_L = self.other_properties(kprop, self.x, 1)
         self.Mw_V, self.ksi_V, self.rho_V = self.other_properties(kprop, self.y, 0)
@@ -76,7 +75,6 @@ class StabilityCheck:
         A = self.aalpha * self.P / (kprop.R* self.T) ** 2
         self.psi = (l_reshape * aalpha_ij).sum(axis = 0)
         return A, B
-
 
     def Z_PR(B, A, ph):
         # PR cubic EOS: Z**3 - (1-B)*Z**2 + (A-2*B-3*B**2)*Z-(A*B-B**2-B**3)

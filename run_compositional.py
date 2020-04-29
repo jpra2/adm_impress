@@ -14,8 +14,8 @@ import time
 def initialize(load, convert, mesh):
     M, elements_lv0, data_impress, wells = initial_mesh(mesh, load=load, convert=convert)
     n_volumes = data_impress.len_entities['volumes']
-    fprop, fprop_block, kprop = get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes)
-    return M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes
+    prop, fprop, fprop_block, kprop = get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes)
+    return M, data_impress, prop, wells, fprop, fprop_block, kprop, load, n_volumes
 
 def get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes):
     kprop = ComponentProperties(data_loaded)
@@ -31,7 +31,7 @@ def get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes)
     prop = PropertiesCalc(n_volumes)
     prop.run_outside_loop(data_impress, wells, fprop, kprop)
     fprop.inputs_missing_properties(kprop)
-    return fprop, fprop_block, kprop
+    return prop, fprop, fprop_block, kprop
 
 class run_simulation:
 
@@ -48,13 +48,12 @@ class run_simulation:
         self.mesh_name =  'compositional_'
         self.all_compositional_results = self.get_empty_current_compositional_results()
 
-    def run(self, M, data_impress, wells, fprop, fprop_block, kprop, load, n_volumes):
-
+    def run(self, M, data_impress, wells, prop, fprop, fprop_block, kprop, load, n_volumes):
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
 
         self.t += self.delta_t
-        FVM = CompositionalFVM(M, data_impress, wells, fprop, fprop_block, kprop, self.delta_t, load)
+        FVM = CompositionalFVM(M, data_impress, wells, prop, fprop, fprop_block, kprop, self.delta_t, load)
 
         self.delta_t = FVM.delta_t # if the CFL condition is broken, delta_t is changed
 
@@ -68,7 +67,6 @@ class run_simulation:
 
         prop = PropertiesCalc(n_volumes)
         prop.run_inside_loop(data_impress, wells, fprop, kprop)
-        import pdb; pdb.set_trace()
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, kprop.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         self.update_loop()
         t1 = time.time()
