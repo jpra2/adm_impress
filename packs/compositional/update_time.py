@@ -73,6 +73,7 @@ class delta_time:
         delta_ts = self.update_delta_ts(delta_t, fprop, deltaSlim)
         delta_tn = self.update_delta_tn(delta_t, fprop, deltaNlim)
         delta_tv = self.update_delta_tv(delta_t, fprop, deltaVlim)
+        #delta_t = min(delta_tp, delta_ts, delta_tn, delta_tv)
 
         if fprop.Cw == 0 and not load_k: delta_t = self.update_delta_tcfl(delta_t, fprop)
         else: delta_t = min(delta_tp, delta_ts, delta_tn, delta_tv)
