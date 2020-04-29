@@ -2,7 +2,7 @@ mesh_name: mesh/100x1x1_b.msh
 n_test: 0
 compositional: True
 hidrocarbon_components: True
-water_component: True
+water_component: False
 
 load_compositional_data: False
 load_data: False
@@ -47,7 +47,7 @@ compositional_data:
   residual_saturations:
     Sorw: 0
     Sorg: 0
-    Swr: 0.2
+    Swr: 0
     Sgr: 0
     Sor: 0
 
@@ -76,7 +76,7 @@ compositional_data:
 Saturation:
   r1:
     type: all
-    value: 0.2
+    value: 0
 
 Porosity:
   r1:
