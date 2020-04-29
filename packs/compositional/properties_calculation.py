@@ -27,7 +27,7 @@ class PropertiesCalc:
     def run_inside_loop(self, data_impress, wells, fprop, kprop):
         self.set_properties(fprop, kprop)
         self.update_porous_volume(data_impress, fprop)
-        self.update_water_saturation(data_impress, fprop, kprop)
+        if kprop.load_w: self.update_water_saturation(data_impress, fprop, kprop)
         self.update_saturations(data_impress, fprop, kprop)
         self.update_mole_numbers(fprop, kprop)
 
@@ -60,7 +60,7 @@ class PropertiesCalc:
             fprop.phase_molar_densities[0,1,:] = fprop.ksi_V
 
         fprop.component_molar_fractions[kprop.n_components-1, kprop.n_phases-1,:] = 1 #water molar fraction in water component
-        fprop.phase_molar_densities[0, kprop.n_phases-1,:] = fprop.ksi_W
+        if kprop.load_w: fprop.phase_molar_densities[0, kprop.n_phases-1,:] = fprop.ksi_W
 
     def update_saturations(self, data_impress, fprop, kprop):
         fprop.Sw = data_impress['saturation']
@@ -79,7 +79,7 @@ class PropertiesCalc:
         fprop.Vo = fprop.Vp * fprop.So
         fprop.Vg = fprop.Vp * fprop.Sg
         fprop.Vw = fprop.Vp * fprop.Sw
-        fprop.Vt = fprop.Vo + fprop.Vg + fprop.Vw  #np.sum(fprop.phase_mole_numbers / fprop.phase_molar_densities, axis = 1).ravel()
+
 
     def update_mole_numbers(self, fprop, kprop):
         self.update_phase_volumes(fprop)
@@ -93,13 +93,13 @@ class PropertiesCalc:
             V[0,0,:] = fprop.Vo
             V[0,1,:] = fprop.Vg
             fprop.mole_numbers_o_and_g = fprop.ksi_o_and_g * V
-            fprop.phase_mole_numbers[0,0:kprop.n_phases-1,:] = fprop.mole_numbers_o_and_g
+            fprop.phase_mole_numbers[0,0:kprop.n_phases-1*kprop.load_w,:] = fprop.mole_numbers_o_and_g
 
         if kprop.load_w:
             fprop.mole_number_w = fprop.ksi_W * fprop.Vw
             fprop.phase_mole_numbers[0,kprop.n_phases-1,:] = fprop.mole_number_w
-        else: fprop.mole_number_w = [] * np.zeros(self.n_volumes)
-
+        else: fprop.mole_number_w = np.zeros(self.n_volumes)
+        fprop.Vt = np.sum(fprop.phase_mole_numbers / fprop.phase_molar_densities, axis = 1).ravel()
         #fprop.component_mole_numbers = np.sum(fprop.phase_mole_numbers*fprop.component_molar_fractions,axis=1)
         #fprop.phase_mole_numbers = np.sum(fprop.component_mole_numbers/fprop.component_molar_fractions, axis=  0)
         #saem como um vetor em  função dos blocos - rever isso daqui. Se eu atualizo o número de moles do componente,
@@ -122,7 +122,7 @@ class PropertiesCalc:
         fprop.phase_viscosities = np.zeros(fprop.relative_permeabilities.shape)
         if kprop.load_k:
             self.phase_viscosities_oil_and_gas = self.phase_viscosity(fprop, kprop)
-            fprop.phase_viscosities[0,0:kprop.n_phases-1,:] = self.phase_viscosities_oil_and_gas
+            fprop.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosities_oil_and_gas
         if kprop.load_w:
             mi_W = data_loaded['compositional_data']['water_data']['mi_W']
             fprop.phase_viscosities[0,kprop.n_phases-1,:] = mi_W
