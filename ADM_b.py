@@ -99,7 +99,7 @@ mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
 
-OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=0.3)
+OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=1.0)
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 
