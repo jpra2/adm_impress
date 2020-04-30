@@ -466,9 +466,9 @@ class AdmMethod(DataManager, TpfaFlux2):
     def smoother_jacobi(self, R, T, P, b, print_errors=False):
 
         # try:
-        #     pv=np.load('flying/pms.npy')
+        pv=np.load('flying/pms.npy')
         # except:
-        pv=self.data_impress['pms']
+        #     pv=self.data_impress['pms']
         # pv=np.zeros(len(b))
         dt=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
         dt1=1/dt
@@ -485,7 +485,8 @@ class AdmMethod(DataManager, TpfaFlux2):
             np.save('results/jac_iterarion.npy',np.array([0]))
             ji=0
         if ji==0:
-            nite=5
+            pv=np.zeros(len(b))
+            nite=10
         else:
             pv=np.load('flying/pms.npy')
             nite=1
@@ -493,8 +494,9 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         for i in range(nite):
             pv12 = pv + (P*spsolve(csc_matrix(P.T*T*P),P.T.tocsc()*(b-T*pv)))
-            pv = pl*b-J*pv12
-            # pv += pl*(b-T*pv)
+            for j in range(5):
+                pv = pl*b-J*pv12
+
             if print_errors:
                 if i==0:
                     pf = self.solver.direct_solver(T, b)
@@ -509,11 +511,12 @@ class AdmMethod(DataManager, TpfaFlux2):
                 vms=ts*(pv[a0]-pv[a1])/hs
                 ev_l2=np.linalg.norm(vf-vms)/np.linalg.norm(vf)
                 ap=np.hstack([ap,np.array([[ji+i+1],[ep_l2],[ev_l2]])])
-                if ev_l2>mant:
-                    print("divergiu")
-                    import pdb; pdb.set_trace()
-                else:
-                    mant=ev_l2
+                print(ev_l2,ep_l2)
+                # if ev_l2>mant:
+                #     print("divergiu")
+                #     import pdb; pdb.set_trace()
+                # else:
+                #     mant=ev_l2
             np.save('results/jac_iterarion.npy',np.array([ji+i+1]))
         np.save('flying/pms.npy',pv)
         pv = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))

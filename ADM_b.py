@@ -94,7 +94,7 @@ if load_operators:
 else:
     # multilevel_operators.run(tpfa_solver['Tini'])
     multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
-
+PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
@@ -120,6 +120,35 @@ meshset_volumes = M.core.mb.create_meshset()
 meshset_faces = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 M.core.mb.add_entities(meshset_faces, M.core.all_faces)
+
+OP_AMS=mlo['prolongation_level_1']
+OR_AMS=mlo['restriction_level_1']
+Tc=OR_AMS*T*OP_AMS
+bc=OR_AMS*b
+from scipy.sparse import linalg
+pc=linalg.spsolve(Tc,bc)
+adm_method.organize_ops_adm(mlo['prolongation_level_'+str(1)],
+                            mlo['restriction_level_'+str(1)],
+                            1)
+pms=OP_AMS*pc
+OP_ADM = adm_method['adm_prolongation_level_1']
+
+OR_ADM = adm_method['adm_restriction_level_1']
+Tcadm=OR_ADM*T*OP_ADM
+bcadm = OR_ADM*b
+pcadm=linalg.spsolve(Tcadm,bcadm)
+padm=OP_ADM*pcadm
+
+
+pf=linalg.spsolve(T,b)
+eadm=np.linalg.norm(abs(padm-pf))/np.linalg.norm(pf)
+eams=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
+print("erro_adm: {}, erro_ams: {}".format(eadm,eams))
+data_impress['pressure'] = padm
+data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
+
+data_impress.update_variables_to_mesh()
+M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
 
 nn = 50
 cont = 1
@@ -155,9 +184,7 @@ while verif:
     # data_impress['pressure'] = p2
     # data_impress['erro'] = np.absolute((p2-data_impress['pms']))
     b1.run_2()
-    data_impress.update_variables_to_mesh()
 
-    M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
     # M.core.mb.write_file('results/testt_f'+str(cont)+'.vtk', [meshset_faces])
 
     if cont % nn == 0:
@@ -177,11 +204,11 @@ while verif:
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
 
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
-    b1.print_test()
+    # b1.print_test()
 
     # n=0
-    # data_impress.update_variables_to_mesh()
-    # M.core.print(folder='results', file='test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    data_impress.update_variables_to_mesh()
+    M.core.print(folder='results', file='test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
     T, b = b1.get_T_and_b()
 
