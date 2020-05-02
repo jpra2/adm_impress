@@ -79,7 +79,7 @@ class PropertiesCalc:
         fprop.Vo = fprop.Vp * fprop.So
         fprop.Vg = fprop.Vp * fprop.Sg
         fprop.Vw = fprop.Vp * fprop.Sw
-
+        #fprop.Vt = fprop.Vo + fprop.Vg + fprop.Vw
 
     def update_mole_numbers(self, fprop, kprop):
         self.update_phase_volumes(fprop)
@@ -134,4 +134,3 @@ class PropertiesCalc:
         fprop.rho_W = fprop.ksi_W * fprop.Mw_w
 
         data_impress['saturation'] = fprop.component_mole_numbers[kprop.n_components-1,:] * (1 / fprop.ksi_W) / fprop.Vp
-        #if kprop.load_w and not kprop.load_k: data_impress['saturation'] = np.ones(self.n_volumes)

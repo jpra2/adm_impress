@@ -52,18 +52,17 @@ class FluidProperties:
 
     def run_inputs_k(self, fprop_block, kprop, n_volumes):
         self.inputs_all_volumes_k(fprop_block, kprop, n_volumes)
+        if not kprop.load_w: self.Cw = 0
 
-    def run_inputs_w(self, T, P, data_loaded, kprop, n_volumes):
+    def run_inputs_w(self, T, P, data_loaded, n_volumes):
         self.inputs_all_volumes(T, P, n_volumes)
-        self.inputs_water_properties(data_loaded, kprop, n_volumes)
+        self.inputs_water_properties(data_loaded, n_volumes)
 
-    def inputs_water_properties(self, data_loaded, kprop, n_volumes):
+    def inputs_water_properties(self, data_loaded, n_volumes):
         self.rho_W = data_loaded['compositional_data']['water_data']['rho_W'] * np.ones(n_volumes)
         self.Mw_w = data_loaded['compositional_data']['water_data']['Mw_w'] * np.ones(n_volumes)
         self.ksi_W0 = self.rho_W/self.Mw_w
         self.ksi_W = self.ksi_W0 #* (1 + fprop.Cw * (self.P - Pw))
-        if not kprop.load_w: self.Cw = 0
-        #self.Sw = data_loaded['Saturation']['r1']['value'] * np.ones(n_volumes)
 
     #def convert_well_term():
 

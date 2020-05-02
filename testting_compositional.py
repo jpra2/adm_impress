@@ -20,7 +20,7 @@ delta_t_initial = 1000
 loop_max = 20
 t = 0
 loop = 0
-tmax = 426996.93 #365*86400#422693.9470089848 #seg #0.01* 86400
+tmax = 422693.9470089848*3.18/5#1.3824*86400#365*86400#422693.9470089848 #seg #0.01* 86400
 
 
 """ ----------------------------- RUN CODE --------------------------------- """
@@ -39,7 +39,6 @@ while t < tmax: # and loop < loop_max:
     loop = sim.loop
     if (t + sim.delta_t) > tmax:
         sim.delta_t = tmax - t
-    
     #print(loop)
     print(sim.t)
 print(fprop.P)

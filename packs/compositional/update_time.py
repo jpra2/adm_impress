@@ -12,8 +12,8 @@ class delta_time:
 
     def update_CFL(delta_t, fprop):
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
-        CFL = delta_t * 1 / (np.nanmin(fprop.component_mole_numbers /
-                   abs(fprop.component_flux_vols_total)))
+        CFL = delta_t * 1 / np.nanmin((fprop.component_mole_numbers[fprop.component_mole_numbers!=0] /
+                   abs(fprop.component_flux_vols_total[fprop.component_mole_numbers!=0])))
         if (CFL > 1): delta_t = delta_t / 2
         #delta_tcfl = np.nanmin(CFL * (fprop.component_mole_numbers) / fprop.component_flux_vols_total, axis = 1) #make nan
         np.seterr(**old_settings)

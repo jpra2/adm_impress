@@ -26,11 +26,12 @@ def get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes)
         fprop_block.run(fprop.z, kprop)
         fprop.run_inputs_k(fprop_block, kprop, n_volumes)
     else: fprop.x = []; fprop.y = []
-    if kprop.load_w: fprop.run_inputs_w(T, P, data_loaded, kprop, n_volumes)
+    if kprop.load_w: fprop.run_inputs_w(T, P, data_loaded, n_volumes)
 
     prop = PropertiesCalc(n_volumes)
     prop.run_outside_loop(data_impress, wells, fprop, kprop)
     fprop.inputs_missing_properties(kprop)
+
     return prop, fprop, fprop_block, kprop
 
 class run_simulation:

@@ -30,7 +30,7 @@ compositional_data:
   capillary_pressure: Chang
 
   rock_compressibility: 7.252e-8
-  Pf: 13.78951458E6
+  Pf: 13.79E6
 
   #capillary pressure data - not ok with this
   Cpc: 62052.84
@@ -76,7 +76,7 @@ compositional_data:
 Saturation:
   r1:
     type: all
-    value: 0
+    value: 0.
 
 Porosity:
   r1:
@@ -92,7 +92,7 @@ Permeability:
 Pressure:
   r1:
     type: all
-    value: 13.78951458E6 #confirmar
+    value: 13.79E6 #confirmar
 
 Temperature:
   r1:
