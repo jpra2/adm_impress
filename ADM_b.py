@@ -7,7 +7,8 @@ import numpy as np
 import time
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
-from packs.biphasic.biphasic_tpfa import BiphasicTpfa
+# from packs.biphasic.biphasic_tpfa import BiphasicTpfa
+from packs.biphasic.biphasic_ms.biphasic_multiscale import BiphasicTpfaMultiscale
 '''
 def get_gids_and_primal_id(gids, primal_ids):
     gids2 = np.unique(gids)
@@ -79,7 +80,7 @@ biphasic = data_loaded['biphasic']
 M, elements_lv0, data_impress, wells = initial_mesh()
 
 if biphasic:
-    b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
+    b1 = BiphasicTpfaMultiscale(M, data_impress, elements_lv0, wells)
 
 multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 mlo = multilevel_operators

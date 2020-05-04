@@ -1,20 +1,19 @@
-
+import numpy as np
+import scipy.sparse as sp
 
 class bipahsicMultiscaleProperties:
 
-    def flux_internal_faces_ms():
-        doc = "The flux_internal_faces property."
-        def fget(self):
-            internal_faces = self.elements_lv0['internal_faces']
-            return self.data_impress['flux_faces'][internal_faces]
-    flux_internal_faces = property(**flux_internal_faces())
+    @property
+    def flux_internal_faces_ms(self):
+        internal_faces = self.elements_lv0['internal_faces']
+        return self.data_impress['flux_faces'][internal_faces]
 
     @property
     def flux_w_internal_faces_ms(self):
-        flux_internal_faces = self.flux_w_internal_faces_ms
+        flux_internal_faces = self.flux_internal_faces_ms
         fw_faces = self.data_impress['fw_faces']
         internal_faces = self.elements_lv0['internal_faces']
-        flux_w_internal_faces = fw_faces[internal_faces]*flux_faces[internal_faces]
+        flux_w_internal_faces = fw_faces[internal_faces]*flux_internal_faces
         return flux_w_internal_faces
 
     @property
@@ -22,7 +21,7 @@ class bipahsicMultiscaleProperties:
         flux_internal_faces = self.flux_w_internal_faces_ms
         fw_faces = self.data_impress['fw_faces']
         internal_faces = self.elements_lv0['internal_faces']
-        flux_o_internal_faces = (1 - fw_faces[internal_faces])*flux_faces[internal_faces]
+        flux_o_internal_faces = (1 - fw_faces[internal_faces])*flux_internal_faces
         return flux_o_internal_faces
 
     @property
