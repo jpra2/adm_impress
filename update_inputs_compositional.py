@@ -29,6 +29,7 @@ class ComponentProperties:
     def __init__(self, data_loaded):
         self.load_k = data_loaded['hidrocarbon_components']
         self.load_w = data_loaded['water_component']
+        self.compressible_k = data_loaded['compressible_fluid']
         self.n_phases = 2 * self.load_k + 1 * self.load_w
 
         if self.load_k:
@@ -86,15 +87,10 @@ class FluidProperties:
         self.rho_L = fprop_block.rho_L * np.ones(n_volumes)
         self.rho_V = fprop_block.rho_V * np.ones(n_volumes)
 
-
-    def inputs_missing_properties(self, kprop):
         #coef_vc7 = np.array([21.573, 0.015122, -27.6563, 0.070615])
         #kprop.vc[kprop.C7 == 1] =  coef_vc7[0] + coef_vc7[1] * np.mean(kprop.Mw[kprop.C7 == 1]) + \
                             #coef_vc7[2] * np.mean([kprop.SG[kprop.C7 == 1]]) + coef_vc7[3] \
                             #* np.mean(kprop.Mw[kprop.C7 == 1]) * np.mean([kprop.SG[kprop.C7 == 1]])
-
-        self.component_phase_mole_numbers = self.component_molar_fractions * self.phase_mole_numbers
-        self.component_mole_numbers = np.sum(self.component_phase_mole_numbers, axis = 1)
 
     def update_all_volumes(self, fprop_block, i):
         self.z[:,i] = fprop_block.z

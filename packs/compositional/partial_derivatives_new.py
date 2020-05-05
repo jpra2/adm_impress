@@ -10,7 +10,6 @@ from .properties_calculation import PropertiesCalc
 class PartialDerivatives:
 
     def __init__(self, fprop):
-        self.n_phases = 2
         self.T = fprop.T
 
     def coefficientsPR(self, kprop, l):
@@ -27,12 +26,9 @@ class PartialDerivatives:
         aalpha_i_reshape = np.ones((kprop.Nc,kprop.Nc)) * aalpha_i[:,np.newaxis]
         aalpha_ik = np.sqrt(aalpha_i_reshape.T * aalpha_i[:,np.newaxis]) \
                         * (1 - kprop.Bin)
-        #bm = sum(l * b)
-        #l_reshape = np.ones((aalpha_ik).shape) * l[:, np.newaxis]
-        #aalpha = (l_reshape.T * l[:,np.newaxis] * aalpha_ik).sum()
-        bm = np.sum(l * b, axis=0)
-        l_reshape = np.ones((aalpha_ik).shape) * l[:,np.newaxis,:]
-        aalpha = (l_reshape.T * l.T[:,np.newaxis,:] * aalpha_ik).sum(axis=2).ravel()
+        bm = np.sum(l * b[:,np.newaxis], axis=0)
+        l_reshape = np.ones((kprop.Nc, kprop.Nc, len(l[0,:]))) * l[:, np.newaxis, :]
+        aalpha = (l_reshape.T * l.T[:, :, np.newaxis] * aalpha_ik[np.newaxis,:,:]).sum(axis=2).sum(axis=1)
         return bm, aalpha
 
     def coefficientsPR2(self, kprop, l):
