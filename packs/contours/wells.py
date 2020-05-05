@@ -146,7 +146,8 @@ class Wells(DataManager):
         mb.tag_set_data(self.tags['INJ'], ws_inj, np.repeat(1, len(ws_inj)))
         mb.tag_set_data(self.tags['PROD'], ws_prod, np.repeat(1, len(ws_prod)))
         mb.tag_set_data(self.tags['P'], ws_p, values_p)
-        mb.tag_set_data(self.tags['Q'], ws_q, values_q)
+        for value_q in values_q:
+            mb.tag_set_data(self.tags['Q'], ws_q, value_q)
 
     def load_tags(self):
         assert not self._loaded
