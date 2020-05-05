@@ -13,34 +13,41 @@ import numpy as np
 
 
 class CompositionalFVM:
-    def __init__(self, M, data_impress, prop, wells, fprop, fprop_block, kprop, delta_t, load):
+    def __init__(self, M, data_impress, prop, wells, fprop, fprop_block, kprop, delta_t, load, loop):
         self.n_volumes = data_impress.len_entities['volumes']
         self.all_wells = wells['all_wells'].astype(int)
         self.porosity = data_impress['poro']
         self.cf = np.array(data_loaded['compositional_data']['rock_compressibility']).astype(float)
         self.v0 = M.faces.bridge_adjacencies(M.faces.internal,2,3)
         self.n_internal_faces = len(M.faces.internal)
-        self.delta_t = self.runIMPEC(M, data_loaded, data_impress, prop, wells, fprop, fprop_block, kprop, delta_t)
+        self.delta_t = self.runIMPEC(M, data_loaded, data_impress, prop, wells, fprop, fprop_block, kprop, delta_t, loop)
 
-    def runIMPEC(self, M, data_loaded, data_impress, prop,  wells, fprop, fprop_block, kprop, delta_t):
+    def runIMPEC(self, M, data_loaded, data_impress, prop,  wells, fprop, fprop_block, kprop, delta_t, loop):
         self.update_mobilities(fprop)
+        self.mobilities_old = np.copy(self.mobilities)
         fprop.P_old = np.copy(fprop.P)
+        self.dVt_derivatives(fprop, fprop_block, kprop)
+
         r = 1/2# enter the while loop
         while (r!=1.):
-            self.dVt_derivatives(fprop, fprop_block, kprop)
             self.update_capillary_pressure(data_loaded, data_impress, fprop, kprop)
             self.get_faces_properties_upwind(fprop, kprop)
+
+            fprop.component_mole_numbers_old = np.copy(fprop.component_mole_numbers)
+            self.mobilities_internal_faces_old = np.copy(self.mobilities_internal_faces)
+
             T = self.update_transmissibility( M, wells, fprop, kprop, delta_t)
             D = self.update_independent_terms(fprop, kprop, wells, delta_t)
             self.update_pressure(T, D, data_impress, fprop)
-            self.update_flux_internal_faces(M, data_impress, prop, fprop_block, fprop, kprop)
+            self.update_flux_internal_faces(M, data_impress, wells, prop, fprop_block, fprop, kprop, delta_t)
             self.update_flux_volumes(fprop, kprop)
             # For the composition calculation the time step may be different because it treats
             #composition explicitly and this explicit models are conditionally stable - wich can
             #be based on the CFL parameter.
             delta_tcfl = delta_time.update_CFL(delta_t, fprop)
             r = delta_tcfl/delta_t
-            delta_t = delta_tcfl
+            r = 1
+            #delta_t = delta_tcfl
 
         self.update_composition(fprop, kprop, wells, delta_t)
         return delta_t
@@ -49,20 +56,25 @@ class CompositionalFVM:
         self.mobilities = fprop.relative_permeabilities / fprop.phase_viscosities
 
     def dVt_derivatives(self, fprop, fprop_block, kprop):
-        """ REVER DERIVADAS PARA OS COMPONENTES OLEO """
-        #fprop.component_phase_mole_numbers = fprop.component_molar_fractions * fprop.phase_mole_numbers
-
         self.dVtk = np.zeros([kprop.n_components, self.n_volumes])
+
         if kprop.load_k:
-            self.dVtk[0:kprop.Nc,:], dVtP = PartialDerivatives(fprop).get_all_derivatives(kprop, fprop)
-            #self.dVtk[0:kprop.Nc,:], dVtP = PartialDerivatives().dVt_derivatives(fprop, fprop_block, kprop)
+
+            if not kprop.compressible_k:
+                dVtP = np.zeros(self.n_volumes)
+                self.dVtk[0:kprop.Nc,:] = 1 / fprop.ksi_L
+            else: self.dVtk[0:kprop.Nc,:], dVtP = PartialDerivatives(fprop).get_all_derivatives(kprop, fprop)
+
         else: dVtP = np.zeros(self.n_volumes)
+
         if kprop.load_w:
+
             self.dVtk[kprop.n_components-1,:] = 1 / fprop.ksi_W
             kprop.Cw = np.array(data_loaded['compositional_data']['water_data']['Cw']).astype(float)
             dVwP = -fprop.component_mole_numbers[kprop.Nc,:] * fprop.ksi_W0 * kprop.Cw / fprop.ksi_W**2
+
         else: dVwP = np.zeros(self.n_volumes)
-        #dVtP = fprop.Vt*(1.04e-5)/6894.757
+
         self.dVtP = dVtP + dVwP
 
     def get_mobilities_upwind(self, fprop, kprop):
@@ -77,8 +89,9 @@ class CompositionalFVM:
         self.mobilities_internal_faces[0,Pj_up <= Pj] = mobilities_vols[0,Pj_up <= Pj]
         self.mobilities_internal_faces[0,Pj_up > Pj] = mobilities_vols_up[0,Pj_up > Pj]
 
+    #still dont know if its going to be used
     def get_phase_molar_densities_upwind(self, fprop, kprop):
-        P_Pcap = fprop.P_old+ self.Pcap
+        P_Pcap = fprop.P_old + self.Pcap
         Pj = P_Pcap[:,self.v0[:,0]]
         Pj_up = P_Pcap[:,self.v0[:,1]]
 
@@ -90,7 +103,7 @@ class CompositionalFVM:
 
     def get_faces_properties_upwind(self, fprop, kprop):
         self.get_mobilities_upwind(fprop, kprop)
-        P_Pcap = fprop.P_old+ self.Pcap
+        P_Pcap = fprop.P_old + self.Pcap
         Pj = P_Pcap[:,self.v0[:,0]]
         Pj_up = P_Pcap[:,self.v0[:,1]]
 
@@ -138,7 +151,6 @@ class CompositionalFVM:
         T += diag
 
         self.T_noCC = np.copy(T)
-
         ''' Includding contour conditions '''
         T[wells['ws_p'],:] = 0
         T[wells['ws_p'], wells['ws_p']] = 1
@@ -157,7 +169,7 @@ class CompositionalFVM:
 
     def pressure_independent_term(self, fprop):
         vector = fprop.Vbulk * self.porosity * self.cf - self.dVtP
-        pressure_term = vector * fprop.P_old
+        pressure_term = vector * fprop.P
         return pressure_term
 
     def capillary_independent_term(self, fprop, kprop):
@@ -185,7 +197,8 @@ class CompositionalFVM:
 
     def well_term(self, kprop, fprop, wells):
         self.q = np.zeros([kprop.n_components, self.n_volumes]) #for now
-        self.q[:,wells['ws_q']] = wells['values_q']#[:,np.newaxis]  #for now - its going to change
+        if len(wells['ws_q']) > 0:
+            self.q[:,wells['ws_q']] = wells['values_q'][:,np.newaxis]  #for now - its going to change
         well_term = np.sum(self.dVtk * self.q, axis = 0)
         return well_term
 
@@ -202,6 +215,7 @@ class CompositionalFVM:
         fprop.P = np.linalg.solve(T,D)
         data_impress['pressure'] = fprop.P
 
+    # still dont know if its goind to be used
     def update_phase_molar_densities(self, fprop_block, fprop, kprop, l, ph):
         ksi_phase = np.zeros(self.n_volumes)
         #think of way for doing this vectorized
@@ -213,14 +227,18 @@ class CompositionalFVM:
             ksi_phase[i] = fprop.P[i] / (Z * kprop.R* fprop.T)
         return ksi_phase
 
-    def update_mobilities_in(self, data_impress, prop, fprop_block, fprop, kprop):
-        Pf = np.array(data_loaded['compositional_data']['Pf']).astype(float)
-        fprop.phase_molar_densities[0,0,:] = self.update_phase_molar_densities(fprop_block, fprop, kprop, fprop.x, 1)
-        fprop.phase_molar_densities[0,1,:] = self.update_phase_molar_densities(fprop_block, fprop, kprop, fprop.y, 0)
-        fprop.ksi_L = fprop.phase_molar_densities[0,0,:]
-        fprop.ksi_V = fprop.phase_molar_densities[0,1,:]
-        fprop.Vp = self.porosity * fprop.Vbulk * (1 + self.cf*(fprop.P - Pf))
+    # still dont know about this
+    def update_mobilities_in(self, data_impress, wells, prop, fprop_block, fprop, kprop, delta_t):
+        self.update_flux_wells(fprop, kprop, wells, delta_t)
+        fprop.component_mole_numbers = fprop.component_mole_numbers_old + delta_t * self.q
         if kprop.load_w: prop.update_water_saturation(data_impress, fprop, kprop)
+        Pf = np.array(data_loaded['compositional_data']['Pf']).astype(float)
+        #fprop.phase_molar_densities[0,0,:] = self.update_phase_molar_densities(fprop_block, fprop, kprop, fprop.x, 1)
+        #fprop.phase_molar_densities[0,1,:] = self.update_phase_molar_densities(fprop_block, fprop, kprop, fprop.y, 0)
+        #fprop.ksi_L = fprop.phase_molar_densities[0,0,:]
+        #fprop.ksi_V = fprop.phase_molar_densities[0,1,:]
+        fprop.Vp = self.porosity * fprop.Vbulk * (1 + self.cf*(fprop.P - Pf))
+
         prop.update_saturations(data_impress, fprop, kprop)
 
         fprop.relative_permeability = getattr(relative_permeability2, data_loaded['compositional_data']['relative_permeability'])
@@ -231,22 +249,19 @@ class CompositionalFVM:
 
         prop.update_relative_permeabilities(fprop, kprop)
         prop.update_phase_viscosities(data_loaded, fprop, kprop)
-
         self.update_mobilities(fprop)
-        self.get_phase_molar_densities_upwind(fprop, kprop)
+        #self.get_phase_molar_densities_upwind(fprop, kprop)
 
-    def update_flux_internal_faces(self, M, data_impress, prop, fprop_block, fprop, kprop):
-
+    def update_flux_internal_faces(self, M, data_impress, wells, prop, fprop_block, fprop, kprop, delta_t):
         P_Pcap = fprop.P + self.Pcap #para isso, Pcapj = Pj - P
         Pot_hidj = P_Pcap[:,self.v0[:,0]]
         Pot_hidj_up = P_Pcap[:,self.v0[:,1]]
 
-        fprop.total_flux_internal_faces = - np.sum(self.mobilities_internal_faces * self.pretransmissibility_internal_faces
+        fprop.total_flux_internal_faces = - np.sum(self.mobilities_internal_faces_old * self.pretransmissibility_internal_faces
                                          * (Pot_hidj_up - Pot_hidj), axis = 1)
 
-        #self.update_mobilities_in(data_impress, prop, fprop_block, fprop, kprop)
+        #self.update_mobilities_in(data_impress, wells, prop, fprop_block, fprop, kprop, delta_t)
         #self.get_mobilities_upwind(fprop, kprop)
-
         frj = self.mobilities_internal_faces[0,:,:] / np.sum(self.mobilities_internal_faces[0,:,:], axis = 0)
         self.phase_flux_internal_faces = frj * fprop.total_flux_internal_faces
         # M.flux_faces[M.faces.internal] = total_flux_internal_faces * M.faces.normal[M.faces.internal].T
@@ -274,14 +289,20 @@ class CompositionalFVM:
         if len(wp) > 0:
             well_term[0,0] = (self.T_noCC[wp,:] @ fprop.P - self.pressure_term[wp] + self.volume_term[wp] ) / delta_t + self.capillary_term[wp]
             if kprop.n_components > 1:
-                mob_k = np.sum(self.mobilities[:,:,wp] * fprop.component_molar_fractions[:,:,wp], axis = 1).ravel()
-                C = np.diag(np.ones(kprop.n_components))
-                C[1:,0] = - mob_k[1:]/ mob_k[0]
-                C[0,:] = self.dVtk[:,wp].T
-                self.q[:,wp] = np.linalg.solve(C,well_term)
+                n_components = kprop.n_components
+                ref = 0 # componente de refererencia para pegar a mobilidade
+                mob_k = np.sum(self.mobilities_old[:,:,wp] * fprop.component_molar_fractions[:,:,wp], axis = 1).ravel()
+                if mob_k[0] == 0:
+                    ref = 1
+                    n_components -= 1
+                C = np.diag(np.ones(n_components))
+                C[1:,0] = - mob_k[(ref+1):]/ mob_k[ref]
+                C[0,:] = self.dVtk[ref:,wp].T
+                self.q[ref:,wp] = np.linalg.solve(C,well_term)
             else: self.q[:,wp] = well_term[0,0] / self.dVtk[:,wp]
-        if len(wells['ws_q'])>0:
-            self.q[:,wells['ws_q']] = wells['values_q']#[:,np.newaxis]
+
+        if len(wells['ws_q']) > 0:
+            self.q[:,wells['ws_q']] = wells['values_q'][:,np.newaxis]
 
         #wq = wells['ws_q']
         #self.q[:,wells['ws_q']] = ((self.T_noCC[wq,:] @ fprop.P - self.pressure_term[wq] + self.volume_term[wq] ) / delta_t
@@ -290,6 +311,5 @@ class CompositionalFVM:
 
     def update_composition(self, fprop, kprop, wells, delta_t):
         self.update_flux_wells(fprop, kprop, wells, delta_t)
-
         fprop.component_mole_numbers = fprop.component_mole_numbers + delta_t * (self.q + fprop.component_flux_vols_total)
         fprop.z = fprop.component_mole_numbers[0:kprop.Nc,:] / np.sum(fprop.component_mole_numbers[0:kprop.Nc,:], axis = 0)

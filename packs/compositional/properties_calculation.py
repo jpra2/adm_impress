@@ -12,6 +12,7 @@ class PropertiesCalc:
     def run_outside_loop(self, data_impress, wells, fprop, kprop):
         self.set_properties(fprop, kprop)
         self.update_porous_volume(data_impress, fprop)
+        #data_impress['saturation'] = data_impress['saturation'] - data_loaded['compositional_data']['residual_saturations']['Swr']
         self.update_saturations(data_impress, fprop, kprop)
         self.update_mole_numbers(fprop, kprop)
 
@@ -20,9 +21,12 @@ class PropertiesCalc:
         if kprop.load_k:
             self.phase_viscosity = getattr(phase_viscosity, data_loaded['compositional_data']['phase_viscosity'])
             self.phase_viscosity = self.phase_viscosity(self.n_volumes, fprop, kprop)
-
+        #fprop.Sw = fprop.Sw + data_loaded['compositional_data']['residual_saturations']['Swr']
         self.update_relative_permeabilities(fprop, kprop)
         self.update_phase_viscosities(data_loaded, fprop, kprop)
+        #fprop.Sw = data_impress['saturation']
+        fprop.component_phase_mole_numbers = fprop.component_molar_fractions * fprop.phase_mole_numbers
+        fprop.component_mole_numbers = np.sum(fprop.component_phase_mole_numbers, axis = 1)
 
     def run_inside_loop(self, data_impress, wells, fprop, kprop):
         self.set_properties(fprop, kprop)
@@ -108,6 +112,7 @@ class PropertiesCalc:
 
 
     def update_relative_permeabilities(self, fprop, kprop):
+
         # So, Sw, Sg = self.update_saturations_without_contours()
         # saturations = np.array([So, Sg, Sw])
         saturations = np.array([fprop.So, fprop.Sg, fprop.Sw])
@@ -121,6 +126,7 @@ class PropertiesCalc:
     def update_phase_viscosities(self, data_loaded, fprop, kprop):
         fprop.phase_viscosities = np.zeros(fprop.relative_permeabilities.shape)
         if kprop.load_k:
+            #fprop.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = 0.02*np.ones([2,self.n_volumes])
             self.phase_viscosities_oil_and_gas = self.phase_viscosity(fprop, kprop)
             fprop.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosities_oil_and_gas
         if kprop.load_w:
