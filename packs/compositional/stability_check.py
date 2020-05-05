@@ -1,6 +1,7 @@
 """Check stability of a thermodynamic equilibrium."""
 import numpy as np
 from scipy.misc import derivative
+from .equation_of_state import PengRobinson
 import math
 # import matplotlib.pyplot as plt
 ## Encontrar os pontos estacionarios. Estes correspondem aos pontos nos quais a derivada de g com respeito a Y é 0
@@ -14,20 +15,12 @@ class StabilityCheck:
     def __init__(self, P, T, kprop):
         self.T = T
         self.P = P
-        # self.run(z, kprop)
-        #StabilityCheck.TPD(self)
+        self.EOS = PengRobinson(P, T, kprop)
 
     def run(self, z, kprop):
-        #if all(z==0):
-        #    self.x = np.zeros(kprop.Nc); self.y = np.zeros(kprop.Nc); self.L = 0.; self.V = 0.; self.K = 1.;
-        #    self.Mw_L = 0; self.Mw_V = 0.; self.rho_L = 0.; self.rho_V = 0; self.ksi_L = 0; self.ksi_V = 0
-        #    self.z = np.zeros(kprop.Nc)
         self.R = kprop.R
         self.equilibrium_ratio_Wilson(kprop)
 
-        #if sum(z < 0):
-        #    self.x = np.zeros(kprop.Nc); self.y = np.zeros(kprop.Nc); self.L = -1; self.V = -1
-        #else:
         if any(z <= 0):
             self.molar_properties(kprop, z)
         else:
@@ -54,51 +47,6 @@ class StabilityCheck:
         self.K = np.exp(5.37 * (1 + kprop.w) * (1 - kprop.Tc / self.T)) * \
                 (kprop.Pc / self.P)
 
-    def coefficientsPR(self, kprop, l):
-        #l - any phase molar composition
-        PR_kC7 = np.array([0.379642, 1.48503, 0.1644, 0.016667])
-        PR_k = np.array([0.37464, 1.54226, 0.26992])
-
-        k = (PR_kC7[0] + PR_kC7[1] * kprop.w - PR_kC7[2] * kprop.w ** 2 + \
-            PR_kC7[3] * kprop.w ** 3) * kprop.C7 + (PR_k[0] + PR_k[1] * kprop.w - \
-            PR_k[2] * kprop.w ** 2) * (1 - kprop.C7)
-        alpha = (1 + k * (1 - (self.T / kprop.Tc) ** (1 / 2))) ** 2
-        aalpha_i = 0.45724 * (kprop.R* kprop.Tc) ** 2 / kprop.Pc * alpha
-        self.b = 0.07780 * kprop.R* kprop.Tc / kprop.Pc
-        aalpha_i_reshape = np.ones((kprop.Nc,kprop.Nc)) * aalpha_i[:,np.newaxis]
-        aalpha_ij = np.sqrt(aalpha_i_reshape.T * aalpha_i[:,np.newaxis]) \
-                        * (1 - kprop.Bin)
-        self.bm = sum(l * self.b)
-        B = self.bm * self.P / (kprop.R* self.T)
-        l_reshape = np.ones((aalpha_ij).shape) * l[:, np.newaxis]
-        self.aalpha = (l_reshape.T * l[:,np.newaxis] * aalpha_ij).sum()
-        A = self.aalpha * self.P / (kprop.R* self.T) ** 2
-        self.psi = (l_reshape * aalpha_ij).sum(axis = 0)
-        return A, B
-
-    def Z_PR(B, A, ph):
-        # PR cubic EOS: Z**3 - (1-B)*Z**2 + (A-2*B-3*B**2)*Z-(A*B-B**2-B**3)
-        coef = [1, -(1 - B), (A - 2*B - 3*B**2), -(A*B - B**2 - B**3)]
-        Z = np.roots(coef)
-        roots = np.isreal(Z)
-        Z_reais = np.real(Z[roots]) #Saving the real roots
-        Z_ans = min(Z_reais) * ph + max(Z_reais) * (1 - ph)
-
-        ''' This last line, considers that the phase is composed by a pure
-         component, so the EOS model can return more than one real root.
-            If liquid, Zl = min(Z) and gas, Zv = max(Z).
-            You can notice that, if there's only one real root,
-        it works as well.'''
-        return Z_ans
-
-    def lnphi(self, kprop, l, ph):
-        #l - any phase molar composition
-        A, B = self.coefficientsPR(kprop, l)
-        Z = StabilityCheck.Z_PR(B, A, ph)
-        lnphi = self.b / self.bm * (Z - 1) - np.log(Z - B) - A / (2 * (2 ** (1/2))
-                * B) * (2 * self.psi / self.aalpha - self.b / self.bm) * np.log((Z + (1 +
-                2 ** (1/2)) * B) / (Z + (1 - 2 ** (1/2)) * B))
-        return lnphi
 
     """------------------- Stability test calculation -----------------------"""
 
@@ -113,10 +61,10 @@ class StabilityCheck:
         Y = z / self.K
         Yold = 0.9 * Y
         y = Y / sum(Y)
-        lnphiz = self.lnphi(kprop, z, 0)
+        lnphiz = self.EOS.lnphi(kprop, z, 0)
         while max(abs(Y / Yold - 1)) > 1e-9: #convergência
             Yold = np.copy(Y)
-            lnphiy = self.lnphi(kprop, y, 1)
+            lnphiy = self.EOS.lnphi(kprop, y, 1)
             Y = np.exp(np.log(z) + lnphiz - lnphiy)
             y = Y / sum(Y)
         stationary_point1 = sum(Y)
@@ -127,10 +75,10 @@ class StabilityCheck:
         Y = self.K * z
         Y_old = 0.9 * Y
         y = Y / sum(Y)
-        lnphiz = self.lnphi(kprop, z, 1)
+        lnphiz = self.EOS.lnphi(kprop, z, 1)
         while max(abs(Y / Y_old - 1)) > 1e-9:
             Y_old = np.copy(Y)
-            lnphiy = self.lnphi(kprop, y, 0)
+            lnphiy = self.EOS.lnphi(kprop, y, 0)
             Y = np.exp(np.log(z) + lnphiz - lnphiy)
             y = Y / sum(Y)
         stationary_point2 = sum(Y)
@@ -146,7 +94,7 @@ class StabilityCheck:
         else: self.molar_properties_Yinghui(kprop, z)
 
     def deltaG_molar(self, kprop, l, ph):
-        lnphi = [self.lnphi(kprop, l, 1 - ph), self.lnphi(kprop, l, ph)]
+        lnphi = [self.EOS.lnphi(kprop, l, 1 - ph), self.EOS.lnphi(kprop, l, ph)]
         deltaG_molar = sum(l * (lnphi[1 - ph] - lnphi[ph]))
         if deltaG_molar >= 0: ph = ph
         else: ph = 1 - ph
@@ -154,7 +102,7 @@ class StabilityCheck:
 
     def lnphi_based_on_deltaG(self,kprop, l, ph):
         ph = self.deltaG_molar(kprop, l, ph)
-        return self.lnphi(kprop, l, ph)
+        return self.EOS.lnphi(kprop, l, ph)
 
     def solve_objective_function_Yinghui(self, z1, zi, z, K1, KNc, Ki):
 
@@ -273,11 +221,13 @@ class StabilityCheck:
     def other_properties(self, kprop, l, ph):
         s = 0.085
         #l - any phase molar composition
-        A, B = self.coefficientsPR(kprop, l)
+        A, B = self.EOS.coefficients_cubic_EOS(kprop, l)
         ph = self.deltaG_molar(kprop, l, ph)
-        Z = StabilityCheck.Z_PR(B, A, ph)
-        #v = Z*kprop.R*self.T/self.P - s*self.b
-        ksi_phase = self.P / (Z * kprop.R* self.T)
+        Z = PengRobinson.Z(B, A, ph)
+        v = Z*kprop.R*self.T/self.P - sum(s*self.EOS.b*l)*6.243864674*10**(-5)
+        ksi_phase = 1/v
+        #ksi_phase = self.P / (Z * kprop.R* self.T)
+
         Mw_phase = sum(l * kprop.Mw)
         rho_phase = ksi_phase * sum(l * kprop.Mw)
         # se precisar retornar mais coisa, entra aqui
