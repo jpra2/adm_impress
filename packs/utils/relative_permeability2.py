@@ -22,14 +22,15 @@ class BrooksAndCorey:
     def relative_permeabilities(self, saturations):
         #saturations = [So,Sg,Sw]
         if self.Sor < 0:
-            self.Sor = self.Sorw * (1 - saturations[1] / (1 - self.Swr - self.Sorg)) + \
-                    self.Sorg * saturations[1] / (1 - self.Swr - self.Sorg)
+            self.Sor = self.Sorw * (1 - saturations[2] / (1 - self.Swr - self.Sorg)) + \
+                    self.Sorg * saturations[2] / (1 - self.Swr - self.Sorg)
 
-        krw = self.krw0 * ((saturations[2] - self.Swr) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_w
-        krw[saturations[2]==0] = 0
-        kro = self.kro0 * ((saturations[0] - self.Sor) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_o
-        kro[saturations[2]==0] = 1.
-        krg = self.krg0 * ((saturations[1] - self.Sgr) / (1 - self.Swr - self.Sorw - self.Sgr)) ** self.n_g
+        krw = self.krw0 * ((saturations[2] - self.Swr) / (1 - self.Swr - self.Sor - self.Sgr)) ** self.n_w
+        krw[saturations[2]<self.Swr] = 0
+        kro = self.kro0 * ((saturations[0] - self.Sor) / (1 - self.Swr - self.Sor - self.Sgr)) ** self.n_o
+        kro[saturations[2]<self.Swr] = self.kro0 * ((saturations[0][saturations[2]<self.Swr] - self.Sor) / (1 - self.Sor - self.Sgr)) ** self.n_o
+        kro[saturations[0]<self.Sor] = 0
+        krg = self.krg0 * ((saturations[1] - self.Sgr) / (1 - self.Swr - self.Sor - self.Sgr)) ** self.n_g
         return kro, krg, krw
 
     def __call__(self, saturations):
