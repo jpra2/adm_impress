@@ -38,6 +38,12 @@ compositional_data:
   Cpc: 62052.84
   Epc: 2
 
+  time_data:
+    deltaPlim: 68.9476
+    deltaNlim: .0001
+    deltaSlim: .0001
+    deltaVlim: .00001
+
   #rever isso de Cw=0 e Pw
   water_data:
     mi_W: 0.249e-3

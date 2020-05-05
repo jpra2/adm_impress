@@ -1,7 +1,9 @@
 mesh_name: mesh/100x1x1_b.msh
 n_test: 0
+
 compositional: True
 hidrocarbon_components: True
+compressible_fluid: True
 water_component: False
 
 load_compositional_data: False
@@ -16,6 +18,8 @@ read_permeability: false
 monophasic_data: false
 set_permeability: True
 
+use_vpi: False
+
 monophasic_data:
   gama: 10000.0
   mi: 1.0
@@ -24,6 +28,7 @@ compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
+  time_to_save: [1015, 422694]
   tempo_maximo: null
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
@@ -35,6 +40,12 @@ compositional_data:
   #capillary pressure data - not ok with this
   Cpc: 62052.84
   Epc: 2
+
+  time_data:
+    deltaPlim: 68.9476
+    deltaNlim: .0001
+    deltaSlim: .0001
+    deltaVlim: .00001
 
   #rever isso de Cw=0 e Pw
   water_data:
