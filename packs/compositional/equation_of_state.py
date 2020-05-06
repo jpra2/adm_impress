@@ -57,3 +57,6 @@ class PengRobinson:
                 2 ** (1/2)) * B) / (Z + (1 - 2 ** (1/2)) * B))
 
         return lnphi
+
+    def Volume_Translation(self):
+        #translation made in the molar volume

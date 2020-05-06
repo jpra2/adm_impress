@@ -1,5 +1,6 @@
-"""Check stability of a thermodynamic equilibrium."""
+"""Check stability of a system and find its composition at a thermodynamic equilibrium."""
 import numpy as np
+from ..directories import data_loaded
 from scipy.misc import derivative
 from .equation_of_state import PengRobinson
 import math
@@ -15,6 +16,7 @@ class StabilityCheck:
     def __init__(self, P, T, kprop):
         self.T = T
         self.P = P
+        self.s = np.array(data_loaded['compositional_data']['vshift_parameter']).astype(float)
         self.EOS = PengRobinson(P, T, kprop)
 
     def run(self, z, kprop):
@@ -219,12 +221,11 @@ class StabilityCheck:
             self.K = razao * self.K
 
     def other_properties(self, kprop, l, ph):
-        s = 0.085
         #l - any phase molar composition
         A, B = self.EOS.coefficients_cubic_EOS(kprop, l)
         ph = self.deltaG_molar(kprop, l, ph)
         Z = PengRobinson.Z(B, A, ph)
-        v = Z*kprop.R*self.T/self.P - sum(s*self.EOS.b*l)*6.243864674*10**(-5)
+        v = Z*kprop.R*self.T/self.P - sum(self.s*self.EOS.b*l)*6.243864674*10**(-5) #check this unity (ft³/lbmole to m³/mole)
         ksi_phase = 1/v
         #ksi_phase = self.P / (Z * kprop.R* self.T)
 

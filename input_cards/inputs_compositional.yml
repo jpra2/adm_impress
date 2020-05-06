@@ -82,6 +82,8 @@ compositional_data:
     Bin: [0]
     C7: [1]
     SG: [0.7342]
+    vshift_parameter: [0.085]
+
 
 #water saturation data
 Saturation:
