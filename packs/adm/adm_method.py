@@ -464,6 +464,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         # self.data_impress['pms'] = p2
         # ##############################
         self.T = T
+        
     def smoother_jacobi(self, R, T, P, b, print_errors=False):
 
         # try:
@@ -541,14 +542,11 @@ class AdmMethod(DataManager, TpfaFlux2):
         return pv
 
     def test_smoothers(self, R, T, P, b, local_preconditioner, global_multiscale_preconditioner):
+        neta_lim=self.elements_lv0['neta_lim']
         if local_preconditioner=='jacobi':
-            dt=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
-            dt1=1/dt
-            lc=np.arange(len(dt))
-            pl=csc_matrix((dt1,(lc,lc)),shape=T.shape)
-            T2=T.copy()
-            T2.setdiag(0)
-            J=pl*T2
+            tc=time.time()
+            J, pl = self.construct_jacobi_preconsitioner(T)
+            tc=time.time()-tc
         if global_multiscale_preconditioner=='galerkin':
             Rg=P.T
         elif global_multiscale_preconditioner==msfv:
@@ -570,30 +568,19 @@ class AdmMethod(DataManager, TpfaFlux2):
             pv12 = pv + (P*spsolve(Tcg,P.T.tocsc()*(b-T*pv)))
             tg=time.time()-tg
             tl=time.time()
-            de_0=1
-            de_ant=1
-            dp=np.linalg.norm(pv-pv12)
-            cj=0
-
-            while ((de_ant-dp)/(de_0-de_ant)<alpha_jacobi and cj<10) or cj<3:
-                de_0=de_ant
-                de_ant=dp
-                pv = pl*b-J*pv12
-                dp=np.linalg.norm(pv-pv12)
-                pv12=pv
-                cj+=1
-                print((dp-de_ant)/(de_ant-de_0))
-            print(cj)
+            pv = self.iterate_jacobi(pv, pv12,b, pl, J, alpha_jacobi=0.8)
             tl=time.time()-tl
             pms = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
             ep_l2, ep_linf, ev_l2, ev_linf = self.get_error_norms(pf, pms)
             errors.append([ep_l2, ep_linf, ev_l2, ev_linf])
-            times.append([tf, tg, tl])
+            times.append([tf, tc, tg, tl])
             cont+=1
         errors=np.vstack(errors)
         times=np.vstack(times)
         tt=times[:,1].sum()+times[:,2].sum()
-        import pdb; pdb.set_trace()
+        et=np.hstack([errors, times])
+        np.savetxt('results_smoothers/'+global_multiscale_preconditioner+'_'+local_preconditioner+'_'+str(neta_lim)+'.csv',et)
+        return pms
 
     def get_error_norms(self, pf, pv):
         ep_l2=np.linalg.norm(pf-pv)/np.linalg.norm(pf)
@@ -609,6 +596,33 @@ class AdmMethod(DataManager, TpfaFlux2):
         ep_linf=abs(pf-pv).max()/abs(pf).max()
         ev_linf=abs(vf-vms).max()/abs(vf).max()
         return ep_l2, ep_linf, ev_l2, ev_linf
+
+    def construct_jacobi_preconsitioner(self, T):
+        dt=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
+        dt1=1/dt
+        lc=np.arange(len(dt))
+        pl=csc_matrix((dt1,(lc,lc)),shape=T.shape)
+        T2=T.copy()
+        T2.setdiag(0)
+        J=pl*T2
+        return J, pl
+
+    def iterate_jacobi(self, pv, pv12,b, pl, J, alpha_jacobi):
+        de_0=1
+        de_ant=1
+        dp=np.linalg.norm(pv-pv12)
+        cj=0
+        # while ((de_ant-dp)/(de_0-de_ant)<alpha_jacobi and cj<10) or cj<3:
+        for i in range(20):
+            de_0=de_ant
+            de_ant=dp
+            pv = pl*b-J*pv12
+            # dp=np.linalg.norm(pv-pv12)
+            pv12=pv
+            cj+=1
+            # print((dp-de_ant)/(de_ant-de_0))
+        print(cj)
+        return pv
 
     def set_pms_flux_intersect_faces_dep0(self):
 
