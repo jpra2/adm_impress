@@ -451,7 +451,8 @@ class AdmMethod(DataManager, TpfaFlux2):
             T_adm = OR_adm*T_adm*OP_adm
 
         # pms = self.solver.direct_solver(T_adm, b_adm)
-
+        self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner='jacobi',\
+        global_multiscale_preconditioner='galerkin')
         pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
 
 
@@ -539,7 +540,75 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         return pv
 
+    def test_smoothers(self, R, T, P, b, local_preconditioner, global_multiscale_preconditioner):
+        if local_preconditioner=='jacobi':
+            dt=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
+            dt1=1/dt
+            lc=np.arange(len(dt))
+            pl=csc_matrix((dt1,(lc,lc)),shape=T.shape)
+            T2=T.copy()
+            T2.setdiag(0)
+            J=pl*T2
+        if global_multiscale_preconditioner=='galerkin':
+            Rg=P.T
+        elif global_multiscale_preconditioner==msfv:
+            Rg=R
+        Tcg=Rg*T*P #global T coarse
+        tf=time.time()
+        pf=spsolve(T,b)
+        tf=time.time()-tf
 
+        pv=P*spsolve(R*T*P,R*b)
+        maxiter=500
+        ep_l2=np.inf
+        cont=0
+        errors=[]
+        times=[]
+        alpha_jacobi=0.5
+        while ep_l2>0.01 and cont<maxiter:
+            tg=time.time()
+            pv12 = pv + (P*spsolve(Tcg,P.T.tocsc()*(b-T*pv)))
+            tg=time.time()-tg
+            tl=time.time()
+            de_0=1
+            de_ant=1
+            dp=np.linalg.norm(pv-pv12)
+            cj=0
+
+            while ((de_ant-dp)/(de_0-de_ant)<alpha_jacobi and cj<10) or cj<3:
+                de_0=de_ant
+                de_ant=dp
+                pv = pl*b-J*pv12
+                dp=np.linalg.norm(pv-pv12)
+                pv12=pv
+                cj+=1
+                print((dp-de_ant)/(de_ant-de_0))
+            print(cj)
+            tl=time.time()-tl
+            pms = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
+            ep_l2, ep_linf, ev_l2, ev_linf = self.get_error_norms(pf, pms)
+            errors.append([ep_l2, ep_linf, ev_l2, ev_linf])
+            times.append([tf, tg, tl])
+            cont+=1
+        errors=np.vstack(errors)
+        times=np.vstack(times)
+        tt=times[:,1].sum()+times[:,2].sum()
+        import pdb; pdb.set_trace()
+
+    def get_error_norms(self, pf, pv):
+        ep_l2=np.linalg.norm(pf-pv)/np.linalg.norm(pf)
+        adjs=self.elements_lv0['neig_internal_faces']
+        internal_faces=self.elements_lv0['internal_faces']
+        ts=self.data_impress['transmissibility'][internal_faces]
+        hs=self.data_impress['u_normal'][internal_faces].max(axis=1)
+        a0=adjs[:,0]
+        a1=adjs[:,1]
+        vf=ts*(pf[a0]-pf[a1])/hs
+        vms=ts*(pv[a0]-pv[a1])/hs
+        ev_l2=np.linalg.norm(vf-vms)/np.linalg.norm(vf)
+        ep_linf=abs(pf-pv).max()/abs(pf).max()
+        ev_linf=abs(vf-vms).max()/abs(vf).max()
+        return ep_l2, ep_linf, ev_l2, ev_linf
 
     def set_pms_flux_intersect_faces_dep0(self):
 

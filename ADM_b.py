@@ -56,7 +56,7 @@ def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     data_impress['verif_po'] = l2
     data_impress['verif_rest'] = el2
     data_impress.update_variables_to_mesh(['verif_po', 'verif_rest'])
-    M.core.print(file='results/test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    # M.core.print(file='results/test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
     import pdb; pdb.set_trace()
 
 def dados_unitarios(data_impress):
@@ -98,8 +98,9 @@ PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
-
-OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=1.0)
+neta_lim=100000000.0
+elements_lv0['neta_lim']=neta_lim
+OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 
@@ -208,7 +209,8 @@ while verif:
 
     # n=0
     data_impress.update_variables_to_mesh()
-    M.core.print(folder='results', file='test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
+    # M.core.print(folder='results', file='test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
     T, b = b1.get_T_and_b()
 
