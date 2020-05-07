@@ -4,10 +4,11 @@ from ...common_files.common_infos import CommonInfos
 import multiprocessing as mp
 from ...solvers.solvers_scipy.solver_sp import SolverSp
 import time
+from ...directories import data_loaded
 
 class masterNeumanNonNested:
 
-    def __init__(self, data_impress, elements_lv0, ml_data, n_levels, T_without, wells, pare=False):
+    def __init__(self, M, data_impress, elements_lv0, ml_data, n_levels, T_without, wells, pare=False):
         self.data_impress = data_impress
         self.elements_lv0 = elements_lv0
         self.ml_data = ml_data
@@ -15,6 +16,7 @@ class masterNeumanNonNested:
         self.T_without = T_without
         self.wells = wells
         self.pare = pare
+        self.mesh = M
         self.one_worker = True
 
     def get_n_workers(self, list_of_subdomains):
@@ -75,6 +77,7 @@ class masterNeumanNonNested:
         n_volumes = len(levels)
         volumes_pcorr_falt = []
         pcorr_falt = []
+        vols_lv0 = set(gid0[levels==0])
 
         if self.pare:
             import pdb; pdb.set_trace()
@@ -84,7 +87,7 @@ class masterNeumanNonNested:
             set_level = set([level])
 
             all_gids_coarse = self.data_impress['GID_'+ str_level]
-            # all_local_ids_coarse = self.data_impress['COARSE_LOCAL_ID_'+ str_level]
+            # all_local_ids_cvolumes_dirichlet_2oarse = self.data_impress['COARSE_LOCAL_ID_'+ str_level]
             all_intern_boundary_volumes = self.ml_data['internal_boundary_fine_volumes_level_'+ str_level]
             all_intersect_faces = self.ml_data['coarse_intersect_faces_level_'+ str_level]
             all_intern_faces = self.ml_data['coarse_internal_faces_level_'+ str_level]
@@ -132,6 +135,26 @@ class masterNeumanNonNested:
                             intersect_faces_new = intersect_faces_new[inds]
                             intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
 
+                    volumes_dirichlet_2 = (set(volumes) & vols_lv0) - set(self.wells['ws_p'])
+                    if volumes_dirichlet_2:
+                        for v in volumes_dirichlet_2:
+                            ind_diric.append(v)
+                            val_diric.append(pms[v])
+                            # faces_volume = self.elements_lv0['volumes_face_volumes'][v]
+                            # faces_volume_intersect = np.intersect1d(faces_volume, intersect_faces_new)
+                            # if len(faces_volume_intersect) > 0:
+                            #     viz = self.elements_lv0['neig_internal_faces'][self.elements_lv0['remaped_internal_faces'][faces_volume_intersect]]
+                            #     pms0 = pms[viz[:,0]]
+                            #     pms1 = pms[viz[:,1]]
+                            #     t0 = self.data_impress['transmissibility'][faces_volume_intersect]
+                            #     pms_flux_faces_local = get_flux_faces(pms1, pms0, t0)
+                            #     pms_flux_faces[faces_volume_intersect] = pms_flux_faces_local
+
+                            inds = ~((v0_new[:,0]==v) | (v0_new[:,1]==v))
+                            v0_new = v0_new[inds]
+                            intersect_faces_new = intersect_faces_new[inds]
+                            intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
+
                     if volumes_neuman:
                         ind_neum += list(volumes_neuman)
                         for v in ind_neum:
@@ -148,7 +171,7 @@ class masterNeumanNonNested:
                         pms1 = pms[v0[:,1]]
                         t0 = self.data_impress['transmissibility'][intersect_faces_new]
                         pms_flux_faces_local = get_flux_faces(pms1, pms0, t0)
-                        pms_flux_faces[intersect_faces] = pms_flux_faces_local
+                        pms_flux_faces[intersect_faces_new] = pms_flux_faces_local
 
                         lines = np.concatenate([v0[:, 0], v0[:, 1]])
                         cols = np.repeat(0, len(lines))
@@ -234,6 +257,41 @@ class masterNeumanNonNested:
         list_of_process_per_cpu = self.get_n_workers(list_of_subdomains)
         return list_of_process_per_cpu
 
+    def correct_flux_faces_volumes_lv0(self):
+        gid0 = self.data_impress['GID_0']
+        levels = self.data_impress['LEVEL']
+        b_faces = self.elements_lv0['boundary_faces']
+        n_volumes = len(gid0)
+        pms = self.data_impress['pms']
+
+        volumes_lv0 = gid0[levels==0]
+        # self.data_impress['pcorr'][volumes_lv0] = pms[volumes_lv0]
+
+        faces_viz_volumes_lv0 = np.unique(np.concatenate(self.elements_lv0['volumes_face_volumes'][volumes_lv0]))
+        faces_viz_volumes_lv0 = np.setdiff1d(faces_viz_volumes_lv0, b_faces)
+        v0 = faces_viz_volumes_lv0
+        vols_viz_faces = self.elements_lv0['neig_internal_faces'][self.elements_lv0['remaped_internal_faces'][v0]]
+        v0 = vols_viz_faces
+
+        pms0 = pms[v0[:,0]]
+        pms1 = pms[v0[:,1]]
+        t0 =  self.data_impress['transmissibility'][faces_viz_volumes_lv0]
+
+        flux_faces = get_flux_faces(pms1, pms0, t0)
+
+        return faces_viz_volumes_lv0, flux_faces
+
+    def print_test(self):
+        self.data_impress.update_variables_to_mesh()
+        name = 'results/test_'
+        self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+
+    def print_test_faces(self):
+
+        self.data_impress.update_variables_to_mesh()
+        name = 'results/test_faces'
+        self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings1.yml")
+
     def run(self):
         list_of_process_per_cpu = self.preprocess()
         master2worker = [mp.Pipe() for _ in range(self.n_workers)]
@@ -262,6 +320,9 @@ class masterNeumanNonNested:
 
         for proc in procs:
         	proc.join()
+
+        # faces, flux = self.correct_flux_faces_volumes_lv0()
+        # self.global_ms_flux_faces[faces] = flux
 
         return self.global_ms_flux_faces.copy(), global_pcorr
 

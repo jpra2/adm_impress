@@ -9,7 +9,8 @@ import time
 import matplotlib.pyplot as plt
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
-from packs.biphasic.biphasic_tpfa import BiphasicTpfa
+# from packs.biphasic.biphasic_tpfa import BiphasicTpfa
+from packs.biphasic.biphasic_ms.biphasic_multiscale import BiphasicTpfaMultiscale
 plt.close('all')
 '''
 def get_gids_and_primal_id(gids, primal_ids):
@@ -82,7 +83,7 @@ biphasic = data_loaded['biphasic']
 M, elements_lv0, data_impress, wells = initial_mesh()
 
 if biphasic:
-    b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
+    b1 = BiphasicTpfaMultiscale(M, data_impress, elements_lv0, wells)
 
 multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 mlo = multilevel_operators
@@ -116,6 +117,9 @@ gids_0 = data_impress['GID_0']
 
 adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
 # adm_method.set_initial_mesh(mlo, T, b)
+#
+# meshset_volumes = M.core.mb.create_meshset()
+# M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 
 meshset_volumes = M.core.mb.create_meshset()
 meshset_faces = M.core.mb.create_meshset()
@@ -187,6 +191,8 @@ while verif:
     b1.run_2()
 
     # M.core.mb.write_file('results/testt_f'+str(cont)+'.vtk', [meshset_faces])
+
+    import pdb; pdb.set_trace()
 
     if cont % nn == 0:
         import pdb; pdb.set_trace()
