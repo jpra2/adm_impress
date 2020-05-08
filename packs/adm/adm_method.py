@@ -13,6 +13,7 @@ from scipy.sparse.linalg import spsolve
 from scipy.sparse import csc_matrix
 from ..directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
+from scipy.sparse.linalg import spsolve_triangular
 import time
 
 
@@ -445,8 +446,8 @@ class AdmMethod(DataManager, TpfaFlux2):
             T_adm = OR_adm*T_adm*OP_adm
 
         # pms = self.solver.direct_solver(T_adm, b_adm)
-        self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner='olav',\
-        global_multiscale_preconditioner='galerkin')
+        self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner='ilu0',\
+        global_multiscale_preconditioner='galerkin', n_prec_levels=1)
         # pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
 
 
@@ -535,14 +536,16 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         return pv
 
-    def test_smoothers(self, R, T, P, b, local_preconditioner, global_multiscale_preconditioner):
+    def test_smoothers(self, R, T, P, b, local_preconditioner, global_multiscale_preconditioner, n_prec_levels=1):
         neta_lim=self.elements_lv0['neta_lim']
         tc=time.time()
         if local_preconditioner=='jacobi':
             alpha_jacobi=0.97
             Ml, pl = self.construct_jacobi_preconsitioner(T)
         elif local_preconditioner=='ilu0' or local_preconditioner=='olav':
-            Ml=linalg.spilu(T,drop_tol=1e-12,fill_factor=1,permc_spec='NATURAL')
+            Ml=linalg.spilu(T,drop_tol=1e-4,fill_factor=1,permc_spec='NATURAL')
+        elif local_preconditioner=='sor':
+            Sf=self.get_Sor(T,n_prec_levels)
         tc=time.time()-tc
         if global_multiscale_preconditioner=='galerkin':
             Rg=P.T
@@ -570,14 +573,16 @@ class AdmMethod(DataManager, TpfaFlux2):
             if local_preconditioner=='jacobi':
                 pv = self.iterate_jacobi(pv, pv12,b, pl, Ml, alpha_jacobi=alpha_jacobi)
             elif local_preconditioner=='ilu0':
-                for i in range(3):
-                    pv=pv12+Ml.solve(b-T*pv)
-                    pv12=pv
+                # for i in range(3):
+                pv=pv12+Ml.solve(b-T*pv12)
+                pv12=pv
             elif local_preconditioner=='olav':
                 dk=b-T*pv12
-                yrf=Ml.solve(dk)                
+                yrf=Ml.solve(dk)
                 pv=pv12+P*spsolve(Tcg,Rg*(dk-T*yrf))+yrf
-
+            elif local_preconditioner=='sor':
+                pf3 = pv12 + linalg.spsolve_triangular(Sf,(b - T*pv12),overwrite_A=True, overwrite_b=True)
+                pv = pf3 + linalg.spsolve_triangular(Sf,(b - T*pf3))
             tl=time.time()-tl
             pms = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
             ep_l2, ep_linf, ev_l2, ev_linf = self.get_error_norms(pf, pms)
@@ -606,6 +611,30 @@ class AdmMethod(DataManager, TpfaFlux2):
         ep_linf=abs(pf-pv).max()/abs(pf).max()
         ev_linf=abs(vf-vms).max()/abs(vf).max()
         return ep_l2, ep_linf, ev_l2, ev_linf
+
+    def get_Sor(self, T, Tcg=None, n_prec_levels=1, Wf=2, Wc=2/3):
+        lf, cf, df = find(T)
+        l=lf>cf
+        # u=lf<cf
+        d=lf==cf
+        L=csc_matrix((df[l],(lf[l],cf[l])),shape=T.shape)
+        # U=csc_matrix((df[u],(lf[u],cf[u])),shape=T.shape)
+        D=csc_matrix((df[d],(lf[d],cf[d])),shape=T.shape)
+        S=D+Wf*L
+        if n_prec_levels==2:
+            lf, cf, df = find(Tcg)
+            l=lf>cf
+            # u=lf<cf
+            d=lf==cf
+            Lc=csc_matrix((df[l],(lf[l],c[l])),shape=T.shape)
+            # Uc=csc_matrix((df[u],(lf[u],c[u])),shape=T.shape)
+            Dc=csc_matrix((df[d],(lf[d],c[d])),shape=T.shape)
+            Sc=Dc+Wc*Lc
+            return S.tocsr(), Sc.tocsr()
+        else:
+            return S.tocsr()
+
+
 
     def construct_jacobi_preconsitioner(self, T):
         dt=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
