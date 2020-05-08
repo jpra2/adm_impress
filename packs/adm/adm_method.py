@@ -8,7 +8,7 @@ from .local_solution import LocalSolution
 from. obj_infos import InfosForProcess
 from ..directories import data_loaded
 from ..errors.err import ConservativeVolumeError, PmsFluxFacesError
-from scipy.sparse import linalg
+from scipy.sparse import linalg, find
 from scipy.sparse.linalg import spsolve
 from scipy.sparse import csc_matrix
 from ..directories import file_adm_mesh_def
@@ -158,12 +158,6 @@ class AdmMethod(DataManager, TpfaFlux2):
 
     def set_level_wells_2(self):
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
-
-        # so_nv1 = self.so_nv1
-        #
-        # if so_nv1:
-        #     self.data_impress['LEVEL'] = np.ones(len(self.data_impress['GID_0']), dtype=int)
-        #     self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids), dtype=int)
 
     def set_adm_mesh(self):
 
@@ -451,9 +445,9 @@ class AdmMethod(DataManager, TpfaFlux2):
             T_adm = OR_adm*T_adm*OP_adm
 
         # pms = self.solver.direct_solver(T_adm, b_adm)
-        self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner='jacobi',\
+        self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner='olav',\
         global_multiscale_preconditioner='galerkin')
-        pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
+        # pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
 
 
         self.data_impress['pms'] = pms
@@ -464,7 +458,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         # self.data_impress['pms'] = p2
         # ##############################
         self.T = T
-        
+
     def smoother_jacobi(self, R, T, P, b, print_errors=False):
 
         # try:
@@ -543,32 +537,47 @@ class AdmMethod(DataManager, TpfaFlux2):
 
     def test_smoothers(self, R, T, P, b, local_preconditioner, global_multiscale_preconditioner):
         neta_lim=self.elements_lv0['neta_lim']
+        tc=time.time()
         if local_preconditioner=='jacobi':
-            tc=time.time()
-            J, pl = self.construct_jacobi_preconsitioner(T)
-            tc=time.time()-tc
+            alpha_jacobi=0.97
+            Ml, pl = self.construct_jacobi_preconsitioner(T)
+        elif local_preconditioner=='ilu0' or local_preconditioner=='olav':
+            Ml=linalg.spilu(T,drop_tol=1e-12,fill_factor=1,permc_spec='NATURAL')
+        tc=time.time()-tc
         if global_multiscale_preconditioner=='galerkin':
             Rg=P.T
         elif global_multiscale_preconditioner==msfv:
             Rg=R
+
+
         Tcg=Rg*T*P #global T coarse
         tf=time.time()
         pf=spsolve(T,b)
         tf=time.time()-tf
 
         pv=P*spsolve(R*T*P,R*b)
-        maxiter=500
+        maxiter=50
         ep_l2=np.inf
         cont=0
         errors=[]
         times=[]
-        alpha_jacobi=0.5
+
         while ep_l2>0.01 and cont<maxiter:
             tg=time.time()
-            pv12 = pv + (P*spsolve(Tcg,P.T.tocsc()*(b-T*pv)))
+            pv12 = pv + (P*spsolve(Tcg,Rg*(b-T*pv)))
             tg=time.time()-tg
             tl=time.time()
-            pv = self.iterate_jacobi(pv, pv12,b, pl, J, alpha_jacobi=0.8)
+            if local_preconditioner=='jacobi':
+                pv = self.iterate_jacobi(pv, pv12,b, pl, Ml, alpha_jacobi=alpha_jacobi)
+            elif local_preconditioner=='ilu0':
+                for i in range(3):
+                    pv=pv12+Ml.solve(b-T*pv)
+                    pv12=pv
+            elif local_preconditioner=='olav':
+                dk=b-T*pv12
+                yrf=Ml.solve(dk)                
+                pv=pv12+P*spsolve(Tcg,Rg*(dk-T*yrf))+yrf
+
             tl=time.time()-tl
             pms = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
             ep_l2, ep_linf, ev_l2, ev_linf = self.get_error_norms(pf, pms)
@@ -577,9 +586,10 @@ class AdmMethod(DataManager, TpfaFlux2):
             cont+=1
         errors=np.vstack(errors)
         times=np.vstack(times)
-        tt=times[:,1].sum()+times[:,2].sum()
+        tt=times[:,2].sum()+times[:,3].sum()
         et=np.hstack([errors, times])
         np.savetxt('results_smoothers/'+global_multiscale_preconditioner+'_'+local_preconditioner+'_'+str(neta_lim)+'.csv',et)
+        import pdb; pdb.set_trace()
         return pms
 
     def get_error_norms(self, pf, pv):
@@ -612,7 +622,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         de_ant=1
         dp=np.linalg.norm(pv-pv12)
         cj=0
-        # while ((de_ant-dp)/(de_0-de_ant)<alpha_jacobi and cj<10) or cj<3:
+        # while ((de_ant-dp)/(de_0-de_ant)<alpha_jacobi and cj<100) or cj<3:
         for i in range(20):
             de_0=de_ant
             de_ant=dp
@@ -621,7 +631,7 @@ class AdmMethod(DataManager, TpfaFlux2):
             pv12=pv
             cj+=1
             # print((dp-de_ant)/(de_ant-de_0))
-        print(cj)
+        # print(cj)
         return pv
 
     def set_pms_flux_intersect_faces_dep0(self):
@@ -855,7 +865,6 @@ class AdmMethod(DataManager, TpfaFlux2):
             # if not np.allclose(flux_volumes_2, flux_volumes):
             #     raise ValueError('Diferenca entre fluxo pms local e global')
             self.data_impress['flux_volumes_test'] = flux_volumes_2
-            ######################################
 
     def get_nt_process(self):
 
@@ -1054,20 +1063,6 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['pcorr'] = _pcorr
         self.data_impress['flux_volumes'] = _flux_volumes
         self.data_impress['flux_faces'] = _flux_faces
-
-        # _debug = data_loaded['_debug']
-        # if _debug:
-        #
-        #     #######################
-        #     ## test
-        #     v0 = g_neig_internal_faces
-        #     internal_faces = self.elements_lv0['internal_faces']
-        #     lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
-        #     cols = np.repeat(0, len(lines))
-        #     data = np.array([_flux_faces[internal_faces], -_flux_faces[internal_faces]]).flatten()
-        #     flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
-        #     self.data_impress['flux_volumes_test'] = flux_volumes_2
-        #     ######################################
 
     def set_saturation_level(self):
 
@@ -1304,5 +1299,3 @@ class AdmMethod(DataManager, TpfaFlux2):
 
     def print_test(self):
         self.data_impress.update_variables_to_mesh()
-        # name = 'results/test_'
-        # self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
