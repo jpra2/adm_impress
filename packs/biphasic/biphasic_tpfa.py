@@ -111,6 +111,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         pos = ~pos
         self._data['upwind_identificate'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
         self._data['upwind_identificate_o'] = ~self._data['upwind_identificate'].copy()
+        self.upwind_wells()
 
         self.visualize_upwind_vec()
 
@@ -292,6 +293,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         deltas_t.append(self.update_delta_t_dep0())
         deltas_t.append(self.update_delta_t_new())
 
+        import pdb; pdb.set_trace()
+
         self.delta_t = min(deltas_t)
 
         # self.delta_t = flux_w_volumes/(volumes*phis)
@@ -434,8 +437,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         saturations[ids_var] = sats
 
-        if np.allclose(saturations, saturations0):
-            import pdb; pdb.set_trace()
+        # if np.allclose(saturations, saturations0):
+        #     import pdb; pdb.set_trace()
 
         ########################
         # import pdb; pdb.set_trace()
@@ -522,6 +525,28 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         self.visualize_upwind_vec()
 
+    def upwind_wells(self):
+
+        wells_inj = self.wells['ws_inj']
+        if len(wells_inj) > 0:
+            set_wells_inj = set(wells_inj)
+            faces = np.unique(np.concatenate(self.elements_lv0['volumes_face_faces'][wells_inj]))
+            faces = np.setdiff1d(faces, self.elements_lv0['boundary_faces'])
+
+            ids_faces_internal = self.rmap_internal_faces(faces)
+            self._data['upwind_identificate'][ids_faces_internal] = False
+            self._data['upwind_identificate_o'][ids_faces_internal] = False
+
+            v0 = self.elements_lv0['neig_internal_faces'][ids_faces_internal]
+
+            for volumes, i in zip(v0, ids_faces_internal):
+                if set_wells_inj & set([volumes[0]]):
+                    self._data['upwind_identificate'][i, 0] = True
+                    self._data['upwind_identificate_o'][i, 0] = True
+                if set_wells_inj & set([volumes[1]]):
+                    self._data['upwind_identificate'][i, 1] = True
+                    self._data['upwind_identificate_o'][i, 1] = True
+
     def update_upwind_phases(self):
         '''
             paper Starnoni
@@ -531,18 +556,12 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         internal_faces = self.elements_lv0['internal_faces']
         v0 = self.elements_lv0['neig_internal_faces']
         saturation = self.data_impress['saturation']
-        # flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
         q_sigma_internal_faces = self.data_impress['flux_faces'][internal_faces]
         q_sigma_internal_faces[np.absolute(q_sigma_internal_faces) < k0] = 0
         qposi = q_sigma_internal_faces >= 0
         qneg = ~qposi
-        # q_sigma_internal_faces = self.data_impress['flux_faces'][internal_faces]
         ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
-        # g_o_internal_faces = self.g_o_internal_faces
-        # g_w_internal_faces = self.g_w_internal_faces
         G = ak*(self.g_w_internal_faces - self.g_o_internal_faces)
-        # lambda_w_internal_faces = self.lambda_w_internal_faces
-        # lambda_o_internal_faces = self.lambda_o_internal_faces
         gnegi = G <= 0
         gpos = ~gnegi
         test1 = qposi & gnegi
@@ -575,6 +594,51 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
             if test_2_2.sum() > 0:
                 self._data['upwind_identificate'][test2_2, 0] = True
                 self._data['upwind_identificate_o'][test2_2, 1] = True
+
+        if test3.sum() > 0:
+            q_sigma_2 = q_sigma_internal_faces[test3]
+            flux_w_faces = self.data_impress['flux_w_faces'][internal_faces][test3]
+            flux_o_faces = self.data_impress['flux_o_faces'][internal_faces][test3]
+
+            pos_sigma = np.full(len(q_sigma_2), True, dtype=bool)
+            pos_w = flux_w_faces < 0
+            pos_o = flux_o_faces < 0
+            and_pos_w = pos_w & pos_sigma
+            and_pos_o = pos_o & pos_sigma
+
+            upwind_w = np.full((len(q_sigma_2), 2), False, dtype=bool)
+            upwind_o = np.full((len(q_sigma_2), 2), False, dtype=bool)
+
+            upwind_w[and_pos_w, 1] = True
+            upwind_o[and_pos_o, 1] = True
+
+            upwind_o[and_pos_w, 1] = True
+            upwind_w[and_pos_o, 1] = True
+
+            self._data['upwind_identificate'][test3] = upwind_w
+            self._data['upwind_identificate_o'][test3] = upwind_o
+
+            flux_w_internal_faces = (-(self.grad_p_internal_faces*ak*self.lambda_w_internal_faces - self.flux_grav_w_internal_faces))[test3]
+            flux_o_internal_faces = (-(self.grad_p_internal_faces*ak*self.lambda_o_internal_faces - self.flux_grav_o_internal_faces))[test3]
+            flux_total = flux_w_internal_faces + flux_o_internal_faces
+
+            pos_flux_total = fluxflux_total < 0
+            and_pos_sigma = pos_flux_total & pos_sigma
+
+            if ~and_pos_sigma.sum() > 1:
+                t1 = ~and_pos_sigma & and_pos_w & ~and_pos_o
+                t2 = ~and_pos_sigma & and_pos_o & ~and_pos_w
+
+                upwind_o[t1] = False
+                upwind_o[t1, 0] = True
+
+                upwind_w[t2] = False
+                upwind[t2, 0] = True
+
+                self._data['upwind_identificate'][test3] = upwind_w
+                self._data['upwind_identificate_o'][test3] = upwind_o
+
+        self.upwind_wells()
 
         verif1 = self._data['upwind_identificate'][:,0] ^ self._data['upwind_identificate'][:,1]
         verif2 = self._data['upwind_identificate_o'][:,0] ^ self._data['upwind_identificate_o'][:,1]
@@ -621,10 +685,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         # q_sigma_internal_faces[np.absolute(q_sigma_internal_faces) < k0] = 0
         # q_sigma_internal_faces = self.data_impress['flux_faces'][internal_faces]
         ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
-        G = -(self.g_w_internal_faces - self.g_o_internal_faces)
-        g1 = G >= 0 + d2
-        import pdb; pdb.set_trace()
-
 
         pos_sigma = q_sigma_internal_faces > 0 + d1
         pos_w = flux_w_internal_faces > 0 + d1
@@ -901,6 +961,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         flux = self.data_impress['flux_faces'][f1]
         upw = self.data_impress['upwind_w_faces_vec'][f1]
 
-        # self.print_test_faces()
+        self.print_test_faces()
+        self.print_test()
 
-        # import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
