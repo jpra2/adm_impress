@@ -125,9 +125,9 @@ class PropertiesCalc:
             self.phase_viscosity = getattr(phase_viscosity, data_loaded['compositional_data']['phase_viscosity'])
             self.phase_viscosity = self.phase_viscosity(self.n_volumes, fprop, kprop)
 
-            fprop.phase_viscosities[0,0:2,:] = 0.02*np.ones([2,self.n_volumes])
-            #self.phase_viscosities_oil_and_gas = self.phase_viscosity(fprop, kprop)
-            #fprop.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosities_oil_and_gas
+            #fprop.phase_viscosities[0,0:2,:] = 0.02*np.ones([2,self.n_volumes]) #only for BL test
+            self.phase_viscosities_oil_and_gas = self.phase_viscosity(fprop, kprop)
+            fprop.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosities_oil_and_gas
 
     def update_water_saturation(self, data_impress, fprop, kprop):
         Pw = np.array(data_loaded['compositional_data']['water_data']['Pw']).astype(float)

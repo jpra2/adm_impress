@@ -276,12 +276,6 @@ class CompositionalFVM:
         data = np.array([-component_flux_internal_faces, component_flux_internal_faces]).flatten()
         fprop.component_flux_vols_total = sp.csc_matrix((data, (lines, cols)), shape = (kprop.n_components, self.n_volumes)).toarray()
 
-        # só ta funcionando pra 1d:
-        #flux_vols = np.zeros([kprop.n_components,2,self.n_volumes])
-        #flux_vols[:,0,self.v0[:,0]] = -component_flux_internal_faces
-        #flux_vols[:,1,self.v0[:,1]] = component_flux_internal_faces
-        #flux_vols_total = np.sum(flux_vols,axis = 1)
-
     def update_flux_wells(self, fprop, kprop, wells, delta_t):
         wp = wells['ws_p']
         well_term = np.zeros([kprop.n_components,1])
