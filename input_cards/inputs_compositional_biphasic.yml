@@ -1,9 +1,13 @@
-mesh_name: mesh/100x1x1_b.msh
-n_test: 0
+mesh_name: 500x1x1_b.msh
+name_save_file: 'results_Buckley_Leverett_case'
+
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: False
 water_component: True
+use_vpi: True
+
+
 
 load_compositional_data: False
 load_data: False
@@ -11,26 +15,22 @@ convert_english_to_SI: False
 set_porosity: true
 set_permeability: true
 read_permeability: false
-
 gravity: false
-
 deletar_results: false
 load_operators: false
-
 monophasic_data: false
-
-
 monophasic_data:
   gama: 10000.0
   mi: 1.0
 
-use_vpi: True
+
 
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
-  vpis_para_gravar_vtk: [0.1, 0.15, 0.2]
+  vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
+  time_to_save: [0.0]
   tempo_maximo: null
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
@@ -48,6 +48,7 @@ compositional_data:
     deltaNlim: 1
     deltaSlim: 0.1
     deltaVlim: 1
+    delta_t_ini: 2.5
 
   water_data:
     mi_W: 1e-3
@@ -84,6 +85,7 @@ compositional_data:
     Bin: [0]
     C7: [1]
     SG: [0.7342]
+    vshift_parameter: [0.0]
 
 #water saturation data
 Saturation:

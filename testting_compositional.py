@@ -12,16 +12,20 @@ import update_inputs_compositional
 
 """ --------------------------For user to fill------------------------------ """
 
-name_current = 'current_compositional_b_results_'
-name_all = 'all_compositional_b_results_'
-mesh = 'mesh/100x1x1_b.msh'
+name_current = 'current_compositional_results_'
+name_all = data_loaded['name_save_file'] + '_'
+mesh = 'mesh/' + data_loaded['mesh_name']
 
-delta_t_initial = 1000
-loop_max = 1000000000000
-t = 0
-loop = 0
-tmax = 422693.9470089848#1.3824*86400#365*86400#422693.9470089848 #seg #0.01* 86400
 
+delta_t_initial = data_loaded['compositional_data']['time_data']['delta_t_ini']
+if data_loaded['use_vpi']:
+    stop_criteria = max(data_loaded['compositional_data']['vpis_para_gravar_vtk'])
+else: stop_criteria = max(data_loaded['compositional_data']['time_to_save'])
+
+loop_max = 1000
+run_criteria = 0
+
+ #31536000 #1.3824*86400#365*86400#422693.9470089848 #seg #0.01* 86400
 
 """ ----------------------------- RUN CODE --------------------------------- """
 
@@ -32,15 +36,18 @@ M, data_impress, prop, wells, fprop, fprop_block, kprop, load, n_volumes = run_c
 
 sim = run_simulation(delta_t_initial, data_impress, fprop, name_current, name_all)
 
-while t < tmax:# and loop < loop_max:
+while run_criteria < stop_criteria :# and loop < loop_max:
 
     sim.run(M, data_impress, wells, prop, fprop, fprop_block, kprop, load, n_volumes)
-    t = sim.t
-    loop = sim.loop
-    if (t + sim.delta_t) > tmax:
-        sim.delta_t = tmax - t
 
-    print(sim.t)
+    if data_loaded['use_vpi']: run_criteria = sim.vpi
+    else:
+        run_criteria = sim.t
+        if (sim.t + sim.delta_t) > stop_criteria:
+            sim.delta_t = stop_criteria - sim.t
+    print(run_criteria)
+    #if (t + sim.delta_t) > sim.time_save:
+
 print(fprop.P)
 import pdb; pdb.set_trace()
 sim.save_infos(data_impress, M)

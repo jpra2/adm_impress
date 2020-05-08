@@ -1,10 +1,12 @@
-mesh_name: mesh/100x1x1_b.msh
-n_test: 0
+mesh_name: 100x1x1_b.msh
+name_save_file: 'results_compressive_oil_case'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
 water_component: False
+use_vpi: False
+
 
 load_compositional_data: False
 load_data: False
@@ -17,18 +19,17 @@ load_operators: false
 read_permeability: false
 monophasic_data: false
 set_permeability: True
-
-use_vpi: False
-
 monophasic_data:
   gama: 10000.0
   mi: 1.0
+
+
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [1015, 274752.]
+  time_to_save: [1015, 432000.]
   tempo_maximo: null
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
@@ -45,7 +46,8 @@ compositional_data:
     deltaPlim: 68.9476
     deltaNlim: .001
     deltaSlim: .001
-    deltaVlim: .00001
+    deltaVlim: .0001
+    delta_t_ini: 1000
 
   #rever isso de Cw=0 e Pw
   water_data:
@@ -80,7 +82,7 @@ compositional_data:
     Mw: [142.28e-3]
     w: [0.4890]
     Bin: [0]
-    C7: [0]
+    C7: [1]
     SG: [0.7342]
     vshift_parameter: [0.085]
 
@@ -100,7 +102,7 @@ Porosity:
 Permeability:
   r1:
     type: all
-    value: [4.934617e-13, 0, 0, 0, 0, 0, 0, 0, 0]
+    value: [4.934617e-13, 0, 0, 0, 4.934617e-13, 0, 0, 0, 4.934617e-13]
 
 Pressure:
   r1:
