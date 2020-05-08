@@ -46,8 +46,7 @@ class CompositionalFVM:
             #be based on the CFL parameter.
             delta_tcfl = delta_time.update_CFL(delta_t, fprop)
             r = delta_tcfl/delta_t
-            r = 1
-            #delta_t = delta_tcfl
+            delta_t = delta_tcfl
 
         self.update_composition(fprop, kprop, wells, delta_t)
         return delta_t
@@ -303,11 +302,6 @@ class CompositionalFVM:
 
         if len(wells['ws_q']) > 0:
             self.q[:,wells['ws_q']] = wells['values_q'][:,np.newaxis]
-
-        #wq = wells['ws_q']
-        #self.q[:,wells['ws_q']] = ((self.T_noCC[wq,:] @ fprop.P - self.pressure_term[wq] + self.volume_term[wq] ) / delta_t
-        #                        + self.capillary_term[wq])/self.dVtk[:,wq]
-        #if kprop.load_w and not kprop.load_k: self.q[:,wp] = self.q[:,wells['ws_q']]
 
     def update_composition(self, fprop, kprop, wells, delta_t):
         self.update_flux_wells(fprop, kprop, wells, delta_t)

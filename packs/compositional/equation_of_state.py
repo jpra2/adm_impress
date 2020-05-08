@@ -10,7 +10,7 @@ class PengRobinson:
     def coefficientsPR(self, kprop):
         #l - any phase molar composition
         PR_kC7 = np.array([0.379642, 1.48503, 0.1644, 0.016667])
-        PR_k = np.array([0.37464, 1.5422, 0.26992])
+        PR_k = np.array([0.37464, 1.54226, 0.26992])
 
         k = (PR_kC7[0] + PR_kC7[1] * kprop.w - PR_kC7[2] * kprop.w ** 2 + \
             PR_kC7[3] * kprop.w ** 3) * kprop.C7 + (PR_k[0] + PR_k[1] * kprop.w - \
@@ -57,6 +57,3 @@ class PengRobinson:
                 2 ** (1/2)) * B) / (Z + (1 - 2 ** (1/2)) * B))
 
         return lnphi
-
-    def Volume_Translation(self):
-        #translation made in the molar volume

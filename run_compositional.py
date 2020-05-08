@@ -28,7 +28,7 @@ def get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes)
     else: fprop.x = []; fprop.y = []
     if kprop.load_w: fprop.run_inputs_w(T, P, data_loaded, n_volumes)
 
-    prop = PropertiesCalc(n_volumes)
+    prop = PropertiesCalc(data_impress, n_volumes)
     prop.run_outside_loop(data_impress, wells, fprop, kprop)
     return prop, fprop, fprop_block, kprop
 
@@ -42,7 +42,7 @@ class run_simulation:
         self.t = 0.0
         self.contador_vtk = 0
         self.n_volumes = len(data_impress['volume'])
-        self.vpi = data_loaded['use_vpi']
+        self.use_vpi = data_loaded['use_vpi']
         self.vpi_save = data_loaded['compositional_data']['vpis_para_gravar_vtk']
         self.time_save = data_loaded['compositional_data']['time_to_save']
         fprop.Vbulk = data_impress['volume']
@@ -73,13 +73,12 @@ class run_simulation:
         dt = t1 - t0
 
         # Talvez isso esteja antes de self.all_compositional_results dentro de update_current_compositional_results
-        if self.vpi:
-            if np.round(self.vpi,2) in self.vpi_save:
+        if self.use_vpi:
+            if np.round(self.vpi,3) in self.vpi_save:
+                
                 self.update_current_compositional_results(M, wells, fprop, dt) #ver quem vou salvar
         else:
-
             if np.round(self.t) in self.time_save:
-                import pdb; pdb.set_trace()
                 self.update_current_compositional_results(M, wells, fprop, dt)
 
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, kprop.load_k, self.loop)#get delta_t with properties in t=n and t=n+1

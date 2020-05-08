@@ -16,7 +16,7 @@ class StabilityCheck:
     def __init__(self, P, T, kprop):
         self.T = T
         self.P = P
-        self.s = np.array(data_loaded['compositional_data']['vshift_parameter']).astype(float)
+        self.s = np.array(data_loaded['compositional_data']['component_data']['vshift_parameter']).astype(float)
         self.EOS = PengRobinson(P, T, kprop)
 
     def run(self, z, kprop):
