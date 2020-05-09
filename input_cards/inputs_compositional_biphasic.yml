@@ -45,10 +45,11 @@ compositional_data:
 
   time_data:
     deltaPlim: 70
-    deltaNlim: 1
-    deltaSlim: 0.1
+    deltaNlim: 10
+    deltaSlim: 0.4
     deltaVlim: 1
-    delta_t_ini: 2.5
+    delta_t_ini: 2.8
+    #2.765
 
   water_data:
     mi_W: 1e-3
@@ -58,12 +59,10 @@ compositional_data:
     Pw: 13.789514E6
 
   residual_saturations:
-    Sorw: 0.
+    Sorw: 0.35
     Sorg: 0
     Swr: 0.2
     Sgr: 0
-    Sor: 0.35
-    # if its not given Sor, beeing given Sorg and Sorw instead, attribute to Sor a negatuve value
 
   relative_permeability_data:
     krw0: 0.2

@@ -17,7 +17,6 @@ name_all = data_loaded['name_save_file'] + '_'
 mesh = 'mesh/' + data_loaded['mesh_name']
 
 
-delta_t_initial = data_loaded['compositional_data']['time_data']['delta_t_ini']
 if data_loaded['use_vpi']:
     stop_criteria = max(data_loaded['compositional_data']['vpis_para_gravar_vtk'])
 else: stop_criteria = max(data_loaded['compositional_data']['time_to_save'])
@@ -32,13 +31,13 @@ run_criteria = 0
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 
-M, data_impress, prop, wells, fprop, fprop_block, kprop, load, n_volumes = run_compositional.initialize(load, convert, mesh)
+M, data_impress, wells, fprop, kprop, load, n_volumes = run_compositional.initialize(load, convert, mesh)
 
-sim = run_simulation(delta_t_initial, data_impress, fprop, name_current, name_all)
+sim = run_simulation(M, wells, data_impress, name_current, name_all)
 
 while run_criteria < stop_criteria :# and loop < loop_max:
 
-    sim.run(M, data_impress, wells, prop, fprop, fprop_block, kprop, load, n_volumes)
+    sim.run(M, data_impress, wells, fprop, kprop, load, n_volumes)
 
     if data_loaded['use_vpi']: run_criteria = sim.vpi
     else:
@@ -46,9 +45,15 @@ while run_criteria < stop_criteria :# and loop < loop_max:
         if (sim.t + sim.delta_t) > stop_criteria:
             sim.delta_t = stop_criteria - sim.t
     print(run_criteria)
-    #if (t + sim.delta_t) > sim.time_save:
 
+""" Just for the 2D case """
+centroids = M.data['centroid_volumes']
+p0 = [0,292.608,0]
+p1 = [609.6,316.992,0.3048]
+ind_ans = get_box(centroids,np.array([p0,p1]))
+fprop.P = fprop.P[ind_ans]
 print(fprop.P)
+
 import pdb; pdb.set_trace()
 sim.save_infos(data_impress, M)
 

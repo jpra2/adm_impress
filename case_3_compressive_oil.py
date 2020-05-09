@@ -53,7 +53,7 @@ for arq in arquivos:
                           1980.22, 1979.12, 1977.66, 1975.97, 1973.94, 1971.55, 1969.17, 1967.25, 1965.04, 1960.79, 1952.94, 1940.9,
                           1928.27, 1920.54, 1911.46, 1900, 1905.88])'''
 
-        datas = np.load('flying/all_compositional_comp_oil_results_5_days.npy', allow_pickle=True)
+        datas = np.load('flying/results_compressive_oil_case_89.npy', allow_pickle=True)
 
         for data in datas[1:]:
             pressure = data[4] / 6894.757

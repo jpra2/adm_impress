@@ -14,13 +14,15 @@ import time
 def initialize(load, convert, mesh):
     M, elements_lv0, data_impress, wells = initial_mesh(mesh, load=load, convert=convert)
     n_volumes = data_impress.len_entities['volumes']
-    prop, fprop, fprop_block, kprop = get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes)
-    return M, data_impress, prop, wells, fprop, fprop_block, kprop, load, n_volumes
+    fprop, kprop = get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes)
+    return M, data_impress, wells, fprop, kprop, load, n_volumes
 
 def get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes):
     kprop = ComponentProperties(data_loaded)
     P, T = update_inputs_compositional.inputs_overall_properties(data_loaded)
     fprop = FluidProperties(kprop)
+    get_constant_properties(data_impress, fprop)
+
     fprop_block = StabilityCheck(P, T, kprop)
     if kprop.load_k:
         fprop_block.run(fprop.z, kprop)
@@ -28,13 +30,20 @@ def get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes)
     else: fprop.x = []; fprop.y = []
     if kprop.load_w: fprop.run_inputs_w(T, P, data_loaded, n_volumes)
 
-    prop = PropertiesCalc(data_impress, n_volumes)
-    prop.run_outside_loop(data_impress, wells, fprop, kprop)
-    return prop, fprop, fprop_block, kprop
+    PropertiesCalc(n_volumes).run_outside_loop(data_impress, wells, fprop, kprop)
+    return fprop, kprop
+
+def get_constant_properties(data_impress, fprop):
+    fprop.Pf = np.array(data_loaded['compositional_data']['Pf']).astype(float)
+    fprop.porosity = data_impress['poro']
+    fprop.cf = np.array(data_loaded['compositional_data']['rock_compressibility']).astype(float)
+    fprop.Pw = np.array(data_loaded['compositional_data']['water_data']['Pw']).astype(float)
+    fprop.Cw = np.array(data_loaded['compositional_data']['water_data']['Cw']).astype(float)
+    fprop.Vbulk = data_impress['volume']
 
 class run_simulation:
 
-    def __init__(self, delta_t_initial, data_impress, fprop, name_current, name_all):
+    def __init__(self, M, wells, data_impress, name_current, name_all):
         self.name_current_compositional_results =os.path.join(direc.flying, name_current + '.npy')
         self.name_all_compositional_results = os.path.join(direc.flying, name_all)
         self.loop = 0
@@ -45,17 +54,16 @@ class run_simulation:
         self.use_vpi = data_loaded['use_vpi']
         self.vpi_save = data_loaded['compositional_data']['vpis_para_gravar_vtk']
         self.time_save = data_loaded['compositional_data']['time_to_save']
-        fprop.Vbulk = data_impress['volume']
-        self.delta_t = delta_t_initial
+        self.delta_t = data_loaded['compositional_data']['time_data']['delta_t_ini']
         self.mesh_name =  'compositional_'
         self.all_compositional_results = self.get_empty_current_compositional_results()
+        self.FVM = CompositionalFVM(M, self.n_volumes, wells)
 
-    def run(self, M, data_impress, wells, prop, fprop, fprop_block, kprop, load, n_volumes):
+    def run(self, M, data_impress, wells, fprop, kprop, load, n_volumes):
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
-        FVM = CompositionalFVM(M, data_impress, prop, wells, fprop, fprop_block, kprop, self.delta_t, load, self.loop)
+        self.delta_t = self.FVM.runIMPEC(M, data_loaded, data_impress, wells, fprop, kprop, self.delta_t)
 
-        self.delta_t = FVM.delta_t # if the CFL condition is broken, delta_t is changed
         self.t += self.delta_t
 
         if kprop.load_k and kprop.compressible_k:
@@ -66,7 +74,8 @@ class run_simulation:
                 fprop_block.run(z, kprop)
                 fprop.update_all_volumes(fprop_block, i)
 
-        prop.run_inside_loop(data_impress, wells, fprop, kprop)
+        PropertiesCalc(n_volumes).run_inside_loop(data_impress, wells, fprop, kprop)
+        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, kprop.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         self.update_vpi(kprop, fprop, wells)
         self.update_loop()
         t1 = time.time()
@@ -75,13 +84,13 @@ class run_simulation:
         # Talvez isso esteja antes de self.all_compositional_results dentro de update_current_compositional_results
         if self.use_vpi:
             if np.round(self.vpi,3) in self.vpi_save:
-                
+
                 self.update_current_compositional_results(M, wells, fprop, dt) #ver quem vou salvar
         else:
             if np.round(self.t) in self.time_save:
                 self.update_current_compositional_results(M, wells, fprop, dt)
 
-        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, kprop.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
+
 
     def update_loop(self):
         self.loop += 1
