@@ -446,10 +446,19 @@ class AdmMethod(DataManager, TpfaFlux2):
             T_adm = OR_adm*T_adm*OP_adm
 
         # pms = self.solver.direct_solver(T_adm, b_adm)
-        self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner='ilu0',\
-        global_multiscale_preconditioner='galerkin', n_prec_levels=1)
         # pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
-
+        local_preconditioners=['ilu0', 'jacobi']
+        global_multiscale_preconditioners=['galerkin', 'msfv']
+        ets=[]
+        names=[]
+        for l in local_preconditioners:
+            for g in global_multiscale_preconditioners:
+                et = self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner=l,\
+                global_multiscale_preconditioner=g, n_prec_levels=1)
+                ets.append(np.array(et))
+                names.append(l+'_'+g)
+        plt.close('all')
+        self.plot_graphics(ets, names)
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms
@@ -459,6 +468,45 @@ class AdmMethod(DataManager, TpfaFlux2):
         # self.data_impress['pms'] = p2
         # ##############################
         self.T = T
+
+    def plot_graphics(self, ets, names):
+        a=1
+        norms=['ep_L2', 'ep_Linf', 'ev_L2', 'ev_Linf']
+        for i in range(4): # 4 normas de erro serão plotadas
+            plt.close('all')
+            fig=plt.figure()
+
+            plt.plot()
+            tf=np.inf
+            ymin=np.inf
+            ymax=0
+            xmax=0
+            for j in range(len(names)):
+                tf2=ets[j][:,4].max()
+                if tf2<tf:
+                    tf=tf2
+                xx=np.cumsum(ets[j][:,6]+ets[j][:,7])+ets[j][:,5].max()
+                yy=ets[j][:,i]
+                if yy.min()<ymin:
+                    ymin=yy.min()
+                if yy.max()>ymax and yy.max()<100:
+                    ymax=yy.max()
+                if xx.max()>xmax and yy.max()<100:
+                    xmax=xx.max()
+                if yy.max()<100:
+                    plt.plot(xx,yy, label=names[j])
+                plt.xlabel('Time (s)')
+                plt.ylabel(norms[i])
+                plt.legend()
+            plt.plot(np.repeat(tf,2),np.array([ymin, ymax])) # plots time to solve Tf
+            plt.xlim((0,xmax))
+            plt.savefig('results_smoothers/'+norms[i]+'.png')
+
+
+
+
+
+        import pdb; pdb.set_trace()
 
     def smoother_jacobi(self, R, T, P, b, print_errors=False):
 
@@ -549,11 +597,11 @@ class AdmMethod(DataManager, TpfaFlux2):
         tc=time.time()-tc
         if global_multiscale_preconditioner=='galerkin':
             Rg=P.T
-        elif global_multiscale_preconditioner==msfv:
+        elif global_multiscale_preconditioner=='msfv':
             Rg=R
 
-
         Tcg=Rg*T*P #global T coarse
+
         tf=time.time()
         pf=spsolve(T,b)
         tf=time.time()-tf
@@ -564,10 +612,12 @@ class AdmMethod(DataManager, TpfaFlux2):
         cont=0
         errors=[]
         times=[]
-
+        ep_l2, ep_linf, ev_l2, ev_linf = self.get_error_norms(pf, pv)
+        times.append([0,0,0,0])
+        errors.append([ep_l2, ep_linf, ev_l2, ev_linf])
         while ep_l2>0.01 and cont<maxiter:
             tg=time.time()
-            pv12 = pv + (P*spsolve(Tcg,Rg*(b-T*pv)))
+            pv12 = pv + 1.0*(P*spsolve(Tcg,Rg*(b-T*pv)))
             tg=time.time()-tg
             tl=time.time()
             if local_preconditioner=='jacobi':
@@ -593,9 +643,9 @@ class AdmMethod(DataManager, TpfaFlux2):
         times=np.vstack(times)
         tt=times[:,2].sum()+times[:,3].sum()
         et=np.hstack([errors, times])
-        np.savetxt('results_smoothers/'+global_multiscale_preconditioner+'_'+local_preconditioner+'_'+str(neta_lim)+'.csv',et)
-        import pdb; pdb.set_trace()
-        return pms
+        # np.savetxt('results_smoothers/'+global_multiscale_preconditioner+'_'+local_preconditioner+'_'+str(neta_lim)+'.csv',et)
+
+        return et
 
     def get_error_norms(self, pf, pv):
         ep_l2=np.linalg.norm(pf-pv)/np.linalg.norm(pf)
@@ -633,8 +683,6 @@ class AdmMethod(DataManager, TpfaFlux2):
             return S.tocsr(), Sc.tocsr()
         else:
             return S.tocsr()
-
-
 
     def construct_jacobi_preconsitioner(self, T):
         dt=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
