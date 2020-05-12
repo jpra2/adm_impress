@@ -221,7 +221,7 @@ class CompositionalFVM:
         return independent_terms
 
     def update_pressure(self, T, D, data_impress, fprop):
-        fprop.P = np.linalg.solve(T,D)
+        fprop.P = linalg.solve(T,D)
         data_impress['pressure'] = fprop.P
 
 
@@ -263,7 +263,7 @@ class CompositionalFVM:
                 C = np.diag(np.ones(n_components))
                 C[1:,0] = - mob_k[(ref+1):]/ mob_k[ref]
                 C[0,:] = self.dVtk[ref:,wp].T
-                self.q[ref:,wp] = np.linalg.solve(C,well_term)
+                self.q[ref:,wp] = linalg.solve(C,well_term)
             else: self.q[:,wp] = well_term[0,0] / self.dVtk[:,wp]
 
         if len(wells['ws_q']) > 0:
