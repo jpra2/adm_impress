@@ -118,14 +118,13 @@ class PropertiesCalc:
             fprop.relative_permeabilities[0,1,:] = krg
         if kprop.load_w:
             fprop.relative_permeabilities[0, kprop.n_phases-1,:] = krw
-
             if any(fprop.Sw > (1 - Sor - Sgr)) or any(fprop.So > (1 - Swr - Sgr)):
                 raise ValueError('valor errado da saturacao - mudar delta_t_ini')
 
     def update_phase_viscosities(self, data_loaded, fprop, kprop):
         if kprop.load_k:
             self.phase_viscosity = self.phase_viscosity(self.n_volumes, fprop, kprop)
-            #fprop.phase_viscosities[0,0:2,:] = 0.02*np.ones([2,self.n_volumes]) #only for BL test
+            #fprop.phase_viscosities[0,0:2,:] = 0.00024887*np.ones([2,self.n_volumes]) #only for BL test
             self.phase_viscosities_oil_and_gas = self.phase_viscosity(fprop, kprop)
             fprop.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosities_oil_and_gas
 

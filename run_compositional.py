@@ -62,6 +62,7 @@ class run_simulation:
     def run(self, M, data_impress, wells, fprop, kprop, load, n_volumes):
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
+        #import pdb; pdb.set_trace()
         self.delta_t = self.FVM.runIMPEC(M, data_loaded, data_impress, wells, fprop, kprop, self.delta_t)
 
         self.t += self.delta_t
@@ -75,8 +76,8 @@ class run_simulation:
                 fprop.update_all_volumes(fprop_block, i)
 
         PropertiesCalc(n_volumes).run_inside_loop(data_impress, wells, fprop, kprop)
-        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, kprop.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         self.update_vpi(kprop, fprop, wells)
+        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, kprop.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         self.update_loop()
         t1 = time.time()
         dt = t1 - t0
@@ -84,7 +85,6 @@ class run_simulation:
         # Talvez isso esteja antes de self.all_compositional_results dentro de update_current_compositional_results
         if self.use_vpi:
             if np.round(self.vpi,3) in self.vpi_save:
-
                 self.update_current_compositional_results(M, wells, fprop, dt) #ver quem vou salvar
         else:
             if np.round(self.t) in self.time_save:
@@ -96,30 +96,36 @@ class run_simulation:
         self.loop += 1
 
     def update_vpi(self, kprop, fprop, wells):
-        #mudar tudinho
-        phase_existance = np.zeros([1,kprop.n_phases,self.n_volumes])
+        #self.phase_existance = np.zeros([1, kprop.n_phases, self.n_volumes])
 
-        if kprop.load_k:
-            phase_existance[0,0,:] = 1 + np.sign(fprop.L-1)
-            phase_existance[0,1,:] = 1 + np.sign(fprop.V-1)
-        if kprop.load_w: phase_existance[0,kprop.n_phases - 1,:] = 1
+        #if kprop.load_k:
+        #    self.phase_existance[0,0,:] = np.sign(fprop.L)
+        #    self.phase_existance[0,1,:] = np.sign(fprop.V)**2
+        #if kprop.load_w:
+        #    self.phase_existance[0,kprop.n_phases-1,:] = 1
 
-        flux_vols_total = fprop.component_flux_vols_total[:,wells['ws_inj']] / \
-            (fprop.component_molar_fractions * phase_existance * fprop.phase_molar_densities).sum(axis=1)[:,wells['ws_inj']]
-        flux_total_inj = np.absolute(flux_vols_total)
+        if len(wells['ws_inj'])>0:
+            #flux_vols_total = fprop.component_flux_vols_total / \
+            #(fprop.component_molar_fractions * self.phase_existance * fprop.phase_molar_densities).sum(axis=1)[:,wells['ws_inj']]
+
+            flux_vols_total = wells['values_q']
+            # (fprop.component_molar_fractions * phase_existance * fprop.phase_molar_densities).sum(axis=1)[:,wells['ws_inj']]
+            flux_total_inj = np.absolute(flux_vols_total)
+        else: flux_total_inj = np.zeros(2)
         self.vpi += (flux_total_inj.sum()*self.delta_t)/sum(fprop.Vp)
 
 
     def get_empty_current_compositional_results(self):
 
-        return [np.array(['loop', 'delta_t [s]', 'simulation_time [s]', 't [s]', 'pressure [Pa]', 'Sw'])]
+        return [np.array(['loop', 'delta_t [s]', 'simulation_time [s]', 't [s]', 'pressure [Pa]', 'Sw', 'centroids'])]
 
     def update_current_compositional_results(self, M, wells, fprop, simulation_time: float = 0.0):
 
         #total_flux_internal_faces = fprop.total_flux_internal_faces.ravel() #* M.faces.normal[M.faces.internal]
         #total_flux_internal_faces_vector = fprop.total_flux_internal_faces.T * np.abs(M.faces.normal[M.faces.internal])
 
-        self.current_compositional_results = np.array([self.loop, self.delta_t, simulation_time, self.t, fprop.P, fprop.Sw])
+        self.current_compositional_results = np.array([self.loop, self.delta_t, simulation_time,
+        self.t, fprop.P, fprop.Sw, M.data['centroid_volumes']])
         self.all_compositional_results.append(self.current_compositional_results)
 
     def export_current_compositional_results(self):

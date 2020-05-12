@@ -27,7 +27,7 @@ class BrooksAndCorey:
         krw[saturations[2]<self.Swr] = 0
         kro = self.kro0 * ((saturations[0] - Sor) / (1 - self.Swr - Sor - self.Sgr)) ** self.n_o
         #kro[saturations[2]<self.Swr] = self.kro0 * ((saturations[0][saturations[2]<self.Swr] - self.Sor) / (1 - self.Sor - self.Sgr)) ** self.n_o
-        kro[saturations[0]<Sor] = 1
+        kro[saturations[2]<self.Swr] = 1
         krg = self.krg0 * ((saturations[1] - self.Sgr) / (1 - self.Swr - Sor - self.Sgr)) ** self.n_g
         return kro, krg, krw, Sor
 
