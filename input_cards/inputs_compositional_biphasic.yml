@@ -122,6 +122,7 @@ Wells:
     type: Injector
     type_region: box
     value: [-0, -0.00181845]
+    ksi_inj: 55484.31372
 
   P2:
     p0: [0.6083808, 0.0, 0.0]

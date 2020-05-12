@@ -1,4 +1,4 @@
-mesh_name: 25x25x1_m.msh
+mesh_name: 25x25x1_b.msh
 name_save_file: 'results_2d_injection_case'
 
 n_test: 0
