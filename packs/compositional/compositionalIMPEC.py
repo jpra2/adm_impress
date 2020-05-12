@@ -34,16 +34,14 @@ class CompositionalFVM:
             self.mobilities_internal_faces_old = np.copy(self.mobilities_internal_faces)
 
             T = self.update_transmissibility( M, wells, fprop, kprop, delta_t)
-            import pdb; pdb.set_trace()
             D = self.update_independent_terms(fprop, kprop, wells, delta_t)
             self.update_pressure(T, D, data_impress, fprop)
             self.update_flux_internal_faces(M, data_impress, wells, fprop, kprop, delta_t)
             self.update_flux_volumes(fprop, kprop)
-            # For the composition calculation the time step may be different because it treats
+            # For the composition calculation the time step might be different because it treats
             #composition explicitly and this explicit models are conditionally stable - wich can
             #be based on the CFL parameter.
 
-            #Now checking if the initial delta_t is making saturation grow bigger than possible:
             delta_t_new = delta_time.update_CFL(delta_t, wells, fprop)
 
             r = delta_t_new/delta_t
@@ -214,7 +212,6 @@ class CompositionalFVM:
         return well_term
 
     def update_independent_terms(self, fprop, kprop, wells, delta_t):
-        import pdb; pdb.set_trace()
         self.pressure_term = self.pressure_independent_term(fprop)
         self.capillary_term = self.capillary_independent_term(fprop, kprop)
         self.volume_term = self.volume_discrepancy_independent_term(fprop)
