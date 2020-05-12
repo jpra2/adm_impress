@@ -28,7 +28,7 @@ def get_levelantids_levelids(level_ids_ant, level_ids):
         if len(level_id) > 1:
             raise ValueError('erro get_level_id')
         level_ids2.append(level_id[0])
-
+        
     level_ids2 = np.array(level_ids2)
 
     return gids2, level_ids2
@@ -448,8 +448,8 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         # pms = self.solver.direct_solver(T_adm, b_adm)
         # pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
-        local_preconditioners=['ilu0', 'jacobi', 'olav', 'sor']
-        global_multiscale_preconditioners=['galerkin', 'msfv']
+        local_preconditioners=['bosma', 'jacobi', 'olav']
+        global_multiscale_preconditioners=['galerkin']
         # compare_smoothers(OR_adm, T, OP_adm, b, global_multiscale_preconditioners, self.elements_lv0, self.data_impress)
         # import pdb; pdb.set_trace()
         ets=[]
@@ -594,7 +594,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         if local_preconditioner=='jacobi':
             alpha_jacobi=0.97
             Ml, pl = self.construct_jacobi_preconsitioner(T)
-        elif local_preconditioner=='ilu0' or local_preconditioner=='olav':
+        elif local_preconditioner=='bosma' or local_preconditioner=='olav':
             Ml=linalg.spilu(T,drop_tol=1e-4,fill_factor=1,permc_spec='NATURAL')
         elif local_preconditioner=='sor':
             Sf=self.get_Sor(T,n_prec_levels)
@@ -611,23 +611,24 @@ class AdmMethod(DataManager, TpfaFlux2):
         tf=time.time()-tf
 
         pv=P*spsolve(Rg*T*P,Rg*b)
-        maxiter=50
-        ep_l2=np.inf
+        # pv=np.zeros_like(b)
+        maxiter=20
+        er_l2=np.inf
         cont=0
         errors=[]
         times=[]
         ep_l2, ep_linf, ev_l2, ev_linf = self.get_error_norms(pf, pv)
         times.append([0,0,0,0])
         errors.append([ep_l2, ep_linf, ev_l2, ev_linf])
-        while ep_l2>0.01 and cont<maxiter:
+        while er_l2>1e-4 and cont<maxiter:
             tg=time.time()
             pv12 = pv + 1.0*(P*spsolve(Tcg,Rg*(b-T*pv)))
             tg=time.time()-tg
             tl=time.time()
             if local_preconditioner=='jacobi':
                 pv = self.iterate_jacobi(pv, pv12,b, pl, Ml, alpha_jacobi=alpha_jacobi)
-            elif local_preconditioner=='ilu0':
-                for i in range(1):
+            elif local_preconditioner=='bosma':
+                for i in range(5):
                     pv=pv12+Ml.solve(b-T*pv12)
                     pv12=pv
             elif local_preconditioner=='olav':
@@ -638,6 +639,8 @@ class AdmMethod(DataManager, TpfaFlux2):
                 pf3 = pv12 + linalg.spsolve(Sf,(b - T*pv12))
                 pv = pf3 + linalg.spsolve(Sf,(b - T*pf3))
             tl=time.time()-tl
+            er_l2=np.linalg.norm(b-T*pv)/np.linalg.norm(b)
+            print(er_l2, 'erro relatitivo no resíduo')
             pms = pv + (P*spsolve(csc_matrix(Rg*T*P),Rg.tocsc()*(b-T*pv)))
             ep_l2, ep_linf, ev_l2, ev_linf = self.get_error_norms(pf, pms)
             errors.append([ep_l2, ep_linf, ev_l2, ev_linf])
