@@ -14,6 +14,7 @@ from scipy.sparse import csc_matrix
 from ..directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 from scipy.sparse.linalg import spsolve_triangular
+from packs.adm.smoothers.test_smoothers import compare_smoothers
 import time
 
 
@@ -447,8 +448,10 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         # pms = self.solver.direct_solver(T_adm, b_adm)
         # pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
-        local_preconditioners=['ilu0', 'jacobi']
+        local_preconditioners=['ilu0', 'jacobi', 'olav', 'sor']
         global_multiscale_preconditioners=['galerkin', 'msfv']
+        # compare_smoothers(OR_adm, T, OP_adm, b, global_multiscale_preconditioners, self.elements_lv0, self.data_impress)
+        # import pdb; pdb.set_trace()
         ets=[]
         names=[]
         for l in local_preconditioners:
@@ -478,13 +481,17 @@ class AdmMethod(DataManager, TpfaFlux2):
 
             plt.plot()
             tf=np.inf
+            tc=np.inf
             ymin=np.inf
             ymax=0
             xmax=0
             for j in range(len(names)):
-                tf2=ets[j][:,4].max()
+                tf2=ets[j][:,4][ets[j][:,4]>0].min()
+                tc2=ets[j][:,5][ets[j][:,5]>0].min()
                 if tf2<tf:
                     tf=tf2
+                if tc2<tc:
+                    tc=tc2
                 xx=np.cumsum(ets[j][:,6]+ets[j][:,7])+ets[j][:,5].max()
                 yy=ets[j][:,i]
                 if yy.min()<ymin:
@@ -499,12 +506,9 @@ class AdmMethod(DataManager, TpfaFlux2):
                 plt.ylabel(norms[i])
                 plt.legend()
             plt.plot(np.repeat(tf,2),np.array([ymin, ymax])) # plots time to solve Tf
+            plt.plot(np.repeat(tc,2),np.array([ymin, ymax])) # plots time to solve Tc
             plt.xlim((0,xmax))
             plt.savefig('results_smoothers/'+norms[i]+'.png')
-
-
-
-
 
         import pdb; pdb.set_trace()
 
@@ -606,7 +610,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         pf=spsolve(T,b)
         tf=time.time()-tf
 
-        pv=P*spsolve(R*T*P,R*b)
+        pv=P*spsolve(Rg*T*P,Rg*b)
         maxiter=50
         ep_l2=np.inf
         cont=0
@@ -623,18 +627,18 @@ class AdmMethod(DataManager, TpfaFlux2):
             if local_preconditioner=='jacobi':
                 pv = self.iterate_jacobi(pv, pv12,b, pl, Ml, alpha_jacobi=alpha_jacobi)
             elif local_preconditioner=='ilu0':
-                # for i in range(3):
-                pv=pv12+Ml.solve(b-T*pv12)
-                pv12=pv
+                for i in range(1):
+                    pv=pv12+Ml.solve(b-T*pv12)
+                    pv12=pv
             elif local_preconditioner=='olav':
                 dk=b-T*pv12
                 yrf=Ml.solve(dk)
                 pv=pv12+P*spsolve(Tcg,Rg*(dk-T*yrf))+yrf
             elif local_preconditioner=='sor':
-                pf3 = pv12 + linalg.spsolve_triangular(Sf,(b - T*pv12),overwrite_A=True, overwrite_b=True)
-                pv = pf3 + linalg.spsolve_triangular(Sf,(b - T*pf3))
+                pf3 = pv12 + linalg.spsolve(Sf,(b - T*pv12))
+                pv = pf3 + linalg.spsolve(Sf,(b - T*pf3))
             tl=time.time()-tl
-            pms = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
+            pms = pv + (P*spsolve(csc_matrix(Rg*T*P),Rg.tocsc()*(b-T*pv)))
             ep_l2, ep_linf, ev_l2, ev_linf = self.get_error_norms(pf, pms)
             errors.append([ep_l2, ep_linf, ev_l2, ev_linf])
             times.append([tf, tc, tg, tl])

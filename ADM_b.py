@@ -78,7 +78,6 @@ get_correction_term = data_loaded['get_correction_term']
 n_levels = int(data_loaded['n_levels'])
 _debug = data_loaded['_debug']
 biphasic = data_loaded['biphasic']
-
 M, elements_lv0, data_impress, wells = initial_mesh()
 
 if biphasic:
@@ -98,7 +97,7 @@ PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
-neta_lim=1.0
+neta_lim=100000000.0
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
