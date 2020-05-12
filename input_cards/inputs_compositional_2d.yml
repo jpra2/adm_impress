@@ -1,4 +1,4 @@
-mesh_name: 25x25x1_b.msh
+mesh_name: 25x25x1_m.msh
 name_save_file: 'results_2d_injection_case'
 
 n_test: 0
@@ -35,7 +35,7 @@ compositional_data:
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
 
-  rock_compressibility: 7.25e-8
+  rock_compressibility: 7.252e-8
   Pf: 13.79E6
 
   #capillary pressure data - not ok with this
@@ -43,11 +43,11 @@ compositional_data:
   Epc: 2
 
   time_data:
-    deltaPlim: 70.
+    deltaPlim: 1.
     deltaNlim: 0.001
     deltaSlim: 0.001
     deltaVlim: .0001
-    delta_t_ini: 1000
+    delta_t_ini: .1
 
   #rever isso de Cw=0 e Pw
   water_data:
@@ -89,7 +89,7 @@ compositional_data:
 Saturation:
   r1:
     type: all
-    value: .0
+    value: 0.
 
 Porosity:
   r1:
@@ -100,7 +100,7 @@ Porosity:
 Permeability:
   r1:
     type: all
-    value: [1.48e-15, 0, 0, 0, 1.48e-15, 0, 0, 0, 1.48e-15]
+    value: [1.4804e-15, 0, 0, 0, 1.4804e-15, 0, 0, 0, 1.4804e-15]
 
 Pressure:
   r1:
@@ -110,9 +110,9 @@ Pressure:
 Temperature:
   r1:
     type: all
-    value: 588.7
+    value: 366.4833
 
-#water
+
 Wells:
   P1:
     p0: [292.608, 292.608, 0.0]
@@ -120,4 +120,5 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: [-0.1564]
+    value: [-2.72e-6]
+    ksi_inj: 4588.4116
