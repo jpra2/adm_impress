@@ -1,4 +1,5 @@
 from .. import directories as direc
+from ..utils.utils_old import get_box
 import numpy as np
 
 
@@ -7,7 +8,8 @@ def set_saturation_regions(M, wells):
 
     centroids = M.data['centroid_volumes']
     n = len(centroids)
-
+    data = np.zeros(len(M.data[M.data.variables_impress['saturation']]))
+    nv0 = 0
     for reg in direc.data_loaded[direc.names_data_loaded_lv0[4]]:
         d0 = direc.data_loaded[direc.names_data_loaded_lv0[4]][reg]
         tipo = d0['type']
@@ -16,6 +18,16 @@ def set_saturation_regions(M, wells):
         if tipo == direc.types_region_for_saturation[0]:
             tamanho_variavel = len(M.data[M.data.variables_impress['saturation']])
             data = np.repeat(value, tamanho_variavel)
+            M.data[M.data.variables_impress['saturation']] = data
+
+        elif tipo == direc.types_region_for_saturation[2]:
+            p0 = d0['p0']
+            p1 = d0['p1']
+            limites = np.array([p0, p1])
+            vols = get_box(centroids, limites)
+            nv = len(vols)
+            data[nv0:(nv+nv0)] = np.repeat(value, nv)
+            nv0 = nv
             M.data[M.data.variables_impress['saturation']] = data
 
         elif tipo == direc.types_region_for_saturation[1]:

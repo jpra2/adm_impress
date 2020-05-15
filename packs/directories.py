@@ -13,7 +13,7 @@ names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeab
 names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
 
 types_region_data_loaded = ['all', 'box']
-types_region_for_saturation = ['all', 'wells']
+types_region_for_saturation = ['all', 'wells', 'box']
 types_presc = ['dirichlet', 'neumann']
 types_wells = ['injector', 'producer']
 
@@ -61,8 +61,8 @@ names_outfiles_variables_steps = [os.path.join(flying, 'variables0.npz'),
                                   ]
 names_datas_contour = os.path.join(flying, 'datas_contour.npz')
 
-#with open('input_cards/inputs_compositional_monophasic.yml', 'r') as f:
-with open('input_cards/inputs_compositional_biphasic.yml', 'r') as f:
+#with open('input_cards/inputs_compositional_2d.yml', 'r') as f:
+with open('input_cards/inputs_compositional_biphasic_v.yml', 'r') as f:
 #with open('input_cards/inputs_compositional_2d.yml', 'r') as f:
     data_loaded = yaml.safe_load(f)
 
