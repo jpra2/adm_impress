@@ -16,10 +16,10 @@ class PropertiesCalc:
         self.set_properties(fprop, kprop)
         self.update_porous_volume(data_impress, fprop)
         self.update_saturations(data_impress, fprop, kprop)
+        self.set_initial_volume(fprop)
         self.set_initial_mole_numbers(fprop, kprop)
         self.update_relative_permeabilities(fprop, kprop)
         self.update_phase_viscosities(data_loaded, fprop, kprop)
-        self.set_initial_component_mole_numbers(kprop, fprop)
         self.update_mobilities(fprop)
 
     def run_inside_loop(self, data_impress, wells, fprop, kprop):
@@ -47,18 +47,21 @@ class PropertiesCalc:
         fprop.component_molar_fractions[kprop.n_components-1, kprop.n_phases-1,:] = 1 #water molar fraction in water component
         if kprop.load_w: fprop.phase_molar_densities[0, kprop.n_phases-1,:] = fprop.ksi_W
 
+    def set_initial_volume(self, fprop):
+        self.Vo = fprop.Vp * fprop.So
+        self.Vg = fprop.Vp * fprop.Sg
+        self.Vw = fprop.Vp * fprop.Sw
+        fprop.Vt = self.Vo +self.Vg + self.Vw
+
     def set_initial_mole_numbers(self, fprop, kprop):
-        self.update_phase_volumes(fprop)
         fprop.phase_mole_numbers = np.zeros([1, kprop.n_phases, self.n_volumes])
 
         if kprop.load_k:
-            fprop.phase_mole_numbers[0,0,:] = fprop.ksi_L*fprop.Vo
-            fprop.phase_mole_numbers[0,1,:] = fprop.ksi_V*fprop.Vg
+            fprop.phase_mole_numbers[0,0,:] = fprop.ksi_L * self.Vo
+            fprop.phase_mole_numbers[0,1,:] = fprop.ksi_V * self.Vg
         if kprop.load_w:
-            fprop.phase_mole_numbers[0,kprop.n_phases-1,:] = fprop.ksi_W * fprop.Vw
-        fprop.Vt = fprop.Vo + fprop.Vg + fprop.Vw
+            fprop.phase_mole_numbers[0,kprop.n_phases-1,:] = fprop.ksi_W * self.Vw
 
-    def set_initial_component_mole_numbers(self, kprop, fprop):
         component_phase_mole_numbers = fprop.component_molar_fractions * fprop.phase_mole_numbers
         fprop.component_mole_numbers = np.sum(component_phase_mole_numbers, axis = 1)
 
@@ -76,11 +79,6 @@ class PropertiesCalc:
             fprop.Sg[fprop.V==0] = 0
             fprop.So = 1 - fprop.Sw - fprop.Sg
         else: fprop.So = np.zeros(len(fprop.Sw)); fprop.Sg = np.zeros(len(fprop.Sw))
-
-    def update_phase_volumes(self, fprop):
-        fprop.Vo = fprop.Vp * fprop.So
-        fprop.Vg = fprop.Vp * fprop.Sg
-        fprop.Vw = fprop.Vp * fprop.Sw
 
     def update_mole_numbers(self, fprop, kprop):
         # este daqui foi criado separado pois, quando compressivel, o volume poroso pode
@@ -135,4 +133,4 @@ class PropertiesCalc:
     def update_water_saturation(self, data_impress, wells, fprop, kprop):
         fprop.ksi_W = fprop.ksi_W0 * (1 + fprop.Cw * (fprop.P - fprop.Pw))
         fprop.rho_W = fprop.ksi_W * fprop.Mw_w
-        data_impress['saturation'] = fprop.component_mole_numbers[kprop.n_components-1,:] * (1 / fprop.ksi_W) / fprop.Vp
+        data_impress['saturation'] = fprop.component_mole_numbers[kprop.n_components-1,:] * (1 / fprop.ksi_W) / fprop.Vp #or Vt ?
