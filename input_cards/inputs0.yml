@@ -18,7 +18,7 @@ Porosity:
 Pressure:
   r1:
     type: all
-    value: 13.79E6
+    value: 13.78951458E6
 Saturation:
   r1:
     type: all
@@ -26,7 +26,7 @@ Saturation:
 Temperature:
   r1:
     type: all
-    value: 366.33
+    value: 366.4833
 Wells:
   P1:
     p0:
@@ -40,13 +40,13 @@ Wells:
     prescription: P
     type: Producer
     type_region: box
-    value: 13100000.0
+    value: 13100038.3
 compositional: true
 compositional_data:
   CFL: 0.5
   Cpc: 62052.84
   Epc: 2
-  Pf: 13.79E6
+  Pf: 13.78951458E6
   capillary_pressure: Chang
   component_data:
     Bin:
@@ -65,10 +65,13 @@ compositional_data:
     - 619.28
     vc:
     - 0.0006031
+    vshift_parameter:
+    - 0.085
     w:
     - 0.489
     z:
     - 1.0
+  g: 9.80665
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   relative_permeability_data:
@@ -80,20 +83,20 @@ compositional_data:
     n_w: 3.0
   residual_saturations:
     Sgr: 0
-    Sor: 0
     Sorg: 0
     Sorw: 0
     Swr: 0
   rock_compressibility: 7.252e-08
   tempo_maximo: null
   time_data:
-    deltaNlim: 0.0001
+    deltaNlim: 0.001
     deltaPlim: 68.9476
-    deltaSlim: 0.0001
-    deltaVlim: 1.0e-05
+    deltaSlim: 0.001
+    deltaVlim: 0.0001
+    delta_t_ini: 1000
   time_to_save:
   - 1015
-  - 422694
+  - 432000.0
   vpis_para_gravar_vtk:
   - 0.1
   - 0.3
@@ -112,11 +115,11 @@ hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: mesh/100x1x1_b.msh
+mesh_name: 100x1x1_b.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-n_test: 0
+name_save_file: results_compressive_oil_case
 read_permeability: false
 set_permeability: true
 set_porosity: true

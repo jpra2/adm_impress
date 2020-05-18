@@ -76,7 +76,7 @@ class PartialDerivatives:
         #dVt_dP = np.zeros(n_blocks)
         #dVt_dNk = np.zeros([kprop.Nc, n_blocks])
 
-        P = fprop.P_old
+        P = fprop.P
         So = fprop.So
         Vt = fprop.Vt
         xkj = fprop.component_molar_fractions[0:kprop.Nc,0,:]
@@ -86,7 +86,7 @@ class PartialDerivatives:
         dVt_dP = self.get_dVt_dP_analytically(P, kprop, Vt, No, xkj)
 
         '''for b in range(n_blocks):
-            P = fprop.P_old[b]
+            P = fprop.P[b]
             So = fprop.So[b]
             Vt = fprop.Vt[b]
             xkj = fprop.component_molar_fractions[0:kprop.Nc,0,b]

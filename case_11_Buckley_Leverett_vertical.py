@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import math
 
 flying = 'flying'
 name = 'all_compositional_'
@@ -13,15 +14,28 @@ nw = 2
 no = 2
 Swr = 0.2
 Sor = 0.35
-mi_w = 1
-mi_o = 20
+miu_w = 1
+miu_o = 20
+k = 0.5
+W = 0.1*30.48
+T = 0.1*30.48
+A = W*T
+qw = 0.1*0.32774128
+q = qw
+alpha = math.pi/2
+delta_rho = 0.315
+g = 980.665
+g_gradient = delta_rho*g/1013216
 Sw = np.linspace(Swr, 1-Sor, 500)
+Sw1 = np.zeros([1,1])
+Sw3 = np.zeros([1,1])
+xD3 = np.zeros([1,1])
 td = 0.2
 
 S = (Sw - Swr)/(1 - Swr - Sor)
 krw = krw_end*S**nw
 kro = kro_end*(1-S)**no
-fw = (krw*mi_o) / ((krw*mi_o)+(kro*mi_w))
+fw = (1 + (k*kro*A)*(g_gradient*np.sin(alpha))/(q*miu_o))/((krw*miu_o) + (kro*miu_w))*(krw*miu_o)
 
 p1 = np.polyfit(Sw, fw, 12)
 p2 = np.polyder(p1)
@@ -56,11 +70,12 @@ xD = np.append(xD,xD3)
 SwD = np.append(Sw1,Sw2)
 SwD = np.append(SwD,Sw3)
 
+
 for  arq in arquivos:
     if  arq.startswith(name):
-        datas = np.load('flying/results_Buckley_Leverett_case_506.npy', allow_pickle=True)
+        datas = np.load('flying/results_Buckley_Leverett_vertical_case_506.npy', allow_pickle=True)
         import pdb; pdb.set_trace()
-        for data in datas[6:]:
+        for data in datas[8:]:
             Sw = data[5]
             x = np.linspace(0,1,500)
             plt.figure(1)
@@ -71,5 +86,5 @@ for  arq in arquivos:
             plt.title('Buckley-Leverett Solution Example')
             plt.ylabel('Water Saturation')
             plt.xlabel('Dimensionless distance')
-            plt.savefig('results/compositional/saturation_w_BL_comparison1.png')
+            plt.savefig('results/compositional/saturation_w_vert_BL_comparison.png')
             import pdb; pdb.set_trace()

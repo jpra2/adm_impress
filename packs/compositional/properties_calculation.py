@@ -18,11 +18,9 @@ class PropertiesCalc:
         self.update_saturations(data_impress, fprop, kprop)
         self.set_initial_mole_numbers(fprop, kprop)
         self.update_relative_permeabilities(fprop, kprop)
-        fprop.phase_viscosities = np.zeros(fprop.relative_permeabilities.shape)
         self.update_phase_viscosities(data_loaded, fprop, kprop)
-        if kprop.load_w: self.set_water_viscosity(kprop, fprop)
         self.set_initial_component_mole_numbers(kprop, fprop)
-
+        self.update_mobilities(fprop)
 
     def run_inside_loop(self, data_impress, wells, fprop, kprop):
         self.set_properties(fprop, kprop)
@@ -33,6 +31,7 @@ class PropertiesCalc:
         self.update_total_volume(fprop)
         self.update_relative_permeabilities(fprop, kprop)
         self.update_phase_viscosities(data_loaded, fprop, kprop)
+        self.update_mobilities(fprop)
 
     def set_properties(self, fprop, kprop):
         fprop.component_molar_fractions = np.zeros([kprop.n_components, kprop.n_phases, self.n_volumes])
@@ -59,9 +58,6 @@ class PropertiesCalc:
             fprop.phase_mole_numbers[0,kprop.n_phases-1,:] = fprop.ksi_W * fprop.Vw
         fprop.Vt = fprop.Vo + fprop.Vg + fprop.Vw
 
-    def set_water_viscosity(self, kprop, fprop):
-        fprop.phase_viscosities[0,kprop.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
-
     def set_initial_component_mole_numbers(self, kprop, fprop):
         component_phase_mole_numbers = fprop.component_molar_fractions * fprop.phase_mole_numbers
         fprop.component_mole_numbers = np.sum(component_phase_mole_numbers, axis = 1)
@@ -71,7 +67,6 @@ class PropertiesCalc:
 
     def update_saturations(self, data_impress, fprop, kprop):
         fprop.Sw = data_impress['saturation']
-
         if kprop.load_k:
             fprop.Sg = np.zeros(fprop.Sw.shape)
             fprop.Sg[fprop.V!=0] = (1 - fprop.Sw[fprop.V!=0]) * \
@@ -93,7 +88,7 @@ class PropertiesCalc:
         #como se sabe. A equação do outside loop ela relaciona o volume total com o poroso, de modo
         #que eles nunca vão ser diferentes e um erro vai ser propagado por toda a simulação. Todavia,
         #ele funciona para o primeiro passo de tempo uma vez que a pressão não mudou e Vp = Vt ainda.
-        self.update_phase_volumes(fprop)
+
         fprop.phase_mole_numbers = np.zeros([1, kprop.n_phases, self.n_volumes])
 
         if kprop.load_k:
@@ -114,21 +109,28 @@ class PropertiesCalc:
 
         saturations = np.array([fprop.So, fprop.Sg, fprop.Sw])
         kro,krg,krw, Sor = self.relative_permeability(saturations)
-        fprop.relative_permeabilities = np.zeros([1, kprop.n_phases, self.n_volumes])
+        self.relative_permeabilities = np.zeros([1, kprop.n_phases, self.n_volumes])
         if kprop.load_k:
-            fprop.relative_permeabilities[0,0,:] = kro
-            fprop.relative_permeabilities[0,1,:] = krg
+            self.relative_permeabilities[0,0,:] = kro
+            self.relative_permeabilities[0,1,:] = krg
         if kprop.load_w:
-            fprop.relative_permeabilities[0, kprop.n_phases-1,:] = krw
-            if any(fprop.Sw > (1 - Sor - Sgr)) or any(fprop.So > (1 - Swr - Sgr)):
-                raise ValueError('valor errado da saturacao - mudar delta_t_ini')
+            self.relative_permeabilities[0, kprop.n_phases-1,:] = krw
+            #if kprop.load_k:
+                #if any(fprop.Sw > (1 - Sor - Sgr)) or any(fprop.So > (1 - Swr - Sgr)):
+                #    raise ValueError('valor errado da saturacao - mudar delta_t_ini')
 
     def update_phase_viscosities(self, data_loaded, fprop, kprop):
+        self.phase_viscosities = np.zeros(self.relative_permeabilities.shape)
         if kprop.load_k:
             self.phase_viscosity = self.phase_viscosity(self.n_volumes, fprop, kprop)
-            #fprop.phase_viscosities[0,0:2,:] = 0.00024887*np.ones([2,self.n_volumes]) #only for BL test
+            #self.phase_viscosities[0,0:2,:] = 0.02*np.ones([2,self.n_volumes]) #only for BL test
             self.phase_viscosities_oil_and_gas = self.phase_viscosity(fprop, kprop)
-            fprop.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosities_oil_and_gas
+            self.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosities_oil_and_gas
+        if kprop.load_w:
+            self.phase_viscosities[0,kprop.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
+
+    def update_mobilities(self, fprop):
+        fprop.mobilities = self.relative_permeabilities / self.phase_viscosities
 
     def update_water_saturation(self, data_impress, wells, fprop, kprop):
         fprop.ksi_W = fprop.ksi_W0 * (1 + fprop.Cw * (fprop.P - fprop.Pw))

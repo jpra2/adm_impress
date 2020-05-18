@@ -23,11 +23,10 @@ monophasic_data:
   gama: 10000.0
   mi: 1.0
 
-
-
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
+  g: 9.80665
   CFL: 0.5
   vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
   time_to_save: [0.0]
@@ -45,10 +44,10 @@ compositional_data:
 
   time_data:
     deltaPlim: 70
-    deltaNlim: 10
-    deltaSlim: 0.4
+    deltaNlim: 0.3
+    deltaSlim: 0.3
     deltaVlim: 1
-    delta_t_ini: 2.8
+    delta_t_ini: 1.8
     #2.765
 
   water_data:
@@ -84,7 +83,7 @@ compositional_data:
     Bin: [0]
     C7: [1]
     SG: [0.7342]
-    vshift_parameter: [0.0]
+    vshift_parameter: [0.085]
 
 #water saturation data
 Saturation:
@@ -121,7 +120,7 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: [-0, -0.00181845]
+    value: [-0, -3.2774128e-8]
     ksi_inj: 55484.31372
 
   P2:

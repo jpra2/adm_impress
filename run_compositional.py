@@ -23,8 +23,8 @@ def get_initial_properties(M, data_impress, wells, load, data_loaded, n_volumes)
     fprop = FluidProperties(kprop)
     get_constant_properties(data_impress, fprop)
 
-    fprop_block = StabilityCheck(P, T, kprop)
     if kprop.load_k:
+        fprop_block = StabilityCheck(P, T, kprop)
         fprop_block.run(fprop.z, kprop)
         fprop.run_inputs_k(fprop_block, kprop, n_volumes)
     else: fprop.x = []; fprop.y = []

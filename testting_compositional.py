@@ -34,7 +34,7 @@ convert = data_loaded['convert_english_to_SI']
 M, data_impress, wells, fprop, kprop, load, n_volumes = run_compositional.initialize(load, convert, mesh)
 
 sim = run_simulation(M, wells, data_impress, name_current, name_all)
-import pdb; pdb.set_trace()
+
 while run_criteria < stop_criteria :# and loop < loop_max:
     sim.run(M, data_impress, wells, fprop, kprop, load, n_volumes)
     #import pdb; pdb.set_trace()
@@ -43,9 +43,10 @@ while run_criteria < stop_criteria :# and loop < loop_max:
         run_criteria = sim.t
         if (sim.t + sim.delta_t) > stop_criteria:
             sim.delta_t = stop_criteria - sim.t
-    if sim.delta_t > fprop.Vp[wells['ws_inj']]/wells['values_q']:
+    if sim.delta_t > fprop.Vp[wells['ws_inj']]/wells['values_q'][wells['values_q']!=0]:
         sim.delta_t = .8*fprop.Vp[wells['ws_inj']]/wells['values_q']
-    print(sim.delta_t)
+
+    print(sim.t)
 
 print(fprop.P)
 

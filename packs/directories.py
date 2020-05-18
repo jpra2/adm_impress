@@ -62,7 +62,7 @@ names_outfiles_variables_steps = [os.path.join(flying, 'variables0.npz'),
 names_datas_contour = os.path.join(flying, 'datas_contour.npz')
 
 #with open('input_cards/inputs_compositional_2d.yml', 'r') as f:
-with open('input_cards/inputs_compositional_biphasic_v.yml', 'r') as f:
+with open('input_cards/inputs_compositional_2d.yml', 'r') as f:
 #with open('input_cards/inputs_compositional_2d.yml', 'r') as f:
     data_loaded = yaml.safe_load(f)
 
