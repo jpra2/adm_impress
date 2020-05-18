@@ -28,7 +28,7 @@ def get_levelantids_levelids(level_ids_ant, level_ids):
         if len(level_id) > 1:
             raise ValueError('erro get_level_id')
         level_ids2.append(level_id[0])
-        
+
     level_ids2 = np.array(level_ids2)
 
     return gids2, level_ids2
@@ -446,8 +446,10 @@ class AdmMethod(DataManager, TpfaFlux2):
 
             T_adm = OR_adm*T_adm*OP_adm
 
-        # pms = self.solver.direct_solver(T_adm, b_adm)
+        pms = OP_adm*self.solver.direct_solver(T_adm, b_adm)
+
         # pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
+        '''
         local_preconditioners=['bosma', 'jacobi', 'olav']
         global_multiscale_preconditioners=['galerkin']
         # compare_smoothers(OR_adm, T, OP_adm, b, global_multiscale_preconditioners, self.elements_lv0, self.data_impress)
@@ -461,7 +463,7 @@ class AdmMethod(DataManager, TpfaFlux2):
                 ets.append(np.array(et))
                 names.append(l+'_'+g)
         plt.close('all')
-        self.plot_graphics(ets, names)
+        self.plot_graphics(ets, names)'''
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms

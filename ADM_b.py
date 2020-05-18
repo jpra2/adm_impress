@@ -86,7 +86,9 @@ if biphasic:
 multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 mlo = multilevel_operators
 T, b = b1.get_T_and_b()
-
+perms=np.load("flying/permeability.npy")
+perms_xx=perms[:,0]
+data_impress["perm_x"]=perms_xx
 
 if load_operators:
     pass
@@ -97,7 +99,7 @@ PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
-neta_lim=1.0
+neta_lim=0.1
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
@@ -150,7 +152,7 @@ data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
 data_impress.update_variables_to_mesh()
 M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
 
-nn = 50
+nn = 2
 cont = 1
 
 verif = True

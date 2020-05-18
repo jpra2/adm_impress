@@ -3,6 +3,9 @@ from . import directories_impress as direc_impress
 from ..directories import data_loaded
 from ..utils.utils_old import get_box
 import numpy as np
+from sympy.parsing.sympy_parser import parse_expr
+from sympy import symbols, lambdify
+
 # from .preprocess1 import set_saturation_regions
 
 
@@ -154,6 +157,39 @@ class Preprocess0:
                 cir_1=(x-x0)**2+(y-x0)**2+(z-z0)**2<r1**2
                 indices=np.arange(len(centroids))[cir_0 & cir_1]
                 n_volumes = len(indices)
+                M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
+                np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
+
+            elif tipo == 'delimited_region':
+                indices=np.repeat(False,len(centroids))
+                x_inf=d0['x_inf']
+                x_sup=d0['x_sup']
+                y_inf=d0['y_inf']
+                y_sup=d0['y_sup']
+                z_inf=d0['z_inf']
+                z_sup=d0['z_sup']
+                xc=centroids[:,0]
+                yc=centroids[:,1]
+                zc=centroids[:,2]
+                x, y, z = symbols('x y z')
+                for i in range(len(x_inf)):
+                    x_i=parse_expr(x_inf[i])
+                    x_s=parse_expr(x_sup[i])
+                    y_i=parse_expr(y_inf[i])
+                    y_s=parse_expr(y_sup[i])
+                    z_i=parse_expr(z_inf[i])
+                    z_s=parse_expr(z_sup[i])
+                    fx_i=lambdify([x,y,z],x_i)(xc,yc,zc)
+                    fx_s=lambdify([x,y,z],x_s)(xc,yc,zc)
+                    fy_i=lambdify([x,y,z],y_i)(xc,yc,zc)
+                    fy_s=lambdify([x,y,z],y_s)(xc,yc,zc)
+                    fz_i=lambdify([x,y,z],z_i)(xc,yc,zc)
+                    fz_s=lambdify([x,y,z],z_s)(xc,yc,zc)
+                    inds=(xc>fx_i) & (xc<fx_s) & (yc>fy_i) & (yc<fy_s) & (zc>fz_i) & (zc<fz_s)
+                    indices=indices | inds
+                indices=np.arange(len(centroids))[indices]
+                n_volumes = len(indices)
+                
                 M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
                 np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
 
