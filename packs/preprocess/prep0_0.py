@@ -160,7 +160,7 @@ class Preprocess0:
                 M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
                 np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
 
-            elif tipo == 'delimited_region':
+            elif tipo == 'cartesian_region':
                 indices=np.repeat(False,len(centroids))
                 x_inf=d0['x_inf']
                 x_sup=d0['x_sup']
@@ -189,7 +189,32 @@ class Preprocess0:
                     indices=indices | inds
                 indices=np.arange(len(centroids))[indices]
                 n_volumes = len(indices)
-                
+
+                M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
+                np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
+            elif tipo == 'polar_region':
+                r, t = symbols('r t')
+                indices=np.repeat(False,len(centroids))
+                for i in range(len(d0['center'])):
+                    center=d0['center'][i]
+                    r_inf=parse_expr(d0['r_inf'][i])
+                    r_sup=parse_expr(d0['r_sup'][i])
+                    t_inf=parse_expr(d0['t_inf'][i])
+                    t_sup=parse_expr(d0['t_sup'][i])
+                    xc=centroids[:,0]-center[0]
+                    yc=centroids[:,1]-center[1]
+                    zc=centroids[:,2]-center[2]
+                    rs=np.sqrt(xc*xc+yc*yc)
+                    ts=np.arccos(xc/rs)
+                    ts[yc<0]=2*3.141592653589793-ts[yc<0]
+                    r_i=lambdify([r, t], r_inf)(rs,ts)
+                    r_s=lambdify([r, t], r_sup)(rs,ts)
+                    t_i=lambdify([r, t], t_inf)(rs,ts)
+                    t_s=lambdify([r, t], t_sup)(rs,ts)
+                    inds = (rs>r_i) & (rs<r_s) & (ts>t_i) & (ts<t_s)
+                    indices=indices | inds
+                indices=np.arange(len(centroids))[indices]
+                n_volumes = len(indices)
                 M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
                 np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
 
@@ -198,9 +223,7 @@ class Preprocess0:
                 p1 = d0[direc.names_data_loaded_lv2[3]]
                 points = np.array([np.array(p0), np.array(p1)])
                 indices = get_box(centroids, points)
-
                 n_volumes = len(indices)
-
                 M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
                 np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
     def set_phi_regions(self, M):
