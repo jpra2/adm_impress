@@ -20,6 +20,8 @@ verif = True
 meshset_volumes = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 # import pdb; pdb.set_trace()
+meshset = M.core.mb.create_meshset()
+M.core.mb.add_entities(meshset, M.core.all_volumes)
 while verif:
     if cont_for_save % n_for_save == 0:
         b1.run(save=True)
@@ -28,13 +30,21 @@ while verif:
         b1.run()
         cont_for_save += 1
     print(f'\n loop: {b1.loop}\n')
-    if cont % n == 0:
-        cont = 1
-        data_impress.update_variables_to_mesh()
-        name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
-        M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
-        # import pdb; pdb.set_trace()
-    M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
+
+    # if cont % n == 0:
+    #     cont = 1
+    #     data_impress.update_variables_to_mesh()
+    #     name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
+    #     M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+    #     # import pdb; pdb.set_trace()
+
+    b1.print_test()
+    b1.print_test_faces()
+
+    # import pdb; pdb.set_trace()
+
+    if cont % n2 == 0:
+        import pdb; pdb.set_trace()
     cont += 1
     if cont % n2 == 0:
         import pdb; pdb.set_trace()
@@ -44,7 +54,7 @@ while verif:
             cont2 = 1
             data_impress.update_variables_to_mesh()
             name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
-            M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+            # M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
             # import pdb; pdb.set_trace()
 
         cont2 += 1

@@ -72,6 +72,7 @@ class AdmNonNested(AdmMethod):
 
 
     def equalize_levels(self):
+
         levels = self.data_impress['LEVEL'].copy()
         gid0 = self.data_impress['GID_0']
         # ############

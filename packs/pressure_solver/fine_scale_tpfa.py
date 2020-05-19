@@ -3,6 +3,7 @@ from ..flux_calculation.flux_tpfa import TpfaFlux
 from ..directories import data_loaded
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 import numpy as np
+from ..data_class.structured_mesh_properties import StructuredMeshProperties
 
 class FineScaleTpfaPressureSolver(TpfaScheme, TpfaFlux):
 

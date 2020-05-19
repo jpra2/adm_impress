@@ -7,14 +7,15 @@ mesh_name: mesh/9x1x9.msh
 n_test: 0
 state: 0
 type_of_solution: fine_scale
-gravity: false
-load_data: true
+gravity: true
+test_segregation: false
+load_data: false
 convert_english_to_SI: false
 monophasic: false
 biphasic: true
 load_biphasic_data: false
 deletar_results: true
-multilevel_data: true
+multilevel_data: false
 load_multilevel_data: false
 load_operators: false
 get_correction_term: false
@@ -76,7 +77,7 @@ set_porosity: true
 Porosity:
   r1:
     type: all
-    value: 0.3
+    value: 0.2
 
   # r2:
   #   type: box
@@ -87,15 +88,15 @@ Porosity:
 Saturation:
   r1:
     type: all
-    value: 0.2
+    value: 0.8
 
-  # r2:
-  #   type: box
-  #   type1_well: null
-  #   type2_well: null
-  #   p0: [0.0, 0.0, 0.0]
-  #   p1: [27.0, 27.0, 13.0]
-  #   value: 0.2
+  r2:
+    type: box
+    type1_well: null
+    type2_well: null
+    p0: [0.0, 0.0, 0.0]
+    p1: [9.0, 1.0, 5.0]
+    value: 0.2
 
   r3:
     type: wells
@@ -104,27 +105,27 @@ Saturation:
     value: 0.8
 
 Wells:
-  P1:
-    p0: [0.0, 2190.0, 168.0]
-    p1: [20.0, 2200.0, 170.0]
-    prescription: Q
-    type: Injector
-    type_region: box
-    # value: 3000000.0
-    # value: 10000000000.0
-    value: 10000.0
-    # value: 10000000.0
-  P2:
-    # p0: [880.0, 440.0, 0.0]
-    # p1: [900.0, 450.0, 90.0]
-    # p0: [160.0, 80.0, 16.0]
-    # p1: [180.0, 90.0, 18.0]
-    p0: [1180.0, 0.0, 168.0]
-    p1: [1200.0, 10.0, 170.0]
-    prescription: P
-    type: Producer
-    type_region: box
-    value: 1.0
+    P3:
+        # p0: [880.0, 440.0, 0.0]
+        # p1: [900.0, 450.0, 90.0]
+        p0: [8.0, 0.0, 8.0]
+        p1: [9.0, 1.0, 9.0]
+        prescription: P
+        type: Producer
+        type_region: box
+        value: 1.0
+    P1:
+        p0: [0.0, 0.0, 0.0]
+        # p1: [20.0, 10.0, 90.0]
+        p1: [1.0, 1.0, 1.0]
+        prescription: Q
+        # prescription: P
+        type: Injector
+        type_region: box
+        # value: 3000000.0
+        # value: 10000000000.0
+        value: 100000.0
+        # value: 10000000.0
 
   # P4:
   #   p0: [0.0, 2190.0, 168.0]
@@ -150,7 +151,7 @@ biphasic_data:
   Sor: 0.2
   Swc: 0.2
   cfl: 0.9
-  gama_o: 1000.0
+  gama_o: 100.0
   gama_w: 1000.0
   kro0: 1.0
   krw0: 1.0
