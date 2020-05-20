@@ -5,6 +5,7 @@ import multiprocessing as mp
 from scipy.sparse import csc_matrix,csr_matrix, linalg, vstack, find
 import time
 from packs.multiscale.operators.prolongation.AMS.Paralell.partitionating_parameters import calibrate_partitioning_parameters
+import pdb
 
 class DualDomain:
     def __init__(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
@@ -16,6 +17,9 @@ class DualDomain:
 
     def get_local_informations(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
         # viz=M.mtu.get_bridge_adjacencies(volumes,2,3)
+        volumes = np.array(volumes)
+        if len(volumes.dtype) > 1:
+            volumes = volumes['volumes']
         viz=np.unique(np.concatenate(elements_lv0['volumes_face_volumes'][volumes]))
         nv=len(volumes)
         # M.mb.tag_set_data(M.local_id_dual_tag,viz, np.repeat(nv+5,len(viz)))

@@ -9,9 +9,7 @@ import scipy.sparse as sp
 from ....directories import data_loaded
 from ....errors.err import DualStructureError
 from ....adm.adm_method import get_levelantids_levelids
-
 from packs.multiscale.preprocess.dual_primal.paralell import paralell_dual_and_primal
-
 import time
 
 
@@ -74,11 +72,11 @@ class MultilevelData(DataManager):
         self.get_boundary_coarse_faces(M)
         print("Time to get boundary: {} seconds".format(time.time()-t0))
         t0=time.time()
-        # self.get_dual_structure()
-        # print("Time to dual structure: {} seconds".format(time.time()-t0))
+        self.get_dual_structure()
+        print("Time to dual structure: {} seconds".format(time.time()-t0))
         # t0=time.time()
-        self.get_dual_structure_with_graph()
-        print("Time to dual structure with graph: {} seconds".format(time.time()-t0))
+        # self.get_dual_structure_with_graph()
+        # print("Time to dual structure with graph: {} seconds".format(time.time()-t0))
         t0=time.time()
         self.set_volumes_without_gravity_source_term()
         print("Time to set volumes gravity: {} seconds".format(time.time()-t0))
@@ -625,7 +623,7 @@ class MultilevelData(DataManager):
             from scipy.sparse import csc_matrix, csgraph
             graph=csc_matrix((data,(lines,cols)),shape=(len(interns),len(interns)))
             n_l,labels=csgraph.connected_components(graph,connection='strong')
-            conjs_interns=[interns[labels==l] for l in range(n_l)]    
+            conjs_interns=[interns[labels==l] for l in range(n_l)]
             structure = [np.unique(np.concatenate(M.volumes.bridge_adjacencies(intern0, 0, 3))) for intern0 in conjs_interns]
             self._data[self.dual_structure+str(level)]=structure
 
@@ -646,7 +644,11 @@ class MultilevelData(DataManager):
                 # volumes = structure['volumes']
                 # dual_id = structure['dual_id']
                 volumes = structure
-                dual_id = dual_flags[volumes]
+                try:
+                    dual_id = dual_flags[volumes]
+                except IndexError as e:
+                    volumes = structure['volumes']
+                    dual_id = structure['dual_id']
 
                 local_centroids = all_centroids[volumes]
                 xmin, ymin, zmin = local_centroids.min(axis=0)
@@ -673,3 +675,8 @@ class MultilevelData(DataManager):
 
         # M.core.print(file=self.name_mesh, config_input='input_cards/print_settings.yml')
         M.save_variables('multiscale_data')
+
+    def test_dual_structure(self, level):
+
+        st = self._data[self.dual_structure+str(level)]
+        

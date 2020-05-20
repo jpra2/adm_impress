@@ -3,16 +3,19 @@ from packs.adm.adm_method import AdmMethod
 from packs.biphasic.biphasic_ms.biphasic_multiscale import BiphasicTpfaMultiscale
 from packs.directories import data_loaded
 from testting1_monophasic_multilevel import(M, elements_lv0, wells, data_impress,
-                                            multilevel_operators as mlo, tpfa_solver)
+                                            multilevel_operators as mlo)
 import scipy.sparse as sp
 import numpy as np
 import time
+import pdb
 
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 n = data_loaded['n_test']
 biphasic = data_loaded['biphasic']
 n_levels = data_loaded['n_levels']
+
+pdb.set_trace()
 
 # M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
 

@@ -1,11 +1,13 @@
 from .data_manager import DataManager
 import numpy as np
-from ..directories.data_loaded import only_mesh_name
+from ..directories import only_mesh_name
+import pdb
 
 class ElementsLv0(DataManager):
 
-    def __init__(self, M, load=False, data_name: str='elementsLv0.npz'):
-        data_name = only_mesh_name + '_' + data_name
+    def __init__(self, M, load=False, data_name: str='elementsLv0'):
+
+        data_name = data_name + '_' + only_mesh_name + '.npz'
         super().__init__(data_name, load=load)
         self.mesh = M
         if not load:
@@ -20,7 +22,7 @@ class ElementsLv0(DataManager):
         self._data['nodes'] = self.mesh.nodes.all
         self._data['internal_faces'] = self.mesh.faces.internal
         self._data['boundary_faces'] = np.setdiff1d(self['faces'], self['internal_faces'])
-        # self._data['neig_faces'] = self.mesh.faces.bridge_adjacencies(self['faces'], 2, 3)
+        self._data['neig_faces'] = self.mesh.faces.bridge_adjacencies(self['faces'], 2, 3)
         self._data['neig_internal_faces'] = self.mesh.faces.bridge_adjacencies(self['internal_faces'], 2, 3)
         self._data['neig_boundary_faces'] = self.mesh.faces.bridge_adjacencies(self['boundary_faces'], 2, 3).flatten()
         # self._data['all_volumes'] = self.mesh.core.all_volumes
