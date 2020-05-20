@@ -2,6 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 from ..data_class.structured_mesh_properties import StructuredMeshProperties
 from ..directories import data_loaded
+import pdb
 
 
 class biphasicProperties(StructuredMeshProperties):

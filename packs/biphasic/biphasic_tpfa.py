@@ -14,6 +14,7 @@ from ..errors.err import MaxLoopIterationError
 from ..data_class.structured_mesh_properties import StructuredMeshProperties
 from .tests_general import testsGeneral
 from ..utils.utils_old import get_box
+import pdb
 
 class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral):
 
@@ -112,38 +113,9 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self._data['upwind_identificate'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
         self._data['upwind_identificate_o'] = ~self._data['upwind_identificate'].copy()
         self.upwind_wells()
+        self.test_upwind_dup()
 
         self.visualize_upwind_vec()
-
-        # ws_inj = self.wells['ws_inj']
-        #
-        # v0 = vols_viz_internal_faces[:, 0]
-        # v1 = vols_viz_internal_faces[:, 1]
-        # ids = np.arange(len(v0))
-        #
-        # idv0 = np.array([], dtype=np.int64)
-        # idv1 = idv0.copy()
-        # for w in ws_inj:
-        #     vv0 = ids[v0 == w]
-        #     vv1 = ids[v1 == w]
-        #     idv0 = np.append(idv0, vv0)
-        #     idv1 = np.append(idv1, vv1)
-        #
-        # idv0 = np.array(idv0).flatten()
-        # idv1 = np.array(idv1).flatten()
-        # idsv = np.union1d(idv0, idv1)
-        # ids_fora = np.setdiff1d(ids, idsv)
-        #
-        # self._data['upwind_identificate'][idv0, 0] = np.full(len(idv0), True, dtype=bool)
-        # self._data['upwind_identificate'][idv1, 1] = np.full(len(idv1), True, dtype=bool)
-        # self._data['upwind_identificate'][ids_fora, 0] = np.full(len(ids_fora), True, dtype=bool)
-
-        # total_mobility_internal_faces = np.zeros(len(internal_faces))
-        # fw_internal_faces = total_mobility_internal_faces.copy()
-
-        # total_mobility_internal_faces[idv0] = lambda_t[v0[idv0]]
-        # total_mobility_internal_faces[idv1] = lambda_t[v1[idv1]]
-        # total_mobility_internal_faces[ids_fora] = (lambda_t[v0[ids_fora]] + lambda_t[v1[ids_fora]])/2
 
         total_mobility_internal_faces = self.lambda_t_internal_faces
 
@@ -163,8 +135,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         fw_faces[internal_faces] = fw_internal_faces
         fw_faces[b_faces] = self.fw_volumes[vols_viz_boundary_faces]
-        # gama_faces[internal_faces] = gama_internal_faces
-        # gama_faces[b_faces] = gama[vols_viz_boundary_faces]
 
         transmissibility = pretransmissibility*total_mobility_faces
 
@@ -543,7 +513,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
                 if set_wells_inj & set([volumes[0]]):
                     self._data['upwind_identificate'][i, 0] = True
                     self._data['upwind_identificate_o'][i, 0] = True
-                if set_wells_inj & set([volumes[1]]):
+                elif set_wells_inj & set([volumes[1]]):
                     self._data['upwind_identificate'][i, 1] = True
                     self._data['upwind_identificate_o'][i, 1] = True
 
@@ -622,7 +592,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
             flux_o_internal_faces = (-(self.grad_p_internal_faces*ak*self.lambda_o_internal_faces - self.flux_grav_o_internal_faces))[test3]
             flux_total = flux_w_internal_faces + flux_o_internal_faces
 
-            pos_flux_total = fluxflux_total < 0
+            pos_flux_total = flux_total < 0
             and_pos_sigma = pos_flux_total & pos_sigma
 
             if ~and_pos_sigma.sum() > 1:
@@ -640,12 +610,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         self.upwind_wells()
 
-        verif1 = self._data['upwind_identificate'][:,0] ^ self._data['upwind_identificate'][:,1]
-        verif2 = self._data['upwind_identificate_o'][:,0] ^ self._data['upwind_identificate_o'][:,1]
-        verif1 = ~verif1
-        verif2 = ~verif2
-        if verif1.sum() > 0 or verif2.sum() > 0:
-            import pdb; pdb.set_trace()
+        self.test_upwind_dup()
 
         self.visualize_upwind_vec()
 
@@ -866,11 +831,11 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         # self.update_gama()
         T, b = self.get_T_and_b()
         p = self.solver.direct_solver(T, b)
-        self.test_rhs_term(T, b, p)
+        # self.test_rhs_term(T, b, p)
         self.data_impress['pressure'] = p
         # self.get_total_flux_faces()
         self.get_flux_faces_and_volumes()
-        self.test_flux_volumes(self['Tini'], p, self.data_impress['flux_grav_volumes'], -self.data_impress['flux_volumes'])
+        # self.test_flux_volumes(self['Tini'], p, self.data_impress['flux_grav_volumes'], -self.data_impress['flux_volumes'])
         self.run_2(save = save)
         # return T, b
 
@@ -965,3 +930,15 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         # self.print_test()
 
         # import pdb; pdb.set_trace()
+
+    def test_upwind_dup(self):
+
+        if data_loaded['_debug'] == False:
+            return None
+
+        verif1 = self._data['upwind_identificate'][:,0] ^ self._data['upwind_identificate'][:,1]
+        verif2 = self._data['upwind_identificate_o'][:,0] ^ self._data['upwind_identificate_o'][:,1]
+        verif1 = ~verif1
+        verif2 = ~verif2
+        if verif1.sum() > 0 or verif2.sum() > 0:
+            import pdb; pdb.set_trace()
