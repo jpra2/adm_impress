@@ -1,8 +1,8 @@
 # mesh_name: mesh/45x45x45.msh
 # mesh_name: mesh/9x9x9.h5m
-mesh_name: mesh/9x1x9.h5m
+# mesh_name: mesh/9x1x9.h5m
 # mesh_name: mesh/9x9x1.h5m
-# mesh_name: mesh/27x27x27.msh
+mesh_name: mesh/27x27x15.h5m
 n_test: 0
 state: 0
 type_of_solution: fine_scale
@@ -35,11 +35,17 @@ Permeability:
     type: all
     value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
 
-  # r2:
-  #   type: box
-  #   p0: [80.0, 0.0, 0.0]
-  #   p1: [100.0, 50.0, 2.0]
-  #   value: [0.001, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0, 0.001]
+  r2:
+    type: box
+    p0: [8.0, 0.0, 0.0]
+    p1: [9.0, 13.0, 15.0]
+    value: [0.001, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0, 0.001]
+
+  r3:
+    type: box
+    p0: [18.0, 13.0, 0.0]
+    p1: [19.0, 27.0, 15.0]
+    value: [0.001, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0, 0.001]
 
 set_porosity: true
 Porosity:
@@ -78,15 +84,15 @@ Wells:
         # p1: [900.0, 450.0, 90.0]
         type_region: box
         p0: [0.0, 0.0, 0.0]
-        p1: [1.0, 1.0, 9.0]
+        p1: [1.0, 1.0, 15.0]
         prescription: Q
         type: Injector
-        value: 1000000
+        value: 10000000
     P2:
         type_region: box
-        p0: [8.0, 0.0, 0.0]
+        p0: [26.0, 26.0, 0.0]
         # p1: [20.0, 10.0, 90.0]
-        p1: [9.0, 1.0, 9.0]
+        p1: [27.0, 27.0, 15.0]
         prescription: P
         # prescription: P
         type: Producer
@@ -103,13 +109,13 @@ biphasic_data:
   Sor: 0.2
   Swc: 0.2
   cfl: 0.9
-  gama_o: 100.0
+  gama_o: 900.0
   gama_w: 1000.0
   kro0: 1.0
   krw0: 1.0
   loop_maximo: null
   loops_para_gravar: 2
-  mi_o: 0.01
+  mi_o: 0.001
   mi_w: 0.01
   n_o: 2.0
   n_w: 2.0

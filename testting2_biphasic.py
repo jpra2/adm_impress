@@ -36,26 +36,30 @@ while verif:
     #     M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
     #     # import pdb; pdb.set_trace()
 
-    b1.print_test()
-    b1.print_test_faces()
+    if cont2 % 3 == 0:
 
-    pdb.set_trace()
+
+        b1.print_test()
+        b1.print_test_faces()
+        pdb.set_trace()
+
+    cont2 += 1
 
     # import pdb; pdb.set_trace()
 
-    if cont % n2 == 0:
-        import pdb; pdb.set_trace()
-    cont += 1
-    loop += 1
-    if loop > 200:
-        if cont2 % n2 == 0:
-            cont2 = 1
-            data_impress.update_variables_to_mesh()
-            name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
-            # M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
-            # import pdb; pdb.set_trace()
-
-        cont2 += 1
+    # if cont % n2 == 0:
+    #     import pdb; pdb.set_trace()
+    # cont += 1
+    # loop += 1
+    # if loop > 200:
+    #     if cont2 % n2 == 0:
+    #         cont2 = 1
+    #         data_impress.update_variables_to_mesh()
+    #         name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
+    #         # M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+    #         # import pdb; pdb.set_trace()
+    #
+    #     cont2 += 1
 
 
 

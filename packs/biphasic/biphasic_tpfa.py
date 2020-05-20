@@ -27,7 +27,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self.relative_permeability = self.relative_permeability()
         self.V_total = (data_impress['volume']*data_impress['poro']).sum()
         self.max_contador_vtk = len(self.biphasic_data['vpis_para_gravar_vtk'])
-        self.delta_sat_max = 0.1
+        self.delta_sat_max = 0.4
         self.lim_flux_w = 9e-8
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
