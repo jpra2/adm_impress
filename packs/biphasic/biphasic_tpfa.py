@@ -974,7 +974,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         flux = self.data_impress['flux_faces'][f1]
         upw = self.data_impress['upwind_w_faces_vec'][f1]
 
-        self.print_test_faces()
-        self.print_test()
+        # self.print_test_faces()
+        # self.print_test()
 
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()

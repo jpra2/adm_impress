@@ -15,8 +15,6 @@ n = data_loaded['n_test']
 biphasic = data_loaded['biphasic']
 n_levels = data_loaded['n_levels']
 
-pdb.set_trace()
-
 # M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
 
 if biphasic:
@@ -49,8 +47,10 @@ while verif:
 
     adm_method.solve_multiscale_pressure(T, b)
     adm_method.set_pcorr()
+    pdb.set_trace()
     b1.get_velocity_faces()
     b1.get_flux_volumes()
+    pdb.set_trace()
     # adm_method.set_paralel_pcorr()
     # p2 = adm_method.solver.direct_solver(T, b)
     # data_impress['pressure'] = p2

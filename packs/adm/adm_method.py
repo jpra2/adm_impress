@@ -14,6 +14,7 @@ from scipy.sparse import csc_matrix
 from ..directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 import time
+import pdb
 
 
 def get_levelantids_levelids(level_ids_ant, level_ids):
@@ -450,10 +451,10 @@ class AdmMethod(DataManager, TpfaFlux2):
 
             T_adm = OR_adm*T_adm*OP_adm
 
-        # pms = self.solver.direct_solver(T_adm, b_adm)
-        self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner='jacobi',\
-        global_multiscale_preconditioner='galerkin')
-        pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
+        pms = self.solver.direct_solver(T_adm, b_adm)
+        # self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner='jacobi',\
+        # global_multiscale_preconditioner='galerkin')
+        # pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
 
 
         self.data_impress['pms'] = pms
@@ -464,6 +465,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         # self.data_impress['pms'] = p2
         # ##############################
         self.T = T
+
     def smoother_jacobi(self, R, T, P, b, print_errors=False):
 
         # try:
@@ -724,6 +726,8 @@ class AdmMethod(DataManager, TpfaFlux2):
                 pressure_vertex = pms[vertex]
                 volumes = gid0[all_gids_coarse==gidc]
 
+                pdb.set_trace()
+
                 internal_volumes = np.setdiff1d(volumes, np.concatenate([intern_boundary_volumes, vertex]))
                 flux_grav_internal_volumes = flux_grav_volumes[internal_volumes]
 
@@ -731,8 +735,12 @@ class AdmMethod(DataManager, TpfaFlux2):
                 v0 = neig_intersect_faces
                 transmissibility_intersect_faces = transmissibility[intersect_faces]
                 t0 = transmissibility_intersect_faces
-                pms0 = pms[neig_intersect_faces[:,0]]
-                pms1 = pms[neig_intersect_faces[:,1]]
+                try:
+
+                    pms0 = pms[neig_intersect_faces[:,0]]
+                    pms1 = pms[neig_intersect_faces[:,1]]
+                except Exception as e:
+                    pdb.set_trace()
                 flux_grav_intersect_faces = flux_grav_faces[intersect_faces]
                 flux_intersect_faces = -((pms1 - pms0) * t0 - flux_grav_intersect_faces)
                 flux_faces[intersect_faces] = flux_intersect_faces
