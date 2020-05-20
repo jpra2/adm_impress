@@ -3,6 +3,7 @@ from packs.running.initial_mesh_properties import initial_mesh
 from packs.utils.info_manager import InfoManager
 from packs.directories import data_loaded as dd
 import os
+import pdb
 
 M, elements_lv0, data_impress, wells = initial_mesh()
 b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
@@ -37,6 +38,8 @@ while verif:
 
     b1.print_test()
     b1.print_test_faces()
+
+    pdb.set_trace()
 
     # import pdb; pdb.set_trace()
 

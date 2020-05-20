@@ -66,34 +66,34 @@ Saturation:
     p1: [9.0, 1.0, 5.0]
     value: 0.2
 
-  r3:
-    type: wells
-    type1_well: Injector
-    type2_well: null
-    value: 0.8
+  # r3:
+  #   type: wells
+  #   type1_well: Injector
+  #   type2_well: null
+  #   value: 0.8
 
 Wells:
     P3:
         # p0: [880.0, 440.0, 0.0]
         # p1: [900.0, 450.0, 90.0]
+        type_region: box
         p0: [8.0, 0.0, 8.0]
         p1: [9.0, 1.0, 9.0]
         prescription: P
         type: Producer
-        type_region: box
-        value: 1.0
-    P1:
-        p0: [0.0, 0.0, 0.0]
-        # p1: [20.0, 10.0, 90.0]
-        p1: [1.0, 1.0, 1.0]
-        prescription: Q
-        # prescription: P
-        type: Injector
-        type_region: box
-        # value: 3000000.0
-        # value: 10000000000.0
-        value: 100000.0
-        # value: 10000000.0
+        value: 0.0
+    # P1:
+    #     p0: [0.0, 0.0, 0.0]
+    #     # p1: [20.0, 10.0, 90.0]
+    #     p1: [1.0, 1.0, 1.0]
+    #     prescription: Q
+    #     # prescription: P
+    #     type: Injector
+    #     type_region: box
+    #     # value: 3000000.0
+    #     # value: 10000000000.0
+    #     value: 100000.0
+    #     # value: 10000000.0
 
 monophasic_data:
   gama: 100.0
