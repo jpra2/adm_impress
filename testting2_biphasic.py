@@ -36,12 +36,14 @@ while verif:
     #     M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
     #     # import pdb; pdb.set_trace()
 
-    if cont2 % 3 == 0:
-
+    if cont2 % 20 == 0 or cont2 == 1:
 
         b1.print_test()
         b1.print_test_faces()
+
+    if cont2 % 40 == 0:
         pdb.set_trace()
+
 
     cont2 += 1
 
