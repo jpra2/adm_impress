@@ -3,6 +3,8 @@
 def update_inputs():
     from packs.utils.info_manager import InfoManager
     import os
+    import pdb
+    # dd = InfoManager('input_cards/inputs0_2.yml', 'input_cards/inputs0.yml')
     dd = InfoManager('input_cards/inputs0.yml', 'input_cards/inputs0.yml')
     # dd['load_data'] = True
     # dd['multilevel_data'] = False
@@ -27,7 +29,7 @@ def update_inputs():
     # dd2 = InfoManager('input_cards/variable_adm.yml', 'input_cards/variable_input.yml')
     # dd2.save_obj()
 
-    if dd['deletar_results']:
+    if dd['deletar_results'] == True:
 
         results = 'results'
         ff = os.listdir(results)
@@ -39,6 +41,7 @@ def update_inputs():
             if f.endswith('.vtk'):
                 os.remove(os.path.join(results, f))
 
+
     if dd['deletar_npyfiles_flying'] == True:
 
         flying = 'flying'
@@ -49,4 +52,4 @@ def update_inputs():
                 os.remove(os.path.join(flying, f))
 
 update_inputs()
-del update_inputs
+# del update_inputs

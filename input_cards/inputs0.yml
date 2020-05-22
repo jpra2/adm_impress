@@ -6,7 +6,7 @@ mesh_name: mesh/27x27x15.h5m
 n_test: 0
 state: 0
 type_of_solution: fine_scale
-gravity: false
+gravity: true
 test_segregation: false
 load_data: false
 convert_english_to_SI: false
@@ -14,6 +14,7 @@ monophasic: false
 biphasic: true
 load_biphasic_data: false
 deletar_results: true
+deletar_npyfiles_flying: true
 multilevel_data: false
 load_multilevel_data: false
 load_operators: false
@@ -87,7 +88,7 @@ Wells:
         p1: [1.0, 1.0, 15.0]
         prescription: Q
         type: Injector
-        value: 10000000
+        value: 30000000
     P2:
         type_region: box
         p0: [26.0, 26.0, 0.0]

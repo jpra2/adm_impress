@@ -39,6 +39,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         M.core.mb.add_entities(self.meshset_volumes, M.core.all_volumes)
         self.meshset_faces = M.core.mb.create_meshset()
         M.core.mb.add_entities(self.meshset_faces, M.core.all_faces)
+        self.pare1 = False
 
         # self.solver = solverTril()
 
@@ -341,6 +342,11 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         volumes = self.data_impress['volume']
         phis = self.data_impress['poro']
 
+        if self.pare1:
+            import pdb; pdb.set_trace()
+
+            self.pare1 = False
+
         # import pdb; pdb.set_trace()
 
         # ids_2 = ids[fw_volumes < 0]
@@ -426,7 +432,12 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         min_sat = saturations.min()
         max_sat = saturations.max()
 
-        if min_sat < self.biphasic_data['Swc'] or max_sat > 1-self.biphasic_data['Sor']:
+        deltt = 0.0001
+
+        if min_sat < self.biphasic_data['Swc'] - deltt or max_sat > 1-self.biphasic_data['Sor'] + deltt:
+            self.data_impress['verif_po'][:] = 0
+            idsr = saturations > 1-self.biphasic_data['Sor']
+            self.data_impress['verif_po'][idsr] = 1
             return 1
             # raise ValueError(f'\nprint max_sat: {max_sat} ; min_sat: {min_sat}\n')
 
@@ -437,7 +448,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
     def reduce_delta_t(self):
         d = self.delta_t
         self.delta_t *= 1/2
-        # print(f'\nreducing delta_t: {d} -> {self.delta_t} \n')
+        print(f'\nreducing delta_t: {d} -> {self.delta_t} \n')
+        self.pare1 = True
 
     def update_t(self):
         self.t += self.delta_t
@@ -608,7 +620,129 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
                 self._data['upwind_identificate'][test3] = upwind_w
                 self._data['upwind_identificate_o'][test3] = upwind_o
 
-        self.upwind_wells()
+        # self.upwind_wells()
+
+        self.test_upwind_dup()
+
+        self.visualize_upwind_vec()
+
+    def update_upwind_phases_new3(self):
+        '''
+            paper Starnoni
+        '''
+        k0 = 9e-7
+
+        internal_faces = self.elements_lv0['internal_faces']
+        v0 = self.elements_lv0['neig_internal_faces']
+        saturation = self.data_impress['saturation']
+        q_sigma_internal_faces = self.data_impress['flux_faces'][internal_faces]
+        q_sigma_internal_faces[np.absolute(q_sigma_internal_faces) < k0] = 0
+        q_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
+        q_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
+
+        self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
+        self._data['upwind_identificate_o'] = self._data['upwind_identificate'].copy()
+
+        #fluxo total positivo
+        qsig_pos = q_sigma_internal_faces > 0
+        #fluxo total negativo
+        qsig_neg = q_sigma_internal_faces < 0
+        #fluxo total zero
+        qsig_zero = ~(qsig_pos | qsig_neg)
+
+        #fluxo de agua positivo
+        qw_pos = q_w_internal_faces > 0
+        #fluxo de agua negativo
+        qw_neg = q_w_internal_faces < 0
+        # qw_zero = ~(qwpos | qwneg)
+
+        #fluxo de oleo positivo
+        qo_pos = q_o_internal_faces > 0
+        #fluxo de oleo negativo
+        qo_neg = q_o_internal_faces < 0
+        # qo_zero = ~(qopos | qoneg)
+
+        #fluxo de agua e oleo positivo
+        qw_qo_pos = qw_pos & qo_pos
+        #fluxo de agua e oleo negativo
+        qw_qo_neg = qw_neg & qo_neg
+
+        self._data['upwind_identificate'][qw_qo_pos, 0] = True
+        self._data['upwind_identificate_o'][qw_qo_pos, 0] = True
+        self._data['upwind_identificate'][qw_qo_neg, 1] = True
+        self._data['upwind_identificate_o'][qw_qo_neg, 1] = True
+
+        if qsig_zero.sum() > 0:
+            zs_qt_zero = self.data_impress['centroids_volumes'][:, 2][v0[qsig_zero]]
+            delta_z = zs_qt_zero[:, 1] - zs_qt_zero[:, 0]
+            zpos = delta_z > 0
+            zneg = delta_z < 0
+            zzero = ~(zpos | zneg)
+            upgw = np.full((qsig_zero.sum(), 2), False, dtype=bool)
+            upgo = np.full((qsig_zero.sum(), 2), False, dtype=bool)
+
+            upgw[zpos, 1] = True
+            upgo[zpos, 0] = True
+
+            upgw[zneg, 0] = True
+            upgo[zneg, 1] = True
+
+            upgw[zzero, 1] = True
+            upgo[zzero, 1] = True
+
+        passado = qw_qo_pos | qw_qo_neg | qsig_zero
+        passado = ~passado
+
+        t1 = qsig_pos & passado
+        t2 = qsig_neg & passado
+
+        qw_qt_pos = t1 & qw_pos
+        qo_qt_pos = t1 & qo_pos
+        qw_qt_neg = t2 & qw_neg
+        qo_qt_neg = t2 & qo_neg
+
+        self._data['upwind_identificate'][qw_qt_pos, 0] = True
+        self._data['upwind_identificate_o'][qw_qt_pos, 0] = True
+
+        self._data['upwind_identificate_o'][qo_qt_pos, 0] = True
+        self._data['upwind_identificate'][qo_qt_pos, 0] = True
+
+        self._data['upwind_identificate'][qw_qt_neg, 1] = True
+        self._data['upwind_identificate_o'][qw_qt_neg, 1] = True
+
+        self._data['upwind_identificate_o'][qo_qt_neg, 1] = True
+        self._data['upwind_identificate'][qo_qt_neg, 1] = True
+
+        qsigma_2 = self.flux_sigma_internal_faces
+
+        q_s2_pos = (qsigma_2 > 0)
+        q_s2_neg = (qsigma_2 < 0)
+        and_qs2_pos = qsig_pos & passado
+        and_qs2_neg = qsig_neg & passado
+
+        t3 = and_qs2_pos & qw_qt_pos
+        if not np.allclose(t3, qw_qt_pos):
+            t3 = t3 ^ qw_qt_pos
+            self._data['upwind_identificate_o'][t3] = False
+            self._data['upwind_identificate_o'][t3, 1] = True
+
+        t4 = and_qs2_pos & qo_qt_pos
+        if not np.allclose(t4, qo_qt_pos):
+            t4 = t4 ^ qo_qt_pos
+            self._data['upwind_identificate'][t4] = False
+            self._data['upwind_identificate'][t4, 1] = True
+
+        t5 = and_qs2_neg & qw_qt_neg
+        if not np.allclose(t5, qw_qt_neg):
+            t5 = t5 ^ qw_qt_neg
+            self._data['upwind_identificate_o'][t5] = False
+            self._data['upwind_identificate_o'][t3, 0] = True
+
+        t6 = and_qs2_neg & qo_qt_neg
+        if not np.allclose(t6, qo_qt_neg):
+            t6 = t6 ^ qo_qt_neg
+            self._data['upwind_identificate'][t6] = False
+            self._data['upwind_identificate'][t6, 0] = True
 
         self.test_upwind_dup()
 
