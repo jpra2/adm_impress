@@ -27,7 +27,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self.relative_permeability = self.relative_permeability()
         self.V_total = (data_impress['volume']*data_impress['poro']).sum()
         self.max_contador_vtk = len(self.biphasic_data['vpis_para_gravar_vtk'])
-        self.delta_sat_max = 0.1
+        self.delta_sat_max = 0.02
         self.lim_flux_w = 9e-8
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
@@ -626,6 +626,104 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         self.visualize_upwind_vec()
 
+    def update_upwind_phases_new4(self):
+        '''
+            paper Starnoni
+        '''
+        k0 = 9e-7
+
+        internal_faces = self.elements_lv0['internal_faces']
+        v0 = self.elements_lv0['neig_internal_faces']
+        saturation = self.data_impress['saturation']
+        ak = self.data_impress['area'][internal_faces]*self.data_impress['k_harm'][internal_faces]
+        q_sigma_internal_faces = self.data_impress['flux_faces'][internal_faces]
+        q_sigma_internal_faces[np.absolute(q_sigma_internal_faces) < k0] = 0
+        q_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
+        q_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
+
+        self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
+        self._data['upwind_identificate_o'] = self._data['upwind_identificate'].copy()
+
+        faces_w_pos_align = np.full(len(internal_faces), False, dtype=bool)
+        faces_w_neg_align = np.full(len(internal_faces), False, dtype=bool)
+        faces_o_pos_align = np.full(len(internal_faces), False, dtype=bool)
+        faces_o_neg_align = np.full(len(internal_faces), False, dtype=bool)
+        faces_zero = np.full(len(internal_faces), False, dtype=bool)
+
+        for i, f in enumerate(internal_faces):
+            qw = q_w_internal_faces[i]
+            qo = q_o_internal_faces[i]
+            qt = q_sigma_internal_faces[i]
+            if abs(qt) < k0:
+                faces_zero[i] = True
+                zs = self.data_impress['centroid_volumes'][v0[i]][:,2]
+                delta_z = zs[1] - zs[0]
+                if delta_z >= 0:
+                    self._data['upwind_identificate'][i, 1] = True
+                    self._data['upwind_identificate_o'][i, 0] = True
+                else:
+                    self._data['upwind_identificate'][i, 0] = True
+                    self._data['upwind_identificate_o'][i, 1] = True
+                continue
+
+            elif qt > 0:
+                if qw > 0:
+                    faces_w_pos_align[i] = True
+                    self._data['upwind_identificate'][i, 0] = True
+                    self._data['upwind_identificate_o'][i, 0] = True
+                elif qo > 0:
+                    faces_o_pos_align[i] = True
+                    self._data['upwind_identificate_o'][i, 0] = True
+                    self._data['upwind_identificate'][i, 0] = True
+
+            elif qt < 0:
+                if qw < 0:
+                    faces_w_neg_align[i] = True
+                    self._data['upwind_identificate'][i, 1] = True
+                    self._data['upwind_identificate_o'][i, 1] = True
+                elif qo < 0:
+                    faces_o_neg_align[i] = True
+                    self._data['upwind_identificate_o'][i, 1] = True
+                    self._data['upwind_identificate'][i, 1] = True
+
+        self.test_upwind_dup()
+
+        flux_w_internal_faces = (-(self.grad_p_internal_faces*ak*self.lambda_w_internal_faces - self.flux_grav_w_internal_faces))
+        flux_o_internal_faces = (-(self.grad_p_internal_faces*ak*self.lambda_o_internal_faces - self.flux_grav_o_internal_faces))
+        flux_total_2 = flux_w_internal_faces + flux_o_internal_faces
+
+        for i, f in enumerate(internal_faces):
+            if faces_zero[i] == True:
+                continue
+            elif faces_w_pos_align[i] == faces_o_pos_align[i]:
+                continue
+            elif faces_w_neg_align[i] == faces_o_neg_align[i]:
+                continue
+
+
+            s1 = np.sign(q_sigma_internal_faces)
+            s2 = np.sign(flux_total_2[i])
+
+            if s1 == s2:
+                continue
+
+            if faces_w_pos_align[i] == True:
+                self._data['upwind_identificate_o'][i] = False
+                self._data['upwind_identificate_o'][i, 1] = True
+            elif faces_o_pos_align[i] == True:
+                self._data['upwind_identificate'][i] = False
+                self._data['upwind_identificate'][i, 1] = True
+            elif faces_w_neg_align[i] == True:
+                self._data['upwind_identificate_o'][i] = False
+                self._data['upwind_identificate_o'][i, 0] = True
+            elif faces_o_neg_align[i] == True:
+                self._data['upwind_identificate'][i] = False
+                self._data['upwind_identificate'][i, 0] = True
+
+        self.test_upwind_dup()
+
+        self.visualize_upwind_vec()
+
     def update_upwind_phases_new3(self):
         '''
             paper Starnoni
@@ -673,7 +771,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self._data['upwind_identificate_o'][qw_qo_neg, 1] = True
 
         if qsig_zero.sum() > 0:
-            zs_qt_zero = self.data_impress['centroids_volumes'][:, 2][v0[qsig_zero]]
+            zs_qt_zero = self.data_impress['centroid_volumes'][:, 2][v0[qsig_zero]]
             delta_z = zs_qt_zero[:, 1] - zs_qt_zero[:, 0]
             zpos = delta_z > 0
             zneg = delta_z < 0
@@ -712,6 +810,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         self._data['upwind_identificate_o'][qo_qt_neg, 1] = True
         self._data['upwind_identificate'][qo_qt_neg, 1] = True
+
+        self.test_upwind_dup()
 
         qsigma_2 = self.flux_sigma_internal_faces
 
