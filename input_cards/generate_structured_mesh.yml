@@ -3,7 +3,7 @@
 block_size: [1.0, 1.0, 1.0]
 
 # tamanho total da malha
-mesh_size: [27.0, 27.0, 15.0]
+mesh_size: [12.0, 1.0, 12.0]
 
 # nome da malha para salvar
-mesh_name: '27x27x15.h5m'
+mesh_name: '12x1x12.h5m'

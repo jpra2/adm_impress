@@ -147,6 +147,13 @@ class Preprocess0:
                 n_volumes = len(indices)
                 M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
 
+
+        #######################
+        ## deletar
+        permx = M.data[M.data.variables_impress['permeability']][:, 0]
+        M.data['verif_po'][:] = permx
+        #######################
+
     def set_phi_regions(self, M):
         # TODO: atualizar essa funcao
         centroids = M.data['centroid_volumes']
