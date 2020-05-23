@@ -23,7 +23,7 @@ convert_capillary_pressure_to: 'Pa'
 _debug: True
 
 Crs:
-  Cr1: [5, 5, 1]
+  Cr1: [11, 11, 1]
   Cr2: [100, 100, 1]
 
 read_permeability: false

@@ -89,6 +89,10 @@ class DualDomain:
         ks=data_impress['transmissibility'][int_facs]
         # ids_globais_vols=M.mb.tag_get_data(M.ID_reordenado_tag,np.concatenate([np.uint64(internals),np.uint64(faces), np.uint64(edges),vertices]),flat=True)
         ids_globais_vols=np.concatenate([np.uint64(internals),np.uint64(faces), np.uint64(edges),vertices])
+
+        if nv>4:
+            print(nv)
+            data_impress['coupled_flag'][volumes]=np.repeat(1.0,len(volumes))
         return adjs, ks, ids_globais_vols, ns
 
 class OP_local:

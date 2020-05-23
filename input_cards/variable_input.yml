@@ -644,3 +644,10 @@ val_neum:
   data type: float
   sparse: True
   level: 0
+
+coupled_flag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
