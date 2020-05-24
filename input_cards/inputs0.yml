@@ -96,9 +96,10 @@ Wells:
         prescription: P
         type: Injector
         value: 0.0
+
     # P2:
     #     type_region: box
-    #     p0: [26.0, 26.0, 0.0]
+    #     p0: [26.0, 0.0, 0.0]
     #     # p1: [20.0, 10.0, 90.0]
     #     p1: [27.0, 27.0, 15.0]
     #     prescription: P

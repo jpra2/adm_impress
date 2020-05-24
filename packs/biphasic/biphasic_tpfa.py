@@ -1,4 +1,7 @@
 from ..pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
+from ..pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
+from ..pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
+from ..pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 from ..directories import data_loaded
 from ..utils import relative_permeability
 from ..solvers.solvers_scipy.solver_sp import SolverSp
@@ -27,7 +30,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self.relative_permeability = self.relative_permeability()
         self.V_total = (data_impress['volume']*data_impress['poro']).sum()
         self.max_contador_vtk = len(self.biphasic_data['vpis_para_gravar_vtk'])
-        self.delta_sat_max = 0.02
+        self.delta_sat_max = 0.1
         self.lim_flux_w = 9e-8
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
@@ -437,7 +440,9 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         if min_sat < self.biphasic_data['Swc'] - deltt or max_sat > 1-self.biphasic_data['Sor'] + deltt:
             self.data_impress['verif_po'][:] = 0
             idsr = saturations > 1-self.biphasic_data['Sor']
-            self.data_impress['verif_po'][idsr] = 1
+            self.data_impress['verif_po'][:] = 0.0
+            self.data_impress['verif_po'][idsr] = 1.0
+            # import pdb; pdb.set_trace()
             return 1
             # raise ValueError(f'\nprint max_sat: {max_sat} ; min_sat: {min_sat}\n')
 
@@ -529,7 +534,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
                     self._data['upwind_identificate'][i, 1] = True
                     self._data['upwind_identificate_o'][i, 1] = True
 
-    def update_upwind_phases(self):
+    def update_upwind_phases_old2(self):
         '''
             paper Starnoni
         '''
@@ -619,6 +624,66 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
                 self._data['upwind_identificate'][test3] = upwind_w
                 self._data['upwind_identificate_o'][test3] = upwind_o
+
+        self.upwind_wells()
+
+        self.test_upwind_dup()
+
+        self.visualize_upwind_vec()
+
+    def update_upwind_phases(self):
+        '''
+            paper Starnoni
+        '''
+        # k0 = 9e-7
+        k0 = 9e-2
+
+        internal_faces = self.elements_lv0['internal_faces']
+        v0 = self.elements_lv0['neig_internal_faces']
+        saturation = self.data_impress['saturation']
+        flux_w_faces = self.data_impress['flux_w_faces'][internal_faces]
+        flux_o_faces = self.data_impress['flux_o_faces'][internal_faces]
+        flux_total = self.data_impress['flux_faces'][internal_faces]
+        flux_w_faces[np.absolute(flux_w_faces) < k0] = 0.0
+        flux_o_faces[np.absolute(flux_o_faces) < k0] = 0.0
+        flux_total[np.absolute(flux_total) < k0] = 0.0
+
+        tw = flux_w_faces >= 0
+        to = flux_o_faces >= 0
+
+        self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
+        self._data['upwind_identificate_o'] = self._data['upwind_identificate'].copy()
+
+        self._data['upwind_identificate'][tw, 0] = True
+        self._data['upwind_identificate_o'][to, 0] = True
+
+        tw = ~tw
+        to = ~to
+        self._data['upwind_identificate'][tw, 1] = True
+        self._data['upwind_identificate_o'][to, 1] = True
+
+        tt = np.absolute(flux_total) < k0
+        self._data['upwind_identificate'][tt] = False
+        self._data['upwind_identificate_o'][tt] = False
+
+        centroids = self.data_impress['centroid_volumes'][v0[tt]]
+        delta_z = centroids[:,1] - centroids[:,0]
+        delta_z = delta_z[:,2]
+
+        upgw = np.full((tt.sum(), 2), False, dtype=bool)
+        upgo = np.full((tt.sum(), 2), False, dtype=bool)
+
+        tz = delta_z >= 0
+
+        upgw[tz, 1] = True
+        upgo[tz, 0] = True
+
+        tz = ~tz
+        upgw[tz, 0] = True
+        upgo[tz, 1] = True
+
+        self._data['upwind_identificate'][tt] = upgw
+        self._data['upwind_identificate_o'][tt] = upgo
 
         # self.upwind_wells()
 
