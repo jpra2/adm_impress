@@ -48,6 +48,8 @@ compositional_data:
     deltaSlim: 0.3
     deltaVlim: 1
     delta_t_ini: 1.8
+    delta_tmax: 1000
+    delta_tmin: 0.0001
     #2.765
 
   water_data:

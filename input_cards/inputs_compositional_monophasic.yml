@@ -51,6 +51,8 @@ compositional_data:
     deltaSlim: .0001
     deltaVlim: .00001
     delta_t_ini: 0.1
+    delta_tmax: 10
+    delta_tmin: 0.0001
   #rever isso de Cw=0 e Pw
   water_data:
     mi_W: 0.000249

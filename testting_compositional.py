@@ -23,7 +23,8 @@ else: stop_criteria = max(data_loaded['compositional_data']['time_to_save'])
 max_delta_t = max(data_loaded['compositional_data']['time_to_save'])
 loop_max = 1000
 run_criteria = 0
-
+loop = 0
+tmax = 173958
  #31536000 #1.3824*86400#365*86400#422693.9470089848 #seg #0.01* 86400
 
 """ ----------------------------- RUN CODE --------------------------------- """
@@ -35,18 +36,18 @@ M, data_impress, wells, fprop, kprop, load, n_volumes = run_compositional.initia
 
 sim = run_simulation(M, wells, data_impress, name_current, name_all)
 
-while run_criteria < stop_criteria :# and loop < loop_max:
-    sim.run(M, data_impress, wells, fprop, kprop, load, n_volumes)
+while run_criteria < stop_criteria: #and loop < loop_max:
     #import pdb; pdb.set_trace()
+    sim.run(M, data_impress, wells, fprop, kprop, load, n_volumes)
+
     if data_loaded['use_vpi']: run_criteria = sim.vpi
     else:
         run_criteria = sim.t
         if (sim.t + sim.delta_t) > stop_criteria:
             sim.delta_t = stop_criteria - sim.t
-    if sim.delta_t > fprop.Vp[wells['ws_inj']]/wells['values_q'][wells['values_q']!=0]:
-        sim.delta_t = .8*fprop.Vp[wells['ws_inj']]/wells['values_q']
+    loop = sim.loop
 
-    print(sim.t)
+    print(sim.vpi)
 
 print(fprop.P)
 

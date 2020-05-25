@@ -36,7 +36,7 @@ compositional_data:
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
 
-  rock_compressibility: 0
+  rock_compressibility: 7.252e-8
   Pf: 13.79E6
 
   #capillary pressure data - not ok with this

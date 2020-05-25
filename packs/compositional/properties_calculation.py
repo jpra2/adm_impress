@@ -21,6 +21,7 @@ class PropertiesCalc:
         self.update_relative_permeabilities(fprop, kprop)
         self.update_phase_viscosities(data_loaded, fprop, kprop)
         self.update_mobilities(fprop)
+        self.update_capillary_pressure(fprop, kprop)
 
     def run_inside_loop(self, data_impress, wells, fprop, kprop):
         self.set_properties(fprop, kprop)
@@ -32,10 +33,12 @@ class PropertiesCalc:
         self.update_relative_permeabilities(fprop, kprop)
         self.update_phase_viscosities(data_loaded, fprop, kprop)
         self.update_mobilities(fprop)
+        self.update_capillary_pressure(fprop, kprop)
 
     def set_properties(self, fprop, kprop):
         fprop.component_molar_fractions = np.zeros([kprop.n_components, kprop.n_phases, self.n_volumes])
         fprop.phase_molar_densities = np.zeros([1, kprop.n_phases, self.n_volumes])
+        fprop.phase_densities = np.zeros(fprop.phase_molar_densities.shape)
 
         if kprop.load_k:
             fprop.component_molar_fractions[0:kprop.Nc,0,:] = fprop.x
@@ -44,8 +47,14 @@ class PropertiesCalc:
             fprop.phase_molar_densities[0,0,:] = fprop.ksi_L
             fprop.phase_molar_densities[0,1,:] = fprop.ksi_V
 
-        fprop.component_molar_fractions[kprop.n_components-1, kprop.n_phases-1,:] = 1 #water molar fraction in water component
-        if kprop.load_w: fprop.phase_molar_densities[0, kprop.n_phases-1,:] = fprop.ksi_W
+            fprop.phase_densities[0,0,:] = fprop.rho_L
+            fprop.phase_densities[0,0,:] = fprop.rho_V
+
+        if kprop.load_w:
+            fprop.phase_molar_densities[0, kprop.n_phases-1,:] = fprop.ksi_W
+            fprop.component_molar_fractions[kprop.n_components-1, kprop.n_phases-1,:] = 1 #water molar fraction in water component
+            fprop.phase_densities[0,kprop.n_phases-1,:] = fprop.rho_W
+
 
     def set_initial_volume(self, fprop):
         self.Vo = fprop.Vp * fprop.So
@@ -122,15 +131,27 @@ class PropertiesCalc:
         if kprop.load_k:
             self.phase_viscosity = self.phase_viscosity(self.n_volumes, fprop, kprop)
             #self.phase_viscosities[0,0:2,:] = 0.02*np.ones([2,self.n_volumes]) #only for BL test
-            self.phase_viscosities_oil_and_gas = self.phase_viscosity(fprop, kprop)
-            self.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosities_oil_and_gas
+            #self.phase_viscosities[0,0:2,:] = 0.001*np.ones([2,self.n_volumes]) #only for BL test
+            self.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosity(fprop, kprop)
         if kprop.load_w:
             self.phase_viscosities[0,kprop.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
 
     def update_mobilities(self, fprop):
         fprop.mobilities = self.relative_permeabilities / self.phase_viscosities
 
+    def update_capillary_pressure(self, fprop, kprop):
+        """ not working yet"""
+        #get_capillary_pressure = getattr(capillary_pressure, data_loaded['compositional_data']['capillary_pressure'])
+        #get_capillary_pressure = get_capillary_pressure(data_loaded, data_impress, fprop.phase_molar_densities, fprop.component_molar_fractions)
+        #Pcow, Pcog = get_capillary_pressure(data_loaded, fprop.Sw, fprop.So, fprop.Sg)
+
+        fprop.Pcap = np.zeros([kprop.n_phases,self.n_volumes])
+        # Pcap[0,0,:] = Pcog
+        # Pcap[0,1,:] = Pcow
+
     def update_water_saturation(self, data_impress, wells, fprop, kprop):
+        Swr = float(direc.data_loaded['compositional_data']['residual_saturations']['Swr'])
         fprop.ksi_W = fprop.ksi_W0 * (1 + fprop.Cw * (fprop.P - fprop.Pw))
         fprop.rho_W = fprop.ksi_W * fprop.Mw_w
         data_impress['saturation'] = fprop.component_mole_numbers[kprop.n_components-1,:] * (1 / fprop.ksi_W) / fprop.Vp #or Vt ?
+        #data_impress['saturation'][data_impress['saturation'] < Swr] = Swr

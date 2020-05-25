@@ -75,9 +75,9 @@ class FluidProperties:
         self.T = fprop_block.T
         self.R = fprop_block.R
         self.P = fprop_block.P * np.ones(n_volumes)
-        self.z = fprop_block.z * np.ones([kprop.Nc, n_volumes])
-        self.x = fprop_block.x * np.ones([kprop.Nc, n_volumes])
-        self.y = fprop_block.y * np.ones([kprop.Nc, n_volumes])
+        self.z = fprop_block.z[:,np.newaxis] * np.ones([kprop.Nc, n_volumes])
+        self.x = fprop_block.x[:,np.newaxis] * np.ones([kprop.Nc, n_volumes])
+        self.y = fprop_block.y[:,np.newaxis] * np.ones([kprop.Nc, n_volumes])
         self.L = fprop_block.L * np.ones(n_volumes)
         self.V = fprop_block.V * np.ones(n_volumes)
         self.Mw_L = fprop_block.Mw_L * np.ones(n_volumes)

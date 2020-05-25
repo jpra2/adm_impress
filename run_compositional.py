@@ -62,7 +62,6 @@ class run_simulation:
     def run(self, M, data_impress, wells, fprop, kprop, load, n_volumes):
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
-        #import pdb; pdb.set_trace()
         self.delta_t = self.FVM.runIMPEC(M, data_loaded, data_impress, wells, fprop, kprop, self.delta_t)
 
         self.t += self.delta_t
@@ -112,19 +111,20 @@ class run_simulation:
             # (fprop.component_molar_fractions * phase_existance * fprop.phase_molar_densities).sum(axis=1)[:,wells['ws_inj']]
             flux_total_inj = np.absolute(flux_vols_total)
         else: flux_total_inj = np.zeros(2)
-        self.vpi += (flux_total_inj.sum()*self.delta_t)/sum(fprop.Vp)
+
+        self.vpi = self.vpi + (flux_total_inj.sum())/sum(fprop.Vp)*self.delta_t
 
 
     def get_empty_current_compositional_results(self):
 
-        return [np.array(['loop', 'delta_t [s]', 'simulation_time [s]', 't [s]', 'pressure [Pa]', 'Sw', 'centroids'])]
+        return [np.array(['loop', 'vpi [s]', 'simulation_time [s]', 't [s]', 'pressure [Pa]', 'Sw', 'centroids'])]
 
     def update_current_compositional_results(self, M, wells, fprop, simulation_time: float = 0.0):
 
         #total_flux_internal_faces = fprop.total_flux_internal_faces.ravel() #* M.faces.normal[M.faces.internal]
         #total_flux_internal_faces_vector = fprop.total_flux_internal_faces.T * np.abs(M.faces.normal[M.faces.internal])
 
-        self.current_compositional_results = np.array([self.loop, self.delta_t, simulation_time,
+        self.current_compositional_results = np.array([self.loop, self.vpi, simulation_time,
         self.t, fprop.P, fprop.Sw, M.data['centroid_volumes']])
         self.all_compositional_results.append(self.current_compositional_results)
 

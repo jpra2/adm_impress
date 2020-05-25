@@ -70,14 +70,18 @@ class delta_time:
         deltaSlim = data_loaded['compositional_data']['time_data']['deltaSlim']
         deltaNlim = data_loaded['compositional_data']['time_data']['deltaNlim']
         deltaVlim = data_loaded['compositional_data']['time_data']['deltaVlim']
+        delta_tmax = data_loaded['compositional_data']['time_data']['delta_tmax']
+        delta_tmin = data_loaded['compositional_data']['time_data']['delta_tmin']
 
         delta_tp = self.update_delta_tp(delta_t, fprop, deltaPlim)
         delta_ts = self.update_delta_ts(delta_t, fprop, deltaSlim)
         delta_tn = self.update_delta_tn(delta_t, fprop, deltaNlim)
         delta_tv = self.update_delta_tv(delta_t, fprop, deltaVlim)
 
-        #delta_t = self.update_delta_tcfl(delta_t, fprop)
         if fprop.Cw == 0 and not load_k: delta_t = self.update_delta_tcfl(delta_t, fprop)
         else: delta_t = min(delta_tp, delta_ts, delta_tn, delta_tv)
         
+        if delta_t > delta_tmax: delta_t = delta_tmax
+        if delta_t < delta_tmin: delta_t = delta_tmin
+
         return delta_t
