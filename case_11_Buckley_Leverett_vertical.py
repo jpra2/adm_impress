@@ -73,8 +73,9 @@ SwD = np.append(SwD,Sw3)
 
 for  arq in arquivos:
     if  arq.startswith(name):
-        datas = np.load('flying/results_Buckley_Leverett_vertical_case_506.npy', allow_pickle=True)
+        datas = np.load('flying/results_Buckley_Leverett_vertical_caset_506.npy', allow_pickle=True)
         import pdb; pdb.set_trace()
+
         for data in datas[8:]:
             Sw = data[5]
             x = np.linspace(0,1,500)
@@ -86,5 +87,19 @@ for  arq in arquivos:
             plt.title('Buckley-Leverett Solution Example')
             plt.ylabel('Water Saturation')
             plt.xlabel('Dimensionless distance')
-            plt.savefig('results/compositional/saturation_w_vert_BL_comparison.png')
-            import pdb; pdb.set_trace()
+            plt.savefig('results/compositional/saturation_w_vert_BL_comparison11.png' )
+
+
+        '''datas = np.load('flying/results_vertical_case_7855.npy', allow_pickle=True)
+        import pdb; pdb.set_trace()
+        for data in datas[1:]:
+            Sw = data[5]
+            x = np.linspace(0,1,500)
+            plt.figure(1)
+            plt.plot(x, Sw, 'r')
+            plt.grid()
+            loop = data[0]
+            plt.title('Teste')
+            plt.ylabel('Water Saturation')
+            plt.xlabel('Dimensionless distance')
+            plt.savefig('results/compositional/saturation_w_vertical_tcase.png' )'''

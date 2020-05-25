@@ -71,5 +71,5 @@ for  arq in arquivos:
             plt.title('Buckley-Leverett Solution Example')
             plt.ylabel('Water Saturation')
             plt.xlabel('Dimensionless distance')
-            plt.savefig('results/compositional/saturation_w_BL_comparison1.png')
+            plt.savefig('results/compositional/saturation_w_BL_comparison2.png')
             import pdb; pdb.set_trace()

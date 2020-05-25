@@ -17,7 +17,7 @@ h = 1
 
 Pi = 2000
 Bo = 1.1178
-miu = 0.24964
+miu = 0.249
 por = 0.2
 k = 1.5
 cf = 1.04e-5
@@ -156,7 +156,7 @@ for  arq in arquivos:
 
             e3 = (sum((P-p3)**2)/(45*45))**(1/2)
 
-        datas = np.load('flying/results_2d_injection_25_case_852.npy', allow_pickle=True)
+        datas = np.load('flying/results_2d_injection_25_case_t_72.npy', allow_pickle=True)
 
         for data in datas[1:]:
             pressure4 = data[4] / 6894.757
@@ -216,10 +216,10 @@ for  arq in arquivos:
             plt.plot(x1, pressure1, 'r', x2, pressure2, 'b', x3, pressure3, 'g', x, P, 'y')
             plt.grid()
             plt.legend(('25 blocks', '225 blocks', '2025 blocks', 'Analytical Solution'))
-            #plt.figure(2)
-            #plt.plot( x, p3, 'g', x, P, 'y')
+            plt.figure(2)
+            plt.plot( x4, pressure4, 'g', x, P, 'y')
             plt.grid()
             plt.ylabel('Pressure (psi)')
             plt.xlabel('Distance in X - Direction (ft)')
-            plt.savefig('results/compositional/pressure_2d'  + '.png')
+            plt.savefig('results/compositional/pressure_2d_1'  + '.png')
             import pdb; pdb.set_trace()
