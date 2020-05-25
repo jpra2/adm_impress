@@ -1,11 +1,11 @@
 mesh_name: 25x25x1_b.msh
-name_save_file: 'results_2d_injection_25_case'
+name_save_file: 'results_2d_injection_25_case_t'
 
 n_test: 0
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
-water_component: True
+water_component: False
 use_vpi: False
 
 load_compositional_data: False
@@ -44,11 +44,13 @@ compositional_data:
   Epc: 2
 
   time_data:
-    deltaPlim: .1
-    deltaNlim: 0.0001
-    deltaSlim: 0.0001
+    deltaPlim: 1.
+    deltaNlim: 0.001
+    deltaSlim: 0.001
     deltaVlim: .0001
     delta_t_ini: 1000
+    delta_tmax: 1332400.
+    delta_tmin: .1
 
   #rever isso de Cw=0 e Pw
   water_data:
@@ -77,12 +79,12 @@ compositional_data:
     z: [1.]
     Tc: [619.28]
     Pc: [2109795.73]
-    vc: [0.0006031]
+    vc: [0.0006031573275]
     R: [8.3144598]
     Mw: [142.28e-3]
     w: [0.4890]
     Bin: [0]
-    C7: [1]
+    C7: [0]
     SG: [0.7342]
     vshift_parameter: [0.085]
 
@@ -106,7 +108,7 @@ Permeability:
 Pressure:
   r1:
     type: all
-    value: 13.79E6 #confirmar
+    value: 13.78951458E6 #confirmar
 
 Temperature:
   r1:
@@ -121,5 +123,5 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: [-2.720252624e-6, 0]
-    ksi_inj: 4588.41158708
+    value: [-2.720252624e-6]
+    ksi_inj: 4587.389676497057
