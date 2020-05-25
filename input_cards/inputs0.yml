@@ -64,7 +64,7 @@ compositional_data:
     Tc:
     - 619.28
     vc:
-    - 0.0006031
+    - 0.0006031573275
     vshift_parameter:
     - 0.085
     w:
@@ -94,6 +94,8 @@ compositional_data:
     deltaSlim: 0.001
     deltaVlim: 0.0001
     delta_t_ini: 1000
+    delta_tmax: 1000
+    delta_tmin: 1e-4
   time_to_save:
   - 1015
   - 432000.0
@@ -115,11 +117,11 @@ hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: 100x1x1_b.msh
+mesh_name: 100x1x1_wag.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_compressive_oil_case
+name_save_file: results_wag_case
 read_permeability: false
 set_permeability: true
 set_porosity: true
