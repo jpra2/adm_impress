@@ -8,6 +8,12 @@
 *.msh
 !27x27x27.msh
 !100x1x1.msh
+!500x1x1_b.msh
+!25x25x1_b.msh
+!100x1x1_m.msh
+!100x1x10.msh
+!1x1x500_b.msh
+!1x1x100_m.msh
 *.txt
 *.csv
 *.png
