@@ -4,6 +4,7 @@ from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.directories import data_loaded
 from packs.multiscale.operators.prolongation.AMS.Paralell.group_dual_volumes import group_dual_volumes_and_get_OP
 import scipy.sparse as sp
+from pymoab import types
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -22,6 +23,19 @@ def get_gids_and_primal_id(gids, primal_ids):
         primal_ids2.append(primal_id[0])
     primal_ids2 = np.array(primal_ids2)
     return gids2, primal_ids2'''
+def plot_operator(OP_AMS, primals):
+    for i in range(len(primals)):
+        tag_ams=M.core.mb.tag_get_handle("OP_AMS_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        fb_ams = OP_AMS[:, primals[i]].toarray()
+        M.core.mb.tag_set_data(tag_ams, M.core.all_volumes, fb_ams)
+
+def write_file_with_tag_range(tag,lims):
+    mc=M.core.mb.create_meshset()
+    tag_ams=M.core.mb.tag_get_handle(tag, 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+    values=M.core.mb.tag_get_data(tag_ams,M.core.all_volumes,flat=True)
+    entities=np.array(M.core.all_volumes)[(values>lims[0]) & (values<lims[1])]
+    M.core.mb.add_entities(mc,entities)
+    M.core.mb.write_file('results/'+tag+'.vtk', [mc])
 
 def mostrar(i, data_impress, M, op1, rest1):
     l0 = np.concatenate(op1[:,i].toarray())
@@ -99,7 +113,7 @@ PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
-neta_lim=2.0
+neta_lim=2.0*np.inf
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
@@ -125,6 +139,9 @@ M.core.mb.add_entities(meshset_faces, M.core.all_faces)
 
 OP_AMS=mlo['prolongation_level_1']
 OR_AMS=mlo['restriction_level_1']
+plot_operator(OP_AMS,np.arange(OP_AMS.shape[1]))
+write_file_with_tag_range('OP_AMS_63',[0,np.inf])
+
 Tc=OR_AMS*T*OP_AMS
 bc=OR_AMS*b
 from scipy.sparse import linalg
@@ -190,9 +207,7 @@ while verif:
     # M.core.mb.write_file('results/testt_f'+str(cont)+'.vtk', [meshset_faces])
 
     if cont % nn == 0:
-        mc=M.core.mb.create_meshset()
-        M.core.mb.add_entities(mc,np.array(M.core.all_volumes)[data_impress['coupled_flag']==1])
-        M.core.mb.write_file('results/testt_coup'+str(cont)+'.vtk', [mc])
+
         import pdb; pdb.set_trace()
 
     # adm_method.restart_levels_2()
