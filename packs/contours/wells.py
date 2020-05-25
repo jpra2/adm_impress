@@ -93,15 +93,18 @@ class Wells(DataManager):
                 p1 = well['p1']
                 limites = np.array([p0, p1])
                 vols = get_box(centroids, limites)
+                if len(values_q)==0 and prescription=='Q':
+                    values_q = np.zeros([len(vols), len(value)])
                 nv = len(vols)
+                i = 0
                 if prescription == 'Q':
-
                     val = value/nv
                     if tipo == 'Injector':
                         val *= -1
 
                     ws_q.append(vols)
-                    values_q.append(np.repeat(val, nv))
+                    values_q[i:nv,:] = val
+                    i = nv
 
                 elif prescription == 'P':
                     val = value
@@ -116,7 +119,7 @@ class Wells(DataManager):
         ws_q = np.array(ws_q).flatten()
         ws_p = np.array(ws_p).flatten()
         values_p = np.array(values_p).flatten()
-        values_q = np.array(values_q).flatten()
+        values_q = np.array(values_q)#.flatten()
         ws_inj = np.array(ws_inj).flatten()
         ws_prod = np.array(ws_prod).flatten()
 
@@ -146,8 +149,10 @@ class Wells(DataManager):
         mb.tag_set_data(self.tags['INJ'], ws_inj, np.repeat(1, len(ws_inj)))
         mb.tag_set_data(self.tags['PROD'], ws_prod, np.repeat(1, len(ws_prod)))
         mb.tag_set_data(self.tags['P'], ws_p, values_p)
-        for value_q in values_q:
-            mb.tag_set_data(self.tags['Q'], ws_q, value_q)
+
+        for i in range(len(values_q[0,:])):
+            mb.tag_set_data(self.tags['Q'], ws_q, values_q[:,i])
+
 
     def load_tags(self):
         assert not self._loaded
