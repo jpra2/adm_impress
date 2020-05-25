@@ -27,7 +27,7 @@ class StabilityCheck:
             self.molar_properties(kprop, z)
         else:
             sp1,sp2 = self.StabilityTest(kprop, z)
-            if sp1 > 1 or sp2 > 1: self.molar_properties(kprop, z)
+            if np.round(sp1,5) > 1 or np.round(sp2,5) > 1: self.molar_properties(kprop, z)
             else: #tiny manipulation
                 self.x = z; self.y = z
                 self.bubble_point_pressure()
@@ -157,7 +157,7 @@ class StabilityCheck:
 
         """ Solution """
         if z1 != 0:
-            xi = self.solve_objective_function_Yinghui(z1, zi, z, K1, KNc, Ki, i)
+            xi = self.solve_objective_function_Yinghui(z1, zi, z, K1, KNc, Ki)
         else:
             '''Explicit Calculation of xi'''
             xi = (K1 - 1) * zi / (K1 - Ki)
