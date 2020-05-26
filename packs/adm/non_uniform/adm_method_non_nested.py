@@ -825,7 +825,7 @@ class AdmNonNested(AdmMethod):
 
     def set_pms_flux(self, T_witout, wells, pare=False):
 
-        master = masterNeumanNonNested(self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, T_witout, wells, pare=pare)
+        master = masterNeumanNonNested(self.mesh, self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, T_witout, wells, pare=pare)
         ms_flux_faces, pcorr = master.run()
         del master
         self.data_impress['flux_faces'] = ms_flux_faces
