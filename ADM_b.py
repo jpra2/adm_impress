@@ -113,7 +113,7 @@ PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
-neta_lim=2.0*np.inf
+neta_lim=1.0*np.inf
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
@@ -140,7 +140,7 @@ M.core.mb.add_entities(meshset_faces, M.core.all_faces)
 OP_AMS=mlo['prolongation_level_1']
 OR_AMS=mlo['restriction_level_1']
 plot_operator(OP_AMS,np.arange(OP_AMS.shape[1]))
-write_file_with_tag_range('OP_AMS_63',[0,np.inf])
+# write_file_with_tag_range('OP_AMS_63',[0,np.inf])
 
 Tc=OR_AMS*T*OP_AMS
 bc=OR_AMS*b
@@ -169,7 +169,7 @@ data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
 data_impress.update_variables_to_mesh()
 M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
 
-nn = 2
+nn = 10
 cont = 1
 
 verif = True
