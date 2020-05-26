@@ -210,7 +210,7 @@ while verif:
 
     # M.core.mb.write_file('results/testt_f'+str(cont)+'.vtk', [meshset_faces])
 
-    import pdb; pdb.set_trace()
+    
 
     if cont % nn == 0:
 
