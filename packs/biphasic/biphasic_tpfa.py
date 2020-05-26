@@ -16,13 +16,13 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         load = data_loaded['load_biphasic_data']
         self.load = load
         super().__init__(data_impress, elements_lv0, wells, data_name=data_name, load=load)
-        self.biphasic_data = data_loaded['biphasic_data']        
+        self.biphasic_data = data_loaded['biphasic_data']
         self.relative_permeability = getattr(relative_permeability, self.biphasic_data['relative_permeability'])
         self.relative_permeability = self.relative_permeability()
         self.V_total = (data_impress['volume']*data_impress['poro']).sum()
         self.max_contador_vtk = len(self.biphasic_data['vpis_para_gravar_vtk'])
-        self.delta_sat_max = 0.5
-        self.lim_flux_w = 9e-8
+        self.delta_sat_max = 0.4
+        self.lim_flux_w = 0
         self.name_current_biphasic_results = os.path.join(direc.flying, 'current_biphasic_results.npy')
         self.name_all_biphasic_results = os.path.join(direc.flying, 'all_biphasic_results_')
         self.mesh_name = os.path.join(direc.flying, 'biphasic_')
@@ -398,10 +398,18 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
             import pdb; pdb.set_trace()
         ###################
 
+        ###########################
+        # self.data_impress['verif_po'][:] = 0.0
+        # self.data_impress['verif_po'][:] = (fw_volumes*self.delta_t)/(phis*volumes)
+        ###########################
+
         fw_volumes = fw_volumes[ids_var]
         volumes = volumes[ids_var]
         phis = phis[ids_var]
         sats = saturations[ids_var]
+
+        # if self.loop == 6:
+        #     import pdb; pdb.set_trace()
 
         sats += (fw_volumes*self.delta_t)/(phis*volumes)
 
@@ -437,7 +445,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         min_sat = saturations.min()
         max_sat = saturations.max()
 
-        if min_sat < self.biphasic_data['Swc']-0.01 or max_sat > 1-self.biphasic_data['Sor']+0.1:
+        if min_sat < self.biphasic_data['Swc']-0.001 or max_sat > 1-self.biphasic_data['Sor']+0.001:
             return 1
             # raise ValueError(f'\nprint max_sat: {max_sat} ; min_sat: {min_sat}\n')
 

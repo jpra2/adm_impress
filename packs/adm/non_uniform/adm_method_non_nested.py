@@ -8,9 +8,11 @@ import matplotlib.pyplot as plt
 from pymoab import types
 from scipy.sparse import csc_matrix, csgraph
 # from .paralel_neuman import masterNeumanNonNested
-from .paralel_neuman_new0 import masterNeumanNonNested
+# from .paralel_neuman_new0 import masterNeumanNonNested
+from .paralel_neuman_new1 import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):
+
     def set_adm_mesh_non_nested(self, v0=[], v1=[], pare=False):
         levels = self.data_impress['LEVEL'].copy()
         gids_0 = self.data_impress['GID_0']
@@ -69,7 +71,6 @@ class AdmNonNested(AdmMethod):
             self.number_vols_in_levels[i] = len(levels[levels==i])
         self.n1_adm = n1
         self.n2_adm = n2
-
 
     def equalize_levels(self):
         levels = self.data_impress['LEVEL'].copy()

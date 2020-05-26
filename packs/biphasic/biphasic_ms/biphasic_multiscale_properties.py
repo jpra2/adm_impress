@@ -41,6 +41,10 @@ class bipahsicMultiscaleProperties:
         flux_w_volumes[ws_prod] -= flux_volumes[ws_prod]*fw_vol[ws_prod]
         flux_w_volumes[ws_inj] -= flux_volumes[ws_inj]*fw_vol[ws_inj]
 
+        self.data_impress['verif_po'][:] = 0.0
+        self.data_impress['verif_po'][ws_prod] = flux_volumes[ws_prod]*fw_vol[ws_prod]
+        self.data_impress['verif_po'][ws_inj] = flux_volumes[ws_inj]*fw_vol[ws_inj]
+
         return flux_w_volumes
 
     @property

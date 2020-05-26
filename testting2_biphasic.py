@@ -9,7 +9,7 @@ b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
 # b1.run()
 # import pdb; pdb.set_trace()
 n = 1
-n2 = 20
+n2 = 40
 n_for_save = 20
 cont_for_save = 1
 loop = 0
@@ -28,26 +28,27 @@ while verif:
         b1.run()
         cont_for_save += 1
     print(f'\n loop: {b1.loop}\n')
-    if cont % n == 0:
-        cont = 1
-        data_impress.update_variables_to_mesh()
-        name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
-        M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
-        # import pdb; pdb.set_trace()
+    # if cont % n == 0:
+    #     cont = 1
+    #     data_impress.update_variables_to_mesh()
+    #     name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
+    #     M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+    #     # import pdb; pdb.set_trace()
+    data_impress.update_variables_to_mesh()
     M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
     cont += 1
     if cont % n2 == 0:
         import pdb; pdb.set_trace()
-    loop += 1
-    if loop > 200:
-        if cont2 % n2 == 0:
-            cont2 = 1
-            data_impress.update_variables_to_mesh()
-            name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
-            M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
-            # import pdb; pdb.set_trace()
-
-        cont2 += 1
+    # loop += 1
+    # if loop > 200:
+    #     if cont2 % n2 == 0:
+    #         cont2 = 1
+    #         data_impress.update_variables_to_mesh()
+    #         name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
+    #         M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+    #         # import pdb; pdb.set_trace()
+    #
+    #     cont2 += 1
 
 
 

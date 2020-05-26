@@ -120,61 +120,78 @@ class masterNeumanNonNested:
                 val_diric = []
                 val_neum = []
 
-                if volumes_dirichlet:
-                    ind_diric += list(volumes_dirichlet)
-                    for v in ind_diric:
-                        ## adicionar em ind_dirich os valores de pressao prescrita
-                        val_diric += [self.wells['values_p'][self.wells['ws_p']==v][0]]
-                        ## pegando os indices nas faces de interseccao local e removendo caso haja volumes de dirichlet
-                        inds = ~((v0_new[:,0]==v) | (v0_new[:,1]==v))
-                        intersect_faces_new = intersect_faces_new[inds]
-                        intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
+                # if volumes_dirichlet:
+                #     ind_diric += list(volumes_dirichlet)
+                #     for v in ind_diric:
+                #         ## adicionar em ind_dirich os valores de pressao prescrita
+                #         val_diric += [self.wells['values_p'][self.wells['ws_p']==v][0]]
+                #         ## pegando os indices nas faces de interseccao local e removendo caso haja volumes de dirichlet
+                #         inds = ~((v0_new[:,0]==v) | (v0_new[:,1]==v))
+                #         intersect_faces_new = intersect_faces_new[inds]
+                #         intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
 
-                volumes_dirichlet_2 = (set(volumes) & vols_lv0) - set(self.wells['ws_p'])
-                if volumes_dirichlet_2:
-                    for v in volumes_dirichlet_2:
-                        ind_diric.append(v)
-                        val_diric.append(pms[v])
-                        inds = ~((v0_new[:,0]==v) | (v0_new[:,1]==v))
-                        v0_new = v0_new[inds]
-                        intersect_faces_new = intersect_faces_new[inds]
-                        intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
+                ind_diric = vertex
+                val_diric = pms[vertex]
 
-                if volumes_neuman:
-                    ind_neum += list(volumes_neuman)
-                    for v in ind_neum:
-                        val_neum += [self.wells['values_q'][self.wells['ws_q']==v][0]]
-                        inds = ~((v0_new[:,0]==v) | (v0_new[:,1]==v))
-                        v0_new = v0_new[inds]
-                        intersect_faces_new = intersect_faces_new[inds]
-                        intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
+                # volumes_dirichlet_2 = (set(volumes) & vols_lv0) - set(self.wells['ws_p'])
+                # if volumes_dirichlet_2:
+                #     for v in volumes_dirichlet_2:
+                #         ind_diric.append(v)
+                #         val_diric.append(pms[v])
+                #         inds = ~((v0_new[:,0]==v) | (v0_new[:,1]==v))
+                #         v0_new = v0_new[inds]
+                #         intersect_faces_new = intersect_faces_new[inds]
+                #         intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
 
-                if len(intern_boundary_volumes_new) > 0:
-                    v0 = v0_new
-                    pms0 = pms[v0[:,0]]
-                    pms1 = pms[v0[:,1]]
-                    t0 = self.data_impress['transmissibility'][intersect_faces_new]
-                    pms_flux_faces_local = get_flux_faces(pms1, pms0, t0)
-                    pms_flux_faces[intersect_faces_new] = pms_flux_faces_local
+                # if volumes_neuman:
+                #     ind_neum += list(volumes_neuman)
+                #     for v in ind_neum:
+                #         val_neum += [self.wells['values_q'][self.wells['ws_q']==v][0]]
+                #         inds = ~((v0_new[:,0]==v) | (v0_new[:,1]==v))
+                #         v0_new = v0_new[inds]
+                #         intersect_faces_new = intersect_faces_new[inds]
+                #         intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
 
-                    lines = np.concatenate([v0[:, 0], v0[:, 1]])
-                    cols = np.repeat(0, len(lines))
-                    data = np.concatenate([pms_flux_faces_local, -pms_flux_faces_local])
-                    flux_pms_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
-                    presc_flux_intern_boundary_volumes = flux_pms_volumes[intern_boundary_volumes_new]
+                ind_neum = intern_boundary_volumes_new
+                v0 = v0_new
+                pms0 = pms[v0[:,0]]
+                pms1 = pms[v0[:,1]]
+                t0 = self.data_impress['transmissibility'][intersect_faces_new]
+                pms_flux_faces_local = get_flux_faces(pms1, pms0, t0)
+                pms_flux_faces[intersect_faces_new] = pms_flux_faces_local
+                lines = np.concatenate([v0[:, 0], v0[:, 1]])
+                cols = np.repeat(0, len(lines))
+                data = np.concatenate([pms_flux_faces_local, -pms_flux_faces_local])
+                flux_pms_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+                presc_flux_intern_boundary_volumes = flux_pms_volumes[intern_boundary_volumes_new]
+                val_neum = list(presc_flux_intern_boundary_volumes)
 
-                    ind_neum += list(intern_boundary_volumes_new)
-                    val_neum += list(presc_flux_intern_boundary_volumes)
+                # if len(intern_boundary_volumes_new) > 0:
+                #     v0 = v0_new
+                #     pms0 = pms[v0[:,0]]
+                #     pms1 = pms[v0[:,1]]
+                #     t0 = self.data_impress['transmissibility'][intersect_faces_new]
+                #     pms_flux_faces_local = get_flux_faces(pms1, pms0, t0)
+                #     pms_flux_faces[intersect_faces_new] = pms_flux_faces_local
+                #
+                #     lines = np.concatenate([v0[:, 0], v0[:, 1]])
+                #     cols = np.repeat(0, len(lines))
+                #     data = np.concatenate([pms_flux_faces_local, -pms_flux_faces_local])
+                #     flux_pms_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+                #     presc_flux_intern_boundary_volumes = flux_pms_volumes[intern_boundary_volumes_new]
+                #
+                #     ind_neum += list(intern_boundary_volumes_new)
+                #     val_neum += list(presc_flux_intern_boundary_volumes)
 
-                if len(ind_diric) == 0:
-                    if set(vertex) & set(ind_neum):
-                        candidatos = set(volumes) - set(ind_neum)
-                        vol = candidatos.pop()
-                        ind_diric += [vol]
-                        val_diric += [pms[vol]]
-                    else:
-                        ind_diric += list(vertex)
-                        val_diric += list(pressure_vertex)
+                # if len(ind_diric) == 0:
+                #     if set(vertex) & set(ind_neum):
+                #         candidatos = set(volumes) - set(ind_neum)
+                #         vol = candidatos.pop()
+                #         ind_diric += [vol]
+                #         val_diric += [pms[vol]]
+                #     else:
+                #         ind_diric += list(vertex)
+                #         val_diric += list(pressure_vertex)
 
                 # ind_diric=volumes[level_volumes==1]
                 # if len(ind_diric)>0:
@@ -185,12 +202,17 @@ class masterNeumanNonNested:
                 #     else:
                 #         ind_diric=vertex
                 # else:
-                ind_diric=vertex
-                val_diric=pms[ind_diric]
+                # ind_diric=vertex
+                # val_diric=pms[ind_diric]
                 self.data_impress['val_diric'][ind_diric]=val_diric
                 self.data_impress['val_neum'][ind_neum]=val_neum
 
                 list_of_subdomains.append(Subdomain(volumes, ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, self.T_without))
+
+        ####################
+        if len(list_of_subdomains) != len(gids_level):
+            import pdb; pdb.set_trace()
+        ###################
 
         return list_of_subdomains, pms_flux_faces
 

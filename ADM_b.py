@@ -173,7 +173,7 @@ data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
 data_impress.update_variables_to_mesh()
 M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
 
-nn = 10
+nn = 60
 cont = 1
 
 verif = True
@@ -207,10 +207,11 @@ while verif:
     # data_impress['pressure'] = p2
     # data_impress['erro'] = np.absolute((p2-data_impress['pms']))
     b1.run_2()
+    print(f'\ndelta_t:{b1.delta_t} ***********************\n')
 
     # M.core.mb.write_file('results/testt_f'+str(cont)+'.vtk', [meshset_faces])
 
-    
+
 
     if cont % nn == 0:
 

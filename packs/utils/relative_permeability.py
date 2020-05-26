@@ -12,9 +12,10 @@ class BrooksAndCorey:
         self.kro0 = float(direc.data_loaded['biphasic_data']['kro0'])
 
     def _stemp(self, S):
-        S[S>0.8]=0.8
-        S[S<0.2]=0.2
-        return (S - self.Swc) / (1 - self.Swc - self.Sor)
+        S1=S.copy()
+        S1[S>1 - self.Sor] = 1 - self.Sor
+        S1[S<self.Swc] = self.Swc
+        return (S1 - self.Swc) / (1 - self.Swc - self.Sor)
 
     def _krw(self, S_temp):
         return self.krw0*(np.power(S_temp, self.n_w))
@@ -22,7 +23,7 @@ class BrooksAndCorey:
     def _kro(self, S_temp):
         return self.kro0*(np.power(1 - S_temp, self.n_o))
 
-    def calculate(self, saturations):        
+    def calculate(self, saturations):
         n = len(saturations)
         ids = np.arange(n)
         ids_fora = ids[(saturations < 0) | (saturations > 1)]
