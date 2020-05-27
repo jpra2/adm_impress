@@ -1,4 +1,4 @@
-mesh_name: 100x1x10.msh
+mesh_name: 100x1x10_2.msh
 name_save_file: 'results_Dietz_30dg_caset'
 
 compositional: True
@@ -29,7 +29,7 @@ compositional_data:
   g: 9.80665
   CFL: 0.5
   vpis_para_gravar_vtk: [0.1, 0.2, 0.3, 0.4]
-  time_to_save: [0]
+  time_to_save: [4320000., 8640000, 12960000, 17280000]
   tempo_maximo: null
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
@@ -85,7 +85,7 @@ compositional_data:
     Bin: [0]
     C7: [0]
     SG: [0.7342]
-    vshift_parameter: [0.]
+    vshift_parameter: [-940]
 
 #water saturation data
 Saturation:
@@ -117,8 +117,8 @@ Temperature:
 
 Wells:
   P1:
-    p0: [26.13248976, 0.0, -18.288]
-    p1: [26.39645431, 3.048, -15.24]
+    p0: [30.1752, 0.0, -20.6456362]
+    p1: [30.48, 3.048, -17.5976362]
     prescription: Q
     type: Injector
     type_region: box
@@ -127,7 +127,7 @@ Wells:
 
   P2:
     p0: [0.0, 0.0, -3.048]
-    p1: [0.2639645431, 3.048, 0.0]
+    p1: [0.3048, 3.048, 0.0]
     prescription: P
     type: Producer
     type_region: box

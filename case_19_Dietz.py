@@ -9,7 +9,7 @@ name = 'all_compositional_'
 arquivos = os.listdir(flying)
 for  arq in arquivos:
     if  arq.startswith(name):
-        datas = np.load('flying/results_Dietz_30dg_case_1249.npy', allow_pickle=True)
+        datas = np.load('flying/results_Dietz_30dg_caset_1288.npy', allow_pickle=True)
 
         x425_all = np.zeros([12,10])
         b=0
@@ -20,10 +20,10 @@ for  arq in arquivos:
             inds = np.zeros([10,100])
             Sw_org = np.zeros([10,100])
             x425 = np.zeros(10)
-            for i in range(10):
-                for j in range(100):
-                    p0 = [0.2639645431*j, 0.0, -0.3048*(i+1) - 0.1524*j]
-                    p1 = [0.2639645431*(j+1), 3.048, -0.3048*i -0.1524*(j+1)]
+            for i in range(0,10):
+                for j in range(0,100):
+                    p0 = [0.3048*j, 0.0, -0.3048*(i+1) - 0.175976362*j]
+                    p1 = [0.3048*(j+1), 3.048, -0.3048*i - 0.175976362*(j+1)]
                     inds[i,j] = get_box(centroids,np.array([p0,p1]))
                 inds = inds.astype(int)
                 Sw_org[i,:] = Sw[inds[i,:]]
@@ -38,7 +38,7 @@ for  arq in arquivos:
                 x = centroids[ind][:,0]
                 x425[i] = x[0] + (0.425 - Slim[0])/(Slim[1] - Slim[0])*(x[1] - x[0])
 
-            x425_all[b,:] = 100 - x425/0.3048/np.cos(pi/6)
+            x425_all[b,:] = 100 - x425/0.3048#/np.cos(pi/6)
             z_plot = np.linspace(-0.5,-9.5,10)
             b+=1
         x_ans = np.array([[15.025, 17.0467, 19.0037, 20.5887, 22.0605, 23.2088, 24.9232, 26.0877, 27.1713, 29.0312],
@@ -47,10 +47,10 @@ for  arq in arquivos:
                           [83.7943, 84.9749, 86.6731, 87.967, 89.455, 90.4739, 91.9942, 93.1748, 94.8892, 95.9567]])
         import pdb; pdb.set_trace()
         x425_plot = np.zeros([4,10])
-        x425_plot[0,:] = x425_all[0,:]
-        x425_plot[1,:] = x425_all[3,:]
-        x425_plot[2,:] = x425_all[6,:]
-        x425_plot[3,:] = x425_all[9,:]
+        x425_plot[0,:] = x425_all[1,:]
+        x425_plot[1,:] = x425_all[4,:]
+        x425_plot[2,:] = x425_all[7,:]
+        x425_plot[3,:] = x425_all[10,:]
         plt.figure(1)
         plt.plot(x425_plot[0,:],z_plot, 'r',label = ('vpi = 0.1'))
         plt.plot(x425_plot[1,:],z_plot,'g', label = ('vpi = 0.2'))
@@ -64,5 +64,5 @@ for  arq in arquivos:
         plt.legend(bbox_to_anchor=(.48, 1.08), loc=9, borderaxespad=0., ncol = 5)
         plt.ylabel('Distance in Z-Direction (ft)')
         plt.xlabel('Distance in X-Direction (ft)')
-        plt.savefig('results/compositional/profile_Dietz_022.png')
+        plt.savefig('results/compositional/profile_Dietz_04.png')
         import pdb; pdb.set_trace()
