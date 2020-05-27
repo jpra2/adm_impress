@@ -99,8 +99,17 @@ class Preprocess0:
         areas = np.array(areas)
         all_areas = np.dot(normals**2, areas)
         dist_cent = np.dot(normals, hs)
-        volume = hs[0]*hs[1]*hs[2]
 
+        dd = np.argwhere(normals!=1)[0]
+        dd1 = np.argwhere(normals[dd]!=1)[0]
+        if len(dd1)>0:
+            inclined_faces_normals = normals[dd][dd1]
+            xz_face = np.argwhere(inclined_faces_normals[:,1]==0)[0]
+            xz_face_angle = inclined_faces_normals[xz_face][0,2]/inclined_faces_normals[xz_face][0,0]
+            theta = np.arctan(xz_face_angle)
+        else: theta = 0
+
+        volume = hs[0]*hs[1]*hs[2]*np.sin(theta)
         n_volumes = M.data.len_entities[direc.entities_lv0[3]]
 
         dd = np.zeros([n_volumes, 3])
