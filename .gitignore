@@ -7,8 +7,6 @@
 *.h5m
 !9x9x9.h5m
 *.vtk
-*.msh
-!27x27x27.msh
 *.txt
 !const_definitions.txt
 *.csv
