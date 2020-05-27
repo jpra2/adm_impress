@@ -19,11 +19,6 @@ if dd['deletar_results']:
         if f[-4:] == '.vtk':
             os.remove(os.path.join(results, f))
 
-def inputs_overall_properties(data_loaded):
-    T = np.array(data_loaded['Temperature']['r1']['value']).astype(float)
-    P = np.array(data_loaded['Pressure']['r1']['value']).astype(float)
-    return P,T
-
 
 class ComponentProperties:
     def __init__(self, data_loaded):

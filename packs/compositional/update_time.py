@@ -1,4 +1,5 @@
 import numpy as np
+from ..utils import constants as ctes
 from ..directories import data_loaded
 
 class delta_time:
@@ -78,9 +79,9 @@ class delta_time:
         delta_tn = self.update_delta_tn(delta_t, fprop, deltaNlim)
         delta_tv = self.update_delta_tv(delta_t, fprop, deltaVlim)
 
-        if fprop.Cw == 0 and not load_k: delta_t = self.update_delta_tcfl(delta_t, fprop)
+        if ctes.Cw == 0 and not load_k: delta_t = self.update_delta_tcfl(delta_t, fprop)
         else: delta_t = min(delta_tp, delta_ts, delta_tn, delta_tv)
-        
+
         if delta_t > delta_tmax: delta_t = delta_tmax
         if delta_t < delta_tmin: delta_t = delta_tmin
 
