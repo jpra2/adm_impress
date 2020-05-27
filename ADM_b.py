@@ -114,7 +114,7 @@ PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
-neta_lim=1.0*np.inf
+neta_lim=1.0
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
@@ -171,9 +171,10 @@ data_impress['pressure'] = padm
 data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
 
 data_impress.update_variables_to_mesh()
-M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
+# M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
 
-nn = 60
+nn = 4000
+pp = 100
 cont = 1
 
 verif = True
@@ -213,7 +214,7 @@ while verif:
 
 
 
-    if cont % nn == 0:
+    if cont % (nn-1) == 0:
 
         import pdb; pdb.set_trace()
 
@@ -234,8 +235,24 @@ while verif:
     # b1.print_test()
 
     # n=0
-    data_impress.update_variables_to_mesh()
-    M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
+
+    if cont % pp == 0:
+
+        meshset_plot_faces=M.core.mb.create_meshset()
+        int_faces=M.faces.internal
+        adjs=M.faces.bridge_adjacencies(int_faces,2,3)
+        ad0=adjs[:,0]
+        ad1=adjs[:,1]
+        lv=data_impress['LEVEL']
+        gid_coarse=data_impress['GID_1']
+        bounds_coarse=int_faces[gid_coarse[ad0]!=gid_coarse[ad1]]
+        lvs0=int_faces[(lv[ad0]==0) | (lv[ad1]==0)]
+        facs_plot=np.concatenate([bounds_coarse,lvs0])
+        M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
+
+        data_impress.update_variables_to_mesh()
+        M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
+        M.core.mb.write_file('results/faces_'+str(cont)+'.vtk', [meshset_plot_faces])
     # M.core.print(folder='results', file='test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
     T, b = b1.get_T_and_b()

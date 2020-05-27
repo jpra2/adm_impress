@@ -444,11 +444,13 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 
         min_sat = saturations.min()
         max_sat = saturations.max()
-
-        if min_sat < self.biphasic_data['Swc']-0.001 or max_sat > 1-self.biphasic_data['Sor']+0.001:
+        saturations[saturations<0.2]=0.2
+        saturations[saturations>0.8]=0.8
+        '''
+        if min_sat < self.biphasic_data['Swc']-0.1 or max_sat > 1-self.biphasic_data['Sor']+0.1:
             return 1
             # raise ValueError(f'\nprint max_sat: {max_sat} ; min_sat: {min_sat}\n')
-
+        '''
         self.data_impress['saturation'] = saturations
 
         return 0
