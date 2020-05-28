@@ -174,7 +174,7 @@ data_impress.update_variables_to_mesh()
 # M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
 
 nn = 4000
-pp = 100
+pp = 50
 cont = 1
 
 verif = True
@@ -214,7 +214,7 @@ while verif:
 
 
 
-    if cont % (nn-1) == 0:
+    if cont % nn == 0:
 
         import pdb; pdb.set_trace()
 

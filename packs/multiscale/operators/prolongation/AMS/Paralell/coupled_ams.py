@@ -7,14 +7,14 @@ import time
 from packs.multiscale.operators.prolongation.AMS.Paralell.partitionating_parameters import calibrate_partitioning_parameters
 
 class DualDomain:
-    def __init__(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
+    def __init__(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=False):
         self.local_couple=local_couple
         self.couple_bound=couple_bound
         self.adjs, self.ks, self.ids_globais_vols, self.ns =  self.get_local_informations(data_impress, elements_lv0, volumes, local_couple=local_couple, couple_bound=couple_bound)
         self.coarse_ids = data_impress['GID_1'][self.vertices]
         self.A_b_t=[]
 
-    def get_local_informations(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
+    def get_local_informations(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=False):
         # viz=M.mtu.get_bridge_adjacencies(volumes,2,3)
         viz=np.unique(np.concatenate(elements_lv0['volumes_face_volumes'][volumes]))
         nv=len(volumes)
@@ -250,7 +250,7 @@ class Partitioner:
         return partitioned_subds
 
 class OP_AMS:
-    def __init__(self, data_impress, elements_lv0, all_conjs_duais, local_couple=0, couple_bound=True):
+    def __init__(self, data_impress, elements_lv0, all_conjs_duais, local_couple=0, couple_bound=False):
         t0=time.time()
 
         print("Time to calibrate partitioning parameters: {} segundos".format(time.time()-t0))
