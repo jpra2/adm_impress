@@ -7,7 +7,7 @@ n_test: 0
 state: 0
 type_of_solution: fine_scale
 gravity: false
-load_data: false
+load_data: true
 convert_english_to_SI: false
 monophasic: false
 biphasic: true
@@ -131,8 +131,8 @@ Saturation:
 
 Wells:
   P1:
-    p0: [99.0, 0.0, 0.0]
-    p1: [100.0, 1.0, 1.0]
+    p0: [0.0, 0.0, 0.0]
+    p1: [1.0, 1.0, 1.0]
     prescription: Q
     type: Injector
     type_region: box
@@ -145,8 +145,8 @@ Wells:
     # p1: [900.0, 450.0, 90.0]
     # p0: [160.0, 80.0, 16.0]
     # p1: [180.0, 90.0, 18.0]
-    p0: [44.0, 33.0, 0.0]
-    p1: [45.0, 34.0, 1.0]
+    p0: [5.0, 5.0, 0.0]
+    p1: [6.0, 6.0, 1.0]
     # p0: [5.0, 5.0, 0.0]
     # p1: [6.0, 6.0, 1.0]
     prescription: P

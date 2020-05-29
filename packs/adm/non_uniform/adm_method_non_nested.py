@@ -824,11 +824,11 @@ class AdmNonNested(AdmMethod):
         self.data_impress.update_variables_to_mesh()
         self.data_impress.export_to_npz()
 
-    def set_pms_flux(self, T_witout, wells, pare=False):
+    def set_pms_flux(self, wells, neumann_subds):
 
-        master = masterNeumanNonNested(self.mesh, self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, T_witout, wells, pare=pare)
+        master = masterNeumanNonNested(self.mesh, self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, wells, neumann_subds)
         ms_flux_faces, pcorr = master.run()
-        del master
+        # del master
         self.data_impress['flux_faces'] = ms_flux_faces
         self.data_impress['pcorr'] = pcorr
 

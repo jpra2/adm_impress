@@ -268,9 +268,10 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         ###
 
         flux_volumes = np.absolute(self.data_impress['flux_volumes'])
+        non_null_flux=flux_volumes>0
         phis = self.data_impress['poro']
         volume = self.data_impress['volume']
-        delta_t = (self.biphasic_data['cfl']*(volume*phis)/flux_volumes).min()
+        delta_t = ((self.biphasic_data['cfl']*(volume*phis))[non_null_flux]/flux_volumes[non_null_flux]).min()
         return delta_t
 
     def update_delta_t(self):

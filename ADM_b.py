@@ -1,5 +1,6 @@
 from packs.running.initial_mesh_properties import initial_mesh
 from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
+from packs.multiscale.preprocess.prep_neumann import NeumannSubdomains
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.directories import data_loaded
 from packs.multiscale.operators.prolongation.AMS.Paralell.group_dual_volumes import group_dual_volumes_and_get_OP
@@ -93,6 +94,7 @@ get_correction_term = data_loaded['get_correction_term']
 n_levels = int(data_loaded['n_levels'])
 _debug = data_loaded['_debug']
 biphasic = data_loaded['biphasic']
+
 M, elements_lv0, data_impress, wells = initial_mesh()
 
 if biphasic:
@@ -172,89 +174,81 @@ data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
 
 data_impress.update_variables_to_mesh()
 # M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
-
-nn = 4000
-pp = 50
+########## for plotting faces adm resolution in a faces file
+int_faces=M.faces.internal
+adjs=M.faces.bridge_adjacencies(int_faces,2,3)
+ad0=adjs[:,0]
+ad1=adjs[:,1]
+#######################################
+neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress)
+nn = 2
+pp = 2
 cont = 1
 
 verif = True
 pare = False
 np.save('results/jac_iterarion.npy',np.array([0]))
 while verif:
-    # multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
-    # multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
-    # mlo = multilevel_operators
+    t0=time.time()
     for level in range(1, n_levels):
-
         adm_method.organize_ops_adm(mlo['prolongation_level_'+str(level)],
                                     mlo['restriction_level_'+str(level)],
                                     level)
-
-    # op1 = adm_method['adm_prolongation_level_1']
-    # or1 = adm_method['adm_restriction_level_1']
-    # import pdb; pdb.set_trace()
+    print(time.time()-t0,'organize_ops_adm')
+    t1=time.time()
     adm_method.restart_levels()
-    # adm_method.set_level_wells_2()
+    print(time.time()-t1,'restart_levels')
+    t1=time.time()
     adm_method.set_level_wells_3()
+    print(time.time()-t1,'level_wells')
+    t1=time.time()
     adm_method.set_saturation_level()
+    print(time.time()-t1,'saturation_level')
+    t1=time.time()
     adm_method.equalize_levels()
-
+    print(time.time()-t1,'equalize_levels')
+    t1=time.time()
     adm_method.solve_multiscale_pressure(T, b)
-    adm_method.set_pms_flux(b1['Tini'], wells, pare=pare)
+    print(time.time()-t1,'solve_multiscale_pressure')
+    t1=time.time()
+    adm_method.set_pms_flux(wells, neumann_subds)
+    print(time.time()-t1,'set_pms_flux')
+    t1=time.time()
     b1.get_velocity_faces()
+    print(time.time()-t1,'get_velocity_faces')
+    t1=time.time()
     b1.get_flux_volumes()
-    # b1.print_test()
-    # p2 = adm_method.solver.direct_solver(T, b)
-    # data_impress['pressure'] = p2
-    # data_impress['erro'] = np.absolute((p2-data_impress['pms']))
+    print(time.time()-t1,'get_flux_volumes')
+    t1=time.time()
     b1.run_2()
-    print(f'\ndelta_t:{b1.delta_t} ***********************\n')
-
-    # M.core.mb.write_file('results/testt_f'+str(cont)+'.vtk', [meshset_faces])
-
-
+    print(time.time()-t1,'run_2')
+    t1=time.time()
 
     if cont % nn == 0:
-
         import pdb; pdb.set_trace()
-
-    # adm_method.restart_levels_2()
-    # adm_method.set_level_wells()
-    #### adm_method.restart_levels()
-    #### # adm_method.set_level_wells_2()
-    #### adm_method.set_level_wells_3()
-    #### adm_method.set_saturation_level()
-    # adm_method.set_saturation_level_imposed_joined_coarse()
-    # adm_method.set_saturation_level_imposed_bound_level_continuity()
-    # adm_method.set_saturation_level_original()
     adm_method.equalize_levels()
+    print(time.time()-t1,'equalize_levels')
+
+    t1=time.time()
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
-
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
-    # b1.print_test()
-
-    # n=0
 
     if cont % pp == 0:
-
         meshset_plot_faces=M.core.mb.create_meshset()
-        int_faces=M.faces.internal
-        adjs=M.faces.bridge_adjacencies(int_faces,2,3)
-        ad0=adjs[:,0]
-        ad1=adjs[:,1]
         lv=data_impress['LEVEL']
         gid_coarse=data_impress['GID_1']
         bounds_coarse=int_faces[gid_coarse[ad0]!=gid_coarse[ad1]]
         lvs0=int_faces[(lv[ad0]==0) | (lv[ad1]==0)]
         facs_plot=np.concatenate([bounds_coarse,lvs0])
         M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
-
         data_impress.update_variables_to_mesh()
         M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
         M.core.mb.write_file('results/faces_'+str(cont)+'.vtk', [meshset_plot_faces])
-    # M.core.print(folder='results', file='test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
     T, b = b1.get_T_and_b()
-
+    tf1=time.time()
+    linalg.spsolve(T,b)
+    print(time.time()-tf1,t1-t0)
+    import pdb; pdb.set_trace()
     cont += 1

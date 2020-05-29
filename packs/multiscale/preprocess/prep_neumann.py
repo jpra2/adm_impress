@@ -1,0 +1,39 @@
+import numpy as np
+class NeumannSubdomains:
+    def __init__(self,elements_lv0,ml_data, data_impress):
+        self.ind_diric=[]
+        self.ind_neum=[]
+        self.intern_local_faces=[]
+        self.adj_intern_local_faces=[]
+        self.adjs_intersect_faces=[]
+        self.intern_boundary_volumes=[]
+        self.intersect_faces=[]
+        self.create_neumann_subdomains(elements_lv0, ml_data, data_impress)
+
+    def create_neumann_subdomains(self,elements_lv0, ml_data, data_impress):
+        remaped_internal_faces = elements_lv0['remaped_internal_faces']
+        neig_internal_faces = elements_lv0['neig_internal_faces']
+        gid0 = data_impress['GID_0']
+        all_gids_coarse = data_impress['GID_1']
+        all_intern_boundary_volumes = ml_data['internal_boundary_fine_volumes_level_1']
+        all_intersect_faces = ml_data['coarse_intersect_faces_level_1']
+        all_intern_faces = ml_data['coarse_internal_faces_level_1']
+        all_faces = ml_data['coarse_faces_level_1']
+        all_fine_vertex = ml_data['fine_vertex_coarse_volumes_level_1']
+        coarse_ids = ml_data['coarse_primal_id_level_1']
+        gids_level = np.unique(all_gids_coarse)
+        for gidc in gids_level:
+            intersect_faces = all_intersect_faces[coarse_ids==gidc][0] # faces na interseccao
+            adjs_intersect_faces = neig_internal_faces[remaped_internal_faces[intersect_faces]]
+            intern_local_faces = all_intern_faces[coarse_ids==gidc][0] # faces internas
+            adj_intern_local_faces = neig_internal_faces[remaped_internal_faces[intern_local_faces]]
+            intern_boundary_volumes = all_intern_boundary_volumes[coarse_ids==gidc][0] # volumes internos no contorno
+            vertex = all_fine_vertex[coarse_ids==gidc]
+
+            self.intersect_faces.append(intersect_faces)
+            self.ind_diric.append(vertex)
+            self.ind_neum.append(intern_boundary_volumes)
+            self.intern_local_faces.append(intern_local_faces)
+            self.adj_intern_local_faces.append(adj_intern_local_faces)
+            self.adjs_intersect_faces.append(adjs_intersect_faces)
+            self.intern_boundary_volumes.append(intern_boundary_volumes)
