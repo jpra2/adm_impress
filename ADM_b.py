@@ -113,7 +113,7 @@ if load_operators:
 else:
     multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
 
-mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
+
 PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
@@ -121,6 +121,7 @@ tpfa_solver.run()
 neta_lim=1.0
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
+mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 
@@ -155,9 +156,7 @@ bc=OR_AMS*b
 from scipy.sparse import linalg
 pc=linalg.spsolve(Tc,bc)
 
-adm_method.organize_ops_adm(mlo['prolongation_lcd_level_'+str(1)],
-                            mlo['restriction_level_'+str(1)],
-                            1)
+adm_method.organize_ops_adm(mlo, 1)
 pms=OP_AMS*pc
 OP_ADM = adm_method['adm_prolongation_level_1']
 
@@ -184,8 +183,8 @@ ad0=adjs[:,0]
 ad1=adjs[:,1]
 #######################################
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress)
-nn = 2
-pp = 2
+nn = 20
+pp = 1
 cont = 1
 
 verif = True
@@ -194,9 +193,7 @@ np.save('results/jac_iterarion.npy',np.array([0]))
 while verif:
     t0=time.time()
     for level in range(1, n_levels):
-        adm_method.organize_ops_adm(mlo['prolongation_lcd_level_'+str(level)],
-                                    mlo['restriction_level_'+str(level)],
-                                    level)
+        adm_method.organize_ops_adm(mlo, level)
     print(time.time()-t0,'organize_ops_adm')
     t1=time.time()
     adm_method.restart_levels()
@@ -225,10 +222,11 @@ while verif:
     t1=time.time()
     b1.run_2()
     print(time.time()-t1,'run_2')
-    t1=time.time()
+
 
     if cont % nn == 0:
         import pdb; pdb.set_trace()
+    t1=time.time()
     adm_method.equalize_levels()
     print(time.time()-t1,'equalize_levels')
 
@@ -253,5 +251,5 @@ while verif:
     tf1=time.time()
     linalg.spsolve(T,b)
     print(time.time()-tf1,t1-t0)
-    import pdb; pdb.set_trace()
+
     cont += 1

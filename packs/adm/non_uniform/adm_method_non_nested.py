@@ -415,7 +415,10 @@ class AdmNonNested(AdmMethod):
         #     volumes = gid0[gid1==gid]
         #     self.data_impress['LEVEL'][volumes] = 0
 
-    def organize_ops_adm(self, OP_AMS_lcd, OR_AMS, level, _pcorr=None):
+    def organize_ops_adm(self, mlo, level, _pcorr=None):
+        OP_AMS_lcd=mlo['prolongation_lcd_level_1']
+        # OP_AMS=mlo['prolongation_level_1'].tolil()
+        OR_AMS=mlo['restriction_level_1']
         t0=time.time()
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
@@ -429,8 +432,10 @@ class AdmNonNested(AdmMethod):
         if level == 1:
             lcd=OP_AMS_lcd
             # t0=time.time()
-            # OP_ADM, OR_ADM, pcorr = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
-            OP_ADM, OR_ADM, pcorr =self.organize(level,lcd, _pcorr=_pcorr)                        
+            # OP_ADM1, OR_ADM1, pcorr1 = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
+            OP_ADM, OR_ADM, pcorr =self.organize(level,lcd, _pcorr=_pcorr)
+            
+
             self._data[self.adm_op_n + str(level)] = OP_ADM
             self._data[self.adm_rest_n + str(level)] = OR_ADM
             self._data[self.pcorr_n+str(level-1)] = pcorr
@@ -508,7 +513,7 @@ class AdmNonNested(AdmMethod):
         return 0
 
     def organize_ops_adm_level_1(self, OP_AMS, OR_AMS, level, _pcorr=None):
-        t0=time.time()
+
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
         gid_ant = self.data_impress['GID_' + str(level-1)]
@@ -517,9 +522,9 @@ class AdmNonNested(AdmMethod):
         level_id_ant = self.data_impress['LEVEL_ID_' + str(level-1)]
         levels = self.data_impress['LEVEL']
         vertices = gid_0[self.data_impress['DUAL_1']==3]
-        t1=time.time()
-        OP_AMS_local = OP_AMS.copy()
-        print(t1-t0,time.time()-t0,"inici")
+
+        OP_AMS_local = OP_AMS.copy().tolil()
+
         # import pdb; pdb.set_trace()
         AMS_TO_ADM = np.arange(len(gid_level[vertices]))
         AMS_TO_ADM[gid_level[vertices]] = level_adm_coarse_id[vertices]
@@ -572,41 +577,41 @@ class AdmNonNested(AdmMethod):
     def organize(self, level, mm,_pcorr=None):
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
-        level_id = self.data_impress['LEVEL_ID_' + str(level)]
+        adm_id = self.data_impress['LEVEL_ID_' + str(level)]
         level_adm_coarse_id = self.data_impress['ADM_COARSE_ID_LEVEL_1']
         levels = self.data_impress['LEVEL']
         vertices = gid_0[self.data_impress['DUAL_1']==3]
 
-        nivel_0 = gid_0[levels==0]
-        ID_global1 = nivel_0
-        ids_adm_nivel0 = level_id[nivel_0]
-        IDs_ADM1 = ids_adm_nivel0
         AMS_TO_ADM = np.arange(len(gid_level[vertices]))
         AMS_TO_ADM[gid_level[vertices]] = level_adm_coarse_id[vertices]
+
+        gid_vols_nv0 = gid_0[levels==0]
+        adm_vols_nv0 = adm_id[gid_vols_nv0]
 
         l1=mm[0]
         c1=mm[1]
-        d1=mm[2]
+        d1=mm[2].copy()
         lvs=levels[l1]
         d1[lvs==0]=0
 
-        l2=ID_global1
-        c2=IDs_ADM1
-        d2=np.repeat(1,len(l2))
-        ID_ADM1 = AMS_TO_ADM[c1]
+        lines=gid_vols_nv0
+        cols=adm_vols_nv0
+        data=np.repeat(1,len(lines))
+        c1_adm = AMS_TO_ADM[c1]
 
-        l2 = np.concatenate([l2,l1])
-        c2 = np.concatenate([c2,ID_ADM1])
-        d2 = np.concatenate([d2,d1])
+        lines = np.concatenate([lines,l1])
+        cols = np.concatenate([cols,c1_adm])
+        data = np.concatenate([data,d1])
 
-        AMS_TO_ADM = np.arange(len(gid_level[vertices]))
-        AMS_TO_ADM[gid_level[vertices]] = level_adm_coarse_id[vertices]
+        # AMS_TO_ADM = np.arange(len(gid_level[vertices]))
+        # AMS_TO_ADM[gid_level[vertices]] = level_adm_coarse_id[vertices]
 
-        n1_adm = len(np.unique(level_id))
+        n1_adm = c1_adm.max()+1
 
-        OP_ADM = sp.csc_matrix((d2,(l2,c2)),shape=(len(gid_0),n1_adm))
+        OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
+
         cols = gid_0
-        lines = level_id
+        lines = adm_id
         data = np.ones(len(lines))
         OR_ADM = sp.csc_matrix((data,(lines,cols)),shape=(n1_adm,len(gid_0)))
 
@@ -672,8 +677,7 @@ class AdmNonNested(AdmMethod):
             pcorr[levels>0] = _pcorr[levels>0]
         else:#np.arange(729)[np.array(OP_ADM.sum(axis=1)==0).T[0]]
             pcorr = np.array([False])
-        if OP_ADM.sum()<729:
-            import pdb; pdb.set_trace()
+
         return OP_ADM, OR_ADM, pcorr
 
     def set_initial_mesh(self, mlo, T, b):
