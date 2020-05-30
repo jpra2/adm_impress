@@ -183,8 +183,8 @@ ad0=adjs[:,0]
 ad1=adjs[:,1]
 #######################################
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress)
-nn = 20
-pp = 1
+nn = 22
+pp = 5
 cont = 1
 
 verif = True
@@ -195,18 +195,14 @@ while verif:
     for level in range(1, n_levels):
         adm_method.organize_ops_adm(mlo, level)
     print(time.time()-t0,'organize_ops_adm')
-    t1=time.time()
-    adm_method.restart_levels()
-    print(time.time()-t1,'restart_levels')
+    
     t1=time.time()
     adm_method.set_level_wells_3()
     print(time.time()-t1,'level_wells')
     t1=time.time()
-    adm_method.set_saturation_level()
+    adm_method.set_saturation_level_simple()
     print(time.time()-t1,'saturation_level')
-    t1=time.time()
-    adm_method.equalize_levels()
-    print(time.time()-t1,'equalize_levels')
+
     t1=time.time()
     adm_method.solve_multiscale_pressure(T, b)
     print(time.time()-t1,'solve_multiscale_pressure')
@@ -218,6 +214,7 @@ while verif:
     print(time.time()-t1,'get_velocity_faces')
     t1=time.time()
     b1.get_flux_volumes()
+
     print(time.time()-t1,'get_flux_volumes')
     t1=time.time()
     b1.run_2()
@@ -226,9 +223,9 @@ while verif:
 
     if cont % nn == 0:
         import pdb; pdb.set_trace()
-    t1=time.time()
-    adm_method.equalize_levels()
-    print(time.time()-t1,'equalize_levels')
+    # t1=time.time()
+    # adm_method.equalize_levels()
+    # print(time.time()-t1,'equalize_levels')
 
     t1=time.time()
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
@@ -251,5 +248,5 @@ while verif:
     tf1=time.time()
     linalg.spsolve(T,b)
     print(time.time()-tf1,t1-t0)
-
+    import pdb; pdb.set_trace()
     cont += 1

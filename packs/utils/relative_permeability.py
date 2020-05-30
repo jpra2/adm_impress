@@ -24,23 +24,26 @@ class BrooksAndCorey:
         return self.kro0*(np.power(1 - S_temp, self.n_o))
 
     def calculate(self, saturations):
-        n = len(saturations)
-        ids = np.arange(n)
-        ids_fora = ids[(saturations < 0) | (saturations > 1)]
-        if len(ids_fora) > 0:
-            raise ValueError('saturacao errada')
+        # n = len(saturations)
+        # ids = np.arange(n)
+        # ids_fora = ids[(saturations < 0) | (saturations > 1)]
+        # if len(ids_fora) > 0:
+        #     raise ValueError('saturacao errada')
+        #
+        # krw = np.zeros(n)
+        # kro = krw.copy()
+        # ids1 = ids[saturations > (1 - self.Sor)]
+        # ids2 = ids[saturations < self.Swc]
+        # ids_r = np.setdiff1d(ids, np.union1d(ids1, ids2))
 
-        krw = np.zeros(n)
-        kro = krw.copy()
-        ids1 = ids[saturations > (1 - self.Sor)]
-        ids2 = ids[saturations < self.Swc]
-        ids_r = np.setdiff1d(ids, np.union1d(ids1, ids2))
-
-        krw[ids1] = np.repeat(self.krw0, len(ids1))
-        kro[ids2] = np.repeat(self.kro0, len(ids2))
-        Stemp = self._stemp(saturations[ids_r])
-        krw[ids_r] = self._krw(Stemp)
-        kro[ids_r] = self._kro(Stemp)
+        # krw[ids1] = np.repeat(self.krw0, len(ids1))
+        # kro[ids2] = np.repeat(self.kro0, len(ids2))
+        # import pdb; pdb.set_trace()
+        saturations[saturations<self.Swc]=self.Swc
+        saturations[saturations>1-self.Sor]=1-self.Sor
+        Stemp = self._stemp(saturations)
+        krw = self._krw(Stemp)
+        kro = self._kro(Stemp)
 
         return krw, kro
 

@@ -150,6 +150,7 @@ class masterNeumanNonNested:
                 cols = np.repeat(0, len(lines))
                 data = np.concatenate([pms_flux_faces_local, -pms_flux_faces_local])
                 flux_pms_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+
                 presc_flux_intern_boundary_volumes = flux_pms_volumes[intern_boundary_volumes]
                 val_neum = list(presc_flux_intern_boundary_volumes)
 
@@ -181,7 +182,6 @@ class masterNeumanNonNested:
                 intern_faces: faces internas do coarse volume
                 intersect_faces: faces na interseccao
         '''
-
         list_of_subdomains = []
         pms_flux_faces = np.zeros(len(self.elements_lv0['faces']))
         pms = self.data_impress['pms']

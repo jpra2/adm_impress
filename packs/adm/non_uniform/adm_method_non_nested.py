@@ -117,6 +117,7 @@ class AdmNonNested(AdmMethod):
     def set_saturation_level(self):
 
         levels = self.data_impress['LEVEL'].copy()
+        import pdb; pdb.set_trace()
         gid1 = self.data_impress['GID_1']
         gid0 = self.data_impress['GID_0']
         level_0_ini = set(gid0[levels==0])
@@ -160,6 +161,18 @@ class AdmNonNested(AdmMethod):
                 else:
                     levels[gids0] = 1
 
+        self.data_impress['LEVEL'] = levels.copy()
+
+    def set_saturation_level_simple(self):
+        levels = self.data_impress['LEVEL'].copy()
+        saturation = self.data_impress['saturation']
+        internal_faces = self.elements_lv0['internal_faces']
+        v0 = self.elements_lv0['neig_internal_faces']
+        ds = saturation[v0]
+        ds = np.absolute(ds[:,1] - ds[:,0])
+        inds = ds >= self.delta_sat_max
+        levels[v0[inds][:,0]] = 0
+        levels[v0[inds][:,1]] = 0    
         self.data_impress['LEVEL'] = levels.copy()
 
     def set_saturation_level_imposed_joined_coarse(self):
@@ -406,6 +419,7 @@ class AdmNonNested(AdmMethod):
         self.data_impress['LEVEL'] = levels.copy()
 
     def set_level_wells_3(self):
+        self.data_impress['LEVEL'][:] = 1
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
         # gid0 = self.data_impress['GID_0']
         # gid1 = self.data_impress['GID_1']
@@ -434,7 +448,7 @@ class AdmNonNested(AdmMethod):
             # t0=time.time()
             # OP_ADM1, OR_ADM1, pcorr1 = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
             OP_ADM, OR_ADM, pcorr =self.organize(level,lcd, _pcorr=_pcorr)
-            
+
 
             self._data[self.adm_op_n + str(level)] = OP_ADM
             self._data[self.adm_rest_n + str(level)] = OR_ADM
