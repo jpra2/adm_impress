@@ -198,6 +198,7 @@ class masterNeumanNonNested:
             coarse_ids = self.ml_data['coarse_primal_id_level_'+ str_level]
             gids_level = np.unique(coarse_ids)
             for gidc in gids_level:
+
                 intersect_faces=self.neumann_subds.intersect_faces[gidc]
                 intern_local_faces = self.neumann_subds.intern_local_faces[gidc]
                 intern_boundary_volumes=self.neumann_subds.intern_boundary_volumes[gidc]
@@ -206,6 +207,9 @@ class masterNeumanNonNested:
                 adj_intern_local_faces = self.neumann_subds.adj_intern_local_faces[gidc]
                 transmissibility = self.data_impress['transmissibility'][intern_local_faces]
                 ind_neum = self.neumann_subds.intern_boundary_volumes[gidc]
+                lines = self.neumann_subds.lines[gidc]
+                cols = self.neumann_subds.cols[gidc]
+                ind_diric_local=self.neumann_subds.ind_diric_local[gidc]
 
                 val_diric = pms[ind_diric]
                 v0 = adjs_intersect_faces
@@ -214,17 +218,23 @@ class masterNeumanNonNested:
                 t0 = self.data_impress['transmissibility'][intersect_faces]
                 pms_flux_faces_local = get_flux_faces(pms1, pms0, t0)
                 pms_flux_faces[intersect_faces] = pms_flux_faces_local
-                lines = np.concatenate([v0[:, 0], v0[:, 1]])
-                cols = np.repeat(0, len(lines))
-                data = np.concatenate([pms_flux_faces_local, -pms_flux_faces_local])
-                flux_pms_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
-                presc_flux_intern_boundary_volumes = flux_pms_volumes[intern_boundary_volumes]
+
+
+
+                map_vol = np.repeat(-1,adjs_intersect_faces.max()+1)
+                map_vol[intern_boundary_volumes] = np.arange(len(intern_boundary_volumes))
+                ls=np.concatenate([v0[:, 0], v0[:, 1]])
+                ds=np.concatenate([pms_flux_faces_local, -pms_flux_faces_local])
+                local_ids=map_vol[ls]
+                t1=time.time()
+                presc_flux_intern_boundary_volumes=np.bincount(local_ids[local_ids>-1], weights=ds[local_ids>-1])
                 val_neum = list(presc_flux_intern_boundary_volumes)
 
                 # self.data_impress['val_diric'][ind_diric]=val_diric
                 # self.data_impress['val_neum'][ind_neum]=val_neum
 
-                list_of_subdomains.append(Subdomain(ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, transmissibility))
+                list_of_subdomains.append(Subdomain(ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, transmissibility, lines, cols, ind_diric_local))
+
 
         ####################
         if len(list_of_subdomains) != len(gids_level):
@@ -253,9 +263,9 @@ def get_flux_faces(p1, p0, t0, flux_grav_faces=None):
 class Subdomain(CommonInfos):
 
     def __init__(self, ind_diric, ind_neum, val_diric, val_neum,
-        intern_faces, adjs_intern_faces, transmissibility):
+        intern_faces, adjs_intern_faces, transmissibility, lines, cols, ind_diric_local):
         self.transmissibilities=transmissibility
-        self.T_local = self.get_local_matrix_with_boundary_condition(adjs_intern_faces, transmissibility, ind_diric)
+        self.T_local = self.get_local_matrix_with_boundary_condition(lines, cols, transmissibility, ind_diric_local)
         volumes=np.unique(adjs_intern_faces)
         self.volumes = volumes
         self.ids_local = np.arange(len(volumes))
@@ -268,24 +278,13 @@ class Subdomain(CommonInfos):
         self.map_gid_in_lid = np.repeat(-1, volumes.max()+1)
         self.map_gid_in_lid[volumes] = self.ids_local
 
-    def get_local_matrix_with_boundary_condition(self,adjs, transmissibility, ind_diric):
-        volumes=np.unique(adjs)
-        map_volumes=np.repeat(-1,adjs.max()+1)
-        map_volumes[volumes]=range(len(volumes))
-        ind_diric_local=map_volumes[ind_diric]
-        l=map_volumes[adjs[:,0]]
-        c=map_volumes[adjs[:,1]]
+    def get_local_matrix_with_boundary_condition(self,lines, cols, transmissibility, ind_diric_local):
         d=transmissibility.copy()
-        lines=np.concatenate([l,c,l,c])
-        cols=np.concatenate([c,l,l,c])
-
         data=np.concatenate([d,d,-d,-d])
         data[lines==ind_diric_local]=0
         data[(lines==ind_diric_local) & (cols==ind_diric_local)]=0.5
         n_vols=lines.max()+1
         T2=sp.csc_matrix((data,(lines, cols)),shape=(n_vols,n_vols))
-
-
         return T2
 
 

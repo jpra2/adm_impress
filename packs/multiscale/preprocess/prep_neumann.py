@@ -8,6 +8,9 @@ class NeumannSubdomains:
         self.adjs_intersect_faces=[]
         self.intern_boundary_volumes=[]
         self.intersect_faces=[]
+        self.lines=[]
+        self.cols=[]
+        self.ind_diric_local=[]
         self.create_neumann_subdomains(elements_lv0, ml_data, data_impress)
 
     def create_neumann_subdomains(self,elements_lv0, ml_data, data_impress):
@@ -37,3 +40,16 @@ class NeumannSubdomains:
             self.adj_intern_local_faces.append(adj_intern_local_faces)
             self.adjs_intersect_faces.append(adjs_intersect_faces)
             self.intern_boundary_volumes.append(intern_boundary_volumes)
+
+            adjs=adj_intern_local_faces
+            volumes=np.unique(adjs)
+            map_volumes=np.repeat(-1,adjs.max()+1)
+            map_volumes[volumes]=range(len(volumes))
+            ind_diric_local=map_volumes[vertex]
+            l=map_volumes[adjs[:,0]]
+            c=map_volumes[adjs[:,1]]
+            lines=np.concatenate([l,c,l,c])
+            cols=np.concatenate([c,l,l,c])
+            self.lines.append(lines)
+            self.cols.append(cols)
+            self.ind_diric_local.append(ind_diric_local)

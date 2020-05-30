@@ -652,7 +652,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         times=np.vstack(times)
         tt=times[:,2].sum()+times[:,3].sum()
         et=np.hstack([errors, times])
-        # np.savetxt('results_smoothers/'+global_multiscale_preconditioner+'_'+local_preconditioner+'_'+str(neta_lim)+'.csv',et)
+        
 
         return et
 

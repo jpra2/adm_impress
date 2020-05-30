@@ -102,6 +102,7 @@ if biphasic:
 
 multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 mlo = multilevel_operators
+
 T, b = b1.get_T_and_b()
 perms=np.load("flying/permeability.npy")
 perms_xx=perms[:,0]
@@ -110,8 +111,9 @@ data_impress["perm_x"]=perms_xx
 if load_operators:
     pass
 else:
-    # multilevel_operators.run(tpfa_solver['Tini'])
     multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
+
+mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
 PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
@@ -152,7 +154,8 @@ Tc=OR_AMS*T*OP_AMS
 bc=OR_AMS*b
 from scipy.sparse import linalg
 pc=linalg.spsolve(Tc,bc)
-adm_method.organize_ops_adm(mlo['prolongation_level_'+str(1)],
+
+adm_method.organize_ops_adm(mlo['prolongation_lcd_level_'+str(1)],
                             mlo['restriction_level_'+str(1)],
                             1)
 pms=OP_AMS*pc
@@ -191,7 +194,7 @@ np.save('results/jac_iterarion.npy',np.array([0]))
 while verif:
     t0=time.time()
     for level in range(1, n_levels):
-        adm_method.organize_ops_adm(mlo['prolongation_level_'+str(level)],
+        adm_method.organize_ops_adm(mlo['prolongation_lcd_level_'+str(level)],
                                     mlo['restriction_level_'+str(level)],
                                     level)
     print(time.time()-t0,'organize_ops_adm')
