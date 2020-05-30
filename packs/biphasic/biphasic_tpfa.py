@@ -468,8 +468,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         v0 = vols_viz_internal_faces[:, 0]
         v1 = vols_viz_internal_faces[:, 1]
         flux_faces = self.data_impress['flux_faces']
-        flux_internal_faces = flux_faces[internal_faces]
-        print(time.time()-t0,"acess update t")
+        flux_internal_faces = flux_faces[internal_faces]        
         # gama = self.data_impress['gama']
         # gama_faces = np.zeros(len(self.data_impress['gama_faces']))
 

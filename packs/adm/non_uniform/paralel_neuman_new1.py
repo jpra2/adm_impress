@@ -3,10 +3,10 @@ import scipy.sparse as sp
 from ...common_files.common_infos import CommonInfos
 import multiprocessing as mp
 from ...solvers.solvers_scipy.solver_sp import SolverSp
-
+from packs.adm.non_uniform.paralell_neumann_subds import get_subdomains_paralell
 from ...solvers.solvers_trilinos.solvers_tril import solverTril
 import time
-
+import psutil
 class masterNeumanNonNested:
     def __init__(self,M, data_impress, elements_lv0, ml_data, n_levels, wells,neumann_subds):
         self.data_impress = data_impress
@@ -14,18 +14,17 @@ class masterNeumanNonNested:
         self.ml_data = ml_data
         self.n_levels = n_levels
         self.wells = wells
-        self.one_worker = True
+        self.one_worker = False
         self.mesh = M
         self.neumann_subds = neumann_subds
 
-    def run(self):
-        t0=time.time()
+    def run(self):        
         list_of_process_per_cpu = self.preprocess()
         master2worker = [mp.Pipe() for _ in range(self.n_workers)]
         m2w, w2m = list(zip(*master2worker))
         procs = [mp.Process(target=run_thing, args=[LocalSolution(obj, comm)]) for obj, comm in zip(list_of_process_per_cpu, w2m)]
         global_pcorr = np.zeros(len(self.data_impress['GID_0']))
-        print(time.time()-t0,'GGGGGGGGGGGGGGG')
+
         for proc in procs:
         	proc.start()
 
@@ -41,7 +40,7 @@ class masterNeumanNonNested:
 
         for proc in procs:
         	proc.join()
-        print(time.time()-t0,"hhhhhhhhhhhhhh")
+
 
         return self.global_ms_flux_faces.copy(), global_pcorr
 
@@ -49,7 +48,8 @@ class masterNeumanNonNested:
         if self.one_worker:
             n_cpu = 1
         else:
-            n_cpu = mp.cpu_count()//2 - 1
+            # n_cpu = int(mp.cpu_count()/2)
+            n_cpu = psutil.cpu_count(logical=False)
 
         self.n_workers = n_cpu
         list_of_process_per_cpu = []
@@ -130,7 +130,6 @@ class masterNeumanNonNested:
                 adj_intern_local_faces = neig_internal_faces[remaped_internal_faces[intern_local_faces]]
                 v0 = adjs_intersect_faces.copy()
 
-
                 ind_diric = []
                 ind_neum = []
                 val_diric = []
@@ -182,6 +181,7 @@ class masterNeumanNonNested:
                 intern_faces: faces internas do coarse volume
                 intersect_faces: faces na interseccao
         '''
+
         list_of_subdomains = []
         pms_flux_faces = np.zeros(len(self.elements_lv0['faces']))
         pms = self.data_impress['pms']
@@ -190,13 +190,13 @@ class masterNeumanNonNested:
         gid0 = self.data_impress['GID_0']
         n_volumes = len(pms)
 
-        self.data_impress['val_diric'][:]=0
-        self.data_impress['val_neum'][:]=0
+
         for level in range(1, self.n_levels):
             str_level = str(level)
             set_level = set([level])
             coarse_ids = self.ml_data['coarse_primal_id_level_'+ str_level]
             gids_level = np.unique(coarse_ids)
+            # import pdb; pdb.set_trace()
             for gidc in gids_level:
 
                 intersect_faces=self.neumann_subds.intersect_faces[gidc]
@@ -243,10 +243,69 @@ class masterNeumanNonNested:
 
         return list_of_subdomains, pms_flux_faces
 
-    def preprocess(self):
+    def get_subdomains_master(self):
+        transmissibility_faces=self.data_impress['transmissibility']
+        pms = self.data_impress['pms']
+
         t0=time.time()
+        # pms_flux_faces1 = np.zeros(len(transmissibility_faces))
+
+        # all_intersect_faces = np.concatenate(self.ml_data['coarse_intersect_faces_level_1'])
+        # remaped_internal_faces = self.elements_lv0['remaped_internal_faces']
+        # neig_internal_faces = self.elements_lv0['neig_internal_faces']
+        # intersect_faces = all_intersect_faces
+        # adjs_intersect_faces = neig_internal_faces[remaped_internal_faces[intersect_faces]]
+        # v0 = adjs_intersect_faces
+        # pms0 = pms[v0[:,0]]
+        # pms1 = pms[v0[:,1]]
+        # transm = self.data_impress['transmissibility'][intersect_faces]
+        # pms_flux_faces_local = get_flux_faces(pms1, pms0, transm)
+        # pms_flux_faces1[intersect_faces] = pms_flux_faces_local
+
+        list_of_neumann_objects = self.neumann_subds.neumann_subds
+        n_workers = psutil.cpu_count(logical=False)
+
+        # n_workers = int(mp.cpu_count()/2)
+        if n_workers>len(list_of_neumann_objects):
+            n_workers=len(list_of_subdomains)
+
+
+
+        print(time.time()-t0,"starting")
+
+        t0=time.time()
+        list_of_process_per_cpu=self.get_n_workers(list_of_neumann_objects)
+        print(time.time()-t0,"partitionate")
+        t0=time.time()
+        master2worker = [mp.Pipe() for _ in range(self.n_workers)]
+        m2w, w2m = list(zip(*master2worker))
+        procs = [mp.Process(target=get_subdomains_paralell, args=[obj, transmissibility_faces, pms, comm]) for obj, comm in zip(list_of_process_per_cpu, w2m)]
+        print(time.time()-t0,"create-procs")
+        t0=time.time()
+        pms_flux_faces = np.zeros(len(self.elements_lv0['faces']))
+        list_of_subdomains=[]
+        for proc in procs:
+        	proc.start()
+        print(time.time()-t0,"start procs")
+        t0=time.time()
+        for comm in m2w:
+            msg = comm.recv()
+            list_of_subdomains+=msg[0]
+            ti=time.time()
+            pms_flux_faces[msg[1]!=0]=msg[1][msg[1]!=0]
+            print(time.time()-ti,"fluxes")
+        print(time.time()-t0,"recv")
+        t0=time.time()
+
+        for proc in procs:
+        	proc.join()
+        print(time.time()-t0,"join")
+        return list_of_subdomains, pms_flux_faces
+
+
+    def preprocess(self):
         list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_vec()
-        print(time.time()-t0,'fffffffffffff')
+        # list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_master()
         list_of_process_per_cpu = self.get_n_workers(list_of_subdomains)
         return list_of_process_per_cpu
 

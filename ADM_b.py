@@ -183,56 +183,43 @@ ad0=adjs[:,0]
 ad1=adjs[:,1]
 #######################################
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress)
-nn = 22
-pp = 5
+nn = 500
+pp = 50
 cont = 1
 
 verif = True
 pare = False
 np.save('results/jac_iterarion.npy',np.array([0]))
 while verif:
-    t0=time.time()
+
     for level in range(1, n_levels):
         adm_method.organize_ops_adm(mlo, level)
-    print(time.time()-t0,'organize_ops_adm')
-    
-    t1=time.time()
-    adm_method.set_level_wells_3()
-    print(time.time()-t1,'level_wells')
-    t1=time.time()
-    adm_method.set_saturation_level_simple()
-    print(time.time()-t1,'saturation_level')
 
-    t1=time.time()
+
+
+    adm_method.set_level_wells_3()
+
+    adm_method.set_saturation_level_simple()
+
     adm_method.solve_multiscale_pressure(T, b)
-    print(time.time()-t1,'solve_multiscale_pressure')
-    t1=time.time()
+
     adm_method.set_pms_flux(wells, neumann_subds)
-    print(time.time()-t1,'set_pms_flux')
-    t1=time.time()
+
     b1.get_velocity_faces()
-    print(time.time()-t1,'get_velocity_faces')
-    t1=time.time()
+
     b1.get_flux_volumes()
 
-    print(time.time()-t1,'get_flux_volumes')
-    t1=time.time()
     b1.run_2()
-    print(time.time()-t1,'run_2')
-
 
     if cont % nn == 0:
         import pdb; pdb.set_trace()
-    # t1=time.time()
-    # adm_method.equalize_levels()
-    # print(time.time()-t1,'equalize_levels')
 
-    t1=time.time()
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
 
     if cont % pp == 0:
+        print("Creating_file")
         meshset_plot_faces=M.core.mb.create_meshset()
         lv=data_impress['LEVEL']
         gid_coarse=data_impress['GID_1']
@@ -243,10 +230,8 @@ while verif:
         data_impress.update_variables_to_mesh()
         M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
         M.core.mb.write_file('results/faces_'+str(cont)+'.vtk', [meshset_plot_faces])
+        print("File created at time-step: ",cont)
 
     T, b = b1.get_T_and_b()
-    tf1=time.time()
-    linalg.spsolve(T,b)
-    print(time.time()-tf1,t1-t0)
-    import pdb; pdb.set_trace()
+    print('timestep: ',cont)
     cont += 1
