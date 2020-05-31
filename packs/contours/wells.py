@@ -78,6 +78,7 @@ class Wells(DataManager):
         ws_prod = [] ## pocos produtores
         values_p = [] ## valor da pressao prescrita
         values_q = [] ## valor da vazao prescrita
+        values_q_type = []
 
         for p in data_wells:
 
@@ -101,9 +102,10 @@ class Wells(DataManager):
                     val = value/nv
                     if tipo == 'Injector':
                         val *= -1
-
                     ws_q.append(vols)
+                    values_type = well['value_type']
                     values_q[i:nv,:] = val
+                    values_q_type.append(values_type)
                     i = nv
 
                 elif prescription == 'P':
@@ -131,6 +133,7 @@ class Wells(DataManager):
         self['values_q'] = values_q
         self['all_wells'] = np.union1d(ws_inj, ws_prod)
         self['values_p_ini'] = values_p.copy()
+        self['value_type'] = values_q_type
 
     def set_infos(self):
         assert not self._loaded
@@ -149,9 +152,9 @@ class Wells(DataManager):
         mb.tag_set_data(self.tags['INJ'], ws_inj, np.repeat(1, len(ws_inj)))
         mb.tag_set_data(self.tags['PROD'], ws_prod, np.repeat(1, len(ws_prod)))
         mb.tag_set_data(self.tags['P'], ws_p, values_p)
-
-        for i in range(len(values_q[0,:])):
-            mb.tag_set_data(self.tags['Q'], ws_q, values_q[:,i])
+        if len(values_q>0):
+            for i in range(len(values_q[0,:])):
+                mb.tag_set_data(self.tags['Q'], ws_q, values_q[:,i])
 
 
     def load_tags(self):

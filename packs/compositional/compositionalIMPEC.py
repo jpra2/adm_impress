@@ -1,5 +1,4 @@
 from .pressure_solver import TPFASolver
-from .partial_derivatives_new import PartialDerivatives
 from .flux_calculation import Flux
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 from scipy import linalg
@@ -13,7 +12,6 @@ class CompositionalFVM:
         self.update_gravity_term(fprop)
         self.get_faces_properties_upwind(fprop, kprop)
         self.get_phase_densities_internal_faces(fprop)
-    
         r = .8# enter the while loop
         while (r!=1.):
             fprop.P, total_flux_internal_faces, self.q = TPFASolver().get_pressure(M, wells, fprop, kprop, delta_t, r)
@@ -25,6 +23,7 @@ class CompositionalFVM:
             r = delta_t_new/delta_t
             delta_t = delta_t_new
         self.update_composition(fprop, kprop, delta_t)
+
         return delta_t
 
     def update_gravity_term(self, fprop):
@@ -54,13 +53,10 @@ class CompositionalFVM:
         fprop.component_molar_fractions_internal_faces[:,Pot_hidj_up <= Pot_hidj] = component_molar_fractions_vols[:,Pot_hidj_up <= Pot_hidj]
         fprop.component_molar_fractions_internal_faces[:,Pot_hidj_up > Pot_hidj] = component_molar_fractions_vols_up[:,Pot_hidj_up > Pot_hidj]
 
-
     def get_phase_densities_internal_faces(self, fprop):
-
         fprop.phase_densities_internal_faces = (fprop.Vp[ctes.v0[:,0]] * fprop.phase_densities[:,:,ctes.v0[:,0]] +
                                                 fprop.Vp[ctes.v0[:,1]] * fprop.phase_densities[:,:,ctes.v0[:,1]]) /  \
                                                 (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])
-
 
     def update_composition(self, fprop, kprop, delta_t):
         fprop.component_mole_numbers = fprop.component_mole_numbers + delta_t * (self.q + fprop.component_flux_vols_total)
