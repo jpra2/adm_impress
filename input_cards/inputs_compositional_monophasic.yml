@@ -1,3 +1,4 @@
+#Water case in 1D reservoir
 mesh_name: 100x1x1_m.msh
 name_save_file: results_monophasic_incompressible
 n_test: 0
@@ -124,8 +125,8 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: -1.31096512e-8
-    ksi_inj: 39746.06232584
+    value: [-1.31096512e-8]
+    value_type: volumetric
 
   P2:
     p0: [0.603504, 0.0, 0.0]

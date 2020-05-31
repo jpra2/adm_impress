@@ -1,3 +1,4 @@
+#Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 100x1x1.msh
 name_save_file: 'results_compressive_oil_case'
 
@@ -45,12 +46,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: .001
-    deltaSlim: .001
-    deltaVlim: .0001
+    deltaNlim: .01
+    deltaSlim: .01
+    deltaVlim: .001
     delta_t_ini: 1000
-    delta_tmax: 1000
-    delta_tmin: 1e-4
+    delta_tmax: 7000
+    delta_tmin: 0.0001
 
   water_data:
     mi_W: 1e-3
