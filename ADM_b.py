@@ -183,8 +183,8 @@ ad0=adjs[:,0]
 ad1=adjs[:,1]
 #######################################
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress)
-nn = 500
-pp = 50
+nn = 200
+pp = 1
 cont = 1
 
 verif = True
@@ -194,8 +194,6 @@ while verif:
 
     for level in range(1, n_levels):
         adm_method.organize_ops_adm(mlo, level)
-
-
 
     adm_method.set_level_wells_3()
 
