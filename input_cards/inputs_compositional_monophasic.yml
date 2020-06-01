@@ -37,6 +37,7 @@ compositional_data:
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
+  equation_of_state: PengRobinson
 
   rock_compressibility: 0
     #7.25e-8

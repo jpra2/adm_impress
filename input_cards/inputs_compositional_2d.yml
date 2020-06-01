@@ -6,7 +6,7 @@ n_test: 0
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
-water_component: False
+water_component: True
 use_vpi: False
 
 load_compositional_data: False
@@ -36,6 +36,7 @@ compositional_data:
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
+  equation_of_state: PengRobinson
 
   rock_compressibility: 7.252e-8
   Pf: 13.78951458E6
@@ -50,7 +51,7 @@ compositional_data:
     deltaSlim: .01
     deltaVlim: .001
     delta_t_ini: 1000
-    delta_tmax: 7000
+    delta_tmax: 133240
     delta_tmin: 0.0001
 
   #rever isso de Cw=0 e Pw
@@ -81,7 +82,6 @@ compositional_data:
     Tc: [619.277778]
     Pc: [2109795.731]
     vc: [0.0006031573275]
-    R: [8.3144598]
     Mw: [142.276e-3]
     w: [0.4890]
     Bin: [0]
@@ -93,7 +93,7 @@ compositional_data:
 Saturation:
   r1:
     type: all
-    value: 0.
+    value: 0.2
 
 Porosity:
   r1:
@@ -124,5 +124,5 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: [-2.720252624e-6]
+    value: [-2.720252624e-6,0]
     value_type: volumetric
