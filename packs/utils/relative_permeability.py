@@ -12,6 +12,8 @@ class BrooksAndCorey:
         self.kro0 = float(direc.data_loaded['biphasic_data']['kro0'])
 
     def _stemp(self, S):
+        S[S>0.8]=0.8
+        S[S<0.2]=0.2
         return (S - self.Swc) / (1 - self.Swc - self.Sor)
 
     def _krw(self, S_temp):
@@ -20,13 +22,7 @@ class BrooksAndCorey:
     def _kro(self, S_temp):
         return self.kro0*(np.power(1 - S_temp, self.n_o))
 
-    def calculate(self, saturations):
-
-        # import pdb; pdb.set_trace()
-        # name='results/test_1'
-        #
-        # M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
-
+    def calculate(self, saturations):        
         n = len(saturations)
         ids = np.arange(n)
         ids_fora = ids[(saturations < 0) | (saturations > 1)]

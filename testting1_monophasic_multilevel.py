@@ -93,8 +93,8 @@ else:
         multilevel_operators.run(tpfa_solver['Tini'], total_source_term=b, q_grav=data_impress['flux_grav_volumes'])
         # multilevel_operators.run_paralel_ant0(tpfa_solver['Tini'], total_source_term=b, q_grav=data_impress['flux_grav_volumes'])
     else:
-        multilevel_operators.run(tpfa_solver['Tini'])
-    # multilevel_operators.run_paralel(tpfa_solver['Tini'])
-    # multilevel_operators.run_paralel_ant0(tpfa_solver['Tini'])
+        # multilevel_operators.run(tpfa_solver['Tini'])
+        multilevel_operators.run_paralel(tpfa_solver['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
+        # multilevel_operators.run_paralel_ant0(tpfa_solver['Tini'])
 
-import pdb; pdb.set_trace()
+# import pdb; pdb.set_trace()

@@ -21,7 +21,7 @@ adm_method.organize_ops_adm(mlo['prolongation_level_1'],
                             mlo['restriction_level_1'],
                             1)
 
-if n_levels > 1:
+if n_levels > 2:
     adm_method.organize_ops_adm(mlo['prolongation_level_2'],
                                 mlo['restriction_level_2'],
                                 2)

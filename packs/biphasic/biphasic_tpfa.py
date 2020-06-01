@@ -44,8 +44,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         M.core.mb.add_entities(self.meshset_faces, M.core.all_faces)
         self.pare1 = False
 
-        # self.solver = solverTril()
-
         if not load:
             self.loop = 0
             self.vpi = 0.0
@@ -421,15 +419,15 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         ########################
         # import pdb; pdb.set_trace()
-        test = ids[(saturations < 0) | (saturations > 1)]
-        if len(test) > 0:
-            self.data_impress['saturation'] = saturations
-            self.data_impress.update_variables_to_mesh()
-            self.mesh.core.print(file='results/test_', extension='.vtk', config_input="input_cards/print_settings0.yml")
-            import pdb; pdb.set_trace()
-
-            raise ValueError(f'valor errado da saturacao {saturations[test]}')
-        del test
+        # test = ids[(saturations < 0) | (saturations > 1)]
+        # if len(test) > 0:
+        #     self.data_impress['saturation'] = saturations
+        #     self.data_impress.update_variables_to_mesh()
+        #     self.mesh.core.print(file='results/test_', extension='.vtk', config_input="input_cards/print_settings0.yml")
+        #     import pdb; pdb.set_trace()
+        #
+        #     raise ValueError(f'valor errado da saturacao {saturations[test]}')
+        # del test
         #########################
 
         min_sat = saturations.min()
@@ -467,10 +465,24 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
     def update_upwind_phases_old0(self):
 
         internal_faces = self.elements_lv0['internal_faces']
-        flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
-        flux_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
 
-        pos = flux_w_internal_faces >= 0
+        b_faces = self.elements_lv0['boundary_faces']
+        t_internal = pretransmissibility[internal_faces]
+        vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
+        vols_viz_boundary_faces = self.elements_lv0['neig_boundary_faces'].flatten()
+        fw_vol = self.data_impress['fw_vol']
+        lambda_t = self.data_impress['lambda_t']
+        v0 = vols_viz_internal_faces[:, 0]
+        v1 = vols_viz_internal_faces[:, 1]
+        flux_faces = self.data_impress['flux_faces']
+        flux_internal_faces = flux_faces[internal_faces]
+        # gama = self.data_impress['gama']
+        # gama_faces = np.zeros(len(self.data_impress['gama_faces']))
+
+        # ids = np.arange(len(internal_faces))
+        #
+        pos = flux_internal_faces >= 0
+        # outros = np.setdiff1d(ids, fluxo_positivo)
         self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
         self._data['upwind_identificate'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
         pos = ~pos
@@ -1179,8 +1191,8 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
     def print_test(self):
         self.data_impress.update_variables_to_mesh()
         name = 'results/test_volumes_'+str(self.loop)+'.vtk'
-        self.mesh.core.mb.write_file(name, [self.meshset_volumes])
         # self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+        self.mesh.core.mb.write_file(name, [self.meshset_volumes])
 
     def print_test_faces(self):
 

@@ -55,6 +55,18 @@ Permeability:
     #     p1: [12.0, 1.0, 12.0]
     #     value: [10.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0]
 
+  # r7:
+  #   type: box
+  #   p0: [60.0, 86.0, 0.0]
+  #   p1: [99.0, 87.0, 1.0]
+  #   value: [100.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 100.0]
+  # r8:
+  #   type: ring
+  #   c0: [50,50,0.5]
+  #   r0: 0
+  #   r1: 30
+  #   value: [0.000001, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0, 0.000001]
+
 set_porosity: true
 Porosity:
   r1:
@@ -109,6 +121,22 @@ Wells:
         # value: 10000000000.0
         value: 0.0
         # value: 10000000.0
+
+  # P4:
+  #   p0: [0.0, 2190.0, 168.0]
+  #   p1: [20.0, 2200.0, 170.0]
+  #   prescription: P
+  #   type: Producer
+  #   type_region: box
+  #   value: 1.0
+  #
+  # P5:
+  #   p0: [1180.0, 2190.0, 168.0]
+  #   p1: [1200.0, 2200.0, 170.0]
+  #   prescription: P
+  #   type: Producer
+  #   type_region: box
+  #   value: 1.0
 
 monophasic_data:
   gama: 100.0

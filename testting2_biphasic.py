@@ -19,6 +19,9 @@ loop = 0
 cont = 1
 cont2 = 1
 verif = True
+
+meshset_volumes = M.core.mb.create_meshset()
+M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 # import pdb; pdb.set_trace()
 meshset = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset, M.core.all_volumes)

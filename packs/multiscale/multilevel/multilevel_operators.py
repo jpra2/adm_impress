@@ -1,3 +1,4 @@
+import time
 from ...data_class.data_manager import DataManager
 # from ..operators.prolongation.AMS.ams_tpfa import AMSTpfa
 from ..operators.prolongation.AMS.ams_tpfa_new0 import AMSTpfa
@@ -9,7 +10,7 @@ import os
 from ...multiscale.operators.prolongation.AMS import paralel_ams_new0 as paralel_ams
 from ...multiscale.ms_utils.matrices_for_correction import MatricesForCorrection as mfc
 
-from ..operators.prolongation.AMS.coupled_ams import OP_AMS
+from ..operators.prolongation.AMS.Paralell.coupled_ams import OP_AMS
 
 def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
 
@@ -71,6 +72,7 @@ class MultilevelOperators(DataManager):
 
         super().__init__(data_name=data_name, load=load)
         self.load = load
+
         self.ml_data = ml_data
 
         self.n_levels = n_levels
@@ -251,14 +253,14 @@ class MultilevelOperators(DataManager):
 
         self.export_to_npz()
 
-    def run_paralel(self, T):
+    def run_paralel(self, T,dual_volumes, local_couple, couple_bound):
 
         T_ant = T.copy()  #T(l-1)
 
         for n in range(1, self.n_levels):
             level = n
 
-            OP = self.get_OP_paralel(level)
+            OP = self.get_OP_paralel(level,dual_volumes, local_couple, couple_bound)
             self._data[self.prolongation + str(level)] = OP
             OR = self._data[self.restriction + str(level)]
 
@@ -272,22 +274,49 @@ class MultilevelOperators(DataManager):
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
 
-    def get_OP_paralel(self, level):
+    def get_OP_paralel(self, level,dual_volumes, local_couple, couple_bound):
+        #
+        # dual_structure = self.ml_data['dual_structure_level_'+str(level)]
+        # dual_volumes = [dd['volumes'] for dd in dual_structure]
 
-        dual_structure = self.ml_data['dual_structure_level_'+str(level)]
-        dual_volumes = [dd['volumes'] for dd in dual_structure]
-        rr = [np.unique(np.concatenate(dual_volumes[0:2]))]
-        dual_volumes = rr + dual_volumes[2:]
-        local_couple = 2
-        couple_bound = False
-        for dd in dual_volumes:
-            try:
-                OP += OP_AMS(self.data_impress, self.elements_lv0, dd, local_couple=local_couple, couple_bound=couple_bound).OP
-            except:
-                OP = OP_AMS(self.data_impress, self.elements_lv0, dd, local_couple=local_couple, couple_bound=couple_bound).OP
-        diag=np.array(1/OP.sum(axis=1))[:,0]
+        ###################################
+        # juntar=np.array([2,3, 10, 11,34,35, 42, 43, 50,51, 58, 59, 14,15])
+        # # juntar=np.array([2, 10, 34, 42,  50, 58, 14])
+        #
+        #
+        # todos=np.arange(len(dual_volumes))
+        # keep_dual=np.setdiff1d(todos,juntar[1:])
+        #
+        # dual_volumes=np.array(dual_volumes)
+        # dual_volumes2=dual_volumes[keep_dual]
+        #
+        # new_volume=np.unique(np.hstack(dual_volumes[juntar]))
+        # dual_volumes2[juntar[0]]=new_volume
+        # dual_volumes=dual_volumes2
+
+        # import pdb; pdb.set_trace()
+        #
+        # ###########################################
+        # rr = [np.unique(np.concatenate(dual_volumes[0:3]))]
+        # dual_volumes = rr + dual_volumes[3:]
+        # import yaml
+        # with open('input_cards/partial_decoupling_options.yml', 'r') as f:
+        #     variables_loaded = yaml.safe_load(f)
+        #
+        # local_couple = variables_loaded['local_couple']
+        # couple_bound = variables_loaded['couple_bound']
+
+        t0=time.time()
+        result = OP_AMS(self.data_impress, self.elements_lv0, dual_volumes, local_couple=local_couple, couple_bound=couple_bound)
+        OP=result.OP
+        diag=np.ones(OP.shape[0])
+        sums=np.array(OP.sum(axis=1)).T[0]
+        
+        diag[sums>0]=np.array(1/OP.sum(axis=1)[sums>0])[:,0]
         l=range(len(diag))
         c=l
         mult=sp.csc_matrix((diag,(l,c)),shape=(len(diag), len(diag)))
         OP=mult*OP
+        print("tempo total para cálculo do OP {} segundos".format(time.time()-t0))
+
         return OP

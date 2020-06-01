@@ -579,6 +579,13 @@ perpendicular_direction_flag:
   sparse: True
   level: 0
 
+verif_faces_flag:
+  type: faces
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
 vug:
   type: volumes
   data size: 1
@@ -597,5 +604,75 @@ ADM_COARSE_ID_LEVEL_2:
   type: volumes
   data size: 1
   data type: int
+  sparse: True
+  level: 0
+
+velocity_projection:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_0:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_1:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_2:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_3:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_4:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_5:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_999:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+val_diric:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+val_neum:
+  type: volumes
+  data size: 1
+  data type: float
   sparse: True
   level: 0

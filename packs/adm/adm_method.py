@@ -9,9 +9,12 @@ from. obj_infos import InfosForProcess
 from ..directories import data_loaded
 from ..errors.err import ConservativeVolumeError, PmsFluxFacesError
 from scipy.sparse import linalg
+from scipy.sparse.linalg import spsolve
+from scipy.sparse import csc_matrix
 from ..directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 import time
+import pdb
 
 
 def get_levelantids_levelids(level_ids_ant, level_ids):
@@ -125,6 +128,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.all_wells_ids = all_wells_ids
         self.n_levels = n_levels
         self.delta_sat_max = 0.1
+        # self.delta_sat_max = 2.0
         self.data_impress = data_impress
         self.number_vols_in_levels = np.zeros(self.n_levels+1, dtype=int)
         gids_0 = self.data_impress['GID_0']
@@ -303,6 +307,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         if level == 1:
             OP_ADM, OR_ADM, pcorr = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
+
             self._data[self.adm_op_n + str(level)] = OP_ADM
             self._data[self.adm_rest_n + str(level)] = OR_ADM
             self._data[self.pcorr_n+str(level-1)] = pcorr
@@ -370,7 +375,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(n1_adm,n2_adm))
         OR_ADM = sp.csc_matrix((data_or,(lines_or,cols_or)),shape=(n2_adm,n1_adm))
-
+        import pdb; pdb.set_trace()
         self._data[self.adm_op_n + str(level)] = OP_ADM
         self._data[self.adm_rest_n + str(level)] = OR_ADM
 
@@ -437,6 +442,7 @@ class AdmMethod(DataManager, TpfaFlux2):
             level = i
             OP_adm = self._data[self.adm_op_n + str(level)]
             OR_adm = self._data[self.adm_rest_n + str(level)]
+            # OR_adm=OP_adm.T
             if self.get_correction_term:
                 pcorr_adm = self._data[self.pcorr_n+str(level)]
                 b_adm = OR_adm*b_adm - OR_adm*T_adm*pcorr_adm
@@ -446,19 +452,165 @@ class AdmMethod(DataManager, TpfaFlux2):
             T_adm = OR_adm*T_adm*OP_adm
 
         pms = self.solver.direct_solver(T_adm, b_adm)
-        # p_adm = pms.copy()
+        # self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner='jacobi',\
+        # global_multiscale_preconditioner='galerkin')
+        # pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
 
-        for i in range(1, n_levels):
-            level = self.n_levels - i
-            if self.get_correction_term:
-                pcorr_adm = self._data[self.pcorr_n+str(level)]
-                pms = self._data[self.adm_op_n + str(level)]*pms + pcorr_adm
-            else:
-                pms = self._data[self.adm_op_n + str(level)]*pms
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms
+        # ##########################
+        # p2 = self.solver.direct_solver(T, b)
+        # self.data_impress['pressure'] = p2
+        # self.data_impress['pms'] = p2
+        # ##############################
         self.T = T
+
+    def smoother_jacobi(self, R, T, P, b, print_errors=False):
+
+        # try:
+        pv=np.load('flying/pms.npy')
+        # except:
+        #     pv=self.data_impress['pms']
+        # pv=np.zeros(len(b))
+        dt=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
+        dt1=1/dt
+        lc=np.arange(len(dt))
+        pl=csc_matrix((dt1,(lc,lc)),shape=T.shape)
+
+        T2=T.copy()
+        T2.setdiag(0)
+        J=pl*T2
+        ap=np.zeros((3,1))
+        try:
+            ji=np.load("results/jac_iterarion.npy")[0]
+        except:
+            np.save('results/jac_iterarion.npy',np.array([0]))
+            ji=0
+        if ji==0:
+            pv=np.zeros(len(b))
+            nite=10
+        else:
+            pv=np.load('flying/pms.npy')
+            nite=1
+        mant=np.inf
+
+        for i in range(nite):
+            pv12 = pv + (P*spsolve(csc_matrix(P.T*T*P),P.T.tocsc()*(b-T*pv)))
+            for j in range(5):
+                pv = pl*b-J*pv12
+
+            if print_errors:
+                if i==0:
+                    pf = self.solver.direct_solver(T, b)
+                ep_l2=np.linalg.norm(pf-pv)/np.linalg.norm(pf)
+                adjs=self.elements_lv0['neig_internal_faces']
+                internal_faces=self.elements_lv0['internal_faces']
+                ts=self.data_impress['transmissibility'][internal_faces]
+                hs=self.data_impress['u_normal'][internal_faces].max(axis=1)
+                a0=adjs[:,0]
+                a1=adjs[:,1]
+                vf=ts*(pf[a0]-pf[a1])/hs
+                vms=ts*(pv[a0]-pv[a1])/hs
+                ev_l2=np.linalg.norm(vf-vms)/np.linalg.norm(vf)
+                ap=np.hstack([ap,np.array([[ji+i+1],[ep_l2],[ev_l2]])])
+                print(ev_l2,ep_l2)
+                # if ev_l2>mant:
+                #     print("divergiu")
+                #     import pdb; pdb.set_trace()
+                # else:
+                #     mant=ev_l2
+            np.save('results/jac_iterarion.npy',np.array([ji+i+1]))
+        np.save('flying/pms.npy',pv)
+        pv = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
+        vms=ts*(pv[a0]-pv[a1])/hs
+        ev_l2=np.linalg.norm(vf-vms)/np.linalg.norm(vf)
+        ap=np.hstack([ap,np.array([[ji+i+2],[ep_l2],[ev_l2]])])
+        # plt.plot(ap[0,1:],ap[1,1:])
+        plt.yscale('log')
+        plt.scatter(ap[0,1:],ap[2,1:])
+        plt.savefig("results/notms.png")
+
+        # if print_errors:
+        #     try:
+        #         jac = np.load('flying/jacobi_smooter.npy')
+        #         i_ant = jac[0,-1]
+        #         jac.hstack(jac,ap)
+        #     except:
+        #         jac = np.save('flying/jacobi_smooter.npy')
+        #         import pdb; pdb.set_trace()
+
+        return pv
+
+    def test_smoothers(self, R, T, P, b, local_preconditioner, global_multiscale_preconditioner):
+        if local_preconditioner=='jacobi':
+            dt=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
+            dt1=1/dt
+            lc=np.arange(len(dt))
+            pl=csc_matrix((dt1,(lc,lc)),shape=T.shape)
+            T2=T.copy()
+            T2.setdiag(0)
+            J=pl*T2
+        if global_multiscale_preconditioner=='galerkin':
+            Rg=P.T
+        elif global_multiscale_preconditioner==msfv:
+            Rg=R
+        Tcg=Rg*T*P #global T coarse
+        tf=time.time()
+        pf=spsolve(T,b)
+        tf=time.time()-tf
+
+        pv=P*spsolve(R*T*P,R*b)
+        maxiter=500
+        ep_l2=np.inf
+        cont=0
+        errors=[]
+        times=[]
+        alpha_jacobi=0.5
+        while ep_l2>0.01 and cont<maxiter:
+            tg=time.time()
+            pv12 = pv + (P*spsolve(Tcg,P.T.tocsc()*(b-T*pv)))
+            tg=time.time()-tg
+            tl=time.time()
+            de_0=1
+            de_ant=1
+            dp=np.linalg.norm(pv-pv12)
+            cj=0
+
+            while ((de_ant-dp)/(de_0-de_ant)<alpha_jacobi and cj<10) or cj<3:
+                de_0=de_ant
+                de_ant=dp
+                pv = pl*b-J*pv12
+                dp=np.linalg.norm(pv-pv12)
+                pv12=pv
+                cj+=1
+                print((dp-de_ant)/(de_ant-de_0))
+            print(cj)
+            tl=time.time()-tl
+            pms = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
+            ep_l2, ep_linf, ev_l2, ev_linf = self.get_error_norms(pf, pms)
+            errors.append([ep_l2, ep_linf, ev_l2, ev_linf])
+            times.append([tf, tg, tl])
+            cont+=1
+        errors=np.vstack(errors)
+        times=np.vstack(times)
+        tt=times[:,1].sum()+times[:,2].sum()
+        import pdb; pdb.set_trace()
+
+    def get_error_norms(self, pf, pv):
+        ep_l2=np.linalg.norm(pf-pv)/np.linalg.norm(pf)
+        adjs=self.elements_lv0['neig_internal_faces']
+        internal_faces=self.elements_lv0['internal_faces']
+        ts=self.data_impress['transmissibility'][internal_faces]
+        hs=self.data_impress['u_normal'][internal_faces].max(axis=1)
+        a0=adjs[:,0]
+        a1=adjs[:,1]
+        vf=ts*(pf[a0]-pf[a1])/hs
+        vms=ts*(pv[a0]-pv[a1])/hs
+        ev_l2=np.linalg.norm(vf-vms)/np.linalg.norm(vf)
+        ep_linf=abs(pf-pv).max()/abs(pf).max()
+        ev_linf=abs(vf-vms).max()/abs(vf).max()
+        return ep_l2, ep_linf, ev_l2, ev_linf
 
     def set_pms_flux_intersect_faces_dep0(self):
 
@@ -574,6 +726,8 @@ class AdmMethod(DataManager, TpfaFlux2):
                 pressure_vertex = pms[vertex]
                 volumes = gid0[all_gids_coarse==gidc]
 
+                pdb.set_trace()
+
                 internal_volumes = np.setdiff1d(volumes, np.concatenate([intern_boundary_volumes, vertex]))
                 flux_grav_internal_volumes = flux_grav_volumes[internal_volumes]
 
@@ -581,8 +735,12 @@ class AdmMethod(DataManager, TpfaFlux2):
                 v0 = neig_intersect_faces
                 transmissibility_intersect_faces = transmissibility[intersect_faces]
                 t0 = transmissibility_intersect_faces
-                pms0 = pms[neig_intersect_faces[:,0]]
-                pms1 = pms[neig_intersect_faces[:,1]]
+                try:
+
+                    pms0 = pms[neig_intersect_faces[:,0]]
+                    pms1 = pms[neig_intersect_faces[:,1]]
+                except Exception as e:
+                    pdb.set_trace()
                 flux_grav_intersect_faces = flux_grav_faces[intersect_faces]
                 flux_intersect_faces = -((pms1 - pms0) * t0 - flux_grav_intersect_faces)
                 flux_faces[intersect_faces] = flux_intersect_faces
@@ -1140,5 +1298,5 @@ class AdmMethod(DataManager, TpfaFlux2):
 
     def print_test(self):
         self.data_impress.update_variables_to_mesh()
-        name = 'results/test_'
-        self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+        # name = 'results/test_'
+        # self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
