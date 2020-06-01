@@ -468,7 +468,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         v0 = vols_viz_internal_faces[:, 0]
         v1 = vols_viz_internal_faces[:, 1]
         flux_faces = self.data_impress['flux_faces']
-        flux_internal_faces = flux_faces[internal_faces]        
+        flux_internal_faces = flux_faces[internal_faces]
         # gama = self.data_impress['gama']
         # gama_faces = np.zeros(len(self.data_impress['gama_faces']))
 
@@ -527,7 +527,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         fw_vol = self.data_impress['fw_vol']
         water_production = (self.data_impress['flux_volumes'][ws_prod]*fw_vol[ws_prod]).sum()
         oil_production = (self.data_impress['flux_volumes'][ws_prod]).sum() - water_production
-
+        
         wor = water_production/oil_production
 
         self.current_biphasic_results = np.array([self.loop, self.delta_t, simulation_time,

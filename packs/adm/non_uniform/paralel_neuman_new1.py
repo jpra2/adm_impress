@@ -18,7 +18,7 @@ class masterNeumanNonNested:
         self.mesh = M
         self.neumann_subds = neumann_subds
 
-    def run(self):        
+    def run(self):
         list_of_process_per_cpu = self.preprocess()
         master2worker = [mp.Pipe() for _ in range(self.n_workers)]
         m2w, w2m = list(zip(*master2worker))
@@ -304,8 +304,8 @@ class masterNeumanNonNested:
 
 
     def preprocess(self):
-        list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_vec()
-        # list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_master()
+        # list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_vec()
+        list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_master()
         list_of_process_per_cpu = self.get_n_workers(list_of_subdomains)
         return list_of_process_per_cpu
 

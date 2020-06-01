@@ -128,7 +128,7 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.ml_data = M.multilevel_data
         self.all_wells_ids = all_wells_ids
         self.n_levels = n_levels
-        self.delta_sat_max = 0.02
+        self.delta_sat_max = 2
         # self.delta_sat_max = 2.0
         self.data_impress = data_impress
         self.number_vols_in_levels = np.zeros(self.n_levels+1, dtype=int)
@@ -427,7 +427,7 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         return OP_ADM, OR_ADM, pcorr
 
-    def solve_multiscale_pressure(self, T: 'fine transmissibility matrix', b: 'fine source term'):
+    def solve_multiscale_pressure(self, T: 'fine transmissibility matrix', b: 'fine source term', mc):
 
         T_adm = T.copy()
         b_adm = b.copy()
@@ -445,9 +445,20 @@ class AdmMethod(DataManager, TpfaFlux2):
                 b_adm = OR_adm*b_adm
 
             T_adm = OR_adm*T_adm*OP_adm
+            ###########################
+            #for TPFAlization
+            Tc=T_adm
+            mc[mc>0]=Tc[mc>0]
+            mc.setdiag(0)
+            dia=np.array(mc.sum(axis=1)).T[0]
+            dia[dia==0]=-1
+            mc.setdiag(-dia)
+            T_adm=mc
+
+            #################################
 
         pms = OP_adm*self.solver.direct_solver(T_adm, b_adm)
-
+        
         # pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
         '''
         local_preconditioners=['bosma', 'jacobi', 'olav']

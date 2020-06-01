@@ -118,7 +118,7 @@ PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
-neta_lim=1.0
+neta_lim=0.0
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
@@ -197,11 +197,53 @@ while verif:
 
     adm_method.set_level_wells_3()
 
-    adm_method.set_saturation_level_simple()
-
-    adm_method.solve_multiscale_pressure(T, b)
+    # adm_method.set_saturation_level_simple()
+    adm_method.set_saturation_level_imposed_bound_level_continuity()
+    # adm_method.set_saturation_level_imposed_joined_coarse()
+    ######################################
+    # for TPFAlization
+    id1=data_impress['LEVEL_ID_1']
+    lines=np.concatenate([id1[ad0],id1[ad1],id1[ad0],id1[ad1]])
+    cols=np.concatenate([id1[ad1],id1[ad0],id1[ad0],id1[ad1]])
+    data=np.ones(len(lines))
+    mc=sp.csc_matrix((data,(lines,cols)),shape=(adm_method.n1_adm,adm_method.n1_adm))
+    mc[mc>0]=1
+    # import matplotlib.pyplot as plt
+    # plt.matshow(mc.toarray())
+    # plt.savefig("results/lixo.png")
+    # import pdb; pdb.set_trace()
+    ########################################
+    adm_method.solve_multiscale_pressure(T, b, mc)
 
     adm_method.set_pms_flux(wells, neumann_subds)
+    # import pdb; pdb.set_trace()
+
+    ####################################
+    op_adm = adm_method._data['adm_prolongation_level_1']
+    or_adm = adm_method._data['adm_restriction_level_1']
+    Tc=or_adm*T*op_adm
+    lcd=sp.find(Tc)
+    lc=lcd[0]
+    cc=lcd[1]
+    dc=lcd[2]
+    diags=lc==cc
+    off_diag=lc!=cc
+    val_diag=dc[diags]
+    lcc_diag=lc[diags]
+    val_off_diag=dc[off_diag]
+
+    lc_off_diag=lc[off_diag]
+    val_diag_off_diag=val_diag[lcc_diag][lc_off_diag]
+    netas=val_off_diag/val_diag_off_diag
+    netasp=netas>0
+    netas=netas[netasp]
+    I=lc[off_diag][netasp]
+    J=cc[off_diag][netasp]
+    if len(netas)>0:
+        print(netas.max())
+        if netas.max()>0:
+            # import pdb; pdb.set_trace()
+            afff=1
 
     b1.get_velocity_faces()
 
