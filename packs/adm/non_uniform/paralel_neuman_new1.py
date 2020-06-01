@@ -14,7 +14,7 @@ class masterNeumanNonNested:
         self.ml_data = ml_data
         self.n_levels = n_levels
         self.wells = wells
-        self.one_worker = False
+        self.one_worker = True
         self.mesh = M
         self.neumann_subds = neumann_subds
 
@@ -230,8 +230,8 @@ class masterNeumanNonNested:
                 presc_flux_intern_boundary_volumes=np.bincount(local_ids[local_ids>-1], weights=ds[local_ids>-1])
                 val_neum = list(presc_flux_intern_boundary_volumes)
 
-                # self.data_impress['val_diric'][ind_diric]=val_diric
-                # self.data_impress['val_neum'][ind_neum]=val_neum
+                self.data_impress['val_diric'][ind_diric]=val_diric
+                self.data_impress['val_neum'][ind_neum]=val_neum
 
                 list_of_subdomains.append(Subdomain(ind_diric, ind_neum, val_diric, val_neum, intern_local_faces, adj_intern_local_faces, transmissibility, lines, cols, ind_diric_local))
 
@@ -304,8 +304,8 @@ class masterNeumanNonNested:
 
 
     def preprocess(self):
-        # list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_vec()
-        list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_master()
+        list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_vec()
+        # list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_master()
         list_of_process_per_cpu = self.get_n_workers(list_of_subdomains)
         return list_of_process_per_cpu
 

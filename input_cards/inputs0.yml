@@ -7,7 +7,7 @@ n_test: 0
 state: 0
 type_of_solution: fine_scale
 gravity: false
-load_data: true
+load_data: false
 convert_english_to_SI: false
 monophasic: false
 biphasic: true

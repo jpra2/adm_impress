@@ -4,6 +4,7 @@ from packs.multiscale.preprocess.prep_neumann import NeumannSubdomains
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.directories import data_loaded
 from packs.multiscale.operators.prolongation.AMS.Paralell.group_dual_volumes import group_dual_volumes_and_get_OP
+from packs.multiscale.tpfalize_operator import tpfalize
 import scipy.sparse as sp
 from pymoab import types
 import numpy as np
@@ -116,11 +117,17 @@ else:
 
 PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
+
+
+
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
 neta_lim=0.0
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
+
+# import pdb; pdb.set_trace()
+# mlo=tpfalize(M,mlo,data_impress)
 mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
@@ -148,6 +155,9 @@ M.core.mb.add_entities(meshset_faces, M.core.all_faces)
 
 OP_AMS=mlo['prolongation_level_1']
 OR_AMS=mlo['restriction_level_1']
+
+
+
 plot_operator(OP_AMS,np.arange(OP_AMS.shape[1]))
 # write_file_with_tag_range('OP_AMS_63',[0,np.inf])
 
@@ -181,7 +191,8 @@ int_faces=M.faces.internal
 adjs=M.faces.bridge_adjacencies(int_faces,2,3)
 ad0=adjs[:,0]
 ad1=adjs[:,1]
-#######################################
+# #######################################
+
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress)
 nn = 200
 pp = 1
@@ -196,27 +207,16 @@ while verif:
         adm_method.organize_ops_adm(mlo, level)
 
     adm_method.set_level_wells_3()
+    # gid1=data_impress["GID_1"]
+    # data_impress["LEVEL"][ad0[gid1[ad0]!=gid1[ad1]]]=0
+    # data_impress["LEVEL"][ad1[gid1[ad0]!=gid1[ad1]]]=0
+    # data_impress["LEVEL"][ad1[ad0!=ad1]]=0
+    # data_impress["LEVEL"][data_impress['saturation']>0.2]=0
+    adm_method.set_saturation_level_simple()
 
-    # adm_method.set_saturation_level_simple()
-    adm_method.set_saturation_level_imposed_bound_level_continuity()
-    # adm_method.set_saturation_level_imposed_joined_coarse()
-    ######################################
-    # for TPFAlization
-    id1=data_impress['LEVEL_ID_1']
-    lines=np.concatenate([id1[ad0],id1[ad1],id1[ad0],id1[ad1]])
-    cols=np.concatenate([id1[ad1],id1[ad0],id1[ad0],id1[ad1]])
-    data=np.ones(len(lines))
-    mc=sp.csc_matrix((data,(lines,cols)),shape=(adm_method.n1_adm,adm_method.n1_adm))
-    mc[mc>0]=1
-    # import matplotlib.pyplot as plt
-    # plt.matshow(mc.toarray())
-    # plt.savefig("results/lixo.png")
-    # import pdb; pdb.set_trace()
-    ########################################
-    adm_method.solve_multiscale_pressure(T, b, mc)
+    adm_method.solve_multiscale_pressure(T, b)
 
     adm_method.set_pms_flux(wells, neumann_subds)
-    # import pdb; pdb.set_trace()
 
     ####################################
     op_adm = adm_method._data['adm_prolongation_level_1']
