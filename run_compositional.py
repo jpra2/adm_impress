@@ -21,12 +21,14 @@ def initialize(load, convert, mesh):
 def get_initial_properties(M, wells, load, data_loaded):
     kprop = ComponentProperties(data_loaded)
     P = np.array(data_loaded['Pressure']['r1']['value']).astype(float)
-    fprop = FluidProperties(kprop)
+    fprop = FluidProperties(kprop, P, ctes.n_volumes)
 
     if kprop.load_k:
         fprop_block = StabilityCheck(P, ctes.T, kprop)
-        fprop_block.run(fprop.z, kprop)
+        fprop_block.run(kprop.z, kprop)
         fprop.run_inputs_k(fprop_block, kprop, ctes.n_volumes)
+        fprop_block.get_EOS_dependent_properties(kprop, fprop)
+
     else: fprop.x = []; fprop.y = []
 
     if kprop.load_w: fprop.run_inputs_w(ctes.T, P, data_loaded, ctes.n_volumes)
@@ -63,6 +65,7 @@ class run_simulation:
                 fprop_block = StabilityCheck(P, fprop.T, kprop)
                 fprop_block.run(z, kprop)
                 fprop.update_all_volumes(fprop_block, i)
+        fprop_block.get_EOS_dependent_properties(kprop, fprop)
 
         PropertiesCalc().run_inside_loop(M, fprop, kprop)
         self.update_vpi(kprop, fprop, wells)

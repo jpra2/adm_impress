@@ -2,6 +2,7 @@ from .. import directories as direc
 from . import directories_impress as direc_impress
 from ..directories import data_loaded
 from ..utils.utils_old import get_box
+from math import pi
 import numpy as np
 # from .preprocess1 import set_saturation_regions
 
@@ -93,21 +94,22 @@ class Preprocess0:
                     hs[1] = modulos[j]
                 elif np.allclose(unis2[j], unis[2]):
                     hs[2] = modulos[j]
-                elif unis2[j][1] == 0: #caso inclinado em xz
+                elif unis2[j][1] == 0 and unis[j][0]!=1 and unis[j][2]!=1: #caso inclinado em xz
                     hs[0] = modulos[j]
 
         areas = np.array(areas)
         all_areas = np.dot(normals**2, areas)
         dist_cent = np.dot(normals, hs)
 
-        dd = np.argwhere(normals!=1)[0]
-        dd1 = np.argwhere(normals[dd]!=1)[0]
-        if len(dd1)>0:
-            inclined_faces_normals = normals[dd][dd1]
-            xz_face = np.argwhere(inclined_faces_normals[:,1]==0)[0]
+        v = np.ones([3,1])
+        dd = np.argwhere(np.round(normals@v, 2)!=1)
+        
+        if len(dd)>0:
+            inclined_faces_normals = normals[dd.ravel()]
+            xz_face = np.argwhere(inclined_faces_normals[:,1]==0).ravel()
             xz_face_angle = inclined_faces_normals[xz_face][0,2]/inclined_faces_normals[xz_face][0,0]
             theta = np.arctan(xz_face_angle)
-        else: theta = 0
+        else: theta = pi/2
 
         volume = hs[0]*hs[1]*hs[2]*np.sin(theta)
         n_volumes = M.data.len_entities[direc.entities_lv0[3]]

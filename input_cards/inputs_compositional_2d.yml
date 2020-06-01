@@ -1,5 +1,6 @@
-mesh_name: 25x25x1_b.msh
-name_save_file: 'results_2d_injection_25_case_t'
+#Oil injection in oil reservoir 2-D with 1 oil component
+mesh_name: 25x25x1.msh
+name_save_file: 'results_2d_injection_25_case'
 
 n_test: 0
 compositional: True
@@ -28,7 +29,7 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  g: 9.81
+  g: 9.80665
   CFL: 0.5
   vpis_para_gravar_vtk: [0.0038]
   time_to_save: [22018., 31536000.]
@@ -44,13 +45,13 @@ compositional_data:
   Epc: 2
 
   time_data:
-    deltaPlim: 1.
-    deltaNlim: 0.001
-    deltaSlim: 0.001
-    deltaVlim: .0001
+    deltaPlim: 68.9476
+    deltaNlim: .01
+    deltaSlim: .01
+    deltaVlim: .001
     delta_t_ini: 1000
-    delta_tmax: 1332400.
-    delta_tmin: .1
+    delta_tmax: 7000
+    delta_tmin: 0.0001
 
   #rever isso de Cw=0 e Pw
   water_data:
@@ -77,16 +78,16 @@ compositional_data:
 #decane critical molar density is 1640 mol/m3
   component_data:
     z: [1.]
-    Tc: [619.28]
-    Pc: [2109795.73]
+    Tc: [619.277778]
+    Pc: [2109795.731]
     vc: [0.0006031573275]
     R: [8.3144598]
-    Mw: [142.28e-3]
+    Mw: [142.276e-3]
     w: [0.4890]
     Bin: [0]
     C7: [0]
     SG: [0.7342]
-    vshift_parameter: [0.085]
+    vshift_parameter: [0.0]
 
 #water saturation data
 Saturation:
@@ -118,10 +119,10 @@ Temperature:
 
 Wells:
   P1:
-    p0: [292.608, 292.608, 0.0]
-    p1: [316.992, 316.992, 0.3048]
+    p0: [292.608, 292.608, -0.3048]
+    p1: [316.992, 316.992, 0.0]
     prescription: Q
     type: Injector
     type_region: box
     value: [-2.720252624e-6]
-    ksi_inj: 4587.389676497057
+    value_type: volumetric

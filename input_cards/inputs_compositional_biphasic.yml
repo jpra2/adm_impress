@@ -1,5 +1,6 @@
+#Buckley Leverett's horizontal case
 mesh_name: 500x1x1_b.msh
-name_save_file: 'results_Buckley_Leverett_case'
+name_save_file: 'results_Buckley_Leverett_caset'
 
 compositional: True
 hidrocarbon_components: True
@@ -123,7 +124,7 @@ Wells:
     type: Injector
     type_region: box
     value: [-0, -3.2774128e-8]
-    ksi_inj: 55484.31372
+    value_type: volumetric
 
   P2:
     p0: [0.6083808, 0.0, 0.0]
