@@ -1,5 +1,6 @@
 import numpy as np
 from .stability_check import StabilityCheck
+from ..utils import constants as ctes
 import math
 from scipy.misc import derivative
 import sympy
@@ -21,8 +22,8 @@ class PartialDerivatives:
             PR_kC7[3] * kprop.w ** 3) * kprop.C7 + (PR_k[0] + PR_k[1] * kprop.w - \
             PR_k[2] * kprop.w ** 2) * (1 - kprop.C7)
         alpha = (1 + k * (1 - (self.T / kprop.Tc) ** (1 / 2))) ** 2
-        aalpha_i = 0.45724 * (kprop.R* kprop.Tc) ** 2 / kprop.Pc * alpha
-        b = 0.07780 * kprop.R* kprop.Tc / kprop.Pc
+        aalpha_i = 0.45724 * (ctes.R* kprop.Tc) ** 2 / kprop.Pc * alpha
+        b = 0.07780 * ctes.R* kprop.Tc / kprop.Pc
         aalpha_i_reshape = np.ones((kprop.Nc,kprop.Nc)) * aalpha_i[:,np.newaxis]
         aalpha_ik = np.sqrt(aalpha_i_reshape.T * aalpha_i[:,np.newaxis]) \
                         * (1 - kprop.Bin)
@@ -40,8 +41,8 @@ class PartialDerivatives:
             PR_kC7[3] * kprop.w ** 3) * kprop.C7 + (PR_k[0] + PR_k[1] * kprop.w - \
             PR_k[2] * kprop.w ** 2) * (1 - kprop.C7)
         alpha = (1 + k * (1 - (self.T / kprop.Tc) ** (1 / 2))) ** 2
-        aalpha_i = 0.45724 * (kprop.R* kprop.Tc) ** 2 / kprop.Pc * alpha
-        b = 0.07780 * kprop.R* kprop.Tc / kprop.Pc
+        aalpha_i = 0.45724 * (ctes.R* kprop.Tc) ** 2 / kprop.Pc * alpha
+        b = 0.07780 * ctes.R* kprop.Tc / kprop.Pc
         aalpha_i_reshape = np.ones((kprop.Nc,kprop.Nc)) * aalpha_i[:,np.newaxis]
         aalpha_ik = np.sqrt(aalpha_i_reshape.T * aalpha_i[:,np.newaxis]) \
                         * (1 - kprop.Bin)
@@ -53,7 +54,7 @@ class PartialDerivatives:
 
     def get_dVt_dNk_analytically(self, P, kprop, Vt, Sj, xkj, Nk):
         bm, am = self.coefficientsPR(kprop, xkj)
-        C = np.array([P*(Sj*xkj)**3, (bm*P - kprop.R*self.T)*(Sj*xkj)**2, (am - 3*P*bm**2 - 2*kprop.R*self.T*bm)*(Sj*xkj)])
+        C = np.array([P*(Sj*xkj)**3, (bm*P - ctes.R*self.T)*(Sj*xkj)**2, (am - 3*P*bm**2 - 2*ctes.R*self.T*bm)*(Sj*xkj)])
 
         Num = 3*Vt**3/(Nk**4)*C[0] + 2*Vt**2/(Nk**3)*C[1] + Vt/(Nk**2)*C[2]
         Den = 3*Vt**2/(Nk**3)*C[0] + 2*Vt/(Nk**2)*C[1] + 1/Nk*C[2]
@@ -66,7 +67,7 @@ class PartialDerivatives:
         C = np.array([(1/Nj)**3, (1/Nj)**2, (1/Nj)])
 
         Num = - Vt**3*C[0] - bm**3 - Vt**2*bm*C[1] + 3*bm**2*Vt*C[2]
-        Den = 3*Vt**2*P*C[0] + 2*Vt*(bm*P - kprop.R*self.T)*C[1] + (am - 3*bm**2*P - 2*kprop.R*self.T*bm)*C[2]
+        Den = 3*Vt**2*P*C[0] + 2*Vt*(bm*P - ctes.R*self.T)*C[1] + (am - 3*bm**2*P - 2*ctes.R*self.T*bm)*C[2]
 
         dVt_dP = Num/Den
         return dVt_dP
@@ -97,7 +98,7 @@ class PartialDerivatives:
         return dVt_dNk, dVt_dP
 
     def PR_EOS(self, P, kprop, Sj, xkj, Nk, ph, bm ,a):
-        C = np.array([P*(Sj*xkj/Nk)**3, (bm*P - kprop.R*self.T)*(Sj*xkj/Nk)**2, (a - 3*P*bm**2 - 2*kprop.R*self.T*bm)*(Sj*xkj/Nk), P*bm**3 + kprop.R*self.T*bm**2 - a*bm])
+        C = np.array([P*(Sj*xkj/Nk)**3, (bm*P - ctes.R*self.T)*(Sj*xkj/Nk)**2, (a - 3*P*bm**2 - 2*ctes.R*self.T*bm)*(Sj*xkj/Nk), P*bm**3 + ctes.R*self.T*bm**2 - a*bm])
         Vt = np.roots(C)
         roots = np.isreal(Vt)
         Vt_reais = np.real(Vt[roots]) #Saving the real roots

@@ -32,14 +32,12 @@ tmax = 173958
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 
-M, data_impress, wells, fprop, kprop, load = run_compositional.initialize(load, convert, mesh)
-
 sim = run_simulation(name_current, name_all)
+M, data_impress, wells, fprop, kprop, load = sim.initialize(load, convert, mesh)
 
 while run_criteria < stop_criteria: #and loop < loop_max:
-    #import pdb; pdb.set_trace()
     sim.run(M, wells, fprop, kprop, load)
-
+    #import pdb; pdb.set_trace()
     if data_loaded['use_vpi']: run_criteria = sim.vpi
     else:
         run_criteria = sim.t
@@ -47,7 +45,7 @@ while run_criteria < stop_criteria: #and loop < loop_max:
             sim.delta_t = stop_criteria - sim.t
     loop = sim.loop
 
-    print(sim.vpi)
+    print(sim.t)
 
 print(fprop.P)
 

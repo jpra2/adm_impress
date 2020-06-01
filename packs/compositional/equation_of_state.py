@@ -1,5 +1,7 @@
 import numpy as np
 from cmath import acos
+from ..utils import constants as ctes
+from ..solvers.EOS_solver.solver import CubicRoots
 
 class PengRobinson:
     def __init__(self, P, T, kprop):
@@ -16,8 +18,8 @@ class PengRobinson:
             PR_kC7[3] * kprop.w ** 3) * (1*(kprop.w >= 0.49))  + (PR_k[0] + PR_k[1] * kprop.w - \
             PR_k[2] * kprop.w ** 2) * (1*(kprop.w < 0.49))
         alpha = (1 + k * (1 - (self.T/ kprop.Tc) ** (1 / 2))) ** 2
-        aalpha_i = 0.45724 * (kprop.R * kprop.Tc) ** 2 / kprop.Pc * alpha
-        self.b = 0.07780 * kprop.R * kprop.Tc / kprop.Pc
+        aalpha_i = 0.45724 * (ctes.R * kprop.Tc) ** 2 / kprop.Pc * alpha
+        self.b = 0.07780 * ctes.R * kprop.Tc / kprop.Pc
         aalpha_i_reshape = np.ones((kprop.Nc,kprop.Nc)) * aalpha_i[:,np.newaxis]
         self.aalpha_ij = np.sqrt(aalpha_i_reshape.T * aalpha_i[:,np.newaxis]) \
                         * (1 - kprop.Bin)
@@ -26,8 +28,8 @@ class PengRobinson:
         self.bm = sum(l * self.b)
         l_reshape = np.ones((self.aalpha_ij).shape) * l[:, np.newaxis]
         self.aalpha = (l_reshape.T * l[:,np.newaxis] * self.aalpha_ij).sum()
-        B = self.bm * self.P/ (kprop.R* self.T)
-        A = self.aalpha * self.P/ (kprop.R* self.T) ** 2
+        B = self.bm * self.P/ (ctes.R* self.T)
+        A = self.aalpha * self.P/ (ctes.R* self.T) ** 2
         self.psi = (l_reshape * self.aalpha_ij).sum(axis = 0)
         return A, B
 
@@ -67,49 +69,16 @@ class PengRobinson:
         self.bm = np.sum(l * self.b[:,np.newaxis], axis=0)
         l_reshape = np.ones((self.aalpha_ij).shape)[:,:,np.newaxis] * l[:,np.newaxis,:]
         self.aalpha = (l_reshape * l[np.newaxis,:,:] * self.aalpha_ij[:,:,np.newaxis]).sum(axis=0).sum(axis=0)
-        B = self.bm * self.P / (kprop.R* self.T)
-        A = self.aalpha * self.P / (kprop.R* self.T) ** 2
+        B = self.bm * self.P / (ctes.R* self.T)
+        A = self.aalpha * self.P / (ctes.R* self.T) ** 2
         self.psi = (l_reshape * self.aalpha_ij).sum(axis = 0)
         return A, B
 
     def Z_vectorized(A, B):
-        coef = np.empty([4,len(B)])
+        coef = np.empty([4,len(B.ravel())])
         coef[0,:] = np.ones(len(B))
         coef[1,:] = -(1 - B)
         coef[2,:] = (A - 2*B - 3*B**2)
         coef[3,:] = -(A*B - B**2 - B**3)
-        
-        Q = 2*coef[1]**3/27 - coef[1]*coef[2]/3 + coef[3]
-        P = -coef[1]**2/3 + coef[2]
-        delta = (Q/2)**2 + (P/3)**3
-        R = ((P/3)**(3))**(1/2)*1j
-        arg_theta = (-Q/(2*R))
-        real_arg = np.isreal(arg_theta[0])
-        real_index = np.where(real_arg == True)[0]
-        complex_index = np.where(real_arg == False)[0]
-
-        theta = np.zeros(len(arg_theta), dtype = np.complex_)
-
-        theta[real_index] = 1/3*np.arccos(arg_theta[real_index])
-        for i in range(len(complex_index)):
-            theta[complex_index[i]] = (1/3)*acos(arg_theta[complex_index[i]])
-        omega = (-1 + 1j*np.sqrt(3))/2
-
-        xs_args = np.empty([2,len(A)])
-        xs_args[0,:] = -Q/2 + delta**(1/2)
-        xs_args[1,:] =  -Q/2 - delta**(1/2)
-
-        real_args = np.isreal(xs_args)
-        real_index = np.where(real_args == True)[0]
-        complex_index2 = np.where(real_args ==  False)[0]
-        xs_args[real_index] = np.cbrt(xs_args[real_index])
-        xs_args[complex_index2] = (xs_args[complex_index2])**(1/3)
-
-        omegas  = np.array([[1,1],[omega,omega**2],[omega**2,omega**3]])
-        X = omegas@xs_args
-
-        reais = np.isreal(X)
-        r_pos = np.where(reais==True)
-        Xreais = np.real(X[r_pos[:]])
-        Z = Xreais -coef[1]/3
+        Z = CubicRoots().run(coef)
         return Z

@@ -12,30 +12,6 @@ from packs.utils import constants as ctes
 import os
 import time
 
-def initialize(load, convert, mesh):
-    M, elements_lv0, data_impress, wells = initial_mesh(mesh, load=load, convert=convert)
-    ctes.init(M)
-    fprop, kprop = get_initial_properties(M, wells, load, data_loaded)
-    return M, data_impress, wells, fprop, kprop, load
-
-def get_initial_properties(M, wells, load, data_loaded):
-    kprop = ComponentProperties(data_loaded)
-    P = np.array(data_loaded['Pressure']['r1']['value']).astype(float)
-    fprop = FluidProperties(kprop, P, ctes.n_volumes)
-
-    if kprop.load_k:
-        fprop_block = StabilityCheck(P, ctes.T, kprop)
-        fprop_block.run(kprop.z, kprop)
-        fprop.run_inputs_k(fprop_block, kprop, ctes.n_volumes)
-        fprop_block.get_EOS_dependent_properties(kprop, fprop)
-
-    else: fprop.x = []; fprop.y = []
-
-    if kprop.load_w: fprop.run_inputs_w(ctes.T, P, data_loaded, ctes.n_volumes)
-
-    PropertiesCalc().run_outside_loop(M, fprop, kprop)
-    return fprop, kprop
-
 class run_simulation:
 
     def __init__(self, name_current, name_all):
@@ -50,6 +26,28 @@ class run_simulation:
         self.delta_t = data_loaded['compositional_data']['time_data']['delta_t_ini']
         self.mesh_name =  'compositional_'
         self.all_compositional_results = self.get_empty_current_compositional_results()
+        self.p1 = PropertiesCalc()
+
+    def initialize(self, load, convert, mesh):
+        M, elements_lv0, data_impress, wells = initial_mesh(mesh, load=load, convert=convert)
+        ctes.init(M)
+        fprop, kprop = self.get_initial_properties(M, wells, load, data_loaded)
+        return M, data_impress, wells, fprop, kprop, load
+
+    def get_initial_properties(self, M, wells, load, data_loaded):
+        kprop = ComponentProperties()
+        fprop = FluidProperties(kprop, ctes.n_volumes)
+
+        if kprop.load_k:
+            fprop_block = StabilityCheck(fprop.P[0], fprop.T, kprop)
+            fprop_block.run(kprop.z, kprop)
+            fprop.run_inputs_k(fprop_block, kprop, ctes.n_volumes)
+            #fprop_block.get_EOS_dependent_properties(kprop, fprop)
+
+        else: fprop.x = []; fprop.y = []
+        if kprop.load_w: fprop.get_inital_water_properties(ctes.n_volumes)
+        self.p1.run_outside_loop(M, fprop, kprop)
+        return fprop, kprop
 
     def run(self, M, wells, fprop, kprop, load):
         t0 = time.time()
@@ -65,9 +63,9 @@ class run_simulation:
                 fprop_block = StabilityCheck(P, fprop.T, kprop)
                 fprop_block.run(z, kprop)
                 fprop.update_all_volumes(fprop_block, i)
-        fprop_block.get_EOS_dependent_properties(kprop, fprop)
+        #fprop_block.get_EOS_dependent_properties(kprop, fprop)
 
-        PropertiesCalc().run_inside_loop(M, fprop, kprop)
+        self.p1.run_inside_loop(M, fprop, kprop)
         self.update_vpi(kprop, fprop, wells)
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, kprop.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         self.update_loop()

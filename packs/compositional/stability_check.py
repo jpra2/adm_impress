@@ -2,7 +2,7 @@
 import numpy as np
 from ..directories import data_loaded
 from scipy.misc import derivative
-from .equation_of_state import PengRobinson
+from . import equation_of_state
 import math
 # import matplotlib.pyplot as plt
 ## Encontrar os pontos estacionarios. Estes correspondem aos pontos nos quais a derivada de g com respeito a Y é 0
@@ -16,11 +16,10 @@ class StabilityCheck:
     def __init__(self, P, T, kprop):
         self.T = T
         self.P = P
-        self.s = np.array(data_loaded['compositional_data']['component_data']['vshift_parameter']).astype(float)
-        self.EOS = PengRobinson(P, T, kprop)
+        EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
+        self.EOS = EOS_class(P, T, kprop)
 
     def run(self, z, kprop):
-        self.R = kprop.R
         self.equilibrium_ratio_Wilson(kprop)
 
         if any(z <= 0):
@@ -33,11 +32,6 @@ class StabilityCheck:
                 self.bubble_point_pressure()
                 if self.P > self.Pbubble: self.L = 1; self.V = 0; ph = 1
                 else: self.L = 0; self.V = 1; ph = 0
-
-    def get_EOS_dependent_properties(self, kprop, fprop):
-        self.EOS = PengRobinson(fprop.P, self.T, kprop)
-        fprop.Mw_L, fprop.ksi_L, fprop.rho_L = self.calculate_properties(fprop, kprop, fprop.x, 1)
-        fprop.Mw_V, fprop.ksi_V, fprop.rho_V = self.calculate_properties(fprop, kprop, fprop.y, 0)
 
     def equilibrium_ratio_Wilson(self, kprop):
         self.K = np.exp(5.37 * (1 + kprop.w) * (1 - kprop.Tc / self.T)) * \
@@ -92,22 +86,21 @@ class StabilityCheck:
     def deltaG_molar(self, kprop, l, ph):
         lnphi = [self.EOS.lnphi(kprop, l, 1 - ph), self.EOS.lnphi(kprop, l, ph)]
         deltaG_molar = sum(l * (lnphi[1 - ph] - lnphi[ph]))
-        if deltaG_molar >= 0: ph = ph
-        else: ph = 1 - ph
+        if deltaG_molar < 0: ph = 1 - ph
         return ph
 
-    def deltaG_molar_vectorized(self, kprop, l, ph):
-        lnphi = np.empty(2, len(self.P))
-        lnphi[0,:] = self.EOS.lnphi(kprop, l, 1 - ph)
-        lnphi[1,:] = self.EOS.lnphi(kprop, l, ph)
+    def deltaG_molar_vectorized(EOS, kprop, l, ph):
+        lnphi = np.empty([2, len(ph)])
+        lnphi[0,:] = EOS.lnphi(kprop, l, 1 - ph)
+        lnphi[1,:] = EOS.lnphi(kprop, l, ph)
 
         deltaG_molar = np.sum(l * (lnphi[1 - ph] - lnphi[ph]), axis=0)
-        ph[deltaG_molar<0] = 1 - ph
+        ph[deltaG_molar<0] = 1 - ph[deltaG_molar<0]
         return ph
 
     def lnphi_based_on_deltaG(self,kprop, l, ph):
         ph = np.array(ph)[:,np.newaxis]
-        ph = self.deltaG_molar_vectorized(kprop, l, ph)
+        ph = StabilityCheck.deltaG_molar_vectorized(self.EOS, kprop, l, ph)
         return self.EOS.lnphi(kprop, l, ph)
 
     def solve_objective_function_Yinghui(self, z1, zi, z, K1, KNc, Ki):
@@ -224,29 +217,12 @@ class StabilityCheck:
                               where = self.fv != 0)
             self.K = razao * self.K
 
-
-    def calculate_properties(self, fprop, kprop, l, ph):
-        #l - any phase molar composition
-        A, B = self.EOS.coefficients_cubic_EOS_vectorized(kprop, l)
-        Z_reais = PengRobinson.Z_vectorized(A, B)
-        if len(Z_reais[np.newaxis,:][:,0])>1:
-            ph = self.deltaG_molar_vectorized(kprop, l, ph)
-            Z = min(Z_reais) * ph + max(Z_reais) * (1 - ph)
-        else: Z = Z_reais
-        v = Z*kprop.R*self.T/fprop.P - sum(self.s*self.EOS.b*l)*6.243864674*10**(-5) #check this unity (ft³/lbmole to m³/mole)
-        ksi_phase = 1/v
-        #ksi_phase = self.P / (Z * kprop.R* self.T)
-        Mw_phase = sum(l * kprop.Mw)
-        rho_phase = ksi_phase * sum(l * kprop.Mw)
-        # se precisar retornar mais coisa, entra aqui
-        return Mw_phase, ksi_phase, rho_phase
-
     def bubble_point_pressure(self):
         #Isso vem de uma junção da Lei de Dalton com a Lei de Raoult
         Pv = self.K * self.P
         self.Pbubble = sum(self.x * Pv)
 
-    def TPD(self, z): #ainda não sei onde usar isso
+    '''def TPD(self, z): #ainda não sei onde usar isso
         x = np.zeros(self.Nc)
 
         #**********************Tangent Plane distance plot*********************#
@@ -262,15 +238,15 @@ class StabilityCheck:
                 x[k] = (1 - t[i]) / (kprop.Nc- 1)
                 x[kprop.Nc- 1] = t[i]
 
-            '''O modo que x varia implica no formato de TPD. No presente exemplo,
+            ''''''O modo que x varia implica no formato de TPD. No presente exemplo,
             a fração molar do segundo componente de x varia direto com t, que é a
             variável de plotagem. Logo, a distancia dos planos tangentes será
-            zero em z[Nc-1]. O contrário ocorreria'''
+            zero em z[Nc-1]. O contrário ocorreria''''''
             lnphix = self.lnphi(x, 0); #new phase (vapor- ph=2)
             for j in range(0,self.Nc):
                 fix = math.exp(lnphix[j]) * x[j] * self.P
                 fiz = math.exp(lnphiz[j]) * z[j] * self.P
-                aux = aux + x[j] * kprop.R* self.T * (math.log(fix / fiz))
+                aux = aux + x[j] * ctes.R* self.T * (math.log(fix / fiz))
                 TPD[i] = aux
 
         plt.figure(0)
@@ -278,4 +254,4 @@ class StabilityCheck:
         plt.xlabel('x')
         plt.ylabel('TPD')
         plt.show()
-        return TPD
+        return TPD'''

@@ -15,13 +15,13 @@ def init(M):
     global Cw
     global Pw
     global Vbulk
-    global T
+    global R
 
     Pf = np.array(data_loaded['compositional_data']['Pf']).astype(float)
     Cf = np.array(data_loaded['compositional_data']['rock_compressibility']).astype(float)
     Pw = np.array(data_loaded['compositional_data']['water_data']['Pw']).astype(float)
     Cw = np.array(data_loaded['compositional_data']['water_data']['Cw']).astype(float)
-    T = np.array(data_loaded['Temperature']['r1']['value']).astype(float)
+    R = 8.3144598
     n_volumes = len(M.volumes.all)
     v0 = M.faces.bridge_adjacencies(M.faces.internal,2,3)
     porosity = M.data['poro']
