@@ -194,8 +194,8 @@ ad1=adjs[:,1]
 # #######################################
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress)
-nn = 200
-pp = 1
+nn = 2000
+pp = 100
 cont = 1
 
 verif = True
