@@ -1,7 +1,8 @@
 import numpy as np
 
 class NeumannSubdomains:
-    def __init__(self,elements_lv0,ml_data, data_impress):
+    def __init__(self,elements_lv0,ml_data, data_impress, wells):
+        self.wells=wells['all_wells']
         self.ind_diric=[]
         self.ind_neum=[]
         self.intern_local_faces=[]
@@ -33,7 +34,12 @@ class NeumannSubdomains:
             intern_local_faces = all_intern_faces[coarse_ids==gidc][0] # faces internas
             adj_intern_local_faces = neig_internal_faces[remaped_internal_faces[intern_local_faces]]
             intern_boundary_volumes = all_intern_boundary_volumes[coarse_ids==gidc][0] # volumes internos no contorno
-            vertex = all_fine_vertex[coarse_ids==gidc]
+
+            pocos=np.intersect1d(self.wells,gid0[all_gids_coarse==gidc])
+            if len(pocos)>0:
+                vertex=pocos
+            else:
+                vertex = all_fine_vertex[coarse_ids==gidc]
 
             self.intersect_faces.append(intersect_faces)
             self.ind_diric.append(vertex)

@@ -193,7 +193,7 @@ ad0=adjs[:,0]
 ad1=adjs[:,1]
 # #######################################
 
-neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress)
+neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
 nn = 2000
 pp = 100
 cont = 1

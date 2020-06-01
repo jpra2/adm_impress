@@ -136,10 +136,11 @@ Wells:
     p1: [100.0, 1.0, 1.0]
     # p0: [560.0, 1080.0, 168.0]
     # p1: [580.0, 1090.0, 170.0]
-    prescription: Q
-    type: Injector
+    prescription: P
+    type: Producer
     type_region: box
-    value: 10000.0
+    value: 1.0
+
 
   P2:
     p0: [44.0, 33.0, 0.0]
@@ -150,7 +151,10 @@ Wells:
     type: Producer
     type_region: box
     value: 1.0
-
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: 10000.0
   # P3:
   #   p0: [1180.0, 0.0, 168.0]
   #   p1: [1200.0, 10.0, 170.0]
