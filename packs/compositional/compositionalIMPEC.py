@@ -12,7 +12,7 @@ class CompositionalFVM:
         self.update_gravity_term(fprop)
         self.get_faces_properties_upwind(fprop, kprop)
         self.get_phase_densities_internal_faces(fprop)
-        r = .8# enter the while loop
+        r = 0.8# enter the while loop
         while (r!=1.):
             fprop.P, total_flux_internal_faces, self.q = TPFASolver().get_pressure(M, wells, fprop, kprop, delta_t, r)
             Flux().update_flux(fprop, kprop, total_flux_internal_faces)

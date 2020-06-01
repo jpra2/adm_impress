@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 
 flying = 'flying'
-name = 'all_compositional_'
+name = 'results'
 arquivos = os.listdir(flying)
 i=1
 
@@ -58,7 +58,7 @@ SwD = np.append(SwD,Sw3)
 
 for  arq in arquivos:
     if  arq.startswith(name):
-        datas = np.load('flying/results_Buckley_Leverett_case_506.npy', allow_pickle=True)
+        datas = np.load('flying/results_Buckley_Leverett_caset_506.npy', allow_pickle=True)
         import pdb; pdb.set_trace()
         for data in datas[6:]:
             Sw = data[5]

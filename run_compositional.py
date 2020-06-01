@@ -45,7 +45,7 @@ class run_simulation:
             #fprop_block.get_EOS_dependent_properties(kprop, fprop)
 
         else: fprop.x = []; fprop.y = []
-        if kprop.load_w: fprop.get_inital_water_properties(ctes.n_volumes)
+    
         self.p1.run_outside_loop(M, fprop, kprop)
         return fprop, kprop
 

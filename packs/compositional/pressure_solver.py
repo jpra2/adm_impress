@@ -9,7 +9,7 @@ from .partial_derivatives_new import PartialDerivatives
 class TPFASolver:
 
     def get_pressure(self, M, wells, fprop, kprop, delta_t,r):
-        if r == 0.8: self.dVt_derivatives(fprop, kprop)
+        if r==0.8: self.dVt_derivatives(fprop, kprop)
         T = self.update_transmissibility(M, wells, fprop, kprop, delta_t)
         D = self.update_independent_terms(M, fprop, kprop, wells, delta_t)
         self.update_pressure(T, D, fprop)
@@ -23,15 +23,16 @@ class TPFASolver:
 
             if not kprop.compressible_k:
                 dVtP = np.zeros(ctes.n_volumes)
-                self.dVtk[0:kprop.Nc,:] = 1 / fprop.ksi_L
+                self.dVtk[0:kprop.Nc,:] = 1 / fprop.phase_molar_densities[0,0,:]
             else: self.dVtk[0:kprop.Nc,:], dVtP = PartialDerivatives(fprop).get_all_derivatives(kprop, fprop)
 
         else: dVtP = np.zeros(ctes.n_volumes)
 
         if kprop.load_w:
 
-            self.dVtk[kprop.n_components-1,:] = 1 / fprop.ksi_W
-            dVwP = -fprop.component_mole_numbers[kprop.Nc,:] * fprop.ksi_W0 * ctes.Cw / fprop.ksi_W**2
+            self.dVtk[kprop.n_components-1,:] = 1 / fprop.phase_molar_densities[:,kprop.n_phases-1,:]
+            dVwP = -fprop.component_mole_numbers[kprop.Nc,:] * fprop.ksi_W0 * ctes.Cw / \
+                        fprop.phase_molar_densities[0,kprop.n_phases-1,:]**2
 
         else: dVwP = np.zeros(ctes.n_volumes)
 
@@ -41,7 +42,6 @@ class TPFASolver:
     def update_transmissibility(self, M, wells, fprop, kprop, delta_t):
         self.t0_internal_faces_prod = fprop.component_molar_fractions_internal_faces * fprop.phase_molar_densities_internal_faces \
                                 * fprop.mobilities_internal_faces
-
         ''' Transmissibility '''
         t0 = (self.t0_internal_faces_prod).sum(axis = 1)
         t0 = t0 * ctes.pretransmissibility_internal_faces
@@ -55,6 +55,7 @@ class TPFASolver:
 
             Ta = (sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_volumes, ctes.n_volumes))).toarray()
             T += Ta * self.dVtk[i,:]
+
         #T = (T * self.dVtk.T[:,np.newaxis, :]).sum(axis = 2)
 
         T = T * delta_t

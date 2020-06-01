@@ -35,7 +35,6 @@ class ComponentProperties:
             self.Pc = np.array(data_loaded['compositional_data']['component_data']['Pc']).astype(float)
             self.vc = np.array(data_loaded['compositional_data']['component_data']['vc']).astype(float)
             self.Mw = np.array(data_loaded['compositional_data']['component_data']['Mw']).astype(float)
-            self.C7 = np.array(data_loaded['compositional_data']['component_data']['C7']).astype(float)
             self.s = np.array(data_loaded['compositional_data']['component_data']['vshift_parameter']).astype(float)
             self.z = np.array(data_loaded['compositional_data']['component_data']['z']).astype(float)
             self.Nc = len(self.z)
@@ -47,6 +46,7 @@ class FluidProperties:
         P = np.array(data_loaded['Pressure']['r1']['value']).astype(float)
         self.P = P*np.ones(n_volumes)
         self.T = np.array(data_loaded['Temperature']['r1']['value'])
+        self.component_molar_fractions = np.zeros([kprop.n_components, kprop.n_phases, n_volumes])
 
     def run_inputs_k(self, fprop_block, kprop, n_volumes):
         self.inputs_all_volumes_k(fprop_block, kprop, n_volumes)
@@ -70,15 +70,10 @@ class FluidProperties:
         #kprop.vc[kprop.C7 == 1] =  coef_vc7[0] + coef_vc7[1] * np.mean(kprop.Mw[kprop.C7 == 1]) + \
                             #coef_vc7[2] * np.mean([kprop.SG[kprop.C7 == 1]]) + coef_vc7[3] \
                             #* np.mean(kprop.Mw[kprop.C7 == 1]) * np.mean([kprop.SG[kprop.C7 == 1]])
-    def get_inital_water_properties(self, n_volumes):
-        self.rho_W = data_loaded['compositional_data']['water_data']['rho_W'] * np.ones(n_volumes)
-        self.Mw_w = data_loaded['compositional_data']['water_data']['Mw_w'] * np.ones(n_volumes)
-        self.ksi_W0 = self.rho_W/self.Mw_w
-        self.ksi_W = self.ksi_W0 #* (1 + fprop.Cw * (self.P - Pw))
 
     def update_all_volumes(self, fprop_block, i):
-        self.x[:,i] = fprop_block.x
-        self.y[:,i] = fprop_block.y
+        self.component_molar_fractions[:,0,i] = fprop_block.x
+        self.component_molar_fractions[:,1,i] = fprop_block.y
         self.L[i] = fprop_block.L
         self.V[i] = fprop_block.V
         '''self.Mw_L[i] = fprop_block.Mw_L
