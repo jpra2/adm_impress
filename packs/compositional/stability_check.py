@@ -27,23 +27,17 @@ class StabilityCheck:
             self.molar_properties(kprop, z)
         else:
             sp1,sp2 = self.StabilityTest(kprop, z)
-            if np.round(sp1,5) > 1 or np.round(sp2,5) > 1: self.molar_properties(kprop, z)
+            if np.round(sp1,8) > 1 or np.round(sp2,8) > 1: self.molar_properties(kprop, z)
             else: #tiny manipulation
                 self.x = z; self.y = z
                 self.bubble_point_pressure()
-                if self.P > self.Pbubble: self.L = 1; self.V = 0
-                else: self.L = 0; self.V = 1
-                lnphil = self.lnphi_based_on_deltaG(kprop, self.x, 1)
-                lnphiv = self.lnphi_based_on_deltaG(kprop, self.y, 0)
-                self.fv = np.exp(lnphiv) * (self.y * self.P)
-                self.fl = np.exp(lnphil) * (self.x * self.P)
-                self.K = self.y/self.x
+                if self.P > self.Pbubble: self.L = 1; self.V = 0; ph = 1
+                else: self.L = 0; self.V = 1; ph = 0
 
-        self.z = self.x * self.L + self.y * self.V
-        self.Mw_L, self.ksi_L, self.rho_L = self.other_properties(kprop, self.x, 1)
-        self.Mw_V, self.ksi_V, self.rho_V = self.other_properties(kprop, self.y, 0)
-
-        #if self.V == 0: self.ksi_V = self.V * self.ksi_V; self.rho_V = self.V * self.ksi_V
+    def get_EOS_dependent_properties(self, kprop, fprop):
+        self.EOS = PengRobinson(fprop.P, self.T, kprop)
+        fprop.Mw_L, fprop.ksi_L, fprop.rho_L = self.calculate_properties(fprop, kprop, fprop.x, 1)
+        fprop.Mw_V, fprop.ksi_V, fprop.rho_V = self.calculate_properties(fprop, kprop, fprop.y, 0)
 
     def equilibrium_ratio_Wilson(self, kprop):
         self.K = np.exp(5.37 * (1 + kprop.w) * (1 - kprop.Tc / self.T)) * \
@@ -102,8 +96,18 @@ class StabilityCheck:
         else: ph = 1 - ph
         return ph
 
+    def deltaG_molar_vectorized(self, kprop, l, ph):
+        lnphi = np.empty(2, len(self.P))
+        lnphi[0,:] = self.EOS.lnphi(kprop, l, 1 - ph)
+        lnphi[1,:] = self.EOS.lnphi(kprop, l, ph)
+
+        deltaG_molar = np.sum(l * (lnphi[1 - ph] - lnphi[ph]), axis=0)
+        ph[deltaG_molar<0] = 1 - ph
+        return ph
+
     def lnphi_based_on_deltaG(self,kprop, l, ph):
-        ph = self.deltaG_molar(kprop, l, ph)
+        ph = np.array(ph)[:,np.newaxis]
+        ph = self.deltaG_molar_vectorized(kprop, l, ph)
         return self.EOS.lnphi(kprop, l, ph)
 
     def solve_objective_function_Yinghui(self, z1, zi, z, K1, KNc, Ki):
@@ -220,15 +224,18 @@ class StabilityCheck:
                               where = self.fv != 0)
             self.K = razao * self.K
 
-    def other_properties(self, kprop, l, ph):
+
+    def calculate_properties(self, fprop, kprop, l, ph):
         #l - any phase molar composition
-        A, B = self.EOS.coefficients_cubic_EOS(kprop, l)
-        ph = self.deltaG_molar(kprop, l, ph)
-        Z = PengRobinson.Z(B, A, ph)
-        v = Z*kprop.R*self.T/self.P - sum(self.s*self.EOS.b*l)*6.243864674*10**(-5) #check this unity (ft³/lbmole to m³/mole)
+        A, B = self.EOS.coefficients_cubic_EOS_vectorized(kprop, l)
+        Z_reais = PengRobinson.Z_vectorized(A, B)
+        if len(Z_reais[np.newaxis,:][:,0])>1:
+            ph = self.deltaG_molar_vectorized(kprop, l, ph)
+            Z = min(Z_reais) * ph + max(Z_reais) * (1 - ph)
+        else: Z = Z_reais
+        v = Z*kprop.R*self.T/fprop.P - sum(self.s*self.EOS.b*l)*6.243864674*10**(-5) #check this unity (ft³/lbmole to m³/mole)
         ksi_phase = 1/v
         #ksi_phase = self.P / (Z * kprop.R* self.T)
-
         Mw_phase = sum(l * kprop.Mw)
         rho_phase = ksi_phase * sum(l * kprop.Mw)
         # se precisar retornar mais coisa, entra aqui
