@@ -534,7 +534,13 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
                     self._data['upwind_identificate'][i, 1] = True
                     self._data['upwind_identificate_o'][i, 1] = True
 
-    def update_upwind_phases_old2(self):
+    def update_upwind_phases(self):
+        if self.gravity == True:
+            self.update_upwind_phases_with_gravity()
+        else:
+            self.update_upwind_phases_old0()
+
+    def update_upwind_phases_with_gravity_old2(self):
         '''
             paper Starnoni
         '''
@@ -631,7 +637,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         self.visualize_upwind_vec()
 
-    def update_upwind_phases(self):
+    def update_upwind_phases_with_gravity(self):
         '''
             paper Starnoni
         '''
@@ -691,7 +697,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         self.visualize_upwind_vec()
 
-    def update_upwind_phases_new4(self):
+    def update_upwind_phases_with_gravity_new4(self):
         '''
             paper Starnoni
         '''
@@ -789,7 +795,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         self.visualize_upwind_vec()
 
-    def update_upwind_phases_new3(self):
+    def update_upwind_phases_with_gravity_new3(self):
         '''
             paper Starnoni
         '''
@@ -913,7 +919,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         self.visualize_upwind_vec()
 
-    def update_upwind_phases_new2(self):
+    def update_upwind_phases_with_gravity_new2(self):
         d1 = 0
 
         internal_faces = self.elements_lv0['internal_faces']
@@ -935,7 +941,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         self.visualize_upwind_vec()
 
-    def update_upwind_phases_new1(self):
+    def update_upwind_phases_with_gravity_new1(self):
         k0 = 1e-8
         d1 = k0
         d2 = -k0
@@ -1028,7 +1034,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
 
         self.visualize_upwind_vec()
 
-    def update_upwind_phases_new0(self):
+    def update_upwind_phases_with_gravity_new0(self):
 
         internal_faces = self.elements_lv0['internal_faces']
         flux_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
@@ -1130,7 +1136,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         # self.update_gama()
         T, b = self.get_T_and_b()
         p = self.solver.direct_solver(T, b)
-        # self.test_rhs_term(T, b, p)
+        self.test_rhs_term(T, b, p)
         self.data_impress['pressure'] = p
         # self.get_total_flux_faces()
         self.get_flux_faces_and_volumes()
@@ -1147,9 +1153,12 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self.update_flux_w_and_o_volumes()
         self.test_flux_faces()
         self.update_delta_t()
-        self.update_saturation()
+        # self.update_saturation()
+        self.loop_for_saturation()
         self.update_relative_permeability()
         self.update_mobilities()
+        # self.data_impress['flux_w_volumes'][:] = self.update_flux_w_volumes_wells
+        # self.data_impress['flux_o_volumes'][:] = self.update_flux_o_volumes_wells
         self.update_upwind_phases()
         self.update_transmissibility()
         self.update_t()
@@ -1191,8 +1200,11 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         ft = ft.reshape(len(ft), 1)
         self.data_impress['flux_faces_vec'] = u_normal*ft
 
-        fo2 = fo[abs(fo) > 0]
-        fw2 = fw[abs(fw) > 0]
+        try:
+            fo2 = fo[abs(fo) > 0]
+            fw2 = fw[abs(fw) > 0]
+        except:
+            pdb.set_trace()
 
     def visualize_upwind_vec(self):
 
@@ -1241,3 +1253,57 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         verif2 = ~verif2
         if verif1.sum() > 0 or verif2.sum() > 0:
             import pdb; pdb.set_trace()
+
+    def loop_for_saturation(self, n_loops=4):
+
+        self.update_saturation()
+        sat1w = self.data_impress['saturation'][self.wells['all_wells']]
+        s1 = self.data_impress['saturation'][self.wells['all_wells']]
+        print('\ns1: ', s1, '\n')
+
+        delta = 0.001
+        verif = True
+        loop_int_max = 10
+        loop_int = 0
+
+        # for i in range(n_loops):
+        #     self.data_impress['saturation'][self.wells['all_wells']] = self.update_saturation_wells
+        #     s2 = self.data_impress['saturation'][self.wells['all_wells']]
+        #     dsmax = np.absolute(s2 - s1).max()
+        #     if dsmax > delta:
+        #         print('\nentrou\n')
+        #         print('dsmax: ', dsmax)
+        #         print()
+        #         s1 = s2.copy()
+        #         pass
+        # print('\nsaiu\n')
+
+        if self.loop >= 22:
+            self.pare1 = True
+            pdb.set_trace()
+
+        while verif and loop_int <= loop_int_max:
+            self.data_impress['saturation'][self.wells['all_wells']] = self.update_saturation_wells
+            s2 = self.data_impress['saturation'][self.wells['all_wells']]
+            dsmax = np.absolute(s2 - s1).max()
+            if dsmax > delta:
+                print('\nentrou\n')
+                print('dsmax: ', dsmax)
+                print()
+                s1 = s2.copy()
+            else:
+                print('\nsaiu\n')
+                verif = False
+            loop_int += 1
+
+
+        sat2w = self.data_impress['saturation'][self.wells['all_wells']]
+
+        # if self.loop >= 21:
+        #     print(sat1w)
+        #     print(sat2w)
+        #     pdb.set_trace()
+
+        # if self.loop >= 20:
+        #     self.print_test()
+        #     pdb.set_trace()

@@ -409,10 +409,67 @@ class biphasicProperties(StructuredMeshProperties):
             data = np.array([flux_o_internal_faces, -flux_o_internal_faces]).flatten()
             flux_o_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
             ws_prod = self.wells['ws_prod']
-            flux_o_volumes[ws_prod] -= flux_volumes[ws_prod]*(1 - self.fw_volumes[ws_prod])
+            # flux_o_volumes[ws_prod] -= flux_volumes[ws_prod]*(1 - self.fw_volumes[ws_prod])
             return flux_o_volumes
         return locals()
     flux_o_volumes = property(**flux_o_volumes())
+
+    @property
+    def update_flux_w_volumes_for_wells(self):
+        internal_faces = self.elements_lv0['internal_faces']
+        flux_volumes = self.data_impress['flux_volumes'].copy()
+        flux_w_internal_faces = self.data_impress['flux_w_faces'][internal_faces]
+        v0 = self.elements_lv0['neig_internal_faces']
+        n_volumes = len(self.data_impress['GID_0'])
+        ws_prod = self.wells['ws_prod']
+        ws_inj = self.wells['ws_inj']
+
+        lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+        cols = np.repeat(0, len(lines))
+        data = np.array([flux_w_internal_faces, -flux_w_internal_faces]).flatten()
+        flux_w_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
+
+        if self.pare1 == True:
+            pdb.set_trace()
+            self.pare1 = False
+
+        flux_w_volumes[ws_prod] -= flux_volumes[ws_prod]*self.fw_volumes[ws_prod]
+        flux_w_volumes[ws_inj] -= flux_volumes[ws_inj]*self.fw_volumes[ws_inj]
+        return flux_w_volumes
+
+    @property
+    def update_flux_o_volumes_for_wells(self):
+        internal_faces = self.elements_lv0['internal_faces']
+        flux_volumes = self.data_impress['flux_volumes'].copy()
+        flux_o_internal_faces = self.data_impress['flux_o_faces'][internal_faces]
+        v0 = self.elements_lv0['neig_internal_faces']
+        n_volumes = len(self.data_impress['GID_0'])
+        ws_prod = self.wells['ws_prod']
+        ws_inj = self.wells['ws_inj']
+
+        lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+        cols = np.repeat(0, len(lines))
+        data = np.array([flux_o_internal_faces, -flux_o_internal_faces]).flatten()
+        flux_o_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
+
+        flux_o_volumes[ws_prod] -= flux_volumes[ws_prod]*(1 - self.fw_volumes[ws_prod])
+        flux_o_volumes[ws_inj] -= flux_volumes[ws_inj]*(1 - self.fw_volumes[ws_inj])
+        return flux_o_volumes
+
+    @property
+    def update_saturation_wells(self):
+        wells = self.wells['all_wells']
+        flux_w_volumes_new_wells = self.update_flux_w_volumes_for_wells[wells]
+
+        sats = self.data_impress['saturation_last'][wells]
+
+        fw_volumes = -flux_w_volumes_new_wells
+        volumes = self.data_impress['volume'][wells]
+        phis = self.data_impress['poro'][wells]
+
+        sats += (fw_volumes*self.delta_t)/(phis*volumes)
+
+        return sats
 
     def velocity_w_faces():
         doc = "The velocity_w_faces property."

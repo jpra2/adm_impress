@@ -41,8 +41,11 @@ while verif:
     # if cont2 % 20 == 0 or cont2 == 1:
     b1.print_test()
     b1.print_test_faces()
-    time.sleep(1)
-    pdb.set_trace()
+    # time.sleep(1)
+    # pdb.set_trace()
+
+    if cont2 % n2 == 0:
+        pdb.set_trace()
 
 
     cont2 += 1
