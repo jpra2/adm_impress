@@ -6,7 +6,7 @@ n_test: 0
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
-water_component: True
+water_component: False
 use_vpi: False
 
 load_compositional_data: False
@@ -85,15 +85,13 @@ compositional_data:
     Mw: [142.276e-3]
     w: [0.4890]
     Bin: [0]
-    C7: [0]
-    SG: [0.7342]
     vshift_parameter: [0.0]
 
 #water saturation data
 Saturation:
   r1:
     type: all
-    value: 0.2
+    value: 0.
 
 Porosity:
   r1:
@@ -124,5 +122,5 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: [-2.720252624e-6,0]
+    value: [-2.720252624e-6]
     value_type: volumetric

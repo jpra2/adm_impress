@@ -4,7 +4,7 @@ import os
 import math
 
 flying = 'flying'
-name = 'all_compositional_'
+name = 'results'
 arquivos = os.listdir(flying)
 i=1
 
@@ -43,7 +43,7 @@ for i in range(1,n):
 for arq in arquivos:
     if  arq.startswith(name):
 
-        datas = np.load('flying/results_monophasic_incompressible_21.npy', allow_pickle=True)
+        datas = np.load('flying/results_monophasic_incompressible_86.npy', allow_pickle=True)
         import pdb; pdb.set_trace()
         for data in datas[1:]:
             pressure = (data[4] - data[4][99] * np.ones(100))/6894.757
@@ -58,7 +58,7 @@ for arq in arquivos:
         #    p_resp = np.linspace(0.623843,0,100)
             plt.figure(1)
             plt.title('t = 0.01 days')
-            plt.plot(x, pressure, 'r', x_ans, P, 'y')
+            plt.plot(x, pressure, 'r', x_ans, P, 'g')
             plt.grid()
             plt.legend(('PADMEC', 'Analytical Solution'))
             plt.ylabel('Pressure Drop (psi)')
