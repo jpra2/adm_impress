@@ -164,10 +164,9 @@ class PropertiesCalc:
         self.phase_viscosities = np.empty([1, kprop.n_phases, ctes.n_volumes])
         if kprop.load_k:
             self.phase_viscosity = self.phase_viscosity_class(ctes.n_volumes, fprop, kprop)
-            self.phase_viscosities[0,0:2,:] = 0.02*np.ones([2,ctes.n_volumes]) #only for BL test
+            #self.phase_viscosities[0,0:2,:] = 0.02*np.ones([2,ctes.n_volumes]) #only for BL test
             #self.phase_viscosities[0,0:2,:] = 0.001*np.ones([2,ctes.n_volumes]) #only for Dietz test
-            #self.phase_viscosities[0,0:2,:] = 0.000249*np.ones([2,ctes.n_volumes]) #only for Dietz test
-            #self.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosity(fprop, kprop)
+            self.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosity(fprop, kprop)
         if kprop.load_w:
             self.phase_viscosities[0,kprop.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
 
