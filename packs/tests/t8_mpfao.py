@@ -19,8 +19,18 @@ normais, points_subfaces, local_ids_subfaces = mpfa_data.create_subfaces(
     elements_lv0['faces_node_nodes'],
     data_impress['centroid_faces'],
     data_impress['centroid_nodes'],
+    midpoints_edges,
+    set_ids=True
+)
+
+points_subfaces = mpfa_data.get_points_of_subfaces_from_complete_structured_array(
+    points_subfaces,
+    data_impress['centroid_faces'],
+    data_impress['centroid_nodes'],
     midpoints_edges
 )
+
+
 
 pdb.set_trace()
 
