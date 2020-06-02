@@ -25,10 +25,15 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
                 if (max_j[j]-min_j[j])<=crs[i][j]*d_j[j]+1e-10:
                     Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
                 else:
+                    num_p=(max_j[j]-min_j[j])/(crs[i][j]*d_j[j])
+                    sobra_blocos=(num_p-int(num_p))*crs[i][j]
+                    add_initial=d_j[j]*int(sobra_blocos/2)
+
                     Pij=np.array([min_j[j]])
-                    dmin=(int(crs[i][j]/2)+1)*d_j[j]
+                    dmin=(int(crs[i][j]/2)+1)*d_j[j]+add_initial
                     dmax=dmin+round(max_j[j])+d_j[j]
                     Pij=np.append(Pij,np.arange(dmin,dmax,crs[i][j]*d_j[j]))
+                    
             else:
                 Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
 

@@ -9,14 +9,14 @@ b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
 # b1.run()
 # import pdb; pdb.set_trace()
 n = 1
-n2 = 100
+n2 = 5001
 n_for_save = 100
 cont_for_save = 1
 loop = 0
 cont = 1
 cont2 = 1
 verif = True
-pp=1
+pp=100
 meshset_volumes = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 # import pdb; pdb.set_trace()

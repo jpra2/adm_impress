@@ -105,9 +105,12 @@ multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0,
 mlo = multilevel_operators
 
 T, b = b1.get_T_and_b()
-perms=np.load("flying/permeability.npy")
-perms_xx=perms[:,0]
-data_impress["perm_x"]=perms_xx
+try:
+    perms=np.load("flying/permeability.npy")
+    perms_xx=perms[:,0]
+    data_impress["perm_x"]=perms_xx
+except:
+    pass
 
 if load_operators:
     pass
@@ -122,7 +125,7 @@ mlo=multilevel_operators
 
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
-neta_lim=0.0
+neta_lim=1.0
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 
@@ -158,7 +161,7 @@ OR_AMS=mlo['restriction_level_1']
 
 
 
-plot_operator(OP_AMS,np.arange(OP_AMS.shape[1]))
+# plot_operator(OP_AMS,np.arange(OP_AMS.shape[1]))
 # write_file_with_tag_range('OP_AMS_63',[0,np.inf])
 
 Tc=OR_AMS*T*OP_AMS
@@ -194,7 +197,7 @@ ad1=adjs[:,1]
 # #######################################
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
-nn = 2000
+nn = 7000
 pp = 100
 cont = 1
 
