@@ -18,7 +18,7 @@ class PropertiesCalc:
 
     def run_outside_loop(self, M, fprop, kprop):
         if kprop.load_w: self.get_initial_water_properties(fprop)
-        self.update_EOS_dependent_properties(fprop, kprop)
+        if kprop.load_k: self.update_EOS_dependent_properties(fprop, kprop)
         self.set_properties(fprop, kprop)
         self.update_porous_volume( fprop)
         self.update_saturations(M, fprop, kprop)
@@ -28,9 +28,9 @@ class PropertiesCalc:
 
     def run_inside_loop(self, M, fprop, kprop):
         if kprop.compressible_k: self.update_EOS_dependent_properties(fprop, kprop)
+        if kprop.load_w: self.update_water_saturation(M, fprop, kprop)
         self.set_properties(fprop, kprop)
         self.update_porous_volume( fprop)
-        if kprop.load_w: self.update_water_saturation(M, fprop, kprop)
         self.update_saturations(M, fprop, kprop)
         self.update_mole_numbers(fprop, kprop)
         self.update_total_volume(fprop)
@@ -41,6 +41,7 @@ class PropertiesCalc:
         self.update_phase_viscosities(fprop, kprop)
         self.update_mobilities(fprop)
         self.update_capillary_pressure(fprop, kprop)
+        #import pdb; pdb.set_trace()
 
     def get_initial_water_properties(self, fprop):
         self.rho_W = data_loaded['compositional_data']['water_data']['rho_W'] * np.ones(ctes.n_volumes)
@@ -164,9 +165,9 @@ class PropertiesCalc:
         self.phase_viscosities = np.empty([1, kprop.n_phases, ctes.n_volumes])
         if kprop.load_k:
             self.phase_viscosity = self.phase_viscosity_class(ctes.n_volumes, fprop, kprop)
-            #self.phase_viscosities[0,0:2,:] = 0.02*np.ones([2,ctes.n_volumes]) #only for BL test
+            self.phase_viscosities[0,0:2,:] = 0.02*np.ones([2,ctes.n_volumes]) #only for BL test
             #self.phase_viscosities[0,0:2,:] = 0.001*np.ones([2,ctes.n_volumes]) #only for Dietz test
-            self.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosity(fprop, kprop)
+            #self.phase_viscosities[0,0:kprop.n_phases-1*kprop.load_w,:] = self.phase_viscosity(fprop, kprop)
         if kprop.load_w:
             self.phase_viscosities[0,kprop.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
 
