@@ -59,6 +59,6 @@ class CompositionalFVM:
                                                 (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])
 
     def update_composition(self, fprop, kprop, delta_t):
-        import pdb; pdb.set_trace()
+        
         fprop.component_mole_numbers = fprop.component_mole_numbers + delta_t * (self.q + fprop.component_flux_vols_total)
         fprop.z = fprop.component_mole_numbers[0:kprop.Nc,:] / np.sum(fprop.component_mole_numbers[0:kprop.Nc,:], axis = 0)
