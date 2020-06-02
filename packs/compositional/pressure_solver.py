@@ -4,7 +4,7 @@ from ..utils import constants as ctes
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 from scipy import linalg
 import scipy.sparse as sp
-from .partial_derivatives_new import PartialDerivatives
+from . import equation_of_state
 
 class TPFASolver:
 
@@ -19,12 +19,14 @@ class TPFASolver:
 
     def dVt_derivatives(self, fprop, kprop):
         self.dVtk = np.zeros([kprop.n_components, ctes.n_volumes])
+        EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
+        EOS = EOS_class(fprop.P, fprop.T, kprop)
         if kprop.load_k:
 
             if not kprop.compressible_k:
                 dVtP = np.zeros(ctes.n_volumes)
                 self.dVtk[0:kprop.Nc,:] = 1 / fprop.phase_molar_densities[0,0,:]
-            else: self.dVtk[0:kprop.Nc,:], dVtP = PartialDerivatives(fprop).get_all_derivatives(kprop, fprop)
+            else: self.dVtk[0:kprop.Nc,:], dVtP = EOS.get_all_derivatives(kprop, fprop)
 
         else: dVtP = np.zeros(ctes.n_volumes)
 
