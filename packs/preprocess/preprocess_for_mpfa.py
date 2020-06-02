@@ -265,13 +265,15 @@ class PreprocessForMpfa(DataManager):
 
     def create_subvolume_mpfao(self, volume, node, faces_node, faces_volume):
 
-        dt = [(self.name_cent_volume, self.type_int), (self.name_cent_node, self.type_int)]
-        points = [np.array([volume]), np.array([node])]
+        # dt = [(self.name_cent_volume, self.type_int), (self.name_cent_node, self.type_int)]
+        dt = [(self.name_cent_volume, self.type_int)]
+        # points = [np.array([volume]), np.array([node])]
+        points = [volume]
 
         faces_intersect = np.intersect1d(faces_node, faces_volume)
         for i, f1 in enumerate(faces_intersect):
             dt.append((self.name_cent_face + '_' + str(i), self.type_int))
-            points.append(np.array([f1]))
+            points.append(f1)
 
         points_subvolume = np.zeros(1, dtype=dt)
         for i, pt in enumerate(points):
@@ -279,8 +281,37 @@ class PreprocessForMpfa(DataManager):
 
         return points_subvolume
 
-    def get_points_from_st_subvolume_mpfao(self, st_points_subvolume, centroid_faces, centroid_volumes, centroid_nodes):
+    def get_points_from_st_subvolume_mpfao(self, st_point_subvolume, centroid_volumes, centroid_faces):
 
-        
+        assert len(st_point_subvolume) == 1
+        arr = st_point_subvolume
+        # cent_nodes = centroid_nodes[arr['centroid_of_node']]
+        cent_volume = centroid_volumes[arr['centroid_of_volume'][0]]
+        all_centroids_faces = []
+        verif = True
+        n = 0
+        while verif:
+            name = self.name_cent_face + '_' + str(n)
+            try:
+                all_centroids_faces.append(centroid_faces[arr[name][0]])
+            except ValueError:
+                verif = False
+            else:
+                n += 1
 
-        pass
+        poo = np.hstack([cent_volume, np.hstack(all_centroids_faces)])
+        poo = poo.reshape((len(all_centroids_faces) + 1, 3))
+        return poo
+
+    def get_points_from_st_subvolumes_mpfao(self, st_points_subvolumes, centroid_volumes, centroid_faces):
+
+        points = []
+        for arr in st_points_subvolumes:
+            points.append(
+                self.get_points_from_st_subvolume_mpfao(
+                    arr, centroid_volumes, centroid_faces
+                )
+            )
+
+        points = np.array(points)
+        return points

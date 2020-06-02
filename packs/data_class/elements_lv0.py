@@ -75,7 +75,7 @@ class ElementsLv0(DataManager):
         cols = np.concatenate(cols)
         data = np.full(len(lines), True, dtype=bool)
 
-        self['adj_matrix_volumes_to_faces'] = sp.csc_matrix((data, (lines, cols)), dtype=bool, shape=(len(self['volumes']), len(self['faces'])))
+        self._adj_matrix_volumes_to_faces = sp.csc_matrix((data, (lines, cols)), dtype=bool, shape=(len(self['volumes']), len(self['faces'])))
 
     def create_adj_matrix_faces_to_edges(self):
 
@@ -91,7 +91,7 @@ class ElementsLv0(DataManager):
         cols = np.concatenate(cols)
         data = np.full(len(lines), True, dtype=bool)
 
-        self['adj_matrix_faces_to_edges'] = sp.csc_matrix((data, (lines, cols)), dtype=bool, shape=(len(self['faces']), len(self['edges'])))
+        self._adj_matrix_faces_to_edges = sp.csc_matrix((data, (lines, cols)), dtype=bool, shape=(len(self['faces']), len(self['edges'])))
 
     def create_adj_matrix_edges_to_nodes(self):
 
@@ -107,12 +107,12 @@ class ElementsLv0(DataManager):
         cols = np.concatenate(cols)
         data = np.full(len(lines), True, dtype=bool)
 
-        self['adj_matrix_edges_to_nodes'] = sp.csc_matrix((data, (lines, cols)), dtype=bool, shape=(len(self['edges']), len(self['nodes'])))
+        self._adj_matrix_edges_to_nodes = sp.csc_matrix((data, (lines, cols)), dtype=bool, shape=(len(self['edges']), len(self['nodes'])))
 
     def volumes_to_faces(self, volumes):
         volumes2 = self.test_instance(volumes)
         faces = []
-        mat2 = self['adj_matrix_volumes_to_faces'][volumes2]
+        mat2 = self.adj_matrix_volumes_to_faces[volumes2]
         for i in range(mat2.shape[0]):
 
             faces.append(self['faces'][mat2[i].toarray()[0]])
@@ -123,7 +123,7 @@ class ElementsLv0(DataManager):
     def faces_to_volumes(self, faces):
         faces2 = self.test_instance(faces)
         volumes = []
-        mat2 = self['adj_matrix_volumes_to_faces'].transpose()[faces2]
+        mat2 = self.adj_matrix_volumes_to_faces.transpose()[faces2]
         for i in range(mat2.shape[0]):
             volumes.append(self['volumes'][mat2[i].toarray()[0]])
 
@@ -133,7 +133,7 @@ class ElementsLv0(DataManager):
     def faces_to_edges(self, faces):
         faces2 = self.test_instance(faces)
         edges = []
-        mat2 = self['adj_matrix_faces_to_edges'][faces2]
+        mat2 = self.adj_matrix_faces_to_edges[faces2]
         for i in range(mat2.shape[0]):
 
             edges.append(self['edges'][mat2[i].toarray()[0]])
@@ -144,7 +144,7 @@ class ElementsLv0(DataManager):
     def edges_to_faces(self, edges):
         edges2 = self.test_instance(edges)
         faces = []
-        mat2 = self['adj_matrix_faces_to_edges'].transpose()[edges2]
+        mat2 = self.adj_matrix_faces_to_edges.transpose()[edges2]
         for i in range(mat2.shape[0]):
 
             faces.append(self['faces'][mat2[i].toarray()[0]])
@@ -168,7 +168,7 @@ class ElementsLv0(DataManager):
 
         edges2 = self.test_instance(edges)
         nodes = []
-        mat2 = self['adj_matrix_edges_to_nodes'][edges2]
+        mat2 = self.adj_matrix_edges_to_nodes[edges2]
         for i in range(mat2.shape[0]):
 
             nodes.append(self['nodes'][mat2[i].toarray()[0]])
@@ -180,7 +180,7 @@ class ElementsLv0(DataManager):
 
         nodes2 = self.test_instance(nodes)
         edges = []
-        mat2 = self['adj_matrix_edges_to_nodes'].transpose()[nodes2]
+        mat2 = self.adj_matrix_edges_to_nodes.transpose()[nodes2]
         for i in range(mat2.shape[0]):
 
             edges.append(self['edges'][mat2[i].toarray()[0]])
@@ -205,7 +205,7 @@ class ElementsLv0(DataManager):
         faces = self.volumes_to_faces(volumes2)
         resp = self.func_general(faces, self.faces_to_nodes)
         return resp
-        
+
     def nodes_to_volumes(self, nodes):
         nodes2 = self.test_instance(nodes)
         edges = self.nodes_to_edges(nodes2)
@@ -231,3 +231,27 @@ class ElementsLv0(DataManager):
             return value
         else:
             raise ValueError('\ntype not suported\n')
+
+    @property
+    def adj_matrix_volumes_to_faces(self):
+        try:
+            return self._adj_matrix_volumes_to_faces
+        except AttributeError:
+            self.create_adj_matrix_volumes_to_faces()
+            return self._adj_matrix_volumes_to_faces
+
+    @property
+    def adj_matrix_faces_to_edges(self):
+        try:
+            return self._adj_matrix_faces_to_edges
+        except AttributeError:
+            self.create_adj_matrix_faces_to_edges()
+            return self._adj_matrix_faces_to_edges
+
+    @property
+    def adj_matrix_edges_to_nodes(self):
+        try:
+            return self._adj_matrix_edges_to_nodes
+        except AttributeError:
+            self.create_adj_matrix_edges_to_nodes()
+            return self._adj_matrix_edges_to_nodes

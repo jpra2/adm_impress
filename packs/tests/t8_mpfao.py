@@ -3,20 +3,9 @@ from packs.running.initial_mesh_properties import initial_mesh
 import pdb
 
 M, elements_lv0, data_impress, wells = initial_mesh()
-elements_lv0.create_adj_matrix_volumes_to_faces()
-elements_lv0.create_adj_matrix_faces_to_edges()
-elements_lv0.create_adj_matrix_edges_to_nodes()
-
-f1 = elements_lv0.volumes_to_nodes([0,1,2,3])
-
-# fs0 = elements_lv0.get_adj_volumes_to_faces([0, 1])
-
-# edges_v012 = elements_lv0.get_adj_edges_to_volumes([0,1,2])
-
 
 mpfa_data = PreprocessForMpfa()
 
-pdb.set_trace()
 midpoints_edges = mpfa_data.create_midpoints_edges(
     elements_lv0['edges'],
     elements_lv0['nodes'],
@@ -42,13 +31,28 @@ points_subfaces = mpfa_data.get_points_of_subfaces_from_complete_structured_arra
     midpoints_edges
 )
 
-gids_subvolumes, from_volumes_to_gids_subvolumes, str_points_subvolumes = mpfa_data.create_all_subvolumes_mpfao(
+gids_subvolumes, from_volumes_to_gids_subvolumes, structured_points_subvolumes = mpfa_data.create_all_subvolumes_mpfao(
     elements_lv0['volumes'],
     elements_lv0['faces'],
     elements_lv0['volumes_face_faces'],
     elements_lv0['nodes_node_faces'],
     elements_lv0['volumes_face_nodes']
 )
+
+pt = mpfa_data.get_points_from_st_subvolume_mpfao(
+    structured_points_subvolumes[0],
+    data_impress['centroid_volumes'],
+    data_impress['centroid_faces']
+)
+
+pts = mpfa_data.get_points_from_st_subvolumes_mpfao(
+    structured_points_subvolumes[[0,1,2]],
+    data_impress['centroid_volumes'],
+    data_impress['centroid_faces']
+)
+
+
+
 
 
 
