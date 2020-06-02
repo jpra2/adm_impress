@@ -42,6 +42,7 @@ class ElementsLv0(DataManager):
         self._data['volumes_face_volumes'] = self.mesh.volumes.bridge_adjacencies(self._data['volumes'], 2, 3)
         self._data['faces_edge_edges'] = self.mesh.faces.bridge_adjacencies(self._data['faces'], 1, 1)
         self._data['faces_node_nodes'] = self.mesh.faces.bridge_adjacencies(self._data['faces'], 0, 0)
+        self._data['edges_node_nodes'] = self.mesh.edges.bridge_adjacencies(self._data['edges'], 0, 0)
 
     def run(self):
         self.load_elements_from_mesh()
