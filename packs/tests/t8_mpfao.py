@@ -7,7 +7,7 @@ elements_lv0.create_adj_matrix_volumes_to_faces()
 elements_lv0.create_adj_matrix_faces_to_edges()
 elements_lv0.create_adj_matrix_edges_to_nodes()
 
-f1 = elements_lv0.faces_to_nodes([0,1,2,3])
+f1 = elements_lv0.volumes_to_nodes([0,1,2,3])
 
 # fs0 = elements_lv0.get_adj_volumes_to_faces([0, 1])
 

@@ -125,8 +125,6 @@ class ElementsLv0(DataManager):
         volumes = []
         mat2 = self['adj_matrix_volumes_to_faces'].transpose()[faces2]
         for i in range(mat2.shape[0]):
-
-
             volumes.append(self['volumes'][mat2[i].toarray()[0]])
 
         volumes = np.array(volumes)
@@ -157,23 +155,14 @@ class ElementsLv0(DataManager):
     def volumes_to_edges(self, volumes):
         volumes2 = self.test_instance(volumes)
         faces_volumes = self.volumes_to_faces(volumes2)
-        edges_faces_volumes = []
-        for faces_volume in faces_volumes:
-            edges_faces = self.faces_to_edges(faces_volume)
-            edges_faces_volumes.append(np.unique(np.concatenate(edges_faces)))
-
-        return np.array(edges_faces_volumes)
+        resp = self.func_general(faces_volumes, self.faces_to_edges)
+        return resp
 
     def edges_to_volumes(self, edges):
         edges2 = self.test_instance(edges)
         faces_edges = self.edges_to_faces(edges2)
-
-        volumes_faces_edges = []
-        for faces_edge in faces_edges:
-            volumes_faces = self.faces_to_volumes(faces_edge)
-            volumes_faces_edges.append(np.unique(np.concatenate(volumes_faces)))
-
-        return np.array(volumes_faces_edges)
+        resp = self.func_general(faces_edges, self.faces_to_volumes)
+        return resp
 
     def edges_to_nodes(self, edges):
 
@@ -202,28 +191,26 @@ class ElementsLv0(DataManager):
     def faces_to_nodes(self, faces):
         faces2 = self.test_instance(faces)
         edges_faces = self.faces_to_edges(faces2)
-        nodes_edges_faces = []
-        for edges_face in edges_faces:
-            nodes_edges = self.edges_to_nodes(edges_face)
-            nodes_edges_faces.append(np.unique(np.concatenate(nodes_edges)))
-
-        return np.array(nodes_edges_faces)
+        resp = self.func_general(edges_faces, self.edges_to_nodes)
+        return resp
 
     def nodes_to_faces(self, nodes):
         nodes2 = self.test_instance(nodes)
-
         edges_nodes = self.nodes_to_edges(nodes2)
+        faces_edges_nodes = self.func_general(edges_nodes, self.edges_to_faces)
+        return faces_edges_nodes
 
-        faces_edges_nodes = []
-        for edges_node in edges_nodes:
-            faces_edges = self.edges_to_faces(edges_node)
-            faces_edges_nodes.append(np.unique(np.concatenate(faces_edges)))
-
-        test = self.mesh.nodes.bridge_adjacencies(nodes2, 0, 2)
-
-        pdb.set_trace()
-
-        return np.array(faces_edges_nodes)
+    def volumes_to_nodes(self, volumes):
+        volumes2 = self.test_instance(volumes)
+        faces = self.volumes_to_faces(volumes2)
+        resp = self.func_general(faces, self.faces_to_nodes)
+        return resp
+        
+    def nodes_to_volumes(self, nodes):
+        nodes2 = self.test_instance(nodes)
+        edges = self.nodes_to_edges(nodes2)
+        resp = self.func_general(edges, self.edges_to_volumes)
+        return resp
 
     def func_general(self, arr, func):
 
@@ -234,9 +221,6 @@ class ElementsLv0(DataManager):
             resp.append(np.unique(np.concatenate(items)))
 
         return np.array(resp)
-
-
-
 
     def test_instance(self, value):
         if isinstance(value, int):
