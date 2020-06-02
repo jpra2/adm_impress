@@ -4,7 +4,7 @@ import os
 import math
 
 flying = 'flying'
-name = 'all_compositional_'
+name = 'results'
 arquivos = os.listdir(flying)
 i=1
 

@@ -30,7 +30,7 @@ compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [1015, 432000.]
+  time_to_save: [274752, 432000., 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0]
   tempo_maximo: null
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey

@@ -4,7 +4,7 @@ import os
 import math
 
 flying = 'flying'
-name = 'all_compositional_'
+name = 'results_'
 arquivos = os.listdir(flying)
 i=1
 
@@ -32,7 +32,7 @@ for i in range(1,n):
 for arq in arquivos:
     if  arq.startswith(name):
 
-        datas = np.load('flying/results_incompressive_vertical_case_21.npy', allow_pickle=True)
+        datas = np.load('flying/results_incompressive_vertical_case_22.npy', allow_pickle=True)
 
         for data in datas[1:]:
             pressure = (data[4] - data[4][99] * np.ones(100))/6894.757

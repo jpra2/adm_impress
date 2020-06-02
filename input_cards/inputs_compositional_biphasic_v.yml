@@ -1,3 +1,4 @@
+# Buckley Leverett's vertical case
 mesh_name: 1x1x500_b.msh
 name_save_file: 'results_Buckley_Leverett_vertical_caset'
 
@@ -25,10 +26,8 @@ monophasic_data:
 
 
 
-# Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  g: 9.80665
   CFL: 0.5
   vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
   time_to_save: [0.0]
@@ -36,6 +35,7 @@ compositional_data:
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
+  equation_of_state: PengRobinson
 
   rock_compressibility: 0
   Pf: 13.79E6
@@ -81,12 +81,9 @@ compositional_data:
     Tc: [619.2778]
     Pc: [2109795.734]
     vc: [0.000603]
-    R: [8.3144621]
     Mw: [142.276e-3]
     w: [0.4890]
     Bin: [0]
-    C7: [1]
-    SG: [0.7342]
     vshift_parameter: [0.085]
 
 #water saturation data
@@ -125,7 +122,7 @@ Wells:
     type: Injector
     type_region: box
     value: [-0, -3.2774128e-8]
-    ksi_inj: 55480.432972522896
+    value_type: volumetric
 
   P2:
     p0: [0.0, 0.0, -0.6096]

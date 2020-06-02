@@ -1,6 +1,6 @@
 #Water case in 1D reservoir
 mesh_name: 100x1x1_m.msh
-name_save_file: results_monophasic_incompressible
+name_save_file: results_monophasic_compressiblew
 n_test: 0
 compositional: True
 hidrocarbon_components: False
@@ -31,7 +31,7 @@ compositional_data:
   CFL: 0.5
   #  Pensar em um jeito de reorganizar isso
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [846]
+  time_to_save: [0.1, 0.10001, 0.10002, 0.10003, 0.10004, 0.5]
   tempo_maximo: null
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
@@ -58,7 +58,7 @@ compositional_data:
     mi_W: 0.000249
     rho_W: 716.0253128
     Mw_w: 18.015e-3
-    Cw: 0
+    Cw: 1e-12
     Pw: 0
 
   residual_saturations:
@@ -99,14 +99,14 @@ Porosity:
 
 #Permeability in m^2
 Permeability:
-  r1:
+  r2:
     type: all
     value: [4.9346165e-13, 0, 0, 0, 4.9346165e-13, 0, 0, 0, 4.9346165e-13]
 
 Pressure:
   r1:
     type: all
-    value: 13.78951458E6
+    value: 0
 
 Temperature:
   r1:
