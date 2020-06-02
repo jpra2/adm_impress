@@ -41,8 +41,12 @@ while run_criteria < stop_criteria: #and loop < loop_max:
     if data_loaded['use_vpi']: run_criteria = sim.vpi
     else:
         run_criteria = sim.t
-        if (sim.t + sim.delta_t) > stop_criteria:
-            sim.delta_t = stop_criteria - sim.t
+        t_next = sim.time_save[sim.time_save > sim.t]
+        if len(t_next)>1: t_next = t_next[0]
+        if sim.t + sim.delta_t > t_next:
+            sim.delta_t = t_next - sim.t
+        #if (sim.t + sim.delta_t) > stop_criteria:
+        #    sim.delta_t = stop_criteria - sim.t
     loop = sim.loop
 
     print(sim.t)
