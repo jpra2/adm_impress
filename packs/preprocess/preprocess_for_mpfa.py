@@ -8,7 +8,11 @@ class PreprocessForMpfa(DataManager):
     def __init__(self, data_name='PreprocessForMpfa', load=False):
         data_name = data_name + '_' + only_mesh_name + '.npz'
         super().__init__(data_name=data_name, load=load)
-        self.dt_for_points_subfaces = [('centroid_of_face', np.dtype(int)), ('midpoint_of_edge_1', np.dtype(int)), ('centroid_of_node', np.dtype(int)), ('midpoint_of_edge_2', np.dtype(int))]
+        self.type_int = np.dtype(int)
+        self.dt_for_points_subfaces = [('centroid_of_face', self.type_int), ('midpoint_of_edge_1', self.type_int), ('centroid_of_node', self.type_int), ('midpoint_of_edge_2', self.type_int)]
+        self.name_cent_volume = 'centroid_of_volume'
+        self.name_cent_face = 'centroid_of_face'
+        self.name_cent_node = 'centroid_of_node'
 
     def create_midpoints_edges(self, edges, nodes, centroid_nodes, nodes_edges):
         '''
@@ -180,17 +184,16 @@ class PreprocessForMpfa(DataManager):
         points = np.array(points)
         return points
 
-    def create_subvolumes_mpfao(self, volumes, faces, edges, centroid_volumes, centroid_faces, midpoints_edges, faces_volumes, faces_nodes):
+    def create_all_subvolumes_mpfao(self, volumes, faces, faces_volumes, faces_nodes, nodes_volumes):
         '''
             input:
                 volumes: volumes
                 faces: faces
-                edges: edges
                 centroid_volumes: centroid volumes
                 centroid_faces: centroid faces
-                midpoints_edges: midpoints edges
                 faces_volumes: faces dos volumes
                 faces_nodes: faces dos nodes
+                nodes_volumes: nodes dos volumes
             output:
                 subvolumes
         '''
@@ -198,32 +201,86 @@ class PreprocessForMpfa(DataManager):
         ## tamanho de todos subvolumes
         gids_subvolumes = []
 
-        ## gids faces of subvolumes
-        gids_faces_of_subvolumes = []
+        # ## gids faces of subvolumes
+        # gids_faces_of_subvolumes = []
 
-        ## tamanho das faces dos subvolumes
-        primeiro_volume = []
+        # ## tamanho das faces dos subvolumes
+        # primeiro_volume = []
 
         # tamanho de todos subvolumes
         points_of_subvolumes = []
 
-        # tamanho de todas as faces dos subvolumes
-        points_of_faces_of_subvolumes = []
+        # # tamanho de todas as faces dos subvolumes
+        # points_of_faces_of_subvolumes = []
 
-        ## tamanho de todas as faces dos subvolumes
-        normals_of_faces_of_subvolumes = []
+        # ## tamanho de todas as faces dos subvolumes
+        # normals_of_faces_of_subvolumes = []
 
         # tamanho de volumes
         from_volumes_to_gids_subvolumes = []
 
-        ## tamanho de todos subvolumes
-        from_subvolumes_to_gids_faces_of_subvolumes = []
+        # ## tamanho de todos subvolumes
+        # from_subvolumes_to_gids_faces_of_subvolumes = []
 
+        n = 0
 
+        for volume in volumes:
 
+            nodes_volume = nodes_volumes[volume]
+            faces_nodes_volume = faces_nodes[nodes_volume]
+            faces_volume = faces_volumes[volume]
 
+            local_ids_subvolumes, points_subvolumes = self.create_subvolumes_from_volume_mpfao(
+                                                        volume, nodes_volume,
+                                                        faces_nodes_volume, faces_volume
+                                                      )
+            n_subvolumes = local_ids_subvolumes.shape[0]
+            from_volumes_to_gids_subvolumes.append(np.arange(n, n+n_subvolumes))
+            [points_of_subvolumes.append(pt) for pt in points_subvolumes]
+            n += n_subvolumes
 
+        gids_subvolumes = np.arange(n)
+        from_volumes_to_gids_subvolumes = np.array(from_volumes_to_gids_subvolumes)
+        points_of_subvolumes = np.array(points_of_subvolumes)
 
+        return gids_subvolumes, from_volumes_to_gids_subvolumes, points_of_subvolumes
 
-        for vol in volumes:
-            pass
+    def create_subvolumes_from_volume_mpfao(self, volume, nodes_volume, faces_nodes_volume, faces_volume):
+
+        points_subvolumes = []
+
+        for i, node in enumerate(nodes_volume):
+            faces_node = faces_nodes_volume[i]
+
+            # points_subvolume = self.create_subvolume_mpfao(volume, node, faces_node, faces_volume)
+            # points_subvolumes.append(points_subvolume)
+            points_subvolumes.append(
+                self.create_subvolume_mpfao(volume, node, faces_node, faces_volume)
+            )
+
+        points_subvolumes = np.array(points_subvolumes)
+        local_ids_subvolumes = np.arange(len(points_subvolumes))
+
+        return local_ids_subvolumes, points_subvolumes
+
+    def create_subvolume_mpfao(self, volume, node, faces_node, faces_volume):
+
+        dt = [(self.name_cent_volume, self.type_int), (self.name_cent_node, self.type_int)]
+        points = [np.array([volume]), np.array([node])]
+
+        faces_intersect = np.intersect1d(faces_node, faces_volume)
+        for i, f1 in enumerate(faces_intersect):
+            dt.append((self.name_cent_face + '_' + str(i), self.type_int))
+            points.append(np.array([f1]))
+
+        points_subvolume = np.zeros(1, dtype=dt)
+        for i, pt in enumerate(points):
+            points_subvolume[0][i] = pt
+
+        return points_subvolume
+
+    def get_points_from_st_subvolume_mpfao(self, st_points_subvolume, centroid_faces, centroid_volumes, centroid_nodes):
+
+        
+
+        pass
