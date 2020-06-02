@@ -28,7 +28,7 @@ def init(M):
     Vbulk = M.data['volume']
     internal_faces = M.faces.internal
     n_internal_faces = len(v0[:,0])
-    g = data_loaded['compositional_data']['g']
+    g = 9.80665
     z = -M.data['centroid_volumes'][:,2]
     pretransmissibility_faces = M.data[M.data.variables_impress['pretransmissibility']]
     pretransmissibility_internal_faces = pretransmissibility_faces[ M.faces.internal]#[100]*np.ones(len(self.internal_faces))
