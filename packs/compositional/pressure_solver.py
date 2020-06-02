@@ -7,6 +7,8 @@ import scipy.sparse as sp
 from . import equation_of_state
 
 class TPFASolver:
+    def __init__(self):
+        self.EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
 
     def get_pressure(self, M, wells, fprop, kprop, delta_t,r):
         if r==0.8: self.dVt_derivatives(fprop, kprop)
@@ -19,10 +21,9 @@ class TPFASolver:
 
     def dVt_derivatives(self, fprop, kprop):
         self.dVtk = np.zeros([kprop.n_components, ctes.n_volumes])
-        EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
-        EOS = EOS_class(fprop.P, fprop.T, kprop)
-        if kprop.load_k:
 
+        if kprop.load_k:
+            EOS = self.EOS_class(fprop.P, fprop.T, kprop)
             if not kprop.compressible_k:
                 dVtP = np.zeros(ctes.n_volumes)
                 self.dVtk[0:kprop.Nc,:] = 1 / fprop.phase_molar_densities[0,0,:]
@@ -32,9 +33,9 @@ class TPFASolver:
 
         if kprop.load_w:
 
-            self.dVtk[kprop.n_components-1,:] = 1 / fprop.phase_molar_densities[:,kprop.n_phases-1,:]
-            dVwP = -fprop.component_mole_numbers[kprop.Nc,:] * fprop.ksi_W0 * ctes.Cw / \
-                        fprop.phase_molar_densities[0,kprop.n_phases-1,:]**2
+            self.dVtk[kprop.n_components-1,:] = 1 / fprop.phase_molar_densities[0,kprop.n_phases-1,:]
+            dVwP = - fprop.component_mole_numbers[kprop.Nc,:] * fprop.ksi_W0 * ctes.Cw / \
+                        (fprop.phase_molar_densities[0,kprop.n_phases-1,:])**2
 
         else: dVwP = np.zeros(ctes.n_volumes)
 
