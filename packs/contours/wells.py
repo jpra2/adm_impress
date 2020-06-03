@@ -103,7 +103,7 @@ class Wells(DataManager):
                     if tipo == 'Injector':
                         val *= -1
                     ws_q.append(vols)
-                    values_type = well['value_type']
+                    values_type = np.repeat(well['value_type'], nv)
                     values_q[i:nv,:] = val
                     values_q_type.append(values_type)
                     i = nv
