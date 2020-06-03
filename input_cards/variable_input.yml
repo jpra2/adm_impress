@@ -658,3 +658,17 @@ coupled_flag:
   data type: float
   sparse: True
   level: 0
+
+raz_flux_tag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_pos:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0

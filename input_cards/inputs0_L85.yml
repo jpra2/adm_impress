@@ -1,8 +1,8 @@
 # mesh_name: mesh/45x45x45.msh
 # mesh_name: mesh/9x9x9.msh
-# mesh_name: mesh/isotropic/27x27x1.msh
-# mesh_name: mesh/60x220x1L85.msh
-mesh_name: mesh/isotropic/21x21x1.msh
+# mesh_name: mesh/isotropic/100x100x1m.msh
+mesh_name: mesh/60x220x1LL85.h5m
+# mesh_name: mesh/isotropic/21x21x1.msh
 n_test: 0
 state: 0
 type_of_solution: fine_scale
@@ -23,31 +23,40 @@ convert_capillary_pressure_to: 'Pa'
 _debug: True
 
 Crs:
-  Cr1: [5, 5, 1]
-  Cr2: [21, 21, 1]
+  Cr1: [9, 19, 1]
+  Cr2: [27, 57, 1]
 
-read_permeability: false
+read_permeability: true
 file_name_permeability: spe10_perms_and_phi.npz
-set_permeability: true
+set_permeability: false
 Permeability:
   r1:
     type: all
     value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+  # r2:
+  #   type: box
+  #   p0: [11.0, 6.0, 0.0]
+  #   p1: [12.0, 13.0, 1.0]
+  #   value: [1e-8, 0.0, 0.0, 0.0, 1e-8, 0.0, 0.0, 0.0, 1.0]
+  # r3:
+  #   type: box
+  #   p0: [10.0, 12.0, 0.0]
+  #   p1: [11.0, 21.0, 1.0]
+  #   value: [1e-8, 0.0, 0.0, 0.0, 1e-8, 0.0, 0.0, 0.0, 1.0]
+  # r4:
+  #   type: box
+  #   p0: [6.0, 14.0, 0.0]
+  #   p1: [14.0, 15.0, 1.0]
+  #   value: [1e-8, 0.0, 0.0, 0.0, 1e-8, 0.0, 0.0, 0.0, 1.0]
+
   r2:
-    type: box
-    p0: [11.0, 6.0, 0.0]
-    p1: [12.0, 13.0, 1.0]
-    value: [1e-8, 0.0, 0.0, 0.0, 1e-8, 0.0, 0.0, 0.0, 1.0]
-  r3:
-    type: box
-    p0: [10.0, 12.0, 0.0]
-    p1: [11.0, 21.0, 1.0]
-    value: [1e-8, 0.0, 0.0, 0.0, 1e-8, 0.0, 0.0, 0.0, 1.0]
-  r4:
-    type: box
-    p0: [6.0, 14.0, 0.0]
-    p1: [14.0, 15.0, 1.0]
-    value: [1e-8, 0.0, 0.0, 0.0, 1e-8, 0.0, 0.0, 0.0, 1.0]
+    type: polar_region
+    center: [[42, 41, 0.5], [42, 41, 0.5], [43, 41, 0.5]]
+    r_inf: ['10*t/pi-2', '20+10*t/pi-2', '40+11*t/pi-2']
+    r_sup: ['10*t/pi', '20+10*t/pi', '40+11*t/pi']
+    t_inf: ['0.0', '0.0', '0.0']
+    t_sup: ['2*pi','2*pi', '3*pi/4']
+    value: [1.0e-6, 0.0, 0.0, 0.0, 1.0e-6, 0.0, 0.0, 0.0, 1.0e-6]
   # r2:
   #   type: box
   #   p0: [2.0, 0.0, 0.0]
@@ -123,25 +132,25 @@ Saturation:
 
 Wells:
   P1:
-    p0: [0.0, 0.0, 0.0]
-    p1: [1.0, 1.0, 1.0]
+    p0: [1180.0, 0.0, 168.0]
+    p1: [1200.0, 10.0, 170.0]
     # p0: [560.0, 1080.0, 168.0]
     # p1: [580.0, 1090.0, 170.0]
-    prescription: Q
-    type: Injector
-    type_region: box
-    value: 10000.0
-
-  P2:
-    p0: [20.0, 20.0, 0.0]
-    p1: [21.0, 21.0, 1.0]
-    # p0: [0.0, 0.0, 168.0]
-    # p1: [20.0, 10.0, 170.0]
     prescription: P
     type: Producer
     type_region: box
     value: 1.0
 
+
+  P2:
+    p0: [0.0, 2190.0, 168.0]
+    p1: [20.0, 2200.0, 170.0]
+    # p0: [0.0, 0.0, 168.0]
+    # p1: [20.0, 10.0, 170.0]
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: 10000.0
   # P3:
   #   p0: [1180.0, 0.0, 168.0]
   #   p1: [1200.0, 10.0, 170.0]
@@ -179,8 +188,8 @@ biphasic_data:
   kro0: 1.0
   krw0: 1.0
   loop_maximo: null
-  loops_para_gravar: 20
-  mi_o: 0.05
+  loops_para_gravar: 2
+  mi_o: 0.01
   mi_w: 0.01
   n_o: 2.0
   n_w: 2.0

@@ -1,6 +1,7 @@
 from packs.running.initial_mesh_properties import initial_mesh
 from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 from packs.multiscale.preprocess.prep_neumann import NeumannSubdomains
+from packs.adm.non_uniform import monotonize_adm
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.directories import data_loaded
 from packs.multiscale.operators.prolongation.AMS.Paralell.group_dual_volumes import group_dual_volumes_and_get_OP
@@ -26,11 +27,34 @@ def get_gids_and_primal_id(gids, primal_ids):
         primal_ids2.append(primal_id[0])
     primal_ids2 = np.array(primal_ids2)
     return gids2, primal_ids2'''
-def plot_operator(OP_AMS, primals):
+def plot_operator(T,OP_AMS, primals):
+    # T2=T.copy()
+    # T2.setdiag(0)
+    # OP_AMS=T2*OP_AMS
     for i in range(len(primals)):
         tag_ams=M.core.mb.tag_get_handle("OP_AMS_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         fb_ams = OP_AMS[:, primals[i]].toarray()
         M.core.mb.tag_set_data(tag_ams, M.core.all_volumes, fb_ams)
+def plot_net_flux(OR_AMS,OP_AMS):
+    Tc=OR_AMS*T*OP_AMS
+    diag=np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
+    gid1=data_impress['GID_1']
+    diags_f=diag[gid1]
+    mm=T*OP_AMS
+    mm2=mm.copy()
+    mm[mm>0]=0
+    mm2[mm<0]=0
+
+    mms=np.array(mm.sum(axis=1)).T[0]
+    mms2=np.array(mm.sum(axis=1)).T[0]
+    data_impress['raz_flux_tag']=mms/diags_f
+    if (mms/diags_f).max() > 1:
+        import pdb; pdb.set_trace()
+    data_impress['raz_pos']=mms2/diags_f
+
+
+
+
 
 def write_file_with_tag_range(tag,lims):
     mc=M.core.mb.create_meshset()
@@ -161,7 +185,7 @@ OR_AMS=mlo['restriction_level_1']
 
 
 
-# plot_operator(OP_AMS,np.arange(OP_AMS.shape[1]))
+plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
 # write_file_with_tag_range('OP_AMS_63',[0,np.inf])
 
 Tc=OR_AMS*T*OP_AMS
@@ -178,6 +202,7 @@ Tcadm=OR_ADM*T*OP_ADM
 bcadm = OR_ADM*b
 pcadm=linalg.spsolve(Tcadm,bcadm)
 padm=OP_ADM*pcadm
+
 
 
 pf=linalg.spsolve(T,b)
@@ -197,19 +222,32 @@ ad1=adjs[:,1]
 # #######################################
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
-nn = 7000
-pp = 100
+nn = 200
+pp = 1
 cont = 1
 
 verif = True
 pare = False
 np.save('results/jac_iterarion.npy',np.array([0]))
 while verif:
+    # import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
     for level in range(1, n_levels):
         adm_method.organize_ops_adm(mlo, level)
+    or_adm=adm_method._data['adm_restriction_level_1']
+    op_adm=adm_method._data['adm_prolongation_level_1']
 
+    monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim)
     adm_method.set_level_wells_3()
+
+    vols_orig=data_impress['GID_0'][data_impress['raz_flux_tag']>0.8]
+    if len(vols_orig)>0:
+        vols_to_lv0=M.volumes.bridge_adjacencies(vols_orig,0,3)
+        vols_to_lv0=np.hstack(vols_to_lv0)
+        vols_to_lv0=np.concatenate([vols_to_lv0,vols_orig])
+        # import pdb; pdb.set_trace()
+        data_impress['LEVEL'][vols_to_lv0]=0
     # gid1=data_impress["GID_1"]
     # data_impress["LEVEL"][ad0[gid1[ad0]!=gid1[ad1]]]=0
     # data_impress["LEVEL"][ad1[gid1[ad0]!=gid1[ad1]]]=0
@@ -217,36 +255,10 @@ while verif:
     # data_impress["LEVEL"][data_impress['saturation']>0.2]=0
     adm_method.set_saturation_level_simple()
 
+
     adm_method.solve_multiscale_pressure(T, b)
 
     adm_method.set_pms_flux(wells, neumann_subds)
-
-    ####################################
-    op_adm = adm_method._data['adm_prolongation_level_1']
-    or_adm = adm_method._data['adm_restriction_level_1']
-    Tc=or_adm*T*op_adm
-    lcd=sp.find(Tc)
-    lc=lcd[0]
-    cc=lcd[1]
-    dc=lcd[2]
-    diags=lc==cc
-    off_diag=lc!=cc
-    val_diag=dc[diags]
-    lcc_diag=lc[diags]
-    val_off_diag=dc[off_diag]
-
-    lc_off_diag=lc[off_diag]
-    val_diag_off_diag=val_diag[lcc_diag][lc_off_diag]
-    netas=val_off_diag/val_diag_off_diag
-    netasp=netas>0
-    netas=netas[netasp]
-    I=lc[off_diag][netasp]
-    J=cc[off_diag][netasp]
-    if len(netas)>0:
-        print(netas.max())
-        if netas.max()>0:
-            # import pdb; pdb.set_trace()
-            afff=1
 
     b1.get_velocity_faces()
 
@@ -260,7 +272,7 @@ while verif:
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
-
+    # plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
     if cont % pp == 0:
         print("Creating_file")
         meshset_plot_faces=M.core.mb.create_meshset()
@@ -276,5 +288,10 @@ while verif:
         print("File created at time-step: ",cont)
 
     T, b = b1.get_T_and_b()
+    plot_net_flux(OR_AMS,OP_AMS)
+    gids_to_monotonize=monotonize_adm.monotonize_adm(mlo, T,neta_lim)
+    if len(gids_to_monotonize)>0:
+        adm_method.set_monotonizing_level(gids_to_monotonize)
     print('timestep: ',cont)
+
     cont += 1

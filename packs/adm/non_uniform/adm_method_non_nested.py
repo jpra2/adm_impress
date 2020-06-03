@@ -172,7 +172,7 @@ class AdmNonNested(AdmMethod):
         ds = np.absolute(ds[:,1] - ds[:,0])
         inds = ds >= self.delta_sat_max
         levels[v0[inds][:,0]] = 0
-        levels[v0[inds][:,1]] = 0    
+        levels[v0[inds][:,1]] = 0
         self.data_impress['LEVEL'] = levels.copy()
 
     def set_saturation_level_imposed_joined_coarse(self):
@@ -428,6 +428,8 @@ class AdmNonNested(AdmMethod):
         # for gid in gids_wells:
         #     volumes = gid0[gid1==gid]
         #     self.data_impress['LEVEL'][volumes] = 0
+    def set_monotonizing_level(self, gids_to_monotonize):        
+        self.data_impress['LEVEL'][gids_to_monotonize]=0
 
     def organize_ops_adm(self, mlo, level, _pcorr=None):
         OP_AMS_lcd=mlo['prolongation_lcd_level_1']
