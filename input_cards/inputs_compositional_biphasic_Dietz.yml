@@ -1,5 +1,6 @@
+#2-D vertical biphasic case - inclined reservoir 1 oil component
 mesh_name: 100x1x10_2.msh
-name_save_file: 'results_Dietz_30dg_caset'
+name_save_file: 'results_Dietz_30dg_case'
 
 compositional: True
 hidrocarbon_components: True
@@ -26,7 +27,6 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  g: 9.80665
   CFL: 0.5
   vpis_para_gravar_vtk: [0.1, 0.2, 0.3, 0.4]
   time_to_save: [4320000., 8640000, 12960000, 17280000]
@@ -34,6 +34,7 @@ compositional_data:
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
+  equation_of_state: PengRobinson
 
   rock_compressibility: 0
   Pf: 13.79E6
@@ -79,12 +80,9 @@ compositional_data:
     Tc: [619.28]
     Pc: [2109795.73]
     vc: [0.0006031573275]
-    R: [8.3144598]
     Mw: [142.28e-3]
     w: [0.4890]
     Bin: [0]
-    C7: [0]
-    SG: [0.7342]
     vshift_parameter: [-940]
 
 #water saturation data
@@ -123,7 +121,7 @@ Wells:
     type: Injector
     type_region: box
     value: [0, -1.31096512e-6]
-    ksi_inj: 55484.318623369414
+    value_type: volumetric
 
   P2:
     p0: [0.0, 0.0, -3.048]

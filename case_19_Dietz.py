@@ -5,11 +5,11 @@ import os
 from math import pi
 from packs.utils.utils_old import get_box
 flying = 'flying'
-name = 'all_compositional_'
+name = 'results'
 arquivos = os.listdir(flying)
 for  arq in arquivos:
     if  arq.startswith(name):
-        datas = np.load('flying/results_Dietz_30dg_caset_1288.npy', allow_pickle=True)
+        datas = np.load('flying/results_Dietz_30dg_case_1288.npy', allow_pickle=True)
 
         x425_all = np.zeros([12,10])
         b=0
@@ -29,6 +29,7 @@ for  arq in arquivos:
                 Sw_org[i,:] = Sw[inds[i,:]]
                 ind_to_ind = np.argwhere(np.round(Sw_org[i,:],3)>0.4).ravel()
                 ind = inds[i,ind_to_ind][0:2]
+                #import pdb; pdb.set_trace()
                 if Sw[ind[0]]>0.425:
                     ind_to_ind = np.argwhere(np.round(Sw_org[i,:],3)<0.4).ravel()
                     ind[1] = ind[0]
@@ -45,7 +46,7 @@ for  arq in arquivos:
                           [38.994, 40.1585, 41.6141, 42.9888, 44.1695, 45.6898, 46.9513, 48.5848, 50.0243, 51.0108],
                           [61.006, 62.8012, 63.9981, 65.0817, 66.7961, 68.0091, 69.772, 71.0335, 72.1172, 73.88],
                           [83.7943, 84.9749, 86.6731, 87.967, 89.455, 90.4739, 91.9942, 93.1748, 94.8892, 95.9567]])
-        import pdb; pdb.set_trace()
+        
         x425_plot = np.zeros([4,10])
         x425_plot[0,:] = x425_all[1,:]
         x425_plot[1,:] = x425_all[4,:]
@@ -60,9 +61,9 @@ for  arq in arquivos:
         plt.plot(x_ans[3,:],z_plot, 'k', label='UTCOMP')
         plt.grid()
         plt.title('Dietz -30° Solution Example', y=1.08)
-        #plt.legend(('vpi = 0.1', 'vpi = 0.2', 'vpi = 0.3', 'vpi = 0.4','Benchmark'))
+        plt.legend(('vpi = 0.1', 'vpi = 0.2', 'vpi = 0.3', 'vpi = 0.4','Benchmark'))
         plt.legend(bbox_to_anchor=(.48, 1.08), loc=9, borderaxespad=0., ncol = 5)
         plt.ylabel('Distance in Z-Direction (ft)')
         plt.xlabel('Distance in X-Direction (ft)')
-        plt.savefig('results/compositional/profile_Dietz_04.png')
+        plt.savefig('results/compositional/profile_Dietz_comparison.png')
         import pdb; pdb.set_trace()
