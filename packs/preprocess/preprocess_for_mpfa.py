@@ -9,10 +9,12 @@ class PreprocessForMpfa(DataManager):
         data_name = data_name + '_' + only_mesh_name + '.npz'
         super().__init__(data_name=data_name, load=load)
         self.type_int = np.dtype(int)
+        self.type_float = np.dtype(float)
         self.dt_for_points_subfaces = [('centroid_of_face', self.type_int), ('midpoint_of_edge_1', self.type_int), ('centroid_of_node', self.type_int), ('midpoint_of_edge_2', self.type_int)]
         self.name_cent_volume = 'centroid_of_volume'
         self.name_cent_face = 'centroid_of_face'
         self.name_cent_node = 'centroid_of_node'
+        self.shapes = ['tetra']
 
     def create_midpoints_edges(self, edges, nodes, centroid_nodes, nodes_edges):
         '''
@@ -198,8 +200,8 @@ class PreprocessForMpfa(DataManager):
                 subvolumes
         '''
 
-        ## tamanho de todos subvolumes
-        gids_subvolumes = []
+        # ## tamanho de todos subvolumes
+        # gids_subvolumes = []
 
         # ## gids faces of subvolumes
         # gids_faces_of_subvolumes = []
@@ -242,6 +244,9 @@ class PreprocessForMpfa(DataManager):
         gids_subvolumes = np.arange(n)
         from_volumes_to_gids_subvolumes = np.array(from_volumes_to_gids_subvolumes)
         points_of_subvolumes = np.array(points_of_subvolumes)
+
+        self._from_volumes_to_gids_subvolumes = from_volumes_to_gids_subvolumes.copy()
+        self._volumes = volumes.copy()
 
         return gids_subvolumes, from_volumes_to_gids_subvolumes, points_of_subvolumes
 
@@ -315,3 +320,143 @@ class PreprocessForMpfa(DataManager):
 
         points = np.array(points)
         return points
+
+    def create_hs_internal_faces(self, internal_faces, volumes_neig_internal_faces, centroid_faces, centroid_volumes):
+
+        hs = np.zeros((len(internal_faces), 2))
+
+        hs[:,0] = np.linalg.norm(centroid_volumes[volumes_neig_internal_faces[:,0]] - centroid_faces[internal_faces], axis=1)
+        hs[:,1] = np.linalg.norm(centroid_volumes[volumes_neig_internal_faces[:,1]] - centroid_faces[internal_faces], axis=1)
+
+        return hs
+
+    def create_all_faces_of_subvolumes_mpfao(self, volumes, from_volumes_to_gids_subvolumes, st_points_all_subvolumes, centroid_volumes, centroid_faces):
+        ## gids faces of subvolumes
+        gids_faces_of_subvolumes = []
+
+        ## tamanho da quantidade de faces
+        id_for_points = []
+
+        # tamanho de todas as faces dos subvolumes
+        points_of_all_faces = [np.array([np.array([0, 0, 0]), np.array([0,0,0]), np.array([0,0,0])])]
+
+        ## tamanho de todas as faces dos subvolumes
+        normals_of_faces_of_subvolumes = []
+
+        ## tamanho de todos subvolumes
+        from_subvolumes_to_gids_faces_of_subvolumes = []
+        ids_count_subvolumes = []
+
+        for volume in volumes:
+            subvolumes = from_volumes_to_gids_subvolumes[volume]
+            st_points_set_subvolumes = st_points_all_subvolumes[subvolumes]
+
+            from_subvolumes_to_faces = self.create_faces_from_set_of_subvolumes(
+                volume, subvolumes, st_points_set_subvolumes, centroid_volumes, centroid_faces,
+                points_of_all_faces, id_for_points, normals_of_faces_of_subvolumes
+            )
+
+            from_subvolumes_to_gids_faces_of_subvolumes.extend(from_subvolumes_to_faces)
+
+        pdb.set_trace()
+
+        id_for_points = np.array(id_for_points)
+        id_for_points -= 1
+        points_of_all_faces = points_of_all_faces.pop(0)
+        gids_faces_of_subvolumes = np.arange(len(ids_for_points))
+
+        return (gids_faces_of_subvolumes, id_for_points, points_of_all_faces,
+                normals_of_faces_of_subvolumes, from_subvolumes_to_gids_faces_of_subvolumes)
+
+    def create_faces_from_set_of_subvolumes(self, volume, subvolumes, st_points_set_subvolumes, centroid_volumes, centroid_faces, points_of_all_faces, ids_for_points, normals_of_faces_of_subvolumes):
+
+        from_subvolumes_to_faces = []
+
+        for subvolume, st_point_subvolume in zip(subvolumes, st_points_set_subvolumes):
+
+            gids_faces_of_subvolume = self.create_faces_of_subvolume_mpfao(
+                volume, subvolume, st_point_subvolume, centroid_volumes, centroid_faces,
+                points_of_all_faces, ids_for_points, normals_of_faces_of_subvolumes
+            )
+
+            from_subvolumes_to_faces.append(gids_faces_of_subvolume)
+
+        return np.array(from_subvolumes_to_faces)
+
+    def create_faces_of_subvolume_mpfao(self, volume, subvolume, st_point_subvolume, centroid_volumes, centroid_faces, points_of_all_faces, ids_for_points, normals_of_faces_of_subvolumes):
+
+        points_subvolume = self.get_points_from_st_subvolume_mpfao(
+            st_point_subvolume, centroid_volumes, centroid_faces
+        )
+
+        centroid_volume = centroid_volumes[volume]
+        shape_name = self.get_shape_name(len(points_subvolume))
+        points_faces, normals = self.separar_faces_e_normals(points_subvolume, shape_name, centroid_volume)
+
+        n_faces = len(normals)
+
+        for normal in normals:
+            normals_of_faces_of_subvolumes.append(normal)
+
+        n0 = len(ids_for_points)
+
+        for pt in points_faces:
+
+            test = np.all(np.all(np.array(points_of_all_faces) == pt, axis=1), axis=1)
+            if test.sum() > 0:
+                ids_points = np.arange(len(points_of_all_faces))
+                ids_for_points.append(ids_points[test][0])
+            else:
+                points_of_all_faces.append(pt)
+                ids_for_points.append(len(points_of_all_faces)-1)
+
+        gids = np.arange(n0, n0 + n_faces)
+
+        return gids
+
+    def get_shape_name(self, n_points):
+
+        if n_points <= 3:
+            raise ValueError('\nQuantidade de pontos menor que 4\n')
+        elif n_points == 4:
+            return self.shapes[0]
+        else:
+            raise NotImplementedError('\nErro inesperado\n')
+
+    def separar_faces_e_normals(self, points, shape_name, centroid_volume):
+
+        if shape_name == self.shapes[0]:
+            return self.faces_for_tetra(points, centroid_volume)
+        else:
+            raise NotImplementedError('\nErro nao esperado\n')
+
+    def faces_for_tetra(self, points, centroid_volume):
+
+        points_faces = np.zeros((4, 3))
+        ids = np.arange(len(points))
+        test = points == centroid_volume
+        id_centroid = ids[np.all(test, axis=1)][0]
+        other_ids = ids[ids != id_centroid]
+        dt = [('x', self.type_float), ('y', self.type_float), ('z', self.type_float)]
+
+        faces = np.array([
+            np.array([points[id_centroid], points[other_ids[0]], points[other_ids[1]]]),
+            np.array([points[id_centroid], points[other_ids[0]], points[other_ids[2]]]),
+            np.array([points[id_centroid], points[other_ids[1]], points[other_ids[2]]]),
+            np.array([points[other_ids[0]], points[other_ids[1]], points[other_ids[2]]])
+        ])
+
+        normals = self.get_normals_tri(faces)
+
+        return faces, normals
+
+    def get_normals_tri(self, faces):
+
+        normals = []
+
+        for pts in faces:
+            vec1 = pts[1] - pts[0]
+            vec2 = pts[2] - pts[0]
+            normals.append(np.cross(vec1, vec2)/2)
+
+        return np.array(normals)

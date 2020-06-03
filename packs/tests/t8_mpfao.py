@@ -10,14 +10,14 @@ midpoints_edges = mpfa_data.create_midpoints_edges(
     elements_lv0['edges'],
     elements_lv0['nodes'],
     data_impress['centroid_nodes'],
-    elements_lv0['edges_node_nodes']
+    elements_lv0.edges_to_nodes(elements_lv0['edges'])
 )
 
 normais, points_subfaces, local_ids_subfaces = mpfa_data.create_subfaces(
     elements_lv0['faces'],
     elements_lv0['edges'],
-    elements_lv0['faces_edge_edges'],
-    elements_lv0['faces_node_nodes'],
+    elements_lv0.faces_to_edges(elements_lv0['faces']),
+    elements_lv0.faces_to_nodes(elements_lv0['faces']),
     data_impress['centroid_faces'],
     data_impress['centroid_nodes'],
     midpoints_edges,
@@ -34,9 +34,9 @@ points_subfaces = mpfa_data.get_points_of_subfaces_from_complete_structured_arra
 gids_subvolumes, from_volumes_to_gids_subvolumes, structured_points_subvolumes = mpfa_data.create_all_subvolumes_mpfao(
     elements_lv0['volumes'],
     elements_lv0['faces'],
-    elements_lv0['volumes_face_faces'],
-    elements_lv0['nodes_node_faces'],
-    elements_lv0['volumes_face_nodes']
+    elements_lv0.volumes_to_faces(elements_lv0['volumes']),
+    elements_lv0.nodes_to_faces(elements_lv0['nodes']),
+    elements_lv0.volumes_to_nodes(elements_lv0['volumes'])
 )
 
 pt = mpfa_data.get_points_from_st_subvolume_mpfao(
@@ -51,7 +51,20 @@ pts = mpfa_data.get_points_from_st_subvolumes_mpfao(
     data_impress['centroid_faces']
 )
 
+hs = mpfa_data.create_hs_internal_faces(
+    elements_lv0['internal_faces'],
+    elements_lv0['neig_internal_faces'],
+    data_impress['centroid_faces'],
+    data_impress['centroid_volumes']
+)
 
+ff = mpfa_data.create_all_faces_of_subvolumes_mpfao(
+    elements_lv0['volumes'],
+    from_volumes_to_gids_subvolumes,
+    structured_points_subvolumes,
+    data_impress['centroid_volumes'],
+    data_impress['centroid_faces']
+)
 
 
 
