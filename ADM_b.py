@@ -38,21 +38,98 @@ def plot_operator(T,OP_AMS, primals):
 def plot_net_flux(OR_AMS,OP_AMS):
     Tc=OR_AMS*T*OP_AMS
     diag=np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
+    diag=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
+
+    diag_orig=data_impress['initial_diag']
+    diag_orig[diag_orig==0]=1
+    diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
+    gids1=data_impress['GID_1']
+    gids0=data_impress['GID_0']
+    OP_AMS_c=OP_AMS.copy()
+
+    phi_diag=OP_AMS_c[gids0,gids1].toarray()[0]
+    OP_AMS_c[gids0,gids1]=0
+    phi_off=OP_AMS_c.tocsc().max(axis=1).T.toarray()[0]
+    # import pdb; pdb.set_trace()
+
+    data_impress['raz_diag'] = ((1-phi_diag)/phi_diag)*abs((diagf-diag_orig)/diag_orig)
+
     gid1=data_impress['GID_1']
     diags_f=diag[gid1]
     mm=T*OP_AMS
     mm2=mm.copy()
-    mm[mm>0]=0
+    # mm[mm>0]=0
     mm2[mm<0]=0
-
-    mms=np.array(mm.sum(axis=1)).T[0]
+    # import pdb; pdb.set_trace()
+    # mms=np.array(mm.sum(axis=1)).T[0]
+    mms=-(mm.max(axis=1)-mm.min(axis=1)).T.toarray()[0]
     mms2=np.array(mm.sum(axis=1)).T[0]
     data_impress['raz_flux_tag']=mms/diags_f
-    if (mms/diags_f).max() > 1:
-        import pdb; pdb.set_trace()
+    # if (mms/diags_f).max() > 1:
+    #     import pdb; pdb.set_trace()
     data_impress['raz_pos']=mms2/diags_f
 
+def get_finescale_netas():
+    tc=OR_AMS*T*OP_AMS
+    nc=Tc.shape[0]
+    dc=np.array(tc[range(nc),range(nc)])[0]
+    tp=(T*OP_AMS).tolil()
+    np.set_printoptions(1)
+    gids0=data_impress['GID_0']
+    gids1=data_impress['GID_1']
+    cont_diag=tp[gids0,gids1]
+    tv=np.array(tp[gids0,gids1].sum(axis=0)).sum(axis=0)
+    tp[gids0,gids1]=0
+    tpp=tp.copy()
+    tpp[tpp<0]=0
+    tpn=tp.copy()
+    tpn[tpn>0]=0
+    # vtp=np.array(tpp.sum(axis=1).T)[0]
+    # vtp[vtp==0]=1
+    # vtn=np.array(tpn.sum(axis=1).T)[0]
+    # tv[tv==0]=1
+    # vtp[vtp==0]=vtn[vtp==0]
+    # import pdb; pdb.set_trace()
+    # tv[tv==0]=1
+    # par=-abs(vtn/tv)
 
+    lines=gids0
+    df=dc[gids1]
+    dd=sp.csc_matrix((1/df,(lines,lines)),shape=T.shape)
+    nf=dd*tpn
+    netasp=nf.max(axis=1).T.toarray()[0]
+    T2=T.tolil().copy()
+    T2[:,netasp>1]=0
+    t2p=(T2*OP_AMS).tolil()
+    t2p[gids0,gids1]=0
+    t2p[tpp<0]=0
+    n2f=dd*t2p
+    netas2p=n2f.max(axis=1).T.toarray()[0]
+    netasp[netas2p>netasp]=netas2p[netas2p>netasp]
+
+    T2=T.tolil().copy()
+    T2[:,netasp>1]=0
+    t2p=(T2*OP_AMS).tolil()
+    t2p[gids0,gids1]=0
+    t2p[tpp<0]=0
+    n2f=dd*t2p
+    netas2p=n2f.max(axis=1).T.toarray()[0]
+    netasp[netas2p>netasp]=netas2p[netas2p>netasp]
+
+    T2=T.tolil().copy()
+    T2[:,netasp>1]=0
+    t2p=(T2*OP_AMS).tolil()
+    t2p[gids0,gids1]=0
+    t2p[tpp<0]=0
+    n2f=dd*t2p
+    netas2p=n2f.max(axis=1).T.toarray()[0]
+    netasp[netas2p>netasp]=netas2p[netas2p>netasp]
+    # data_impress['nfp']=abs(nf.min(axis=1).T.toarray()[0])-abs(nf.max(axis=1).T.toarray()[0])
+    # import pdb; pdb.set_trace()
+    data_impress['nfp']=netasp
+    # data_impress['nfp']=par
+    data_impress['nfn']=abs(-(dd*tpp).min(axis=1).T.toarray()[0]-nf.max(axis=1).T.toarray()[0])
+    # import pdb; pdb.set_trace()
 
 
 
@@ -221,40 +298,52 @@ ad0=adjs[:,0]
 ad1=adjs[:,1]
 # #######################################
 
+diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
+# gids1=data_impress['GID_1']
+# gids0=data_impress['GID_0']
+# OP_AMS_c=OP_AMS.copy()
+# phi_diag=OP_AMS_c[gids0,gids1].toarray()[0]
+# OP_AMS_c[gids0,gids1]=0
+# phi_off=OP_AMS_c.tocsc().max(axis=1).T.toarray()[0]
+data_impress['initial_diag']=diagf
+
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
-nn = 200
+nn = 20
 pp = 1
 cont = 1
 
 verif = True
 pare = False
 np.save('results/jac_iterarion.npy',np.array([0]))
+adm_method.set_level_wells_3()
 while verif:
     # import pdb; pdb.set_trace()
     # import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
+    get_finescale_netas()
+    vols_orig=data_impress['GID_0'][data_impress['nfp']>1]
+    data_impress['LEVEL'][vols_orig]=0
+
+    gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
+    gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
+    adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
 
     for level in range(1, n_levels):
         adm_method.organize_ops_adm(mlo, level)
     or_adm=adm_method._data['adm_restriction_level_1']
     op_adm=adm_method._data['adm_prolongation_level_1']
+    t0=time.time()
 
-    monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim)
+
+    print(time.time()-t0)
+    idl1=data_impress['LEVEL_ID_1']
+    map1=np.zeros(idl1.max()+1)
+    map1[idl1]=data_impress['GID_1']
+    monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim,map1)
+
     adm_method.set_level_wells_3()
-
-    vols_orig=data_impress['GID_0'][data_impress['raz_flux_tag']>0.8]
-    if len(vols_orig)>0:
-        vols_to_lv0=M.volumes.bridge_adjacencies(vols_orig,0,3)
-        vols_to_lv0=np.hstack(vols_to_lv0)
-        vols_to_lv0=np.concatenate([vols_to_lv0,vols_orig])
-        # import pdb; pdb.set_trace()
-        data_impress['LEVEL'][vols_to_lv0]=0
-    # gid1=data_impress["GID_1"]
-    # data_impress["LEVEL"][ad0[gid1[ad0]!=gid1[ad1]]]=0
-    # data_impress["LEVEL"][ad1[gid1[ad0]!=gid1[ad1]]]=0
-    # data_impress["LEVEL"][ad1[ad0!=ad1]]=0
-    # data_impress["LEVEL"][data_impress['saturation']>0.2]=0
+    adm_method.set_monotonizing_level(vols_orig)
     adm_method.set_saturation_level_simple()
-
 
     adm_method.solve_multiscale_pressure(T, b)
 
@@ -269,9 +358,7 @@ while verif:
     if cont % nn == 0:
         import pdb; pdb.set_trace()
 
-    gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
-    gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
-    adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
+
     # plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
     if cont % pp == 0:
         print("Creating_file")

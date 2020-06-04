@@ -33,7 +33,7 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
                     dmin=(int(crs[i][j]/2)+1)*d_j[j]+add_initial
                     dmax=dmin+round(max_j[j])+d_j[j]
                     Pij=np.append(Pij,np.arange(dmin,dmax,crs[i][j]*d_j[j]))
-                    
+
             else:
                 Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
 
@@ -206,7 +206,7 @@ def set_tags(M1, primal_1, primal_2, dual_flag_1, dual_flag_2):
 
 class DualPrimal:
     def __init__(self, M1, coord_nodes, cent_volumes, external_vertex_on_boundary=True):
-        P, D, min_j, max_j, d_j = get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_dual=True)
+        P, D, min_j, max_j, d_j = get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_dual=False)
         # subP, subD = distribute_reservoir_partitions(P, D, nworker=3)
         primal_1, primal_2, dual_flag_1, dual_flag_2 = create_dual_and_primal(P, D, min_j, max_j, d_j, cent_volumes)
         set_tags(M1, primal_1, primal_2, dual_flag_1, dual_flag_2)

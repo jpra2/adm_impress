@@ -672,3 +672,31 @@ raz_pos:
   data type: float
   sparse: True
   level: 0
+
+initial_diag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_diag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+nfp:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+nfn:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
