@@ -11,6 +11,7 @@ from pymoab import types
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 # from packs.biphasic.biphasic_tpfa import BiphasicTpfa
@@ -70,68 +71,54 @@ def plot_net_flux(OR_AMS,OP_AMS):
     data_impress['raz_pos']=mms2/diags_f
 
 def get_finescale_netas():
+    t0=time.time()
+    val_lim=1
     tc=OR_AMS*T*OP_AMS
     nc=Tc.shape[0]
     dc=np.array(tc[range(nc),range(nc)])[0]
-    tp=(T*OP_AMS).tolil()
-    np.set_printoptions(1)
+    tp=T*OP_AMS
+    # np.set_printoptions(1)
     gids0=data_impress['GID_0']
     gids1=data_impress['GID_1']
-    cont_diag=tp[gids0,gids1]
-    tv=np.array(tp[gids0,gids1].sum(axis=0)).sum(axis=0)
-    tp[gids0,gids1]=0
-    tpp=tp.copy()
-    tpp[tpp<0]=0
+    print(time.time()-t0,"initie")
     tpn=tp.copy()
-    tpn[tpn>0]=0
-    # vtp=np.array(tpp.sum(axis=1).T)[0]
-    # vtp[vtp==0]=1
-    # vtn=np.array(tpn.sum(axis=1).T)[0]
-    # tv[tv==0]=1
-    # vtp[vtp==0]=vtn[vtp==0]
-    # import pdb; pdb.set_trace()
-    # tv[tv==0]=1
-    # par=-abs(vtn/tv)
-
+    # tpn[tpn>0]=0
     lines=gids0
     df=dc[gids1]
+    t0=time.time()
     dd=sp.csc_matrix((1/df,(lines,lines)),shape=T.shape)
     nf=dd*tpn
+
     netasp=nf.max(axis=1).T.toarray()[0]
-    T2=T.tolil().copy()
-    T2[:,netasp>1]=0
-    t2p=(T2*OP_AMS).tolil()
-    t2p[gids0,gids1]=0
-    t2p[tpp<0]=0
-    n2f=dd*t2p
-    netas2p=n2f.max(axis=1).T.toarray()[0]
-    netasp[netas2p>netasp]=netas2p[netas2p>netasp]
 
-    T2=T.tolil().copy()
-    T2[:,netasp>1]=0
-    t2p=(T2*OP_AMS).tolil()
-    t2p[gids0,gids1]=0
-    t2p[tpp<0]=0
-    n2f=dd*t2p
-    netas2p=n2f.max(axis=1).T.toarray()[0]
-    netasp[netas2p>netasp]=netas2p[netas2p>netasp]
+    lcd=mlo['prolongation_lcd_level_1']
+    l=lcd[0]
+    c=lcd[1]
+    d=lcd[2]
+    teste=True
+    print(time.time()-t0,'dldldl')
+    while teste:
+        # netasp[wells['all_wells']]=0
+        ls=np.arange(len(netasp))[netasp>val_lim]
+        d2=d.copy()
+        for li in ls:
+            d2[l==li]=0
+        OP_AMS_c=sp.csc_matrix((d2, (l,c)),shape=OP_AMS.shape)
+        # OP_AMS_c=OP_AMS.copy()
+        # OP_AMS_c[netasp>val_lim,:]=0
+        t2p=(T*OP_AMS_c).tolil()
+        # t2p[gids0,gids1]=0
+        n2f=dd*t2p
+        netas2p=n2f.max(axis=1).T.toarray()[0]
+        netas2p[wells['all_wells']]=0
+        if (netas2p>netasp).sum()==0:
+            teste=False
+        netasp[netas2p>netasp]=netas2p[netas2p>netasp]
 
-    T2=T.tolil().copy()
-    T2[:,netasp>1]=0
-    t2p=(T2*OP_AMS).tolil()
-    t2p[gids0,gids1]=0
-    t2p[tpp<0]=0
-    n2f=dd*t2p
-    netas2p=n2f.max(axis=1).T.toarray()[0]
-    netasp[netas2p>netasp]=netas2p[netas2p>netasp]
-    # data_impress['nfp']=abs(nf.min(axis=1).T.toarray()[0])-abs(nf.max(axis=1).T.toarray()[0])
-    # import pdb; pdb.set_trace()
     data_impress['nfp']=netasp
-    # data_impress['nfp']=par
-    data_impress['nfn']=abs(-(dd*tpp).min(axis=1).T.toarray()[0]-nf.max(axis=1).T.toarray()[0])
-    # import pdb; pdb.set_trace()
+    ff=OP_AMS[gids0,gids1].toarray()[0]
 
-
+    data_impress['nfn']=(1-ff)/ff
 
 def write_file_with_tag_range(tag,lims):
     mc=M.core.mb.create_meshset()
@@ -308,7 +295,7 @@ diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
 data_impress['initial_diag']=diagf
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
-nn = 20
+nn = 50
 pp = 1
 cont = 1
 
@@ -317,10 +304,10 @@ pare = False
 np.save('results/jac_iterarion.npy',np.array([0]))
 adm_method.set_level_wells_3()
 while verif:
-    # import pdb; pdb.set_trace()
-    # import pdb; pdb.set_trace()
-    # import pdb; pdb.set_trace()
+
+    t0=time.time()
     get_finescale_netas()
+    print(time.time()-t0)
     vols_orig=data_impress['GID_0'][data_impress['nfp']>1]
     data_impress['LEVEL'][vols_orig]=0
 
@@ -332,10 +319,7 @@ while verif:
         adm_method.organize_ops_adm(mlo, level)
     or_adm=adm_method._data['adm_restriction_level_1']
     op_adm=adm_method._data['adm_prolongation_level_1']
-    t0=time.time()
 
-
-    print(time.time()-t0)
     idl1=data_impress['LEVEL_ID_1']
     map1=np.zeros(idl1.max()+1)
     map1[idl1]=data_impress['GID_1']
@@ -357,6 +341,7 @@ while verif:
 
     if cont % nn == 0:
         import pdb; pdb.set_trace()
+        # verif=False
 
 
     # plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
@@ -375,7 +360,7 @@ while verif:
         print("File created at time-step: ",cont)
 
     T, b = b1.get_T_and_b()
-    plot_net_flux(OR_AMS,OP_AMS)
+    # plot_net_flux(OR_AMS,OP_AMS)
     gids_to_monotonize=monotonize_adm.monotonize_adm(mlo, T,neta_lim)
     if len(gids_to_monotonize)>0:
         adm_method.set_monotonizing_level(gids_to_monotonize)
