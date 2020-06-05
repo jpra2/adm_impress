@@ -16,6 +16,7 @@ types_region_data_loaded = ['all', 'box']
 types_region_for_saturation = ['all', 'wells', 'box']
 types_presc = ['dirichlet', 'neumann']
 types_wells = ['injector', 'producer']
+types_values = ['molar', 'volumetric']
 
 # variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
 #                      'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
@@ -61,15 +62,16 @@ names_outfiles_variables_steps = [os.path.join(flying, 'variables0.npz'),
                                   ]
 names_datas_contour = os.path.join(flying, 'datas_contour.npz')
 
-#with open('input_cards/inputs_compositional_2d.yml', 'r') as f:
-#with open('input_cards/inputs_compositional_monophasic.yml', 'r') as f:
-with open('input_cards/inputs_compositional_biphasic_Dietz.yml', 'r') as f:
+#with open('input_cards/inputs_compositional.yml', 'r') as f:
+with open ('input_cards/input_file_name.yml','r') as f:
+    names_files_load = yaml.safe_load(f)
+    name_input_file_load = names_files_load['name_file']
+    name_variable_inputs_file_load = names_files_load['variable_file']
+
+with open(name_input_file_load, 'r') as f:
     data_loaded = yaml.safe_load(f)
 
-# with open('input_cards/variable_input.yml', 'r') as f:
-#     variables_loaded = yaml.safe_load(f)
-
-with open('input_cards/variable_inputs_compositional.yml', 'r') as f:
+with open(name_variable_inputs_file_load, 'r') as f:
     variables_loaded = yaml.safe_load(f)
 
 name_load = os.path.join(flying, 'load.npy')
