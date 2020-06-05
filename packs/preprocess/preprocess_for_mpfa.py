@@ -3,11 +3,9 @@ from packs.data_class.data_manager import DataManager
 from packs.directories import only_mesh_name
 import numpy as np
 
-class PreprocessForMpfa(DataManager):
+class PreprocessForMpfa:
 
-    def __init__(self, data_name='PreprocessForMpfa', load=False):
-        data_name = data_name + '_' + only_mesh_name + '.npz'
-        super().__init__(data_name=data_name, load=load)
+    def __init__(self):
         self.type_int = np.dtype(int)
         self.type_float = np.dtype(float)
         self.dt_for_points_subfaces = [('centroid_of_face', self.type_int), ('midpoint_of_edge_1', self.type_int), ('centroid_of_node', self.type_int), ('midpoint_of_edge_2', self.type_int)]
