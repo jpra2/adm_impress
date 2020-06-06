@@ -100,8 +100,8 @@ class PrepMonotonicPrimal:
         ls=np.concatenate([self.lines,lc_exter[0]])
         cs=np.concatenate([self.cols,lc_exter[1]])
         # import pdb; pdb.set_trace()
-        if raz_phi.max()>10:
-            critical_volumes=np.arange(len(volumes))[raz_phi>10]
+        if raz_phi.max()>5:
+            critical_volumes=np.arange(len(volumes))[raz_phi>5]
             map_g=np.repeat(-1,len(volumes))
             map_g[critical_volumes]=range(len(critical_volumes))
             pos_crit=(map_g[ls]>-1) & (map_g[cs]>-1)
@@ -184,9 +184,9 @@ def get_monotonizing_volumes(preprocessed_primal_objects, transmissibility, tol)
             critical_groups.append(cg)
 
     netasp_array=np.hstack(netasp_list)
-    if len(critical_groups)==0:
-        critical_groups=np.array([])
-    else:
-        critical_groups=np.hstack(critical_groups)
+    # if len(critical_groups)==0:
+    #     critical_groups=np.array([])
+    # else:
+    #     critical_groups=np.hstack(critical_groups)
     volumes=np.concatenate(volumes)
     return volumes, netasp_array,critical_groups

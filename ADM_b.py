@@ -297,8 +297,8 @@ diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
 data_impress['initial_diag']=diagf
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
-nn = 50
-pp = 1
+nn = 1000
+pp = 50
 cont = 1
 
 verif = True
@@ -312,28 +312,33 @@ adm_method.set_level_wells_3()
 while verif:
 
     transmissibility=data_impress['transmissibility']
-
     t0=time.time()
-
     volumes, netasp_array,critical_groups=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility, tol=0.5)
 
-    t1=time.time()
-    # get_finescale_netas()
-    if len(critical_groups)>0:
-        data_impress['nfn'][:]=0
-        data_impress['nfn'][critical_groups]=10
     data_impress['nfp'][:]=0
     data_impress['nfp'][volumes]=netasp_array
-    try:
-        vols_orig=np.concatenate([volumes[netasp_array>neta_lim],critical_groups]).astype(int)
-    except:
-        import pdb; pdb.set_trace()
-    # import pdb; pdb.set_trace()
-    # print(time.time()-t1,t1-t0,'old_new' )
-    # vols_orig=data_impress['GID_0'][data_impress['nfp']>1]
-    if len(vols_orig)>0:
-        data_impress['LEVEL'][vols_orig]=0
 
+    vols_orig=volumes[netasp_array>1]
+    data_impress['LEVEL'][vols_orig]=0
+
+    l_groups=np.concatenate([np.repeat(i,len(critical_groups[i])) for i in range(len(critical_groups))])
+    groups_c=np.concatenate(critical_groups)
+    t1=time.time()
+
+    teste=True
+    vols_0=np.array([])
+    while teste:
+        lv=len(vols_0)
+        groups_lv0=np.unique(l_groups[data_impress['LEVEL'][groups_c]==0])
+        vols_lv0=np.concatenate(np.array(critical_groups)[groups_lv0])
+        vols_0=np.unique(np.append(vols_0,vols_lv0))
+        if len(vols_0)==lv:
+            teste=False
+        else:
+            vols_lv0=np.concatenate(np.array(critical_groups)[groups_lv0])
+            data_impress['LEVEL'][vols_lv0]=0
+    vols_orig=np.unique(np.concatenate([vols_orig,vols_0])).astype(int)
+    data_impress['LEVEL'][vols_orig]=0
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
@@ -347,7 +352,7 @@ while verif:
     map1=np.zeros(idl1.max()+1)
     map1[idl1]=data_impress['GID_1']
     monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim,map1)
-
+    # np.concatenate(np.array(critical_groups)
     adm_method.set_level_wells_3()
     if len(vols_orig)>0:
         adm_method.set_monotonizing_level(vols_orig)
