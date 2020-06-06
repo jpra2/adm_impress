@@ -29,6 +29,7 @@ def get_gids_and_primal_id(gids, primal_ids):
         primal_ids2.append(primal_id[0])
     primal_ids2 = np.array(primal_ids2)
     return gids2, primal_ids2'''
+
 def plot_operator(T,OP_AMS, primals):
     # T2=T.copy()
     # T2.setdiag(0)
@@ -214,7 +215,7 @@ mlo=multilevel_operators
 
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
-neta_lim=1.0
+neta_lim=1.0*np.inf
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 
@@ -250,7 +251,7 @@ OR_AMS=mlo['restriction_level_1']
 
 
 
-# plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
+plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
 # write_file_with_tag_range('OP_AMS_63',[0,np.inf])
 
 Tc=OR_AMS*T*OP_AMS
@@ -296,13 +297,15 @@ diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
 data_impress['initial_diag']=diagf
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
-nn = 50000
-pp = 100
+nn = 50
+pp = 1
 cont = 1
 
 verif = True
 pare = False
 np.save('results/jac_iterarion.npy',np.array([0]))
+phis_k=OP_AMS[data_impress['GID_0'],data_impress['GID_1']].toarray()[0]
+data_impress['raz_pos']=(1-phis_k)/phis_k
 preprocessed_primal_objects=monotonic_adm_subds.get_preprossed_monotonic_primal_objects(data_impress, elements_lv0, OP_AMS, neumann_subds.neumann_subds)
 
 adm_method.set_level_wells_3()
@@ -312,12 +315,17 @@ while verif:
 
     t0=time.time()
 
-    volumes, netasp_array,critical_groups=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility, tol=1)
+    volumes, netasp_array,critical_groups=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility, tol=0.5)
 
     t1=time.time()
     # get_finescale_netas()
+    if len(critical_groups)>0:
+        data_impress['nfn'][:]=0
+        data_impress['nfn'][critical_groups]=10
+    data_impress['nfp'][:]=0
+    data_impress['nfp'][volumes]=netasp_array
     try:
-        vols_orig=np.concatenate([volumes[netasp_array>10],critical_groups])
+        vols_orig=np.concatenate([volumes[netasp_array>neta_lim],critical_groups]).astype(int)
     except:
         import pdb; pdb.set_trace()
     # import pdb; pdb.set_trace()

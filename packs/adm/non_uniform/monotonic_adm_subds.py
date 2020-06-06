@@ -37,8 +37,11 @@ def get_preprossed_monotonic_primal_objects(data_impress,elements_lv0, OP_AMS,ne
         l_intern=np.concatenate([l, c, l, c])
         c_intern=np.concatenate([c, l, l, c])
 
+        l_exter=np.concatenate([map_l[vols_exter],map_l[vols_exter]])
+        c_exter=np.concatenate([map_l[vols_exter],map_l[vols_inter]])
+        lc_exter=np.vstack([l_exter,c_exter])
 
-        # import pdb; pdb.set_trace()
+
         internal_faces=primal.intern_local_faces
         lines=np.concatenate([l_intern, map_l[vols_inter], map_l[vols_inter]]) #[l, c, l, c, inter, exter]
         cols=np.concatenate([c_intern, map_l[vols_inter], map_l[vols_exter]]) #[c, l, l, c, inter, exter]
@@ -48,18 +51,24 @@ def get_preprossed_monotonic_primal_objects(data_impress,elements_lv0, OP_AMS,ne
         l1=gids0_1[(gids1_0==gid1) | (gids1_1==gid1)]
         ls=np.unique(np.concatenate([l0,l1]))
         OP_AMS_local=OP_AMS_c[ls]
+        gids1_exter=gids1[np.concatenate([vols_exter,vols_exter])]
+
+        phi_k_exter=OP_AMS_local[l_exter,gids1_exter].toarray()[0]
+
 
         # local_volumes=lc==gid1
         # lcd_OP_local=[map_l[lo[local_volumes]], co[local_volumes], do[local_volumes]]
         lcd_OP_local=sp.find(OP_AMS_local)
-        preprocessed_primal_objects.append(PrepMonotonicPrimal(lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes))
+        preprocessed_primal_objects.append(PrepMonotonicPrimal(lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter))
     return preprocessed_primal_objects
 
 class PrepMonotonicPrimal:
-    def __init__(self, lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes):
-        self.create_primal_subds(lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes)
+    def __init__(self, lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter):
+        self.create_primal_subds(lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter)
 
-    def create_primal_subds(self, lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes):
+    def create_primal_subds(self, lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter):
+        # import pdb; pdb.set_trace()
+        self.lc_exter=lc_exter
         self.equals=lines==cols
         self.different=lines!=cols
         self.ls=np.unique(lines[self.equals])
@@ -80,17 +89,24 @@ class PrepMonotonicPrimal:
         # import pdb; pdb.set_trace()
         # phi_k=self.OP_local[:,self.gid1_local]
         phi_k=self.OP_local[:,self.gid1_local].T.toarray()[0]
-        phi_k[np.setdiff1d(np.arange(len(volumes)),np.unique(self.lines))]=1
+        # phi_k[np.setdiff1d(np.arange(len(volumes)),np.unique(self.lines))]=1
+        # import pdb; pdb.set_trace()
+        phi_k[lc_exter[0]]=phi_k_exter
         raz_phi=(1-phi_k)/phi_k
 
         critical_groups=[]
+        lc_exter=self.lc_exter
+
+        ls=np.concatenate([self.lines,lc_exter[0]])
+        cs=np.concatenate([self.cols,lc_exter[1]])
+        # import pdb; pdb.set_trace()
         if raz_phi.max()>10:
             critical_volumes=np.arange(len(volumes))[raz_phi>10]
             map_g=np.repeat(-1,len(volumes))
             map_g[critical_volumes]=range(len(critical_volumes))
-            pos_crit=(map_g[self.lines]>-1) & (map_g[self.cols]>-1)
-            lg=map_g[np.arange(len(volumes))[self.lines[pos_crit]]]
-            cg=map_g[np.arange(len(volumes))[self.cols[pos_crit]]]
+            pos_crit=(map_g[ls]>-1) & (map_g[cs]>-1)
+            lg=map_g[np.arange(len(volumes))[ls[pos_crit]]]
+            cg=map_g[np.arange(len(volumes))[cs[pos_crit]]]
             dg=np.ones(len(lg))
             graph=sp.csc_matrix((dg, (lg, cg)), shape=(len(critical_volumes), len(critical_volumes)))
             nc, labels = sp.csgraph.connected_components(csgraph=graph, directed=False, return_labels=True)
@@ -99,6 +115,7 @@ class PrepMonotonicPrimal:
                 pos=labels==i
                 if pos.sum()>1:
                     critical_groups.append(volumes[critical_volumes[pos]])
+
 
         self.critical_groups=critical_groups
 
@@ -162,8 +179,9 @@ def get_monotonizing_volumes(preprocessed_primal_objects, transmissibility, tol)
         netasp_list.append(netaspn[netaspn>0])
 
         for cg in primal.critical_groups:
-            if len(np.intersect1d(primal.volumes[netaspn>tol],cg))>0:
-                critical_groups.append(cg)
+            # import pdb; pdb.set_trace()
+            # if len(np.intersect1d(primal.volumes[netaspn>tol],cg))>0:
+            critical_groups.append(cg)
 
     netasp_array=np.hstack(netasp_list)
     if len(critical_groups)==0:

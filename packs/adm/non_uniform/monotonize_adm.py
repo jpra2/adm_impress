@@ -70,7 +70,7 @@ def verify_monotonize_adm(or_ams, T, op_ams, neta_lim,ids_ams_1):
     lc_off_diag=lc[off_diag]
     val_diag_off_diag=val_diag[lcc_diag][lc_off_diag]
     netas=val_off_diag/val_diag_off_diag
-    netasp=netas>neta_lim*2
+    netasp=netas>10
     netas=netas[netasp]
     I=lc[off_diag][netasp]
     J=cc[off_diag][netasp]
@@ -79,6 +79,7 @@ def verify_monotonize_adm(or_ams, T, op_ams, neta_lim,ids_ams_1):
 
 
     if len(netas)>0:
-        print(netas.max(),'adm')
-        print(ids_ams_1[I],ids_ams_1[J],netas)
+        if netas.max()>10:
+            print(netas.max(),'adm')
+            print(ids_ams_1[I],ids_ams_1[J],netas)
         # import pdb; pdb.set_trace()
