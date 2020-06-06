@@ -1,115 +1,52 @@
 import numpy as np
-from ..directories import data_loaded
-import scipy.sparse as sp
-from ..convert_unit import constants
 
-class capillaryPressureBiphasic:
-    names_pressure = ['psi', None, 'Pa']
+class Chang:
 
-    def __init__(self):
-        '''
-            Load the capillary_pressure.dat data in data file for interpolation
-        '''
-        self.cap_pressure = data_loaded['capillary_pressure']
-        self.convert_capillary_pressure_to = data_loaded['convert_capillary_pressure_to']
-        self.load_func()
+    def __init__(self, data_loaded, data_impress, phase_molar_densities, component_molar_fractions):
+        self.Swr = data_loaded['compositional_data']['residual_saturations']['Swr']
+        self.Sorg = data_loaded['compositional_data']['residual_saturations']['Sorg']
+        self.Sorw = data_loaded['compositional_data']['residual_saturations']['Sorw']
+        self.Sgr = data_loaded['compositional_data']['residual_saturations']['Sgr']
+        self.Sorw = np.array(self.Sorw).astype(float)
+        self.Sorg = np.array(self.Sorg).astype(float)
+        self.phase_molar_densities = phase_molar_densities
+        self.component_molar_fractions = component_molar_fractions
+        self.porosity = data_impress['poro']
+        self.permeabilities = np.array(data_loaded['Permeability']['r1']['value']).astype(float) #por enquanto
+        self.permeabilities = self.permeabilities[0] * np.ones(len(self.porosity))
 
-    def load_func(self):
-        if not self.cap_pressure:
-            return 1
+    def capillary_pressure(self, data_loaded, sigma, S_term):
+        Cpc = data_loaded['compositional_data']['Cpc']
+        Epc = data_loaded['compositional_data']['Epc']
+        Pcap = - Cpc * sigma * (self.porosity / self.permeabilities) **(1/2) * (S_term) ** Epc
+        import pdb; pdb.set_trace()
+        return Pcap
 
-        points = np.loadtxt('data/capillary_pressure.dat')
-        x = points[:,0]
-        # self.x = x.copy()
-        pcows = points[:,-1]
-        # self.pcs = pcows.copy()
-        grau = len(x)-1
-        coefs = np.polyfit(x, pcows, grau)
-        func = np.poly1d(coefs)
+    def sigma(self, i, j):
+        parachor_number = 10 #entry parameter
+        sigma_ij = (0.016018 * np.sum(parachor_number * (self.phase_molar_densities[0,i,:] * self.component_molar_fractions[:,i,:]
+                - self.phase_molar_densities[0,j,:] * self.component_molar_fractions[:,j,:]), axis = 0)) ** (1/0.25)
+        return sigma_ij
 
-        self.pcow_max = pcows.max()
-        self.pcow_min = pcows.min()
-        self.sat_min = x[pcows == self.pcow_max][0]
-        self.sat_max = x[pcows == self.pcow_min][0]
-        self.func = func
-        return 0
+    def normalized_saturation(self,S, Sr):
+        S_norm = (S - Sr) / (1 - self.Swr - self.Sorw - self.Sgr)
+        return S_norm
 
-    def get_pcow_from_sat(self, sat):
-        '''
-            get pcow from saturation on faces
-        '''
-        self.validate_arr(sat)
-        if not self.cap_pressure:
-            return np.zeros(len(sat))
+    def saturation_term(self, Sw, Sg, So):
+        Sor = self.Sorw * (1 - Sg / (1 - self.Swr - self.Sorg)) + self.Sorg * \
+            (Sg / (1 - self.Swr - self.Sorg))
+        Sw_norm = self.normalized_saturation(Sw, self.Swr)
+        Sg_norm = self.normalized_saturation(Sg, self.Sgr)
+        So_norm = self.normalized_saturation(So, Sor)
+        S_term_cow = 1 - Sw_norm
+        S_term_cog = Sw_norm / (So_norm + Sg_norm)
+        return S_term_cog, S_term_cow
 
-        sat2 = np.array(sat)
-
-        inds_menores = sat2 <= self.sat_min
-        inds_maiores = sat2 >= self.sat_max
-        inds_outros = ~(inds_maiores | inds_menores)
-
-        resp = np.zeros(len(sat2))
-
-        resp[inds_outros] = self.func(sat2[inds_outros])
-        resp[inds_menores] = np.repeat(self.pcow_max, inds_menores.sum())
-        resp[inds_maiores] = np.repeat(self.pcow_min, inds_maiores.sum())
-        resp *= self.convert_cap_pressure()
-
-        return resp
-
-    def convert_cap_pressure(self):
-        if self.convert_capillary_pressure_to == None:
-            k = 1
-        elif self.convert_capillary_pressure_to == 'psi':
-            k = constants.atm_to_psi()
-        elif self.convert_capillary_pressure_to == 'Pa':
-            k = constants.atm_to_pa()
-        else:
-            raise NameError('Nome nao identificado')
-
-        return k
-
-    def validate_arr(self, val):
-
-        if isinstance(val, list) or isinstance(val, tuple) or isinstance(val, np.ndarray):
-            pass
-        else:
-            raise TypeError('sat deve ser um iteravel, menos um dict')
-
-        if max(val) > 1.0 or min(val) < 0.0:
-            raise ValueError(f'Saturacao errada. Min: {min(val)}. Max: {max(val)}')
-
-    def get_gradient_cap_presure(self, dh, cap_pressure):
-        return -(cap_pressure[:,1] - cap_pressure[:,0])/dh
-
-    def get_flux_cap_faces(self, gradient_cap_faces, areas, k_harm, lambda_w_faces):
-        return gradient_cap_faces*areas*k_harm
-
-    def get_flux_cap_volumes(self, vols_viz_faces, flux_cap_faces):
-        lines = np.concatenate([vols_viz_faces[:,0], vols_viz_faces[:,1]])
-        n = len(np.unique(lines))
-        cols = np.zeros(len(lines), dtype=int)
-        data = np.concatenate([flux_cap_faces, -flux_cap_faces])
-        flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n,1)).toarray().flatten()
-
-        return flux_volumes
-
-    def get_capillary_pressure_flux(self,
-        faces: 'faces onde se vai calcular o gradiente da pressao capilar',
-        vols_viz_faces: 'volumes vizinhos das faces',
-        areas: 'areas das faces',
-        k_harm: 'perm equivalente nas faces',
-        dh: 'delta h',
-        lambda_w: 'mobilidade de agua nas faces',
-        cap_pressure: 'vetor com duas colunas: pcap dos vols_viz_faces'):
-
-        if self.cap_pressure:
-            # gradient_cap_faces = self.get_gradient_cap_presure(dh, cap_pressure)
-            # flux_cap_faces = self.get_flux_cap_faces(gradient_cap_faces, areas, k_harm)
-            flux_cap_faces = self.get_flux_cap_faces(self.get_gradient_cap_presure(dh, cap_pressure), areas, k_harm, lambda_w)
-            flux_cap_volumes = self.get_flux_cap_volumes(vols_viz_faces, flux_cap_faces)
-        else:
-            flux_cap_volumes = np.zeros(len(np.unique(vols_viz_faces.flatten())))
-            flux_cap_faces = np.zeros(len(faces))
-
-        return flux_cap_faces, flux_cap_volumes
+    def __call__(self, data_loaded, Sw, Sg, So):
+        S_term_cog, S_term_cow = self.saturation_term(Sw, Sg, So)
+        oleo = 0; gas = 1; agua = 2
+        sigma_wo = self.sigma(agua, oleo)
+        sigma_og = self.sigma(oleo, gas)
+        Pcow =  self.capillary_pressure(data_loaded, sigma_wo, S_term_cow)
+        Pcog = self.capillary_pressure(data_loaded, sigma_og, S_term_cog)
+        return Pcow, Pcog

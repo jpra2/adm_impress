@@ -537,7 +537,6 @@ erro_v:
   type: faces
   data size: 3
   data type: float
-  sparse: True
   level: 0
 
 perpendicular_direction_flag:

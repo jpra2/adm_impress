@@ -19,7 +19,7 @@ class DataManager:
 
         self.name = os.path.join(flying, data_name)
         self._data = dict()
-        self.__class__.all_datas[self.name] = self
+        DataManager.all_datas[self.name] = self
         if load:
             self.load_from_npz()
 
@@ -46,19 +46,16 @@ class DataManager:
     def items(self):
         return self._data.items()
 
-    @classmethod
-    def export_all_datas_to_npz(cls):
-        for obj in cls.all_datas.values():
+    def export_all_datas_to_npz(self):
+        for obj in DataManager.all_datas.values():
             obj.export_to_npz()
 
-    @classmethod
-    def load_all_datas_from_npz(cls):
-        for obj in cls.all_datas.values():
+    def load_all_datas_from_npz(self):
+        for obj in DataManager.all_datas.values():
             obj.load_from_npz()
 
-    @classmethod
-    def get_obj_by_name(cls, name):
-        return cls.all_datas[name]
+    def get_obj_by_name(self, name):
+        return DataManager.all_datas[name]
 
     def __str__(self):
         return str(type(self))
@@ -79,25 +76,9 @@ class DataManager:
         return key in self._data
 
     def __del__(self):
-        del DataManager.all_datas[self.name]
-
-
-# if __name__ == '__main__':
-#
-#     ff1 = dataManager('test.npz')
-#     try:
-#         ff = dataManager(1)
-#     except Exception as e:
-#         assert str(e) == 'data_name must be string'
-#
-#     try:
-#         ff = dataManager('alguma_coisa')
-#     except Exception as e:
-#         assert str(e) == 'data_name must end with ".npz"'
-#
-#     try:
-#         ff = dataManager('test.npz')
-#     except Exception as e:
-#         assert str(e) == 'data_name cannot be repeated'
-#
-#     print('\n Game over \n')
+        # if self.name == 'flying/CompositionalFVM.npz':
+        #     import pdb; pdb.set_trace()
+        try:
+            del DataManager.all_datas[self.name]
+        except:
+            pass

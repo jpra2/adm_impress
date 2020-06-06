@@ -2,6 +2,7 @@ from .. import directories as direc
 from . import directories_impress as direc_impress
 from ..directories import data_loaded
 from ..utils.utils_old import get_box
+from math import pi
 import numpy as np
 # from .preprocess1 import set_saturation_regions
 
@@ -47,9 +48,13 @@ class Preprocess0:
         M.data.update_variables_to_mesh()
 
     def set_area_hex_structured(self, M):
-
+        """ Resolver Isso para malha diagonal amanha"""
         def get_area(ind, normals, nodes_faces, coord_nodes):
-            indice = np.where(normals[:,ind] == 1)[0][0]
+
+            if len(np.where(normals[:,ind] == 1)[0]) == 0:
+                indice = np.where(normals[:,ind]!=0)[0][0]
+            else: indice = np.where(normals[:,ind] == 1)[0][0]
+
             nos = nodes_faces[indice]
             normas = []
             vetores = []
@@ -69,7 +74,6 @@ class Preprocess0:
             area = normas[0] * normas[1]
             vetores = np.absolute(np.array(vetores))
             normas = np.array(normas)
-
             return area, vetores, normas
 
         unis = np.array([np.array([1,0,0]), np.array([0,1,0]), np.array([0,0,1])])
@@ -85,6 +89,7 @@ class Preprocess0:
             unis2 = np.zeros([2,3])
             unis2[0] = vetores[0]/modulos[0]
             unis2[1] = vetores[1]/modulos[1]
+
             areas.append(area)
             for j in range(2):
                 if np.allclose(unis2[j], unis[0]):
@@ -93,11 +98,24 @@ class Preprocess0:
                     hs[1] = modulos[j]
                 elif np.allclose(unis2[j], unis[2]):
                     hs[2] = modulos[j]
+                elif unis2[j][1] == 0 and unis[j][0]!=1 and unis[j][2]!=1: #caso inclinado em xz
+                    hs[0] = modulos[j]
 
         areas = np.array(areas)
-        all_areas = np.dot(normals, areas)
+        all_areas = np.dot(normals**2, areas)
         dist_cent = np.dot(normals, hs)
-        volume = hs[0]*hs[1]*hs[2]
+
+        v = np.ones([3,1])
+        dd = np.argwhere(np.round(normals@v, 2)!=1)
+        
+        if len(dd)>0:
+            inclined_faces_normals = normals[dd.ravel()]
+            xz_face = np.argwhere(inclined_faces_normals[:,1]==0).ravel()
+            xz_face_angle = inclined_faces_normals[xz_face][0,2]/inclined_faces_normals[xz_face][0,0]
+            theta = np.arctan(xz_face_angle)
+        else: theta = pi/2
+
+        volume = hs[0]*hs[1]*hs[2]*np.sin(theta)
         n_volumes = M.data.len_entities[direc.entities_lv0[3]]
 
         dd = np.zeros([n_volumes, 3])
@@ -131,7 +149,9 @@ class Preprocess0:
         for reg in direc.data_loaded[direc.names_data_loaded_lv0[2]]:
             d0 = direc.data_loaded[direc.names_data_loaded_lv0[2]][reg]
             tipo = d0[direc.names_data_loaded_lv2[0]]
-            value = np.array([np.array(d0[direc.names_data_loaded_lv2[1]])])
+            value = np.array(d0[direc.names_data_loaded_lv2[1]])
+            value = np.array([float(v) for v in value.flatten()])
+            value = value[np.newaxis,:]
 
             if tipo == direc.types_region_data_loaded[0]:
                 # tamanho_variavel = M.data.info_data[M.data.variables_impress['permeability']][direc_impress.names_datas[0]]
@@ -177,6 +197,7 @@ class Preprocess0:
         u_normal = M.data[M.data.variables_impress['u_normal']]
         vols_viz_faces = self.elements_lv0['neig_faces']
         internal_faces = self.elements_lv0['internal_faces']
+        #internal_faces = internal_faces_or[M.faces.center[internal_faces_or][:,2]!=0] #just for now
         boundary_faces = self.elements_lv0['boundary_faces']
         centroids_volumes = M.data['centroid_volumes']
         ks = M.data[M.data.variables_impress['permeability']].copy()
@@ -193,6 +214,7 @@ class Preprocess0:
         ni = len(internal_faces)
         ks0 = ks[vols_viz_internal_faces[:, 0]]
         ks1 = ks[vols_viz_internal_faces[:, 1]]
+
         ks0 = ks0.reshape([ni, 3, 3]) * u_normal_internal_faces.reshape([ni, 1, 3])
         ks1 = ks1.reshape([ni, 3, 3]) * u_normal_internal_faces.reshape([ni, 1, 3])
         ks0 = ks0.sum(axis=2).sum(axis=1)

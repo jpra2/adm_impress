@@ -1,0 +1,303 @@
+# Check what will be needed and why (more stuff will possibly be includded)
+NODES:
+  type: nodes
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+centroid_nodes:
+  type: nodes
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+#edges
+centroid_edges:
+  type: edges
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+# Faces
+flux:
+  type: faces
+  data size: 3
+  data type: int
+  sparse: True
+  level: 0
+
+dist_cent:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+u_normal:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+area:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+velocity_faces:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+k_harm:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+pretransmissibility:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+transmissibility:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_grav_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_w_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+lambda_t_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+fw_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+centroid_faces:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+centroid_volumes:
+  type: volumes
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+pressure:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+weight:
+  type: volumes
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+volume:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+poro:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+hs:
+  type: volumes
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+permeability:
+  type: volumes
+  data size: 9
+  data type: float
+  sparse: True
+  level: 0
+
+flux_grav_volumes:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_volumes:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_volumes_test:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_w_volumes:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_o_volumes:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+gama:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+saturation:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+saturation_last:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+krw:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+kro:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+lambda_w:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+lambda_o:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+lambda_t:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+fw_vol:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+mass_oil_production:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+mass_water_production:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+test_fw:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+verif_po:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+verif_rest:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0

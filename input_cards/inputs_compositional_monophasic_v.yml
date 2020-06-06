@@ -1,0 +1,132 @@
+# Water case in 1-D vertical reservoir
+mesh_name: 1x1x100_m.msh
+name_save_file: 'results_incompressive_vertical_case'
+
+compositional: True
+hidrocarbon_components: False
+compressible_fluid: False
+water_component: True
+use_vpi: False
+
+
+load_compositional_data: False
+load_data: False
+convert_english_to_SI: False
+set_porosity: true
+set_permeability: true
+gravity: false
+deletar_results: false
+load_operators: false
+read_permeability: false
+monophasic_data: false
+set_permeability: True
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+
+
+compositional_data:
+  #  Pensar em um jeito de reorganizar iss
+  CFL: 0.5
+  vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
+  time_to_save: [10, 864.]
+  tempo_maximo: null
+  phase_viscosity: LorenzBrayClark
+  relative_permeability: BrooksAndCorey
+  capillary_pressure: Chang
+  equation_of_state: PengRobinson
+
+  rock_compressibility: 0
+  Pf: 13.79E6
+
+  #capillary pressure data - not ok with this
+  Cpc: 62052.84
+  Epc: 2
+
+  time_data:
+    deltaPlim: 6.89476
+    deltaNlim: .0001
+    deltaSlim: .0001
+    deltaVlim: .0001
+    delta_t_ini: .1
+    delta_tmax: 1000.
+    delta_tmin: 0.1
+
+  #rever isso de Cw=0 e Pw
+  water_data:
+    mi_W: 0.000249
+    rho_W: 716.0253128160182
+    Mw_w: 18.015e-3
+    Cw: 0
+    Pw: 13.79E6
+
+  residual_saturations:
+    Sorw: 0
+    Sorg: 0
+    Swr: 0
+    Sgr: 0
+
+  relative_permeability_data:
+    krw0: 1.0
+    krg0: 0.
+    kro0: 0
+    n_o: 2.
+    n_g: 0
+    n_w: 0.
+
+#decane critical molar density is 1640 mol/m3
+  component_data:
+    z: [1.]
+    Tc: [619.28]
+    Pc: [2109795.73]
+    vc: [0.0006031]
+    Mw: [142.28e-3]
+    w: [0.4890]
+    Bin: [0]
+    vshift_parameter: [0.085]
+
+#water saturation data
+Saturation:
+  r1:
+    type: all
+    value: 1.
+
+Porosity:
+  r1:
+    type: all
+    value: 0.20
+
+#Permeability in m^2
+Permeability:
+  r1:
+    type: all
+    value: [4.9346165e-13, 0, 0, 0, 4.9346165e-13, 0, 0, 0, 4.9346165e-13]
+
+Pressure:
+  r1:
+    type: all
+    value: 13.78951458E6
+
+Temperature:
+  r1:
+    type: all
+    value: 288.70556
+
+
+Wells:
+  P1:
+    p0: [0.0, 0.0, -0.006098]
+    p1: [0.03048, 0.03048, 0.0]
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: [-1.31096512e-8]
+    value_type: 'volumetric'
+
+  P2:
+    p0: [0.0, 0.0, -0.6098]
+    p1: [0.03048, 0.03048, -0.603702]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 13.78951458E6

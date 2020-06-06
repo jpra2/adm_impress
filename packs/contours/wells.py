@@ -266,8 +266,10 @@ class Wells(DataManager):
         if len(wells_q) > 0:
             fc_n = M.volumes.bridge_adjacencies(wells_q, 3, 2).flatten()
             contador = collections.Counter(fc_n)
-            facs_nn = np.array([k for k, v in contador.items() if v > 1])
+            facs_nn = np.array([k for k, v in contador.items() if v > 1], dtype=np.int64)
             self['facs_nn'] = facs_nn
+        else:
+            self['facs_nn'] = np.array([], dtype=np.int64)
 
         else:
             self['facs_nn'] = np.array([], dtype=np.int64)

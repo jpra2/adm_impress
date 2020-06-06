@@ -13,9 +13,12 @@ names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeab
 names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
 
 types_region_data_loaded = ['all', 'box']
-types_region_for_saturation = ['all', 'wells']
+types_region_for_saturation = ['all', 'wells', 'box']
 types_presc = ['dirichlet', 'neumann']
 types_wells = ['injector', 'producer']
+types_values = ['molar', 'volumetric']
+
+types_simulation = ['compositional', 'biphasic', 'monophasic']
 
 # variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
 #                      'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
@@ -26,8 +29,7 @@ impress = 'impress'
 tcc = 'tcc'
 flying = 'flying'
 adm = 'adm'
-# input_file_0 = 'inputs0.yml'
-input_file_0 = 'input_cards/inputs0.yml'
+# input_file_0 = 'input_cards/inputs0.yml'
 ext_h5m = '.h5m'
 name_out_file = 'output'
 states = ['0', '1', '2']
@@ -64,15 +66,21 @@ names_datas_contour = os.path.join(flying, 'datas_contour.npz')
 file_adm_mesh_def = 'initial_mesh_def.yml'
 file_adm_mesh_def = os.path.join('input_cards', file_adm_mesh_def)
 
-with open(input_file_0, 'r') as f:
+#with open('input_cards/inputs_compositional.yml', 'r') as f:
+with open ('input_cards/input_file_name.yml','r') as f:
+    names_files_load = yaml.safe_load(f)
+    name_input_file_load = names_files_load['name_file']
+    name_variable_inputs_file_load = names_files_load['variable_file']
+    simulation_type = names_files_load['simulation_type']
+
+with open(name_input_file_load, 'r') as f:
     data_loaded = yaml.safe_load(f)
 
 with open(file_adm_mesh_def, 'r') as f:
     file_adm_mesh_def = yaml.safe_load(f)
 
-
-with open('input_cards/variable_input.yml', 'r') as f:
+with open(name_variable_inputs_file_load, 'r') as f:
     variables_loaded = yaml.safe_load(f)
 
 name_load = os.path.join(flying, 'load.npy')
-name_hist = os.path.join(flying, 'current_biphasic_results.npy')
+name_hist = os.path.join(flying, 'current_compositional_results.npy')
