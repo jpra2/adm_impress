@@ -6,6 +6,7 @@ from ..convert_unit.conversion import Conversion
 from ..preprocess.preprocess1 import set_saturation_regions
 from ..preprocess.prep0_0 import Preprocess0
 from ..directories import data_loaded
+from ..directories import simulation_type, types_simulation
 from ..multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 import numpy as np
 
@@ -20,7 +21,8 @@ def initial_mesh(load=False, convert=False):
 
     if multilevel_data and load_multilevel_data:
         from ..load.preprocessor_load import init_mesh
-        M = init_mesh('flying/multilevel_data-all_.h5m')
+        # M = init_mesh('flying/multilevel_data-all.h5m')
+        M = init_mesh('saves/initial_mesh.h5m')
         elements_lv0 = ElementsLv0(M, load=load)
         data_impress = Data(M, elements_lv0, load=load)
         if not load:
@@ -29,7 +31,11 @@ def initial_mesh(load=False, convert=False):
         ml_data.load_tags()
 
     else:
-        from ..load.preprocessor0 import M
+        if load:
+            from ..load.preprocessor_load import init_mesh
+            M = init_mesh('saves/initial_mesh.h5m')
+        else:
+            from ..load.preprocessor0 import M
         elements_lv0 = ElementsLv0(M, load=load)
         data_impress = Data(M, elements_lv0, load=load)
         if not load:
@@ -37,14 +43,21 @@ def initial_mesh(load=False, convert=False):
         if multilevel_data:
             ml_data = MultilevelData(data_impress, M)
             ml_data.run()
-            ml_data.save_mesh()
+            # ml_data.save_mesh()
 
-    wells = Wells(M, load=load)
+    if simulation_type not in types_simulation:
+        raise Error('Invalid simulation type')
+
+    if simulation_type == 'compositional':
+        from ..contours.wells import WellsCompositional
+        wells = WellsCompositional(M, load = load)
+    else:
+        wells = Wells(M, elements_lv0, load=load)
 
     biphasic = data_loaded['biphasic']
-    load_biphasic_data = data_loaded['load_biphasic_data']
+    #load_biphasic_data = data_loaded['load_biphasic_data']
 
-    if biphasic and not load_biphasic_data:
+    if simulation_type == 'biphasic' and not load:
         set_saturation_regions(M, wells)
         # TODO: atualizar gama
 
