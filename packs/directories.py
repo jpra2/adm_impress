@@ -13,8 +13,6 @@ names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeab
 names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
 
 types_region_data_loaded = ['all', 'box', 'ring']
-types_region_for_saturation = ['all', 'wells']
-types_region_data_loaded = ['all', 'box']
 types_region_for_saturation = ['all', 'wells', 'box']
 types_presc = ['dirichlet', 'neumann']
 types_wells = ['injector', 'producer']
@@ -86,6 +84,16 @@ with open(name_variable_inputs_file_load, 'r') as f:
     variables_loaded = yaml.safe_load(f)
 
 name_load = os.path.join(flying, 'load.npy')
-name_hist = os.path.join(flying, 'current_biphasic_results.npy')
+if simulation_type == 'compositional':
+    name_hist = os.path.join(flying, 'current_compositional_results.npy')
+elif simulation_type == 'biphasic':
+    name_hist = os.path.join(flying, 'current_biphasic_results.npy')
+elif simulation_type == 'monophasic':
+    pass
+else:
+    print('Simulation type may be:')
+    for i in types_simulation:
+        print(i)
+    raise NotImplementedError('\nSimulation type not implemented\n')
+
 only_mesh_name = data_loaded['mesh_name'][5:-4]
-name_hist = os.path.join(flying, 'current_compositional_results.npy')
