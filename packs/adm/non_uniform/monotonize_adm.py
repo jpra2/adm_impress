@@ -1,7 +1,6 @@
 import scipy.sparse as sp
 import numpy as np
 def monotonize_adm(mlo, T, neta_lim):
-
     T=T.copy()
     levels=np.ones(T.shape[0],dtype=int)
     op_ams = mlo['prolongation_level_1']

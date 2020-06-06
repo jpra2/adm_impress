@@ -206,7 +206,7 @@ def set_tags(M1, primal_1, primal_2, dual_flag_1, dual_flag_2):
 
 class DualPrimal:
     def __init__(self, M1, coord_nodes, cent_volumes, external_vertex_on_boundary=True):
-        P, D, min_j, max_j, d_j = get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_dual=False)
+        P, D, min_j, max_j, d_j = get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_dual=True)
         # subP, subD = distribute_reservoir_partitions(P, D, nworker=3)
         primal_1, primal_2, dual_flag_1, dual_flag_2 = create_dual_and_primal(P, D, min_j, max_j, d_j, cent_volumes)
         set_tags(M1, primal_1, primal_2, dual_flag_1, dual_flag_2)

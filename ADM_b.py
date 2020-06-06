@@ -6,6 +6,7 @@ from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.directories import data_loaded
 from packs.multiscale.operators.prolongation.AMS.Paralell.group_dual_volumes import group_dual_volumes_and_get_OP
 from packs.multiscale.tpfalize_operator import tpfalize
+from packs.adm.non_uniform import monotonic_adm_subds
 import scipy.sparse as sp
 from pymoab import types
 import numpy as np
@@ -249,7 +250,7 @@ OR_AMS=mlo['restriction_level_1']
 
 
 
-plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
+# plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
 # write_file_with_tag_range('OP_AMS_63',[0,np.inf])
 
 Tc=OR_AMS*T*OP_AMS
@@ -295,21 +296,35 @@ diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
 data_impress['initial_diag']=diagf
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
-nn = 50
-pp = 1
+nn = 50000
+pp = 100
 cont = 1
 
 verif = True
 pare = False
 np.save('results/jac_iterarion.npy',np.array([0]))
+preprocessed_primal_objects=monotonic_adm_subds.get_preprossed_monotonic_primal_objects(data_impress, elements_lv0, OP_AMS, neumann_subds.neumann_subds)
+
 adm_method.set_level_wells_3()
 while verif:
 
+    transmissibility=data_impress['transmissibility']
+
     t0=time.time()
-    get_finescale_netas()
-    print(time.time()-t0)
-    vols_orig=data_impress['GID_0'][data_impress['nfp']>1]
-    data_impress['LEVEL'][vols_orig]=0
+
+    volumes, netasp_array,critical_groups=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility, tol=1)
+
+    t1=time.time()
+    # get_finescale_netas()
+    try:
+        vols_orig=np.concatenate([volumes[netasp_array>10],critical_groups])
+    except:
+        import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
+    # print(time.time()-t1,t1-t0,'old_new' )
+    # vols_orig=data_impress['GID_0'][data_impress['nfp']>1]
+    if len(vols_orig)>0:
+        data_impress['LEVEL'][vols_orig]=0
 
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
@@ -326,7 +341,9 @@ while verif:
     monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim,map1)
 
     adm_method.set_level_wells_3()
-    adm_method.set_monotonizing_level(vols_orig)
+    if len(vols_orig)>0:
+        adm_method.set_monotonizing_level(vols_orig)
+
     adm_method.set_saturation_level_simple()
 
     adm_method.solve_multiscale_pressure(T, b)
@@ -361,9 +378,9 @@ while verif:
 
     T, b = b1.get_T_and_b()
     # plot_net_flux(OR_AMS,OP_AMS)
-    gids_to_monotonize=monotonize_adm.monotonize_adm(mlo, T,neta_lim)
-    if len(gids_to_monotonize)>0:
-        adm_method.set_monotonizing_level(gids_to_monotonize)
+    # gids_to_monotonize=monotonize_adm.monotonize_adm(mlo, T,neta_lim)
+    # if len(gids_to_monotonize)>0:
+    #     adm_method.set_monotonizing_level(gids_to_monotonize)
     print('timestep: ',cont)
 
     cont += 1

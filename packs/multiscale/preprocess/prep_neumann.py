@@ -106,4 +106,6 @@ class PrimalSubdomain:
         cols=np.concatenate([c,l,l,c])
         self.lines=lines
         self.cols=cols
+        self.gid1=gidc
+        self.volumes=volumes
         self.ind_diric_local=ind_diric_local
