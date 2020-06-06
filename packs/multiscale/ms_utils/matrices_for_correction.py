@@ -9,10 +9,11 @@ class MatricesForCorrection:
         ###################
         ## teste
         rr = total_source_term==0
-        total_source_term[rr] = np.ones(len(total_source_term[rr]))
+        total_source_term2 = total_source_term.copy()
+        total_source_term2[rr] = np.ones(len(total_source_term[rr]))
         ###################
 
-        diagg = gravity_source_term/total_source_term
+        diagg = gravity_source_term/total_source_term2
         n = len(total_source_term)
 
         B_matrix = sp.lil_matrix((n ,n))

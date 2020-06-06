@@ -12,6 +12,8 @@ names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeab
 
 names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
 
+types_region_data_loaded = ['all', 'box', 'ring']
+types_region_for_saturation = ['all', 'wells']
 types_region_data_loaded = ['all', 'box']
 types_region_for_saturation = ['all', 'wells', 'box']
 types_presc = ['dirichlet', 'neumann']
@@ -51,17 +53,18 @@ state_path = os.path.join(flying, state_file)
 last_file_name = 'last_file_name.npy'
 path_local_last_file_name = os.path.join(flying, last_file_name)
 
-names_outfiles_steps = [output_file+'0-all.h5m',
-                        output_file+'1-all.h5m',
-                        output_file+'2-all.h5m',
-                        output_file+'3-all.h5m',
-                        output_file+'4-all.h5m']
+# names_outfiles_steps = [output_file+'0-all.h5m',
+#                         output_file+'1-all.h5m',
+#                         output_file+'2-all.h5m',
+#                         output_file+'3-all.h5m',
+#                         output_file+'4-all.h5m']
+#
+# names_outfiles_variables_steps = [os.path.join(flying, 'variables0.npz'),
+#                                   os.path.join(flying, 'variables1.npz'),
+#                                   os.path.join(flying, 'variables2.npz'),
+#                                   os.path.join(flying, 'variables3.npz')
+#                                   ]
 
-names_outfiles_variables_steps = [os.path.join(flying, 'variables0.npz'),
-                                  os.path.join(flying, 'variables1.npz'),
-                                  os.path.join(flying, 'variables2.npz'),
-                                  os.path.join(flying, 'variables3.npz')
-                                  ]
 names_datas_contour = os.path.join(flying, 'datas_contour.npz')
 file_adm_mesh_def = 'initial_mesh_def.yml'
 file_adm_mesh_def = os.path.join('input_cards', file_adm_mesh_def)
@@ -83,4 +86,6 @@ with open(name_variable_inputs_file_load, 'r') as f:
     variables_loaded = yaml.safe_load(f)
 
 name_load = os.path.join(flying, 'load.npy')
+name_hist = os.path.join(flying, 'current_biphasic_results.npy')
+only_mesh_name = data_loaded['mesh_name'][5:-4]
 name_hist = os.path.join(flying, 'current_compositional_results.npy')

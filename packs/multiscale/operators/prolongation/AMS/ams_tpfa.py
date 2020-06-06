@@ -28,12 +28,35 @@ class AMSTpfa:
         self.get_G()
         self.G2 = get_G2(vertices, primal_ids)
 
-        # self.T_wire = self.G*self.T*self.GT
-        # # self.T_wire = self.GT*self.T*self.G
-        # self.get_as()
-        # self._data['OP_AMS_' + str(self.id)] = self.get_OP_AMS_TPFA_by_AS()
+    def run(self, T: 'transmissibility matrix', total_source_term=None, B_matrix=None, Eps_matrix=None):
 
-        # self.run()
+        if self.get_correction_term:
+            B_wire = self.G*B_matrix*self.GT
+            Eps_wire = self.G*Eps_matrix*self.GT
+            self.I = sp.identity(len(np.concatenate(self.wirebasket_elements))).tocsc()
+            self.E_wire = Eps_wire*B_wire + self.I - B_wire
+            self.it = 0
+            del B_wire, Eps_wire
+
+        T_wire = self.G*T*self.GT
+        if self.tpfalizar:
+            T_wire = self.tpfalize(T_wire)
+        # self._data['T_wire'] = T_wire
+        As = self.get_as(T_wire)
+        del T_wire
+
+        if self.get_prolongation_operator:
+            OP = self.get_OP_AMS_TPFA_by_AS(As)
+        else:
+            OP = np.array([False])
+
+        if self.get_correction_term:
+            total_source_term_wire = self.G*total_source_term
+            pcorr = self.get_pcorr(As, total_source_term_wire)
+        else:
+            pcorr = np.array([False])
+
+        return OP, pcorr
 
     def get_G(self):
         cols = np.concatenate(self.wirebasket_elements)
@@ -93,9 +116,6 @@ class AMSTpfa:
 
     def get_OP_AMS_TPFA_by_AS(self, As):
 
-        # ni = self.wirebasket_numbers[0]
-        # nf = self.wirebasket_numbers[1]
-        # ne = self.wirebasket_numbers[2]
         nv = self.wirebasket_numbers[3]
 
         Pv = sp.identity(nv)
@@ -103,34 +123,6 @@ class AMSTpfa:
         Pf = -linalg.spsolve(As['Aff'].tocsc(),(As['Afe']*Pe).tocsc())
         Pi = -linalg.spsolve(As['Aii'].tocsc(),(As['Aif']*Pf).tocsc())
         op = sp.vstack([Pi,Pf,Pe,Pv])
-
-        #
-        # nni = self.ns_sum[0]
-        # nnf = self.ns_sum[1]
-        # nne = self.ns_sum[2]
-        # nnv = self.ns_sum[3]
-
-        # lines = np.arange(nne, nnv).astype(np.int32)
-        # ntot = (self.wirebasket_numbers.sum())
-        # op = sp.lil_matrix((ntot, nv))
-        # op[lines] = As['Ivv'].tolil()
-
-        # M = As['Aee']
-        # M = linalg.spsolve(M.tocsc(), sp.identity(ne).tocsc())
-        # M = M.dot(-1*As['Aev'])
-        # op[nnf:nne] = M.tolil()
-        #
-        # M2 = As['Aff']
-        # M2 = linalg.spsolve(M2.tocsc(), sp.identity(nf).tocsc())
-        # M2 = M2.dot(-1*As['Afe'])
-        # M = M2.dot(M)
-        # op[nni:nnf] = M.tolil()
-        #
-        # M2 = As['Aii']
-        # M2 = linalg.spsolve(M2.tocsc(), sp.identity(ni).tocsc())
-        # M2 = M2.dot(-1*As['Aif'])
-        # M = M2.dot(M)
-        # op[0:nni] = M.tolil()
 
         return self.GT*op*self.G2
 
@@ -209,35 +201,7 @@ class AMSTpfa:
 
         return pcorr
 
-    def run(self, T: 'transmissibility matrix', total_source_term=None, B_matrix=None, Eps_matrix=None):
 
-        if self.get_correction_term:
-            B_wire = self.G*B_matrix*self.GT
-            Eps_wire = self.G*Eps_matrix*self.GT
-            self.I = sp.identity(len(np.concatenate(self.wirebasket_elements))).tocsc()
-            self.E_wire = Eps_wire*B_wire + self.I - B_wire
-            self.it = 0
-            del B_wire, Eps_wire
-
-        T_wire = self.G*T*self.GT
-        if self.tpfalizar:
-            T_wire = self.tpfalize(T_wire)
-        # self._data['T_wire'] = T_wire
-        As = self.get_as(T_wire)
-        del T_wire
-
-        if self.get_prolongation_operator:
-            OP = self.get_OP_AMS_TPFA_by_AS(As)
-        else:
-            OP = np.array([False])
-
-        if self.get_correction_term:
-            total_source_term_wire = self.G*total_source_term
-            pcorr = self.get_pcorr(As, total_source_term_wire)
-        else:
-            pcorr = np.array([False])
-
-        return OP, pcorr
 
 
 def get_wirebasket_elements(internals, faces, edges, vertices):

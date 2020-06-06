@@ -3,6 +3,9 @@ from packs.running.initial_mesh_properties import initial_mesh
 from packs.utils.info_manager import InfoManager
 from packs.directories import data_loaded as dd
 import os
+import pdb
+import time
+import update_inputs
 
 M, elements_lv0, data_impress, wells = initial_mesh()
 b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
@@ -16,7 +19,12 @@ loop = 0
 cont = 1
 cont2 = 1
 verif = True
+
+meshset_volumes = M.core.mb.create_meshset()
+M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 # import pdb; pdb.set_trace()
+meshset = M.core.mb.create_meshset()
+M.core.mb.add_entities(meshset, M.core.all_volumes)
 while verif:
     if cont_for_save % n_for_save == 0:
         b1.run(save=True)
@@ -25,24 +33,41 @@ while verif:
         b1.run()
         cont_for_save += 1
     print(f'\n loop: {b1.loop}\n')
-    if cont % n == 0:
-        cont = 1
-        data_impress.update_variables_to_mesh()
-        name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
-        M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
-        # import pdb; pdb.set_trace()
-    import pdb; pdb.set_trace()
-    cont += 1
-    loop += 1
-    if loop > 200:
-        if cont2 % n2 == 0:
-            cont2 = 1
-            data_impress.update_variables_to_mesh()
-            name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
-            M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
-            # import pdb; pdb.set_trace()
 
-        cont2 += 1
+    # if cont % n == 0:
+    #     cont = 1
+    #     data_impress.update_variables_to_mesh()
+    #     name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
+    #     M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+    #     # import pdb; pdb.set_trace()
+
+    # if cont2 % 20 == 0 or cont2 == 1:
+    b1.print_test()
+    b1.print_test_faces()
+    # time.sleep(1)
+    # pdb.set_trace()
+
+    if cont2 % n2 == 0:
+        pdb.set_trace()
+
+
+    cont2 += 1
+
+    # import pdb; pdb.set_trace()
+
+    # if cont % n2 == 0:
+    #     import pdb; pdb.set_trace()
+    # cont += 1
+    # loop += 1
+    # if loop > 200:
+    #     if cont2 % n2 == 0:
+    #         cont2 = 1
+    #         data_impress.update_variables_to_mesh()
+    #         name = os.path.join('results', 'biphasic') + '_loop_' + str(b1.loop)
+    #         # M.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")
+    #         # import pdb; pdb.set_trace()
+    #
+    #     cont2 += 1
 
 
 

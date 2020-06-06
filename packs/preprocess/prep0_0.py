@@ -27,7 +27,7 @@ def set_permeability_and_phi_spe10(M):
     M.data[M.data.variables_impress['permeability']] = ks[ee] #permeabilidade
     M.data[M.data.variables_impress['perm_z']] = ks[ee][:,-1]
     M.data[M.data.variables_impress['perm_x']] = ks[ee][:,0]
-    
+
     M.data[M.data.variables_impress['poro']] = phi[ee]  #porosidade
 
 class Preprocess0:
@@ -158,14 +158,42 @@ class Preprocess0:
                 n_volumes = M.data.len_entities['volumes']
                 # valor = valor.reshape([n, tamanho_variavel])
                 M.data[M.data.variables_impress['permeability']] = np.repeat(value, n_volumes, axis=0)
+            elif tipo == 'ring':
+                ###########################################
+                c0=d0['c0']
+                r0=d0['r0']
+                r1=d0['r1']
+                x0=c0[0]
+                y0=c0[1]
+                z0=c0[2]
+
+                x=centroids[:,0]
+                y=centroids[:,1]
+                z=centroids[:,2]
+                cir_0=(x-x0)**2+(y-x0)**2+(z-z0)**2>r0**2
+                cir_1=(x-x0)**2+(y-x0)**2+(z-z0)**2<r1**2
+                indices=np.arange(len(centroids))[cir_0 & cir_1]
+                n_volumes = len(indices)
+                M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
+                np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
 
             elif tipo == direc.types_region_data_loaded[1]:
                 p0 = d0[direc.names_data_loaded_lv2[2]]
                 p1 = d0[direc.names_data_loaded_lv2[3]]
                 points = np.array([np.array(p0), np.array(p1)])
                 indices = get_box(centroids, points)
+
                 n_volumes = len(indices)
+
                 M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
+                np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
+
+
+        #######################
+        ## deletar
+        permx = M.data[M.data.variables_impress['permeability']][:, 0]
+        M.data['verif_po'][:] = permx
+        #######################
 
     def set_phi_regions(self, M):
         # TODO: atualizar essa funcao
@@ -180,6 +208,7 @@ class Preprocess0:
             if tipo == direc.types_region_data_loaded[0]:
                 n_volumes = M.data.len_entities['volumes']
                 M.data[M.data.variables_impress['poro']] = np.repeat(value, n_volumes)
+                M.data['poro'] = np.repeat(value, n_volumes)
 
             elif tipo == direc.types_region_data_loaded[1]:
                 p0 = d0[direc.names_data_loaded_lv2[2]]

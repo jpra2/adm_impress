@@ -166,6 +166,24 @@ flux_faces:
   level: 0
   sparse: true
   type: faces
+flux_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+upwind_w_faces_vec:
+  data size: 3
+  data type: int
+  level: 0
+  sparse: true
+  type: faces
+upwind_o_faces_vec:
+  data size: 3
+  data type: int
+  level: 0
+  sparse: true
+  type: faces
 flux_grav_faces:
   data size: 1
   data type: float
@@ -196,12 +214,19 @@ flux_o_faces_vec:
   level: 0
   sparse: true
   type: faces
+
 flux_o_volumes:
   data size: 1
   data type: float
   level: 0
+  sparse: False
+  type: volumes
 
 phi:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: False
   type: volumes
 flux_press_o_faces_vec:
   data size: 3
@@ -539,7 +564,21 @@ erro_v:
   data type: float
   level: 0
 
+flux_o_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
 perpendicular_direction_flag:
+  type: faces
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+verif_faces_flag:
   type: faces
   data size: 1
   data type: int
@@ -550,5 +589,89 @@ vug:
   type: volumes
   data size: 1
   data type: int
+  sparse: True
+  level: 0
+
+ADM_COARSE_ID_LEVEL_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+ADM_COARSE_ID_LEVEL_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+velocity_projection:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_0:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_1:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_2:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_3:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_4:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_5:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_999:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+val_diric:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+val_neum:
+  type: volumes
+  data size: 1
+  data type: float
   sparse: True
   level: 0

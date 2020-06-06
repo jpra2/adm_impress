@@ -10,3 +10,6 @@ class ConservativeVolumeError(Exception):
 
 class PmsFluxFacesError(Exception):
     pass
+
+class MaxLoopIterationError(Exception):
+    pass
