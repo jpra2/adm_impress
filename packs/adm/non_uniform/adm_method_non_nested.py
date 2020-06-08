@@ -9,7 +9,7 @@ from pymoab import types
 from scipy.sparse import csc_matrix, csgraph
 # from .paralel_neuman import masterNeumanNonNested
 # from .paralel_neuman_new0 import masterNeumanNonNested
-from .paralel_neuman_new1 import masterNeumanNonNested
+from .paralell_neumann_numpy import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):
 
@@ -428,7 +428,7 @@ class AdmNonNested(AdmMethod):
         # for gid in gids_wells:
         #     volumes = gid0[gid1==gid]
         #     self.data_impress['LEVEL'][volumes] = 0
-    def set_monotonizing_level(self, gids_to_monotonize):        
+    def set_monotonizing_level(self, gids_to_monotonize):
         self.data_impress['LEVEL'][gids_to_monotonize]=0
 
     def organize_ops_adm(self, mlo, level, _pcorr=None):

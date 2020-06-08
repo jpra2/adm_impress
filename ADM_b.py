@@ -288,17 +288,13 @@ ad1=adjs[:,1]
 # #######################################
 
 diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
-# gids1=data_impress['GID_1']
-# gids0=data_impress['GID_0']
-# OP_AMS_c=OP_AMS.copy()
-# phi_diag=OP_AMS_c[gids0,gids1].toarray()[0]
-# OP_AMS_c[gids0,gids1]=0
-# phi_off=OP_AMS_c.tocsc().max(axis=1).T.toarray()[0]
+
 data_impress['initial_diag']=diagf
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
-nn = 1000
-pp = 50
+nn = 10
+n_for_save=2
+pp = 1
 cont = 1
 
 verif = True
@@ -310,11 +306,10 @@ preprocessed_primal_objects=monotonic_adm_subds.get_preprossed_monotonic_primal_
 
 adm_method.set_level_wells_3()
 while verif:
-
+    t00=time.time()
     transmissibility=data_impress['transmissibility']
     t0=time.time()
     volumes, netasp_array,critical_groups=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility, tol=0.5)
-
     data_impress['nfp'][:]=0
     data_impress['nfp'][volumes]=netasp_array
 
@@ -324,7 +319,6 @@ while verif:
     l_groups=np.concatenate([np.repeat(i,len(critical_groups[i])) for i in range(len(critical_groups))])
     groups_c=np.concatenate(critical_groups)
     t1=time.time()
-
     teste=True
     vols_0=np.array([])
     while teste:
@@ -342,37 +336,42 @@ while verif:
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
-
+    print(time.time()-t0,'adapt')
+    t0=time.time()
     for level in range(1, n_levels):
         adm_method.organize_ops_adm(mlo, level)
-    or_adm=adm_method._data['adm_restriction_level_1']
-    op_adm=adm_method._data['adm_prolongation_level_1']
+    '''# or_adm=adm_method._data['adm_restriction_level_1']
+    # op_adm=adm_method._data['adm_prolongation_level_1']
 
-    idl1=data_impress['LEVEL_ID_1']
-    map1=np.zeros(idl1.max()+1)
-    map1[idl1]=data_impress['GID_1']
-    monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim,map1)
-    # np.concatenate(np.array(critical_groups)
+    # idl1=data_impress['LEVEL_ID_1']
+    # map1=np.zeros(idl1.max()+1)
+    # map1[idl1]=data_impress['GID_1']
+    # monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim,map1)
+    # np.concatenate(np.array(critical_groups)'''
     adm_method.set_level_wells_3()
     if len(vols_orig)>0:
         adm_method.set_monotonizing_level(vols_orig)
 
     adm_method.set_saturation_level_simple()
-
+    print(time.time()-t0,'levels')
+    t0=time.time()
     adm_method.solve_multiscale_pressure(T, b)
-
+    print(time.time()-t0,'solve')
+    t0=time.time()
     adm_method.set_pms_flux(wells, neumann_subds)
-
+    print(time.time()-t0,'set pms flux')
+    t0=time.time()
     b1.get_velocity_faces()
-
+    print(time.time()-t0,'vel_fac')
+    t0=time.time()
     b1.get_flux_volumes()
-
+    print(time.time()-t0,"flux_vol")
+    t0=time.time()
     b1.run_2()
-
+    print(time.time()-t0,'run2')
     if cont % nn == 0:
         import pdb; pdb.set_trace()
         # verif=False
-
 
     # plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
     if cont % pp == 0:
@@ -395,5 +394,5 @@ while verif:
     # if len(gids_to_monotonize)>0:
     #     adm_method.set_monotonizing_level(gids_to_monotonize)
     print('timestep: ',cont)
-
+    print(time.time()-t00,'loop time')
     cont += 1

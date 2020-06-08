@@ -3,7 +3,7 @@ from packs.running.initial_mesh_properties import initial_mesh
 from packs.utils.info_manager import InfoManager
 from packs.directories import data_loaded as dd
 import os
-
+import time
 M, elements_lv0, data_impress, wells = initial_mesh()
 b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
 # b1.run()
@@ -21,6 +21,7 @@ meshset_volumes = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 # import pdb; pdb.set_trace()
 while verif:
+    t00=time.time()
     if cont_for_save % n_for_save == 0:
         b1.run(save=True)
         cont_for_save = 1
@@ -50,7 +51,7 @@ while verif:
     #         # import pdb; pdb.set_trace()
     #
     #     cont2 += 1
-
+    print(time.time()-t00,'loop time finescale')
 
 
 # b1.run()

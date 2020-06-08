@@ -5,7 +5,7 @@ mesh_name: mesh/35x75x1L85.h5m
 # mesh_name: mesh/isotropic/21x21x1.msh
 n_test: 0
 state: 0
-type_of_solution: fine_scale
+type_of_solution: admff
 gravity: false
 load_data: true
 convert_english_to_SI: false
@@ -73,29 +73,6 @@ Wells:
     type: Producer
     type_region: box
     value: 1.0
-  # P3:
-  #   p0: [1180.0, 0.0, 168.0]
-  #   p1: [1200.0, 10.0, 170.0]
-  #   prescription: P
-  #   type: Producer
-  #   type_region: box
-  #   value: 1.0
-  #
-  # P4:
-  #   p0: [0.0, 2190.0, 168.0]
-  #   p1: [20.0, 2200.0, 170.0]
-  #   prescription: P
-  #   type: Producer
-  #   type_region: box
-  #   value: 1.0
-  #
-  # P5:
-  #   p0: [1180.0, 2190.0, 168.0]
-  #   p1: [1200.0, 2200.0, 170.0]
-  #   prescription: P
-  #   type: Producer
-  #   type_region: box
-  #   value: 1.0
 
 monophasic_data:
   gama: 100.0
