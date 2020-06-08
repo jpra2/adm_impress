@@ -49,7 +49,7 @@ class NeumannSubdomains:
             intern_local_faces = all_intern_faces[coarse_ids==gidc][0] # faces internas
             adj_intern_local_faces = neig_internal_faces[remaped_internal_faces[intern_local_faces]]
             intern_boundary_volumes = all_intern_boundary_volumes[coarse_ids==gidc][0] # volumes internos no contorno
-
+            # import pdb; pdb.set_trace()
             pocos=np.intersect1d(self.wells,gid0[all_gids_coarse==gidc])
             if len(pocos)>0:
                 vertex=pocos
@@ -72,7 +72,7 @@ class NeumannSubdomains:
             self.adj0.append(map_gid_in_lid[adj_intern_local_faces[:,0]])
             self.adj1.append(map_gid_in_lid[adj_intern_local_faces[:,1]])
             self.ind_diric_local.append(map_gid_in_lid[vertex])
-            self.ind_neum_local.append(map_gid_in_lid[intern_boundary_volumes])
+            self.ind_neum_local.append(map_gid_in_lid[intern_boundary_volumes])            
 
             self.T.append(np.zeros((len(volumes),len(volumes))))
             self.b.append(np.zeros(len(volumes)))
@@ -80,8 +80,13 @@ class NeumannSubdomains:
             map_volumes[volumes]=range(len(volumes))
 
             ind_diric_local=map_volumes[vertex]
+
+            # import pdb; pdb.set_trace()
             l=map_volumes[adjs[:,0]]
             c=map_volumes[adjs[:,1]]
+            if (map_volumes[volumes]!=map_gid_in_lid[volumes]).sum():
+                print("ffkffldifere")
+                import pdb; pdb.set_trace()
             self.l.append(l)
             self.c.append(c)
             lines=np.concatenate([l,c,l,c])
@@ -92,14 +97,17 @@ class NeumannSubdomains:
             self.cols_d.append(np.concatenate([l,c]))
             self.lines_off.append(np.concatenate([l,c]))
             self.cols_off.append(np.concatenate([c,l]))
-            self.ind_diric_local.append(ind_diric_local)
 
+            data_impress['initial_diag'][volumes]=map_volumes[volumes]
+            data_impress['raz_flux_tag'][volumes[map_volumes[volumes]==ind_diric_local]]=100
             v0=adjs_intersect_faces.T
             map_vol = np.repeat(-1,adjs_intersect_faces.max()+1)
             map_vol[intern_boundary_volumes] = np.arange(len(intern_boundary_volumes))
+
             ls=np.concatenate([v0[0], v0[1]])
             self.local_bound_ids.append(map_vol[ls])
             data_impress['val_diric'][vertex]=1
+            data_impress['val_neum'][intern_boundary_volumes]=1
             self.neumann_subds.append(PrimalSubdomain(elements_lv0, ml_data, data_impress, gidc))
 
 class PrimalSubdomain:

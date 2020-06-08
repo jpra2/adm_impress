@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from pymoab import types
 from scipy.sparse import csc_matrix, csgraph
 # from .paralel_neuman import masterNeumanNonNested
-# from .paralel_neuman_new0 import masterNeumanNonNested
+# from .paralel_neuman_new1 import masterNeumanNonNested
 from .paralell_neumann_numpy import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):

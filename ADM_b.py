@@ -289,7 +289,7 @@ ad1=adjs[:,1]
 
 diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
 
-data_impress['initial_diag']=diagf
+# data_impress['initial_diag']=diagf
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
 nn = 10
