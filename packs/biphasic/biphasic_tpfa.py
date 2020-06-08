@@ -328,9 +328,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
                 self.reduce_delta_t()
 
     def update_sat(self):
-
-        # import pdb; pdb.set_trace()
-
         saturations0 = self.data_impress['saturation'].copy()
         saturations = saturations0.copy()
         ids = np.arange(len(saturations))
@@ -339,64 +336,21 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         volumes = self.data_impress['volume']
         phis = self.data_impress['poro']
 
-        # import pdb; pdb.set_trace()
-
-        # ids_2 = ids[fw_volumes < 0]
-        # if len(ids_2) > 0:
-        #     self.data_impress['test_fw'][ids_2] = np.repeat(1.0, len(ids_2))
-        #     self.data_impress.update_variables_to_mesh()
-        #     self.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
-        #     import pdb; pdb.set_trace()
-        #     self.data_impress['test_fw'] = np.repeat(0.0, len(self.data_impress['test_fw']))
-        #     self.data_impress.update_variables_to_mesh(['test_fw'])
-
-        ###########################
-        ## teste
         test = ids[(saturations < 0) | (saturations > 1)]
         if len(test) > 0:
             import pdb; pdb.set_trace()
             raise ValueError(f'valor errado da saturacao {saturations[test]}')
         del test
-        ###########################
-
-        #####
-        ### correct flux
-        # test = ids[(fw_volumes < 0) & (np.absolute(fw_volumes) < self.lim_flux_w)]
-        # if len(test) > 0:
-        #     import pdb; pdb.set_trace()
-        #     fw_volumes[test] = np.zeros(len(test))
-
-        #####
-
-        # ##########################
-        # # teste
-        # test = ids[fw_volumes < -self.lim_flux_w]
-        # if len(test) > 0:
-        #     import pdb; pdb.set_trace()
-        #     raise ValueError(f'fluxo negativo de agua {fw_volumes[test]}')
-        # ##########################
-
 
         ids_var = ids[np.absolute(fw_volumes) > self.lim_flux_w]
 
-        ###################
-        ## teste variacao do fluxo de agua
         if len(ids_var) == 0:
             import pdb; pdb.set_trace()
-        ###################
-
-        ###########################
-        # self.data_impress['verif_po'][:] = 0.0
-        # self.data_impress['verif_po'][:] = (fw_volumes*self.delta_t)/(phis*volumes)
-        ###########################
 
         fw_volumes = fw_volumes[ids_var]
         volumes = volumes[ids_var]
         phis = phis[ids_var]
         sats = saturations[ids_var]
-
-        # if self.loop == 6:
-        #     import pdb; pdb.set_trace()
 
         sats += (fw_volumes*self.delta_t)/(phis*volumes)
 
@@ -415,19 +369,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 
         if np.allclose(saturations, saturations0):
             import pdb; pdb.set_trace()
-
-        ########################
-        # import pdb; pdb.set_trace()
-        # test = ids[(saturations < 0) | (saturations > 1)]
-        # if len(test) > 0:
-        #     self.data_impress['saturation'] = saturations
-        #     self.data_impress.update_variables_to_mesh()
-        #     self.mesh.core.print(file='results/test_', extension='.vtk', config_input="input_cards/print_settings0.yml")
-        #     import pdb; pdb.set_trace()
-        #
-        #     raise ValueError(f'valor errado da saturacao {saturations[test]}')
-        # del test
-        #########################
 
         min_sat = saturations.min()
         max_sat = saturations.max()
@@ -525,11 +466,18 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 
         ws_prod = self.wells['ws_prod']
         fw_vol = self.data_impress['fw_vol']
-        water_production = (self.data_impress['flux_volumes'][ws_prod]*fw_vol[ws_prod]).sum()
-        oil_production = (self.data_impress['flux_volumes'][ws_prod]).sum() - water_production
-        
-        wor = water_production/oil_production
 
+        # water_production = (self.data_impress['flux_volumes'][ws_prod]*fw_vol[ws_prod]).sum()
+        # oil_production = (self.data_impress['flux_volumes'][ws_prod]).sum() - water_production
+        # import pdb; pdb.set_trace()
+        faces=np.hstack(self.elements_lv0['volumes_face_faces'][ws_prod])
+        water_production=-abs((self.data_impress['fw_faces'][faces]*self.data_impress['flux_w_faces'][faces])).sum()
+        oil_production = (self.data_impress['flux_volumes'][ws_prod]).sum() - water_production
+        self.data_impress['saturation'][ws_prod]=(0.2*oil_production+0.8*water_production)/(water_production+oil_production)
+        # oil_production=self.data_impress['fo_faces'][np.hstack(self.elements_lv0['volumes_face_volumes'][ws_prod])].sum()
+        wor = water_production/oil_production
+        
+        self.wor=wor
         self.current_biphasic_results = np.array([self.loop, self.delta_t, simulation_time,
             -oil_production, -water_production, self.t, wor, self.vpi, self.contador_vtk])
 

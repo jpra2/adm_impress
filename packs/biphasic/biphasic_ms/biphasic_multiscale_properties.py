@@ -42,12 +42,13 @@ class bipahsicMultiscaleProperties:
 
         # flux_w_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
         flux_w_volumes=np.bincount(lines,weights=data)
+        # import pdb; pdb.set_trace()
         flux_w_volumes[ws_prod] -= flux_volumes[ws_prod]*fw_vol[ws_prod]
         flux_w_volumes[ws_inj] -= flux_volumes[ws_inj]*fw_vol[ws_inj]
 
-        self.data_impress['verif_po'][:] = 0.0
-        self.data_impress['verif_po'][ws_prod] = flux_volumes[ws_prod]*fw_vol[ws_prod]
-        self.data_impress['verif_po'][ws_inj] = flux_volumes[ws_inj]*fw_vol[ws_inj]
+        # self.data_impress['verif_po'][:] = 0.0
+        # self.data_impress['verif_po'][ws_prod] = flux_volumes[ws_prod]*fw_vol[ws_prod]
+        # self.data_impress['verif_po'][ws_inj] = flux_volumes[ws_inj]*fw_vol[ws_inj]
 
         return flux_w_volumes
 

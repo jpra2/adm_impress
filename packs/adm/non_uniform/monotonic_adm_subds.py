@@ -12,11 +12,8 @@ def get_preprossed_monotonic_primal_objects(data_impress,elements_lv0, OP_AMS,ne
     gids1_0=gids1[ffv[:,0]]
     gids1_1=gids1[ffv[:,1]]
 
-    # lo=lcd[0]
-    # co=lcd[1]
-    # do=lcd[2]
-    # lc=gids1[lo]
     preprocessed_primal_objects=[]
+    critical_groups=[]
     for primal in neumann_subds:
         gid1=primal.gid1
         intersect_faces=primal.intersect_faces
@@ -59,8 +56,11 @@ def get_preprossed_monotonic_primal_objects(data_impress,elements_lv0, OP_AMS,ne
         # local_volumes=lc==gid1
         # lcd_OP_local=[map_l[lo[local_volumes]], co[local_volumes], do[local_volumes]]
         lcd_OP_local=sp.find(OP_AMS_local)
-        preprocessed_primal_objects.append(PrepMonotonicPrimal(lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter))
-    return preprocessed_primal_objects
+        prep_primal=PrepMonotonicPrimal(lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter)
+        preprocessed_primal_objects.append(prep_primal)
+        for cg in prep_primal.critical_groups:
+            critical_groups.append(cg)
+    return preprocessed_primal_objects, critical_groups
 
 class PrepMonotonicPrimal:
     def __init__(self, lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter):
@@ -71,6 +71,11 @@ class PrepMonotonicPrimal:
         self.lc_exter=lc_exter
         self.equals=lines==cols
         self.different=lines!=cols
+        self.le=lines[self.equals]
+        self.ce=cols[self.equals]
+        self.ld=lines[self.different]
+        self.cd=cols[self.different]
+
         self.ls=np.unique(lines[self.equals])
         self.lines=lines
         self.cols=cols
@@ -115,78 +120,65 @@ class PrepMonotonicPrimal:
                 pos=labels==i
                 if pos.sum()>1:
                     critical_groups.append(volumes[critical_volumes[pos]])
-
-
         self.critical_groups=critical_groups
 
-
-
-def get_monotonizing_volumes(preprocessed_primal_objects, transmissibility, tol):
-    t0=time.time()
+def get_monotonizing_volumes(preprocessed_primal_objects, transmissibility):
     volumes=[]
     netasp_list=[]
-    critical_groups=[]
     for primal in preprocessed_primal_objects:
         t_internal=transmissibility[primal.intern_global_faces]
         t_intersect=transmissibility[primal.intersect_faces]
         lines=primal.lines
         cols=primal.cols
         data=np.concatenate([t_internal, t_internal, -t_internal, -t_internal, -t_intersect, t_intersect])
-        t0=time.time()
         T_numpy=primal.T_numpy
-
         equals=primal.equals
         different=primal.different
+        le=primal.le
+        ce=primal.ce
+        ld=primal.ld
+        cd=primal.cd
+        if (lines[equals]!=le).sum()!=0 or (lines[different]!=ld).sum()!=0 or (cols[equals]!=ce).sum()!=0 or (cols[different]!=cd).sum()!=0:
+            import pdb; pdb.set_trace()
         ls=primal.ls
+        T_numpy[ld,cd]=data[different]
 
+        T_numpy[ls, ls]=np.bincount(le,weights=data[equals])[ls]
 
-        T_numpy[lines[different],cols[different]]=data[different]
-
-        T_numpy[ls, ls]=np.bincount(lines[equals],weights=data[equals])[ls]
-        # T[range(len(T)),range(len(T))]-=T.sum(axis=1)
-        # T=sp.csc_matrix(T)
-        # import pdb; pdb.set_trace()
-        # print(time.time()-t2,'criar_numpy')
-        # t3=time.time()
-        # T=sp.csr_matrix((data,(lines, cols)), shape=(cols.max()+1, cols.max()+1))
-        # T=sp.csc_matrix(T)
-        # print(time.time()-t3,'criar')
         OP_numpy=primal.OP_numpy
-        # OP_AMS=primal.OP_local
-
         gid1=primal.gid1_local
-
-        # tp=T*OP_AMS
-        np.set_printoptions(1)
         tpn=np.dot(T_numpy,OP_numpy)
-
-
-        # print(time.time()-t1,t1-t0,"mul, dort")
-        # import pdb; pdb.set_trace()
-        # print(time.time()-t0,'multio')
-        # dc=tp[:,gid1].sum()
-        # nf=(1/dc)*tp
-        # netasp=nf.max(axis=1).T.toarray()[0]
 
         dcn=tpn[:,gid1].sum()
         nfn=(1/dcn)*tpn
         netaspn=nfn.max(axis=1)
-        # print(abs(netasp-netaspn).sum(),'netasdif')
 
-        # netasp=nf.max(axis=1)
-
-        volumes.append(primal.volumes[netaspn>0])
-        netasp_list.append(netaspn[netaspn>0])
-
-        for cg in primal.critical_groups:
-            # import pdb; pdb.set_trace()
-            # if len(np.intersect1d(primal.volumes[netaspn>tol],cg))>0:
-            critical_groups.append(cg)
-
+        volumes.append(primal.volumes)
+        netasp_list.append(netaspn)
     netasp_array=np.hstack(netasp_list)
-    # if len(critical_groups)==0:
-    #     critical_groups=np.array([])
-    # else:
-    #     critical_groups=np.hstack(critical_groups)
     volumes=np.concatenate(volumes)
-    return volumes, netasp_array,critical_groups
+    return volumes, netasp_array
+
+def get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, tol):
+    data_impress['nfp'][:]=0
+    data_impress['nfp'][volumes]=netasp_array
+
+    vols_orig=volumes[netasp_array>tol]
+    data_impress['LEVEL'][vols_orig]=0
+
+    t1=time.time()
+    teste=True
+    vols_0=np.array([])
+    while teste:
+        lv=len(vols_0)
+        groups_lv0=np.unique(l_groups[data_impress['LEVEL'][groups_c]==0])
+        vols_lv0=np.concatenate(np.array(critical_groups)[groups_lv0])
+        vols_0=np.unique(np.append(vols_0,vols_lv0))
+        if len(vols_0)==lv:
+            teste=False
+        else:
+            vols_lv0=np.concatenate(np.array(critical_groups)[groups_lv0])
+            data_impress['LEVEL'][vols_lv0]=0
+    vols_orig=np.unique(np.concatenate([vols_orig,vols_0])).astype(int)
+    data_impress['LEVEL'][vols_orig]=0
+    return vols_orig

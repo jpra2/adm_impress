@@ -72,7 +72,7 @@ class NeumannSubdomains:
             self.adj0.append(map_gid_in_lid[adj_intern_local_faces[:,0]])
             self.adj1.append(map_gid_in_lid[adj_intern_local_faces[:,1]])
             self.ind_diric_local.append(map_gid_in_lid[vertex])
-            self.ind_neum_local.append(map_gid_in_lid[intern_boundary_volumes])            
+            self.ind_neum_local.append(map_gid_in_lid[intern_boundary_volumes])
 
             self.T.append(np.zeros((len(volumes),len(volumes))))
             self.b.append(np.zeros(len(volumes)))
@@ -80,8 +80,7 @@ class NeumannSubdomains:
             map_volumes[volumes]=range(len(volumes))
 
             ind_diric_local=map_volumes[vertex]
-
-            # import pdb; pdb.set_trace()
+            
             l=map_volumes[adjs[:,0]]
             c=map_volumes[adjs[:,1]]
             if (map_volumes[volumes]!=map_gid_in_lid[volumes]).sum():

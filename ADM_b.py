@@ -13,31 +13,35 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
+
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 # from packs.biphasic.biphasic_tpfa import BiphasicTpfa
 from packs.biphasic.biphasic_ms.biphasic_multiscale import BiphasicTpfaMultiscale
-plt.close('all')
-'''
-def get_gids_and_primal_id(gids, primal_ids):
-    gids2 = np.unique(gids)
-    primal_ids2 = []
-    for i in gids2:
-        primal_id = np.unique(primal_ids[gids==i])
-        if len(primal_id) > 1:
-            raise ValueError('erro get_gids_and_primal_id')
-        primal_ids2.append(primal_id[0])
-    primal_ids2 = np.array(primal_ids2)
-    return gids2, primal_ids2'''
+
+def save_multilevel_results():
+    vals_n1_adm.append(adm_method.n1_adm)
+    vals_vpi.append(b1.vpi)
+    vals_delta_t.append(b1.delta_t)
+    vals_wor.append(b1.wor)
+
+def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor):
+    vals_n1_adm=np.array(vals_n1_adm+[len(data_impress['GID_0'])])
+    vals_vpi=np.array(vals_vpi)
+    vals_delta_t=np.array(vals_delta_t)
+    vals_wor=np.array(vals_wor)
+    vars=[vals_vpi,vals_n1_adm,vals_delta_t,vals_wor]
+    ms_case=np.load("flying/ms_case.npy")[0]
+    names=['vpi','n1_adm', 'delta_t', 'wor']
+    for i in range(len(vars)):
+        np.save('results/biphasic/ms/'+ms_case+names[i]+'.npy',vars[i])
 
 def plot_operator(T,OP_AMS, primals):
-    # T2=T.copy()
-    # T2.setdiag(0)
-    # OP_AMS=T2*OP_AMS
     for i in range(len(primals)):
         tag_ams=M.core.mb.tag_get_handle("OP_AMS_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         fb_ams = OP_AMS[:, primals[i]].toarray()
         M.core.mb.tag_set_data(tag_ams, M.core.all_volumes, fb_ams)
+
 def plot_net_flux(OR_AMS,OP_AMS):
     Tc=OR_AMS*T*OP_AMS
     diag=np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
@@ -215,7 +219,7 @@ mlo=multilevel_operators
 
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
-neta_lim=1.0*np.inf
+neta_lim=np.load('flying/neta_lim_dual.npy')[0]
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 
@@ -293,8 +297,8 @@ diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
 nn = 10
-n_for_save=2
-pp = 1
+n_for_save=100
+pp = 100
 cont = 1
 
 verif = True
@@ -302,41 +306,28 @@ pare = False
 np.save('results/jac_iterarion.npy',np.array([0]))
 phis_k=OP_AMS[data_impress['GID_0'],data_impress['GID_1']].toarray()[0]
 data_impress['raz_pos']=(1-phis_k)/phis_k
-preprocessed_primal_objects=monotonic_adm_subds.get_preprossed_monotonic_primal_objects(data_impress, elements_lv0, OP_AMS, neumann_subds.neumann_subds)
+preprocessed_primal_objects, critical_groups=monotonic_adm_subds.get_preprossed_monotonic_primal_objects(data_impress, elements_lv0, OP_AMS, neumann_subds.neumann_subds)
+l_groups=np.concatenate([np.repeat(i,len(critical_groups[i])) for i in range(len(critical_groups))])
+groups_c=np.concatenate(critical_groups)
 
 adm_method.set_level_wells_3()
+vals_n1_adm=[]
+vals_vpi=[]
+vals_delta_t=[]
+vals_wor=[]
+neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
 while verif:
     t00=time.time()
     transmissibility=data_impress['transmissibility']
-    t0=time.time()
-    volumes, netasp_array,critical_groups=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility, tol=0.5)
-    data_impress['nfp'][:]=0
-    data_impress['nfp'][volumes]=netasp_array
 
-    vols_orig=volumes[netasp_array>1]
-    data_impress['LEVEL'][vols_orig]=0
+    volumes, netasp_array=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility)
+    vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
 
-    l_groups=np.concatenate([np.repeat(i,len(critical_groups[i])) for i in range(len(critical_groups))])
-    groups_c=np.concatenate(critical_groups)
-    t1=time.time()
-    teste=True
-    vols_0=np.array([])
-    while teste:
-        lv=len(vols_0)
-        groups_lv0=np.unique(l_groups[data_impress['LEVEL'][groups_c]==0])
-        vols_lv0=np.concatenate(np.array(critical_groups)[groups_lv0])
-        vols_0=np.unique(np.append(vols_0,vols_lv0))
-        if len(vols_0)==lv:
-            teste=False
-        else:
-            vols_lv0=np.concatenate(np.array(critical_groups)[groups_lv0])
-            data_impress['LEVEL'][vols_lv0]=0
-    vols_orig=np.unique(np.concatenate([vols_orig,vols_0])).astype(int)
-    data_impress['LEVEL'][vols_orig]=0
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
+
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
-    print(time.time()-t0,'adapt')
+
     t0=time.time()
     for level in range(1, n_levels):
         adm_method.organize_ops_adm(mlo, level)
@@ -353,27 +344,22 @@ while verif:
         adm_method.set_monotonizing_level(vols_orig)
 
     adm_method.set_saturation_level_simple()
-    print(time.time()-t0,'levels')
-    t0=time.time()
-    adm_method.solve_multiscale_pressure(T, b)
-    print(time.time()-t0,'solve')
-    t0=time.time()
-    adm_method.set_pms_flux(wells, neumann_subds)
-    print(time.time()-t0,'set pms flux')
-    t0=time.time()
-    b1.get_velocity_faces()
-    print(time.time()-t0,'vel_fac')
-    t0=time.time()
-    b1.get_flux_volumes()
-    print(time.time()-t0,"flux_vol")
-    t0=time.time()
-    b1.run_2()
-    print(time.time()-t0,'run2')
-    if cont % nn == 0:
-        import pdb; pdb.set_trace()
-        # verif=False
 
-    # plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
+    adm_method.solve_multiscale_pressure(T, b)
+
+    adm_method.set_pms_flux(wells, neumann_subds)
+
+    b1.get_velocity_faces()
+
+    b1.get_flux_volumes()
+
+    b1.run_2()
+    print(b1.wor, adm_method.n1_adm)
+    save_multilevel_results()
+    if cont % nn == 0:
+        export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor)
+        verif=False
+
     if cont % pp == 0:
         print("Creating_file")
         meshset_plot_faces=M.core.mb.create_meshset()
@@ -387,12 +373,5 @@ while verif:
         M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
         M.core.mb.write_file('results/faces_'+str(cont)+'.vtk', [meshset_plot_faces])
         print("File created at time-step: ",cont)
-
     T, b = b1.get_T_and_b()
-    # plot_net_flux(OR_AMS,OP_AMS)
-    # gids_to_monotonize=monotonize_adm.monotonize_adm(mlo, T,neta_lim)
-    # if len(gids_to_monotonize)>0:
-    #     adm_method.set_monotonizing_level(gids_to_monotonize)
-    print('timestep: ',cont)
-    print(time.time()-t00,'loop time')
     cont += 1
