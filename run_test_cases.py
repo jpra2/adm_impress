@@ -1,6 +1,14 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import shutil
+
+# Cleans the previous results
+shutil.rmtree('results/biphasic/ms')
+shutil.rmtree('results/biphasic/finescale')
+# creates new folders
+os.mkdir('results/biphasic/ms')
+os.mkdir('results/biphasic/finescale')
 
 neta_lim_dual_values=[np.inf, np.inf]
 neta_lim_finescale_values=[0.05, 0.1]
@@ -10,9 +18,9 @@ for i in range(len(neta_lim_dual_values)):
     ms_case='n_d'+str(neta_lim_dual_values[i])+'_nf_'+str(neta_lim_finescale_values[i])+'/'
     os.makedirs('results/biphasic/ms/'+ms_case,exist_ok=True)
     np.save('flying/ms_case.npy',np.array([ms_case]))
-#     os.system("python ADM_b.py")
+    os.system("python ADM_b.py")
 #
-# os.system("python testting2_biphasic.py")
+os.system("python testting2_biphasic.py")
 cases_ms=[]
 for root, dirs, files in os.walk("results/biphasic/ms"):
     for dir in dirs:
@@ -32,13 +40,22 @@ for r, ds, fs in os.walk("results/biphasic/finescale"): #print(fs)
 case_finescale=[['finescale',finescale]]
 all_cases=np.array(cases_ms+case_finescale)
 variables=all_cases[0][1].keys()
-import pdb; pdb.set_trace()
+
 for variable in variables:
     plt.close('all')
     for case in all_cases:
         case_name=case[0]
         case_data=case[1]
-        if ((case_name!='finescale') and (variable!="n1_adm")) or (variable!="vpi"):
-            plt.plot(case_data['vpi'], case_data[variable])
+        if variable!="vpi":
+            if case_name=='finescale':
+                if variable!="n1_adm":
+                    plt.plot(case_data['vpi'], case_data[variable],label=case_name)
+            else:
+                if variable=='n1_adm':
+                    plt.plot(case_data['vpi'], 100*case_data[variable][:-1]/case_data[variable][-1], label=case_name)
+                else:
+                    plt.plot(case_data['vpi'], case_data[variable],label=case_name)
 
-    plt.savefig('results/biphasic/'+variable+'.png')
+    if variable!='vpi':
+        plt.legend()
+        plt.savefig('results/biphasic/'+variable+'.png')

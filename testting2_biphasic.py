@@ -18,7 +18,7 @@ def export_finescale_results(vals_vpi,vals_delta_t,vals_wor):
 # b1.run()
 # import pdb; pdb.set_trace()
 n = 1
-n2 = 10
+n2 = 2000
 n_for_save = 100
 cont_for_save = 1
 loop = 0
