@@ -425,8 +425,8 @@ class AdmNonNested(AdmMethod):
         for g1 in gid1_wells:
             pos+=self.data_impress['GID_1']==g1
         vols_to_lv0=self.data_impress['GID_0'][pos>0]
-        
-        vols_to_lv0=np.unique(np.hstack(self.elements_lv0['volumes_face_volumes'][vols_to_lv0]))
+
+        # vols_to_lv0=np.unique(np.hstack(self.elements_lv0['volumes_face_volumes'][vols_to_lv0]))
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
         self.data_impress['LEVEL'][vols_to_lv0] = 0
         # gid0 = self.data_impress['GID_0']

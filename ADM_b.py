@@ -20,19 +20,24 @@ from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 from packs.biphasic.biphasic_ms.biphasic_multiscale import BiphasicTpfaMultiscale
 
 def save_multilevel_results():
+    t_comp.append(t1-t0)
     vals_n1_adm.append(adm_method.n1_adm)
     vals_vpi.append(b1.vpi)
     vals_delta_t.append(b1.delta_t)
     vals_wor.append(b1.wor)
 
-def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor):
+def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf):
     vals_n1_adm=np.array(vals_n1_adm+[len(data_impress['GID_0'])])
     vals_vpi=np.array(vals_vpi)
     vals_delta_t=np.array(vals_delta_t)
     vals_wor=np.array(vals_wor)
-    vars=[vals_vpi,vals_n1_adm,vals_delta_t,vals_wor]
-    ms_case=np.load("flying/ms_case.npy")[0]
-    names=['vpi','n1_adm', 'delta_t', 'wor']
+    t_comp=np.array(t_comp)
+    el2=np.array(el2)*100
+    elinf=np.array(elinf)*100
+
+    vars=[vals_vpi,vals_n1_adm,vals_delta_t,vals_wor, t_comp, el2, elinf]
+
+    names=['vpi','n1_adm', 'delta_t', 'wor', 't_comp', 'el2', 'elinf']
     for i in range(len(vars)):
         np.save('results/biphasic/ms/'+ms_case+names[i]+'.npy',vars[i])
 
@@ -296,10 +301,11 @@ diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
 # data_impress['initial_diag']=diagf
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
-nn = 2000
-n_for_save=100
+nn = 100
 pp = 100
 cont = 1
+vpis_for_save=np.arange(0.0,0.051,0.01)
+count_save=0
 
 verif = True
 pare = False
@@ -309,12 +315,17 @@ data_impress['raz_pos']=(1-phis_k)/phis_k
 preprocessed_primal_objects, critical_groups=monotonic_adm_subds.get_preprossed_monotonic_primal_objects(data_impress, elements_lv0, OP_AMS, neumann_subds.neumann_subds)
 l_groups=np.concatenate([np.repeat(i,len(critical_groups[i])) for i in range(len(critical_groups))])
 groups_c=np.concatenate(critical_groups)
+ms_case=np.load("flying/ms_case.npy")[0]
 
 adm_method.set_level_wells_3()
 vals_n1_adm=[]
 vals_vpi=[]
 vals_delta_t=[]
 vals_wor=[]
+t_comp=[]
+el2=[]
+elinf=[]
+
 neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
 while verif:
     t00=time.time()
@@ -344,7 +355,7 @@ while verif:
         adm_method.set_monotonizing_level(vols_orig)
 
     adm_method.set_saturation_level_simple()
-
+    t0=time.time()
     adm_method.solve_multiscale_pressure(T, b)
 
     adm_method.set_pms_flux(wells, neumann_subds)
@@ -354,13 +365,19 @@ while verif:
     b1.get_flux_volumes()
 
     b1.run_2()
+    t1=time.time()
     print(b1.wor, adm_method.n1_adm)
-    save_multilevel_results()
-    if cont % nn == 0:
-        export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor)
-        verif=False
+    pms=data_impress['pressure']
+    pf=linalg.spsolve(T,b)
+    eadm_2=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
+    eadm_inf=abs(pms-pf).max()/pf.max()
+    el2.append(eadm_2)
+    elinf.append(eadm_inf)
 
-    if cont % pp == 0:
+    save_multilevel_results()
+
+    if vpis_for_save[count_save]<b1.vpi:
+        print(b1.vpi,'vpi')
         print("Creating_file")
         meshset_plot_faces=M.core.mb.create_meshset()
         lv=data_impress['LEVEL']
@@ -370,8 +387,17 @@ while verif:
         facs_plot=np.concatenate([bounds_coarse,lvs0])
         M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
         data_impress.update_variables_to_mesh()
-        M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
-        M.core.mb.write_file('results/faces_'+str(cont)+'.vtk', [meshset_plot_faces])
+        file_count=str(int(100*vpis_for_save[count_save]))
+
+        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
+        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
+
         print("File created at time-step: ",cont)
+        count_save+=1
+
+    if cont % nn == 0 or count_save==len(vpis_for_save)-1:
+        export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf)
+        verif=False
+
     T, b = b1.get_T_and_b()
     cont += 1

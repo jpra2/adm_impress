@@ -476,7 +476,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         self.data_impress['saturation'][ws_prod]=(0.2*oil_production+0.8*water_production)/(water_production+oil_production)
         # oil_production=self.data_impress['fo_faces'][np.hstack(self.elements_lv0['volumes_face_volumes'][ws_prod])].sum()
         wor = water_production/oil_production
-        
+
         self.wor=wor
         self.current_biphasic_results = np.array([self.loop, self.delta_t, simulation_time,
             -oil_production, -water_production, self.t, wor, self.vpi, self.contador_vtk])
@@ -498,7 +498,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         self.all_biphasic_results = self.get_empty_current_biphasic_results()
 
     def run(self, save=False):
-
+        t0=time.time()
         # T, b = super().run()
         # self.update_gama()
         T, b = self.get_T_and_b()
@@ -506,6 +506,9 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         self.data_impress['pressure'] = p
         self.get_flux_faces_and_volumes()
         self.run_2(save = save)
+        t1=time.time()
+        dt=t1-t0
+        self.t_comp=dt
 
     def run_2(self, save=False):
         ######
@@ -522,7 +525,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         self.update_transmissibility()
         self.update_loop()
         t1=time.time()
-        dt = t1-t0
+        dt=t1-t0        
         self.update_current_biphasic_results(dt)
         if save:
             self.save_infos()
