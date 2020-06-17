@@ -172,8 +172,10 @@ def get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volu
     while teste:
         lv=len(vols_0)
         groups_lv0=np.unique(l_groups[data_impress['LEVEL'][groups_c]==0])
-        vols_lv0=np.concatenate(np.array(critical_groups)[groups_lv0])
-        vols_0=np.unique(np.append(vols_0,vols_lv0))
+        if len(groups_lv0)>0:
+            vols_lv0=np.concatenate(np.array(critical_groups)[groups_lv0])
+            vols_0=np.unique(np.append(vols_0,vols_lv0))
+            
         if len(vols_0)==lv:
             teste=False
         else:

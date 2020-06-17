@@ -260,7 +260,7 @@ OR_AMS=mlo['restriction_level_1']
 
 
 
-plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
+# plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
 # write_file_with_tag_range('OP_AMS_63',[0,np.inf])
 
 Tc=OR_AMS*T*OP_AMS

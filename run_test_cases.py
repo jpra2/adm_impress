@@ -56,6 +56,8 @@ def organize_results():
 def print_results(all_cases):
     units={'vpi':'vpi[%]','wor':'wor[%]','t_comp':'comp_time[s]','delta_t':'time-step[]', 'n1_adm':'Nadm/Nf[%]','el2':'ep_L2[%]','elinf':'ep_Linf[%]'}
     variables=all_cases[0][1].keys()
+    ymin=np.inf
+    ymax=-np.inf
     for variable in variables:
         plt.close('all')
         for case in all_cases:
@@ -72,10 +74,26 @@ def print_results(all_cases):
                         plt.xlabel(units['vpi'])
                         plt.ylabel(units[variable])
                     else:
+
+                        if case_data[variable].min()<ymin:
+                            ymin=case_data[variable].min()
+                        elif case_data[variable].max()>ymax:
+                            ymax=case_data[variable].max()
+
                         plt.plot(100*case_data['vpi'], case_data[variable],label=case_name)
                         plt.xlabel(units['vpi'])
                         plt.ylabel(units[variable])
 
+
         if variable!='vpi':
+            if variable=='el2' or variable=='elinf':                
+                plt.yscale('log')
+                plt.gca().set_yticks(plt.gca().get_yticks()[:-1])
+                plt.gca().set_yticklabels(['{:.0f}%'.format(x) for x in plt.gca().get_yticks()])
+                ticks=plt.gca().get_yticks()
+                t_ymin=ticks[ticks>=ymin].min()*10
+                t_ymax=ticks[ticks<=ymax].max()*10
+                plt.ylim((t_ymin,t_ymax))
+
             plt.legend()
             plt.savefig('results/biphasic/'+variable+'.png')
