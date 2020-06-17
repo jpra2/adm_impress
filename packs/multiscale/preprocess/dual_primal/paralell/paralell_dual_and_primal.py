@@ -28,18 +28,12 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
                 if (max_j[j]-min_j[j])<=crs[i][j]*d_j[j]+1e-10:
                     Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
                 else:
-                    num_p=(max_j[j]-min_j[j])/(crs[i][j]*d_j[j])
-                    sobra_blocos=(num_p-int(num_p))*crs[i][j]
-                    add_initial=d_j[j]*int(sobra_blocos/2)
-
+                    n_homog_prim=round((max_j[j]-min_j[j])/(crs[i][j]*d_j[j]))-1
+                    length_non_homog_prim=max_j[j]-min_j[j]-n_homog_prim*crs[i][j]*d_j[j]
+                    initial_homog_primal=min_j[j]+int((length_non_homog_prim/d_j[j])/2)*d_j[j]
                     Pij=np.array([min_j[j]])
-                    dmin=Pij+(int(crs[i][j]/2)+1)*d_j[j]+add_initial
-                    dmax=round(max_j[j])+d_j[j]
-                    # dmax=np.array([min_j[j]])+crs[i][j]*d_j[j]*(num_p-2)
-
-                    Pij=np.append(Pij,np.arange(dmin,dmax,crs[i][j]*d_j[j]))
-                    Pij=np.append(Pij,max_j[j])
-
+                    p_homog=initial_homog_primal+np.cumsum(np.repeat(crs[i][j]*d_j[j],n_homog_prim+2))-crs[i][j]*d_j[j]
+                    Pij=np.append(Pij,p_homog)
             else:
                 Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
 
@@ -47,10 +41,12 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
 
             Dij = (Pij[1:]+Pij[:-1])/2
 
-            # import pdb; pdb.set_trace()
+            # if j==0:
+            #     import pdb; pdb.set_trace()
             if external_vertex_on_boundary and len(Dij)>1:
                 Dij[0] = min_j[j]+d_j[j]/2
                 Dij[-1] = max_j[j]-d_j[j]/2
+            # import pdb; pdb.set_trace()
             P_i.append(Pij)
             D_i.append(Dij)
         P.append(P_i)
@@ -213,11 +209,10 @@ def set_tags(M1, primal_1, primal_2, dual_flag_1, dual_flag_2):
         M1.mb.add_entities(ms,volumes[primal_2[i]])
         M1.mb.tag_set_data(M1.primal_id_tag2,ms,i)
 
-    # ms=M1.mb.create_meshset()
-    # M1.mb.add_entities(ms,M1.all_volumes)
-    # M1.mb.write_file("results/dual_test.vtk",[ms])
-
-
+    ms=M1.mb.create_meshset()
+    M1.mb.add_entities(ms,M1.all_volumes)
+    M1.mb.write_file("results/dual_test.vtk",[ms])
+    # import pdb; pdb.set_trace()
 class DualPrimal:
     def __init__(self, M1, coord_nodes, cent_volumes, external_vertex_on_boundary=True):
 

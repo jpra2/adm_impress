@@ -14,6 +14,7 @@ class masterNeumanNonNested:
     def run(self):
         list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_vec()
         faces_intern, ms_flux_faces, vols, pcorr = LocalSolution(list_of_subdomains).run()
+        # import pdb; pdb.set_trace()
         self.global_ms_flux_faces[faces_intern] = ms_flux_faces
         global_pcorr = np.zeros(len(self.data_impress['GID_0']))
         global_pcorr[vols] = pcorr
@@ -81,7 +82,7 @@ class Subdomain():
         self.adj0=adj0
         self.adj1=adj1
         b[ind_diric_local] = val_diric
-        b[ind_neum_local] = val_neum        
+        b[ind_neum_local] = val_neum
         self.b=b
 
     def get_local_matrix_with_boundary_condition(self, transmissibility, ind_diric_local, T, l, c):
