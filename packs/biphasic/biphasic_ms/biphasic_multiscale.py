@@ -8,6 +8,7 @@ class BiphasicTpfaMultiscale(BiphasicTpfa, bipahsicMultiscaleProperties):
 
     def __init__(self, M, data_impress, elements_lv0, wells, data_name: str='BiphasicTpfaMultiscale.npz'):
         super().__init__(M, data_impress, elements_lv0, wells, data_name=data_name)
+        
 
     def update_flux_w_and_o_volumes(self):
         internal_faces = self.elements_lv0['internal_faces']
@@ -25,4 +26,3 @@ class BiphasicTpfaMultiscale(BiphasicTpfa, bipahsicMultiscaleProperties):
         self.data_impress['flux_o_faces_vec'] = np.zeros(self.data_impress['flux_w_faces_vec'].shape)
         self.data_impress['flux_w_faces_vec'][internal_faces] = flux_w_vec_internal_faces
         self.data_impress['flux_o_faces_vec'][internal_faces] = flux_o_vec_internal_faces
-        

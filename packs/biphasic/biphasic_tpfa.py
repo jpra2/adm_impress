@@ -105,8 +105,10 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         gama = self.data_impress['gama']
         gama_internal_faces = gama_faces[internal_faces]
         self._data['upwind_identificate'] = np.full((len(internal_faces), 2), False, dtype=bool)
+
         saturations = self.data_impress['saturation']
         delta_sat = saturations[vols_viz_internal_faces[:,0]] - saturations[vols_viz_internal_faces[:,1]]
+
         pos = delta_sat >= 0
         self._data['upwind_identificate'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
         pos = ~pos
@@ -217,7 +219,6 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         data = np.array([flux_w_internal_faces, -flux_w_internal_faces]).flatten()
         # flux_w_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
         flux_w_volumes=np.bincount(lines,weights=data)
-        # import pdb; pdb.set_trace()
 
 
         flux_w_volumes[ws_prod] -= flux_volumes[ws_prod]*fw_vol[ws_prod]
@@ -320,6 +321,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         return delta_t
 
     def update_saturation(self):
+
         self.data_impress['saturation_last'] = self.data_impress['saturation'].copy()
         verif = -1
         while verif != 0:
@@ -329,6 +331,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 
     def update_sat(self):
         saturations0 = self.data_impress['saturation'].copy()
+
         saturations = saturations0.copy()
         ids = np.arange(len(saturations))
 
@@ -338,7 +341,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 
         test = ids[(saturations < 0) | (saturations > 1)]
         if len(test) > 0:
-            import pdb; pdb.set_trace()
+
             raise ValueError(f'valor errado da saturacao {saturations[test]}')
         del test
 
@@ -374,6 +377,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         max_sat = saturations.max()
         saturations[saturations<0.2]=0.2
         saturations[saturations>0.8]=0.8
+
         '''
         if min_sat < self.biphasic_data['Swc']-0.1 or max_sat > 1-self.biphasic_data['Sor']+0.1:
             return 1
@@ -473,9 +477,12 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         faces=np.hstack(self.elements_lv0['volumes_face_faces'][ws_prod])
         water_production=-abs((self.data_impress['fw_faces'][faces]*self.data_impress['flux_w_faces'][faces])).sum()
         oil_production = (self.data_impress['flux_volumes'][ws_prod]).sum() - water_production
-        self.data_impress['saturation'][ws_prod]=(0.2*oil_production+0.8*water_production)/(water_production+oil_production)
-        # oil_production=self.data_impress['fo_faces'][np.hstack(self.elements_lv0['volumes_face_volumes'][ws_prod])].sum()
-        wor = water_production/oil_production
+        if oil_production!=0:
+            self.data_impress['saturation'][ws_prod]=(0.2*oil_production+0.8*water_production)/(water_production+oil_production)
+            # oil_production=self.data_impress['fo_faces'][np.hstack(self.elements_lv0['volumes_face_volumes'][ws_prod])].sum()
+            wor = water_production/oil_production
+        else:
+            wor = 0
 
         self.wor=wor
         self.current_biphasic_results = np.array([self.loop, self.delta_t, simulation_time,
@@ -525,7 +532,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         self.update_transmissibility()
         self.update_loop()
         t1=time.time()
-        dt=t1-t0        
+        dt=t1-t0
         self.update_current_biphasic_results(dt)
         if save:
             self.save_infos()

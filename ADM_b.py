@@ -220,15 +220,12 @@ else:
 PP2=mlo['prolongation_level_'+str(1)]
 mlo=multilevel_operators
 
-
-
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
 neta_lim=np.load('flying/neta_lim_dual.npy')[0]
 elements_lv0['neta_lim']=neta_lim
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 
-# import pdb; pdb.set_trace()
 # mlo=tpfalize(M,mlo,data_impress)
 mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
@@ -327,7 +324,10 @@ el2=[]
 elinf=[]
 
 neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
+
+
 while verif:
+
     t00=time.time()
     transmissibility=data_impress['transmissibility']
 
