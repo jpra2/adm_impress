@@ -324,10 +324,9 @@ el2=[]
 elinf=[]
 
 neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
-
+uniform_refinement=np.load('flying/uniform_refinement.npy')[0]
 
 while verif:
-
     t00=time.time()
     transmissibility=data_impress['transmissibility']
 
@@ -353,8 +352,8 @@ while verif:
     adm_method.set_level_wells_3()
     if len(vols_orig)>0:
         adm_method.set_monotonizing_level(vols_orig)
-
-    adm_method.set_saturation_level_simple()
+    adm_method.set_saturation_level_uniform(0.05)
+    # adm_method.set_saturation_level_simple()
     t0=time.time()
     adm_method.solve_multiscale_pressure(T, b)
 

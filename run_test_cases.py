@@ -86,14 +86,17 @@ def print_results(all_cases):
 
 
         if variable!='vpi':
-            if variable=='el2' or variable=='elinf':                
+            if variable=='el2' or variable=='elinf':
                 plt.yscale('log')
-                plt.gca().set_yticks(plt.gca().get_yticks()[:-1])
+                y_ticks=plt.gca().get_yticks()[:-1]
+                y_ticks=np.concatenate(np.vstack([y_ticks,np.append(y_ticks[1:]/2,y_ticks[-1])]).T)[:-1]
+                plt.gca().set_yticks(y_ticks)
                 plt.gca().set_yticklabels(['{:.0f}%'.format(x) for x in plt.gca().get_yticks()])
                 ticks=plt.gca().get_yticks()
+                # import pdb; pdb.set_trace()
                 t_ymin=ticks[ticks>=ymin].min()*10
                 t_ymax=ticks[ticks<=ymax].max()*10
                 plt.ylim((t_ymin,t_ymax))
-
+            plt.grid()
             plt.legend()
             plt.savefig('results/biphasic/'+variable+'.png')

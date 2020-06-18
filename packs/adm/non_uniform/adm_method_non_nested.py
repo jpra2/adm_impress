@@ -175,6 +175,18 @@ class AdmNonNested(AdmMethod):
         levels[v0[inds][:,1]] = 0
         self.data_impress['LEVEL'] = levels.copy()
 
+    def set_saturation_level_uniform(self, delta_max=0.1):
+        levels = self.data_impress['LEVEL'].copy()
+        gids1 = self.data_impress['GID_1']
+        saturation = self.data_impress['saturation']
+        mins=np.ones(len(np.unique(gids1)))
+        maxs=np.zeros(len(np.unique(gids1)))
+        np.maximum.at(maxs,gids1,saturation)
+        np.minimum.at(mins,gids1,saturation)
+        deltas=maxs-mins
+        levels[deltas[gids1]>delta_max]=0
+        self.data_impress['LEVEL'] = levels.copy()
+
     def set_saturation_level_imposed_joined_coarse(self):
 
         levels = self.data_impress['LEVEL'].copy()
