@@ -14,10 +14,10 @@ class masterNeumanNonNested:
     def run(self):
         list_of_subdomains, self.global_ms_flux_faces = self.get_subdomains_vec()
         faces_intern, ms_flux_faces, vols, pcorr = LocalSolution(list_of_subdomains).run()
-        # import pdb; pdb.set_trace()
-        self.global_ms_flux_faces[faces_intern] = ms_flux_faces
+
+        self.global_ms_flux_faces[np.concatenate(faces_intern)] = np.concatenate(ms_flux_faces)
         global_pcorr = np.zeros(len(self.data_impress['GID_0']))
-        global_pcorr[vols] = pcorr
+        global_pcorr[np.concatenate(vols)] = np.concatenate(pcorr)
         return self.global_ms_flux_faces.copy(), global_pcorr
 
     def get_subdomains_vec(self):

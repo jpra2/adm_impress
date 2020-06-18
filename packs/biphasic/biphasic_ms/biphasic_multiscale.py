@@ -9,7 +9,6 @@ class BiphasicTpfaMultiscale(BiphasicTpfa, bipahsicMultiscaleProperties):
     def __init__(self, M, data_impress, elements_lv0, wells, data_name: str='BiphasicTpfaMultiscale.npz'):
         super().__init__(M, data_impress, elements_lv0, wells, data_name=data_name)
         
-
     def update_flux_w_and_o_volumes(self):
         internal_faces = self.elements_lv0['internal_faces']
         self.data_impress['flux_w_faces'] = np.zeros(len(self.data_impress['flux_w_faces']))

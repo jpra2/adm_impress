@@ -209,14 +209,14 @@ def set_tags(M1, primal_1, primal_2, dual_flag_1, dual_flag_2):
         M1.mb.add_entities(ms,volumes[primal_2[i]])
         M1.mb.tag_set_data(M1.primal_id_tag2,ms,i)
 
-    ms=M1.mb.create_meshset()
-    M1.mb.add_entities(ms,M1.all_volumes)
-    M1.mb.write_file("results/dual_test.vtk",[ms])
+    # ms=M1.mb.create_meshset()
+    # M1.mb.add_entities(ms,M1.all_volumes)
+    # M1.mb.write_file("results/dual_test.vtk",[ms])
     # import pdb; pdb.set_trace()
 class DualPrimal:
     def __init__(self, M1, coord_nodes, cent_volumes, external_vertex_on_boundary=True):
 
-        P, D, min_j, max_j, d_j = get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_dual=False)
+        P, D, min_j, max_j, d_j = get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_dual=True)
 
         # subP, subD = distribute_reservoir_partitions(P, D, nworker=3)
         primal_1, primal_2, dual_flag_1, dual_flag_2 = create_dual_and_primal(P, D, min_j, max_j, d_j, cent_volumes)
