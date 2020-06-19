@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.sparse as sp
 import time
-def get_preprossed_monotonic_primal_objects(data_impress,elements_lv0, OP_AMS,neumann_subds):
+def get_preprossed_monotonic_primal_objects(data_impress,elements_lv0, OP_AMS,neumann_subds,phiK_raz_lim=5):
     # lcd=sp.find(OP_AMS)
     OP_AMS_c=OP_AMS.tolil()
     gids1=data_impress['GID_1']
@@ -56,17 +56,17 @@ def get_preprossed_monotonic_primal_objects(data_impress,elements_lv0, OP_AMS,ne
         # local_volumes=lc==gid1
         # lcd_OP_local=[map_l[lo[local_volumes]], co[local_volumes], do[local_volumes]]
         lcd_OP_local=sp.find(OP_AMS_local)
-        prep_primal=PrepMonotonicPrimal(lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter)
+        prep_primal=PrepMonotonicPrimal(lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter, phiK_raz_lim, data_impress)
         preprocessed_primal_objects.append(prep_primal)
         for cg in prep_primal.critical_groups:
             critical_groups.append(cg)
     return preprocessed_primal_objects, critical_groups
 
 class PrepMonotonicPrimal:
-    def __init__(self, lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter):
-        self.create_primal_subds(lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter)
+    def __init__(self, lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter, phiK_raz_lim, data_impress):
+        self.create_primal_subds(lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter,phiK_raz_lim, data_impress)
 
-    def create_primal_subds(self, lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter):
+    def create_primal_subds(self, lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter,phiK_raz_lim, data_impress):
         # import pdb; pdb.set_trace()
         self.lc_exter=lc_exter
         self.equals=lines==cols
@@ -99,14 +99,21 @@ class PrepMonotonicPrimal:
         phi_k[lc_exter[0]]=phi_k_exter
         raz_phi=(1-phi_k)/phi_k
 
+        actual_phi=data_impress['raz_phi'][volumes]
+        efective_phi=np.maximum(actual_phi,raz_phi)
+        data_impress['raz_phi'][volumes]=efective_phi
+
+        phi_subs=1
+
+
         critical_groups=[]
         lc_exter=self.lc_exter
 
         ls=np.concatenate([self.lines,lc_exter[0]])
         cs=np.concatenate([self.cols,lc_exter[1]])
         # import pdb; pdb.set_trace()
-        if raz_phi.max()>5:
-            critical_volumes=np.arange(len(volumes))[raz_phi>5]
+        if raz_phi.max()>phiK_raz_lim:
+            critical_volumes=np.arange(len(volumes))[raz_phi>phiK_raz_lim]
             map_g=np.repeat(-1,len(volumes))
             map_g[critical_volumes]=range(len(critical_volumes))
             pos_crit=(map_g[ls]>-1) & (map_g[cs]>-1)
@@ -161,9 +168,13 @@ def get_monotonizing_volumes(preprocessed_primal_objects, transmissibility):
 
 def get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, tol):
     data_impress['nfp'][:]=0
-    data_impress['nfp'][volumes]=netasp_array
-
-    vols_orig=volumes[netasp_array>tol]
+    # import pdb; pdb.set_trace()
+    maxs=np.zeros(len(np.unique(volumes)))
+    np.maximum.at(maxs,volumes,netasp_array)
+    data_impress['nfp'][np.unique(volumes)]=maxs
+    vols_orig=np.unique(volumes)[maxs>tol]
+    # data_impress['nfp'][volumes]=netasp_array
+    # vols_orig=volumes[netasp_array>tol]
     data_impress['LEVEL'][vols_orig]=0
 
     t1=time.time()
@@ -175,7 +186,7 @@ def get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volu
         if len(groups_lv0)>0:
             vols_lv0=np.concatenate(np.array(critical_groups)[groups_lv0])
             vols_0=np.unique(np.append(vols_0,vols_lv0))
-            
+
         if len(vols_0)==lv:
             teste=False
         else:

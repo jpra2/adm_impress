@@ -309,9 +309,16 @@ pare = False
 np.save('results/jac_iterarion.npy',np.array([0]))
 phis_k=OP_AMS[data_impress['GID_0'],data_impress['GID_1']].toarray()[0]
 data_impress['raz_pos']=(1-phis_k)/phis_k
-preprocessed_primal_objects, critical_groups=monotonic_adm_subds.get_preprossed_monotonic_primal_objects(data_impress, elements_lv0, OP_AMS, neumann_subds.neumann_subds)
-l_groups=np.concatenate([np.repeat(i,len(critical_groups[i])) for i in range(len(critical_groups))])
-groups_c=np.concatenate(critical_groups)
+
+phiK_raz_lim=np.load('flying/phiK_raz_lim.npy')[0]
+
+preprocessed_primal_objects, critical_groups=monotonic_adm_subds.get_preprossed_monotonic_primal_objects(data_impress, elements_lv0, OP_AMS, neumann_subds.neumann_subds, phiK_raz_lim=phiK_raz_lim)
+if len(critical_groups)>1:
+    l_groups=np.concatenate([np.repeat(i,len(critical_groups[i])) for i in range(len(critical_groups))])
+    groups_c=np.concatenate(critical_groups)
+else:
+    l_groups=np.array(critical_groups)
+    groups_c=critical_groups
 ms_case=np.load("flying/ms_case.npy")[0]
 
 adm_method.set_level_wells_3()
@@ -324,14 +331,15 @@ el2=[]
 elinf=[]
 
 neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
-uniform_refinement=np.load('flying/uniform_refinement.npy')[0]
+type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
 
 while verif:
     t00=time.time()
     transmissibility=data_impress['transmissibility']
-
-    volumes, netasp_array=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility)
-    vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
+    if type_of_refinement=='uni':
+        volumes, netasp_array=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility)
+        netasp_array=np.maximum(netasp_array,netasp_array*data_impress['raz_phi'][volumes])
+        vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
 
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
@@ -350,10 +358,14 @@ while verif:
     # monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim,map1)
     # np.concatenate(np.array(critical_groups)'''
     adm_method.set_level_wells_3()
-    if len(vols_orig)>0:
-        adm_method.set_monotonizing_level(vols_orig)
-    adm_method.set_saturation_level_uniform(0.05)
-    # adm_method.set_saturation_level_simple()
+
+    if type_of_refinement=='uni':
+        if len(vols_orig)>0:
+            adm_method.set_monotonizing_level(vols_orig)
+        adm_method.set_saturation_level_simple()
+    else:
+        adm_method.set_saturation_level_uniform(0.05)
+
     t0=time.time()
     adm_method.solve_multiscale_pressure(T, b)
 
