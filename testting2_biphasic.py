@@ -19,16 +19,16 @@ def export_finescale_results(vals_vpi,vals_delta_t,vals_wor, t_comp):
 # b1.run()
 # import pdb; pdb.set_trace()
 n = 1
-n2 = 100
+n2 = 1000
 n_for_save = 100
 cont_for_save = 1
 loop = 0
 cont = 1
 cont2 = 1
 verif = True
-vpis_for_save=np.arange(0.0,0.051,0.01)
+vpis_for_save=np.load('flying/vpis_for_save.npy')
 count_save=0
-pp=100
+pp=1000
 meshset_volumes = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 # import pdb; pdb.set_trace()
@@ -60,16 +60,19 @@ while verif:
     #     # import pdb; pdb.set_trace()
     # if cont % pp == 0:
     if vpis_for_save[count_save]<b1.vpi:
+        np.save('flying/saturation_'+str(vpis_for_save[count_save])+'.npy', data_impress['saturation'])
         data_impress.update_variables_to_mesh()
         # M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
         file_count=str(int(100*vpis_for_save[count_save]))
-
-        M.core.mb.write_file('results/biphasic/finescale/vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
+        if vpis_for_save[count_save]==vpis_for_save.max():
+            export_finescale_results(vpi, delta_t, wor,t_comp)
+            verif=False
+        # M.core.mb.write_file('results/biphasic/finescale/vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
         count_save+=1
 
-    if cont % n2 == 0:
-        export_finescale_results(vpi, delta_t, wor,t_comp)
-        verif=False
+    # if cont % n2 == 0:
+    #     export_finescale_results(vpi, delta_t, wor,t_comp)
+    #     verif=False
     cont += 1
     # loop += 1
     # if loop > 200:

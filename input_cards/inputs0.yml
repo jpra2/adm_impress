@@ -7,7 +7,7 @@ n_test: 0
 state: 0
 type_of_solution: adm
 gravity: false
-load_data: true
+load_data: false
 convert_english_to_SI: false
 monophasic: false
 biphasic: true
@@ -25,7 +25,7 @@ _debug: True
 Crs:
   # Cr1: [9, 19, 1]
   # Cr2: [30, 50, 1]
-  Cr1: [5, 5, 1]
+  Cr1: [5, 11, 1]
   Cr2: [35, 75, 1]
 
 read_permeability: true

@@ -26,7 +26,7 @@ def save_multilevel_results():
     vals_delta_t.append(b1.delta_t)
     vals_wor.append(b1.wor)
 
-def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf):
+def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save):
     vals_n1_adm=np.array(vals_n1_adm+[len(data_impress['GID_0'])])
     vals_vpi=np.array(vals_vpi)
     vals_delta_t=np.array(vals_delta_t)
@@ -35,11 +35,13 @@ def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp
     el2=np.array(el2)*100
     elinf=np.array(elinf)*100
 
-    vars=[vals_vpi,vals_n1_adm,vals_delta_t,vals_wor, t_comp, el2, elinf]
-
-    names=['vpi','n1_adm', 'delta_t', 'wor', 't_comp', 'el2', 'elinf']
+    es_L2=np.array(es_L2)*100
+    es_Linf=np.array(es_Linf)*100
+    vars=[vals_vpi,vals_n1_adm,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf, vpis_for_save]
+    names=['vpi','n1_adm', 'delta_t', 'wor', 't_comp', 'el2', 'elinf', 'es_L2', 'es_Linf', 'vpis_for_save']
     for i in range(len(vars)):
         np.save('results/biphasic/ms/'+ms_case+names[i]+'.npy',vars[i])
+
 
 def plot_operator(T,OP_AMS, primals):
     for i in range(len(primals)):
@@ -298,10 +300,10 @@ diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
 # data_impress['initial_diag']=diagf
 
 neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
-nn = 100
-pp = 100
+nn = 1000
+pp = 1000
 cont = 1
-vpis_for_save=np.arange(0.0,0.051,0.01)
+vpis_for_save=np.load('flying/vpis_for_save.npy')
 count_save=0
 
 verif = True
@@ -329,6 +331,8 @@ vals_wor=[]
 t_comp=[]
 el2=[]
 elinf=[]
+es_L2=[]
+es_Linf=[]
 
 neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
@@ -339,6 +343,7 @@ while verif:
     if type_of_refinement=='uni':
         volumes, netasp_array=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility)
         netasp_array=np.maximum(netasp_array,netasp_array*data_impress['raz_phi'][volumes])
+        
         vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
 
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
@@ -388,6 +393,13 @@ while verif:
     save_multilevel_results()
 
     if vpis_for_save[count_save]<b1.vpi:
+        sat_f=np.load('flying/saturation_'+str(vpis_for_save[count_save])+'.npy')
+        sat_adm=data_impress['saturation']
+
+        es_L2.append(np.linalg.norm(sat_f-sat_adm)/np.linalg.norm(sat_f))
+        es_Linf.append(abs(sat_f-sat_adm).max()/sat_f.max())
+
+
         print(b1.vpi,'vpi')
         print("Creating_file")
         meshset_plot_faces=M.core.mb.create_meshset()
@@ -402,13 +414,15 @@ while verif:
 
         M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
         M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
-
+        if vpis_for_save[count_save]==vpis_for_save.max():
+            export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1])
+            verif=False
         print("File created at time-step: ",cont)
         count_save+=1
 
-    if cont % nn == 0 or count_save==len(vpis_for_save)-1:
-        export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf)
-        verif=False
+    # if cont % nn == 0 or count_save==len(vpis_for_save)-1:
+    #     export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save])
+    #     verif=False
 
     T, b = b1.get_T_and_b()
     cont += 1

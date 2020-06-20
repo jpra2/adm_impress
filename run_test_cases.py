@@ -14,26 +14,27 @@ def remove_previous_files():
     os.mkdir('results/biphasic/finescale/vtks')
 
 def run_test_cases():
-    # neta_lim_dual_values=[np.inf, np.inf, np.inf,1.0, 1.0, 1.0, np.inf, 1.0]
-    # neta_lim_finescale_values=[np.inf, 5.0, 0.5, np.inf, 5.0, 0.5, np.inf, np.inf]
-    # type_of_refinement_values=['uni','uni','uni', 'uni', 'uni', 'uni', 'n_uni', 'n_uni']
-    # phiK_raz_lim_values=[3, 3, 3, 3, 3, 3, 3, 3]
-    neta_lim_dual_values=[np.inf, np.inf,np.inf, 1.0, 1.0,1.0]
-    neta_lim_finescale_values=[20.0, 100.0,1000.0, 20.0, 100.0, 1000.0]
-    type_of_refinement_values=['uni','uni','uni', 'uni','uni', 'uni', 'uni']
-    phiK_raz_lim_values=[5, 5, 5, 5, 5, 5]
+    vpis_for_save=np.arange(0.0,0.501,0.01)
+    np.save('flying/vpis_for_save.npy',vpis_for_save)
+    os.system("python testting2_biphasic.py")
+    neta_lim_dual_values=[np.inf, np.inf]
+    neta_lim_finescale_values=[100.0, 100.0]
+    type_of_refinement_values=['uni', 'uni']
+    phiK_raz_lim_values=[5, 5]
+    delta_sat_max=[2.0, 0.1]
     for i in range(len(neta_lim_dual_values)):
+        np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
         np.save('flying/neta_lim_dual.npy',np.array([neta_lim_dual_values[i]]))
         np.save('flying/type_of_refinement.npy',np.array([type_of_refinement_values[i]]))
         np.save('flying/phiK_raz_lim.npy',np.array([phiK_raz_lim_values[i]]))
-        ms_case='n_d'+str(neta_lim_dual_values[i])+'_nf_'+str(neta_lim_finescale_values[i])+'_'+type_of_refinement_values[i]+'_sens_'+str(phiK_raz_lim_values[i])+'/'
+        ms_case='n_d'+str(neta_lim_dual_values[i])+'_nf_'+str(neta_lim_finescale_values[i])+'_'+type_of_refinement_values[i]+'_sens_'+str(phiK_raz_lim_values[i])+'_neta_lim_'+str(delta_sat_max[i])+'/'
         os.makedirs('results/biphasic/ms/'+ms_case,exist_ok=True)
         os.makedirs('results/biphasic/ms/'+ms_case+'vtks',exist_ok=True)
         np.save('flying/ms_case.npy',np.array([ms_case]))
         os.system("python ADM_b.py")
 
-    os.system("python testting2_biphasic.py")
+
 
 def organize_results():
     cases_ms=[]
@@ -64,12 +65,15 @@ def organize_results():
 
 def print_results(all_cases):
     font = {'size'   : 22}
-    units={'vpi':'vpi[%]','wor':'wor[%]','t_comp':'comp_time[s]','delta_t':'time-step[]', 'n1_adm':'Nadm/Nf[%]','el2':'ep_L2[%]','elinf':'ep_Linf[%]'}
+
+    units={'vpi':'vpi[%]','wor':'wor[%]','t_comp':'comp_time[s]','delta_t':'time-step[]', 'n1_adm':'Nadm/Nf[%]','el2':'ep_L2[%]','elinf':'ep_Linf[%]', 'es_L2':'es_L2[%]', 'es_Linf':'es_Linf[%]', 'vpis_for_save':'vpi[%]'}
     variables=all_cases[0][1].keys()
-    ymin=np.inf
-    ymax=-np.inf
+
     for variable in variables:
         plt.close('all')
+        ymin=np.inf
+        ymax=-np.inf
+
         for case in all_cases:
             case_name=case[0]
             case_data=case[1]
@@ -78,46 +82,61 @@ def print_results(all_cases):
                 style='-.'
             else:
                 style='-'
-            if variable!="vpi":
+            if variable!="vpi" and variable!='vpis_for_save':
                 if case_name=='finescale':
-                    if variable!="n1_adm" and variable!="el2" and variable!="elinf":
+                    if variable!="n1_adm" and variable!="el2" and variable!="elinf" and variable!='es_L2' and variable!='es_Linf':
                         plt.plot(100*case_data['vpi'], case_data[variable],label=case_name)
                 else:
                     if variable=='n1_adm':
                         plt.plot(100*case_data['vpi'], 100*case_data[variable][:-1]/case_data[variable][-1], style, label=case_name)
                         plt.xlabel(units['vpi'])
                         plt.ylabel(units[variable])
-                    else:
-
+                    elif variable!='es_L2' and variable!='es_Linf':
                         if case_data[variable].min()<ymin:
                             ymin=case_data[variable].min()
-                        elif case_data[variable].max()>ymax:
+                        if case_data[variable].max()>ymax:
                             ymax=case_data[variable].max()
 
                         plt.plot(100*case_data['vpi'], case_data[variable],style,label=case_name)
                         plt.xlabel(units['vpi'])
                         plt.ylabel(units[variable])
+                    else: # Saturation variables
+                        if case_data[variable].min()<ymin:
+                            ymin=case_data[variable].min()
+                        if case_data[variable].max()>ymax:
+                            ymax=case_data[variable].max()
+                        try:
+                            plt.plot(100*case_data['vpis_for_save'], case_data[variable],style,label=case_name)
+                        except:
+                            import pdb; pdb.set_trace()
+                        plt.xlabel(units['vpis_for_save'])
+                        plt.ylabel(units[variable])
 
 
-        if variable!='vpi':
-            if variable=='el2' or variable=='elinf':
+        if variable!='vpi' and variable!='vpis_for_save':
+            if variable=='el2' or variable=='elinf' or variable=='es_L2' or variable=='es_Linf':
+                # import pdb; pdb.set_trace()
+                if ymin>0:
+                    ymin=10**int(np.log10(ymin))
+                if ymax>0:
+                    ymax=10**int(np.log10(ymax)+1)
                 plt.yscale('log')
                 y_ticks=plt.gca().get_yticks()[:-1]
                 y_ticks=np.concatenate(np.vstack([y_ticks,np.append(y_ticks[1:]/2,y_ticks[-1])]).T)[:-1]
                 plt.gca().set_yticks(y_ticks)
                 ticks=plt.gca().get_yticks()
-                # import pdb; pdb.set_trace()
-                t_ymin=ticks[ticks>=ymin].min()*10
-                t_ymax=ticks[ticks<=ymax].max()*10
 
-                # import pdb; pdb.set_trace()
+                pos_ymax=(ticks<ymax).sum()
+                t_ymin=ticks[ticks>=ymin].min()
+                t_ymax=ticks[pos_ymax]
+
                 plt.yticks(ticks)
-                plt.gca().tick_params(which='minor', length=4, color='r')                
+
                 plt.gca().set_yticklabels(['{:.0f}%'.format(x) for x in plt.gca().get_yticks()])
-                plt.ylim((t_ymin,t_ymax))
+                plt.ylim(t_ymin,t_ymax)
 
-
-
+            plt.gca().tick_params(which='minor', length=10)
+            plt.gca().tick_params(which='major', length=15)
             matplotlib.rc('font', **font)
             plt.grid()
             plt.legend()

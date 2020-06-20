@@ -707,3 +707,10 @@ raz_phi:
   data type: float
   sparse: True
   level: 0
+
+ref_param:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0

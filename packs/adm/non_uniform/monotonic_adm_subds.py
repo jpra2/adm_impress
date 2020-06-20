@@ -171,7 +171,7 @@ def get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volu
     # import pdb; pdb.set_trace()
     maxs=np.zeros(len(np.unique(volumes)))
     np.maximum.at(maxs,volumes,netasp_array)
-    data_impress['nfp'][np.unique(volumes)]=maxs
+    data_impress['ref_param'][np.unique(volumes)]=maxs
     vols_orig=np.unique(volumes)[maxs>tol]
     # data_impress['nfp'][volumes]=netasp_array
     # vols_orig=volumes[netasp_array>tol]
