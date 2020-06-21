@@ -17,11 +17,11 @@ def run_test_cases():
     vpis_for_save=np.arange(0.0,0.501,0.01)
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     os.system("python testting2_biphasic.py")
-    neta_lim_dual_values=[np.inf, np.inf]
-    neta_lim_finescale_values=[100.0, 100.0]
-    type_of_refinement_values=['uni', 'uni']
-    phiK_raz_lim_values=[5, 5]
-    delta_sat_max=[2.0, 0.1]
+    neta_lim_dual_values=[np.inf, np.inf, 1.0]
+    neta_lim_finescale_values=[np.inf, 10.0, 10.0]
+    type_of_refinement_values=['uni', 'uni', 'uni']
+    phiK_raz_lim_values=[3, 3, 3]
+    delta_sat_max=[2.0, 2.0, 2.0]
     for i in range(len(neta_lim_dual_values)):
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
@@ -114,13 +114,12 @@ def print_results(all_cases):
 
 
         if variable!='vpi' and variable!='vpis_for_save':
-            if variable=='el2' or variable=='elinf' or variable=='es_L2' or variable=='es_Linf':
-                # import pdb; pdb.set_trace()
+            if (variable=='el2' or variable=='elinf' or variable=='es_L2' or variable=='es_Linf') and False:
                 if ymin>0:
                     ymin=10**int(np.log10(ymin))
                 if ymax>0:
                     ymax=10**int(np.log10(ymax)+1)
-                plt.yscale('log')
+                # plt.yscale('log')
                 y_ticks=plt.gca().get_yticks()[:-1]
                 y_ticks=np.concatenate(np.vstack([y_ticks,np.append(y_ticks[1:]/2,y_ticks[-1])]).T)[:-1]
                 plt.gca().set_yticks(y_ticks)
@@ -128,6 +127,7 @@ def print_results(all_cases):
 
                 pos_ymax=(ticks<ymax).sum()
                 t_ymin=ticks[ticks>=ymin].min()
+                # import pdb; pdb.set_trace()
                 t_ymax=ticks[pos_ymax]
 
                 plt.yticks(ticks)

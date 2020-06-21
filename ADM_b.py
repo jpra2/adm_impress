@@ -343,7 +343,7 @@ while verif:
     if type_of_refinement=='uni':
         volumes, netasp_array=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility)
         netasp_array=np.maximum(netasp_array,netasp_array*data_impress['raz_phi'][volumes])
-        
+
         vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
 
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
@@ -412,8 +412,8 @@ while verif:
         data_impress.update_variables_to_mesh()
         file_count=str(int(100*vpis_for_save[count_save]))
 
-        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
-        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
+        # M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
+        # M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
         if vpis_for_save[count_save]==vpis_for_save.max():
             export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1])
             verif=False
