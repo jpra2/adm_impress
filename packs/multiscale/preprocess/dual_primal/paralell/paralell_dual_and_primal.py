@@ -6,7 +6,7 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
     cr2 = direc.data_loaded['Crs']['Cr2']
     crs = [cr1, cr2]
 
-    if np.array(cr1).max()==3:
+    if np.array(cr1).max()<5:
         uniform_dual=False
     Lx, Ly, Lz = coord_nodes.max(axis=0)-coord_nodes.min(axis=0)
     min_x, min_y, min_z = coord_nodes.min(axis=0)

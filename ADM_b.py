@@ -206,6 +206,7 @@ multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0,
 mlo = multilevel_operators
 
 T, b = b1.get_T_and_b()
+# import pdb; pdb.set_trace()
 try:
     perms=np.load("flying/permeability.npy")
     perms_xx=perms[:,0]
@@ -259,10 +260,57 @@ OR_AMS=mlo['restriction_level_1']
 
 
 
-# plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
+plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
 # write_file_with_tag_range('OP_AMS_63',[0,np.inf])
+import matplotlib as mpl
+def save_matrices_as_png(matrices, names):
+    for matrix,name in zip(matrices,names):
+        plt.close('all')
+        colors_pos = plt.cm.Blues(np.linspace(0, 1, 256))
+        colors_neg = plt.cm.Reds(np.linspace(0, 1, 256))[::-1]
+        if name=='OP_AMS':
+            all_colors=colors_pos
+            v_center=1e-10
+        else:
+            all_colors = np.vstack((colors_neg, colors_pos))
+            v_center=0
+
+        mat_map = mpl.colors.LinearSegmentedColormap.from_list('mat_map', all_colors)
+        divnorm = mpl.colors.DivergingNorm(vmin=matrix.toarray().min(), vcenter=v_center, vmax=matrix.toarray().max())
+
+        plt.matshow(matrix.toarray(),cmap=mat_map,norm=divnorm,rasterized=True)
+        plt.gca().set_yticks(range(matrix.shape[0]))
+        plt.gca().set_xticks(range(matrix.shape[1]))
+        plt.gcf().set_size_inches(matrix.shape[1],matrix.shape[0])
+        plt.gca().set_xticks([x - 0.5 for x in plt.gca().get_xticks()][1:], minor='true')
+        plt.gca().set_yticks([y - 0.5 for y in plt.gca().get_yticks()][1:], minor='true')
+        plt.grid(which='minor')
+        for i in range(matrix.shape[0]):
+            for j in range(matrix.shape[1]):
+                # c = round(matrix[i,j]*100000)/100000
+                c=matrix[i,j]
+                if abs(c)>1e-15:
+                    c='{:.2f}'.format(c)
+                    plt.text(j, i, str(c), va='center', ha='center',fontsize=15)
+        plt.savefig('results/'+name+'.png')
 
 Tc=OR_AMS*T*OP_AMS
+matrices=[T,Tc,OP_AMS,T*OP_AMS]
+names=['T','Tc','OP_AMS', 'TP']
+save_matrices_as_png(matrices,names)
+# import pdb; pdb.set_trace()
+# plt.close('all')
+# plt.matshow(Tc.toarray())
+# plt.savefig('results/Tc.png')
+# plt.close('all')
+# plt.matshow(T.toarray())
+# plt.savefig('results/T.png')
+# plt.close('all')
+# plt.matshow(OP_AMS.toarray())
+# plt.savefig('results/OP_AMS.png')
+# plt.close('all')
+# plt.matshow(OP_ADM.toarray())
+# plt.savefig('results/OP_ADM.png')
 bc=OR_AMS*b
 from scipy.sparse import linalg
 pc=linalg.spsolve(Tc,bc)
@@ -323,7 +371,8 @@ else:
     groups_c=critical_groups
 ms_case=np.load("flying/ms_case.npy")[0]
 
-adm_method.set_level_wells_3()
+# adm_method.set_level_wells_3()
+adm_method.set_level_wells_only()
 vals_n1_adm=[]
 vals_vpi=[]
 vals_delta_t=[]
@@ -362,7 +411,8 @@ while verif:
     # map1[idl1]=data_impress['GID_1']
     # monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim,map1)
     # np.concatenate(np.array(critical_groups)'''
-    adm_method.set_level_wells_3()
+    # adm_method.set_level_wells_3()
+    adm_method.set_level_wells_only()
 
     if type_of_refinement=='uni':
         if len(vols_orig)>0:
@@ -385,6 +435,7 @@ while verif:
     print(b1.wor, adm_method.n1_adm)
     pms=data_impress['pressure']
     pf=linalg.spsolve(T,b)
+    data_impress['tpfa_pressure']=pf
     eadm_2=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
     eadm_inf=abs(pms-pf).max()/pf.max()
     el2.append(eadm_2)
@@ -412,8 +463,8 @@ while verif:
         data_impress.update_variables_to_mesh()
         file_count=str(int(100*vpis_for_save[count_save]))
 
-        # M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
-        # M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
+        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
+        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
         if vpis_for_save[count_save]==vpis_for_save.max():
             export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1])
             verif=False

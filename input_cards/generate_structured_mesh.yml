@@ -12,4 +12,4 @@ block_number: [4, 4, 1]
 
 
 # nome da malha para salvar
-mesh_name: '4x4x1.h5m'
+mesh_name: 'isotropic/4x4x1.h5m'
