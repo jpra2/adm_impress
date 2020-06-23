@@ -47,6 +47,7 @@ class Preprocess0:
 
         self.run(M)
         M.data.export_to_npz()
+        np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
         M.data.update_variables_to_mesh()
 
     def set_area_hex_structured(self, M):
@@ -158,6 +159,7 @@ class Preprocess0:
                 indices=np.arange(len(centroids))[cir_0 & cir_1]
                 n_volumes = len(indices)
                 M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
+
                 np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
 
             elif tipo == 'cartesian_region':
