@@ -293,7 +293,7 @@ def save_matrices_as_png(matrices, names):
                     c='{:.2f}'.format(c)
                     plt.text(j, i, str(c), va='center', ha='center',fontsize=15)
         plt.savefig('results/'+name+'.png')
-
+from scipy.sparse import csc_matrix
 def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines):
     Lines=[data_impress['GID_0'][data_impress['GID_1']==l] for l in Lines]
     colors=[plt.cm.Blues,plt.cm.Greens]
@@ -306,10 +306,6 @@ def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines):
         if name=='OP_AMS_hi' or name=='OP_ADM_hi':
             all_colors=colors_pos
             v_center=1e-10
-            for lines,color in zip(Lines,colors):
-                mat_aux=np.zeros_like(matrix.toarray())
-                mat_aux[lines]=matrix.toarray()[lines]
-                plt.matshow(mat_aux,cmap=color)
         else:
             all_colors = np.vstack((colors_neg, colors_pos))
             v_center=0
@@ -353,8 +349,8 @@ padm=OP_ADM*pcadm
 matrices=[T,Tc,OP_AMS,T*OP_AMS, OP_ADM, Tcadm,T*OP_ADM]
 names=['T','Tc','OP_AMS', 'TP', 'OP_ADM', 'Tcadm','TP_ADM']
 save_matrices_as_png(matrices,names)
-matricesh=[T,OP_AMS]
-namesh=['T_hi','OP_AMS_hi']
+matricesh=[T,OP_AMS,T*OP_AMS]
+namesh=['T_hi','OP_AMS_hi','TP_hi']
 lines=[0,1]
 save_matrices_as_png_with_highlighted_lines(matricesh,namesh, lines)
 import pdb; pdb.set_trace()
