@@ -262,8 +262,12 @@ OR_AMS=mlo['restriction_level_1']
 
 plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
 # write_file_with_tag_range('OP_AMS_63',[0,np.inf])
+from scipy.sparse import csc_matrix
 import matplotlib as mpl
+mpl.rc('font', **{'size'   : 22})
+
 def save_matrices_as_png(matrices, names):
+
     for matrix,name in zip(matrices,names):
         plt.close('all')
         colors_pos = plt.cm.Blues(np.linspace(0, 1, 256))
@@ -285,35 +289,31 @@ def save_matrices_as_png(matrices, names):
         plt.gca().set_xticks([x - 0.5 for x in plt.gca().get_xticks()][1:], minor='true')
         plt.gca().set_yticks([y - 0.5 for y in plt.gca().get_yticks()][1:], minor='true')
         plt.grid(which='minor')
+
         for i in range(matrix.shape[0]):
             for j in range(matrix.shape[1]):
-                # c = round(matrix[i,j]*100000)/100000
                 c=matrix[i,j]
                 if abs(c)>1e-15:
                     c='{:.2f}'.format(c)
                     plt.text(j, i, str(c), va='center', ha='center',fontsize=15)
+
+
         plt.savefig('results/'+name+'.png')
-from scipy.sparse import csc_matrix
-def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines):
-    Lines=[data_impress['GID_0'][data_impress['GID_1']==l] for l in Lines]
-    colors=[plt.cm.Blues,plt.cm.Greens]
-    for matrix,name in zip(matrices,names):
-        mat_aux=np.zeros_like(matrix.toarray())
-        mat_aux[Lines[0]]=matrix.toarray()[Lines[0]]
-        plt.close('all')
-        colors_pos = plt.cm.Blues(np.linspace(0, 1, 256))
-        colors_neg = plt.cm.Reds(np.linspace(0, 1, 256))[::-1]
-        if name=='OP_AMS_hi' or name=='OP_ADM_hi':
-            all_colors=colors_pos
-            v_center=1e-10
+
+def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines0):
+    colors=['lime','cyan','y','m']
+
+    for matrix, name in zip(matrices,names):
+        if matrix.shape[0]>4:
+            # import pdb; pdb.set_trace()
+            Lines=[data_impress['GID_0'][data_impress['GID_1']==l] for l in Lines0]
         else:
-            all_colors = np.vstack((colors_neg, colors_pos))
-            v_center=0
-
-        mat_map = mpl.colors.LinearSegmentedColormap.from_list('mat_map', all_colors)
-        divnorm = mpl.colors.DivergingNorm(vmin=matrix.toarray().min(), vcenter=v_center, vmax=matrix.toarray().max())
-
-        plt.matshow(mat_aux,cmap=mat_map,norm=divnorm,rasterized=True)
+            Lines=[[l] for l in Lines0]
+        plt.close('all')
+        plt.matshow(np.zeros_like(matrix.toarray()),cmap=plt.cm.Blues)
+        for (lines, color) in zip(Lines,colors):
+            for l in lines:
+                plt.axhspan(l-0.5,l+0.5, color=color, alpha=0.7)
         plt.gca().set_yticks(range(matrix.shape[0]))
         plt.gca().set_xticks(range(matrix.shape[1]))
         plt.gcf().set_size_inches(matrix.shape[1],matrix.shape[0])
@@ -322,15 +322,13 @@ def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines):
         plt.grid(which='minor')
         for i in range(matrix.shape[0]):
             for j in range(matrix.shape[1]):
-                # c = round(matrix[i,j]*100000)/100000
                 c=matrix[i,j]
                 if abs(c)>1e-15:
                     c='{:.2f}'.format(c)
-                    plt.text(j, i, str(c), va='center', ha='center',fontsize=15)
+                    plt.text(j, i, str(c), va='center', ha='center',fontsize=15)        
         plt.savefig('results/'+name+'.png')
 
 Tc=OR_AMS*T*OP_AMS
-
 bc=OR_AMS*b
 from scipy.sparse import linalg
 pc=linalg.spsolve(Tc,bc)
@@ -349,9 +347,9 @@ padm=OP_ADM*pcadm
 matrices=[T,Tc,OP_AMS,T*OP_AMS, OP_ADM, Tcadm,T*OP_ADM]
 names=['T','Tc','OP_AMS', 'TP', 'OP_ADM', 'Tcadm','TP_ADM']
 save_matrices_as_png(matrices,names)
-matricesh=[T,OP_AMS,T*OP_AMS]
-namesh=['T_hi','OP_AMS_hi','TP_hi']
-lines=[0,1]
+matricesh=[T,OP_AMS,T*OP_AMS,Tc]
+namesh=['T_hi','OP_AMS_hi','TP_hi','Tc_hi']
+lines=[0,1,2,3]
 save_matrices_as_png_with_highlighted_lines(matricesh,namesh, lines)
 import pdb; pdb.set_trace()
 
