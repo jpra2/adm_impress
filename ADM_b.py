@@ -44,10 +44,14 @@ def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp
 
 
 def plot_operator(T,OP_AMS, primals):
+    OP_AMS_c=T*OP_AMS
     for i in range(len(primals)):
         tag_ams=M.core.mb.tag_get_handle("OP_AMS_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         fb_ams = OP_AMS[:, primals[i]].toarray()
+        tag_tp=M.core.mb.tag_get_handle("TP_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        tp_ams = OP_AMS_c[:, primals[i]].toarray()
         M.core.mb.tag_set_data(tag_ams, M.core.all_volumes, fb_ams)
+        M.core.mb.tag_set_data(tag_tp, M.core.all_volumes, tp_ams)
 
 def plot_net_flux(OR_AMS,OP_AMS):
     Tc=OR_AMS*T*OP_AMS
@@ -295,7 +299,7 @@ def save_matrices_as_png(matrices, names):
                 c=matrix[i,j]
                 if abs(c)>1e-15:
                     c='{:.2f}'.format(c)
-                    plt.text(j, i, str(c), va='center', ha='center',fontsize=15)
+                    plt.text(j, i, str(c), va='center', ha='center',fontsize=15, color = 'lime',weight='bold')
 
 
         plt.savefig('results/'+name+'.png')
@@ -303,7 +307,32 @@ def save_matrices_as_png(matrices, names):
 def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines0):
     colors=['lime','cyan','y','m']
 
+    cmap = mpl.colors.ListedColormap(colors)
+    cmap.set_over('red')
+    cmap.set_under('blue')
+
+    bounds = [-1.0, -0.5, 0.0, 0.5, 1.0]
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    mat_=np.array([[0,3],[1,2]])
+    plt.matshow(mat_,cmap=cmap)
+    plt.gca().set_yticks(range(mat_.shape[0]))
+    plt.gca().set_xticks(range(mat_.shape[1]))
+    plt.gcf().set_size_inches(mat_.shape[1]*2,mat_.shape[0]*2)
+    ticks=[0.0,1.0]
+    ticks_M=[-0.5,0.5,1.5]
+
+    plt.gca().set_xticks(ticks, minor='true')
+    plt.gca().set_yticks(ticks, minor='true')
+    plt.gca().set_xticks(ticks_M, minor='false')
+    plt.gca().set_yticks(ticks_M, minor='false')
+    plt.gca().tick_params(which='major',width=3,color='black')
+    plt.grid(which='major')
+    plt.savefig('results/mesh.png')
+
     for matrix, name in zip(matrices,names):
+
+
+
         if matrix.shape[0]>4:
             # import pdb; pdb.set_trace()
             Lines=[data_impress['GID_0'][data_impress['GID_1']==l] for l in Lines0]
@@ -325,7 +354,7 @@ def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines0):
                 c=matrix[i,j]
                 if abs(c)>1e-15:
                     c='{:.2f}'.format(c)
-                    plt.text(j, i, str(c), va='center', ha='center',fontsize=15)        
+                    plt.text(j, i, str(c), va='center', ha='center',fontsize=15)
         plt.savefig('results/'+name+'.png')
 
 Tc=OR_AMS*T*OP_AMS
@@ -351,7 +380,7 @@ matricesh=[T,OP_AMS,T*OP_AMS,Tc]
 namesh=['T_hi','OP_AMS_hi','TP_hi','Tc_hi']
 lines=[0,1,2,3]
 save_matrices_as_png_with_highlighted_lines(matricesh,namesh, lines)
-import pdb; pdb.set_trace()
+# import pdb; pdb.set_trace()
 
 pf=linalg.spsolve(T,b)
 eadm=np.linalg.norm(abs(padm-pf))/np.linalg.norm(pf)
