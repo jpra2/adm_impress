@@ -311,9 +311,9 @@ def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines0):
     cmap.set_over('red')
     cmap.set_under('blue')
 
-    bounds = [-1.0, -0.5, 0.0, 0.5, 1.0]
+    bounds = [-0.5, 0.5, 1.5, 2.5, 3.5]
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
-    mat_=np.array([[0,3],[1,2]])
+    mat_=np.array([[1,3],[0,2]])
     plt.matshow(mat_,cmap=cmap)
     plt.gca().set_yticks(range(mat_.shape[0]))
     plt.gca().set_xticks(range(mat_.shape[1]))
