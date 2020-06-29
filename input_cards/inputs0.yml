@@ -35,7 +35,11 @@ Permeability:
   r1:
     type: all
     value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
-
+  r2:
+    type: box
+    value: [1e-2, 0.0, 0.0, 0.0, 1e-2, 0.0, 0.0, 0.0, 1e-2]
+    p0: [3.0, 0.0, 0.0]
+    p1: [4.0, 1.0, 1.0]
 
 set_porosity: true
 Porosity:

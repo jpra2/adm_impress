@@ -17,8 +17,8 @@ def run_test_cases():
     vpis_for_save=np.arange(0.0,0.501,0.01)
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     os.system("python testting2_biphasic.py")
-    neta_lim_dual_values=[np.inf, np.inf, 1.0]
-    neta_lim_finescale_values=[np.inf, 10.0, 10.0]
+    neta_lim_dual_values=[np.inf, 1.0, np.inf]
+    neta_lim_finescale_values=[1.0, 10.0, np.inf]
     type_of_refinement_values=['uni', 'uni', 'uni']
     phiK_raz_lim_values=[3, 3, 3]
     delta_sat_max=[2.0, 2.0, 2.0]

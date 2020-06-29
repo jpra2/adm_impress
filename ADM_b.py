@@ -323,10 +323,11 @@ def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines0):
 
     plt.gca().set_xticks(ticks, minor='true')
     plt.gca().set_yticks(ticks, minor='true')
-    plt.gca().set_xticks(ticks_M, minor='false')
     plt.gca().set_yticks(ticks_M, minor='false')
+    plt.gca().set_xticks(ticks_M, minor='false')
     plt.gca().tick_params(which='major',width=3,color='black')
-    plt.grid(which='major')
+    plt.grid(which='minor',color='black',linewidth=2)
+    plt.grid(which='major',color='black')
     plt.savefig('results/mesh.png')
 
     for matrix, name in zip(matrices,names):
@@ -376,8 +377,22 @@ padm=OP_ADM*pcadm
 matrices=[T,Tc,OP_AMS,T*OP_AMS, OP_ADM, Tcadm,T*OP_ADM]
 names=['T','Tc','OP_AMS', 'TP', 'OP_ADM', 'Tcadm','TP_ADM']
 save_matrices_as_png(matrices,names)
-matricesh=[T,OP_AMS,T*OP_AMS,Tc]
-namesh=['T_hi','OP_AMS_hi','TP_hi','Tc_hi']
+# import pdb; pdb.set_trace()
+diags=np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
+
+gids1=data_impress['GID_1']
+gids0=data_impress['GID_0']
+dia_vec=csc_matrix(np.array([diags[gids1]]).T)
+vals=1/diags[gids1]
+mult=csc_matrix((vals,(gids0,gids0)),shape=(len(gids0),len(gids0)))
+tp_mod=T*OP_AMS
+tp_mod[gids0,gids1]=0
+mat_neta=mult*tp_mod
+mat_neta[mat_neta<0]=0
+max_neta=mat_neta.max(axis=1).tocsc()
+
+matricesh=[T,OP_AMS,T*OP_AMS,Tc, mat_neta,dia_vec, max_neta]
+namesh=['T_hi','OP_AMS_hi','TP_hi','Tc_hi','neta','dia_vec','max_neta']
 lines=[0,1,2,3]
 save_matrices_as_png_with_highlighted_lines(matricesh,namesh, lines)
 # import pdb; pdb.set_trace()
@@ -422,8 +437,11 @@ if len(critical_groups)>1:
     l_groups=np.concatenate([np.repeat(i,len(critical_groups[i])) for i in range(len(critical_groups))])
     groups_c=np.concatenate(critical_groups)
 else:
-    l_groups=np.array(critical_groups)
-    groups_c=critical_groups
+    l_groups=np.repeat(0,len(critical_groups[0]))
+    groups_c=critical_groups[0]
+# else:
+#     l_groups=np.array(critical_groups)
+#     groups_c=critical_groups
 ms_case=np.load("flying/ms_case.npy")[0]
 
 # adm_method.set_level_wells_3()
@@ -441,14 +459,20 @@ es_Linf=[]
 neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
 
+# import pdb; pdb.set_trace()
 while verif:
     t00=time.time()
     transmissibility=data_impress['transmissibility']
     if type_of_refinement=='uni':
         volumes, netasp_array=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility)
-        netasp_array=np.maximum(netasp_array,netasp_array*data_impress['raz_phi'][volumes])
+        maxs=np.zeros(len(np.unique(volumes)))
+        np.maximum.at(maxs,volumes,netasp_array)
 
+        data_impress['nfp'][np.unique(volumes)]=maxs
+        netasp_array=np.maximum(netasp_array,netasp_array*data_impress['raz_phi'][volumes])
+        # vols_orig=volumes[netasp_array>neta_lim_finescale]
         vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
+        # vols_orig=np.array([])
 
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
