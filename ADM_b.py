@@ -469,7 +469,7 @@ while verif:
         np.maximum.at(maxs,volumes,netasp_array)
 
         data_impress['nfp'][np.unique(volumes)]=maxs
-        netasp_array=np.maximum(netasp_array,netasp_array*data_impress['raz_phi'][volumes])
+        # netasp_array=np.maximum(netasp_array,netasp_array*data_impress['raz_phi'][volumes])
         # vols_orig=volumes[netasp_array>neta_lim_finescale]
         vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
         # vols_orig=np.array([])

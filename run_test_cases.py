@@ -3,7 +3,8 @@ import os
 import matplotlib.pyplot as plt
 import shutil
 import matplotlib
-
+font = {'size'   : 22}
+matplotlib.rc('font', **font)
 def remove_previous_files():
     # Cleans the previous results
     shutil.rmtree('results/biphasic/ms')
@@ -14,11 +15,12 @@ def remove_previous_files():
     os.mkdir('results/biphasic/finescale/vtks')
 
 def run_test_cases():
-    vpis_for_save=np.arange(0.0,0.501,0.01)
+    # vpis_for_save=np.arange(0.0,0.501,0.01)
+    vpis_for_save=np.arange(0.0,1.01,0.2)
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     os.system("python testting2_biphasic.py")
     neta_lim_dual_values=[np.inf, 1.0, np.inf]
-    neta_lim_finescale_values=[1.0, 10.0, np.inf]
+    neta_lim_finescale_values=[1.0, 1.0, np.inf]
     type_of_refinement_values=['uni', 'uni', 'uni']
     phiK_raz_lim_values=[3, 3, 3]
     delta_sat_max=[2.0, 2.0, 2.0]
@@ -64,7 +66,6 @@ def organize_results():
     return all_cases_results
 
 def print_results(all_cases):
-    font = {'size'   : 22}
 
     units={'vpi':'vpi[%]','wor':'wor[%]','t_comp':'comp_time[s]','delta_t':'time-step[]', 'n1_adm':'Nadm/Nf[%]','el2':'ep_L2[%]','elinf':'ep_Linf[%]', 'es_L2':'es_L2[%]', 'es_Linf':'es_Linf[%]', 'vpis_for_save':'vpi[%]'}
     variables=all_cases[0][1].keys()
@@ -137,7 +138,7 @@ def print_results(all_cases):
 
             plt.gca().tick_params(which='minor', length=10)
             plt.gca().tick_params(which='major', length=15)
-            matplotlib.rc('font', **font)
+
             plt.grid()
             plt.legend()
             plt.gcf().set_size_inches(20,10)
