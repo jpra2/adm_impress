@@ -277,9 +277,6 @@ class Wells(DataManager):
         else:
             self['facs_nn'] = np.array([], dtype=np.int64)
 
-        else:
-            self['facs_nn'] = np.array([], dtype=np.int64)
-
     def loaded(self):
         assert not self._loaded
         self._loaded = True

@@ -12,6 +12,8 @@ from ...multiscale.ms_utils.matrices_for_correction import MatricesForCorrection
 
 from ..operators.prolongation.AMS.Paralell.coupled_ams import OP_AMS
 
+import pdb
+
 def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
 
     gids2 = np.unique(gids)
@@ -188,6 +190,8 @@ class MultilevelOperators(DataManager):
                 Eps_matrix = None
                 total_source_term = None
 
+            pdb.set_trace()
+
             OP, pcorr = self.operators[str(level)].run(T_ant, total_source_term=total_source_term, B_matrix=B_matrix, Eps_matrix=Eps_matrix)
             # import pdb; pdb.set_trace()
             self._data[self.prolongation + str(level)] = OP
@@ -311,7 +315,7 @@ class MultilevelOperators(DataManager):
         OP=result.OP
         diag=np.ones(OP.shape[0])
         sums=np.array(OP.sum(axis=1)).T[0]
-        
+
         diag[sums>0]=np.array(1/OP.sum(axis=1)[sums>0])[:,0]
         l=range(len(diag))
         c=l

@@ -1,21 +1,29 @@
 import numpy as np
 import scipy.sparse as sp
-from ..directories import data_loaded
+from ..directories import data_loaded, simulation_type
 import pdb
 
 class TpfaFlux:
 
     def get_gravity_source_term(self):
 
-        biphasic = data_loaded['biphasic']
-        monophasic = data_loaded['monophasic']
+        # biphasic = data_loaded['biphasic']
+        # monophasic = data_loaded['monophasic']
 
-        if biphasic == monophasic:
-            raise ValueError('biphasic == monophasic')
+        # if biphasic == monophasic:
+        #     raise ValueError('biphasic == monophasic')
 
-        if monophasic:
+        # if monophasic:
+        #     self.get_gravity_source_term_mono()
+        #     return 0
+
+        if simulation_type == 'biphasic':
+            pass
+        elif simulation_type == 'monophasic':
             self.get_gravity_source_term_mono()
             return 0
+        else:
+            raise NameError('\nInvalid simulation type\n')
 
         centroids = self.data_impress['centroid_volumes']
         source_term_volumes = np.zeros(len(centroids))

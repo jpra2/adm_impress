@@ -16,10 +16,10 @@ biphasic: true
 load_biphasic_data: false
 deletar_results: true
 deletar_npyfiles_flying: true
-multilevel_data: false
+multilevel_data: true
 load_multilevel_data: false
 load_operators: false
-get_correction_term: false
+get_correction_term: true
 n_levels: 2
 capillary_pressure: false
 convert_capillary_pressure_to: 'Pa'

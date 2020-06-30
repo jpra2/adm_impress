@@ -188,8 +188,8 @@ class biphasicProperties(StructuredMeshProperties):
             if not self.gravity:
                 return np.zeros(len(internal_faces))
             gama_w = self.biphasic_data['gama_w']
-            # return -(self.grad_z_internal_faces)*gama_w
-            return -(self.delta_z_internal_faces)*gama_w
+            return -(self.grad_z_internal_faces)*gama_w
+            # return -(self.delta_z_internal_faces)*gama_w
         return locals()
     g_w_internal_faces = property(**g_w_internal_faces())
 
@@ -200,7 +200,8 @@ class biphasicProperties(StructuredMeshProperties):
             if not self.gravity:
                 return np.zeros(len(internal_faces))
             gama_o = self.biphasic_data['gama_o']
-            return -(self.delta_z_internal_faces)*gama_o
+            return -(self.grad_z_internal_faces)*gama_o
+            # return -(self.delta_z_internal_faces)*gama_o
         return locals()
     g_o_internal_faces = property(**g_o_internal_faces())
 
