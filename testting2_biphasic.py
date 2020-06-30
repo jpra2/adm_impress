@@ -67,7 +67,7 @@ while verif:
         if vpis_for_save[count_save]==vpis_for_save.max():
             export_finescale_results(vpi, delta_t, wor,t_comp)
             verif=False
-        # M.core.mb.write_file('results/biphasic/finescale/vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
+        M.core.mb.write_file('results/biphasic/finescale/vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
         count_save+=1
 
     # if cont % n2 == 0:

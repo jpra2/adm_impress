@@ -16,7 +16,7 @@ def remove_previous_files():
 
 def run_test_cases():
     # vpis_for_save=np.arange(0.0,0.501,0.01)
-    vpis_for_save=np.arange(0.0,1.01,0.2)
+    vpis_for_save=np.arange(0.0,0.501,0.01)
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     os.system("python testting2_biphasic.py")
     neta_lim_dual_values=[np.inf, 1.0, np.inf]
