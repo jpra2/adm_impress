@@ -433,10 +433,10 @@ data_impress['raz_pos']=(1-phis_k)/phis_k
 phiK_raz_lim=np.load('flying/phiK_raz_lim.npy')[0]
 
 preprocessed_primal_objects, critical_groups=monotonic_adm_subds.get_preprossed_monotonic_primal_objects(data_impress, elements_lv0, OP_AMS, neumann_subds.neumann_subds, phiK_raz_lim=phiK_raz_lim)
-if len(critical_groups)>1:
+try:
     l_groups=np.concatenate([np.repeat(i,len(critical_groups[i])) for i in range(len(critical_groups))])
     groups_c=np.concatenate(critical_groups)
-else:
+except:
     l_groups=np.repeat(0,len(critical_groups[0]))
     groups_c=critical_groups[0]
 # else:
