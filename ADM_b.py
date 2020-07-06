@@ -264,7 +264,7 @@ OR_AMS=mlo['restriction_level_1']
 
 
 
-# plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
+plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
 # write_file_with_tag_range('OP_AMS_63',[0,np.inf])
 from scipy.sparse import csc_matrix
 import matplotlib as mpl
@@ -373,7 +373,7 @@ bcadm = OR_ADM*b
 pcadm=linalg.spsolve(Tcadm,bcadm)
 padm=OP_ADM*pcadm
 
-'''
+
 matrices=[T,Tc,OP_AMS,T*OP_AMS, OP_ADM, Tcadm,T*OP_ADM]
 names=['T','Tc','OP_AMS', 'TP', 'OP_ADM', 'Tcadm','TP_ADM']
 save_matrices_as_png(matrices,names)
@@ -396,7 +396,7 @@ namesh=['T_hi','OP_AMS_hi','TP_hi','Tc_hi','neta','dia_vec','max_neta']
 lines=[0,1,2,3]
 save_matrices_as_png_with_highlighted_lines(matricesh,namesh, lines)
 # import pdb; pdb.set_trace()
-'''
+
 pf=linalg.spsolve(T,b)
 eadm=np.linalg.norm(abs(padm-pf))/np.linalg.norm(pf)
 eams=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
@@ -437,8 +437,11 @@ try:
     l_groups=np.concatenate([np.repeat(i,len(critical_groups[i])) for i in range(len(critical_groups))])
     groups_c=np.concatenate(critical_groups)
 except:
-    l_groups=np.repeat(0,len(critical_groups[0]))
-    groups_c=critical_groups[0]
+    # import pdb; pdb.set_trace()
+    l_groups=np.array([0])
+    groups_c=np.array([0])
+    # l_groups=np.repeat(0,len(critical_groups[0]))
+    # groups_c=critical_groups[0]
 # else:
 #     l_groups=np.array(critical_groups)
 #     groups_c=critical_groups
@@ -471,7 +474,13 @@ while verif:
         data_impress['nfp'][np.unique(volumes)]=maxs
         # netasp_array=np.maximum(netasp_array,netasp_array*data_impress['raz_phi'][volumes])
         # vols_orig=volumes[netasp_array>neta_lim_finescale]
-        vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
+        try:
+            vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
+        except:
+            vols_orig=data_impress['GID_0'][maxs>neta_lim_finescale]
+            # vols_orig=data_impress['GID_0'][data_impress['LEVEL']==0]
+        #
+        # vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
         # vols_orig=np.array([])
 
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]

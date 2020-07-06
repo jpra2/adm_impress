@@ -16,21 +16,21 @@ def remove_previous_files():
 
 def run_test_cases():
     # vpis_for_save=np.arange(0.0,0.501,0.01)
-    vpis_for_save=np.arange(0.0,0.501,0.01)
+    vpis_for_save=np.arange(0.0,0.15101,0.01)
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     os.system("python testting2_biphasic.py")
-    neta_lim_dual_values=[np.inf, 1.0, np.inf]
-    neta_lim_finescale_values=[1.0, 1.0, np.inf]
-    type_of_refinement_values=['uni', 'uni', 'uni']
-    phiK_raz_lim_values=[3, 3, 3]
-    delta_sat_max=[2.0, 2.0, 2.0]
+    neta_lim_dual_values=[np.inf, np.inf,1.0, np.inf]
+    neta_lim_finescale_values=[1.0, np.inf, 1.0,1.0]
+    type_of_refinement_values=['uni', 'uni', 'uni', 'uni']
+    phiK_raz_lim_values=[np.inf, np.inf, np.inf, 3]
+    delta_sat_max=[1.1, 1.1,1.1, 2.0]
     for i in range(len(neta_lim_dual_values)):
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
         np.save('flying/neta_lim_dual.npy',np.array([neta_lim_dual_values[i]]))
         np.save('flying/type_of_refinement.npy',np.array([type_of_refinement_values[i]]))
         np.save('flying/phiK_raz_lim.npy',np.array([phiK_raz_lim_values[i]]))
-        ms_case='n_d'+str(neta_lim_dual_values[i])+'_nf_'+str(neta_lim_finescale_values[i])+'_'+type_of_refinement_values[i]+'_sens_'+str(phiK_raz_lim_values[i])+'_neta_lim_'+str(delta_sat_max[i])+'/'
+        ms_case='neta_'+str(neta_lim_dual_values[i])+'_alpha_'+str(neta_lim_finescale_values[i])+'_'+type_of_refinement_values[i]+'_beta_'+str(phiK_raz_lim_values[i])+'_delta_'+str(delta_sat_max[i])+'/'
         os.makedirs('results/biphasic/ms/'+ms_case,exist_ok=True)
         os.makedirs('results/biphasic/ms/'+ms_case+'vtks',exist_ok=True)
         np.save('flying/ms_case.npy',np.array([ms_case]))
@@ -78,8 +78,8 @@ def print_results(all_cases):
         for case in all_cases:
             case_name=case[0]
             case_data=case[1]
-            case_data['vpi']
-            if case_name[3]!='i':
+            # case_data['vpi']
+            if case_name[5]!='i':
                 style='-.'
             else:
                 style='-'
@@ -118,6 +118,8 @@ def print_results(all_cases):
             if (variable=='el2' or variable=='elinf' or variable=='es_L2' or variable=='es_Linf') and False:
                 if ymin>0:
                     ymin=10**int(np.log10(ymin))
+                    if ymin<1e-2:
+                        ymin=1e-2
                 if ymax>0:
                     ymax=10**int(np.log10(ymax)+1)
                 # plt.yscale('log')
@@ -130,7 +132,6 @@ def print_results(all_cases):
                 t_ymin=ticks[ticks>=ymin].min()
                 # import pdb; pdb.set_trace()
                 t_ymax=ticks[pos_ymax]
-
                 plt.yticks(ticks)
 
                 plt.gca().set_yticklabels(['{:.0f}%'.format(x) for x in plt.gca().get_yticks()])
