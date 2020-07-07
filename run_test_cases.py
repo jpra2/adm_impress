@@ -15,15 +15,15 @@ def remove_previous_files():
     os.mkdir('results/biphasic/finescale/vtks')
 
 def run_test_cases():
-    # vpis_for_save=np.arange(0.0,0.501,0.01)
-    vpis_for_save=np.arange(0.0,0.15101,0.01)
+    vpis_for_save=np.arange(0.0,0.501,0.01)
+
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     os.system("python testting2_biphasic.py")
-    neta_lim_dual_values=[np.inf, np.inf,1.0, np.inf]
-    neta_lim_finescale_values=[1.0, np.inf, 1.0,1.0]
-    type_of_refinement_values=['uni', 'uni', 'uni', 'uni']
-    phiK_raz_lim_values=[np.inf, np.inf, np.inf, 3]
-    delta_sat_max=[1.1, 1.1,1.1, 2.0]
+    neta_lim_dual_values=     [ np.inf, np.inf, np.inf, np.inf,    1.0,    1.0,    1.0,    1.0,    1.0]
+    neta_lim_finescale_values=[ np.inf, np.inf,    1.0,    1.0, np.inf, np.inf,    1.0,    1.0,    1.0]
+    type_of_refinement_values=['n_uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
+    phiK_raz_lim_values=      [ np.inf, np.inf, np.inf,      3, np.inf,      3, np.inf,      3,      3]
+    delta_sat_max=            [    0.1,    0.1,    0.1,    0.1,    0.1,    0.1,    0.1,    0.1,    2.0]
     for i in range(len(neta_lim_dual_values)):
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))

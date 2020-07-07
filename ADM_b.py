@@ -264,7 +264,7 @@ OR_AMS=mlo['restriction_level_1']
 
 
 
-plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
+# plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
 # write_file_with_tag_range('OP_AMS_63',[0,np.inf])
 from scipy.sparse import csc_matrix
 import matplotlib as mpl
@@ -373,7 +373,7 @@ bcadm = OR_ADM*b
 pcadm=linalg.spsolve(Tcadm,bcadm)
 padm=OP_ADM*pcadm
 
-
+'''
 matrices=[T,Tc,OP_AMS,T*OP_AMS, OP_ADM, Tcadm,T*OP_ADM]
 names=['T','Tc','OP_AMS', 'TP', 'OP_ADM', 'Tcadm','TP_ADM']
 save_matrices_as_png(matrices,names)
@@ -396,7 +396,7 @@ namesh=['T_hi','OP_AMS_hi','TP_hi','Tc_hi','neta','dia_vec','max_neta']
 lines=[0,1,2,3]
 save_matrices_as_png_with_highlighted_lines(matricesh,namesh, lines)
 # import pdb; pdb.set_trace()
-
+'''
 pf=linalg.spsolve(T,b)
 eadm=np.linalg.norm(abs(padm-pf))/np.linalg.norm(pf)
 eams=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
@@ -461,7 +461,7 @@ es_Linf=[]
 
 neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
-
+delta_sat_max=np.load('flying/delta_sat_max.npy')[0]
 # import pdb; pdb.set_trace()
 while verif:
     t00=time.time()
@@ -505,9 +505,9 @@ while verif:
     if type_of_refinement=='uni':
         if len(vols_orig)>0:
             adm_method.set_monotonizing_level(vols_orig)
-        adm_method.set_saturation_level_simple()
+        adm_method.set_saturation_level_simple(delta_sat_max)
     else:
-        adm_method.set_saturation_level_uniform(0.05)
+        adm_method.set_saturation_level_uniform(delta_sat_max)
 
     t0=time.time()
     adm_method.solve_multiscale_pressure(T, b)

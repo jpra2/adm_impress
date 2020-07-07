@@ -163,14 +163,14 @@ class AdmNonNested(AdmMethod):
 
         self.data_impress['LEVEL'] = levels.copy()
 
-    def set_saturation_level_simple(self):
+    def set_saturation_level_simple(self,delta_sat_max=0.1):
         levels = self.data_impress['LEVEL'].copy()
         saturation = self.data_impress['saturation']
         internal_faces = self.elements_lv0['internal_faces']
         v0 = self.elements_lv0['neig_internal_faces']
         ds = saturation[v0]
         ds = np.absolute(ds[:,1] - ds[:,0])
-        inds = ds >= self.delta_sat_max
+        inds = ds >= delta_sat_max
         levels[v0[inds][:,0]] = 0
         levels[v0[inds][:,1]] = 0
         self.data_impress['LEVEL'] = levels.copy()
