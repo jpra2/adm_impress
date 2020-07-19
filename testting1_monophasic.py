@@ -106,12 +106,17 @@ from packs.running.initial_mesh_properties import initial_mesh
 from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 from packs.directories import data_loaded
 from packs.solvers.solvers_scipy.solver_sp import SolverSp
+import pdb
 
 n = data_loaded['n_test']
 
 M, elements_lv0, data_impress, wells = initial_mesh()
+
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 T, b = tpfa_solver.run()
+solver = SolverSp()
+p = solver.direct_solver(T, b)
+data_impress['pressure'] = p
 data_impress.update_variables_to_mesh()
 M.core.print(folder='results', file='test'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
 

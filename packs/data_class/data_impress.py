@@ -2,7 +2,7 @@
 '''
 classe Data criada para armazenar um dict linkando o nome da variavel
 a variavel do impress e tambem as informacoes dos dados.
-Essa classe será utilizada para automatizar alguns processos.
+Essa classe sera utilizada para automatizar alguns processos.
 '''
 import numpy as np
 from .. import directories as direc

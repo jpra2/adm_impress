@@ -5,6 +5,7 @@ import numpy as np
 from ..data_class.data_manager import DataManager
 import collections
 from ..utils.utils_old import get_box
+import pdb
 
 class Wells(DataManager):
 
@@ -274,9 +275,6 @@ class Wells(DataManager):
             contador = collections.Counter(fc_n)
             facs_nn = np.array([k for k, v in contador.items() if v > 1], dtype=np.int64)
             self['facs_nn'] = facs_nn
-        else:
-            self['facs_nn'] = np.array([], dtype=np.int64)
-
         else:
             self['facs_nn'] = np.array([], dtype=np.int64)
 

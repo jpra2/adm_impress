@@ -558,12 +558,12 @@ erro_p:
   sparse: True
   level: 0
 
-# erro_v:
-#   type: faces
-#   data size: 3
-#   data type: float
-#   sparse: True
-#   level: 0
+erro_v:
+  type: faces
+  data size: 3
+  data type: float
+  level: 0
+  sparse: True
 
 flux_o_faces:
   type: faces

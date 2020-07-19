@@ -1,19 +1,27 @@
-from .. import directories as direc
-import numpy as np
 
 class BrooksAndCorey:
 
-    def __init__(self):
-        self.Sor = float(direc.data_loaded['biphasic_data']['Sor'])
-        self.Swc = float(direc.data_loaded['biphasic_data']['Swc'])
-        self.n_w = float(direc.data_loaded['biphasic_data']['n_w'])
-        self.n_o = float(direc.data_loaded['biphasic_data']['n_o'])
-        self.krw0 = float(direc.data_loaded['biphasic_data']['krw0'])
-        self.kro0 = float(direc.data_loaded['biphasic_data']['kro0'])
+    def __init__(self, data_loaded):
+        self.Sor = float(data_loaded['Sor'])
+        self.Swc = float(data_loaded['Swc'])
+        self.n_w = float(data_loaded['n_w'])
+        self.n_o = float(data_loaded['n_o'])
+        self.krw0 = float(data_loaded['krw0'])
+        self.kro0 = float(data_loaded['kro0'])
+        self.ds = float(data_loaded['ds'])
 
     def _stemp(self, S):
-        S[S>0.8]=0.8
-        S[S<0.2]=0.2
+
+        inds = np.arange(len(S))
+
+        ite = inds[S > 1 - self.Sor + self.ds]
+        ite2 = inds[S < self.Swc - self.ds]
+
+        if len(ite) > 0 or len(ite2) > 0:
+            raise ValueError('Saturation Not supported')
+
+        S[ite] = 1 - self.Sor
+        S[ite2] = self.Swc
         return (S - self.Swc) / (1 - self.Swc - self.Sor)
 
     def _krw(self, S_temp):

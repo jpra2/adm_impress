@@ -1,13 +1,13 @@
 # mesh_name: mesh/45x45x45.msh
-# mesh_name: mesh/9x9x9.h5m
+mesh_name: mesh/9x9x9.h5m
 # mesh_name: mesh/9x1x9.h5m
-mesh_name: mesh/9x9x1.h5m
+# mesh_name: mesh/9x9x1.h5m
 # mesh_name: mesh/27x27x15.h5m
 # mesh_name: mesh/12x1x12.h5m
 n_test: 0
 state: 0
 type_of_solution: fine_scale
-gravity: false
+gravity: true
 test_segregation: false
 load_data: false
 convert_english_to_SI: false
@@ -23,6 +23,7 @@ get_correction_term: false
 n_levels: 2
 capillary_pressure: false
 convert_capillary_pressure_to: 'Pa'
+load_dataset: True
 _debug: True
 
 Crs:
@@ -104,16 +105,16 @@ Wells:
         # p1: [900.0, 450.0, 90.0]
         type_region: box
         p0: [0.0, 0.0, 0.0]
-        p1: [1.0, 1.0, 1.0]
+        p1: [1.0, 1.0, 9.0]
         prescription: Q
         type: Injector
-        value: 10.0
+        value: 1000.0
 
     P2:
         type_region: box
         p0: [8.0, 8.0, 0.0]
         # p1: [20.0, 10.0, 90.0]
-        p1: [9.0, 9.0, 1.0]
+        p1: [9.0, 9.0, 9.0]
         prescription: P
         # prescription: P
         type: Producer
@@ -139,7 +140,7 @@ Wells:
   #   value: 1.0
 
 monophasic_data:
-  gama: 100.0
+  gama: 10.0
   mi: 1.0
 
 biphasic_data:

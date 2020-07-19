@@ -3,6 +3,7 @@ from ..directories import data_loaded
 import numpy as np
 import scipy.sparse as sp
 
+
 class TpfaScheme(DataManager):
 
     def __init__(self, data_impress, elements_lv0, data_name: str='TpfaScheme.npz', load=False):

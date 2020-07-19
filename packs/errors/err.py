@@ -13,3 +13,6 @@ class PmsFluxFacesError(Exception):
 
 class MaxLoopIterationError(Exception):
     pass
+
+class NameLoadError(Exception):
+    pass
