@@ -156,3 +156,14 @@ class TpfaPreprocess:
         normals = normals.reshape(len(normals), 1)
         u_normal_direction = delta_x/normals
         return u_normal_direction
+
+    def get_k_volumes_internal_faces_direction(self, volumes_adj_internal_faces, permeability, abs_u_normal_internal_faces):
+        perms_adjs = permeability[volumes_adj_internal_faces]
+        perms_resp = np.empty((len(perms_adjs), 2))
+        abs_u = abs_u_normal_internal_faces
+
+        for i in range(perms_adjs.shape[0]):
+            perms_resp[i,0] = np.dot(np.dot(perms_adjs[i, 0], abs_u[i]), abs_u[i])
+            perms_resp[i,1] = np.dot(np.dot(perms_adjs[i, 1], abs_u[i]), abs_u[i])
+
+        return perms_resp

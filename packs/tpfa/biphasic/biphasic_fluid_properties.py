@@ -1,3 +1,4 @@
+import yaml
 
 class BiphasicFluidProperties:
 
@@ -15,11 +16,11 @@ class BiphasicFluidProperties:
         self._mi_o = float(data_loaded['mi_o'])
 
     @property
-    def density_w(self):
-        return self._density
+    def rho_w(self):
+        return self._density_w
 
     @property
-    def density_o(self):
+    def rho_o(self):
         return self._density_o
 
     @property

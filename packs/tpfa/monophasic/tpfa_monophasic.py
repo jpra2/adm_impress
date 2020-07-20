@@ -1,5 +1,6 @@
 from packs.tpfa.monophasic.monophasic_fluid_properties import MonophasicFluidProperties
 import scipy.sparse as sp
+import numpy as np
 
 
 
@@ -17,7 +18,7 @@ class TpfaMonophasic:
 
         T = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, n_volumes))
 
-        return T
+        return T.tolil()
 
     def get_linear_problem(self, volumes_dirichlet, volumes_neumman, values_dirichlet, values_neumman, gravity_source_term_volumes, transmissibility_matrix_without_boundary_conditions):
 
@@ -29,4 +30,4 @@ class TpfaMonophasic:
         T2 [volumes_dirichlet] = 0
         T2[volumes_dirichlet, volumes_dirichlet] = 1.0
 
-        return T, b
+        return T2.tocsc(), b

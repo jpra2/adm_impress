@@ -10,9 +10,7 @@ def get_relative_permeability(input_file=''):
     with open(input_file, 'r') as f:
         data_loaded = yaml.safe_load(f)
 
-    pdb.set_trace()
-
     name_data = data_loaded['relative_permeability']
     obj = getattr(relative_permeability, name_data)
     obj = obj(data_loaded)
-    return relative_permeability
+    return obj
