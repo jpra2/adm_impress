@@ -31,3 +31,14 @@ class TpfaMonophasic:
         T2[volumes_dirichlet, volumes_dirichlet] = 1.0
 
         return T2.tocsc(), b
+
+    @staticmethod
+    def get_total_flux_volumes(flux_internal_faces, volumes, volumes_adj_internal_faces):
+
+        v0 = volumes_adj_internal_faces
+        n_volumes = len(volumes)
+        lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+        cols = np.repeat(0, len(lines))
+        data = np.array([flux_internal_faces, -flux_internal_faces]).flatten()
+        flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
+        return flux_volumes

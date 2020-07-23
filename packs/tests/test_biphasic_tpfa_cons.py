@@ -154,6 +154,9 @@ while loop <= loop_max:
         elements.get_value('volumes_adj_internal_faces'),
         g_source_total_internal_faces
     )
+    
+    data_impress['flux_grav_volumes'] = g_source_total_volumes
+    data_impress['saturation'] = saturation
 
     T = monophasic.mount_transmissibility_matrix(
         biphasic_data['transmissibility_faces'][elements.internal_faces],
@@ -171,8 +174,111 @@ while loop <= loop_max:
         T
     )
 
-    pressure = solver.direct_solver(T_with_boundary, b)
-    data_impress['pressure'] = pressure
+    data_impress['pressure'] = solver.direct_solver(T_with_boundary, b)
+    total_velocity_internal_faces = biphasic.get_total_velocity_internal_faces(
+        data_impress['pressure'],
+        elements.internal_faces,
+        phisical_properties.gravity_vector,
+        elements.get_value('volumes_adj_internal_faces'),
+        rock_data['keq_faces'][elements.internal_faces],
+        biphasic_data['mob_w_internal_faces'],
+        biphasic_data['mob_o_internal_faces'],
+        geom['centroid_volumes'],
+        biphasic.properties.rho_w,
+        biphasic.properties.rho_o
+    )
+
+    # total_flux_internal_faces = biphasic.get_total_flux_internal_faces(
+    #     total_velocity_internal_faces,
+    #     geom['u_direction_internal_faces'],
+    #     geom['areas'][elements.internal_faces]
+    # )
+
+    # flux_w_internal_faces, flux_o_internal_faces = biphasic.get_flux_w_and_o_internal_faces(
+    #     total_flux_internal_faces,
+    #     biphasic.properties.rho_w,
+    #     biphasic.properties.rho_o,
+    #     biphasic_data['mob_w_internal_faces'],
+    #     biphasic_data['mob_o_internal_faces'],
+    #     simulation_data['nkga_internal_faces']
+    # )
+
+    velocity_w_internal_faces, velocity_o_internal_faces = biphasic.get_velocity_w_and_o_internal_faces(
+        total_velocity_internal_faces,
+        phisical_properties.gravity_vector,
+        rock_data['keq_faces'][elements.internal_faces],
+        biphasic.properties.rho_w,
+        biphasic.properties.rho_o,
+        biphasic_data['mob_w_internal_faces'],
+        biphasic_data['mob_o_internal_faces']
+    )
+
+    flux_w_internal_faces = biphasic.test_flux(
+        velocity_w_internal_faces,
+        geom['u_direction_internal_faces'],
+        geom['areas'][elements.internal_faces]
+    )
+
+    flux_o_internal_faces = biphasic.test_flux(
+        velocity_o_internal_faces,
+        geom['u_direction_internal_faces'],
+        geom['areas'][elements.internal_faces]
+    )
+
+    total_flux_internal_faces = flux_w_internal_faces + flux_o_internal_faces
+
+    flux_total_volumes = monophasic.get_total_flux_volumes(
+        total_flux_internal_faces,
+        elements.volumes,
+        elements.get_value('volumes_adj_internal_faces')
+    )
+
+    flux_w_volumes = biphasic.get_flux_phase_volumes(
+        flux_w_internal_faces,
+        wells['all_wells'],
+        mob_w,
+        elements.get_value('volumes_adj_internal_faces'),
+        elements.volumes,
+        flux_total_volumes
+    )
+
+    flux_o_volumes = biphasic.get_flux_phase_volumes(
+        flux_o_internal_faces,
+        wells['all_wells'],
+        mob_o,
+        elements.get_value('volumes_adj_internal_faces'),
+        elements.volumes,
+        flux_total_volumes
+    )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    pdb.set_trace()
+
+
+
+
+
+
+
+
+
+
+
+
     name = 'results/test_volumes_' + str(loop) + '.vtk'
     print_test_volumes(name)
 
