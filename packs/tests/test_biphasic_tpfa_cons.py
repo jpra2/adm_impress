@@ -1,11 +1,13 @@
 from packs.tpfa.biphasic import TpfaBiphasicCons
 from packs.tpfa.monophasic import TpfaMonophasic
-from packs.data_class import GeometricData, Elements, RockData, SparseDataManager, DataManager, BiphasicData, SimulationData
+from packs.data_class import GeometricData, Elements, DataManager, SparseDataManager, RockData, BiphasicData, SimulationData, WellsData, AccumulativeBiphasicData, CurrentDataBiphasic
 from packs.preprocess import TpfaPreprocess
 from packs.running.initial_mesh_properties import initial_mesh
 from packs.properties import PhisicalProperties
 from packs.solvers.solvers_scipy.solver_sp import SolverSp
+from copy import deepcopy
 import numpy as np
+import os
 import pdb
 
 
@@ -15,6 +17,8 @@ import pdb
 ###########################################
 ## preprocessamento
 M, _, data_impress, wells = initial_mesh()
+wells2 = WellsData()
+wells2._data = deepcopy(wells._data)
 meshset_volumes = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 meshset_faces = M.core.mb.create_meshset()
@@ -52,7 +56,7 @@ n_vols = len(elements.volumes)
 
 preprocess = TpfaPreprocess()
 geom = GeometricData()
-geom['abs_u_normal_faces'] = M.faces.normal
+geom['abs_u_normal_faces'] = M.faces.normal[:]
 geom['block_dimension'] = np.repeat(1.0, n_vols*3).reshape(n_vols, 3)
 geom['volume'] = np.prod(geom['block_dimension'], axis=1)
 geom['centroid_volumes'] = M.volumes.center[:]
@@ -63,6 +67,7 @@ nodes_of_faces = elements.faces_to_nodes(elements.faces)
 points_faces = geom['centroid_nodes'][nodes_of_faces]
 geom['areas'] = preprocess.get_areas_faces(elements.faces, points_faces)
 geom['u_direction_internal_faces'] = preprocess.get_u_normal_internal_faces(elements.get_value('volumes_adj_internal_faces'), geom['abs_u_normal_faces'][elements.internal_faces], geom['centroid_volumes'])
+geom['hi'] = preprocess.get_h_internal_faces(geom['block_dimension'], elements.get_value('volumes_adj_internal_faces'), geom['abs_u_normal_faces'][elements.internal_faces])
 
 rock_data = RockData()
 rock_data['permeability'] = perms.copy()
@@ -86,67 +91,115 @@ biphasic_data['saturation'] = M.saturation[:].flatten()
 
 monophasic = TpfaMonophasic()
 biphasic = TpfaBiphasicCons()
-biphasic_data['krw'], biphasic_data['kro'] = biphasic.get_krw_and_kro(biphasic_data['saturation'])
-# krw, kro = biphasic.get_krw_and_kro(biphasic_data['saturation'])
-mob_w, mob_o = biphasic.get_mobilities_w_o(biphasic_data['krw'], biphasic_data['kro'])
-###
-##initialize
-biphasic_data['upwind_w'], biphasic_data['upwind_o'] = biphasic.set_initial_upwind_internal_faces(
-    biphasic_data['saturation'],
-    elements.get_value('volumes_adj_internal_faces'),
-    wells['ws_inj'],
-    elements.internal_faces,
-    elements.volumes_to_faces(elements.volumes),
-    elements.boundary_faces,
-    elements.get_value('map_internal_faces')
-)
-###
-biphasic_data['mob_w_internal_faces'] = mob_w[elements.get_value('volumes_adj_internal_faces')[biphasic_data['upwind_w']]]
-biphasic_data['mob_o_internal_faces'] = mob_o[elements.get_value('volumes_adj_internal_faces')[biphasic_data['upwind_o']]]
-biphasic_data['transmissibility_faces'] = biphasic.get_transmissibility_faces(
-    geom['areas'],
-    elements.internal_faces,
-    elements.boundary_faces,
-    elements.get_value('volumes_adj_internal_faces'),
-    elements.get_value('volumes_adj_boundary_faces'),
-    biphasic_data['upwind_w'],
-    biphasic_data['upwind_o'],
-    mob_w,
-    mob_o,
-    rock_data['keq_faces']
-)
 
 simulation_data = SimulationData()
 simulation_data['nkga_internal_faces'] = phisical_properties.get_nkga(rock_data['keq_faces'][elements.internal_faces], geom['u_direction_internal_faces'], geom['areas'][elements.internal_faces])
+dty = [('prod_o', float), ('prod_w', float), ('wor', float),
+       ('delta_t', float), ('dvpi', float), ('loop', int)]
 
-biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = phisical_properties.get_g_source_w_o_internal_faces(
-    simulation_data['nkga_internal_faces'],
-    biphasic_data['mob_w_internal_faces'],
-    biphasic_data['mob_o_internal_faces'],
-    biphasic.properties.rho_w,
-    biphasic.properties.rho_o
-)
+# data_to_export = {
+#     'prod_o': np.array([0.0]),
+#     'prod_w': np.array([0.0]),
+#     'wor': np.array([0.0]),
+#     'delta_t': np.array([0.0]),
+#     'dvpi': np.array([0.0]),
+#     'loop': np.array([0.0])
+# }
 
-wells.add_gravity_2(
-    elements.volumes,
-    phisical_properties.gravity_vector,
-    geom['centroid_volumes'],
-    elements.get_value('volumes_adj_volumes_by_faces'),
-    geom['centroid_nodes'],
-    biphasic_data['saturation'],
-    biphasic.properties.rho_w,
-    biphasic.properties.rho_o
-)
+current_data = CurrentDataBiphasic()
+current_data['current'] = np.zeros(1, dtype=dty)
+
+# wells.add_gravity_2(
+#     elements.volumes,
+#     phisical_properties.gravity_vector,
+#     geom['centroid_volumes'],
+#     elements.get_value('volumes_adj_volumes_by_faces'),
+#     geom['centroid_nodes'],
+#     biphasic_data['saturation'],
+#     biphasic.properties.rho_w,
+#     biphasic.properties.rho_o
+# )
+
+accumulate = AccumulativeBiphasicData()
+accumulate.create()
+accumulate.insert_data(current_data['current'])
+
+DataManager.export_all_datas_to_npz()
+SparseDataManager.export_all_datas()
 
 
+###############################################
+
+###############################################
 
 solver = SolverSp()
 ###########################################
 
-loop_max = 30
+loop_max = 20
 loop = 0
 
 while loop <= loop_max:
+
+    biphasic_data['krw'], biphasic_data['kro'] = biphasic.get_krw_and_kro(biphasic_data['saturation'])
+    mob_w, mob_o = biphasic.get_mobilities_w_o(biphasic_data['krw'], biphasic_data['kro'])
+
+    if loop == 0:
+
+        biphasic_data['upwind_w'], biphasic_data['upwind_o'] = biphasic.set_initial_upwind_internal_faces(
+            biphasic_data['saturation'],
+            elements.get_value('volumes_adj_internal_faces'),
+            wells['ws_inj'],
+            elements.internal_faces,
+            elements.volumes_to_faces(elements.volumes),
+            elements.boundary_faces,
+            elements.get_value('map_internal_faces')
+        )
+        
+    else:
+        biphasic_data['upwind_w'], biphasic_data['upwind_o'] = biphasic.update_upwind_phases(
+            elements.internal_faces,
+            elements.get_value('volumes_adj_internal_faces'),
+            biphasic_data['saturation'],
+            flux_w_internal_faces,
+            flux_o_internal_faces,
+            total_flux_internal_faces,
+            geom['centroid_volumes']
+        )
+
+    ###
+    biphasic_data['mob_w_internal_faces'] = mob_w[elements.get_value('volumes_adj_internal_faces')[biphasic_data['upwind_w']]]
+    biphasic_data['mob_o_internal_faces'] = mob_o[elements.get_value('volumes_adj_internal_faces')[biphasic_data['upwind_o']]]
+    biphasic_data['transmissibility_faces'] = biphasic.get_transmissibility_faces(
+        geom['areas'],
+        elements.internal_faces,
+        elements.boundary_faces,
+        elements.get_value('volumes_adj_internal_faces'),
+        elements.get_value('volumes_adj_boundary_faces'),
+        biphasic_data['upwind_w'],
+        biphasic_data['upwind_o'],
+        mob_w,
+        mob_o,
+        rock_data['keq_faces']
+    )
+
+    biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = phisical_properties.get_g_source_w_o_internal_faces(
+        simulation_data['nkga_internal_faces'],
+        biphasic_data['mob_w_internal_faces'],
+        biphasic_data['mob_o_internal_faces'],
+        biphasic.properties.rho_w,
+        biphasic.properties.rho_o
+    )
+
+    wells2.add_gravity_2(
+        elements.volumes,
+        phisical_properties.gravity_vector,
+        geom['centroid_volumes'],
+        elements.get_value('volumes_adj_volumes_by_faces'),
+        geom['centroid_nodes'],
+        biphasic_data['saturation'],
+        biphasic.properties.rho_w,
+        biphasic.properties.rho_o
+    )
 
     g_source_total_internal_faces = biphasic_data['g_source_w_internal_faces'] + biphasic_data['g_source_o_internal_faces']
     g_source_total_volumes = phisical_properties.get_total_g_source_volumes(
@@ -154,9 +207,6 @@ while loop <= loop_max:
         elements.get_value('volumes_adj_internal_faces'),
         g_source_total_internal_faces
     )
-    
-    data_impress['flux_grav_volumes'] = g_source_total_volumes
-    data_impress['saturation'] = saturation
 
     T = monophasic.mount_transmissibility_matrix(
         biphasic_data['transmissibility_faces'][elements.internal_faces],
@@ -166,17 +216,17 @@ while loop <= loop_max:
     )
 
     T_with_boundary, b = monophasic.get_linear_problem(
-        wells['ws_p'],
-        wells['ws_q'],
-        wells['values_p'],
-        wells['values_q'],
+        wells2['ws_p'],
+        wells2['ws_q'],
+        wells2['values_p'],
+        wells2['values_q'],
         g_source_total_volumes,
         T
     )
 
-    data_impress['pressure'] = solver.direct_solver(T_with_boundary, b)
+    pressure = solver.direct_solver(T_with_boundary, b)
     total_velocity_internal_faces = biphasic.get_total_velocity_internal_faces(
-        data_impress['pressure'],
+        pressure,
         elements.internal_faces,
         phisical_properties.gravity_vector,
         elements.get_value('volumes_adj_internal_faces'),
@@ -236,7 +286,7 @@ while loop <= loop_max:
     flux_w_volumes = biphasic.get_flux_phase_volumes(
         flux_w_internal_faces,
         wells['all_wells'],
-        mob_w,
+        mob_w/(mob_w+mob_o),
         elements.get_value('volumes_adj_internal_faces'),
         elements.volumes,
         flux_total_volumes
@@ -245,58 +295,102 @@ while loop <= loop_max:
     flux_o_volumes = biphasic.get_flux_phase_volumes(
         flux_o_internal_faces,
         wells['all_wells'],
-        mob_o,
+        mob_o/(mob_w+mob_o),
         elements.get_value('volumes_adj_internal_faces'),
         elements.volumes,
         flux_total_volumes
     )
 
+    biphasic_data['saturation_last'] = biphasic_data['saturation'].copy()
 
+    delta_t, biphasic_data['saturation'] = biphasic.update_saturation(
+        flux_w_volumes,
+        rock_data['porosity'],
+        geom['volume'],
+        flux_total_volumes,
+        total_velocity_internal_faces,
+        mob_w/(mob_w + mob_o),
+        biphasic_data['saturation_last'],
+        elements.get_value('volumes_adj_internal_faces'),
+        geom['hi'],
+        geom['abs_u_normal_faces'][elements.internal_faces]
+    )
 
+    prod_w, prod_o, wor, dvpi = biphasic.get_production_w_o(
+        flux_total_volumes,
+        mob_w,
+        mob_o,
+        wells2['ws_inj'],
+        wells2['ws_prod'],
+        delta_t,
+        geom['volume'],
+        rock_data['porosity']
+    )
 
-
-
-
-
-
-
-
-
-
-
-
-
-    pdb.set_trace()
-
-
-
-
-
-
-
-
-
-
-
-
-    name = 'results/test_volumes_' + str(loop) + '.vtk'
-    print_test_volumes(name)
-
-
-
-
-    pdb.set_trace()
-
-
-
-
-
-
-
-
-
-
-
+    # data_to_export = {
+    #     'prod_o': np.array([prod_o]),
+    #     'prod_w': np.array([prod_w]),
+    #     'wor': np.array([wor]),
+    #     'delta_t': np.array([delta_t]),
+    #     'dvpi': np.array([dvpi]),
+    #     'loop': np.array([loop])
+    # }
     loop += 1
+
+    current_data['current'] = np.array([(prod_o, prod_w, wor, delta_t, dvpi, loop)], dtype=dty)
+    accumulate.insert_data(current_data['current'])
+
+    if loop % 5 == 0:
+        accumulate.export(local_key_identifier='loop')
+        current_data.export_to_npz()
+
+    if loop % 10 == 0:
+        all_datas = accumulate.load_all_datas()
+        pdb.set_trace()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # pdb.set_trace()
+
+
+
+
+
+
+
+
+
+
+
+
+    # name = 'results/test_volumes_' + str(loop) + '.vtk'
+    # print_test_volumes(name)
+
+
+
+
+    # pdb.set_trace()
 
 pdb.set_trace()

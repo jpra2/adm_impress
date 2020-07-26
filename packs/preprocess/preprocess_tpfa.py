@@ -37,7 +37,7 @@ class TpfaPreprocess:
         ks1 = ks1 * u_normal_internal_faces.reshape([ni, 1, 3])
         ks0 = ks0.sum(axis=2).sum(axis=1)
         ks1 = ks1.sum(axis=2).sum(axis=1)
-        hi = self.get_h_internal_faces(ni, block_dimension, v0, u_normal_internal_faces)
+        hi = self.get_h_internal_faces(block_dimension, v0, u_normal_internal_faces)
         k_harm_faces[internal_faces] = hi.sum(axis=1)/(hi[:, 0]/ks0 + hi[:, 1]/ks1)
 
         vols_viz_boundary_faces = volumes_adj_boundary_faces
@@ -51,9 +51,9 @@ class TpfaPreprocess:
 
         return k_harm_faces
 
-    def get_h_internal_faces(self, n_internal_faces, block_dimension, volumes_adj_internal_faces, u_normal_internal_faces):
+    def get_h_internal_faces(self, block_dimension, volumes_adj_internal_faces, u_normal_internal_faces):
 
-        ni = n_internal_faces
+        ni = len(volumes_adj_internal_faces)
         vols_viz_internal_faces = volumes_adj_internal_faces
         hs = block_dimension
 

@@ -1,6 +1,7 @@
 from packs.tpfa.biphasic.get_relative import get_relative_permeability
 from packs.tpfa.biphasic.biphasic_fluid_properties import BiphasicFluidProperties
 from packs.tpfa.biphasic.biphasic_utils import BiphasicUtils
+from packs.tpfa.biphasic.simulation_infos import SimulationInfos
 from packs.tpfa.common_files import SimulationVariables
 from packs.tpfa.monophasic import TpfaMonophasic
 import scipy.sparse as sp
@@ -14,6 +15,7 @@ class TpfaBiphasicCons:
         self.properties = BiphasicFluidProperties()
         self.biphasic_utils = BiphasicUtils()
         self.simulation_variables = SimulationVariables()
+        self.simulation_infos = SimulationInfos()
 
     def get_empty_current_biphasic_results(self):
 
@@ -99,7 +101,7 @@ class TpfaBiphasicCons:
         k1 = gradient_pressure*(mob_t)*keq
         k2 = (rho_w*mob_w_int_f + rho_o*mob_o_int_f)*keq
         k2 = gravity_vector * k2
-        resp = -(k1 + k2)
+        resp = k1 + k2
         return resp
 
     def get_total_flux_internal_faces(self, total_velocity_internal_faces, u_direction_internal_faces, areas_internal_faces):
@@ -152,9 +154,287 @@ class TpfaBiphasicCons:
 
         return flux
 
-    def get_flux_phase_volumes(self, flux_internal_faces, all_wells, mobility_phase_volumes, volumes_adj_internal_faces, volumes, total_flux_volumes):
+    def get_flux_phase_volumes(self, flux_phase_internal_faces, all_wells, flux_frac_phase_volumes, volumes_adj_internal_faces, volumes, total_flux_volumes):
 
-        flux_volumes = TpfaMonophasic.get_total_flux_volumes(flux_internal_faces, volumes, volumes_adj_internal_faces)
-        flux_volumes[all_wells] -= total_flux_volumes[all_wells]*mobility_phase_volumes[all_wells]
+        fw_phase = flux_frac_phase_volumes
+        flux_volumes = TpfaMonophasic.get_total_flux_volumes(flux_phase_internal_faces, volumes, volumes_adj_internal_faces)
+        flux_volumes[all_wells] -= total_flux_volumes[all_wells]*fw_phase[all_wells]
 
         return flux_volumes
+
+    def update_delta_t(self, flux_w_volumes, porosity, vol_volumes, total_flux_volumes, total_velocity_internal_faces, flux_frac_w_volumes, saturation, volumes_adj_internal_faces, hi, abs_u_normal_internal_faces):
+
+        deltas_t = []
+        deltas_t.append(self.update_delta_t_for_delta_sat_max(flux_w_volumes, porosity, vol_volumes))
+        deltas_t.append(self.update_delta_t_dep0(total_flux_volumes, porosity, vol_volumes))
+        deltas_t.append(self.update_delta_t_new(porosity, vol_volumes, total_velocity_internal_faces, flux_frac_w_volumes, saturation, volumes_adj_internal_faces, hi, abs_u_normal_internal_faces))
+        deltas_t.append(self.update_delta_t2(np.linalg.norm(total_velocity_internal_faces*abs_u_normal_internal_faces, axis=1), hi))
+
+        delta_t = min(deltas_t)
+
+        return delta_t
+
+    def update_delta_t_for_delta_sat_max(self, flux_w_volumes, porosity, vol_volumes):
+
+        delta_sat_max = self.simulation_infos.data['delta_sat_max']
+        phis = porosity
+        volume = vol_volumes
+
+        test = flux_w_volumes/(volume*phis)
+        test = np.absolute(test[np.absolute(test)>0]).max()
+        delta_t = delta_sat_max/test
+        return delta_t
+
+    def update_delta_t_new(self, porosity, vol_volumes, total_velocity_internal_faces, flux_frac_w_volumes, saturation, volumes_adj_internal_faces, hi, abs_u_normal_internal_faces):
+
+        ####
+        # de acordo com as faces
+        ####
+
+
+
+        lim_ds = 1e-10
+        cfl = self.simulation_infos.data['cfl']
+
+        phis = porosity
+        volume = vol_volumes
+        # velocity_faces = np.absolute(self.data_impress['velocity_faces'])
+        # internal_faces = self.elements_lv0['internal_faces']
+        fw_vol = flux_frac_w_volumes
+        # saturation = self.data_impress['saturation']
+        viz_int = volumes_adj_internal_faces
+
+        dists_int = hi.sum(axis=1)
+        vel_internal_faces = np.linalg.norm(total_velocity_internal_faces*abs_u_normal_internal_faces, axis=1)
+
+        v0 = viz_int[:, 0]
+        v1 = viz_int[:, 1]
+        df = np.absolute(fw_vol[v1] - fw_vol[v0])
+        ds = np.absolute(saturation[v1] - saturation[v0])
+        ids = np.arange(len(ds))
+        ids_2 = ids[ds > lim_ds]
+
+        dists_int = dists_int[ids_2]
+        vel_internal_faces = vel_internal_faces[ids_2]
+        df = df[ids_2]
+        ds = ds[ids_2]
+        dfds = df/ds
+        delta_t = (cfl*(dists_int/(vel_internal_faces*dfds))).min()
+        return delta_t
+
+    def update_delta_t_dep0(self, total_flux_volumes, porosity, vol_volumes):
+        ###
+        ## de acordo com o fluxo nos volumes
+        ###
+
+        cfl = self.simulation_infos.data['cfl']
+
+        flux_volumes = np.absolute(total_flux_volumes)
+        phis = porosity
+        volume = vol_volumes
+
+        delta_t = (cfl*(volume*phis)/flux_volumes).min()
+        return delta_t
+
+    def update_delta_t2(self, total_velocity_internal_faces, hi):
+        cfl = self.simulation_infos.data['cfl']
+        abs_velocity = np.absolute(total_velocity_internal_faces)
+        dx = hi.sum(axis=1)
+        deltas_t = cfl*(dx/abs_velocity)
+        delta_t = deltas_t.min()
+        return delta_t
+
+    def update_saturation(self, flux_w_volumes, porosity, vol_volumes, total_flux_volumes, total_velocity_internal_faces, flux_frac_w_volumes, saturation0, volumes_adj_internal_faces, hi, abs_u_normal_internal_faces):
+        cont = 0
+        max_loops = 100
+
+        delta_t = self.update_delta_t(
+            flux_w_volumes,
+            porosity,
+            vol_volumes,
+            total_flux_volumes,
+            total_velocity_internal_faces,
+            flux_frac_w_volumes,
+            saturation0,
+            volumes_adj_internal_faces,
+            hi,
+            abs_u_normal_internal_faces
+        )
+
+        verif = -1
+
+        while verif != 0:
+            verif, saturation = self.update_sat(
+                saturation0,
+                flux_w_volumes,
+                vol_volumes,
+                porosity,
+                delta_t
+            )
+            if verif == 1:
+                delta_t = self.reduce_delta_t(delta_t)
+
+            if cont == max_loops:
+                raise ValueError('Loop maximo atingido')
+
+            cont += 1
+
+        return delta_t, saturation
+
+    def update_sat(self, saturation0, flux_w_volumes, vol_volumes, porosity, delta_t):
+
+        lim_flux_w = 9e-8
+        delta_sat_max = self.simulation_infos.data['delta_sat_max']
+        Swc = self.relative_permeability.Swc
+        Sor = self.relative_permeability.Sor
+        deltt = 0.0001
+
+        # import pdb; pdb.set_trace()
+
+        saturations = saturation0.copy()
+        ids = np.arange(len(saturations))
+
+        fw_volumes = -flux_w_volumes
+
+        volumes = vol_volumes
+        phis = porosity
+
+        # import pdb; pdb.set_trace()
+
+        # ids_2 = ids[fw_volumes < 0]
+        # if len(ids_2) > 0:
+        #     self.data_impress['test_fw'][ids_2] = np.repeat(1.0, len(ids_2))
+        #     self.data_impress.update_variables_to_mesh()
+        #     self.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
+        #     import pdb; pdb.set_trace()
+        #     self.data_impress['test_fw'] = np.repeat(0.0, len(self.data_impress['test_fw']))
+        #     self.data_impress.update_variables_to_mesh(['test_fw'])
+
+        ###########################
+        ## teste
+        test = ids[(saturations < 0) | (saturations > 1)]
+        if len(test) > 0:
+            raise ValueError(f'valor errado da saturacao {saturations[test]}')
+        del test
+
+        ids_var = ids[np.absolute(fw_volumes) > lim_flux_w]
+
+        ###################
+        ## teste variacao do fluxo de agua
+        if len(ids_var) == 0:
+            import pdb; pdb.set_trace()
+        ###################
+
+        fw_volumes = fw_volumes[ids_var]
+        volumes = volumes[ids_var]
+        phis = phis[ids_var]
+        sats = saturations[ids_var]
+
+        sats += (fw_volumes*delta_t)/(phis*volumes)
+
+        delta_sat = sats - saturations[ids_var]
+        ids2 = np.arange(len(delta_sat))
+
+        #############
+        ## teste variacao maxima de saturacao
+        test = ids2[np.absolute(delta_sat) > delta_sat_max+0.000001]
+        if len(test) > 0:
+            return 1, True
+        del test
+        ##############
+
+        saturations[ids_var] = sats
+
+        # if np.allclose(saturations, saturations0):
+        #     import pdb; pdb.set_trace()
+
+        min_sat = saturations.min()
+        max_sat = saturations.max()
+
+        ## teste dos limites
+        if min_sat < Swc - deltt or max_sat > 1-Sor + deltt:
+            return 1, True
+
+        return 0, saturations
+
+    def reduce_delta_t(self, dt):
+        delta_t = dt*1/2
+        print(f'\nreducing delta_t: {dt} -> {delta_t} \n')
+        return delta_t
+
+    def get_production_w_o(self, flux_total_volumes, mob_w, mob_o, wells_injector, wells_producer, delta_t, vol_volumes, porosity):
+
+        fw_volumes = mob_w/(mob_w + mob_o)
+        fo_volumes = 1 - fw_volumes
+        prod_o = -flux_total_volumes[wells_producer]*fo_volumes[wells_producer]
+        prod_o = prod_o.sum()*delta_t
+
+        prod_w = -flux_total_volumes[wells_producer]*fw_volumes[wells_producer]
+        prod_w = prod_w.sum()*delta_t
+
+        wor = prod_w/prod_o
+
+        vol_all = vol_volumes*porosity
+        vol_all = vol_all.sum()
+
+        dvpi = flux_total_volumes[wells_injector].sum()
+        dvpi = (dvpi*delta_t)/vol_all
+
+        return prod_w, prod_o, wor, dvpi
+
+    def update_upwind_phases(self, internal_faces, volumes_adj_internal_faces, saturation, flux_w_internal_faces, flux_o_internal_faces, total_flux_internal_faces, centroid_volumes):
+        '''
+            paper Starnoni
+            with gravity
+        '''
+        # k0 = 9e-7
+        k0 = 9e-2
+
+        # internal_faces = self.elements_lv0['internal_faces']
+        v0 = volumes_adj_internal_faces
+        # saturation = self.data_impress['saturation']
+        flux_w_faces = flux_w_internal_faces
+        flux_o_faces = flux_o_internal_faces
+        flux_total = total_flux_internal_faces
+        flux_w_faces[np.absolute(flux_w_faces) < k0] = 0.0
+        flux_o_faces[np.absolute(flux_o_faces) < k0] = 0.0
+        flux_total[np.absolute(flux_total) < k0] = 0.0
+
+        tw = flux_w_faces >= 0
+        to = flux_o_faces >= 0
+
+        upwind_w = np.full((len(internal_faces), 2), False, dtype=bool)
+        upwind_o = upwind_w.copy()
+
+        upwind_w[tw, 0] = True
+        upwind_o[to, 0] = True
+
+        tw = ~tw
+        to = ~to
+        upwind_w[tw, 1] = True
+        upwind_o[to, 1] = True
+
+        tt = np.absolute(flux_total) < k0
+        upwind_w[tt] = False
+        upwind_o[tt] = False
+
+        centroids = centroid_volumes[v0[tt]]
+        delta_z = centroids[:,1] - centroids[:,0]
+        delta_z = delta_z[:,2]
+
+        upgw = np.full((tt.sum(), 2), False, dtype=bool)
+        upgo = np.full((tt.sum(), 2), False, dtype=bool)
+
+        tz = delta_z >= 0
+
+        upgw[tz, 1] = True
+        upgo[tz, 0] = True
+
+        tz = ~tz
+        upgw[tz, 0] = True
+        upgo[tz, 1] = True
+
+        upwind_w[tt] = upgw
+        upwind_o[tt] = upgo
+
+        self.test_upwind_dup(upwind_w, upwind_o)

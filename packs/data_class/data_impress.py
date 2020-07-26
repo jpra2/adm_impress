@@ -10,6 +10,7 @@ import pickle
 import pdb
 from .data_manager import DataManager
 from ..convert_unit import constants
+from packs.directories import only_mesh_name
 
 class Data(DataManager):
     '''
@@ -18,10 +19,11 @@ class Data(DataManager):
     '''
     # valores_para_converter = ['hs', 'permeability', 'dist_cent']
 
-    def __init__(self, fine_scale_mesh_obj, elementsLv0_obj, load: bool=False, data_name: str='data_impress.npz'):
+    def __init__(self, fine_scale_mesh_obj, elementsLv0_obj, load: bool=False, data_name: str='data_impress'):
         '''
         fine_scale_mesh_obj: objeto multiscalemeshMS
         '''
+        data_name = data_name + '_' + only_mesh_name + '.npz'
         super().__init__(data_name, load=load)
 
         self.info_data = dict()

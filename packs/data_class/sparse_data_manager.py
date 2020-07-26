@@ -57,18 +57,20 @@ class SparseDataManager(CommonDataManager):
 
         print(f'\n{self.name} saved\n')
 
-    def get_obj_by_name(self, name):
+    @classmethod
+    def get_obj_by_name(cls, name):
         return SparseDataManager.all_datas[name]
 
     @classmethod
     def export_all_datas(cls):
-        # for obj in SparseDataManager.all_datas.values():
-        for obj in cls.all_datas.values():
+        for obj in SparseDataManager.all_datas.values():
+        # for obj in cls.all_datas.values():
             obj.export()
 
     @classmethod
     def load_all_datas(cls):
-        for obj in cls.all_datas.values():
+        # for obj in cls.all_datas.values():
+        for obj in SparseDataManager.all_datas.values():
             obj.load()
 
     def __del__(self):

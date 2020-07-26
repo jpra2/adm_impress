@@ -15,6 +15,9 @@ class CommonDataManager:
         del r[key]
         return r
 
+    def update(self, data):
+        self._data.update(data)
+
     def __setitem__(self, key, value):
         self._data[key] = value
 
