@@ -16,6 +16,7 @@ impress/
 impress(copia)/
 *.pyc
 *.imp
+*.zip
 .idea/
 
 

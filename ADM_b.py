@@ -397,6 +397,7 @@ lines=[0,1,2,3]
 save_matrices_as_png_with_highlighted_lines(matricesh,namesh, lines)
 # import pdb; pdb.set_trace()
 '''
+
 pf=linalg.spsolve(T,b)
 eadm=np.linalg.norm(abs(padm-pf))/np.linalg.norm(pf)
 eams=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
@@ -446,6 +447,8 @@ except:
 #     l_groups=np.array(critical_groups)
 #     groups_c=critical_groups
 ms_case=np.load("flying/ms_case.npy")[0]
+coupl=100*(data_impress['coupled_flag']==1).sum()/len(data_impress['coupled_flag'])
+np.save('results/biphasic/ms/'+ms_case+'/modif'+'.npy',np.array([coupl]))
 
 # adm_method.set_level_wells_3()
 adm_method.set_level_wells_only()
@@ -522,7 +525,13 @@ while verif:
     t1=time.time()
     print(b1.wor, adm_method.n1_adm)
     pms=data_impress['pressure']
+    p_wells=pms[wells['all_wells']]
+    pms=(pms-p_wells.min())/(p_wells.max()-p_wells.min())
+
     pf=linalg.spsolve(T,b)
+    p_wells=pf[wells['all_wells']]
+    pms=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
+
     data_impress['tpfa_pressure']=pf
     eadm_2=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
     eadm_inf=abs(pms-pf).max()/pf.max()
@@ -532,6 +541,9 @@ while verif:
     save_multilevel_results()
 
     if vpis_for_save[count_save]<b1.vpi:
+        refinement=100*((data_impress['LEVEL']==0).sum()-len(p_wells))/len(data_impress['LEVEL'])
+        np.save('results/biphasic/ms/'+ms_case+'/refinement'+'.npy',np.array([refinement]))
+
         sat_f=np.load('flying/saturation_'+str(vpis_for_save[count_save])+'.npy')
         sat_adm=data_impress['saturation']
 

@@ -15,15 +15,15 @@ def remove_previous_files():
     os.mkdir('results/biphasic/finescale/vtks')
 
 def run_test_cases():
-    vpis_for_save=np.arange(0.0,0.501,0.01)
+    vpis_for_save=np.array([0.0])
 
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     os.system("python testting2_biphasic.py")
-    neta_lim_dual_values=     [ np.inf, np.inf, np.inf, np.inf,    1.0,    1.0,    1.0,    1.0,    1.0]
-    neta_lim_finescale_values=[ np.inf, np.inf,    1.0,    1.0, np.inf, np.inf,    1.0,    1.0,    1.0]
-    type_of_refinement_values=['n_uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
-    phiK_raz_lim_values=      [ np.inf, np.inf, np.inf,      3, np.inf,      3, np.inf,      3,      3]
-    delta_sat_max=            [    0.1,    0.1,    0.1,    0.1,    0.1,    0.1,    0.1,    0.1,    2.0]
+    neta_lim_dual_values=     [    0.0,    0.1,    0.5,    1.0]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
+    neta_lim_finescale_values=[ np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    type_of_refinement_values=['n_uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
+    phiK_raz_lim_values=      [ np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    delta_sat_max=            [    1.0,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
     for i in range(len(neta_lim_dual_values)):
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
@@ -35,8 +35,6 @@ def run_test_cases():
         os.makedirs('results/biphasic/ms/'+ms_case+'vtks',exist_ok=True)
         np.save('flying/ms_case.npy',np.array([ms_case]))
         os.system("python ADM_b.py")
-
-
 
 def organize_results():
     cases_ms=[]
@@ -66,10 +64,10 @@ def organize_results():
     return all_cases_results
 
 def print_results(all_cases):
-
-    units={'vpi':'vpi[%]','wor':'wor[%]','t_comp':'comp_time[s]','delta_t':'time-step[]', 'n1_adm':'Nadm/Nf[%]','el2':'ep_L2[%]','elinf':'ep_Linf[%]', 'es_L2':'es_L2[%]', 'es_Linf':'es_Linf[%]', 'vpis_for_save':'vpi[%]'}
+    units={'vpi':'vpi[%]','wor':'wor[]','t_comp':'comp_time[s]','delta_t':'time-step[]', 'n1_adm':'Nadm/Nf[%]','el2':'ep_L2[%]','elinf':'ep_Linf[%]', 'es_L2':'es_L2[%]', 'es_Linf':'es_Linf[%]', 'vpis_for_save':'vpi[%]'}
     variables=all_cases[0][1].keys()
-
+    e_pl2=[]
+    e_plinf=[]
     for variable in variables:
         plt.close('all')
         ymin=np.inf
@@ -78,12 +76,18 @@ def print_results(all_cases):
         for case in all_cases:
             case_name=case[0]
             case_data=case[1]
+            if variable=='el2' and case_name!='finescale':
+                e_pl2.append(case_data[variable][0])
+            elif variable=='elinf' and case_name!='finescale':
+                e_plinf.append(case_data[variable][0])
+
             # case_data['vpi']
             if case_name[5]!='i':
                 style='-.'
             else:
                 style='-'
             if variable!="vpi" and variable!='vpis_for_save':
+
                 if case_name=='finescale':
                     if variable!="n1_adm" and variable!="el2" and variable!="elinf" and variable!='es_L2' and variable!='es_Linf':
                         plt.plot(100*case_data['vpi'], case_data[variable],label=case_name)
@@ -101,6 +105,7 @@ def print_results(all_cases):
                         plt.plot(100*case_data['vpi'], case_data[variable],style,label=case_name)
                         plt.xlabel(units['vpi'])
                         plt.ylabel(units[variable])
+
                     else: # Saturation variables
                         if case_data[variable].min()<ymin:
                             ymin=case_data[variable].min()
@@ -112,7 +117,6 @@ def print_results(all_cases):
                             import pdb; pdb.set_trace()
                         plt.xlabel(units['vpis_for_save'])
                         plt.ylabel(units[variable])
-
 
         if variable!='vpi' and variable!='vpis_for_save':
             if (variable=='el2' or variable=='elinf' or variable=='es_L2' or variable=='es_Linf') and False:
@@ -144,3 +148,5 @@ def print_results(all_cases):
             plt.legend()
             plt.gcf().set_size_inches(20,10)
             plt.savefig('results/biphasic/'+variable+'.png')
+
+    import pdb; pdb.set_trace()
