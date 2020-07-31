@@ -26,7 +26,8 @@ def save_multilevel_results():
     vals_delta_t.append(b1.delta_t)
     vals_wor.append(b1.wor)
 
-def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save):
+def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp,
+    el2, elinf, es_L2, es_Linf,vpis_for_save, ep_haji_L2,ep_haji_Linf, er_L2, er_Linf):
     vals_n1_adm=np.array(vals_n1_adm+[len(data_impress['GID_0'])])
     vals_vpi=np.array(vals_vpi)
     vals_delta_t=np.array(vals_delta_t)
@@ -34,11 +35,14 @@ def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp
     t_comp=np.array(t_comp)
     el2=np.array(el2)*100
     elinf=np.array(elinf)*100
-
     es_L2=np.array(es_L2)*100
     es_Linf=np.array(es_Linf)*100
-    vars=[vals_vpi,vals_n1_adm,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf, vpis_for_save]
-    names=['vpi','n1_adm', 'delta_t', 'wor', 't_comp', 'el2', 'elinf', 'es_L2', 'es_Linf', 'vpis_for_save']
+    ep_haji_L2=np.array(ep_haji_L2)
+    ep_haji_Linf=np.array(ep_haji_Linf)
+    er_L2=np.array(er_L2)
+    er_Linf=np.array(er_Linf)
+    vars=[vals_vpi,vals_n1_adm,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf, vpis_for_save, ep_haji_L2,ep_haji_Linf, er_L2, er_Linf]
+    names=['vpi','n1_adm', 'delta_t', 'wor', 't_comp', 'el2', 'elinf', 'es_L2', 'es_Linf', 'vpis_for_save','ep_haji_L2','ep_haji_Linf', 'er_L2', 'er_Linf']
     for i in range(len(vars)):
         np.save('results/biphasic/ms/'+ms_case+names[i]+'.npy',vars[i])
 
@@ -224,7 +228,8 @@ else:
     multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
 
 
-PP2=mlo['prolongation_level_'+str(1)]
+# PP2=mlo['prolongation_level_'+str(1)]
+
 mlo=multilevel_operators
 
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
@@ -448,7 +453,7 @@ except:
 #     groups_c=critical_groups
 ms_case=np.load("flying/ms_case.npy")[0]
 coupl=100*(data_impress['coupled_flag']==1).sum()/len(data_impress['coupled_flag'])
-np.save('results/biphasic/ms/'+ms_case+'/modif'+'.npy',np.array([coupl]))
+np.save('results/biphasic/ms/'+ms_case+'/coupl'+'.npy',np.array([coupl]))
 
 # adm_method.set_level_wells_3()
 adm_method.set_level_wells_only()
@@ -461,6 +466,12 @@ el2=[]
 elinf=[]
 es_L2=[]
 es_Linf=[]
+
+er_L2=[]
+er_Linf=[]
+ep_haji_L2=[]
+ep_haji_Linf=[]
+
 
 neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
@@ -525,18 +536,33 @@ while verif:
     t1=time.time()
     print(b1.wor, adm_method.n1_adm)
     pms=data_impress['pressure']
-    p_wells=pms[wells['all_wells']]
-    pms=(pms-p_wells.min())/(p_wells.max()-p_wells.min())
+    if neta_lim==np.inf:
+        np.save('flying/original_ms_solution.npy',pms)
+        po=pms.copy()
+    else:
+        po=np.load('flying/original_ms_solution.npy')
+
+    er_L2.append(np.linalg.norm(T*pms-b)/np.linalg.norm(T*po-b))
+    
+    er_Linf.append((T*pms-b).max()/(T*po-b).max())
+
+    ep_haji_L2.append(np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf-po))
+    ep_haji_Linf.append(abs(pms-pf).max()/(pf-po).max())
 
     pf=linalg.spsolve(T,b)
-    p_wells=pf[wells['all_wells']]
-    pms=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
 
     data_impress['tpfa_pressure']=pf
     eadm_2=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
     eadm_inf=abs(pms-pf).max()/pf.max()
     el2.append(eadm_2)
     elinf.append(eadm_inf)
+
+    p_wells=pms[wells['all_wells']]
+    pms=(pms-p_wells.min())/(p_wells.max()-p_wells.min())
+    data_impress['pressure']=pms
+
+    p_wells=pf[wells['all_wells']]
+    pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
 
     save_multilevel_results()
 
@@ -566,7 +592,9 @@ while verif:
         M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
         M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
         if vpis_for_save[count_save]==vpis_for_save.max():
-            export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1])
+            export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor,
+            t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1],
+            ep_haji_L2,ep_haji_Linf, er_L2, er_Linf)
             verif=False
         print("File created at time-step: ",cont)
         count_save+=1
