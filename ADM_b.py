@@ -452,6 +452,9 @@ except:
 #     l_groups=np.array(critical_groups)
 #     groups_c=critical_groups
 ms_case=np.load("flying/ms_case.npy")[0]
+data_impress['coupled_flag'][data_impress['DUAL_1']>=2]=0
+
+
 coupl=100*(data_impress['coupled_flag']==1).sum()/len(data_impress['coupled_flag'])
 np.save('results/biphasic/ms/'+ms_case+'/coupl'+'.npy',np.array([coupl]))
 
@@ -543,7 +546,7 @@ while verif:
         po=np.load('flying/original_ms_solution.npy')
 
     er_L2.append(np.linalg.norm(T*pms-b)/np.linalg.norm(T*po-b))
-    
+
     er_Linf.append((T*pms-b).max()/(T*po-b).max())
 
     ep_haji_L2.append(np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf-po))
@@ -551,7 +554,7 @@ while verif:
 
     pf=linalg.spsolve(T,b)
 
-    data_impress['tpfa_pressure']=pf
+
     eadm_2=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
     eadm_inf=abs(pms-pf).max()/pf.max()
     el2.append(eadm_2)
@@ -560,9 +563,11 @@ while verif:
     p_wells=pms[wells['all_wells']]
     pms=(pms-p_wells.min())/(p_wells.max()-p_wells.min())
     data_impress['pressure']=pms
+    data_impress['DUAL_PRESSURE'][data_impress['DUAL_1']>=2]=pms[data_impress['DUAL_1']>=2]
 
     p_wells=pf[wells['all_wells']]
     pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
+    data_impress['tpfa_pressure']=pf
 
     save_multilevel_results()
 

@@ -714,3 +714,10 @@ ref_param:
   data type: float
   sparse: True
   level: 0
+
+DUAL_PRESSURE:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
