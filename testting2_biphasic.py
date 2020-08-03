@@ -52,6 +52,7 @@ while verif:
     delta_t.append(b1.delta_t)
     wor.append(b1.wor)
     print(f'\n loop: {b1.loop}\n')
+    np.save('flying/velocity_faces_finescale.npy',data_impress['velocity_faces'])
     # if cont % n == 0:
     #     cont = 1
     #     data_impress.update_variables_to_mesh()

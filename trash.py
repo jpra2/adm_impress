@@ -1,21 +1,18 @@
-import time
-import concurrent.futures
+import matplotlib.pyplot as plt
+from brokenaxes import brokenaxes
+import numpy as np
 
-def do(a, b):
-    t0=time.time()
-    print('doing something')
-    time.sleep(1)
-    print(time.time()-t0)
-    return a+b
-t1=time.time()
-aa=[]
-with concurrent.futures.ProcessPoolExecutor() as executor:
-    a=[1,2,5,6,7,8,9, 10,20,50,9,10,22,4,5,6,6,6,78,8]
-    b=2
-    results=[executor.submit(do,aa,b) for aa in a]
-    for f in concurrent.futures.as_completed(results):
-        aa.append(f.result())
+fig = plt.figure(figsize=(5,5))
+bax = brokenaxes(xlims=((1, 500), (600, 10000)),
+	     ylims=((1, 500), (600, 10000)),
+		 hspace=.15, xscale='log', yscale='log')
 
+x = np.logspace(0.0, 4, 100)
+bax.loglog(x, x, label='$y=x=10^{0}$ to $10^{4}$')
 
-print(time.time()-t1,'done all')
-import pdb; pdb.set_trace()
+bax.legend(loc='best')
+bax.grid(axis='both', which='major', ls='-')
+bax.grid(axis='both', which='minor', ls='--', alpha=0.4)
+bax.set_xlabel('x')
+bax.set_ylabel('y')
+plt.savefig('results/single_phase/trash.png')

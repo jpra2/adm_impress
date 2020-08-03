@@ -27,7 +27,8 @@ def save_multilevel_results():
     vals_wor.append(b1.wor)
 
 def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp,
-    el2, elinf, es_L2, es_Linf,vpis_for_save, ep_haji_L2,ep_haji_Linf, er_L2, er_Linf):
+    el2, elinf, es_L2, es_Linf,vpis_for_save, ep_haji_L2,ep_haji_Linf, er_L2, er_Linf,
+    ev_L2,ev_Linf):
     vals_n1_adm=np.array(vals_n1_adm+[len(data_impress['GID_0'])])
     vals_vpi=np.array(vals_vpi)
     vals_delta_t=np.array(vals_delta_t)
@@ -37,12 +38,17 @@ def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp
     elinf=np.array(elinf)*100
     es_L2=np.array(es_L2)*100
     es_Linf=np.array(es_Linf)*100
+    ev_L2=np.array(ev_L2)*100
+    ev_Linf=np.array(ev_Linf)*100
+
     ep_haji_L2=np.array(ep_haji_L2)
     ep_haji_Linf=np.array(ep_haji_Linf)
     er_L2=np.array(er_L2)
     er_Linf=np.array(er_Linf)
-    vars=[vals_vpi,vals_n1_adm,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf, vpis_for_save, ep_haji_L2,ep_haji_Linf, er_L2, er_Linf]
-    names=['vpi','n1_adm', 'delta_t', 'wor', 't_comp', 'el2', 'elinf', 'es_L2', 'es_Linf', 'vpis_for_save','ep_haji_L2','ep_haji_Linf', 'er_L2', 'er_Linf']
+    vars=[vals_vpi,vals_n1_adm,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2,
+        es_Linf, vpis_for_save, ep_haji_L2,ep_haji_Linf, er_L2, er_Linf, ev_L2, ev_Linf]
+    names=['vpi','n1_adm', 'delta_t', 'wor', 't_comp', 'el2', 'elinf', 'es_L2',
+        'es_Linf', 'vpis_for_save','ep_haji_L2','ep_haji_Linf', 'er_L2', 'er_Linf', 'ev_L2', 'ev_Linf']
     for i in range(len(vars)):
         np.save('results/biphasic/ms/'+ms_case+names[i]+'.npy',vars[i])
 
@@ -469,6 +475,8 @@ el2=[]
 elinf=[]
 es_L2=[]
 es_Linf=[]
+ev_L2=[]
+ev_Linf=[]
 
 er_L2=[]
 er_Linf=[]
@@ -539,11 +547,16 @@ while verif:
     t1=time.time()
     print(b1.wor, adm_method.n1_adm)
     pms=data_impress['pressure']
-    if neta_lim==np.inf:
+    if neta_lim_finescale==np.inf:
         np.save('flying/original_ms_solution.npy',pms)
+
         po=pms.copy()
+        vo=data_impress['velocity_faces']
+        np.save('flying/velocity_faces_AMS.npy',vo)
     else:
+
         po=np.load('flying/original_ms_solution.npy')
+        vo=np.load('flying/velocity_faces_AMS.npy')
 
     er_L2.append(np.linalg.norm(T*pms-b)/np.linalg.norm(T*po-b))
 
@@ -553,6 +566,12 @@ while verif:
     ep_haji_Linf.append(abs(pms-pf).max()/(pf-po).max())
 
     pf=linalg.spsolve(T,b)
+
+    vf=np.load('flying/velocity_faces_finescale.npy')
+    vadm=data_impress['velocity_faces']
+    ev_L2.append(np.linalg.norm(abs(vf-vadm).max(axis=1))/np.linalg.norm(abs(vf).max(axis=1)))
+    ev_Linf.append(abs(vf-vadm).max()/abs(vf).max())
+
 
 
     eadm_2=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
@@ -599,7 +618,7 @@ while verif:
         if vpis_for_save[count_save]==vpis_for_save.max():
             export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor,
             t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1],
-            ep_haji_L2,ep_haji_Linf, er_L2, er_Linf)
+            ep_haji_L2,ep_haji_Linf, er_L2, er_Linf,ev_L2,ev_Linf)
             verif=False
         print("File created at time-step: ",cont)
         count_save+=1

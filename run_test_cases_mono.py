@@ -3,7 +3,9 @@ import os
 import matplotlib.pyplot as plt
 import shutil
 import matplotlib
+from matplotlib import ticker
 from brokenaxes import brokenaxes
+
 
 font = {'size'   : 40}
 matplotlib.rc('font', **font)
@@ -21,11 +23,12 @@ def run_test_cases():
 
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     os.system("python testting2_biphasic.py")
-    neta_lim_dual_values=     [ np.inf,    1.0,    5.0,   10.0,   50.0,  100.0]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
-    neta_lim_finescale_values=[ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    type_of_refinement_values=[  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
-    phiK_raz_lim_values=      [ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    delta_sat_max=            [    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
+    # neta_lim_dual_values=     [ np.inf,    0.5,    1.0,    2.0,   10.0,  100.0]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
+    neta_lim_dual_values=     [ np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
+    neta_lim_finescale_values=[ np.inf,    1.0,   10.0,    1.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    type_of_refinement_values=[  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
+    phiK_raz_lim_values=      [ np.inf, np.inf, np.inf,    3.0,    3.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    delta_sat_max=            [    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
     for i in range(len(neta_lim_dual_values)):
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
@@ -65,46 +68,97 @@ def organize_results():
 
     return all_cases_results
 
-def get_axis_lims(ordenada,max_raz):
+def get_axis_lims(ordenada,max_raz,pre_inds=[]):
+    ind_superates=[]
     if (ordenada==0).sum()==0:
-        reasons=ordenada[:-1]/ordenada[1:]
-        reasons[1/reasons>reasons]=1/reasons[1/reasons>reasons]
+        # reasons=ordenada[:-1]/ordenada[1:]
+        # reasons[1/reasons>reasons]=1/reasons[1/reasons>reasons]
+        reasons=abs(ordenada[:-1]-ordenada[1:])
+
         reasons=np.concatenate([[1],reasons])
         ind_superates=np.arange(len(ordenada))[(reasons>max_raz) | (reasons<1/max_raz)]
+        ind_separates=np.unique(np.concatenate([pre_inds, ind_superates]))
         i_prev=0
         ylims=[]
 
         for ind in ind_superates:
             vals=np.array([ordenada[i_prev],ordenada[ind-1]])
-            if vals.max()<100:
-                ylims.append((vals.min()*0.99,vals.max()*1.01))
+
+            if vals.max()<1.1:
+                ylims.append((vals.min()-0.006,vals.max()+0.006))
+            elif vals.min()%1==0:
+                ylims.append((int(vals.min())-0.2,int(vals.max())+0.2))
             else:
-                ylims.append((vals.min()-0.99,vals.max()+1.01))
+                ylims.append((int(vals.min())-1,int(vals.max())+1.01))
             i_prev=ind
         # if i_prev<=len(ordenada)-1:
-        if ordenada[-1]<100:
-            ylims.append((ordenada[-1]*0.99,ordenada[-1]*1.01))
+        if ordenada[-1]<1.1:
+            ylims.append((ordenada[-1]-0.008,ordenada[-1]+0.008))
+        elif ordenada.max()%1==0:
+            ylims.append((int(ordenada[-1])-0.2,int(ordenada[-1])+0.2))
+        elif len(ind_superates)>0:
+            ylims.append((int(ordenada[-1])-1,int(ordenada[-1])+1.01))
         else:
-            ylims.append((ordenada[-1]-0.99,ordenada[-1]+1.01))
+            ylims=[(ordenada.min(),ordenada.max())]
     else:
         if ordenada.min()!=ordenada.max():
             ylims=[(ordenada.min(),ordenada.max())]
         else:
             ylims=[(0,1)]
-    # print(ylims)
-    return(ylims)
+
+    return ylims, ind_superates
+
+
+
+def merge_intervals(intervals):
+    s = sorted(intervals, key=lambda t: t[0])
+    m = 0
+    for  t in s:
+        if t[0] > s[m][1]:
+            m += 1
+            s[m] = t
+        else:
+            s[m] = (s[m][0], t[1])
+    return s[:m+1]
+
+
+def setup(ax, title='teste'):
+    """Set up common parameters for the Axes in the example."""
+    # only show the bottom spine
+    ax.yaxis.set_major_locator(ticker.NullLocator())
+    ax.spines['right'].set_color('none')
+    ax.spines['left'].set_color('none')
+    ax.spines['top'].set_color('none')
+
+    # define tick positions
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(1.00))
+    ax.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
+
+    ax.xaxis.set_ticks_position('bottom')
+    ax.tick_params(which='major', width=1.00, length=5)
+    ax.tick_params(which='minor', width=0.75, length=2.5, labelsize=10)
+    ax.set_xlim(0, 5)
+    ax.set_ylim(0, 1)
+    ax.text(0.0, 0.2, title, transform=ax.transAxes,
+            fontsize=14, fontname='Monospace', color='tab:blue')
 
 def print_results(all_cases):
     units={'vpi':'vpi [%]','wor':'wor []','t_comp':'comp_time [s]','delta_t':'time-step []',
         'n1_adm':'Nadm/Nf[%]','el2':r'$||e_p||_2$'+' [%]','elinf':r'$||e_p||_\infty$'+' [%]', 'es_L2':'es_L2 [%]',
         'es_Linf':'es_Linf [%]', 'vpis_for_save':'vpi [%]','coupl':"Percentage of enrichment [%]",
         'refinement':"Percentage at fine-scale [%]", 'ep_haji_L2':'ep_rel_ms_L2[]',
-        'ep_haji_Linf':'ep_rel_ms_Linf[]','er_L2':r'$||e_r||_2$'+' []','er_Linf':r'$||e_r||_\infty$'+' []'}
+        'ep_haji_Linf':'ep_rel_ms_Linf[]','er_L2':r'$||e_r||_2$'+' []','er_Linf':r'$||e_r||_\infty$'+' []',
+        'ev_L2':r'$||e_v||_2$'+' [%]','ev_Linf':r'$||e_v||_\infty$'+' [%]'}
     variables=all_cases[0][1].keys()
     single_vars={}
     for u in units.keys():
         single_vars[u]=[]
     single_vars['neta']=[]
+    single_vars['alpha']=[]
+    single_vars['beta']=[]
+    single_vars['delta']=[]
+    names_single_vars=['neta', 'beta', 'alpha', 'delta']
+
     for variable in variables:
         plt.close('all')
         ymin=np.inf
@@ -114,15 +168,25 @@ def print_results(all_cases):
             case_name=case[0]
             case_data=case[1]
 
-
             if case_name!='finescale':
                 single_vars[variable].append(case_data[variable][0])
-                if case_name[5:8]!='inf':
-                    if variable=='el2':
-                        single_vars['neta'].append(float(case_name[5:8]))
-                else:
-                    if variable=='el2':
-                        single_vars['neta'].append(1000.0)
+                # case name defined variables
+                if variable=='el2':
+                    input_params=case_name.split('_')
+                    for i, param in enumerate(input_params):
+                        if param in names_single_vars:
+                            if input_params[i+1]=='inf':
+                                single_vars[param].append(1000.0)
+                            else:
+                                single_vars[param].append(float(input_params[i+1]))
+
+
+                # if case_name[5:8]!='inf':
+                #     if variable=='el2':
+                #         single_vars['neta'].append(float(case_name[5:8]))
+                # else:
+                #     if variable=='el2':
+                #         single_vars['neta'].append(1000.0)
 
             # case_data['vpi']
             if case_name[5]!='i':
@@ -195,51 +259,145 @@ def print_results(all_cases):
 
             plt.grid()
             plt.legend()
-            plt.gcf().set_size_inches(20,10)
+            plt.gcf().set_size_inches(20,20)
             plt.savefig('results/biphasic/'+variable+'.png')
 
     for var in single_vars:
-        if var!='neta':
-            plt.close('all')
-            abcissa=np.array(single_vars['neta'])
-            pos=abcissa<10000
-            abcissa=abcissa[pos]
-            ordenada=np.array(single_vars[var])[pos]
+        abcissa_var='alpha'
+        control_variable='beta'
+
+        all_abcissa=np.array(single_vars[abcissa_var])
+        pos=all_abcissa<10000
+        all_abcissa=all_abcissa[pos]
+        all_ordenada=np.array(single_vars[var])[pos]
+        control_parameters=single_vars[control_variable]
+        ordenadas=[]
+        abcissas=[]
+        control_vals=np.unique(control_parameters)
+        for p in np.unique(control_parameters):
+            orden=all_ordenada[control_parameters==p]
+            abcis=all_abcissa[control_parameters==p]
+            if abcis.max()<1000:
+                orden=np.sort(np.concatenate([[all_ordenada[all_abcissa==1000][0]],orden]))
+                abcis=np.sort(np.concatenate([[1000],abcis]))
+            ordenadas.append(orden)
+            abcissas.append(abcis)
+
+        plt.close('all')
+        xlims=[]
+        ylims=[]
+        for abcissa, ordenada in zip(abcissas, ordenadas):
+            ordenada[ordenada<=0]=1
             ind_sort=np.argsort(abcissa)
             abcissa=abcissa[ind_sort]
             ordenada=ordenada[ind_sort]
             if 'haji' in var:
                 ordenada[abcissa==1000]=1
 
-            xlims=get_axis_lims(abcissa,9)
-            ylims=get_axis_lims(ordenada,10)
-            ylims[0]=(0,ylims[0][1])
-            xlims[0]=(0,xlims[0][1])
+            xlim, pre_inds=get_axis_lims(abcissa,9)
+            ylim,_=get_axis_lims(ordenada,9)
+
+            xlims.append(xlim)
+            ylims.append(ylim)
+
+
+        #     merge_intervals(np.concatenate(ylims))
+        #     import pdb; pdb.set_trace()
+        xlims=merge_intervals(np.concatenate(xlims))
+        ylims=merge_intervals(np.concatenate(ylims))
+        # ylims[0]=(0,ylims[0][1])
+        # xlims[0]=(0,xlims[0][1])
+        # xlims=[(abcissa[0]/1.1,abcissa[-2]*1.1),(abcissa[-1]/1.1,abcissa[-1]*1.1)]
+
+        xlims=[(10**(int(np.log10(all_abcissa.min()))),10**(1+int(np.log10(all_abcissa.max()))))]
+
+        # if var=='coupl':
+        #     ylims=[(-1,ylims[0][1]+1)]
+        if var=='refinement':
+            all_ordenada[all_ordenada==0]=ordenada.max()
+
+        if var in ['elinf','el2', 'ev_L2', 'ev_Linf', 'refinement']:
+            plt.close('all')
+            ylims=[(10**(int(np.log10(all_ordenada.min()))),10**(1+int(np.log10(all_ordenada.max()))))]
 
             fig=plt.figure()
-            bax=brokenaxes(xlims=xlims, ylims=ylims)
-
-            # import pdb; pdb.set_trace()
-            # if ordenada[-2]!=0 and ordenada[-1]/ordenada[-2]>10 and var!='coupl':
-            #
-            #     ylims=((0,ordenada[-2]*1.01),(ordenada[-1]*0.99,ordenada[-1]*1.01))
-            #
-            #     bax=brokenaxes(xlims=[(0,abcissa[-2]*1.01),(999,1001)], ylims=ylims)
-            #
-            # else:
-            #     bax=brokenaxes(xlims=((0,abcissa[-2]*1.01),(999,1001)))
-            # if len(ylims1)>1:
-            #     import pdb; pdb.set_trace()
-            # bax=brokenaxes(xlims=[(0,abcissa[-2]*1.01),(999,1001)], ylims=ylims)
-
-            plt.gca().tick_params(which='minor', length=10)
-            plt.gca().tick_params(which='major', length=15)
-            plt.gcf().set_size_inches(20,15)
-            bax.set_xlabel(r'$\epsilon$ []',labelpad=40)
-            bax.set_ylabel(units[var], labelpad=70)
-            bax.plot(abcissa, ordenada)
-            bax.scatter(abcissa, ordenada, s=60)
+            # bax=brokenaxes(xlims=xlims, ylims=ylims, xscale='log', yscale='log')
+            bax=plt
             bax.grid()
+            bax.xlabel(r'$\alpha$ []',labelpad=0)
+            if var not in ['neta', 'alpha', 'beta', 'delta']:
+                bax.ylabel(units[var], labelpad=-20)
+            plt.gcf().set_size_inches(15,15)
+            control=0
+            for abcissa, ordenada in zip(abcissas, ordenadas):
+                if var=='refinement':
+                    abcissa=np.delete(abcissa,np.arange(len(ordenada))[ordenada==0])
+                    ordenada=np.delete(ordenada,np.arange(len(ordenada))[ordenada==0])
+                plt.gca().tick_params(which='minor', length=10)
+                plt.gca().tick_params(which='major', length=15)
+                ind_sort=np.argsort(abcissa)
+                abcissa=abcissa[ind_sort]
+                ordenada=ordenada[ind_sort]
+                plt.savefig('results/single_phase/lixo0.png')
+                if ordenada.min()>0:
+                    plt.xscale('log')
+                    plt.yscale('log')
+                    bax.plot(abcissa, ordenada,label=r'$\beta^\lim = {}$'.format(control_vals[control]))
+                    plt.savefig('results/single_phase/lixo1.png')
+                    # import pdb; pdb.set_trace()
+                    bax.scatter(abcissa, ordenada, s=300)
+
+                # bax.legend(loc='best')
+                bax.grid(axis='both', which='major', ls='-',lw=3)
+                bax.grid(axis='both', which='minor', ls='--', alpha=0.4, lw=2)
+
+
+
+                # FixedFormatter should only be used together with FixedLocator.
+                # Otherwise, one cannot be sure where the labels will end up.
+                positions = np.unique(all_abcissa.astype(int))
+                labels = positions.astype(str)
+
+                bax.gca().xaxis.set_major_locator(ticker.FixedLocator(positions))
+                bax.gca().xaxis.set_major_formatter(ticker.FixedFormatter(labels))
+
+
+                positions = 10**np.arange(int(np.log10(all_ordenada).min()), int(np.log10(all_ordenada).max())+1)
+                pp=[]
+                for p in positions:
+                    for i in range(2,10):
+                        pp.append(i*p)
+                close_values=[]
+                for n in np.sort(np.unique(all_ordenada)):
+                    close_values.append(min(pp, key=lambda x:abs(x-n)))
+                all_ticks=np.zeros_like(pp)
+                close_values= np.unique(np.array(close_values))
+                for value in close_values:
+                    ind=pp==value
+                    all_ticks[ind]=np.array(pp)[ind][0]
+                at=[]
+                for v in all_ticks:
+                    if v==0:
+                        at.append('')
+                    else:
+                        at.append(v)
+                all_ticks=at
+                labels = positions.astype(str)
+                # bax.gca().margins(1)
+                bax.gca().yaxis.set_major_locator(ticker.FixedLocator(positions))
+                bax.gca().yaxis.set_major_formatter(ticker.FixedFormatter(labels))
+
+                bax.gca().yaxis.set_minor_locator(ticker.FixedLocator(pp))
+                bax.gca().yaxis.set_minor_formatter(ticker.FixedFormatter(all_ticks))
+                plt.legend()
+                # bax.axs[0].yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+                # bax.axs[0].xaxis.set_major_formatter(ticker.NullFormatter())
+                # bax.gca().yaxis.set_minor_formatter(ticker.NullFormatter())
+                bax.gca().xaxis.set_minor_formatter(ticker.NullFormatter())
+                # ticks=plt.gca().get_yticks()
+                control+=1
+            # plt.xscale('log')
+
             plt.savefig('results/single_phase/'+var+'.png')
 
     import pdb; pdb.set_trace()
