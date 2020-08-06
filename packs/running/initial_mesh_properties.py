@@ -5,11 +5,13 @@ from ..contours.wells import Wells
 from ..convert_unit.conversion import Conversion
 from ..preprocess.preprocess1 import set_saturation_regions
 from ..preprocess.prep0_0 import Preprocess0
-from ..directories import data_loaded
+from ..directories import data_loaded, only_mesh_name
 from ..directories import simulation_type, types_simulation
 from ..multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 import numpy as np
 import os
+# import time
+import pdb
 
 # import pdb; pdb.set_trace()
 
@@ -23,13 +25,13 @@ def initial_mesh():
     load_multilevel_data = data_loaded['load_multilevel_data']
 
     if multilevel_data and load_multilevel_data:
+        import time
         t0=time.time()
         print("creating M")
         from ..load.preprocessor_load import init_mesh
         # M = init_mesh('flying/multilevel_data-all.h5m')
-        import time
 
-        M = init_mesh('saves/initial_mesh.h5m')
+        M = init_mesh('saves/initial_mesh_' + only_mesh_name + '.h5m')
         print("time to create M: {} seconds".format(time.time()-t0))
         t0=time.time()
         elements_lv0 = ElementsLv0(M, load=load)
@@ -54,7 +56,7 @@ def initial_mesh():
             print("creating M")
             t0=time.time()
             from ..load.preprocessor_load import init_mesh
-            M = init_mesh('saves/initial_mesh.h5m')
+            M = init_mesh('saves/initial_mesh_' + only_mesh_name + '.h5m')
             print("time to create M: {} seconds".format(time.time()-t0))
         else:
             import time
@@ -104,7 +106,7 @@ def initial_mesh():
         wells.update_values_to_mesh()
         data_impress.update_variables_to_mesh()
         wells.export_all_datas_to_npz()
-        M.save_variables('initial_mesh')
+        M.save_variables('initial_mesh_'+ only_mesh_name)
         del data_impress['permeability']
 
     if data_loaded['deletar_results'] == True:

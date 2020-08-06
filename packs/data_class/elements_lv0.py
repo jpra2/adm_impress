@@ -154,15 +154,25 @@ class ElementsLv0(DataManager):
 
     def volumes_to_edges(self, volumes):
         volumes2 = self.test_instance(volumes)
-        faces_volumes = self.volumes_to_faces(volumes2)
-        resp = self.func_general(faces_volumes, self.faces_to_edges)
-        return resp
+        mat2 = self.adj_matrix_volumes_to_faces*self.adj_matrix_faces_to_edges[volumes2]
+        nodes = []
+        for i in range(mat2.shape[0]):
+
+            nodes.append(self['nodes'][mat2[i].toarray()[0]])
+
+        nodes = np.array(nodes)
+        return nodes
 
     def edges_to_volumes(self, edges):
         edges2 = self.test_instance(edges)
-        faces_edges = self.edges_to_faces(edges2)
-        resp = self.func_general(faces_edges, self.faces_to_volumes)
-        return resp
+        mat2 = self.adj_matrix_faces_to_edges.transpose()*self.adj_matrix_volumes_to_faces.transpose()[edges2]
+        volumes = []
+        for i in range(mat2.shape[0]):
+
+            volumes.append(self['volumes'][mat2[i].toarray()[0]])
+
+        volumes = np.array(volumes)
+        return volumes
 
     def edges_to_nodes(self, edges):
 
@@ -190,37 +200,47 @@ class ElementsLv0(DataManager):
 
     def faces_to_nodes(self, faces):
         faces2 = self.test_instance(faces)
-        edges_faces = self.faces_to_edges(faces2)
-        resp = self.func_general(edges_faces, self.edges_to_nodes)
-        return resp
+        mat2 = self.adj_matrix_faces_to_edges*self.adj_matrix_edges_to_nodes[faces2]
+        nodes = []
+        for i in range(mat2.shape[0]):
+
+            nodes.append(self['nodes'][mat2[i].toarray()[0]])
+
+        nodes = np.array(nodes)
+        return nodes
 
     def nodes_to_faces(self, nodes):
         nodes2 = self.test_instance(nodes)
-        edges_nodes = self.nodes_to_edges(nodes2)
-        faces_edges_nodes = self.func_general(edges_nodes, self.edges_to_faces)
-        return faces_edges_nodes
+        mat2 = self.adj_matrix_edges_to_nodes.transpose()*self.adj_matrix_faces_to_edges.transpose()[nodes2]
+        faces = []
+        for i in range(mat2.shape[0]):
+
+            faces.append(self['faces'][mat2[i].toarray()[0]])
+
+        faces = np.array(faces)
+        return faces
 
     def volumes_to_nodes(self, volumes):
         volumes2 = self.test_instance(volumes)
-        faces = self.volumes_to_faces(volumes2)
-        resp = self.func_general(faces, self.faces_to_nodes)
-        return resp
+        mat2 = self.adj_matrix_volumes_to_faces*self.adj_matrix_faces_to_edges*self.adj_matrix_edges_to_nodes[volumes2]
+        nodes = []
+        for i in range(mat2.shape[0]):
+
+            nodes.append(self['nodes'][mat2[i].toarray()[0]])
+
+        nodes = np.array(nodes)
+        return nodes
 
     def nodes_to_volumes(self, nodes):
         nodes2 = self.test_instance(nodes)
-        edges = self.nodes_to_edges(nodes2)
-        resp = self.func_general(edges, self.edges_to_volumes)
-        return resp
+        mat2 = self.adj_matrix_edges_to_nodes.transpose()*self.adj_matrix_faces_to_edges.transpose()*self.adj_matrix_volumes_to_faces.transpose()[nodes2]
+        volumes = []
+        for i in range(mat2.shape[0]):
 
-    def func_general(self, arr, func):
+            volumes.append(self['volumes'][mat2[i].toarray()[0]])
 
-        resp = []
-
-        for item in arr:
-            items = func(item)
-            resp.append(np.unique(np.concatenate(items)))
-
-        return np.array(resp)
+        volumes = np.array(volumes)
+        return volumes
 
     def test_instance(self, value):
         if isinstance(value, int):

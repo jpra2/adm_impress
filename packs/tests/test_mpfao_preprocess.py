@@ -68,8 +68,5 @@ ff = mpfa_data.create_all_faces_of_subvolumes_mpfao(
 
 
 
-
-pdb.set_trace()
-
 # mpfa_data.init_data(M, elements_lv0, data_impress)
 # pdb.set_trace()

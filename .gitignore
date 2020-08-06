@@ -5,6 +5,7 @@
 *.dat
 !capillary_pressure.dat
 *.h5m
+*.h5
 !9x9x9.h5m
 *.vtk
 *.msh

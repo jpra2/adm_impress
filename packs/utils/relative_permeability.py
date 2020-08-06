@@ -22,7 +22,7 @@ class BrooksAndCorey:
     def _kro(self, S_temp):
         return self.kro0*(np.power(1 - S_temp, self.n_o))
 
-    def calculate(self, saturations):        
+    def calculate(self, saturations):
         n = len(saturations)
         ids = np.arange(n)
         ids_fora = ids[(saturations < 0) | (saturations > 1)]

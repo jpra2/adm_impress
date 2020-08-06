@@ -90,8 +90,6 @@ class TpfaFlux:
             gamma = self.data_impress['gama']
             gama_faces = self.data_impress['gama_faces']
 
-            import pdb; pdb.set_trace()
-
             vols_viz_internal_faces = self.elements_lv0['neig_internal_faces']
             v0 = vols_viz_internal_faces
             transmissibility_internal_faces = transmissibility_faces[internal_faces]

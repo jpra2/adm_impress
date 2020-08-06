@@ -21,7 +21,7 @@ import pdb
 
 class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral):
 
-        def __init__(self, M, data_impress, elements_lv0, wells, data_name: str='BiphasicTpfa.npz'):
+    def __init__(self, M, data_impress, elements_lv0, wells, data_name: str='BiphasicTpfa.npz'):
         load = data_loaded['load_biphasic_data']
         self.load = load
         super().__init__(data_impress, elements_lv0, wells, data_name=data_name, load=load)
