@@ -3,6 +3,7 @@ from packs.directories import only_mesh_name
 from packs.directories import flying
 import os
 import pdb
+import numpy as np
 
 class AccumulativeArrayDataManager:
 
@@ -13,7 +14,7 @@ class AccumulativeArrayDataManager:
     def create(self, global_identifier=0) -> None:
 
         _resps = ['s', 'n']
-        assert isinstance(global_identifier, int) == True
+        assert isinstance(global_identifier, int) == True or isinstance(global_identifier, np.int) or isinstance(global_identifier, np.int64)
 
         data_name = self.file_name + str(global_identifier) + self.ext
 

@@ -84,11 +84,13 @@ class TpfaBiphasicCons:
         if verif1.sum() > 0 or verif2.sum() > 0:
             raise ValueError('Duplicidade no upwind')
 
-    def get_transmissibility_faces(self, areas_faces, internal_faces, boundary_faces, volumes_adj_internal_faces, volumes_adj_boundary_faces, upwind_w, upwind_o, mob_w, mob_o, keq_faces):
+    def get_transmissibility_faces(self, areas_faces, internal_faces, boundary_faces, volumes_adj_internal_faces, volumes_adj_boundary_faces, upwind_w, upwind_o, mob_w, mob_o, keq_faces, hi):
 
         transmissibility = np.zeros(len(areas_faces))
-        transmissibility[internal_faces] = (mob_w[volumes_adj_internal_faces[upwind_w]] + mob_o[volumes_adj_internal_faces[upwind_o]])*keq_faces[internal_faces]
-        transmissibility[boundary_faces] = (mob_w[volumes_adj_boundary_faces] + mob_o[volumes_adj_boundary_faces])*keq_faces[boundary_faces]
+        transmissibility[internal_faces] = (mob_w[volumes_adj_internal_faces[upwind_w]] + mob_o[volumes_adj_internal_faces[upwind_o]])*keq_faces[internal_faces]/hi.sum(axis=1)
+        # transmissibility[boundary_faces] = (mob_w[volumes_adj_boundary_faces] + mob_o[volumes_adj_boundary_faces])*keq_faces[boundary_faces]
+        # TODO: atualizar essa funcao para o caso de precisar das transmissibilidades nas faces do contorno
+        transmissibility[boundary_faces] = np.zeros(len(boundary_faces))
 
         return transmissibility
 
@@ -159,7 +161,6 @@ class TpfaBiphasicCons:
         fw_phase = flux_frac_phase_volumes
         flux_volumes = TpfaMonophasic.get_total_flux_volumes(flux_phase_internal_faces, volumes, volumes_adj_internal_faces)
         flux_volumes[all_wells] -= total_flux_volumes[all_wells]*fw_phase[all_wells]
-
         return flux_volumes
 
     def update_delta_t(self, flux_w_volumes, porosity, vol_volumes, total_flux_volumes, total_velocity_internal_faces, flux_frac_w_volumes, saturation, volumes_adj_internal_faces, hi, abs_u_normal_internal_faces):
@@ -382,7 +383,7 @@ class TpfaBiphasicCons:
 
         return prod_w, prod_o, wor, dvpi
 
-    def update_upwind_phases(self, internal_faces, volumes_adj_internal_faces, saturation, flux_w_internal_faces, flux_o_internal_faces, total_flux_internal_faces, centroid_volumes):
+    def update_upwind_phases(self, centroid_volumes, internal_faces, volumes_adj_internal_faces, saturation, flux_w_internal_faces, flux_o_internal_faces, total_flux_internal_faces):
         '''
             paper Starnoni
             with gravity
@@ -438,3 +439,24 @@ class TpfaBiphasicCons:
         upwind_o[tt] = upgo
 
         self.test_upwind_dup(upwind_w, upwind_o)
+
+        return upwind_w, upwind_o
+
+    def visualize_upwind_vec(self, internal_faces, abs_u_normal_internal_faces, centroid_volumes, volumes_adj_internal_faces, upwind_w, upwind_o):
+
+        u_normal_internal_faces = abs_u_normal_internal_faces
+        v0 = volumes_adj_internal_faces
+        c0 = centroid_volumes[v0[:,0]]
+        c1 = centroid_volumes[v0[:,1]]
+        dc = c1-c0
+        norm = np.linalg.norm(dc, axis=1).reshape(dc.shape[0], 1)
+        dcu = dc/norm
+        upwind_w_out = np.zeros((len(internal_faces), 3), dtype=int)
+        upwind_w_out[upwind_w[:,0]] = dcu[upwind_w[:,0]].astype(int)
+        upwind_w_out[upwind_w[:,1]] = -dcu[upwind_w[:,1]].astype(int)
+
+        upwind_o_out = np.zeros((len(internal_faces), 3), dtype=int)
+        upwind_o_out[upwind_o[:,0]] = dcu[upwind_o[:,0]].astype(int)
+        upwind_o_out[upwind_o[:,1]] = -dcu[upwind_o[:,1]].astype(int)
+
+        return upwind_w_out, upwind_o_out

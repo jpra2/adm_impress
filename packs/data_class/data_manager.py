@@ -34,6 +34,8 @@ class DataManager(CommonDataManager):
 
         np.savez(self.name, **self._data)
 
+        print(f'\n{self.name} saved\n')
+
         # with open(self.name_info_data, 'rb') as f:
         #     pickle.dump
 
@@ -43,6 +45,8 @@ class DataManager(CommonDataManager):
 
         for name, variable in arq.items():
             self._data[name] = variable
+
+        print(f'\n{self.name} loaded\n')
 
     @classmethod
     def export_all_datas_to_npz(cls):

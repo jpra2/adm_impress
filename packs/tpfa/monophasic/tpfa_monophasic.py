@@ -32,6 +32,16 @@ class TpfaMonophasic:
 
         return T2.tocsc(), b
 
+    def get_transmissibility_faces(self, areas_faces, internal_faces, boundary_faces, volumes_adj_internal_faces, volumes_adj_boundary_faces, mi, keq_faces, hi):
+
+        transmissibility = np.zeros(len(areas_faces))
+        transmissibility[internal_faces] = (1/mi)*keq_faces[internal_faces]/hi.sum(axis=1)
+        # transmissibility[boundary_faces] = keq_faces[boundary_faces]
+        # TODO: atualizar essa funcao para o caso de precisar das transmissibilidades nas faces do contorno
+        transmissibility[boundary_faces] = np.zeros(len(boundary_faces))
+
+        return transmissibility
+
     @staticmethod
     def get_total_flux_volumes(flux_internal_faces, volumes, volumes_adj_internal_faces):
 

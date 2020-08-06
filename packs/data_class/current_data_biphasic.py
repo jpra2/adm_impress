@@ -1,4 +1,4 @@
 from packs.data_class import DataManager
 
-class CurrentDataBiphasic(DataManager):
+class CurrentBiphasicData(DataManager):
     pass

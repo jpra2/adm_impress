@@ -11,7 +11,7 @@ class AdjacenciesMatrix(SparseDataManager):
 class MeshElements(DataManager):
     pass
 
-class Elements:
+class ElementsData:
     _tipos = ['array', 'sparse']
 
     def __init__(self, load=False):
@@ -71,7 +71,7 @@ class Elements:
 
         self.matrices['Matrix_edges_to_nodes'] = sp.csc_matrix((data, (lines, cols)), dtype=bool, shape=(len(edges), len(nodes)))
 
-    def insert_value(self, name, data, tipo):
+    def insert(self, name, data, tipo):
         '''
             insere alguma informacao adiocional
             tipo: tipo da informacao - "array" ou "sparse"
@@ -244,12 +244,12 @@ class Elements:
             return 0
 
     def test_tipo(self, tipo):
-        if tipo in Elements._tipos:
+        if tipo in ElementsData._tipos:
             pass
         else:
             raise NameError(f'tipo nao esta em {Elements._tipos}')
 
-    def get_value(self, name):
+    def get(self, name):
         try:
             return self.mesh_elements[name]
         except KeyError:

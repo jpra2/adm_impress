@@ -267,7 +267,7 @@ class Wells(DataManager):
         self['ws_prod'] = ws_prod.astype(np.int64)
         self['values_p'] = values_p
         self['values_q'] = values_q
-        self['all_wells'] = np.union1d(ws_inj, ws_prod)
+        self['all_wells'] = np.union1d(ws_inj, ws_prod).astype(int)
         self['values_p_ini'] = values_p.copy()
 
     def set_infos(self):
