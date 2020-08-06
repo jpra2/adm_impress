@@ -102,9 +102,21 @@ def carregar():
 wells2, elements, geom, rock_data = preprocessar()
 # wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate = carregar()
 # pdb.set_trace()
+solver = SolverSp()
 
 monophasic_fluid_properties = MonophasicFluidProperties()
 tpfa_monophasic = TpfaMonophasic()
+
+# pdb.set_trace()
+
+v0 = M.volumes.bridge_adjacencies(M.volumes.all, 2, 3)
+v1 = elements.get('volumes_adj_volumes_by_faces')
+
+v00 = M.faces.bridge_adjacencies(M.faces.internal[:], 2, 3)
+v11 = elements.get('volumes_adj_internal_faces')
+v22 = elements.faces_to_volumes(elements.internal_faces)
+
+# pdb.set_trace()
 
 transmissibility_faces = tpfa_monophasic.get_transmissibility_faces(
     geom['areas'],
@@ -117,15 +129,58 @@ transmissibility_faces = tpfa_monophasic.get_transmissibility_faces(
     geom['hi']
 )
 
-pdb.set_trace()
+t1 = transmissibility_faces
 
-transmissibility_faces = tpfa_monophasic.get_transmissibility_faces(
+# pdb.set_trace()
+
+transmissibility_faces2 = tpfa_monophasic.get_transmissibility_faces(
     geom['areas'],
-    M.faces.internal,
-    M.faces.boundary,
-    elements.get('volumes_adj_internal_faces'),
-    elements.get('volumes_adj_boundary_faces'),
+    M.faces.internal[:],
+    M.faces.boundary[:],
+    M.faces.bridge_adjacencies(M.faces.internal[:], 2, 3),
+    M.faces.bridge_adjacencies(M.faces.boundary[:], 2, 3).flatten(),
     monophasic_fluid_properties.mi,
     rock_data['keq_faces'],
     geom['hi']
 )
+
+t2 = transmissibility_faces2
+
+test1 = np.allclose(t1, t2)
+# pdb.set_trace()
+
+T2 = tpfa_monophasic.mount_transmissibility_matrix(
+    t1[M.faces.internal[:]],
+    M.faces.internal[:],
+    M.faces.bridge_adjacencies(M.faces.internal[:], 2, 3),
+    M.volumes.all
+)
+
+T1 = tpfa_monophasic.mount_transmissibility_matrix(
+    t1[elements.internal_faces],
+    elements.internal_faces,
+    elements.get('volumes_adj_internal_faces'),
+    elements.volumes
+)
+
+g_source_total_volumes = np.zeros(len(elements.volumes))
+
+T_with_boundary, b = tpfa_monophasic.get_linear_problem(
+    wells2['ws_p'],
+    wells2['ws_q'],
+    wells2['values_p'],
+    wells2['values_q'],
+    g_source_total_volumes,
+    T1
+)
+
+pressure = solver.direct_solver(T_with_boundary, b)
+
+M.pressure[:] = pressure
+
+M.core.print(folder='results', file='test1', extension=".vtk", config_input="input_cards/print_settings0.yml")
+
+
+
+
+pdb.set_trace()

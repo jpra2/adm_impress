@@ -12,8 +12,8 @@ class MonophasicFluidProperties:
         with open(input_file, 'r') as f:
             data_loaded = yaml.safe_load(f)
 
-        self._density = float(data_loaded['monophasic_data']['density'])
-        self._mi = float(data_loaded['monophasic_data']['mi'])
+        self._density = float(data_loaded['density'])
+        self._mi = float(data_loaded['mi'])
 
     @property
     def density(self):
