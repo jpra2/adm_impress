@@ -17,6 +17,8 @@ impress(copia)/
 *.pyc
 *.imp
 *.zip
+*.pdf
+*.svg
 .idea/
 
 

@@ -22,20 +22,26 @@ def run_test_cases():
     vpis_for_save=np.array([0.0])
 
     np.save('flying/vpis_for_save.npy',vpis_for_save)
-    os.system("python testting2_biphasic.py")
+    # os.system("python testting2_biphasic.py")
+    crs=[[3,7,1],[5, 11, 1],[9, 19, 1],[13, 27, 1]]
+    np.save('flying/all_crs.npy',np.array(crs))
     # neta_lim_dual_values=     [ np.inf,    0.5,    1.0,    2.0,   10.0,  100.0]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
-    neta_lim_dual_values=     [ np.inf, np.inf, np.inf, np.inf]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
-    neta_lim_finescale_values=[   30.0,   30.0,   30.0,   30.0]# np.inf,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    type_of_refinement_values=[  'uni',  'uni',  'uni',  'uni']#  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
-    phiK_raz_lim_values=      [    3.0,   10.0,  100.0, 1000.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf,    3.0,    3.0,    3.0,    3.0,    3.0,   10.0,   10.0,   10.0,   10.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    delta_sat_max=            [    1.1,    1.1,    1.1,    1.1]#    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
+    neta_lim_dual_values=     [    0.5,    1.0,   2.0,   10.0,   100.0, np.inf]#,  np.inf,    1.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
+    neta_lim_finescale_values=[ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#,  np.inf, np.inf]# np.inf,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    type_of_refinement_values=[  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,    'uni', 'uni']#  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
+    phiK_raz_lim_values=      [ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#,  np.inf, np.inf]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf,    3.0,    3.0,    3.0,    3.0,    3.0,   10.0,   10.0,   10.0,   10.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    delta_sat_max=            [    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,     1.1,    1.1]#    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
+    cr_inds=                  [      3,      3,      3,      3,      3,      3]#,       1,      1]
     for i in range(len(neta_lim_dual_values)):
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
         np.save('flying/neta_lim_dual.npy',np.array([neta_lim_dual_values[i]]))
         np.save('flying/type_of_refinement.npy',np.array([type_of_refinement_values[i]]))
         np.save('flying/phiK_raz_lim.npy',np.array([phiK_raz_lim_values[i]]))
-        ms_case='neta_'+str(neta_lim_dual_values[i])+'_alpha_'+str(neta_lim_finescale_values[i])+'_'+type_of_refinement_values[i]+'_beta_'+str(phiK_raz_lim_values[i])+'_delta_'+str(delta_sat_max[i])+'/'
+        np.save('flying/crs.npy',np.array(crs[cr_inds[i]]))
+        ms_case='neta_'+str(neta_lim_dual_values[i])+'_alpha_'+str(neta_lim_finescale_values[i])+\
+        '_type_'+type_of_refinement_values[i]+'_beta_'+str(phiK_raz_lim_values[i])+\
+        '_delta_'+str(delta_sat_max[i])+'_CR_'+str(cr_inds[i])+'/'
         os.makedirs('results/biphasic/ms/'+ms_case,exist_ok=True)
         os.makedirs('results/biphasic/ms/'+ms_case+'vtks',exist_ok=True)
         np.save('flying/ms_case.npy',np.array([ms_case]))
@@ -157,7 +163,8 @@ def print_results(all_cases):
     single_vars['alpha']=[]
     single_vars['beta']=[]
     single_vars['delta']=[]
-    names_single_vars=['neta', 'beta', 'alpha', 'delta']
+    single_vars['CR']=[]
+    names_single_vars=['neta', 'beta', 'alpha', 'delta', 'CR']
 
     for variable in variables:
         plt.close('all')
@@ -172,9 +179,11 @@ def print_results(all_cases):
                 single_vars[variable].append(case_data[variable][0])
                 # case name defined variables
                 if variable=='el2':
+                    # import pdb; pdb.set_trace()
                     input_params=case_name.split('_')
                     for i, param in enumerate(input_params):
                         if param in names_single_vars:
+
                             if input_params[i+1]=='inf':
                                 single_vars[param].append(1000.0)
                             else:
@@ -261,8 +270,8 @@ def print_results(all_cases):
             plt.savefig('results/biphasic/'+variable+'.png')
 
     for var in single_vars:
-        abcissa_var='alpha'
-        control_variable='beta'
+        abcissa_var='neta'
+        control_variable='CR'
 
         all_abcissa=np.array(single_vars[abcissa_var])
         pos=all_abcissa<10000
@@ -273,6 +282,7 @@ def print_results(all_cases):
         ordenadas=[]
         abcissas=[]
         control_vals=np.unique(control_parameters)
+
         for p in np.unique(control_parameters):
             orden=all_ordenada[control_parameters==p]
             abcis=all_abcissa[control_parameters==p]
@@ -285,15 +295,15 @@ def print_results(all_cases):
 
         plt.close('all')
 
-        linear_yaxis=['refinement','ev_L2','ev_Linf']
-        if var in ['elinf','el2', 'ev_L2', 'ev_Linf', 'refinement']:
+        linear_yaxis=['refinement','coupl', 'ev_L2','ev_Linf']
+        if var in ['elinf','el2', 'ev_L2', 'ev_Linf', 'refinement', 'coupl']:
             plt.close('all')
             fig=plt.figure()
             plt.grid()
-            plt.xlabel(r'$\alpha$ []',labelpad=0)
+            plt.xlabel(r'$\epsilon$ []',labelpad=-20)
             if var not in ['neta', 'alpha', 'beta', 'delta']:
                 plt.ylabel(units[var])#, labelpad=-20)
-            plt.gcf().set_size_inches(15,15)
+
             control=0
 
             for abcissa, ordenada in zip(abcissas, ordenadas):
@@ -309,13 +319,21 @@ def print_results(all_cases):
                     plt.yscale('log')
 
                 # f, (ax, ax2) = plt.subplots(2, 1, sharey=True)
-                # ax.plot(abcissa, ordenada,label=r'$\beta^\lim = {}$'.format(control_vals[control]))
-                # ax2.plot(abcissa, ordenada,label=r'$\beta^\lim = {}$'.format(control_vals[control]))
+
                 # ax.set_xlim(abcissa.min(), 10.0)  # outliers only
                 # ax2.set_xlim(999, 1001)  # most of the data
                 abc=abcissa[abcissa!=30]
                 ord=ordenada[abcissa!=30]
-                plt.plot(abc, ord,label=r'$\beta^\lim = {}$'.format(control_vals[control]),marker='o',markersize=20)
+                if control_variable=='beta':
+                    label=r'$\beta^\lim = {}$'
+                    control_val=control_vals[control]
+                else:
+                    label='CR = {}'
+                    all_crs=np.load('flying/all_crs.npy')
+                    control_val = int(control_vals[control])
+                    control_val = str(all_crs[control_val][0])+', '+str(all_crs[control_val][1])
+                if control in [1,2]:
+                    plt.plot(abc, ord,label=label.format(control_val),marker='o',markersize=15, linewidth=5)
                 # plt.scatter(abcissa, ordenada, s=300)
 
                 plt.grid(axis='both', which='major', ls='-',lw=3)
@@ -328,7 +346,7 @@ def print_results(all_cases):
                 plt.gca().xaxis.set_major_locator(ticker.FixedLocator(positions))
                 plt.gca().xaxis.set_major_formatter(ticker.FixedFormatter(labels))
 
-                if var!='refinement':
+                if var!='refinement' and var!='coupl':
                     positions = 10**np.arange(int(np.log10(all_ordenada).min()), int(np.log10(all_ordenada).max())+1)
 
                 else:
@@ -373,6 +391,9 @@ def print_results(all_cases):
                     if var=='refinement':
                         pp.append(1)
                         pp.append(10)
+                    if var=='coupl':
+                        pp=np.arange(0,np.array(pp).max()+5,5)
+                        # positions.append(.5)
                     all_ticks=np.array(pp).astype(int)
 
                     # all_ticks=np.array(pp).astype(int)
@@ -391,7 +412,7 @@ def print_results(all_cases):
                 control+=1
             # plt.xscale('log')
 
-
-            plt.savefig('results/single_phase/'+var+'.png')
+            plt.gcf().set_size_inches(15,15)
+            plt.savefig('results/single_phase/'+var+'.pdf', bbox_inches='tight')
 
     import pdb; pdb.set_trace()

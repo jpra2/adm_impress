@@ -4,8 +4,10 @@ import numpy as np
 def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_dual=False):
     cr1 = direc.data_loaded['Crs']['Cr1']
     cr2 = direc.data_loaded['Crs']['Cr2']
+    cr1 = np.load('flying/crs.npy').tolist()
     crs = [cr1, cr2]
 
+    # import pdb; pdb.set_trace()
     if np.array(cr1).max()<5:
         uniform_dual=False
     Lx, Ly, Lz = coord_nodes.max(axis=0)-coord_nodes.min(axis=0)
