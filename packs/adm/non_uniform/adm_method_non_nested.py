@@ -8,9 +8,11 @@ import matplotlib.pyplot as plt
 from pymoab import types
 from scipy.sparse import csc_matrix, csgraph
 # from .paralel_neuman import masterNeumanNonNested
-from .paralel_neuman_new0 import masterNeumanNonNested
+# from .paralel_neuman_new1 import masterNeumanNonNested
+from .paralell_neumann_numpy import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):
+
     def set_adm_mesh_non_nested(self, v0=[], v1=[], pare=False):
         levels = self.data_impress['LEVEL'].copy()
         gids_0 = self.data_impress['GID_0']
@@ -70,7 +72,6 @@ class AdmNonNested(AdmMethod):
         self.n1_adm = n1
         self.n2_adm = n2
 
-
     def equalize_levels(self):
 
         levels = self.data_impress['LEVEL'].copy()
@@ -117,6 +118,7 @@ class AdmNonNested(AdmMethod):
     def set_saturation_level(self):
 
         levels = self.data_impress['LEVEL'].copy()
+        import pdb; pdb.set_trace()
         gid1 = self.data_impress['GID_1']
         gid0 = self.data_impress['GID_0']
         level_0_ini = set(gid0[levels==0])
@@ -160,6 +162,30 @@ class AdmNonNested(AdmMethod):
                 else:
                     levels[gids0] = 1
 
+        self.data_impress['LEVEL'] = levels.copy()
+
+    def set_saturation_level_simple(self,delta_sat_max=0.1):
+        levels = self.data_impress['LEVEL'].copy()
+        saturation = self.data_impress['saturation']
+        internal_faces = self.elements_lv0['internal_faces']
+        v0 = self.elements_lv0['neig_internal_faces']
+        ds = saturation[v0]
+        ds = np.absolute(ds[:,1] - ds[:,0])
+        inds = ds >= delta_sat_max
+        levels[v0[inds][:,0]] = 0
+        levels[v0[inds][:,1]] = 0
+        self.data_impress['LEVEL'] = levels.copy()
+
+    def set_saturation_level_uniform(self, delta_max=0.1):
+        levels = self.data_impress['LEVEL'].copy()
+        gids1 = self.data_impress['GID_1']
+        saturation = self.data_impress['saturation']
+        mins=np.ones(len(np.unique(gids1)))
+        maxs=np.zeros(len(np.unique(gids1)))
+        np.maximum.at(maxs,gids1,saturation)
+        np.minimum.at(mins,gids1,saturation)
+        deltas=maxs-mins
+        levels[deltas[gids1]>delta_max]=0
         self.data_impress['LEVEL'] = levels.copy()
 
     def set_saturation_level_imposed_joined_coarse(self):
@@ -406,7 +432,16 @@ class AdmNonNested(AdmMethod):
         self.data_impress['LEVEL'] = levels.copy()
 
     def set_level_wells_3(self):
+        self.data_impress['LEVEL'][:] = 1
+        gid1_wells=self.data_impress['GID_1'][self.all_wells_ids]
+        pos=np.zeros_like(self.data_impress['LEVEL'])
+        for g1 in gid1_wells:
+            pos+=self.data_impress['GID_1']==g1
+        vols_to_lv0=self.data_impress['GID_0'][pos>0]
+
+        # vols_to_lv0=np.unique(np.hstack(self.elements_lv0['volumes_face_volumes'][vols_to_lv0]))
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
+        self.data_impress['LEVEL'][vols_to_lv0] = 0
         # gid0 = self.data_impress['GID_0']
         # gid1 = self.data_impress['GID_1']
         #
@@ -414,9 +449,18 @@ class AdmNonNested(AdmMethod):
         # for gid in gids_wells:
         #     volumes = gid0[gid1==gid]
         #     self.data_impress['LEVEL'][volumes] = 0
+    def set_level_wells_only(self):
+        self.data_impress['LEVEL'][:] = 1
+        self.data_impress['LEVEL'][self.all_wells_ids] = 0
 
-    def organize_ops_adm(self, OP_AMS, OR_AMS, level, _pcorr=None):
+    def set_monotonizing_level(self, gids_to_monotonize):
+        self.data_impress['LEVEL'][gids_to_monotonize]=0
 
+    def organize_ops_adm(self, mlo, level, _pcorr=None):
+        OP_AMS_lcd=mlo['prolongation_lcd_level_1']
+        # OP_AMS=mlo['prolongation_level_1'].tolil()
+        OR_AMS=mlo['restriction_level_1']
+        t0=time.time()
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
         gid_ant = self.data_impress['GID_' + str(level-1)]
@@ -424,10 +468,15 @@ class AdmNonNested(AdmMethod):
         level_id_ant = self.data_impress['LEVEL_ID_' + str(level-1)]
         levels = self.data_impress['LEVEL']
         dual_id = self.data_impress['DUAL_'+str(level)]
-        OP_AMS = OP_AMS.tolil()
+        # OP_AMS = OP_AMS.tolil()
 
         if level == 1:
-            OP_ADM, OR_ADM, pcorr = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
+            lcd=OP_AMS_lcd
+            # t0=time.time()
+            # OP_ADM1, OR_ADM1, pcorr1 = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
+            OP_ADM, OR_ADM, pcorr =self.organize(level,lcd, _pcorr=_pcorr)
+
+
             self._data[self.adm_op_n + str(level)] = OP_ADM
             self._data[self.adm_rest_n + str(level)] = OR_ADM
             self._data[self.pcorr_n+str(level-1)] = pcorr
@@ -505,6 +554,7 @@ class AdmNonNested(AdmMethod):
         return 0
 
     def organize_ops_adm_level_1(self, OP_AMS, OR_AMS, level, _pcorr=None):
+
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
         gid_ant = self.data_impress['GID_' + str(level-1)]
@@ -513,8 +563,10 @@ class AdmNonNested(AdmMethod):
         level_id_ant = self.data_impress['LEVEL_ID_' + str(level-1)]
         levels = self.data_impress['LEVEL']
         vertices = gid_0[self.data_impress['DUAL_1']==3]
+
         OP_AMS_local = OP_AMS.copy().tolil()
 
+        # import pdb; pdb.set_trace()
         AMS_TO_ADM = np.arange(len(gid_level[vertices]))
         AMS_TO_ADM[gid_level[vertices]] = level_adm_coarse_id[vertices]
 
@@ -542,7 +594,7 @@ class AdmNonNested(AdmMethod):
         data = np.concatenate([data,d1])
         try:
             OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
-            # np.savetxt("results/OP.csv",OP_ADM.toarray(),delimiter=",")
+
             # plot_operator(self, OP_ADM, np.arange())
             # import pdb; pdb.set_trace()
         except:
@@ -557,6 +609,57 @@ class AdmNonNested(AdmMethod):
             pcorr = np.zeros(len(gid_0))
             pcorr[levels>0] = _pcorr[levels>0]
         else:#np.arange(729)[np.array(OP_ADM.sum(axis=1)==0).T[0]]
+            pcorr = np.array([False])
+        if OP_ADM.sum()<OP_ADM.shape[0]-0.1:
+            print("verify ADM prolongation operator organization")
+            import pdb; pdb.set_trace()
+        return OP_ADM, OR_ADM, pcorr
+
+    def organize(self, level, mm,_pcorr=None):
+        gid_0 = self.data_impress['GID_0']
+        gid_level = self.data_impress['GID_' + str(level)]
+        adm_id = self.data_impress['LEVEL_ID_' + str(level)]
+        level_adm_coarse_id = self.data_impress['ADM_COARSE_ID_LEVEL_1']
+        levels = self.data_impress['LEVEL']
+        vertices = gid_0[self.data_impress['DUAL_1']==3]
+
+        AMS_TO_ADM = np.arange(len(gid_level[vertices]))
+        AMS_TO_ADM[gid_level[vertices]] = level_adm_coarse_id[vertices]
+
+        gid_vols_nv0 = gid_0[levels==0]
+        adm_vols_nv0 = adm_id[gid_vols_nv0]
+
+        l1=mm[0]
+        c1=mm[1]
+        d1=mm[2].copy()
+        lvs=levels[l1]
+        d1[lvs==0]=0
+
+        lines=gid_vols_nv0
+        cols=adm_vols_nv0
+        data=np.repeat(1,len(lines))
+        c1_adm = AMS_TO_ADM[c1]
+
+        lines = np.concatenate([lines,l1])
+        cols = np.concatenate([cols,c1_adm])
+        data = np.concatenate([data,d1])
+
+        # AMS_TO_ADM = np.arange(len(gid_level[vertices]))
+        # AMS_TO_ADM[gid_level[vertices]] = level_adm_coarse_id[vertices]
+
+        n1_adm = c1_adm.max()+1
+
+        OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
+
+        cols = gid_0
+        lines = adm_id
+        data = np.ones(len(lines))
+        OR_ADM = sp.csc_matrix((data,(lines,cols)),shape=(n1_adm,len(gid_0)))
+
+        if self.get_correction_term:
+            pcorr = np.zeros(len(gid_0))
+            pcorr[levels>0] = _pcorr[levels>0]
+        else:
             pcorr = np.array([False])
         if OP_ADM.sum()<OP_ADM.shape[0]-0.1:
             print("verify ADM prolongation operator organization")
@@ -600,7 +703,6 @@ class AdmNonNested(AdmMethod):
         data = np.concatenate([data,d1])
         try:
             OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
-            np.savetxt("results/OP.csv",OP_ADM.toarray(),delimiter=",")
             # plot_operator(self, OP_ADM, np.arange())
             # import pdb; pdb.set_trace()
         except:
@@ -616,8 +718,7 @@ class AdmNonNested(AdmMethod):
             pcorr[levels>0] = _pcorr[levels>0]
         else:#np.arange(729)[np.array(OP_ADM.sum(axis=1)==0).T[0]]
             pcorr = np.array([False])
-        if OP_ADM.sum()<729:
-            import pdb; pdb.set_trace()
+
         return OP_ADM, OR_ADM, pcorr
 
     def set_initial_mesh(self, mlo, T, b):
@@ -770,7 +871,6 @@ class AdmNonNested(AdmMethod):
                 SOL_ADM_fina=OP_ADM*OP_ADM_2*SOL_ADM
             else:
 
-                np.savetxt("results/OP_ADM.csv",OP_ADM.toarray(),delimiter=",")
                 SOL_ADM=solver(OR_ADM*T*OP_ADM,OR_ADM*b)
                 SOL_ADM_fina=OP_ADM*SOL_ADM
             self.data_impress['pressure'] = SOL_ADM_fina
@@ -820,15 +920,15 @@ class AdmNonNested(AdmMethod):
             self.data_impress['INITIAL_LEVEL'] = accum_levels[n]
         else:
             self.data_impress['INITIAL_LEVEL'] = self.data_impress['LEVEL'].copy()
-
+        import pdb; pdb.set_trace()
         self.data_impress.update_variables_to_mesh()
         self.data_impress.export_to_npz()
 
-    def set_pms_flux(self, T_witout, wells, pare=False):
+    def set_pms_flux(self, wells, neumann_subds):
 
-        master = masterNeumanNonNested(self.mesh, self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, T_witout, wells, pare=pare)
+        master = masterNeumanNonNested(self.mesh, self.data_impress, self.elements_lv0, self.ml_data, self.n_levels, wells, neumann_subds)
         ms_flux_faces, pcorr = master.run()
-        del master
+        # del master
         self.data_impress['flux_faces'] = ms_flux_faces
         self.data_impress['pcorr'] = pcorr
 

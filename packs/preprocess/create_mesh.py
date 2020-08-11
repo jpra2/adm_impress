@@ -3,8 +3,6 @@ import os
 import numpy as np
 from pymoab import core, types, rng, topo_util
 
-
-
 class createMesh:
 
     def __init__(self):
@@ -14,7 +12,8 @@ class createMesh:
             self.mesh_data = yaml.safe_load(f)
 
         self.mesh_data['block_size'] = np.array(self.mesh_data['block_size'])
-        self.mesh_data['mesh_size'] = np.array(self.mesh_data['mesh_size'])
+        self.mesh_data['mesh_size'] = np.array(self.mesh_data['block_size'])*np.array(self.mesh_data['block_number'])
+        self.mesh_data['starting_point'] = np.array(self.mesh_data['starting_point'])
         self.init_params()
 
         self.mb = core.Core()
@@ -22,8 +21,10 @@ class createMesh:
         self.mtu = topo_util.MeshTopoUtil(self.mb)
 
     def init_params(self):
+        starting_point = self.mesh_data['starting_point']
         block_size = self.mesh_data['block_size']
         mesh_size = self.mesh_data['mesh_size']
+
 
         self.params = dict()
         self.params['nblocks'] = np.floor(mesh_size/block_size).astype(int)
@@ -47,7 +48,7 @@ class createMesh:
                                np.arange(
                                    self.params['nblocks'][0]+1, dtype='float64') *self.mesh_data['block_size'][0])
                            ], dtype='float64')
-
+        coords+=self.mesh_data['starting_point']
         self.verts = self.mb.create_vertices(coords.flatten())
 
     def _create_hexa(self, i, j, k):

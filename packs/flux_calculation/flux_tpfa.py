@@ -135,10 +135,14 @@ class TpfaFlux:
         internal_faces = self.elements_lv0['internal_faces']
         flux_internal_faces = self.data_impress['flux_faces'][internal_faces]
 
-        lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
-        cols = np.repeat(0, len(lines))
-        data = np.array([flux_internal_faces, -flux_internal_faces]).flatten()
-        flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
+
+        # lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
+        lines=np.concatenate(v0.T)
+        # cols = np.repeat(0, len(lines))
+        # data = np.array([flux_internal_faces, -flux_internal_faces]).flatten()
+        data=np.concatenate([flux_internal_faces, -flux_internal_faces])
+        # flux_volumes = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, 1)).toarray().flatten()
+        flux_volumes=np.bincount(lines,weights=data)
 
         self.data_impress['flux_volumes'] = flux_volumes
 

@@ -1,6 +1,6 @@
 file='./mesh/4x4x4.msh'
 
-@profile
+# @profile
 def importe():
     from impress import FineScaleMesh as mesh
     from packs.stokes_brinkman_3d import stokes_brinkman as stokes
@@ -8,13 +8,13 @@ def importe():
     import gc
     import numpy as np
     import time
-    @profile
+    # @profile
     def get_sol2(file):
         # gc.collect(generation=0)
         M = mesh(file)
         stokes.stokes_solver(M)
         # del(M)
-    @profile
+    # @profile
     def run_process():
         p=mp.Process(target=get_sol2, args=[file])
         p.start()

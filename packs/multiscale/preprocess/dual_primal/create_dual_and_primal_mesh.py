@@ -10,6 +10,7 @@ from ....directories import data_loaded
 from ....errors.err import DualStructureError
 from ....adm.adm_method import get_levelantids_levelids
 from packs.multiscale.preprocess.dual_primal.paralell import paralell_dual_and_primal
+from scipy.sparse import csc_matrix, csgraph
 import time
 
 
@@ -72,7 +73,13 @@ class MultilevelData(DataManager):
         self.get_boundary_coarse_faces(M)
         print("Time to get boundary: {} seconds".format(time.time()-t0))
         t0=time.time()
-        self.get_dual_structure()
+        # self.get_dual_structure()
+        self.internal=self.get_separated_dual_entities(
+            self.data_impress['GID_0'],
+            M.faces.bridge_adjacencies(M.faces.internal[:], 2, 3),
+            self.data_impress['DUAL_1'],
+            1
+        )
         print("Time to dual structure: {} seconds".format(time.time()-t0))
         # t0=time.time()
         # self.get_dual_structure_with_graph()
@@ -595,7 +602,6 @@ class MultilevelData(DataManager):
     def get_dual_structure_with_graph(self):
         M = self.mesh
         mb = M.core.mb
-
         gids = self.data_impress['GID_0']
         dt = [('volumes', np.dtype(int))]
         all_volumes = M.core.all_volumes
@@ -626,6 +632,31 @@ class MultilevelData(DataManager):
             conjs_interns=[interns[labels==l] for l in range(n_l)]
             structure = [np.unique(np.concatenate(M.volumes.bridge_adjacencies(intern0, 0, 3))) for intern0 in conjs_interns]
             self._data[self.dual_structure+str(level)]=structure
+
+    @staticmethod
+    def get_separated_dual_entities(gids, adjacencies, dual_flags, separate_flag):
+        gids2separate = gids[dual_flags==separate_flag]
+        gids_definitor = -np.ones(len(gids),dtype=int)
+        gids_definitor[gids2separate]=gids2separate
+
+        adjs=adjacencies.copy()
+        adjs=gids_definitor[adjs]
+        adjs=adjs[(adjs>-1).sum(axis=1)==2]
+
+        adjs0=adjs[:,0]
+        adjs1=adjs[:,1]
+
+        mapd=np.arange(len(gids))
+        mapd[gids2separate]=np.arange(len(gids2separate))
+        lines=np.concatenate([mapd[adjs0],mapd[adjs1]])
+        cols=np.concatenate([mapd[adjs1],mapd[adjs0]])
+        data=np.ones(len(lines))
+
+        graph=csc_matrix((data,(lines,cols)),shape=(len(gids2separate),len(gids2separate)))
+        n_l,labels=csgraph.connected_components(graph,connection='strong')
+        separated_dual_entities=[gids2separate[labels==l] for l in range(n_l)]
+
+        return separated_dual_entities
 
     def set_volumes_without_gravity_source_term(self):
 
@@ -679,4 +710,3 @@ class MultilevelData(DataManager):
     def test_dual_structure(self, level):
 
         st = self._data[self.dual_structure+str(level)]
-        

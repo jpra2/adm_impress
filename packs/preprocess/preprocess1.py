@@ -66,4 +66,4 @@ def set_saturation_regions(M, wells):
             M.data[M.data.variables_impress['saturation']][indices] = np.repeat(value, len(indices))
 
         else:
-            raise NameError("Tipo não suportado, disponíveis: all, box, wells")
+            raise NameError("Tipo não suportado, disponíveis: all, box, wells, ")

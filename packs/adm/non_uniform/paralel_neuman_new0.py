@@ -123,7 +123,9 @@ class masterNeumanNonNested:
                 if volumes_dirichlet:
                     ind_diric += list(volumes_dirichlet)
                     for v in ind_diric:
+                        ## adicionar em ind_dirich os valores de pressao prescrita
                         val_diric += [self.wells['values_p'][self.wells['ws_p']==v][0]]
+                        ## pegando os indices nas faces de interseccao local e removendo caso haja volumes de dirichlet
                         inds = ~((v0_new[:,0]==v) | (v0_new[:,1]==v))
                         intersect_faces_new = intersect_faces_new[inds]
                         intern_boundary_volumes_new = intern_boundary_volumes_new[~(intern_boundary_volumes_new==v)]
@@ -183,8 +185,8 @@ class masterNeumanNonNested:
                 #     else:
                 #         ind_diric=vertex
                 # else:
-                #     ind_diric=vertex
-                # val_diric=pms[ind_diric]
+                ind_diric=vertex
+                val_diric=pms[ind_diric]
                 self.data_impress['val_diric'][ind_diric]=val_diric
                 self.data_impress['val_neum'][ind_neum]=val_neum
 

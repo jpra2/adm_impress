@@ -82,6 +82,7 @@ class MultilevelOperators(DataManager):
 
         self.restriction = 'restriction_level_'
         self.prolongation = 'prolongation_level_'
+
         self.infos_level = 'infos_level_'
         self.gid_n = 'gid'
         self.primal_id_n = 'primal_id'
@@ -97,10 +98,11 @@ class MultilevelOperators(DataManager):
         if load == True:
             for n in range(n_levels):
                 prol_name = self.prolongation + str(n+1)
+
                 rest_name = self.restriction + str(n+1)
                 OP = sp.load_npz(os.path.join('flying', prol_name + '.npz'))
                 OR = sp.load_npz(os.path.join('flying', rest_name + '.npz'))
-                self._data[prol_name] = OP
+                self._data[prol_name] = OP                
                 self._data[rest_name] = OR
         else:
             pass
@@ -311,7 +313,7 @@ class MultilevelOperators(DataManager):
         OP=result.OP
         diag=np.ones(OP.shape[0])
         sums=np.array(OP.sum(axis=1)).T[0]
-        
+
         diag[sums>0]=np.array(1/OP.sum(axis=1)[sums>0])[:,0]
         l=range(len(diag))
         c=l

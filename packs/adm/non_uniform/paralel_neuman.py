@@ -188,8 +188,8 @@ class masterNeumanNonNested:
                             escolhido = candidatos.pop()
                             ind_diric = [escolhido]
                             val_diric = [pms[escolhido]]
-                    if len(ind_diric)>1:
-                        import pdb; pdb.set_trace()
+                    # if len(ind_diric)>1:
+                    #     import pdb; pdb.set_trace()
                     ind_diric=vertex
                     val_diric=pms[vertex]
                     # ind_diric=[]
@@ -249,6 +249,7 @@ class masterNeumanNonNested:
         except ValueError:
             self.volumes_pcorr_falt = []
             self.pcorr_falt = []
+
 
         return list_of_subdomains, pms_flux_faces
 

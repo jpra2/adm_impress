@@ -8,11 +8,13 @@ from .local_solution import LocalSolution
 from. obj_infos import InfosForProcess
 from ..directories import data_loaded
 from ..errors.err import ConservativeVolumeError, PmsFluxFacesError
-from scipy.sparse import linalg
+from scipy.sparse import linalg, find
 from scipy.sparse.linalg import spsolve
 from scipy.sparse import csc_matrix
 from ..directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
+from scipy.sparse.linalg import spsolve_triangular
+from packs.adm.smoothers.test_smoothers import compare_smoothers
 import time
 import pdb
 
@@ -127,8 +129,9 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.ml_data = M.multilevel_data
         self.all_wells_ids = all_wells_ids
         self.n_levels = n_levels
-        self.delta_sat_max = 0.1
+        # self.delta_sat_max = 0.05
         # self.delta_sat_max = 2.0
+        self.delta_sat_max = np.load('flying/delta_sat_max.npy')[0]
         self.data_impress = data_impress
         self.number_vols_in_levels = np.zeros(self.n_levels+1, dtype=int)
         gids_0 = self.data_impress['GID_0']
@@ -159,12 +162,6 @@ class AdmMethod(DataManager, TpfaFlux2):
 
     def set_level_wells_2(self):
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
-
-        # so_nv1 = self.so_nv1
-        #
-        # if so_nv1:
-        #     self.data_impress['LEVEL'] = np.ones(len(self.data_impress['GID_0']), dtype=int)
-        #     self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids), dtype=int)
 
     def set_adm_mesh(self):
 
@@ -451,11 +448,25 @@ class AdmMethod(DataManager, TpfaFlux2):
 
             T_adm = OR_adm*T_adm*OP_adm
 
-        pms = self.solver.direct_solver(T_adm, b_adm)
-        # self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner='jacobi',\
-        # global_multiscale_preconditioner='galerkin')
-        # pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
 
+        pms = OP_adm*self.solver.direct_solver(T_adm, b_adm)
+
+        # pms = self.smoother_jacobi(OR_adm, T, OP_adm, b, print_errors=True)
+        '''
+        local_preconditioners=['bosma', 'jacobi', 'olav']
+        global_multiscale_preconditioners=['galerkin']
+        # compare_smoothers(OR_adm, T, OP_adm, b, global_multiscale_preconditioners, self.elements_lv0, self.data_impress)
+        # import pdb; pdb.set_trace()
+        ets=[]
+        names=[]
+        for l in local_preconditioners:
+            for g in global_multiscale_preconditioners:
+                et = self.test_smoothers(OR_adm, T, OP_adm, b, local_preconditioner=l,\
+                global_multiscale_preconditioner=g, n_prec_levels=1)
+                ets.append(np.array(et))
+                names.append(l+'_'+g)
+        plt.close('all')
+        self.plot_graphics(ets, names)'''
 
         self.data_impress['pms'] = pms
         self.data_impress['pressure'] = pms
@@ -465,6 +476,46 @@ class AdmMethod(DataManager, TpfaFlux2):
         # self.data_impress['pms'] = p2
         # ##############################
         self.T = T
+
+    def plot_graphics(self, ets, names):
+        a=1
+        norms=['ep_L2', 'ep_Linf', 'ev_L2', 'ev_Linf']
+        for i in range(4): # 4 normas de erro serão plotadas
+            plt.close('all')
+            fig=plt.figure()
+
+            plt.plot()
+            tf=np.inf
+            tc=np.inf
+            ymin=np.inf
+            ymax=0
+            xmax=0
+            for j in range(len(names)):
+                tf2=ets[j][:,4][ets[j][:,4]>0].min()
+                tc2=ets[j][:,5][ets[j][:,5]>0].min()
+                if tf2<tf:
+                    tf=tf2
+                if tc2<tc:
+                    tc=tc2
+                xx=np.cumsum(ets[j][:,6]+ets[j][:,7])+ets[j][:,5].max()
+                yy=ets[j][:,i]
+                if yy.min()<ymin:
+                    ymin=yy.min()
+                if yy.max()>ymax and yy.max()<100:
+                    ymax=yy.max()
+                if xx.max()>xmax and yy.max()<100:
+                    xmax=xx.max()
+                if yy.max()<100:
+                    plt.plot(xx,yy, label=names[j])
+                plt.xlabel('Time (s)')
+                plt.ylabel(norms[i])
+                plt.legend()
+            plt.plot(np.repeat(tf,2),np.array([ymin, ymax])) # plots time to solve Tf
+            plt.plot(np.repeat(tc,2),np.array([ymin, ymax])) # plots time to solve Tc
+            plt.xlim((0,xmax))
+            plt.savefig('results_smoothers/'+norms[i]+'.png')
+
+        import pdb; pdb.set_trace()
 
     def smoother_jacobi(self, R, T, P, b, print_errors=False):
 
@@ -542,60 +593,71 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         return pv
 
-    def test_smoothers(self, R, T, P, b, local_preconditioner, global_multiscale_preconditioner):
+    def test_smoothers(self, R, T, P, b, local_preconditioner, global_multiscale_preconditioner, n_prec_levels=1):
+        neta_lim=self.elements_lv0['neta_lim']
+        tc=time.time()
         if local_preconditioner=='jacobi':
-            dt=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
-            dt1=1/dt
-            lc=np.arange(len(dt))
-            pl=csc_matrix((dt1,(lc,lc)),shape=T.shape)
-            T2=T.copy()
-            T2.setdiag(0)
-            J=pl*T2
+            alpha_jacobi=0.97
+            Ml, pl = self.construct_jacobi_preconsitioner(T)
+        elif local_preconditioner=='bosma' or local_preconditioner=='olav':
+            Ml=linalg.spilu(T,drop_tol=1e-4,fill_factor=1,permc_spec='NATURAL')
+        elif local_preconditioner=='sor':
+            Sf=self.get_Sor(T,n_prec_levels)
+        tc=time.time()-tc
         if global_multiscale_preconditioner=='galerkin':
             Rg=P.T
-        elif global_multiscale_preconditioner==msfv:
+        elif global_multiscale_preconditioner=='msfv':
             Rg=R
+
         Tcg=Rg*T*P #global T coarse
+
         tf=time.time()
         pf=spsolve(T,b)
         tf=time.time()-tf
 
-        pv=P*spsolve(R*T*P,R*b)
-        maxiter=500
-        ep_l2=np.inf
+        pv=P*spsolve(Rg*T*P,Rg*b)
+        # pv=np.zeros_like(b)
+        maxiter=20
+        er_l2=np.inf
         cont=0
         errors=[]
         times=[]
-        alpha_jacobi=0.5
-        while ep_l2>0.01 and cont<maxiter:
+        ep_l2, ep_linf, ev_l2, ev_linf = self.get_error_norms(pf, pv)
+        times.append([0,0,0,0])
+        errors.append([ep_l2, ep_linf, ev_l2, ev_linf])
+        while er_l2>1e-4 and cont<maxiter:
             tg=time.time()
-            pv12 = pv + (P*spsolve(Tcg,P.T.tocsc()*(b-T*pv)))
+            pv12 = pv + 1.0*(P*spsolve(Tcg,Rg*(b-T*pv)))
             tg=time.time()-tg
             tl=time.time()
-            de_0=1
-            de_ant=1
-            dp=np.linalg.norm(pv-pv12)
-            cj=0
-
-            while ((de_ant-dp)/(de_0-de_ant)<alpha_jacobi and cj<10) or cj<3:
-                de_0=de_ant
-                de_ant=dp
-                pv = pl*b-J*pv12
-                dp=np.linalg.norm(pv-pv12)
-                pv12=pv
-                cj+=1
-                print((dp-de_ant)/(de_ant-de_0))
-            print(cj)
+            if local_preconditioner=='jacobi':
+                pv = self.iterate_jacobi(pv, pv12,b, pl, Ml, alpha_jacobi=alpha_jacobi)
+            elif local_preconditioner=='bosma':
+                for i in range(5):
+                    pv=pv12+Ml.solve(b-T*pv12)
+                    pv12=pv
+            elif local_preconditioner=='olav':
+                dk=b-T*pv12
+                yrf=Ml.solve(dk)
+                pv=pv12+P*spsolve(Tcg,Rg*(dk-T*yrf))+yrf
+            elif local_preconditioner=='sor':
+                pf3 = pv12 + linalg.spsolve(Sf,(b - T*pv12))
+                pv = pf3 + linalg.spsolve(Sf,(b - T*pf3))
             tl=time.time()-tl
-            pms = pv + (P*spsolve(csc_matrix(R*T*P),R.tocsc()*(b-T*pv)))
+            er_l2=np.linalg.norm(b-T*pv)/np.linalg.norm(b)
+            print(er_l2, 'erro relatitivo no resíduo')
+            pms = pv + (P*spsolve(csc_matrix(Rg*T*P),Rg.tocsc()*(b-T*pv)))
             ep_l2, ep_linf, ev_l2, ev_linf = self.get_error_norms(pf, pms)
             errors.append([ep_l2, ep_linf, ev_l2, ev_linf])
-            times.append([tf, tg, tl])
+            times.append([tf, tc, tg, tl])
             cont+=1
         errors=np.vstack(errors)
         times=np.vstack(times)
-        tt=times[:,1].sum()+times[:,2].sum()
-        import pdb; pdb.set_trace()
+        tt=times[:,2].sum()+times[:,3].sum()
+        et=np.hstack([errors, times])
+
+
+        return et
 
     def get_error_norms(self, pf, pv):
         ep_l2=np.linalg.norm(pf-pv)/np.linalg.norm(pf)
@@ -611,6 +673,55 @@ class AdmMethod(DataManager, TpfaFlux2):
         ep_linf=abs(pf-pv).max()/abs(pf).max()
         ev_linf=abs(vf-vms).max()/abs(vf).max()
         return ep_l2, ep_linf, ev_l2, ev_linf
+
+    def get_Sor(self, T, Tcg=None, n_prec_levels=1, Wf=2, Wc=2/3):
+        lf, cf, df = find(T)
+        l=lf>cf
+        # u=lf<cf
+        d=lf==cf
+        L=csc_matrix((df[l],(lf[l],cf[l])),shape=T.shape)
+        # U=csc_matrix((df[u],(lf[u],cf[u])),shape=T.shape)
+        D=csc_matrix((df[d],(lf[d],cf[d])),shape=T.shape)
+        S=D+Wf*L
+        if n_prec_levels==2:
+            lf, cf, df = find(Tcg)
+            l=lf>cf
+            # u=lf<cf
+            d=lf==cf
+            Lc=csc_matrix((df[l],(lf[l],c[l])),shape=T.shape)
+            # Uc=csc_matrix((df[u],(lf[u],c[u])),shape=T.shape)
+            Dc=csc_matrix((df[d],(lf[d],c[d])),shape=T.shape)
+            Sc=Dc+Wc*Lc
+            return S.tocsr(), Sc.tocsr()
+        else:
+            return S.tocsr()
+
+    def construct_jacobi_preconsitioner(self, T):
+        dt=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
+        dt1=1/dt
+        lc=np.arange(len(dt))
+        pl=csc_matrix((dt1,(lc,lc)),shape=T.shape)
+        T2=T.copy()
+        T2.setdiag(0)
+        J=pl*T2
+        return J, pl
+
+    def iterate_jacobi(self, pv, pv12,b, pl, J, alpha_jacobi):
+        de_0=1
+        de_ant=1
+        dp=np.linalg.norm(pv-pv12)
+        cj=0
+        # while ((de_ant-dp)/(de_0-de_ant)<alpha_jacobi and cj<100) or cj<3:
+        for i in range(20):
+            de_0=de_ant
+            de_ant=dp
+            pv = pl*b-J*pv12
+            # dp=np.linalg.norm(pv-pv12)
+            pv12=pv
+            cj+=1
+            # print((dp-de_ant)/(de_ant-de_0))
+        # print(cj)
+        return pv
 
     def set_pms_flux_intersect_faces_dep0(self):
 
@@ -849,7 +960,6 @@ class AdmMethod(DataManager, TpfaFlux2):
             # if not np.allclose(flux_volumes_2, flux_volumes):
             #     raise ValueError('Diferenca entre fluxo pms local e global')
             self.data_impress['flux_volumes_test'] = flux_volumes_2
-            ######################################
 
     def get_nt_process(self):
 
@@ -1048,20 +1158,6 @@ class AdmMethod(DataManager, TpfaFlux2):
         self.data_impress['pcorr'] = _pcorr
         self.data_impress['flux_volumes'] = _flux_volumes
         self.data_impress['flux_faces'] = _flux_faces
-
-        # _debug = data_loaded['_debug']
-        # if _debug:
-        #
-        #     #######################
-        #     ## test
-        #     v0 = g_neig_internal_faces
-        #     internal_faces = self.elements_lv0['internal_faces']
-        #     lines = np.array([v0[:, 0], v0[:, 1]]).flatten()
-        #     cols = np.repeat(0, len(lines))
-        #     data = np.array([_flux_faces[internal_faces], -_flux_faces[internal_faces]]).flatten()
-        #     flux_volumes_2 = sp.csc_matrix((data, (lines, cols)), shape=(n_volumes, 1)).toarray().flatten()
-        #     self.data_impress['flux_volumes_test'] = flux_volumes_2
-        #     ######################################
 
     def set_saturation_level(self):
 
@@ -1298,5 +1394,3 @@ class AdmMethod(DataManager, TpfaFlux2):
 
     def print_test(self):
         self.data_impress.update_variables_to_mesh()
-        # name = 'results/test_'
-        # self.mesh.core.print(file=name, extension='.vtk', config_input="input_cards/print_settings0.yml")

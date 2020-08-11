@@ -1,5 +1,6 @@
 import copy
 import numpy as np
+from scipy.sparse import csc_matrix
 
 class CommonInfos:
 
@@ -16,8 +17,15 @@ class CommonInfos:
 
         return T2
 
-    def get_local_matrix(self, T, volumes):
+    def get_local_t_from_local_infos(self, lines,cols,data):
+        '''
+            Retorna a Matriz de transmissibilidade local
+        '''
+        n_vols=lines.max()+1
+        T2=csc_matrix((data,(lines, cols)),shape=(n_vols,n_vols)).tolil()
+        return T2
 
+    def get_local_matrix(self, T, volumes):
         T2 = T[volumes][:,volumes]
         return T2
 

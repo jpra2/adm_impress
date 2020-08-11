@@ -8,22 +8,16 @@ from packs.multiscale.operators.prolongation.AMS.Paralell.partitionating_paramet
 import pdb
 
 class DualDomain:
-    def __init__(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
+    def __init__(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=False):
         self.local_couple=local_couple
         self.couple_bound=couple_bound
         self.adjs, self.ks, self.ids_globais_vols, self.ns =  self.get_local_informations(data_impress, elements_lv0, volumes, local_couple=local_couple, couple_bound=couple_bound)
         self.coarse_ids = data_impress['GID_1'][self.vertices]
         self.A_b_t=[]
 
-    def get_local_informations(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=True):
-        # viz=M.mtu.get_bridge_adjacencies(volumes,2,3)
-        volumes = np.array(volumes)
-        if len(volumes.dtype) > 1:
-            volumes = volumes['volumes']
+    def get_local_informations(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=False):
         viz=np.unique(np.concatenate(elements_lv0['volumes_face_volumes'][volumes]))
         nv=len(volumes)
-        # M.mb.tag_set_data(M.local_id_dual_tag,viz, np.repeat(nv+5,len(viz)))
-        # faces_entities=M.mtu.get_bridge_adjacencies(volumes,2,2)
         faces_entities = np.unique(np.concatenate(elements_lv0['volumes_face_faces'][volumes]))
         int_facs=np.setdiff1d(faces_entities, elements_lv0['boundary_faces'])
 
@@ -33,8 +27,7 @@ class DualDomain:
             int_facs=np.setdiff1d(int_facs,so_viz_faces)
 
         dual_id_volumes = data_impress['DUAL_1'][volumes]
-        if local_couple>0:
-            # dual_flags=M.mb.tag_get_data(M.D1_tag, np.array(volumes),flat=True)
+        if local_couple>0:            
             dual_flags=np.repeat(-1,len(elements_lv0["volumes"]))
             dual_flags[volumes]=dual_id_volumes
             if couple_bound:
@@ -44,8 +37,6 @@ class DualDomain:
                 dual_flags_red[dual_flags_red==2]=1
                 if local_couple==2:
                     dual_flags_red[dual_flags_red==1]=0
-
-
             else:
                 try:
                     reduce_flag = np.setdiff1d(volumes, np.concatenate(elements_lv0['volumes_face_volumes'][so_viz]))
@@ -93,6 +84,10 @@ class DualDomain:
         ks=data_impress['transmissibility'][int_facs]
         # ids_globais_vols=M.mb.tag_get_data(M.ID_reordenado_tag,np.concatenate([np.uint64(internals),np.uint64(faces), np.uint64(edges),vertices]),flat=True)
         ids_globais_vols=np.concatenate([np.uint64(internals),np.uint64(faces), np.uint64(edges),vertices])
+
+        if nv>4:
+            print(nv)
+            data_impress['coupled_flag'][volumes]=np.repeat(1.0,len(volumes))
         return adjs, ks, ids_globais_vols, ns
 
 class OP_local:
@@ -250,7 +245,7 @@ class Partitioner:
         return partitioned_subds
 
 class OP_AMS:
-    def __init__(self, data_impress, elements_lv0, all_conjs_duais, local_couple=0, couple_bound=True):
+    def __init__(self, data_impress, elements_lv0, all_conjs_duais, local_couple=0, couple_bound=False):
         t0=time.time()
 
         print("Time to calibrate partitioning parameters: {} segundos".format(time.time()-t0))

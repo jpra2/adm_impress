@@ -676,3 +676,73 @@ val_neum:
   data type: float
   sparse: True
   level: 0
+
+coupled_flag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_flux_tag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_pos:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+initial_diag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_diag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+nfp:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+nfn:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_phi:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+ref_param:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+DUAL_PRESSURE:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
