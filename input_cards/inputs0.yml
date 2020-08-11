@@ -28,7 +28,7 @@ read_permeability: false
 file_name_permeability: spe10_perms_and_phi.npz
 set_permeability: true
 Permeability:
-    r1:
+  r1:
         type: all
         value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
 
