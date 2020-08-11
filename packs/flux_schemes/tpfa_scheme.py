@@ -26,5 +26,5 @@ class TpfaScheme(DataManager):
         data = np.array([t0, t0, -t0, -t0]).flatten()
 
         T = sp.csc_matrix((data, (lines, cols)), shape=(self.n_volumes, self.n_volumes))
-
+        
         self['Tini'] = T

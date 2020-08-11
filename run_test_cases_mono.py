@@ -393,12 +393,7 @@ def print_results(all_cases):
                         pp.append(10)
                     if var=='coupl':
                         pp=np.arange(0,np.array(pp).max()+5,5)
-                        # positions.append(.5)
-                    all_ticks=np.array(pp).astype(int)
-
-                    # all_ticks=np.array(pp).astype(int)
-
-
+                    all_ticks=np.array(pp).astype(int)                
 
                 labels = positions.astype(int).astype(str)
                 plt.gca().yaxis.set_major_locator(ticker.FixedLocator(positions))

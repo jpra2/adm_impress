@@ -53,15 +53,19 @@ def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp
         np.save('results/biphasic/ms/'+ms_case+names[i]+'.npy',vars[i])
 
 
-def plot_operator(T,OP_AMS, primals):
+def plot_operator(T,OP_AMS, primals, marker='',file_prefix=None):
     OP_AMS_c=T*OP_AMS
     for i in range(len(primals)):
-        tag_ams=M.core.mb.tag_get_handle("OP_AMS_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        tag_ams=M.core.mb.tag_get_handle("OP_AMS_"+marker+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         fb_ams = OP_AMS[:, primals[i]].toarray()
-        tag_tp=M.core.mb.tag_get_handle("TP_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        tag_tp=M.core.mb.tag_get_handle("TP_"+marker+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
         tp_ams = OP_AMS_c[:, primals[i]].toarray()
         M.core.mb.tag_set_data(tag_ams, M.core.all_volumes, fb_ams)
         M.core.mb.tag_set_data(tag_tp, M.core.all_volumes, tp_ams)
+        if file_prefix:
+            ms=M.core.mb.create_meshset()
+            M.core.mb.add_entities(ms,M.core.all_volumes)
+            M.core.mb.write_file(file_prefix+str(i),[ms])
 
 def plot_net_flux(OR_AMS,OP_AMS):
     Tc=OR_AMS*T*OP_AMS
@@ -236,13 +240,22 @@ else:
 
 # PP2=mlo['prolongation_level_'+str(1)]
 
+
+
 mlo=multilevel_operators
 
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
 neta_lim=np.load('flying/neta_lim_dual.npy')[0]
+neta_lim=10
 elements_lv0['neta_lim']=neta_lim
+#################
+group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=np.inf)
+OP_orig=mlo['prolongation_level_1']
+
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
+
+
 
 # mlo=tpfalize(M,mlo,data_impress)
 mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
@@ -275,7 +288,7 @@ OR_AMS=mlo['restriction_level_1']
 
 
 
-# plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
+
 # write_file_with_tag_range('OP_AMS_63',[0,np.inf])
 from scipy.sparse import csc_matrix
 import matplotlib as mpl
@@ -462,7 +475,18 @@ data_impress['coupled_flag'][data_impress['DUAL_1']>=2]=0
 
 
 coupl=100*(data_impress['coupled_flag']==1).sum()/len(data_impress['coupled_flag'])
+
+
 np.save('results/biphasic/ms/'+ms_case+'/coupl'+'.npy',np.array([coupl]))
+
+coupled_ms=M.core.mb.create_meshset()
+M.core.mb.add_entities(coupled_ms,np.array(M.core.all_volumes)[data_impress['coupled_flag']==1])
+
+plot_operator(T,OP_AMS,np.array([66,54,25, 100,115]),marker='coupl')
+plot_operator(T,OP_orig,np.array([66,54,25,100, 115]),marker='uncoupl')
+
+M.core.mb.write_file('results/biphasic/ms/'+ms_case+'/vtks/coupled_vols.vtk',[coupled_ms])
+
 
 # adm_method.set_level_wells_3()
 adm_method.set_level_wells_only()
@@ -623,9 +647,7 @@ while verif:
         print("File created at time-step: ",cont)
         count_save+=1
 
-    # if cont % nn == 0 or count_save==len(vpis_for_save)-1:
-    #     export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save])
-    #     verif=False
+
 
     T, b = b1.get_T_and_b()
     cont += 1

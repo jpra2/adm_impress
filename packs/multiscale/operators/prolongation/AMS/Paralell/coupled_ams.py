@@ -15,11 +15,8 @@ class DualDomain:
         self.A_b_t=[]
 
     def get_local_informations(self, data_impress, elements_lv0, volumes, local_couple=0, couple_bound=False):
-        # viz=M.mtu.get_bridge_adjacencies(volumes,2,3)
         viz=np.unique(np.concatenate(elements_lv0['volumes_face_volumes'][volumes]))
         nv=len(volumes)
-        # M.mb.tag_set_data(M.local_id_dual_tag,viz, np.repeat(nv+5,len(viz)))
-        # faces_entities=M.mtu.get_bridge_adjacencies(volumes,2,2)
         faces_entities = np.unique(np.concatenate(elements_lv0['volumes_face_faces'][volumes]))
         int_facs=np.setdiff1d(faces_entities, elements_lv0['boundary_faces'])
 
@@ -29,8 +26,7 @@ class DualDomain:
             int_facs=np.setdiff1d(int_facs,so_viz_faces)
 
         dual_id_volumes = data_impress['DUAL_1'][volumes]
-        if local_couple>0:
-            # dual_flags=M.mb.tag_get_data(M.D1_tag, np.array(volumes),flat=True)
+        if local_couple>0:            
             dual_flags=np.repeat(-1,len(elements_lv0["volumes"]))
             dual_flags[volumes]=dual_id_volumes
             if couple_bound:
@@ -40,8 +36,6 @@ class DualDomain:
                 dual_flags_red[dual_flags_red==2]=1
                 if local_couple==2:
                     dual_flags_red[dual_flags_red==1]=0
-
-
             else:
                 try:
                     reduce_flag = np.setdiff1d(volumes, np.concatenate(elements_lv0['volumes_face_volumes'][so_viz]))
