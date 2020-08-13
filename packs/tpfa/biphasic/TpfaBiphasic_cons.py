@@ -95,12 +95,14 @@ class TpfaBiphasicCons:
         return transmissibility
 
     def get_total_velocity_internal_faces(self, pressure_volumes, internal_faces, gravity_vector, volumes_adj_internal_faces, keq_internal_faces, mobility_w_internal_faces, mobility_o_internal_faces, centroid_volumes, rho_w, rho_o):
-        gradient_pressure = self.simulation_variables.gradient_pressure(pressure_volumes, centroid_volumes, volumes_adj_internal_faces)
+        # gradient_pressure = self.simulation_variables.gradient_pressure(pressure_volumes, centroid_volumes, volumes_adj_internal_faces)
+        pressure_direction = self.simulation_variables.pressure_direction(pressure_volumes, centroid_volumes, volumes_adj_internal_faces)
         mob_w_int_f = mobility_w_internal_faces.reshape(len(internal_faces), 1)
         mob_o_int_f = mobility_o_internal_faces.reshape(len(internal_faces), 1)
         keq = keq_internal_faces.reshape(len(internal_faces), 1)
         mob_t = mob_w_int_f + mob_o_int_f
-        k1 = gradient_pressure*(mob_t)*keq
+        # k1 = gradient_pressure*(mob_t)*keq
+        k1 = pressure_direction*(mob_t)*keq
         k2 = (rho_w*mob_w_int_f + rho_o*mob_o_int_f)*keq
         k2 = gravity_vector * k2
         resp = k1 + k2
