@@ -7,11 +7,13 @@ from packs.directories import data_loaded
 from packs.multiscale.operators.prolongation.AMS.Paralell.group_dual_volumes import group_dual_volumes_and_get_OP
 from packs.multiscale.tpfalize_operator import tpfalize
 from packs.adm.non_uniform import monotonic_adm_subds
+from packs.multiscale.create_local_submatrices_LHS import get_local_matrices_and_global_ids
 import scipy.sparse as sp
 from pymoab import types
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+from packs.data_class import DualStructure
 
 
 # from packs.adm.adm_method import AdmMethod
@@ -216,6 +218,10 @@ _debug = data_loaded['_debug']
 biphasic = data_loaded['biphasic']
 
 M, elements_lv0, data_impress, wells = initial_mesh()
+
+separated_dual_structure = DualStructure(load=True)['dual_structure']
+
+local_matrices_and_global_ids=get_local_matrices_and_global_ids(separated_dual_structure, data_impress['transmissibility'])
 
 if biphasic:
     b1 = BiphasicTpfaMultiscale(M, data_impress, elements_lv0, wells)
@@ -511,6 +517,8 @@ ep_haji_Linf=[]
 neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
 delta_sat_max=np.load('flying/delta_sat_max.npy')[0]
+
+
 # import pdb; pdb.set_trace()
 while verif:
     t00=time.time()
@@ -559,6 +567,7 @@ while verif:
         adm_method.set_saturation_level_uniform(delta_sat_max)
 
     t0=time.time()
+
     adm_method.solve_multiscale_pressure(T, b)
 
     adm_method.set_pms_flux(wells, neumann_subds)

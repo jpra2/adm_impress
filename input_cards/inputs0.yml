@@ -7,7 +7,7 @@ gravity: false
 load_data: false
 convert_english_to_SI: false
 monophasic: true
-biphasic: false
+biphasic: true
 load_biphasic_data: false
 deletar_results: false
 multilevel_data: true

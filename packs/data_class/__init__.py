@@ -1,7 +1,7 @@
 __all__ = ['Data', 'ElementsLv0', 'DataManager', 'SparseDataManager',
            'ElementsData', 'GeometricData', 'RockData', 'BiphasicData',
            'SimulationData', 'WellsData', 'AccumulativeArrayDataManager',
-           'AccumulativeBiphasicData', 'CurrentBiphasicData']
+           'AccumulativeBiphasicData', 'CurrentBiphasicData', 'DualStructure', 'DualMatrices']
 
 from .data_impress import Data
 from .elements_lv0 import ElementsLv0
@@ -16,3 +16,4 @@ from .wells_data import WellsData
 from .accumulative_array_data_manager import AccumulativeArrayDataManager
 from .accumulative_biphasic import AccumulativeBiphasicData
 from .current_data_biphasic import CurrentBiphasicData
+from .dual_data import DualStructure, DualMatrices

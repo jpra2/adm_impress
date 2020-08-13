@@ -111,12 +111,23 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         saturations = self.data_impress['saturation']
         delta_sat = saturations[vols_viz_internal_faces[:,0]] - saturations[vols_viz_internal_faces[:,1]]
 
+
+
         pos = delta_sat >= 0
         self._data['upwind_identificate'][pos, 0] = np.full(pos.sum(), True, dtype=bool)
         pos = ~pos
         self._data['upwind_identificate'][pos, 1] = np.full(pos.sum(), True, dtype=bool)
         self._data['upwind_identificate_o'] = ~self._data['upwind_identificate'].copy()
-        self.upwind_wells()
+        self._data['upwind_identificate'], self._data['upwind_identificate_o'] = self.upwind_wells(
+            self.wells['ws_inj'],
+            self.mesh.volumes.bridge_adjacencies(self.mesh.volumes.all[:], 3, 2),
+            b_faces,
+            self.elements_lv0['remaped_internal_faces'],
+            vols_viz_internal_faces,
+            self._data['upwind_identificate'],
+            self._data['upwind_identificate_o']
+        )
+        
         self.test_upwind_dup()
 
         self.visualize_upwind_vec()
@@ -146,6 +157,30 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
         self.data_impress['lambda_t_faces'] = total_mobility_faces.copy()
         self.data_impress['fw_faces'] = fw_faces.copy()
         # self.data_impress['gama_faces'] = gama_faces.copy()
+
+    def upwind_wells(self, injector_volumes, faces_adj_volumes, boundary_faces, map_internal_faces, volumes_adj_internal_faces, upwind_w, upwind_o):
+
+        wells_inj = injector_volumes
+        if len(wells_inj) > 0:
+            set_wells_inj = set(wells_inj)
+            faces = np.unique(np.concatenate(faces_adj_volumes[wells_inj]))
+            faces = np.setdiff1d(faces, boundary_faces)
+
+            ids_faces_internal = map_internal_faces[faces]
+            upwind_w[ids_faces_internal] = False
+            upwind_o[ids_faces_internal] = False
+
+            v0 = volumes_adj_internal_faces[ids_faces_internal]
+
+            for volumes, i in zip(v0, ids_faces_internal):
+                if set_wells_inj & set([volumes[0]]):
+                    upwind_w[i, 0] = True
+                    upwind_o[i, 0] = True
+                elif set_wells_inj & set([volumes[1]]):
+                    upwind_w[i, 1] = True
+                    upwind_o[i, 1] = True
+
+        return upwind_w, upwind_o
 
     def get_empty_current_biphasic_results(self):
 

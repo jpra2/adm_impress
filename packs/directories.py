@@ -96,4 +96,4 @@ else:
         print(i)
     raise NotImplementedError('\nSimulation type not implemented\n')
 
-only_mesh_name = data_loaded['mesh_name'][5:-4]
+only_mesh_name = data_loaded['mesh_name'].split('/')[-1][:-4]

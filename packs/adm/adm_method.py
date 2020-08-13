@@ -15,6 +15,7 @@ from ..directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 from scipy.sparse.linalg import spsolve_triangular
 from packs.adm.smoothers.test_smoothers import compare_smoothers
+from packs.multiscale.correction_function.CF import CorrectionFunction
 import time
 import pdb
 
@@ -448,6 +449,9 @@ class AdmMethod(DataManager, TpfaFlux2):
 
             T_adm = OR_adm*T_adm*OP_adm
 
+
+        # CorrectionFunction(data_impress['keq_faces'])
+        Cq = CorrectionFunction.solve(b)
 
         pms = OP_adm*self.solver.direct_solver(T_adm, b_adm)
 

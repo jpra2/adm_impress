@@ -11,6 +11,7 @@ from ....errors.err import DualStructureError
 from ....adm.adm_method import get_levelantids_levelids
 from packs.multiscale.preprocess.dual_primal.paralell import paralell_dual_and_primal
 from scipy.sparse import csc_matrix, csgraph
+from packs.data_class import DualStructure
 import time
 
 
@@ -73,14 +74,18 @@ class MultilevelData(DataManager):
         self.get_boundary_coarse_faces(M)
         print("Time to get boundary: {} seconds".format(time.time()-t0))
         t0=time.time()
-        # self.get_dual_structure()
-        ds=self.get_separated_dual_entities(
+
+        dual_structure = DualStructure()
+        dual_structure['dual_structure']=self.get_separated_dual_entities(
             self.data_impress['GID_0'],
             self.data_impress['DUAL_1'],
             M.faces.bridge_adjacencies(M.faces.internal[:], 2, 3),
             M.faces.internal[:],
             np.arange(3)
         )
+        dual_structure.export_to_npz()
+
+
 
         print("Time to dual structure: {} seconds".format(time.time()-t0))
         t0=time.time()
@@ -638,7 +643,7 @@ class MultilevelData(DataManager):
 
     @staticmethod
     def get_separated_dual_entities(gids, dual_flags, adjacencies, internal_faces, separate_flags):
-        separated_dual_structure={}
+        separated_dual_structure=[]
         for separate_flag in separate_flags:
             gids2separate = gids[dual_flags==separate_flag]
             gids_definitor = -np.ones(len(gids),dtype=int)
@@ -663,16 +668,23 @@ class MultilevelData(DataManager):
 
             graph=csc_matrix((data,(lines,cols)),shape=(len(gids2separate),len(gids2separate)))
             n_l,labels=csgraph.connected_components(graph,connection='strong')
-            # separated_dual_entities=[gids2separate[labels==l] for l in range(n_l)]
-            # separated_dual_structure['separated_gids_'+str(separate_flag)] = np.array(separated_dual_entities)
 
             separated_dual_adjacencies=[adjs[labels[mapd[adjs0]]==l] for l in range(n_l)]
             separated_dual_faces=[separated_faces[labels[mapd[adjs0]]==l] for l in range(n_l)]
-
-            separated_infos=[np.array(separated_dual_adjacencies), np.array(separated_dual_faces)]
-            separated_dual_structure[str(separate_flag)] = separated_infos
-        
-        return separated_dual_structure
+            a_lines=[]
+            a_cols=[]
+            a_vols=[]
+            for ad in separated_dual_adjacencies:
+                vols=np.unique(np.concatenate(ad))
+                mape=np.arange(vols.max()+1)
+                mape[vols]=np.arange(len(vols))
+                ad=mape[ad]
+                a_lines.append(np.concatenate([ad[:,0], ad[:,1], ad[:,0], ad[:,1]]))
+                a_cols.append(np.concatenate([ad[:,1], ad[:,0], ad[:,0], ad[:,1]]))
+                a_vols.append(vols)
+            separated_infos=[a_lines, a_cols, separated_dual_faces, a_vols]
+            separated_dual_structure.append(separated_infos)
+        return np.array(separated_dual_structure)
 
     def set_volumes_without_gravity_source_term(self):
 
