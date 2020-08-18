@@ -671,6 +671,7 @@ class MultilevelData(DataManager):
 
             separated_dual_adjacencies=[adjs[labels[mapd[adjs0]]==l] for l in range(n_l)]
             separated_dual_faces=[separated_faces[labels[mapd[adjs0]]==l] for l in range(n_l)]
+
             a_lines=[]
             a_cols=[]
             a_vols=[]
@@ -683,7 +684,7 @@ class MultilevelData(DataManager):
                 a_cols.append(np.concatenate([ad[:,1], ad[:,0], ad[:,0], ad[:,1]]))
                 a_vols.append(vols)
             separated_infos=[a_lines, a_cols, separated_dual_faces, a_vols]
-            separated_dual_structure.append(separated_infos)
+            separated_dual_structure.append(separated_infos)        
         return np.array(separated_dual_structure)
 
     def set_volumes_without_gravity_source_term(self):

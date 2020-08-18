@@ -1,18 +1,32 @@
-def get_local_matrices_and_global_ids(separated_dual_structures, ks):
-    conjs_matrices=[]
+from scipy.sparse import csc_matrix
+from scipy.sparse.linalg import splu as lu
+import numpy as np
 
+def get_local_lu_and_global_ids(separated_dual_structures, ts):
+    local_lu_and_gids=[]
     for separated_dual_structure in separated_dual_structures:
         if len(separated_dual_structure[0])>0:
-            
+            local_lu=[]
+            global_ids=[]
             ss=separated_dual_structure
-            line, cols, faces, vols =ss[0], ss[1], ss[2], ss[3]
-            for line, cols, faces, vols in zip(line, cols, faces, vols):
-                data=np.concatenate(ks, ks, -ks, -ks)
-                mat=csc_matrix((data,(lines,cols)),shape=(len(vols),len(vols)))
-                local_matrices.append(mat)
-                global_ids.append(vols)
+            lines, cols, faces, vols =ss#ss[0], ss[1], ss[2], ss[3]
+            for l, c, f, v in zip(lines, cols, faces, vols):
+                t=ts[f]
+                d=np.concatenate([t, t, -t, -t])
+                mat=csc_matrix((d,(l,c)),shape=(len(v),len(v)))
+                local_lu.append(lu(mat))
+                global_ids.append(v)
 
-            conjs_matrices.append([local_matrices, global_gids])
+            local_lu_and_gids.append([local_lu, global_ids])
         else:
-            conjs_matrices.append([])
-    return cnp.array(conjs_matrices, global_ids)
+            local_lu_and_gids.append([])
+    return local_lu_and_gids
+
+class LocalLU:
+    def update_lu_objects(self, separated_dual_structures, ts):
+        '''
+        separated_dual_structure: preprocessed dual clusters from each dual class
+        ts: transmissibility of all faces
+        '''
+        self.local_lu_and_global_ids=get_local_lu_and_global_ids(separated_dual_structures, ts)
+    
