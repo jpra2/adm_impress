@@ -23,7 +23,8 @@ types_simulation = ['compositional', 'biphasic', 'monophasic']
 # variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
 #                      'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
 
-variables_impress = {'poro': 'phi'}
+# variables_impress = {'poro': 'phi'}
+variables_impress = {}
 
 impress = 'impress'
 tcc = 'tcc'
@@ -96,4 +97,4 @@ else:
         print(i)
     raise NotImplementedError('\nSimulation type not implemented\n')
 
-only_mesh_name = data_loaded['mesh_name'][5:-4]
+only_mesh_name = data_loaded['mesh_name'].split('/')[-1][0:-4]
