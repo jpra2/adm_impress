@@ -5,11 +5,12 @@ from ..contours.wells import Wells
 from ..convert_unit.conversion import Conversion
 from ..preprocess.preprocess1 import set_saturation_regions
 from ..preprocess.prep0_0 import Preprocess0
-from ..directories import data_loaded, only_mesh_name
+from ..directories import data_loaded, only_mesh_name, name_variable_inputs_file_load
 from ..directories import simulation_type, types_simulation
 from ..multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 import numpy as np
 import os
+from .update_inputs import Update_variable, Delete_Files
 # import time
 import pdb
 
@@ -23,6 +24,8 @@ def initial_mesh():
     convert = data_loaded['convert_english_to_SI']
     multilevel_data = data_loaded['multilevel_data']
     load_multilevel_data = data_loaded['load_multilevel_data']
+    Update_variable(name_variable_inputs_file_load)
+    Delete_Files()
 
     if multilevel_data and load_multilevel_data:
         import time

@@ -1,5 +1,5 @@
 # name_file: 'input_cards/inputs_compositional_2d.yml'
 name_file: 'input_cards/inputs0.yml'
-variable_file: 'input_cards/variable_input.yml'
-# simulation_type: 'biphasic'
-simulation_type: 'monophasic'
+variable_file: 'input_cards/variable_adm.yml'
+simulation_type: 'biphasic'
+# simulation_type: 'monophasic'

@@ -69,6 +69,20 @@ velocity_faces:
   sparse: True
   level: 0
 
+velocity_w_faces:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+velocity_o_faces:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
 k_harm:
   type: faces
   data size: 1
@@ -100,6 +114,20 @@ flux_grav_faces:
 flux_faces:
   type: faces
   data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+flux_faces_vec:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+test_velocity:
+  type: faces
+  data size: 3
   data type: float
   sparse: True
   level: 0

@@ -23,7 +23,8 @@ types_simulation = ['compositional', 'biphasic', 'monophasic']
 # variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
 #                      'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
 
-variables_impress = {'poro': 'phi'}
+# variables_impress = {'poro': 'phi'}
+variables_impress = {}
 
 impress = 'impress'
 tcc = 'tcc'

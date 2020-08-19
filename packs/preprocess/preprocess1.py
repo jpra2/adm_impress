@@ -26,7 +26,8 @@ def set_saturation_regions(M, wells):
             limites = np.array([p0, p1])
             vols = get_box(centroids, limites)
             nv = len(vols)
-            data[nv0:(nv+nv0)] = np.repeat(value, nv)
+            # data[nv0:(nv+nv0)] = np.repeat(value, nv)
+            data[vols] = np.repeat(value, nv)
             nv0 = nv
             M.data[M.data.variables_impress['saturation']] = data
 

@@ -1,13 +1,14 @@
 from packs.utils.info_manager import InfoManager
 import os
 
-dd = InfoManager('input_cards/inputs0_2.yml', 'input_cards/inputs0.yml')
-dd.save_obj()
+# dd = InfoManager('input_cards/inputs0_2.yml', 'input_cards/inputs0.yml')
+# dd.save_obj()
 
 def update_inputs():
     from packs.utils.info_manager import InfoManager
     import os
-    dd = InfoManager('input_cards/inputs0.yml', 'input_cards/inputs0.yml')
+    from packs.directories import name_variable_inputs_file_load
+    # dd = InfoManager('input_cards/inputs0.yml', 'input_cards/inputs0.yml')
     # dd['load_data'] = True
     # dd['multilevel_data'] = False
     # dd['load_multilevel_data'] = True

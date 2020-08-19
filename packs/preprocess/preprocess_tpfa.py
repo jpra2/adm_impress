@@ -23,7 +23,7 @@ class TpfaPreprocess:
         '''
 
         boundary_faces = np.setdiff1d(faces, internal_faces)
-        k_harm_faces = np.empty(len(internal_faces) + len(boundary_faces))
+        keq_faces = np.empty(len(internal_faces) + len(boundary_faces))
         u_normal = unit_normal_vector
 
         u_normal_internal_faces = np.absolute(unit_normal_vector[internal_faces])
@@ -38,18 +38,20 @@ class TpfaPreprocess:
         ks0 = ks0.sum(axis=2).sum(axis=1)
         ks1 = ks1.sum(axis=2).sum(axis=1)
         hi = self.get_h_internal_faces(block_dimension, v0, u_normal_internal_faces)
-        k_harm_faces[internal_faces] = hi.sum(axis=1)/(hi[:, 0]/ks0 + hi[:, 1]/ks1)
+        # keq_faces[internal_faces] = hi.sum(axis=1)/(hi[:, 0]/ks0 + hi[:, 1]/ks1)
+        keq_faces[internal_faces] = ((ks0/hi[:,0])*(ks1/hi[:,1]))/((ks0/hi[:,0]) + (ks1/hi[:,1]))
 
         vols_viz_boundary_faces = volumes_adj_boundary_faces
 
         u_normal_b_faces = np.absolute(u_normal[boundary_faces])
         nb = len(boundary_faces)
+        hb = self.get_h_boundary_faces(block_dimension, vols_viz_boundary_faces, u_normal_b_faces)
         ks0 = permeability[vols_viz_boundary_faces]
         ks0 = ks0.reshape([nb, 3, 3]) * u_normal_b_faces.reshape([nb, 1, 3])
         ks0 = ks0.sum(axis=2).sum(axis=1)
-        k_harm_faces[boundary_faces] = ks0
+        keq_faces[boundary_faces] = ks0/hb
 
-        return k_harm_faces
+        return keq_faces
 
     def get_h_internal_faces(self, block_dimension, volumes_adj_internal_faces, u_normal_internal_faces):
 
@@ -57,11 +59,21 @@ class TpfaPreprocess:
         vols_viz_internal_faces = volumes_adj_internal_faces
         hs = block_dimension
 
-        hi = np.zeros((ni, 2))
+        hi = np.empty((ni, 2))
         hi[:, 0] = ((hs[vols_viz_internal_faces[:, 0]]*u_normal_internal_faces).sum(axis=1))/2
         hi[:, 1] = ((hs[vols_viz_internal_faces[:, 1]]*u_normal_internal_faces).sum(axis=1))/2
 
         return hi
+
+    def get_h_boundary_faces(self, block_dimension, vols_viz_boundary_faces, u_normal_boundary_faces):
+
+        nb = len(vols_viz_boundary_faces)
+        hs = block_dimension
+
+        hb = np.empty(nb)
+        hb[:] = ((hs[vols_viz_boundary_faces] * u_normal_boundary_faces).sum(axis=1))/2
+
+        return hb
 
     def get_areas_faces(self, faces, points_faces):
 
