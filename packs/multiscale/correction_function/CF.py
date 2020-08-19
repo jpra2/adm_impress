@@ -31,7 +31,13 @@ def get_cf_i(LUi, q, cf_e_e, cf_f_f, cf_f_e, gids_e, gids_f, Tif, Tie):
     return cf_i_i+cf_i_f+cf_i_e
 
 def get_correction_function(LocalLU, cMats, q):
-    assert len(cMats) == 6
+    # assert len(cMats) == 6
+    Tfe = cMats['Afe']
+    Tif = cMats['Aif']
+    Tie = cMats['Aie']
+
     gids_e, cf_e = solve_correction(Local_LU[2], q)
     gids_f, cf_f_f, cf_f_e = solve_correction(Local_LU[1], q, cf_e, gids_e, Tfe)
     cf_i = solve_correction(Local_LU[0], q, cf_e, cf_f_f, cf_f_e, gids_e, gids_f, Tif, Tie)
+
+    return cf_i + cf_f_f + cf_f_e + cf_e

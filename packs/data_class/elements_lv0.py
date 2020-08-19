@@ -38,10 +38,10 @@ class ElementsLv0(DataManager):
         # remaped_boundary_faces[self._data['boundary_faces']] = np.arange(len(self._data['boundary_faces']))
         # self._data['remaped_boundary_faces'] = remaped_boundary_faces
         #
-        # self._data['volumes_face_faces'] = self.mesh.volumes.bridge_adjacencies(self._data['volumes'], 2, 2)
+        self._data['volumes_face_faces'] = self.mesh.volumes.bridge_adjacencies(self._data['volumes'], 2, 2)
         # self._data['volumes_face_nodes'] = self.mesh.volumes.bridge_adjacencies(self._data['volumes'], 2, 0)
-        # self._data['faces_face_volumes'] = self.mesh.faces.bridge_adjacencies(self._data['faces'], 2, 3)
-        # self._data['volumes_face_volumes'] = self.mesh.volumes.bridge_adjacencies(self._data['volumes'], 2, 3)
+        self._data['faces_face_volumes'] = self.mesh.faces.bridge_adjacencies(self._data['faces'], 2, 3)
+        self._data['volumes_face_volumes'] = self.mesh.volumes.bridge_adjacencies(self._data['volumes'], 2, 3)
         # self._data['faces_edge_edges'] = self.mesh.faces.bridge_adjacencies(self._data['faces'], 1, 1)
         # self._data['faces_node_nodes'] = self.mesh.faces.bridge_adjacencies(self._data['faces'], 0, 0)
         # self._data['edges_node_nodes'] = self.mesh.edges.bridge_adjacencies(self._data['edges'], 0, 0)

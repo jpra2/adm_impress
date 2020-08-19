@@ -1,6 +1,7 @@
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import splu as lu
 import numpy as np
+import pdb
 
 def get_local_lu_and_global_ids(separated_dual_structures, ts):
     local_lu_and_gids=[]
@@ -14,7 +15,12 @@ def get_local_lu_and_global_ids(separated_dual_structures, ts):
                 t=ts[f]
                 d=np.concatenate([t, t, -t, -t])
                 mat=csc_matrix((d,(l,c)),shape=(len(v),len(v)))
-                local_lu.append(lu(mat))
+                try:
+                    local_lu.append(lu(mat))
+                except Exception as e:
+
+                    pdb.set_trace()
+                    raise e
                 global_ids.append(v)
 
             local_lu_and_gids.append([local_lu, global_ids])
@@ -29,4 +35,3 @@ class LocalLU:
         ts: transmissibility of all faces
         '''
         self.local_lu_and_global_ids=get_local_lu_and_global_ids(separated_dual_structures, ts)
-    

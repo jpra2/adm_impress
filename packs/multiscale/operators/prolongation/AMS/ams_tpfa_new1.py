@@ -25,7 +25,7 @@ class AMSTpfa:
         assert self.G.shape == T.shape
 
         try:
-            T_wire = self.G*T*self.GT
+            T_wire = self.get_Twire(T)
         except Exception as e:
             with self.locker:
                 print()
@@ -117,6 +117,55 @@ class AMSTpfa:
 
         return As
 
+    def get_as_off_diagonal(self, T_wire):
+
+        As = dict()
+
+        Tmod = T_wire.copy().tolil()
+        # As['Tf'] = Tmod
+        ni = self.wirebasket_numbers[0]
+        nf = self.wirebasket_numbers[1]
+        ne = self.wirebasket_numbers[2]
+        nv = self.wirebasket_numbers[3]
+
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
+
+        #internos
+        # Aii = Tmod[0:nni, 0:nni]
+        Aif = Tmod[0:nni, nni:nnf]
+        Aie = Tmod[0:nni, nnf:nne]
+
+        #faces
+        # Aff = Tmod[nni:nnf, nni:nnf]
+        Afe = Tmod[nni:nnf, nnf:nne]
+        # soma = Tmod[nni:nnf, 0:nni].sum(axis=1)
+        # d1 = np.matrix(Aff.diagonal()).reshape([nf, 1])
+        # d1 += soma
+        # Aff.setdiag(d1)
+
+        #arestas
+        # Aee = Tmod[nnf:nne, nnf:nne]
+        # Aev = Tmod[nnf:nne, nne:nnv]
+        # soma = Tmod[nnf:nne, nni:nnf].sum(axis=1)
+        # d1 = np.matrix(Aee.diagonal()).reshape([ne, 1])
+        # d1 += soma
+        # Aee.setdiag(d1)
+        # Ivv = sp.identity(nv)
+
+        # As['Aii'] = Aii.tocsc()
+        As['Aif'] = Aif.tocsc()
+        As['Aie'] = Aie.tocsc()
+        # As['Aff'] = Aff.tocsc()
+        As['Afe'] = Afe.tocsc()
+        # As['Aee'] = Aee.tocsc()
+        # As['Aev'] = Aev.tocsc()
+        # As['Ivv'] = Ivv.tocsc()
+
+        return As
+
     def get_OP_AMS_TPFA_by_AS(self, As):
 
         nv = self.wirebasket_numbers[3]
@@ -163,6 +212,11 @@ class AMSTpfa:
         pcorr = self.GT*pcorr
 
         return pcorr
+
+    def get_Twire(self, T):
+        T_wire = self.G*T*self.GT
+        return T_wire
+
 
 
 def get_wirebasket_elements(gids, dual_flags):

@@ -15,7 +15,7 @@ from ..directories import file_adm_mesh_def
 import matplotlib.pyplot as plt
 from scipy.sparse.linalg import spsolve_triangular
 from packs.adm.smoothers.test_smoothers import compare_smoothers
-from packs.multiscale.correction_function.CF import CorrectionFunction
+# from packs.multiscale.correction_function.CF import CorrectionFunction
 import time
 import pdb
 

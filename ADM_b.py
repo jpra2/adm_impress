@@ -5,21 +5,26 @@ from packs.adm.non_uniform import monotonize_adm
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.directories import data_loaded
 from packs.multiscale.operators.prolongation.AMS.Paralell.group_dual_volumes import group_dual_volumes_and_get_OP
+from packs.multiscale.operators.prolongation.AMS.ams_tpfa_new1 import AMSTpfa
 from packs.multiscale.tpfalize_operator import tpfalize
 from packs.adm.non_uniform import monotonic_adm_subds
-from packs.multiscale.create_local_submatrices_LHS import get_local_matrices_and_global_ids
+# from packs.multiscale.create_local_submatrices_LHS import get_local_matrices_and_global_ids
+from packs.multiscale.create_local_submatrices_LHS import LocalLU
+from packs.multiscale.correction_function.CF import get_correction_function
 import scipy.sparse as sp
 from pymoab import types
 import numpy as np
 import time
 import matplotlib.pyplot as plt
 from packs.data_class import DualStructure
-
-
+import pdb
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 # from packs.biphasic.biphasic_tpfa import BiphasicTpfa
 from packs.biphasic.biphasic_ms.biphasic_multiscale import BiphasicTpfaMultiscale
+from packs.tpfa.biphasic.load_or_preprocess_biphasic import preprocessar, carregar
+from packs.tpfa.biphasic import TpfaBiphasicCons
+from packs.tpfa.monophasic import TpfaMonophasic
 
 def save_multilevel_results():
     t_comp.append(t1-t0)
@@ -53,7 +58,6 @@ def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp
         'es_Linf', 'vpis_for_save','ep_haji_L2','ep_haji_Linf', 'er_L2', 'er_Linf', 'ev_L2', 'ev_Linf']
     for i in range(len(vars)):
         np.save('results/biphasic/ms/'+ms_case+names[i]+'.npy',vars[i])
-
 
 def plot_operator(T,OP_AMS, primals, marker='',file_prefix=None):
     OP_AMS_c=T*OP_AMS
@@ -218,18 +222,101 @@ _debug = data_loaded['_debug']
 biphasic = data_loaded['biphasic']
 
 M, elements_lv0, data_impress, wells = initial_mesh()
+meshset_volumes = M.core.mb.create_meshset()
+meshset_faces = M.core.mb.create_meshset()
+M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
+M.core.mb.add_entities(meshset_faces, M.core.all_faces)
+# wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = preprocessar(M, data_impress, wells)
+wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = carregar()
+#########
+monophasic = TpfaMonophasic()
+biphasic = TpfaBiphasicCons()
+biphasic_data['krw'], biphasic_data['kro'] = biphasic.get_krw_and_kro(biphasic_data['saturation'])
+mob_w, mob_o = biphasic.get_mobilities_w_o(biphasic_data['krw'], biphasic_data['kro'])
+biphasic_data['upwind_w'], biphasic_data['upwind_o'] = biphasic.set_initial_upwind_internal_faces(
+    biphasic_data['saturation'],
+    elements.get('volumes_adj_internal_faces'),
+    wells['ws_inj'],
+    elements.internal_faces,
+    elements.volumes_to_faces(elements.volumes),
+    elements.boundary_faces,
+    elements.get('map_internal_faces')
+)
+biphasic_data['mob_w_internal_faces'] = mob_w[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_w']]]
+biphasic_data['mob_o_internal_faces'] = mob_o[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_o']]]
+biphasic_data['transmissibility_faces'] = biphasic.get_transmissibility_faces(
+    geom['areas'],
+    elements.internal_faces,
+    elements.boundary_faces,
+    elements.get('volumes_adj_internal_faces'),
+    elements.get('volumes_adj_boundary_faces'),
+    biphasic_data['mob_w_internal_faces'],
+    biphasic_data['mob_o_internal_faces'],
+    mob_w,
+    mob_o,
+    rock_data['keq_faces']
+)
+biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces(
+    simulation_data['nkga_internal_faces'],
+    biphasic_data['mob_w_internal_faces'],
+    biphasic_data['mob_o_internal_faces'],
+    biphasic.properties.rho_w,
+    biphasic.properties.rho_o,
+    geom['hi']
+)
 
-separated_dual_structure = DualStructure(load=True)['dual_structure']
+wells2.add_gravity_2(
+    elements.volumes,
+    phisical_properties.gravity_vector,
+    geom['centroid_volumes'],
+    elements.get('volumes_adj_volumes_by_faces'),
+    geom['centroid_nodes'],
+    biphasic_data['saturation'],
+    biphasic.properties.rho_w,
+    biphasic.properties.rho_o
+)
 
-local_matrices_and_global_ids=get_local_matrices_and_global_ids(separated_dual_structure, data_impress['transmissibility'])
+g_source_total_internal_faces = biphasic_data['g_source_w_internal_faces'] + biphasic_data['g_source_o_internal_faces']
+g_source_total_volumes = phisical_properties.get_total_g_source_volumes(
+    elements.volumes,
+    elements.get('volumes_adj_internal_faces'),
+    g_source_total_internal_faces
+)
+T = monophasic.mount_transmissibility_matrix(
+    biphasic_data['transmissibility_faces'][elements.internal_faces],
+    elements.internal_faces,
+    elements.get('volumes_adj_internal_faces'),
+    elements.volumes
+)
 
-if biphasic:
-    b1 = BiphasicTpfaMultiscale(M, data_impress, elements_lv0, wells)
+T_with_boundary, b = monophasic.get_linear_problem(
+    wells2['ws_p'],
+    wells2['ws_q'],
+    wells2['values_p'],
+    wells2['values_q'],
+    g_source_total_volumes,
+    T
+)
+data_impress['transmissibility'] = biphasic_data['transmissibility_faces'].copy()
+
+# data_impress.update_variables_to_mesh()
+# M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
+# pdb.set_trace()
+
+#########
+# pdb.set_trace()
+
+# separated_dual_structure = DualStructure(load=True)['dual_structure']
+
+# local_matrices_and_global_ids=get_local_matrices_and_global_ids(separated_dual_structure, data_impress['transmissibility'])
+
+# if biphasic:
+#     b1 = BiphasicTpfaMultiscale(M, data_impress, elements_lv0, wells)
 
 multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 mlo = multilevel_operators
 
-T, b = b1.get_T_and_b()
+# T, b = b1.get_T_and_b()
 # import pdb; pdb.set_trace()
 try:
     perms=np.load("flying/permeability.npy")
@@ -241,27 +328,39 @@ except:
 if load_operators:
     pass
 else:
-    multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
+    # multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
+    multilevel_operators.run_paralel(T, M.multilevel_data['dual_structure_level_1'], 0, False)
 
 
 # PP2=mlo['prolongation_level_'+str(1)]
 
-
-
 mlo=multilevel_operators
 
-tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
-tpfa_solver.run()
-neta_lim=np.load('flying/neta_lim_dual.npy')[0]
+# tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
+# tpfa_solver.run()
+# neta_lim=np.load('flying/neta_lim_dual.npy')[0]
 neta_lim=10
 elements_lv0['neta_lim']=neta_lim
 #################
-group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=np.inf)
+group_dual_volumes_and_get_OP(mlo, T_with_boundary, M, data_impress, T, neta_lim=np.inf)
 OP_orig=mlo['prolongation_level_1']
 
-OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
+OP=group_dual_volumes_and_get_OP(mlo, T_with_boundary, M, data_impress, T, neta_lim=neta_lim)
 
+##########################
+ams_tpfa = AMSTpfa(data_impress['GID_0'], data_impress['GID_1'], data_impress['DUAL_1'])
+Twire = ams_tpfa.get_Twire(T)
+As = ams_tpfa.get_as_off_diagonal(Twire)
+separated_dual_structures = DualStructure(load=True)['dual_structure']
+local_lu_matrices = LocalLU()
+# pdb.set_trace()
+# transmissibility = data_impress['transmissibility']
+transmissibility = np.ones(len(data_impress['transmissibility']))
+local_lu_matrices.update_lu_objects(separated_dual_structures, transmissibility)
+pdb.set_trace()
+cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b)
 
+#############################
 
 # mlo=tpfalize(M,mlo,data_impress)
 mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
@@ -284,10 +383,10 @@ adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
 # meshset_volumes = M.core.mb.create_meshset()
 # M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 
-meshset_volumes = M.core.mb.create_meshset()
-meshset_faces = M.core.mb.create_meshset()
-M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
-M.core.mb.add_entities(meshset_faces, M.core.all_faces)
+# meshset_volumes = M.core.mb.create_meshset()
+# meshset_faces = M.core.mb.create_meshset()
+# M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
+# M.core.mb.add_entities(meshset_faces, M.core.all_faces)
 
 OP_AMS=mlo['prolongation_level_1']
 OR_AMS=mlo['restriction_level_1']
@@ -388,20 +487,22 @@ def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines0):
                     plt.text(j, i, str(c), va='center', ha='center',fontsize=15)
         plt.savefig('results/'+name+'.png')
 
-Tc=OR_AMS*T*OP_AMS
-bc=OR_AMS*b
+# Tc=OR_AMS*T*OP_AMS
+Tc=OR_AMS*T_with_boundary*OP_AMS
+bc=OR_AMS*b - OR_AMS*T_with_boundary*cfs
 from scipy.sparse import linalg
 pc=linalg.spsolve(Tc,bc)
 
 adm_method.organize_ops_adm(mlo, 1)
-pms=OP_AMS*pc
+pms=OP_AMS*pc + cfs
 OP_ADM = adm_method['adm_prolongation_level_1']
 
 OR_ADM = adm_method['adm_restriction_level_1']
-Tcadm=OR_ADM*T*OP_ADM
-bcadm = OR_ADM*b
+# Tcadm=OR_ADM*T*OP_ADM
+Tcadm=OR_ADM*T_with_boundary*OP_ADM
+bcadm = OR_ADM*b - OR_ADM*T_with_boundary*cfs
 pcadm=linalg.spsolve(Tcadm,bcadm)
-padm=OP_ADM*pcadm
+padm=OP_ADM*pcadm + cfs
 
 '''
 matrices=[T,Tc,OP_AMS,T*OP_AMS, OP_ADM, Tcadm,T*OP_ADM]
@@ -428,15 +529,21 @@ save_matrices_as_png_with_highlighted_lines(matricesh,namesh, lines)
 # import pdb; pdb.set_trace()
 '''
 
-pf=linalg.spsolve(T,b)
+# pf=linalg.spsolve(T,b)
+pf=linalg.spsolve(T_with_boundary,b)
 eadm=np.linalg.norm(abs(padm-pf))/np.linalg.norm(pf)
 eams=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
 print("erro_adm: {}, erro_ams: {}".format(eadm,eams))
 data_impress['pressure'] = padm
-data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
+# data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
+data_impress['tpfa_pressure'] = pf.copy()
+data_impress['erro'] = eadm.copy()
+
+pdb.set_trace()
 
 data_impress.update_variables_to_mesh()
 # M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
+pdb.set_trace()
 ########## for plotting faces adm resolution in a faces file
 int_faces=M.faces.internal
 adjs=M.faces.bridge_adjacencies(int_faces,2,3)
@@ -568,7 +675,7 @@ while verif:
 
     t0=time.time()
 
-    adm_method.solve_multiscale_pressure(T, b)
+    adm_method.solve_multiscale_pressure(T, b, pcorr=pcorr)
 
     adm_method.set_pms_flux(wells, neumann_subds)
 
@@ -659,4 +766,5 @@ while verif:
 
 
     T, b = b1.get_T_and_b()
+    # Twithout = b1['Tini'].copy()
     cont += 1

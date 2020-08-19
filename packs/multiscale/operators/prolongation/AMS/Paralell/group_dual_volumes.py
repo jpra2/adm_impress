@@ -10,7 +10,7 @@ def get_coupled_dual_volumes(mlo,T, M, data_impress,neta_lim=0.0, ind=0):
     Tc2.setdiag(0)
     DTc=1/np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
     if (DTc>0).sum()>0 and abs(Tc[DTc>0].sum())<0.01:
-        print((DTc>0).sum(),"diagonais positivas !!!!!!!!!!!")        
+        print((DTc>0).sum(),"diagonais positivas !!!!!!!!!!!")
         DTc[DTc>0]=-abs(DTc).max()
 
     lines=np.arange(Tc.shape[0])
@@ -109,7 +109,7 @@ def get_dual_subdomains(groups):
         dv.append(new_volume)
     return(dv)
 
-def group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim):
+def group_dual_volumes_and_get_OP(mlo, T, M, data_impress, T_without_boundary, neta_lim):
     t0=time.time()
 
     OP_AMS=mlo['prolongation_level_1'].copy().tolil()
@@ -117,7 +117,8 @@ def group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim
 
     dv=get_dual_subdomains(groups)
     if len(dv)>0:
-        mlo.run_paralel(tpfa_solver['Tini'],dv,1,False)
+        # mlo.run_paralel(tpfa_solver['Tini'],dv,1,False)
+        mlo.run_paralel(T_without_boundary,dv,1,False)
         OP_AMS_groups=mlo['prolongation_level_1']
         lins_par=np.unique(np.concatenate(dv))
         OP_AMS[lins_par]=OP_AMS_groups[lins_par]
@@ -155,7 +156,8 @@ def group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim
         print(ind,len(old_groups), len(atualized_groups),len(np.concatenate(atualized_groups)),"dsjjjjjja")
         dv=get_dual_subdomains(new_groups)
         if len(dv)>0:
-            mlo.run_paralel(tpfa_solver['Tini'],dv,1,False)
+            # mlo.run_paralel(tpfa_solver['Tini'],dv,1,False)
+            mlo.run_paralel(T_without_boundary,dv,1,False)
             OP_AMS_groups=mlo['prolongation_level_1']
             lins_par=np.unique(np.concatenate(dv))
             OP_AMS[lins_par]=OP_AMS_groups[lins_par]
