@@ -357,9 +357,14 @@ local_lu_matrices = LocalLU()
 # transmissibility = data_impress['transmissibility']
 transmissibility = np.ones(len(data_impress['transmissibility']))
 local_lu_matrices.update_lu_objects(separated_dual_structures, transmissibility)
-pdb.set_trace()
-cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b)
 
+t0=time.time()
+cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, np.ones_like(b))
+data_impress['pressure']=cfs
+print('cf {}'.format(time.time()-t0))
+import pdb; pdb.set_trace()
+M.core.mb.write_file('results/trash.vtk')
+# import pdb; pdb.set_trace()
 #############################
 
 # mlo=tpfalize(M,mlo,data_impress)

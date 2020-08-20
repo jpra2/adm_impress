@@ -653,8 +653,20 @@ class MultilevelData(DataManager):
             adjs=adjacencies.copy()
             adjs=gids_definitor[adjs]
 
-            separated_positions=(adjs>-1).sum(axis=1)==2
+            separated_positions=(adjs>-1).sum(axis=1)>=1 #internal to cluster adjacency poritions
+            #####
+            # boundary_positions=(adjs>-1).sum(axis=1)==1 # Boundary to cluster adjacency positions internal to reservoir
+            # boundary_vols=adjs[boundary_positions][adjs[boundary_positions]>-1]
+            # boundary_faces=separated_faces[boundary_positions]
+            # bf2bv=np.zeros(boundary_faces.max()+1,dtype=int)
+            # bf2bv[boundary_faces]=boundary_vols
+            #####
             adjs=adjs[separated_positions]
+            ##############
+            bounds=adjs.min(axis=1)<0
+            adjs[adjs<0]=adjs.max(axis=1)[bounds]
+
+
             separated_faces=separated_faces[separated_positions]
 
             adjs0=adjs[:,0]
@@ -675,16 +687,23 @@ class MultilevelData(DataManager):
             a_lines=[]
             a_cols=[]
             a_vols=[]
-            for ad in separated_dual_adjacencies:
+            a_faces=[]
+            for ad, faces in zip(separated_dual_adjacencies,separated_dual_faces):
                 vols=np.unique(np.concatenate(ad))
                 mape=np.arange(vols.max()+1)
                 mape[vols]=np.arange(len(vols))
-                ad=mape[ad]
-                a_lines.append(np.concatenate([ad[:,0], ad[:,1], ad[:,0], ad[:,1]]))
-                a_cols.append(np.concatenate([ad[:,1], ad[:,0], ad[:,0], ad[:,1]]))
+                bound=ad[:,0]==ad[:,1]
+                inner=ad[:,0]!=ad[:,1]
+
+                adb, adi = mape[ad[bound]], mape[ad[inner]]
+                fb, fi = faces[bound], faces[inner]
+
+                a_lines.append(np.concatenate([adi[:,0], adi[:,1], adi[:,0], adi[:,1], adb[:,0]]))
+                a_cols.append(np.concatenate([adi[:,1], adi[:,0], adi[:,0], adi[:,1], adb[:,0]]))
+                a_faces.append(np.concatenate([fi, fi, -fi-1, -fi-1, -fb-1])) # The minus one is to guarantee the unicity in case id '0' is important
                 a_vols.append(vols)
-            separated_infos=[a_lines, a_cols, separated_dual_faces, a_vols]
-            separated_dual_structure.append(separated_infos)        
+            separated_infos=[a_lines, a_cols, a_faces, a_vols]
+            separated_dual_structure.append(separated_infos)
         return np.array(separated_dual_structure)
 
     def set_volumes_without_gravity_source_term(self):

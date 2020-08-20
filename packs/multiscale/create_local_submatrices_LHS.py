@@ -13,14 +13,12 @@ def get_local_lu_and_global_ids(separated_dual_structures, ts):
             lines, cols, faces, vols =ss#ss[0], ss[1], ss[2], ss[3]
             for l, c, f, v in zip(lines, cols, faces, vols):
                 t=ts[f]
-                d=np.concatenate([t, t, -t, -t])
-                mat=csc_matrix((d,(l,c)),shape=(len(v),len(v)))
-                try:
-                    local_lu.append(lu(mat))
-                except Exception as e:
+                d=np.zeros_like(f,dtype=float)
+                d[f>=0]=ts[f[f>=0]]
+                d[f<0]=-ts[-f[f<0]-1] # if f<0, the corresponding face is -f-1 (convention for unicity)
+                mat=csc_matrix((d,(l,c)),shape=(len(v),len(v)))                
+                local_lu.append(lu(mat))
 
-                    pdb.set_trace()
-                    raise e
                 global_ids.append(v)
 
             local_lu_and_gids.append([local_lu, global_ids])
