@@ -523,3 +523,25 @@ class TpfaBiphasicCons:
         g_source_o_internal_faces = nkga_internal_faces*mobility_o_internal_faces*rho_o*hi.sum(axis=1)
 
         return g_source_w_internal_faces, g_source_o_internal_faces
+
+    def get_g_source_w_o_internal_faces1(self, areas_internal_faces, u_direction_internal_faces, g_velocity_w_internal_faces, g_velocity_o_internal_faces):
+
+        gw = (g_velocity_w_internal_faces*u_direction_internal_faces).sum(axis=1)
+        gw = gw*areas_internal_faces
+        go = (g_velocity_o_internal_faces*u_direction_internal_faces).sum(axis=1)
+        go = go*areas_internal_faces
+
+        return gw, go
+
+    def get_g_velocity_w_o_internal_faces(self, gravity_vector, mobility_w_internal_faces, mobility_o_internal_faces, rho_w, rho_o, hi, keq_internal_faces):
+
+        ni = len(keq_internal_faces)
+        mob_w_int_f = mobility_w_internal_faces.reshape(ni, 1)
+        mob_o_int_f = mobility_o_internal_faces.reshape(ni, 1)
+        keq = keq_internal_faces.reshape(ni, 1)
+        hi2 = hi.sum(axis=1).reshape(ni, 1)
+
+        v_gw = rho_w*mob_w_int_f*gravity_vector*keq*hi2
+        v_go = rho_o*mob_o_int_f*gravity_vector*keq*hi2
+
+        return v_gw, v_go
