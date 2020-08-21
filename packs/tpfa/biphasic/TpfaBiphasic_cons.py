@@ -191,15 +191,7 @@ class TpfaBiphasicCons:
     def get_velocity_w_and_o_internal_faces(self, total_velocity_internal_faces, gravity_vector, keq_internal_faces, rho_w, rho_o, mobility_w_internal_faces, mobility_o_internal_faces, hi, abs_normal_internal_faces):
 
         totf = total_velocity_internal_faces
-
-        v_w = np.empty((len(totf), 3))
-        v_o = v_w.copy()
-
-        fw = mobility_w_internal_faces/(mobility_w_internal_faces + mobility_o_internal_faces)
-        fo = 1-fw
         ni = len(keq_internal_faces)
-
-        conti = False
 
         mobw2 = mobility_w_internal_faces.reshape(ni, 1)
         mobo2 = mobility_o_internal_faces.reshape(ni, 1)
@@ -208,30 +200,8 @@ class TpfaBiphasicCons:
         fw2 = mobw2/(mobw2 + mobo2)
         fo2 = 1 - fw2
         k1 = keq2*gravity_vector*(rho_w - rho_o)*hi2
-
-        vw2 = fw2*(totf + mobo2*k1)
-        vo2 = fo2*(totf - mobw2*k1)
-
-        for i, keq in enumerate(keq_internal_faces):
-            u_normal = abs_normal_internal_faces[i]
-            # v_w[i] = fw[i]*(totf[i] + mobility_o_internal_faces[i]*keq*gravity_vector*(-rho_w + rho_o)*hi[i].sum())
-            # v_o[i] = fo[i]*(totf[i] - mobility_w_internal_faces[i]*keq*gravity_vector*(-rho_w + rho_o)*hi[i].sum())
-            # v_w[i] = fw[i]*(totf[i] - mobility_o_internal_faces[i]*keq*gravity_vector*(rho_w - rho_o)*hi[i].sum())
-            # v_o[i] = fo[i]*(totf[i] + mobility_w_internal_faces[i]*keq*gravity_vector*(rho_w - rho_o)*hi[i].sum())
-            v_w[i] = fw[i]*(totf[i] + mobility_o_internal_faces[i]*keq*gravity_vector*(rho_w - rho_o)*hi[i].sum())
-            v_o[i] = fo[i]*(totf[i] - mobility_w_internal_faces[i]*keq*gravity_vector*(rho_w - rho_o)*hi[i].sum())
-            # if np.allclose(u_normal, np.array([0, 0, 1])):
-            #     if np.absolute(v_w[i]).sum() > 9e-10 or np.absolute(v_o[i]).sum() > 9e-10:
-            #         print()
-            #         print(v_w[i])
-            #         print(v_o[i])
-            #         print()
-            #         pdb.set_trace()
-
-        print(np.allclose(vw2, v_w))
-        print(np.allclose(vo2, v_o))
-
-        pdb.set_trace()
+        v_w = fw2*(totf + mobo2*k1)
+        v_o = fo2*(totf - mobw2*k1)
 
         return v_w, v_o
 
