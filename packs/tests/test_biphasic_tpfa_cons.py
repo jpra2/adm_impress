@@ -94,7 +94,8 @@ def preprocessar():
     biphasic_data['saturation'] = M.saturation[:].flatten()
 
     simulation_data = SimulationData()
-    simulation_data['nkga_internal_faces'] = phisical_properties.get_nkga(rock_data['keq_faces'][elements.internal_faces], geom['u_direction_internal_faces'], geom['areas'][elements.internal_faces])
+    # simulation_data['nkga_internal_faces'] = phisical_properties.get_nkga(rock_data['keq_faces'][elements.internal_faces], geom['u_direction_internal_faces'], geom['areas'][elements.internal_faces])
+    simulation_data['nada'] = np.array([-1])
 
 
     current_data = CurrentBiphasicData()
@@ -188,13 +189,21 @@ while loop <= loop_max:
         rock_data['keq_faces']
     )
 
-    biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces(
-        simulation_data['nkga_internal_faces'],
+    biphasic_data['g_velocity_w_internal_faces'], biphasic_data['g_velocity_o_internal_faces'] = biphasic.get_g_velocity_w_o_internal_faces(
+        phisical_properties.gravity_vector,
         biphasic_data['mob_w_internal_faces'],
         biphasic_data['mob_o_internal_faces'],
         biphasic.properties.rho_w,
         biphasic.properties.rho_o,
-        geom['hi']
+        geom['hi'],
+        rock_data['keq_faces'][elements.internal_faces]
+    )
+
+    biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces(
+        geom['areas'][elements.internal_faces],
+        geom['u_direction_internal_faces'],
+        biphasic_data['g_velocity_w_internal_faces'],
+        biphasic_data['g_velocity_o_internal_faces']
     )
 
     wells2.add_gravity_2(
@@ -235,16 +244,12 @@ while loop <= loop_max:
 
     total_velocity_internal_faces = biphasic.get_total_velocity_internal_faces(
         pressure,
-        elements.internal_faces,
-        phisical_properties.gravity_vector,
         elements.get('volumes_adj_internal_faces'),
         rock_data['keq_faces'][elements.internal_faces],
         biphasic_data['mob_w_internal_faces'],
         biphasic_data['mob_o_internal_faces'],
-        biphasic.properties.rho_w,
-        biphasic.properties.rho_o,
         geom['abs_u_normal_faces'][elements.internal_faces],
-        geom['hi']
+        biphasic_data['g_velocity_w_internal_faces'] + biphasic_data['g_velocity_o_internal_faces']
     )
 
     data_impress['velocity_faces'][elements.internal_faces] = total_velocity_internal_faces

@@ -92,7 +92,7 @@ class TpfaBiphasicCons:
 
         return transmissibility
 
-    def get_total_velocity_internal_faces(self, pressure_volumes, internal_faces, gravity_vector, volumes_adj_internal_faces, keq_internal_faces, mobility_w_internal_faces, mobility_o_internal_faces, rho_w, rho_o, abs_u_normal_internal_faces, hi):
+    def get_total_velocity_internal_faces_dep(self, pressure_volumes, internal_faces, gravity_vector, volumes_adj_internal_faces, keq_internal_faces, mobility_w_internal_faces, mobility_o_internal_faces, rho_w, rho_o, abs_u_normal_internal_faces, hi):
         # gradient_pressure = self.simulation_variables.gradient_pressure(pressure_volumes, centroid_volumes, volumes_adj_internal_faces)
         # pressure_direction = self.simulation_variables.pressure_direction(pressure_volumes, centroid_volumes, volumes_adj_internal_faces)
         delta_p = self.simulation_variables.delta_p(pressure_volumes, volumes_adj_internal_faces)
@@ -112,6 +112,25 @@ class TpfaBiphasicCons:
 
         k2 = (rho_w*mob_w_int_f + rho_o*mob_o_int_f)*gravity_vector*keq*hi2
         resp = k1 + k2
+        return resp
+
+    def get_total_velocity_internal_faces(self, pressure_volumes, volumes_adj_internal_faces, keq_internal_faces, mobility_w_internal_faces, mobility_o_internal_faces, abs_u_normal_internal_faces, g_total_velocity_internal_faces):
+        # gradient_pressure = self.simulation_variables.gradient_pressure(pressure_volumes, centroid_volumes, volumes_adj_internal_faces)
+        # pressure_direction = self.simulation_variables.pressure_direction(pressure_volumes, centroid_volumes, volumes_adj_internal_faces)
+        delta_p = self.simulation_variables.delta_p(pressure_volumes, volumes_adj_internal_faces)
+        delta_p = delta_p.reshape(len(delta_p), 1)
+        ni = len(keq_internal_faces)
+        # abs_u_normal_internal_faces2 = abs_u_normal_internal_faces.reshape(ni, 3, 1)
+        # abs_u_normal_internal_faces2 = abs_u_normal_internal_faces.copy()
+        pressure_direction = -delta_p*abs_u_normal_internal_faces
+        mob_w_int_f = mobility_w_internal_faces.reshape(ni, 1)
+        mob_o_int_f = mobility_o_internal_faces.reshape(ni, 1)
+        keq = keq_internal_faces.reshape(ni, 1)
+        mob_t = mob_w_int_f + mob_o_int_f
+        # pdb.set_trace()
+
+        k1 = pressure_direction*(mob_t)*keq
+        resp = k1 + g_total_velocity_internal_faces
         return resp
 
     def get_velocity(self, total_flux_internal_faces, areas_internal_faces, abs_u_normal_internal_faces):
@@ -172,32 +191,17 @@ class TpfaBiphasicCons:
     def get_velocity_w_and_o_internal_faces(self, total_velocity_internal_faces, gravity_vector, keq_internal_faces, rho_w, rho_o, mobility_w_internal_faces, mobility_o_internal_faces, hi, abs_normal_internal_faces):
 
         totf = total_velocity_internal_faces
+        ni = len(keq_internal_faces)
 
-        v_w = np.empty((len(totf), 3))
-        v_o = v_w.copy()
-
-        fw = mobility_w_internal_faces/(mobility_w_internal_faces + mobility_o_internal_faces)
-        fo = 1-fw
-
-        conti = False
-
-        for i, keq in enumerate(keq_internal_faces):
-            u_normal = abs_normal_internal_faces[i]
-            # v_w[i] = fw[i]*(totf[i] + mobility_o_internal_faces[i]*keq*gravity_vector*(-rho_w + rho_o)*hi[i].sum())
-            # v_o[i] = fo[i]*(totf[i] - mobility_w_internal_faces[i]*keq*gravity_vector*(-rho_w + rho_o)*hi[i].sum())
-            # v_w[i] = fw[i]*(totf[i] - mobility_o_internal_faces[i]*keq*gravity_vector*(rho_w - rho_o)*hi[i].sum())
-            # v_o[i] = fo[i]*(totf[i] + mobility_w_internal_faces[i]*keq*gravity_vector*(rho_w - rho_o)*hi[i].sum())
-            v_w[i] = fw[i]*(totf[i] + mobility_o_internal_faces[i]*keq*gravity_vector*(rho_w - rho_o)*hi[i].sum())
-            v_o[i] = fo[i]*(totf[i] - mobility_w_internal_faces[i]*keq*gravity_vector*(rho_w - rho_o)*hi[i].sum())
-            # if np.allclose(u_normal, np.array([0, 0, 1])):
-            #     if np.absolute(v_w[i]).sum() > 9e-10 or np.absolute(v_o[i]).sum() > 9e-10:
-            #         print()
-            #         print(v_w[i])
-            #         print(v_o[i])
-            #         print()
-            #         pdb.set_trace()
-
-        # pdb.set_trace()
+        mobw2 = mobility_w_internal_faces.reshape(ni, 1)
+        mobo2 = mobility_o_internal_faces.reshape(ni, 1)
+        keq2 = keq_internal_faces.reshape(ni, 1)
+        hi2 = hi.sum(axis=1).reshape(ni, 1)
+        fw2 = mobw2/(mobw2 + mobo2)
+        fo2 = 1 - fw2
+        k1 = keq2*gravity_vector*(rho_w - rho_o)*hi2
+        v_w = fw2*(totf + mobo2*k1)
+        v_o = fo2*(totf - mobw2*k1)
 
         return v_w, v_o
 
@@ -515,7 +519,7 @@ class TpfaBiphasicCons:
 
         return upwind_w_out, upwind_o_out
 
-    def get_g_source_w_o_internal_faces(self, nkga_internal_faces, mobility_w_internal_faces, mobility_o_internal_faces, rho_w, rho_o, hi):
+    def get_g_source_w_o_internal_faces_dep(self, nkga_internal_faces, mobility_w_internal_faces, mobility_o_internal_faces, rho_w, rho_o, hi):
 
         assert len(nkga_internal_faces) ==  len(mobility_w_internal_faces) == len(mobility_o_internal_faces)
 
@@ -523,3 +527,25 @@ class TpfaBiphasicCons:
         g_source_o_internal_faces = nkga_internal_faces*mobility_o_internal_faces*rho_o*hi.sum(axis=1)
 
         return g_source_w_internal_faces, g_source_o_internal_faces
+
+    def get_g_source_w_o_internal_faces(self, areas_internal_faces, u_direction_internal_faces, g_velocity_w_internal_faces, g_velocity_o_internal_faces):
+
+        gw = (g_velocity_w_internal_faces*u_direction_internal_faces).sum(axis=1)
+        gw = gw*areas_internal_faces
+        go = (g_velocity_o_internal_faces*u_direction_internal_faces).sum(axis=1)
+        go = go*areas_internal_faces
+
+        return gw, go
+
+    def get_g_velocity_w_o_internal_faces(self, gravity_vector, mobility_w_internal_faces, mobility_o_internal_faces, rho_w, rho_o, hi, keq_internal_faces):
+
+        ni = len(keq_internal_faces)
+        mob_w_int_f = mobility_w_internal_faces.reshape(ni, 1)
+        mob_o_int_f = mobility_o_internal_faces.reshape(ni, 1)
+        keq = keq_internal_faces.reshape(ni, 1)
+        hi2 = hi.sum(axis=1).reshape(ni, 1)
+
+        v_gw = rho_w*mob_w_int_f*gravity_vector*keq*hi2
+        v_go = rho_o*mob_o_int_f*gravity_vector*keq*hi2
+
+        return v_gw, v_go
