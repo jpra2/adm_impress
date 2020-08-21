@@ -199,7 +199,7 @@ while loop <= loop_max:
         rock_data['keq_faces'][elements.internal_faces]
     )
 
-    biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces1(
+    biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces(
         geom['areas'][elements.internal_faces],
         geom['u_direction_internal_faces'],
         biphasic_data['g_velocity_w_internal_faces'],
@@ -244,20 +244,6 @@ while loop <= loop_max:
 
     total_velocity_internal_faces = biphasic.get_total_velocity_internal_faces(
         pressure,
-        elements.internal_faces,
-        phisical_properties.gravity_vector,
-        elements.get('volumes_adj_internal_faces'),
-        rock_data['keq_faces'][elements.internal_faces],
-        biphasic_data['mob_w_internal_faces'],
-        biphasic_data['mob_o_internal_faces'],
-        biphasic.properties.rho_w,
-        biphasic.properties.rho_o,
-        geom['abs_u_normal_faces'][elements.internal_faces],
-        geom['hi']
-    )
-
-    total_velocity_internal_faces1 = biphasic.get_total_velocity_internal_faces1(
-        pressure,
         elements.get('volumes_adj_internal_faces'),
         rock_data['keq_faces'][elements.internal_faces],
         biphasic_data['mob_w_internal_faces'],
@@ -265,10 +251,6 @@ while loop <= loop_max:
         geom['abs_u_normal_faces'][elements.internal_faces],
         biphasic_data['g_velocity_w_internal_faces'] + biphasic_data['g_velocity_o_internal_faces']
     )
-
-    print(np.allclose(total_velocity_internal_faces, total_velocity_internal_faces1))
-
-    pdb.set_trace()
 
     data_impress['velocity_faces'][elements.internal_faces] = total_velocity_internal_faces
     data_impress['pressure'] = pressure
