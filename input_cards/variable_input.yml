@@ -304,6 +304,12 @@ fw_vol:
   level: 0
   sparse: true
   type: volumes
+g_total_source_term:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 gama:
   data size: 1
   data type: float
@@ -491,6 +497,12 @@ phi:
   sparse: false
   type: volumes
 pms:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pms_adm_pressure:
   data size: 1
   data type: float
   level: 0

@@ -593,6 +593,20 @@ vug:
   sparse: True
   level: 0
 
+g_total_source_term:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+pms_adm_pressure:
+    type: volumes
+    data size: 1
+    data type: float
+    sparse: True
+    level: 0
+
 ADM_COARSE_ID_LEVEL_1:
   type: volumes
   data size: 1

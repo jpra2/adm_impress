@@ -256,13 +256,22 @@ biphasic_data['transmissibility_faces'] = biphasic.get_transmissibility_faces(
     mob_o,
     rock_data['keq_faces']
 )
-biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces(
-    simulation_data['nkga_internal_faces'],
+
+biphasic_data['g_velocity_w_internal_faces'], biphasic_data['g_velocity_o_internal_faces'] = biphasic.get_g_velocity_w_o_internal_faces(
+    phisical_properties.gravity_vector,
     biphasic_data['mob_w_internal_faces'],
     biphasic_data['mob_o_internal_faces'],
     biphasic.properties.rho_w,
     biphasic.properties.rho_o,
-    geom['hi']
+    geom['hi'],
+    rock_data['keq_faces'][elements.internal_faces]
+)
+
+biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces(
+    geom['areas'][elements.internal_faces],
+    geom['u_direction_internal_faces'],
+    biphasic_data['g_velocity_w_internal_faces'],
+    biphasic_data['g_velocity_o_internal_faces']
 )
 
 wells2.add_gravity_2(
@@ -282,6 +291,7 @@ g_source_total_volumes = phisical_properties.get_total_g_source_volumes(
     elements.get('volumes_adj_internal_faces'),
     g_source_total_internal_faces
 )
+
 T = monophasic.mount_transmissibility_matrix(
     biphasic_data['transmissibility_faces'][elements.internal_faces],
     elements.internal_faces,
@@ -354,16 +364,18 @@ As = ams_tpfa.get_as_off_diagonal(Twire)
 separated_dual_structures = DualStructure(load=True)['dual_structure']
 local_lu_matrices = LocalLU()
 # pdb.set_trace()
-# transmissibility = data_impress['transmissibility']
-transmissibility = np.ones(len(data_impress['transmissibility']))
+transmissibility = data_impress['transmissibility']
+# transmissibility = np.ones(len(data_impress['transmissibility']))
 local_lu_matrices.update_lu_objects(separated_dual_structures, transmissibility)
 
 t0=time.time()
-cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, np.ones_like(b))
+b2 = g_source_total_volumes.copy()
+b2[wells['ws_q']] = b[wells['ws_q']]
+# b2[wells['ws_p']] = 0
+cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
+# cfs[wells['ws_p']] = 0
 data_impress['pressure']=cfs
 print('cf {}'.format(time.time()-t0))
-import pdb; pdb.set_trace()
-M.core.mb.write_file('results/trash.vtk')
 # import pdb; pdb.set_trace()
 #############################
 
@@ -508,6 +520,12 @@ Tcadm=OR_ADM*T_with_boundary*OP_ADM
 bcadm = OR_ADM*b - OR_ADM*T_with_boundary*cfs
 pcadm=linalg.spsolve(Tcadm,bcadm)
 padm=OP_ADM*pcadm + cfs
+# padm=OP_ADM*pcadm
+data_impress['pms_adm_pressure'] = padm
+data_impress.update_variables_to_mesh()
+# data_impress.update_variables_to_mesh()
+M.core.mb.write_file('results/trash.vtk',[meshset_volumes])
+# import pdb; pdb.set_trace()
 
 '''
 matrices=[T,Tc,OP_AMS,T*OP_AMS, OP_ADM, Tcadm,T*OP_ADM]
@@ -560,7 +578,7 @@ diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
 
 # data_impress['initial_diag']=diagf
 
-neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
+neumann_subds=NeumannSpadmubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
 nn = 1000
 pp = 1000
 cont = 1
