@@ -94,7 +94,7 @@ def preprocessar():
     biphasic_data['saturation'] = M.saturation[:].flatten()
 
     simulation_data = SimulationData()
-    simulation_data['nkga_internal_faces'] = phisical_properties.get_nkga(rock_data['keq_faces'][elements.internal_faces], geom['u_direction_internal_faces'], geom['areas'][elements.internal_faces])
+    # simulation_data['nkga_internal_faces'] = phisical_properties.get_nkga(rock_data['keq_faces'][elements.internal_faces], geom['u_direction_internal_faces'], geom['areas'][elements.internal_faces])
     simulation_data['nada'] = np.array([-1])
 
 
@@ -199,26 +199,12 @@ while loop <= loop_max:
         rock_data['keq_faces'][elements.internal_faces]
     )
 
-    gsw, gso = biphasic.get_g_source_w_o_internal_faces1(
+    biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces1(
         geom['areas'][elements.internal_faces],
         geom['u_direction_internal_faces'],
         biphasic_data['g_velocity_w_internal_faces'],
         biphasic_data['g_velocity_o_internal_faces']
     )
-
-    biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces(
-        simulation_data['nkga_internal_faces'],
-        biphasic_data['mob_w_internal_faces'],
-        biphasic_data['mob_o_internal_faces'],
-        biphasic.properties.rho_w,
-        biphasic.properties.rho_o,
-        geom['hi']
-    )
-
-    print(np.allclose(biphasic_data['g_source_w_internal_faces'], gsw))
-    print(np.allclose(biphasic_data['g_source_o_internal_faces'], gso))
-
-    pdb.set_trace()
 
     wells2.add_gravity_2(
         elements.volumes,
