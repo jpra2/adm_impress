@@ -114,6 +114,25 @@ class TpfaBiphasicCons:
         resp = k1 + k2
         return resp
 
+    def get_total_velocity_internal_faces1(self, pressure_volumes, volumes_adj_internal_faces, keq_internal_faces, mobility_w_internal_faces, mobility_o_internal_faces, abs_u_normal_internal_faces, g_total_velocity_internal_faces):
+        # gradient_pressure = self.simulation_variables.gradient_pressure(pressure_volumes, centroid_volumes, volumes_adj_internal_faces)
+        # pressure_direction = self.simulation_variables.pressure_direction(pressure_volumes, centroid_volumes, volumes_adj_internal_faces)
+        delta_p = self.simulation_variables.delta_p(pressure_volumes, volumes_adj_internal_faces)
+        delta_p = delta_p.reshape(len(delta_p), 1)
+        ni = len(keq_internal_faces)
+        # abs_u_normal_internal_faces2 = abs_u_normal_internal_faces.reshape(ni, 3, 1)
+        # abs_u_normal_internal_faces2 = abs_u_normal_internal_faces.copy()
+        pressure_direction = -delta_p*abs_u_normal_internal_faces
+        mob_w_int_f = mobility_w_internal_faces.reshape(ni, 1)
+        mob_o_int_f = mobility_o_internal_faces.reshape(ni, 1)
+        keq = keq_internal_faces.reshape(ni, 1)
+        mob_t = mob_w_int_f + mob_o_int_f
+        # pdb.set_trace()
+
+        k1 = pressure_direction*(mob_t)*keq
+        resp = k1 + g_total_velocity_internal_faces
+        return resp
+
     def get_velocity(self, total_flux_internal_faces, areas_internal_faces, abs_u_normal_internal_faces):
 
         r1 = total_flux_internal_faces/areas_internal_faces
