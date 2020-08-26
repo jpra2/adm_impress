@@ -49,7 +49,8 @@ class TpfaPreprocess:
         ks0 = permeability[vols_viz_boundary_faces]
         ks0 = ks0.reshape([nb, 3, 3]) * u_normal_b_faces.reshape([nb, 1, 3])
         ks0 = ks0.sum(axis=2).sum(axis=1)
-        keq_faces[boundary_faces] = ks0/hb
+        # keq_faces[boundary_faces] = ks0/hb
+        keq_faces[boundary_faces] = np.zeros(nb)
 
         return keq_faces
 

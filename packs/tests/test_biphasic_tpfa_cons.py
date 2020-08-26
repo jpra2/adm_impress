@@ -176,6 +176,7 @@ while loop <= loop_max:
     ###
     biphasic_data['mob_w_internal_faces'] = mob_w[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_w']]]
     biphasic_data['mob_o_internal_faces'] = mob_o[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_o']]]
+
     biphasic_data['transmissibility_faces'] = biphasic.get_transmissibility_faces(
         geom['areas'],
         elements.internal_faces,
@@ -347,7 +348,10 @@ while loop <= loop_max:
 
     name = 'results/test_volumes_' + str(loop) + '.vtk'
     print_test_volumes(name)
+    # M.core.print(folder='results', file='test_volumes_'+str(loop), extension='.vtk', config_input='input_cards/print_settings0.yml')
+
     name2 = 'results/test_faces_' + str(loop) + '.vtk'
+    # M.core.print(folder='results', file='test_faces_'+str(loop), extension='.vtk', config_input='input_cards/print_settings2.yml')
     print_test_faces(name2)
 
     if loop % 100 == 0:

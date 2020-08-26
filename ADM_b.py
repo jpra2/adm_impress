@@ -25,6 +25,7 @@ from packs.biphasic.biphasic_ms.biphasic_multiscale import BiphasicTpfaMultiscal
 from packs.tpfa.biphasic.load_or_preprocess_biphasic import preprocessar, carregar
 from packs.tpfa.biphasic import TpfaBiphasicCons
 from packs.tpfa.monophasic import TpfaMonophasic
+from packs.multiscale.test_conservation import ConservationTest
 
 def save_multilevel_results():
     t_comp.append(t1-t0)
@@ -228,7 +229,7 @@ M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 M.core.mb.add_entities(meshset_faces, M.core.all_faces)
 # wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = preprocessar(M, data_impress, wells)
 wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = carregar()
-#########
+#########total_gravity_velocity,
 monophasic = TpfaMonophasic()
 biphasic = TpfaBiphasicCons()
 biphasic_data['krw'], biphasic_data['kro'] = biphasic.get_krw_and_kro(biphasic_data['saturation'])
@@ -244,6 +245,7 @@ biphasic_data['upwind_w'], biphasic_data['upwind_o'] = biphasic.set_initial_upwi
 )
 biphasic_data['mob_w_internal_faces'] = mob_w[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_w']]]
 biphasic_data['mob_o_internal_faces'] = mob_o[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_o']]]
+
 biphasic_data['transmissibility_faces'] = biphasic.get_transmissibility_faces(
     geom['areas'],
     elements.internal_faces,
@@ -256,6 +258,21 @@ biphasic_data['transmissibility_faces'] = biphasic.get_transmissibility_faces(
     mob_o,
     rock_data['keq_faces']
 )
+##############################
+biphasic_data['transmissibility_faces'][:] = 1.0
+delta_s = biphasic_data['saturation'][elements.get('volumes_adj_internal_faces')]
+delta_s = np.absolute(delta_s[:,1] - delta_s[:,0])
+delta_s = delta_s > 0
+biphasic_data['transmissibility_faces'][elements.internal_faces[delta_s]] = 2.0
+
+# ff = biphasic_data['transmissibility_faces'] > 1
+# print(ff.sum())
+#
+# pdb.set_trace()
+#############################
+
+
+tt = biphasic_data['transmissibility_faces'].copy()
 
 biphasic_data['g_velocity_w_internal_faces'], biphasic_data['g_velocity_o_internal_faces'] = biphasic.get_g_velocity_w_o_internal_faces(
     phisical_properties.gravity_vector,
@@ -292,6 +309,9 @@ g_source_total_volumes = phisical_properties.get_total_g_source_volumes(
     g_source_total_internal_faces
 )
 
+# g_source_total_volumes = np.zeros_like(g_source_total_volumes)
+# data_impress['g_total_source_term'] = g_source_total_volumes
+data_impress['g_total_source_term'] = g_source_total_volumes
 T = monophasic.mount_transmissibility_matrix(
     biphasic_data['transmissibility_faces'][elements.internal_faces],
     elements.internal_faces,
@@ -370,11 +390,12 @@ local_lu_matrices.update_lu_objects(separated_dual_structures, transmissibility)
 
 t0=time.time()
 b2 = g_source_total_volumes.copy()
-b2[wells['ws_q']] = b[wells['ws_q']]
+# b2=np.ones_like(b2)
+# b2[wells['ws_q']] = -b[wells['ws_q']]
 # b2[wells['ws_p']] = 0
 cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
-# cfs[wells['ws_p']] = 0
-data_impress['pressure']=cfs
+cfs[wells['ws_p']] = 0
+data_impress['gama']=cfs
 print('cf {}'.format(time.time()-t0))
 # import pdb; pdb.set_trace()
 #############################
@@ -504,9 +525,9 @@ def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines0):
                     plt.text(j, i, str(c), va='center', ha='center',fontsize=15)
         plt.savefig('results/'+name+'.png')
 
-# Tc=OR_AMS*T*OP_AMS
+# Tc=OR_AMS*T*OP_AMg_source_total_volumes = np.zeros_like(g_source_total_volumes)
 Tc=OR_AMS*T_with_boundary*OP_AMS
-bc=OR_AMS*b - OR_AMS*T_with_boundary*cfs
+bc=OR_AMS*(b - T_with_boundary*cfs)
 from scipy.sparse import linalg
 pc=linalg.spsolve(Tc,bc)
 
@@ -517,14 +538,15 @@ OP_ADM = adm_method['adm_prolongation_level_1']
 OR_ADM = adm_method['adm_restriction_level_1']
 # Tcadm=OR_ADM*T*OP_ADM
 Tcadm=OR_ADM*T_with_boundary*OP_ADM
-bcadm = OR_ADM*b - OR_ADM*T_with_boundary*cfs
+bcadm = OR_ADM*(b - T_with_boundary*cfs)
 pcadm=linalg.spsolve(Tcadm,bcadm)
 padm=OP_ADM*pcadm + cfs
 # padm=OP_ADM*pcadm
 data_impress['pms_adm_pressure'] = padm
 data_impress.update_variables_to_mesh()
+
 # data_impress.update_variables_to_mesh()
-M.core.mb.write_file('results/trash.vtk',[meshset_volumes])
+# M.core.mb.write_file('results/trash.vtk',[meshset_volumes])
 # import pdb; pdb.set_trace()
 
 '''
@@ -560,12 +582,44 @@ print("erro_adm: {}, erro_ams: {}".format(eadm,eams))
 data_impress['pressure'] = padm
 # data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
 data_impress['tpfa_pressure'] = pf.copy()
-data_impress['erro'] = eadm.copy()
+data_impress['erro_p'] = padm-pf
+
+conservation_test = ConservationTest()
+
+ml_data = M.multilevel_data
+
+conservation_test.conservation_with_gravity(
+    elements.volumes,
+    data_impress['GID_1'],
+    g_source_total_internal_faces,
+    pf,
+    T,
+    ml_data['coarse_faces_level_1'],
+    ml_data['coarse_intersect_faces_level_1'],
+    geom['areas'],
+    ml_data['coarse_primal_id_level_1'],
+    elements.get('volumes_adj_internal_faces'),
+    ml_data['coarse_internal_faces_level_1'],
+    elements.get('map_internal_faces'),
+    geom['abs_u_normal_faces'],
+    biphasic_data['mob_w_internal_faces'],
+    biphasic_data['mob_o_internal_faces'],
+    phisical_properties.gravity_vector,
+    rock_data['keq_faces'],
+    biphasic.properties.rho_w,
+    biphasic.properties.rho_o,
+    geom['hi']
+)
 
 pdb.set_trace()
 
+
+
+# pdb.set_trace()
+
 data_impress.update_variables_to_mesh()
 # M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
+M.core.mb.write_file('results/trash'+'.vtk', [meshset_volumes])
 pdb.set_trace()
 ########## for plotting faces adm resolution in a faces file
 int_faces=M.faces.internal

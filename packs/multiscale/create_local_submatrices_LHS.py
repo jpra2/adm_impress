@@ -5,6 +5,7 @@ import pdb
 
 def get_local_lu_and_global_ids(separated_dual_structures, ts):
     local_lu_and_gids=[]
+    
     for separated_dual_structure in separated_dual_structures:
         if len(separated_dual_structure[0])>0:
             local_lu=[]
@@ -16,7 +17,7 @@ def get_local_lu_and_global_ids(separated_dual_structures, ts):
                 d=np.zeros_like(f,dtype=float)
                 d[f>=0]=ts[f[f>=0]]
                 d[f<0]=-ts[-f[f<0]-1] # if f<0, the corresponding face is -f-1 (convention for unicity)
-                mat=csc_matrix((d,(l,c)),shape=(len(v),len(v)))                
+                mat=csc_matrix((d,(l,c)),shape=(len(v),len(v)))
                 local_lu.append(lu(mat))
 
                 global_ids.append(v)

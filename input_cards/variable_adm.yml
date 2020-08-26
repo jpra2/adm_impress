@@ -223,6 +223,20 @@ flux_press_w_faces_vec:
   sparse: True
   level: 0
 
+upwind_w_faces_vec:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+upwind_o_faces_vec:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
 #################################################################################
 
 # Volumes

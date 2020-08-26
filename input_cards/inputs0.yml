@@ -12,7 +12,7 @@ convert_english_to_SI: false
 monophasic: false
 biphasic: true
 load_biphasic_data: false
-deletar_results: false
+deletar_results: true
 deletar_npyfiles_flying: False
 multilevel_data: true
 load_multilevel_data: false
