@@ -283,6 +283,7 @@ biphasic_data['g_velocity_w_internal_faces'], biphasic_data['g_velocity_o_intern
     geom['hi'],
     rock_data['keq_faces'][elements.internal_faces]
 )
+g_total_velocity = biphasic_data['g_velocity_w_internal_faces'] + biphasic_data['g_velocity_o_internal_faces']
 
 biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces(
     geom['areas'][elements.internal_faces],
@@ -608,7 +609,11 @@ conservation_test.conservation_with_gravity(
     rock_data['keq_faces'],
     biphasic.properties.rho_w,
     biphasic.properties.rho_o,
-    geom['hi']
+    geom['hi'],
+    g_source_total_volumes,
+    ml_data['vertex_level_1'],
+    g_source_total_internal_faces,
+    g_total_velocity
 )
 
 pdb.set_trace()

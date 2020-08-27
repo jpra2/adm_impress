@@ -4,7 +4,8 @@ from scipy.sparse import csc_matrix
 
 class CommonInfos:
 
-    def get_local_t(self, T, volumes):
+    @staticmethod
+    def get_local_t(T, volumes):
         '''
             Retorna a Matriz de transmissibilidade local
         '''
