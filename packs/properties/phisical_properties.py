@@ -52,7 +52,8 @@ class PhisicalProperties:
 
         return g_source_w_internal_faces, g_source_o_internal_faces
 
-    def get_total_g_source_volumes(self, volumes, volumes_adj_internal_faces, g_source_total_internal_faces):
+    @staticmethod
+    def get_total_g_source_volumes(volumes, volumes_adj_internal_faces, g_source_total_internal_faces):
 
         v0 = volumes_adj_internal_faces
         n_volumes = len(volumes)
