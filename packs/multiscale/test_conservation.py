@@ -119,36 +119,9 @@ class ConservationTest:
 
             velocity_internal_faces[map_coarse_internal_faces] = local_velocity
             flux_internal_faces[map_coarse_internal_faces] = local_flux
-
-
-
-
-
-
-
-
-
-
-
-            pdb.set_trace()
-
-
-
-
-
-
-
-
-
-
-
-
-
             ################################################################
 
-
-        pdb.set_trace()
-        return flux_coarse_volumes
+        return flux_internal_faces, velocity_internal_faces
 
     def get_upscale_flux(self, delta_p, abs_u_normal_intersect_faces, keq_intersect_faces,
             mob_w_int_f, mob_o_int_f, hi2, rho_w, rho_o, gravity_vector, areas_intersect_faces, ni):

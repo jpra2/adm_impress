@@ -589,7 +589,7 @@ conservation_test = ConservationTest()
 
 ml_data = M.multilevel_data
 
-conservation_test.conservation_with_gravity(
+total_flux_internal_faces, velocity_internal_faces = conservation_test.conservation_with_gravity(
     elements.volumes,
     data_impress['GID_1'],
     g_source_total_internal_faces,
