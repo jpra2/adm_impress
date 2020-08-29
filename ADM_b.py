@@ -397,7 +397,8 @@ data_impress['verif_rest'][volumes_without_grav_level_0] = 1.0
 
 
 t0=time.time()
-b2 = g_source_total_volumes.copy()
+# b2 = g_source_total_volumes.copy()
+b2 = b.copy()
 b2[volumes_without_grav_level_0] = 0
 
 # b2[data_impress['DUAL_1'] == 2] = 0.0
