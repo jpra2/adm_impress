@@ -23,23 +23,12 @@ class PhisicalProperties:
 
         assert u_normal_faces.shape[1] == 3
         assert len(keq_faces) == len(u_normal_faces) == len(areas)
+        ni = len(keq_faces)
 
-        nkg = np.empty(len(keq_faces))
-
-        # u2 = u_normal_faces.copy()
-        #
-        # pdb.set_trace()
-        # yy = np.tile(self.gravity_vector,(u_normal_faces.shape[0], 1))
-        # # yy = yy.reshape((1, u_normal_faces.shape[0], 3))
-        #
-        # vv = np.tensordot(u2, yy, axes=(0,1))
-        #
-        # bb = np.tensordot(u_normal_faces, yy, axes=1)
-
-
-        for i in range(len(keq_faces)):
-
-            nkg[i] = np.dot(u_normal_faces[i], self.gravity_vector)*keq_faces[i]*areas[i]
+        nkg = u_normal_faces*self.gravity_vector
+        nkg = gg.sum(axis=1)
+        nkg = nkg*keq_faces
+        nkg = nkg*areas
 
         return nkg
 
