@@ -103,7 +103,7 @@ class ConservationTest:
                 T_local[local_ids[volsp], local_ids[volsp]] = 1
                 local_source_term[local_ids[volsp]] = presc_p[volsp]
 
-            if set_q & set(wells_q):
+            if set_q & set(vols):
                 volsq = np.intersect1d(vols, wells_q)
                 volsq = np.setdiff1d(volsq, [vertex])
                 local_source_term[local_ids[volsq]] += presc_q[volsq]
