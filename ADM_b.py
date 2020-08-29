@@ -390,8 +390,15 @@ transmissibility = data_impress['transmissibility']
 # transmissibility = np.ones(len(data_impress['transmissibility']))
 local_lu_matrices.update_lu_objects(separated_dual_structures, transmissibility)
 
+ml_data = M.multilevel_data
+volumes_without_grav_level_0 = ml_data['volumes_without_grav_level_0']
+data_impress['verif_rest'][:] = 0.0
+data_impress['verif_rest'][volumes_without_grav_level_0] = 1.0
+
+
 t0=time.time()
 b2 = g_source_total_volumes.copy()
+b2[volumes_without_grav_level_0] = 0
 
 # b2[data_impress['DUAL_1'] == 2] = 0.0
 
@@ -594,8 +601,6 @@ data_impress['erro_p'] = padm-pf
 
 conservation_test = ConservationTest()
 
-ml_data = M.multilevel_data
-
 # total_flux_internal_faces, velocity_internal_faces = conservation_test.conservation_with_gravity(
 #     elements.volumes,
 #     data_impress['GID_1'],
@@ -627,7 +632,7 @@ flux_coarse_volumes, test_vector, local_pressure = conservation_test.conservatio
     elements.volumes,
     data_impress['GID_1'],
     g_source_total_internal_faces,
-    pf,
+    padm,
     T,
     ml_data['coarse_faces_level_1'],
     ml_data['coarse_intersect_faces_level_1'],
@@ -655,7 +660,7 @@ flux_coarse_volumes, test_vector, local_pressure = conservation_test.conservatio
 )
 data_impress['verif_po'][:] = 0.0
 # data_impress['verif_rest'][:] = 0.0
-data_impress['verif_rest'][:] = local_pressure
+# data_impress['verif_rest'][:] = local_pressure
 
 
 for primal_id, flux in enumerate(flux_coarse_volumes):

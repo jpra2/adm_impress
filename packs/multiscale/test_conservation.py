@@ -135,6 +135,7 @@ class ConservationTest:
             ###############################################################
 
         # return flux_internal_faces, velocity_internal_faces
+        pdb.set_trace()
         return flux_coarse_volumes, test_vector, local_pressure
 
     def get_upscale_flux(self, delta_p, abs_u_normal_intersect_faces,
