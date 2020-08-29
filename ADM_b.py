@@ -227,8 +227,8 @@ meshset_volumes = M.core.mb.create_meshset()
 meshset_faces = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 M.core.mb.add_entities(meshset_faces, M.core.all_faces)
-# wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = preprocessar(M, data_impress, wells)
-wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = carregar()
+wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = preprocessar(M, data_impress, wells)
+# wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = carregar()
 #########total_gravity_velocity,
 monophasic = TpfaMonophasic()
 biphasic = TpfaBiphasicCons()
@@ -283,7 +283,7 @@ biphasic_data['g_velocity_w_internal_faces'], biphasic_data['g_velocity_o_intern
     geom['hi'],
     rock_data['keq_faces'][elements.internal_faces]
 )
-g_total_velocity = biphasic_data['g_velocity_w_internal_faces'] + biphasic_data['g_velocity_o_internal_faces']
+g_total_velocity_internal_faces = biphasic_data['g_velocity_w_internal_faces'] + biphasic_data['g_velocity_o_internal_faces']
 
 biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces(
     geom['areas'][elements.internal_faces],
@@ -328,6 +328,7 @@ T_with_boundary, b = monophasic.get_linear_problem(
     g_source_total_volumes,
     T
 )
+
 data_impress['transmissibility'] = biphasic_data['transmissibility_faces'].copy()
 
 # data_impress.update_variables_to_mesh()
@@ -391,11 +392,16 @@ local_lu_matrices.update_lu_objects(separated_dual_structures, transmissibility)
 
 t0=time.time()
 b2 = g_source_total_volumes.copy()
-# b2=np.ones_like(b2)
+
+# b2[data_impress['DUAL_1'] == 2] = 0.0
+
+# b2=np.ones_like(b2)10000
 # b2[wells['ws_q']] = -b[wells['ws_q']]
 # b2[wells['ws_p']] = 0
+# cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, np.ones_like(b2))
 cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
-cfs[wells['ws_p']] = 0
+# cfs[wells['ws_p']] = 0
+# cfs[:] = 0
 data_impress['gama']=cfs
 print('cf {}'.format(time.time()-t0))
 # import pdb; pdb.set_trace()
@@ -540,6 +546,7 @@ OR_ADM = adm_method['adm_restriction_level_1']
 # Tcadm=OR_ADM*T*OP_ADM
 Tcadm=OR_ADM*T_with_boundary*OP_ADM
 bcadm = OR_ADM*(b - T_with_boundary*cfs)
+# bcadm = OR_ADM*(b - T*cfs)
 pcadm=linalg.spsolve(Tcadm,bcadm)
 padm=OP_ADM*pcadm + cfs
 # padm=OP_ADM*pcadm
@@ -589,7 +596,34 @@ conservation_test = ConservationTest()
 
 ml_data = M.multilevel_data
 
-total_flux_internal_faces, velocity_internal_faces = conservation_test.conservation_with_gravity(
+# total_flux_internal_faces, velocity_internal_faces = conservation_test.conservation_with_gravity(
+#     elements.volumes,
+#     data_impress['GID_1'],
+#     g_source_total_internal_faces,
+#     pf,
+#     T,
+#     ml_data['coarse_faces_level_1'],
+#     ml_data['coarse_intersect_faces_level_1'],
+#     geom['areas'],
+#     ml_data['coarse_primal_id_level_1'],
+#     elements.get('volumes_adj_internal_faces'),
+#     ml_data['coarse_internal_faces_level_1'],
+#     elements.get('map_internal_faces'),
+#     geom['abs_u_normal_faces'],
+#     biphasic_data['mob_w_internal_faces'],
+#     biphasic_data['mob_o_internal_faces'],
+#     phisical_properties.gravity_vector,
+#     rock_data['keq_faces'],
+#     biphasic.properties.rho_w,
+#     biphasic.properties.rho_o,
+#     geom['hi'],
+#     g_source_total_volumes,
+#     ml_data['vertex_level_1'],
+#     g_source_total_internal_faces,
+#     g_total_velocity
+# )
+
+flux_coarse_volumes, test_vector, local_pressure = conservation_test.conservation_with_gravity(
     elements.volumes,
     data_impress['GID_1'],
     g_source_total_internal_faces,
@@ -613,12 +647,20 @@ total_flux_internal_faces, velocity_internal_faces = conservation_test.conservat
     g_source_total_volumes,
     ml_data['vertex_level_1'],
     g_source_total_internal_faces,
-    g_total_velocity
+    g_total_velocity_internal_faces,
+    wells2['ws_p'],
+    wells2['values_p'],
+    wells2['ws_q'],
+    wells2['values_q']
 )
+data_impress['verif_po'][:] = 0.0
+# data_impress['verif_rest'][:] = 0.0
+data_impress['verif_rest'][:] = local_pressure
 
-pdb.set_trace()
 
-
+for primal_id, flux in enumerate(flux_coarse_volumes):
+    data_impress['verif_po'][elements.volumes[data_impress['GID_1'] == primal_id]] = flux
+    # data_impress['verif_rest'][elements.volumes[data_impress['GID_1'] == primal_id]] = test_vector[primal_id]
 
 # pdb.set_trace()
 

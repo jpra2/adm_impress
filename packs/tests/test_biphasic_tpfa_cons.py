@@ -354,6 +354,8 @@ while loop <= loop_max:
     # M.core.print(folder='results', file='test_faces_'+str(loop), extension='.vtk', config_input='input_cards/print_settings2.yml')
     print_test_faces(name2)
 
+    pdb.set_trace()
+
     if loop % 100 == 0:
         accumulate.export(local_key_identifier='loop')
         current_data.export_to_npz()

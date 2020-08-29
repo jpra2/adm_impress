@@ -652,17 +652,15 @@ class MultilevelData(DataManager):
             separated_faces=internal_faces.copy()
             adjs=adjacencies.copy()
             adjs=gids_definitor[adjs]
+            dfa=dual_flags[adjacencies] #dual_flags_adjs
 
-            separated_positions=(adjs>-1).sum(axis=1)>=1 #internal to cluster adjacency poritions
-            #####
-            # boundary_positions=(adjs>-1).sum(axis=1)==1 # Boundary to cluster adjacency positions internal to reservoir
-            # boundary_vols=adjs[boundary_positions][adjs[boundary_positions]>-1]
-            # boundary_faces=separated_faces[boundary_positions]
-            # bf2bv=np.zeros(boundary_faces.max()+1,dtype=int)
-            # bf2bv[boundary_faces]=boundary_vols
-            #####
+            # separated_positions=(adjs>-1).sum(axis=1)>=1
+            separated_positions = ((adjs>-1).sum(axis=1)>=1) & (dfa[:,0]>=separate_flag) & (dfa[:,1]>=separate_flag) #internal to cluster adjacency poritions
+            # if (((adjs>-1).sum(axis=1)>=1)==separated_positions).sum()!=len(separated_positions):
+            #     print('aquirrlldld')
+            # pdb.set_trace()
+
             adjs=adjs[separated_positions]
-            ##############
             bounds=adjs.min(axis=1)<0
             adjs[adjs<0]=adjs.max(axis=1)[bounds]
 

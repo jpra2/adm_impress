@@ -99,20 +99,20 @@ Saturation:
   #   value: 0.8
 
 Wells:
-  # P1:
-  #   p0: [98.0, 98.0, 0.0]
-  #   p1: [99.0, 99.0, 1.0]
-  #   prescription: Q
-  #   type: Injector
-  #   type_region: box
-  #   value: 10000.0
-  P1:
-    p0: [0.0, 0.0, 26.0]
-    p1: [27.0, 1.0, 27.0]
+  P2:
+    p0: [0.0, 0.0, 0.0]
+    p1: [27.0, 1.0, 1.0]
     prescription: P
     type: Producer
     type_region: box
-    value: 10.0
+    value: 1.0
+  P1:
+    p0: [0.0, 0.0, 26.0]
+    p1: [27.0, 1.0, 27.0]
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: 1000.0
 
 monophasic_data:
   gama: 10.0
