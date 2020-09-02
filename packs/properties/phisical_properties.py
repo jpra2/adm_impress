@@ -26,7 +26,7 @@ class PhisicalProperties:
         ni = len(keq_faces)
 
         nkg = u_normal_faces*self.gravity_vector
-        nkg = gg.sum(axis=1)
+        nkg = nkg.sum(axis=1)
         nkg = nkg*keq_faces
         nkg = nkg*areas
 

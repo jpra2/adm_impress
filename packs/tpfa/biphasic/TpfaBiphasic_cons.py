@@ -437,7 +437,7 @@ class TpfaBiphasicCons:
         vol_all = vol_all.sum()
 
         dvpi = flux_total_volumes[wells_injector].sum()
-        dvpi = (dvpi*delta_t)/vol_all
+        dvpi = abs((dvpi*delta_t)/vol_all)
 
         return prod_w, prod_o, wor, dvpi
 

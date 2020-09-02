@@ -9,21 +9,21 @@ from packs.properties import PhisicalProperties
 class ConservationTest:
 
     def conservation_with_gravity(self,
-        volumes, primal_ids, g_source_internal_faces, pressure, global_transmissibility,
+        volumes, primal_ids, pressure, global_transmissibility,
         coarse_faces, coarse_intersect_faces, areas, coarse_primal_ids_org, volumes_adj_internal_faces,
         coarse_internal_faces, map_internal_faces, abs_u_normal_faces,
-        mobility_w_internal_faces, mobility_o_internal_faces, gravity_vector, keq_faces,
+        gravity_vector, keq_faces,
         rho_w, rho_o, hi, g_source_total_volumes, coarse_vertexes, g_source_total_internal_faces, g_velocity_internal_faces,
         wells_p=[], vals_p=[], wells_q=[], vals_q=[]):
 
         all_primal_ids = np.unique(primal_ids)
         cids = coarse_primal_ids_org.copy()
         flux_coarse_volumes = np.zeros(len(all_primal_ids))
-        test_vector = flux_coarse_volumes.copy()
+        # test_vector = flux_coarse_volumes.copy()
         n_volumes = len(volumes)
         local_ids = np.zeros(len(volumes), dtype=int)
         local_pressure = local_ids.astype(float)
-        n_internal_faces = len(mobility_o_internal_faces)
+        n_internal_faces = len(volumes_adj_internal_faces)
         velocity_internal_faces = np.zeros((n_internal_faces, 3))
         flux_internal_faces = np.zeros(n_internal_faces)
         solver = SolverSp()
@@ -38,9 +38,11 @@ class ConservationTest:
             presc_q = np.zeros(n_volumes)
             presc_q[wells_q] = vals_q
 
+        flux2 = np.zeros(n_internal_faces)
+
         for primal_id in all_primal_ids:
 
-            flux2 = np.zeros(n_internal_faces)
+            flux2[:] = 0.0
             vols = volumes[primal_ids == primal_id]
             set_vols = set(vols)
             n_vols = len(vols)
@@ -69,7 +71,7 @@ class ConservationTest:
                 else:
                     adj_intersect_intern_vols[i] = vadjs[1]
 
-            vols2 = np.setdiff1d(vols, adj_intersect_intern_vols[i])
+            # vols2 = np.setdiff1d(vols, adj_intersect_intern_vols[i])
 
             resp, resp2 = self.get_upscale_flux(
                 delta_p,
@@ -134,9 +136,8 @@ class ConservationTest:
             flux_internal_faces[map_coarse_internal_faces] = local_flux
             ###############################################################
 
-        # return flux_internal_faces, velocity_internal_faces
-        pdb.set_trace()
-        return flux_coarse_volumes, test_vector, local_pressure
+        return flux_internal_faces, velocity_internal_faces, local_pressure
+        # return flux_coarse_volumes, test_vector, local_pressure
 
     def get_upscale_flux(self, delta_p, abs_u_normal_intersect_faces,
             areas_intersect_faces, ni, g_velocity_intersect_faces, transmissibility_faces):
@@ -145,13 +146,9 @@ class ConservationTest:
         delta_p2 = delta_p2.reshape(ni, 1)
         pressure_direction = -delta_p2*abs_u_normal_intersect_faces
         transm = transmissibility_faces.reshape(ni, 1)
-        k1 = pressure_direction*transm
-        k2 = g_velocity_intersect_faces
-        resp2 = (k1 + k2)
-        resp3 = resp2*abs_u_normal_intersect_faces
-        resp = resp3.sum(axis=1)*areas_intersect_faces
-        return resp, resp2
-
-    def get_local_velocity(self, pressure, volumes, volumes_adj_faces, keq_faces, g_total_velocity_faces):
-
-        pass
+        v1 = pressure_direction*transm
+        v2 = g_velocity_intersect_faces
+        velocity = (v1 + v2)
+        flux = velocity*abs_u_normal_intersect_faces
+        flux = flux.sum(axis=1)*areas_intersect_faces
+        return flux, velocity

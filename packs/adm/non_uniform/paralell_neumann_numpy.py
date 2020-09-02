@@ -94,7 +94,6 @@ class Subdomain():
         T[ind_diric_local,ind_diric_local]=1
         return T
 
-
 class LocalSolution:
     def __init__(self, subdomains):
         self.subdomains = subdomains

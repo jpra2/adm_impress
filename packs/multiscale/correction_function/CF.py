@@ -2,11 +2,13 @@ from scipy.sparse import csc_matrix
 import numpy as np
 
 def solve_correction(LU,q):
+
     gids=[]
     cf=[]
     for lu, gid in zip(LU[0],LU[1]):
         gids.append(gid)
         cf.append(lu.solve(q[gid]))
+
 
     gids=np.concatenate(gids)
     cf=np.concatenate(cf)

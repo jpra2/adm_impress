@@ -267,7 +267,7 @@ def print_results(all_cases):
             plt.grid()
             plt.legend()
             plt.gcf().set_size_inches(20,20)
-            plt.savefig('results/biphasic/'+variable+'.png')
+            plt.savefig('results/biphasic/'+variable+'.svr')
 
     for var in single_vars:
         abcissa_var='neta'
@@ -393,7 +393,7 @@ def print_results(all_cases):
                         pp.append(10)
                     if var=='coupl':
                         pp=np.arange(0,np.array(pp).max()+5,5)
-                    all_ticks=np.array(pp).astype(int)                
+                    all_ticks=np.array(pp).astype(int)
 
                 labels = positions.astype(int).astype(str)
                 plt.gca().yaxis.set_major_locator(ticker.FixedLocator(positions))
@@ -408,6 +408,6 @@ def print_results(all_cases):
             # plt.xscale('log')
 
             plt.gcf().set_size_inches(15,15)
-            plt.savefig('results/single_phase/'+var+'.pdf', bbox_inches='tight')
+            plt.savefig('results/single_phase/'+var+'.svr', bbox_inches='tight')
 
     import pdb; pdb.set_trace()
