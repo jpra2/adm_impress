@@ -170,7 +170,8 @@ while loop <= loop_max:
             biphasic_data['saturation'],
             flux_w_internal_faces,
             flux_o_internal_faces,
-            total_flux_internal_faces
+            total_flux_internal_faces,
+            gravity = phisical_properties._gravity
         )
 
     ###
@@ -285,6 +286,10 @@ while loop <= loop_max:
 
     total_flux_internal_faces = flux_w_internal_faces + flux_o_internal_faces
 
+    if loop == 0:
+        loop += 1
+        continue
+
     flux_total_volumes = monophasic.get_total_flux_volumes(
         total_flux_internal_faces,
         elements.volumes,
@@ -354,7 +359,7 @@ while loop <= loop_max:
     # M.core.print(folder='results', file='test_faces_'+str(loop), extension='.vtk', config_input='input_cards/print_settings2.yml')
     print_test_faces(name2)
 
-    pdb.set_trace()
+    # pdb.set_trace()
 
     if loop % 100 == 0:
         accumulate.export(local_key_identifier='loop')

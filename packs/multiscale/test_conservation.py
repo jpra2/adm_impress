@@ -136,7 +136,7 @@ class ConservationTest:
             flux_internal_faces[map_coarse_internal_faces] = local_flux
             ###############################################################
 
-        return flux_internal_faces, velocity_internal_faces, local_pressure
+        return flux_coarse_volumes, flux_internal_faces, velocity_internal_faces, local_pressure
         # return flux_coarse_volumes, test_vector, local_pressure
 
     def get_upscale_flux(self, delta_p, abs_u_normal_intersect_faces,

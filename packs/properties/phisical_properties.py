@@ -12,8 +12,13 @@ class PhisicalProperties:
         with open(input_file, 'r') as f:
             data_loaded = yaml.safe_load(f)
 
-        self._gravity = data_loaded['gravity']
+        # self._gravity = data_loaded['gravity']
         self._gravity_vector = np.array(data_loaded['gravity_vector'], dtype=float)
+        soma = np.sum(np.absolute(self._gravity_vector))
+        if soma > 0:
+            self._gravity = True
+        else:
+            self._gravity = False
 
     @property
     def gravity_vector(self):

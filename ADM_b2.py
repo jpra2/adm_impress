@@ -227,8 +227,8 @@ meshset_volumes = M.core.mb.create_meshset()
 meshset_faces = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
 M.core.mb.add_entities(meshset_faces, M.core.all_faces)
-# wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = preprocessar(M, data_impress, wells)
-wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = carregar()
+wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = preprocessar(M, data_impress, wells)
+# wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate, phisical_properties = carregar()
 #########total_gravity_velocity,
 dty = [('prod_o', float), ('prod_w', float), ('wor', float),
        ('delta_t', float), ('dvpi', float), ('loop', int), ('global_identifier', int)]
@@ -383,8 +383,9 @@ OP=group_dual_volumes_and_get_OP(mlo, T_with_boundary, M, data_impress, T, neta_
 
 ##########################
 ams_tpfa = AMSTpfa(data_impress['GID_0'], data_impress['GID_1'], data_impress['DUAL_1'])
-Twire = ams_tpfa.get_Twire(T)
-As = ams_tpfa.get_as_off_diagonal(Twire)
+# Twire = ams_tpfa.get_Twire(T)
+# As = ams_tpfa.get_as_off_diagonal(Twire)
+As = ams_tpfa.get_as_off_diagonal(ams_tpfa.get_Twire(T))
 separated_dual_structures = DualStructure(load=True)['dual_structure']
 local_lu_matrices = LocalLU()
 # pdb.set_trace()
@@ -662,7 +663,7 @@ t0 = time.time()
 #     wells2['ws_q'],
 #     wells2['values_q']
 # )
-total_flux_internal_faces, velocity_internal_faces, local_pressure = conservation_test.conservation_with_gravity(
+flux_coarse_volumes, total_flux_internal_faces, velocity_internal_faces, local_pressure = conservation_test.conservation_with_gravity(
     elements.volumes,
     data_impress['GID_1'],
     padm,
@@ -690,6 +691,9 @@ total_flux_internal_faces, velocity_internal_faces, local_pressure = conservatio
     wells2['values_q']
 )
 t1=time.time()
+data_impress['flux_volumes_test'][:] = 0.0
+for primal_id, coarse_flux in enumerate(flux_coarse_volumes):
+    data_impress['flux_volumes_test'][data_impress['GID_1']==primal_id] = coarse_flux
 
 velocity_w_internal_faces, velocity_o_internal_faces = biphasic.get_velocity_w_and_o_internal_faces(
     velocity_internal_faces,
@@ -722,6 +726,7 @@ flux_total_volumes = monophasic.get_total_flux_volumes(
     elements.volumes,
     elements.get('volumes_adj_internal_faces')
 )
+data_impress['flux_volumes'][:] = flux_total_volumes
 
 flux_w_volumes = biphasic.get_flux_phase_volumes(
     flux_w_internal_faces,
@@ -741,39 +746,40 @@ flux_o_volumes = biphasic.get_flux_phase_volumes(
     flux_total_volumes
 )
 
-biphasic_data['saturation_last'] = biphasic_data['saturation'].copy()
-
-delta_t, biphasic_data['saturation'] = biphasic.update_saturation(
-    flux_w_volumes,
-    rock_data['porosity'],
-    geom['volume'],
-    flux_total_volumes,
-    velocity_internal_faces,
-    mob_w/(mob_w + mob_o),
-    biphasic_data['saturation_last'],
-    elements.get('volumes_adj_internal_faces'),
-    geom['hi'],
-    geom['abs_u_normal_faces'][elements.internal_faces]
-)
-
-prod_w, prod_o, wor, dvpi = biphasic.get_production_w_o(
-    flux_total_volumes,
-    mob_w,
-    mob_o,
-    wells2['ws_inj'],
-    wells2['ws_prod'],
-    delta_t,
-    geom['volume'],
-    rock_data['porosity']
-)
-
-data_impress['saturation'][:] = biphasic_data['saturation'][:]
-
-loop = 0
-loop += 1
-
-current_data['current'] = np.array([(prod_o, prod_w, wor, delta_t, dvpi, loop, accumulate.global_identifier)], dtype=dty)
-accumulate.insert_data(current_data['current'])
+# biphasic_data['saturation_last'] = biphasic_data['saturation'].copy()
+#
+# delta_t, biphasic_data['saturation'] = biphasic.update_saturation(
+#     flux_w_volumes,
+#     rock_data['porosity'],
+#     geom['volume'],
+#     flux_total_volumes,
+#     velocity_internal_faces,
+#     mob_w/(mob_w + mob_o),
+#     biphasic_data['saturation_last'],
+#     elements.get('volumes_adj_internal_faces'),
+#     geom['hi'],
+#     geom['abs_u_normal_faces'][elements.internal_faces]
+# )
+#
+# prod_w, prod_o, wor, dvpi = biphasic.get_production_w_o(
+#     flux_total_volumes,
+#     mob_w,
+#     mob_o,
+#     wells2['ws_inj'],
+#     wells2['ws_prod'],
+#     delta_t,
+#     geom['volume'],
+#     rock_data['porosity']
+# )
+#
+# data_impress['saturation'][:] = biphasic_data['saturation'][:]
+# data_impress['verif_po'][:] = local_pressure
+#
+# loop = 0
+# loop += 1
+#
+# current_data['current'] = np.array([(prod_o, prod_w, wor, delta_t, dvpi, loop, accumulate.global_identifier)], dtype=dty)
+# accumulate.insert_data(current_data['current'])
 
 data_impress.update_variables_to_mesh()
 # M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
@@ -785,16 +791,17 @@ adjs=M.faces.bridge_adjacencies(int_faces,2,3)
 ad0=adjs[:,0]
 ad1=adjs[:,1]
 # #######################################
-
-diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
+# pdb.set_trace()
+# diagf=np.array(T[range(T.shape[0]),range(T.shape[0])])[0]
 
 # data_impress['initial_diag']=diagf
 
-neumann_subds=NeumannSpadmubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
+neumann_subds=NeumannSubdomains(elements_lv0, adm_method.ml_data, data_impress, wells)
 nn = 1000
 pp = 1000
 cont = 1
-vpis_for_save=np.load('flying/vpis_for_save.npy')
+# vpis_for_save=np.load('flying/vpis_for_save.npy')
+vpis_for_save = np.arange(0,0.021,0.01)
 count_save=0
 
 verif = True
@@ -803,7 +810,8 @@ np.save('results/jac_iterarion.npy',np.array([0]))
 phis_k=OP_AMS[data_impress['GID_0'],data_impress['GID_1']].toarray()[0]
 data_impress['raz_pos']=(1-phis_k)/phis_k
 
-phiK_raz_lim=np.load('flying/phiK_raz_lim.npy')[0]
+# phiK_raz_lim=np.load('flying/phiK_raz_lim.npy')[0]
+phiK_raz_lim=np.inf
 
 preprocessed_primal_objects, critical_groups=monotonic_adm_subds.get_preprossed_monotonic_primal_objects(data_impress, elements_lv0, OP_AMS, neumann_subds.neumann_subds, phiK_raz_lim=phiK_raz_lim)
 try:
@@ -830,10 +838,10 @@ np.save('results/biphasic/ms/'+ms_case+'/coupl'+'.npy',np.array([coupl]))
 coupled_ms=M.core.mb.create_meshset()
 M.core.mb.add_entities(coupled_ms,np.array(M.core.all_volumes)[data_impress['coupled_flag']==1])
 
-plot_operator(T,OP_AMS,np.array([66,54,25, 100,115]),marker='coupl')
-plot_operator(T,OP_orig,np.array([66,54,25,100, 115]),marker='uncoupl')
+# plot_operator(T,OP_AMS,np.array([66,54,25, 100,115]),marker='coupl')
+# plot_operator(T,OP_orig,np.array([66,54,25,100, 115]),marker='uncoupl')
 
-M.core.mb.write_file('results/biphasic/ms/'+ms_case+'/vtks/coupled_vols.vtk',[coupled_ms])
+# M.core.mb.write_file('results/biphasic/ms/coupled_vols.vtk',[coupled_ms])
 
 
 # adm_method.set_level_wells_3()
@@ -860,9 +868,11 @@ neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
 delta_sat_max=np.load('flying/delta_sat_max.npy')[0]
 
-pdb.set_trace()
+# pdb.set_trace()
 
 # import pdb; pdb.set_trace()
+verif = True
+loop = 0
 while verif:
 
     biphasic_data['krw'], biphasic_data['kro'] = biphasic.get_krw_and_kro(biphasic_data['saturation'])
@@ -877,6 +887,7 @@ while verif:
         flux_o_internal_faces,
         total_flux_internal_faces
     )
+
     biphasic_data['mob_w_internal_faces'] = mob_w[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_w']]]
     biphasic_data['mob_o_internal_faces'] = mob_o[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_o']]]
 
@@ -1008,9 +1019,14 @@ while verif:
     bcadm = OR_ADM*(b - T_with_boundary*cfs)
     pcadm=linalg.spsolve(Tcadm,bcadm)
     padm=OP_ADM*pcadm + cfs
+    pf = linalg.spsolve(T_with_boundary,b)
+    # padm=pf
     data_impress['pms_adm_pressure'][:] = padm
 
-    total_flux_internal_faces, velocity_internal_faces, local_pressure = conservation_test.conservation_with_gravity(
+    data_impress['tpfa_pressure'][:] = pf
+    data_impress['erro_p'][:] = np.absolute(pf-padm)
+
+    flux_coarse_volumes, total_flux_internal_faces, velocity_internal_faces, local_pressure = conservation_test.conservation_with_gravity(
         elements.volumes,
         data_impress['GID_1'],
         padm,
@@ -1037,6 +1053,10 @@ while verif:
         wells2['ws_q'],
         wells2['values_q']
     )
+    data_impress['verif_po'][:] = local_pressure
+    data_impress['flux_volumes_test'][:] = 0.0
+    for primal_id, coarse_flux in enumerate(flux_coarse_volumes):
+        data_impress['flux_volumes_test'][data_impress['GID_1']==primal_id] = coarse_flux
 
     velocity_w_internal_faces, velocity_o_internal_faces = biphasic.get_velocity_w_and_o_internal_faces(
         velocity_internal_faces,
@@ -1069,6 +1089,7 @@ while verif:
         elements.volumes,
         elements.get('volumes_adj_internal_faces')
     )
+    data_impress['flux_volumes'][:] = flux_total_volumes
 
     flux_w_volumes = biphasic.get_flux_phase_volumes(
         flux_w_internal_faces,
@@ -1078,6 +1099,7 @@ while verif:
         elements.volumes,
         flux_total_volumes
     )
+    data_impress['flux_w_volumes'][:] = flux_w_volumes
 
     flux_o_volumes = biphasic.get_flux_phase_volumes(
         flux_o_internal_faces,
@@ -1115,11 +1137,15 @@ while verif:
     )
 
     data_impress['saturation'][:] = biphasic_data['saturation'][:]
+    data_impress['saturation_last'][:] = biphasic_data['saturation_last'][:]
 
     loop += 1
 
     current_data['current'] = np.array([(prod_o, prod_w, wor, delta_t, dvpi, loop, accumulate.global_identifier)], dtype=dty)
     accumulate.insert_data(current_data['current'])
+    data_impress.update_variables_to_mesh()
+    M.core.mb.write_file('results/trash_'+ str(loop) + '.vtk', [meshset_volumes])
+    # pdb.set_trace()
 
 
 

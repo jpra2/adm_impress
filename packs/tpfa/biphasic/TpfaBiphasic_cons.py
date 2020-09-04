@@ -342,7 +342,8 @@ class TpfaBiphasicCons:
 
     def update_sat(self, saturation0, flux_w_volumes, vol_volumes, porosity, delta_t):
 
-        lim_flux_w = 9e-8
+        lim_flux_w = 0
+        # lim_flux_w = 1e-8
         delta_sat_max = self.simulation_infos.data['delta_sat_max']
         Swc = self.relative_permeability.Swc
         Sor = self.relative_permeability.Sor
@@ -441,63 +442,75 @@ class TpfaBiphasicCons:
 
         return prod_w, prod_o, wor, dvpi
 
-    def update_upwind_phases(self, centroid_volumes, internal_faces, volumes_adj_internal_faces, saturation, flux_w_internal_faces, flux_o_internal_faces, total_flux_internal_faces):
+    def update_upwind_phases(self, centroid_volumes, internal_faces, volumes_adj_internal_faces, saturation, flux_w_internal_faces, flux_o_internal_faces, total_flux_internal_faces, gravity=True):
         '''
             paper Starnoni
             with gravity
         '''
-        # k0 = 9e-7
-        k0 = 9e-2
 
-        # internal_faces = self.elements_lv0['internal_faces']
+
+        k0 = 9e-2
+        min_abs = np.min(np.absolute(total_flux_internal_faces))
         v0 = volumes_adj_internal_faces
         # saturation = self.data_impress['saturation']
-        flux_w_faces = flux_w_internal_faces
-        flux_o_faces = flux_o_internal_faces
-        flux_total = total_flux_internal_faces
-        flux_w_faces[np.absolute(flux_w_faces) < k0] = 0.0
-        flux_o_faces[np.absolute(flux_o_faces) < k0] = 0.0
-        flux_total[np.absolute(flux_total) < k0] = 0.0
-
-        tw = flux_w_faces >= 0
-        to = flux_o_faces >= 0
-
+        flux_w_faces = flux_w_internal_faces.copy()
+        flux_o_faces = flux_o_internal_faces.copy()
+        flux_total = total_flux_internal_faces.copy()
+        testw = np.absolute(flux_w_faces) < k0
+        testo = np.absolute(flux_o_faces) < k0
+        test3 = np.absolute(flux_total) < k0
+        flux_w_faces[testw] = 0.0
+        flux_o_faces[testo] = 0.0
+        flux_total[test3] = 0.0
+        tw = flux_w_faces > 0
+        to = flux_o_faces > 0
         upwind_w = np.full((len(internal_faces), 2), False, dtype=bool)
         upwind_o = upwind_w.copy()
 
-        upwind_w[tw, 0] = True
-        upwind_o[to, 0] = True
+        if gravity == True:
 
-        tw = ~tw
-        to = ~to
-        upwind_w[tw, 1] = True
-        upwind_o[to, 1] = True
+            # internal_faces = self.elements_lv0['internal_faces']
 
-        tt = np.absolute(flux_total) < k0
-        upwind_w[tt] = False
-        upwind_o[tt] = False
+            upwind_w[tw, 0] = True
+            upwind_o[to, 0] = True
 
-        centroids = centroid_volumes[v0[tt]]
-        delta_z = centroids[:,1] - centroids[:,0]
-        delta_z = delta_z[:,2]
+            tw = ~tw
+            to = ~to
+            upwind_w[tw, 1] = True
+            upwind_o[to, 1] = True
 
-        upgw = np.full((tt.sum(), 2), False, dtype=bool)
-        upgo = np.full((tt.sum(), 2), False, dtype=bool)
+            tt = np.absolute(flux_total) < k0
+            upwind_w[tt] = False
+            upwind_o[tt] = False
 
-        tz = delta_z >= 0
+            centroids = centroid_volumes[v0[tt]]
+            delta_z = centroids[:,1] - centroids[:,0]
+            delta_z = delta_z[:,2]
 
-        upgw[tz, 1] = True
-        upgo[tz, 0] = True
+            upgw = np.full((tt.sum(), 2), False, dtype=bool)
+            upgo = np.full((tt.sum(), 2), False, dtype=bool)
 
-        tz = ~tz
-        upgw[tz, 0] = True
-        upgo[tz, 1] = True
+            tz = delta_z >= 0
 
-        upwind_w[tt] = upgw
-        upwind_o[tt] = upgo
+            upgw[tz, 1] = True
+            upgo[tz, 0] = True
+
+            tz = ~tz
+            upgw[tz, 0] = True
+            upgo[tz, 1] = True
+
+            upwind_w[tt] = upgw
+            upwind_o[tt] = upgo
+
+        else:
+            upwind_w[tw, 0] = True
+            upwind_o[to, 0] = True
+            tw = ~tw
+            to = ~to
+            upwind_w[tw, 1] = True
+            upwind_o[to, 1] = True
 
         self.test_upwind_dup(upwind_w, upwind_o)
-
         return upwind_w, upwind_o
 
     def visualize_upwind_vec(self, internal_faces, abs_u_normal_internal_faces, centroid_volumes, volumes_adj_internal_faces, upwind_w, upwind_o):
