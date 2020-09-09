@@ -115,7 +115,7 @@ Wells:
   #   value: 10000.0
 
     P1:
-      p0: [26.0, 0.0, 0.0]
+      p0: [0.0, 0.0, 0.0]
       p1: [27.0, 1.0, 1.0]
       prescription: P
       type: Producer

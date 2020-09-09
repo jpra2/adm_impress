@@ -10,6 +10,11 @@ import numpy as np
 import os
 import pdb
 import time
+from packs.multiscale.test_conservation import ConservationTest
+
+test_coarse_flux = True
+if test_coarse_flux == True:
+    conservation_test = ConservationTest()
 
 M, _, data_impress, wells = initial_mesh()
 meshset_volumes = M.core.mb.create_meshset()
@@ -201,6 +206,8 @@ while loop <= loop_max:
         rock_data['keq_faces'][elements.internal_faces]
     )
 
+    g_total_velocity_internal_faces = biphasic_data['g_velocity_w_internal_faces'] + biphasic_data['g_velocity_o_internal_faces']
+
     biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces(
         geom['areas'][elements.internal_faces],
         geom['u_direction_internal_faces'],
@@ -285,6 +292,43 @@ while loop <= loop_max:
     )
 
     total_flux_internal_faces = flux_w_internal_faces + flux_o_internal_faces
+
+
+    if test_coarse_flux == True:
+        ml_data = M.multilevel_data
+        flux_coarse_volumes_pf, total_flux_internal_faces_pf, velocity_internal_faces_pf, local_pressure_pf = conservation_test.conservation_with_gravity(
+            elements.volumes,
+            data_impress['GID_1'],
+            pressure,
+            T,
+            ml_data['coarse_faces_level_1'],
+            ml_data['coarse_intersect_faces_level_1'],
+            geom['areas'],
+            ml_data['coarse_primal_id_level_1'],
+            elements.get('volumes_adj_internal_faces'),
+            ml_data['coarse_internal_faces_level_1'],
+            elements.get('map_internal_faces'),
+            geom['abs_u_normal_faces'],
+            phisical_properties.gravity_vector,
+            rock_data['keq_faces'],
+            biphasic.properties.rho_w,
+            biphasic.properties.rho_o,
+            geom['hi'],
+            g_source_total_volumes,
+            ml_data['vertex_level_1'],
+            g_source_total_internal_faces,
+            g_total_velocity_internal_faces,
+            wells2['ws_p'],
+            wells2['values_p'],
+            wells2['ws_q'],
+            wells2['values_q']
+        )
+        print()
+        print(np.allclose(total_flux_internal_faces_pf, total_flux_internal_faces))
+        print(np.allclose(local_pressure_pf, pressure))
+        print()
+        pdb.set_trace()
+
 
     if loop == 0:
         loop += 1

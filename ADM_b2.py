@@ -783,7 +783,7 @@ flux_o_volumes = biphasic.get_flux_phase_volumes(
 
 data_impress.update_variables_to_mesh()
 # M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
-M.core.mb.write_file('results/trash'+'.vtk', [meshset_volumes])
+M.core.mb.write_file('results/trash_0'+'.vtk', [meshset_volumes])
 # pdb.set_trace()
 ########## for plotting faces adm resolution in a faces file
 int_faces=M.faces.internal
@@ -874,6 +874,7 @@ delta_sat_max=np.load('flying/delta_sat_max.npy')[0]
 verif = True
 loop = 0
 while verif:
+    # pdb.set_trace()
 
     biphasic_data['krw'], biphasic_data['kro'] = biphasic.get_krw_and_kro(biphasic_data['saturation'])
     mob_w, mob_o = biphasic.get_mobilities_w_o(biphasic_data['krw'], biphasic_data['kro'])
@@ -885,7 +886,8 @@ while verif:
         biphasic_data['saturation'],
         flux_w_internal_faces,
         flux_o_internal_faces,
-        total_flux_internal_faces
+        total_flux_internal_faces,
+        phisical_properties._gravity
     )
 
     biphasic_data['mob_w_internal_faces'] = mob_w[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_w']]]
@@ -915,6 +917,8 @@ while verif:
         geom['hi'],
         rock_data['keq_faces'][elements.internal_faces]
     )
+
+    g_total_velocity_internal_faces = biphasic_data['g_velocity_w_internal_faces'] + biphasic_data['g_velocity_o_internal_faces']
 
     biphasic_data['g_source_w_internal_faces'], biphasic_data['g_source_o_internal_faces'] = biphasic.get_g_source_w_o_internal_faces(
         geom['areas'][elements.internal_faces],
@@ -1053,10 +1057,47 @@ while verif:
         wells2['ws_q'],
         wells2['values_q']
     )
+
     data_impress['verif_po'][:] = local_pressure
     data_impress['flux_volumes_test'][:] = 0.0
     for primal_id, coarse_flux in enumerate(flux_coarse_volumes):
         data_impress['flux_volumes_test'][data_impress['GID_1']==primal_id] = coarse_flux
+    print(flux_coarse_volumes)
+
+    flux_coarse_volumes_pf, total_flux_internal_faces_pf, velocity_internal_faces_pf, local_pressure_pf = conservation_test.conservation_with_gravity(
+        elements.volumes,
+        data_impress['GID_1'],
+        pf,
+        T,
+        ml_data['coarse_faces_level_1'],
+        ml_data['coarse_intersect_faces_level_1'],
+        geom['areas'],
+        ml_data['coarse_primal_id_level_1'],
+        elements.get('volumes_adj_internal_faces'),
+        ml_data['coarse_internal_faces_level_1'],
+        elements.get('map_internal_faces'),
+        geom['abs_u_normal_faces'],
+        phisical_properties.gravity_vector,
+        rock_data['keq_faces'],
+        biphasic.properties.rho_w,
+        biphasic.properties.rho_o,
+        geom['hi'],
+        g_source_total_volumes,
+        ml_data['vertex_level_1'],
+        g_source_total_internal_faces,
+        g_total_velocity_internal_faces,
+        wells2['ws_p'],
+        wells2['values_p'],
+        wells2['ws_q'],
+        wells2['values_q']
+    )
+
+    data_impress['erro'][:] = np.absolute(local_pressure_pf - pf)
+    data_impress['vug'][:] = 0.0
+    print()
+    print(flux_coarse_volumes_pf)
+    for primal_id, coarse_flux in enumerate(flux_coarse_volumes_pf):
+        data_impress['vug'][data_impress['GID_1']==primal_id] = coarse_flux
 
     velocity_w_internal_faces, velocity_o_internal_faces = biphasic.get_velocity_w_and_o_internal_faces(
         velocity_internal_faces,
@@ -1112,7 +1153,7 @@ while verif:
 
     biphasic_data['saturation_last'] = biphasic_data['saturation'].copy()
 
-    delta_t, biphasic_data['saturation'] = biphasic.update_saturation(
+    delta_t, biphasic_data['saturation'][:] = biphasic.update_saturation(
         flux_w_volumes,
         rock_data['porosity'],
         geom['volume'],
