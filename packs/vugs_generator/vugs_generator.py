@@ -1,40 +1,44 @@
-import random
-class GenarateVugs:
-    def __init__(self,M):
-        centro=[300,500,700]
-        abc=[1,3,2]
-        self.get_comparation_parameters(M,centro,abc)
-        centers, abcs=self.get_aleatory_parameters(10,[1,3])
-        for i in range(len(centers)):
-            self.get_comparation_parameters(M,centers[i],abcs[i])
+import numpy as np
+from .impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
 
-        m=M.core.mb.create_meshset()
-        M.core.mb.add_entities(m,M.core.all_volumes)
-        M.core.mb.write_file("results/vugs.vtk",[m])
+class VugGenerator(object):
+    def __init__(self, mesh_file, ellipsis_params_range, num_ellipsoids=10):
+        self.mesh = FineScaleMesh(mesh_file)
+        self.ellipsis_params_range = ellipsis_params_range
+        self.num_ellipsoids = num_ellipsoids
 
+    def run(self):
+        # TODO: Add random rotation matrix.
+        centroids = self.mesh.volumes.center[:]
+        xs, ys, zs = centroids[:, 0], centroids[:, 1], centroids[:, 2]
+        x_range = xs.min(), xs.max()
+        y_range = ys.min(), ys.max()
+        z_range = zs.min(), zs.max()
+        centers, params = self.get_random_ellipsoids(x_range, y_range, z_range)
 
-    def get_comparation_parameters(self,M, centro, params):
-        centroids=M.volumes.center[:]
-        x=centroids[:,0]
-        y=centroids[:,1]
-        z=centroids[:,2]
-        self.x=x
-        self.y=y
-        self.z=z
-        vugs=(x-centro[0])*(x-centro[0])/(params[0]*params[0])\
-            +(y-centro[1])*(y-centro[1])/(params[1]*params[1])\
-            +(z-centro[2])*(z-centro[2])/(params[2]*params[2])<1
-        M.vug[vugs]=1
-    def get_aleatory_parameters(self,n,lim_abc):
-        xmin=self.x.min()
-        xmax=self.x.max()
-        ymin=self.y.min()
-        ymax=self.y.max()
-        zmin=self.z.min()
-        zmax=self.z.max()
-        centers=[]
-        parameters=[]
-        for i in range(n):
-            centers.append([random.uniform(xmin, xmax),random.uniform(ymin,ymax), random.uniform(zmin,zmax)])
-            parameters.append([random.uniform(lim_abc[0],lim_abc[1]),random.uniform(lim_abc[0],lim_abc[1]),random.uniform(lim_abc[0],lim_abc[1])])
-        return centers,parameters
+        # Compute vugs.
+        # REVIEW: Maybe do this as vector/matrix operations.
+        for center, param in zip(centers, params):
+            vols_in_vug = ((xs - center[0]) / param[0])**2 \
+                        + ((ys - center[1]) / param[1])**2 \
+                        + ((zs - center[2]) / param[2])**2
+            self.mesh.vug[vols_in_vug < 1] = 1
+
+    def write_file(self, path="results/vugs.vtk"):
+        vugs_meshset = self.mesh.core.mb.create_meshset()
+        self.mesh.core.mb.add_entities(vugs_meshset, self.mesh.core.all_volumes)
+        self.mesh.core.mb.write_file(path, [vugs_meshset])
+    
+    def get_random_ellipsoids(self, x_range, y_range, z_range):
+        rng = np.random.default_rng()
+        random_centers = np.zeros((self.num_ellipsoids, 3))
+        random_params = np.zeros((self.num_ellipsoids, 3))
+
+        random_centers[:, 0] = rng.uniform(low=x_range[0], high=x_range[1], size=self.num_ellipsoids)
+        random_centers[:, 1] = rng.uniform(low=y_range[0], high=y_range[1], size=self.num_ellipsoids)
+        random_centers[:, 2] = rng.uniform(low=z_range[0], high=z_range[1], size=self.num_ellipsoids)
+        random_params[:] = rng.uniform(low=self.ellipsis_params_range[0], \
+                                        high=self.ellipsis_params_range[1], \
+                                        size=random_params.shape)
+        
+        return random_centers, random_params
