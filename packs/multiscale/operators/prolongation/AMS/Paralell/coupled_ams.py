@@ -27,7 +27,7 @@ class DualDomain:
             int_facs=np.setdiff1d(int_facs,so_viz_faces)
 
         dual_id_volumes = data_impress['DUAL_1'][volumes]
-        if local_couple>0:            
+        if local_couple>0:
             dual_flags=np.repeat(-1,len(elements_lv0["volumes"]))
             dual_flags[volumes]=dual_id_volumes
             if couple_bound:
@@ -209,7 +209,7 @@ class Partitioner:
             cx, cy, intercept = np.load("flying/partitioning_coeffitients_cx_cy_intercept.npy")
             cx2, cxy, cy2 = 0, 0, 0
         else:
-            print("quadrático")
+            print("quadratico")
             try:
                 cx, cy, cx2, cxy, cy2, intercept= np.load("flying/partitioning_coeffitients_bx_cy_dx2_exy_fy2_intercept.npy")
             except:

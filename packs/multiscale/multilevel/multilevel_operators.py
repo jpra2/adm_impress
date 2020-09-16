@@ -102,7 +102,7 @@ class MultilevelOperators(DataManager):
                 rest_name = self.restriction + str(n+1)
                 OP = sp.load_npz(os.path.join('flying', prol_name + '.npz'))
                 OR = sp.load_npz(os.path.join('flying', rest_name + '.npz'))
-                self._data[prol_name] = OP                
+                self._data[prol_name] = OP
                 self._data[rest_name] = OR
         else:
             pass
@@ -319,6 +319,6 @@ class MultilevelOperators(DataManager):
         c=l
         mult=sp.csc_matrix((diag,(l,c)),shape=(len(diag), len(diag)))
         OP=mult*OP
-        print("tempo total para cálculo do OP {} segundos".format(time.time()-t0))
+        print("tempo total para calculo do OP {} segundos".format(time.time()-t0))
 
         return OP
