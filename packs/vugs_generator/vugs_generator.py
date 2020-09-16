@@ -1,5 +1,4 @@
 import numpy as np
-from scipy import linalg
 from .impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
 
 class VugGenerator(object):
@@ -19,11 +18,9 @@ class VugGenerator(object):
 
         # Compute vugs.
         for center, param, angle in zip(centers, params, angles):
-            # A = np.diag(1 / param**2)
-            # REFACTOR: Calculate rotations using a SciPy routine.
-            # TODO: Rotate displaced vector.
-            # R = self.get_rotation_matrix(angle)
-            vols_in_vug = ((centroids - center) / param)**2
+            R = self.get_rotation_matrix(angle)
+            X = (centroids - center).dot(R.T)
+            vols_in_vug = (X / param)**2
             vols_in_vug = vols_in_vug.sum(axis=1)
             self.mesh.vug[vols_in_vug < 1] = 1
 
