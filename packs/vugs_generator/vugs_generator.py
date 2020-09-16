@@ -8,7 +8,6 @@ class VugGenerator(object):
         self.num_ellipsoids = num_ellipsoids
 
     def run(self):
-        # TODO: Add random rotation matrix.
         centroids = self.mesh.volumes.center[:]
         xs, ys, zs = centroids[:, 0], centroids[:, 1], centroids[:, 2]
         x_range = xs.min(), xs.max()
