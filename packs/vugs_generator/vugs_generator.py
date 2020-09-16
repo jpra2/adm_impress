@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import linalg
 from .impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
 
 class VugGenerator(object):
@@ -14,14 +15,16 @@ class VugGenerator(object):
         x_range = xs.min(), xs.max()
         y_range = ys.min(), ys.max()
         z_range = zs.min(), zs.max()
-        centers, params = self.get_random_ellipsoids(x_range, y_range, z_range)
+        centers, params, angles = self.get_random_ellipsoids(x_range, y_range, z_range)
 
         # Compute vugs.
-        # REVIEW: Maybe do this as vector/matrix operations.
-        for center, param in zip(centers, params):
-            vols_in_vug = ((xs - center[0]) / param[0])**2 \
-                        + ((ys - center[1]) / param[1])**2 \
-                        + ((zs - center[2]) / param[2])**2
+        for center, param, angle in zip(centers, params, angles):
+            # A = np.diag(1 / param**2)
+            # REFACTOR: Calculate rotations using a SciPy routine.
+            # TODO: Rotate displaced vector.
+            # R = self.get_rotation_matrix(angle)
+            vols_in_vug = ((centroids - center) / param)**2
+            vols_in_vug = vols_in_vug.sum(axis=1)
             self.mesh.vug[vols_in_vug < 1] = 1
 
     def write_file(self, path="results/vugs.vtk"):
@@ -32,13 +35,24 @@ class VugGenerator(object):
     def get_random_ellipsoids(self, x_range, y_range, z_range):
         rng = np.random.default_rng()
         random_centers = np.zeros((self.num_ellipsoids, 3))
-        random_params = np.zeros((self.num_ellipsoids, 3))
 
         random_centers[:, 0] = rng.uniform(low=x_range[0], high=x_range[1], size=self.num_ellipsoids)
         random_centers[:, 1] = rng.uniform(low=y_range[0], high=y_range[1], size=self.num_ellipsoids)
         random_centers[:, 2] = rng.uniform(low=z_range[0], high=z_range[1], size=self.num_ellipsoids)
-        random_params[:] = rng.uniform(low=self.ellipsis_params_range[0], \
+        random_params = rng.uniform(low=self.ellipsis_params_range[0], \
                                         high=self.ellipsis_params_range[1], \
-                                        size=random_params.shape)
+                                        size=(self.num_ellipsoids, 3))
+        random_angles = rng.uniform(low=0.0, high=2*np.pi, size=(self.num_ellipsoids, 3))
         
-        return random_centers, random_params
+        return random_centers, random_params, random_angles
+    
+    def get_rotation_matrix(self, angle):
+        cos_ang = np.cos(angle)
+        sin_ang = np.sin(angle)
+        return np.array([
+            cos_ang[1]*cos_ang[2], -cos_ang[1]*sin_ang[2], sin_ang[1], \
+            sin_ang[0]*sin_ang[1]*cos_ang[2] + cos_ang[0]*sin_ang[2], \
+            cos_ang[0]*cos_ang[2] - sin_ang[0]*sin_ang[1]*sin_ang[2], \
+            -sin_ang[0]*sin_ang[1], sin_ang[0]*sin_ang[2] - cos_ang[0]*sin_ang[1]*sin_ang[2], \
+            cos_ang[0]*sin_ang[1]*sin_ang[2] + sin_ang[0]*cos_ang[2], cos_ang[0]*cos_ang[1]
+        ]).reshape((3,3))
