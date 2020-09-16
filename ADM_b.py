@@ -580,12 +580,12 @@ while verif:
     elinf.append(eadm_inf)
 
     p_wells=pms[wells['all_wells']]
-    pms=(pms-p_wells.min())/(p_wells.max()-p_wells.min())
+    # pms=(pms-p_wells.min())/(p_wells.max()-p_wells.min())
     data_impress['pressure']=pms
     data_impress['DUAL_PRESSURE'][data_impress['DUAL_1']>=2]=pms[data_impress['DUAL_1']>=2]
 
     p_wells=pf[wells['all_wells']]
-    pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
+    # pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
     data_impress['tpfa_pressure']=pf
 
     save_multilevel_results()

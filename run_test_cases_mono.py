@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import shutil
 import matplotlib
 from matplotlib import ticker
-from brokenaxes import brokenaxes
+
 
 
 font = {'size'   : 40}
@@ -19,19 +19,19 @@ def remove_previous_files():
     os.mkdir('results/biphasic/finescale/vtks')
 
 def run_test_cases():
-    vpis_for_save=np.array([0.0])
+    vpis_for_save=np.arange(0.0,0.01001,0.01)
 
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     # os.system("python testting2_biphasic.py")
-    crs=[[3,7,1],[5, 11, 1],[9, 19, 1],[13, 27, 1]]
+    crs=[[9,9,1],[5, 11, 1],[9, 19, 1],[13, 27, 1]]
     np.save('flying/all_crs.npy',np.array(crs))
     # neta_lim_dual_values=     [ np.inf,    0.5,    1.0,    2.0,   10.0,  100.0]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
-    neta_lim_dual_values=     [    0.5,    1.0,   2.0,   10.0,   100.0, np.inf]#,  np.inf,    1.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
-    neta_lim_finescale_values=[ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#,  np.inf, np.inf]# np.inf,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    type_of_refinement_values=[  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,    'uni', 'uni']#  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
-    phiK_raz_lim_values=      [ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#,  np.inf, np.inf]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf,    3.0,    3.0,    3.0,    3.0,    3.0,   10.0,   10.0,   10.0,   10.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    delta_sat_max=            [    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,     1.1,    1.1]#    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
-    cr_inds=                  [      3,      3,      3,      3,      3,      3]#,       1,      1]
+    neta_lim_dual_values=     [   50.0]#,    1.0]#,   2.0,   10.0,   100.0, np.inf]#,  np.inf,    1.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
+    neta_lim_finescale_values=[    1.0]#, np.inf]#, np.inf, np.inf, np.inf, np.inf]#,  np.inf, np.inf]# np.inf,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    type_of_refinement_values=[  'uni']#,  'uni']#,  'uni',  'uni',  'uni',  'uni']#,    'uni', 'uni']#  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
+    phiK_raz_lim_values=      [    3.0]#, np.inf]#, np.inf, np.inf, np.inf, np.inf]#,  np.inf, np.inf]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf,    3.0,    3.0,    3.0,    3.0,    3.0,   10.0,   10.0,   10.0,   10.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    delta_sat_max=            [    1.1]#,    1.1]#,    1.1,    1.1,    1.1,    1.1]#,     1.1,    1.1]#    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
+    cr_inds=                  [      0]#,      3]#,      3,      3,      3,      3]#,       1,      1]
     for i in range(len(neta_lim_dual_values)):
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
@@ -221,8 +221,10 @@ def print_results(all_cases):
                             ymin=case_data[variable].min()
                         if case_data[variable].max()>ymax:
                             ymax=case_data[variable].max()
-
-                        plt.plot(100*case_data['vpi'], case_data[variable],style,label=case_name)
+                        try:
+                            plt.plot(100*case_data['vpi'], case_data[variable],style,label=case_name)
+                        except:
+                            pass
 
                         plt.xlabel(units['vpi'])
                         plt.ylabel(units[variable])
@@ -288,7 +290,9 @@ def print_results(all_cases):
             abcis=all_abcissa[control_parameters==p]
 
             if abcis.max()<1000:
-                orden=np.concatenate([[all_ordenada[all_abcissa==1000][0]],orden])
+                if (all_abcissa==1000).sum()>0:
+                    orden=np.concatenate([[all_ordenada[all_abcissa==1000][0]],orden])
+
                 abcis=np.concatenate([[1000],abcis])
             ordenadas.append(orden)
             abcissas.append(abcis)
@@ -311,7 +315,10 @@ def print_results(all_cases):
                 plt.gca().tick_params(which='major', length=15)
                 ind_sort=np.argsort(abcissa)
                 abcissa=abcissa[ind_sort]
-                ordenada=ordenada[ind_sort]
+                try:
+                    ordenada=ordenada[ind_sort]
+                except:
+                    ordenada=np.repeat(ordenada[0],len(ind_sort))
 
                 # if ordenada.min()>0:
                 plt.xscale('log')

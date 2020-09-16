@@ -155,12 +155,13 @@ class Wells(DataManager):
                 limites = np.array([p0, p1])
                 vols = get_box(centroids, limites)
                 nv = len(vols)
+
                 if prescription == 'Q':
                     try:
                         val = value/nv
                     except:
                         print("Nenhum volumes corresponde ao poço")
-                        import pdb; pdb.set_trace()
+                    
                     if tipo == 'Injector':
                         val *= -1
 
