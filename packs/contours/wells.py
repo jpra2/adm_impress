@@ -240,7 +240,7 @@ class Wells(DataManager):
 
                 elif prescription == 'P':
                     val = value
-                    ws_p.append(vols)
+                    ws_p.append(vols.astype(np.int32))
                     values_p.append(np.repeat(val, nv))
 
                 if tipo == 'Injector':
@@ -249,17 +249,52 @@ class Wells(DataManager):
                     ws_prod.append(vols)
 
         self['ws_q_sep'] = np.array(ws_q).astype(np.int32)
-        self['ws_p_sep'] = np.array(ws_p).astype(np.int32)
+        self['ws_p_sep'] = np.array(ws_p)
         self['values_p_sep'] = np.array(values_p)
         self['values_p_ini_sep'] = self['values_p_sep'].copy()
         self['values_q_sep'] = np.array(values_q)
 
-        ws_q = np.array(ws_q).flatten()
-        ws_p = np.array(ws_p).flatten()
-        values_p = np.array(values_p).flatten()
-        values_q = np.array(values_q).flatten()
-        ws_inj = np.array(ws_inj).flatten()
-        ws_prod = np.array(ws_prod).flatten()
+        # import pdb; pdb.set_trace()
+
+        if len(ws_q) == 0:
+            ws_q = np.array(ws_q, dtype=int)
+        else:
+            ws_q = np.concatenate(ws_q)
+
+        if len(ws_p) == 0:
+            ws_p = np.array(ws_p, dtype=int)
+        else:
+            ws_p = np.concatenate(ws_p)
+
+
+        # ws_q = np.concatenate(ws_q)
+        # ws_p = np.concatenate(ws_p)
+        # values_p = np.concatenate(values_p)
+
+        if len(values_p) == 0:
+            values_p = np.array(values_p)
+        else:
+            values_p = np.concatenate(values_p)
+
+        if len(values_q) == 0:
+            values_q = np.array(values_q)
+        else:
+            values_q = np.concatenate(values_q)
+
+        # values_q = np.concatenate(values_q)
+
+        if len(ws_inj) == 0:
+            ws_inj = np.array(ws_inj, dtype=int)
+        else:
+            ws_inj = np.concatenate(ws_inj)
+
+        if len(ws_prod) == 0:
+            ws_prod = np.array(ws_prod, dtype=int)
+        else:
+            ws_prod = np.concatenate(ws_prod)
+
+        # ws_inj = np.concatenate(ws_inj)
+        # ws_prod = np.concatenate(ws_prod)
 
         self['ws_p'] = ws_p.astype(np.int64)
         self['ws_q'] = ws_q.astype(np.int64)

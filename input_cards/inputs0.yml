@@ -114,13 +114,29 @@ Wells:
   #   type_region: box
   #   value: 10000.0
 
-    P1:
+    # P1:
+    #   p0: [23.0, 0.0, 0.0]
+    #   p1: [27.0, 1.0, 1.0]
+    #   prescription: P
+    #   type: Producer
+    #   type_region: box
+    #   value: 100.0
+
+    P2:
       p0: [0.0, 0.0, 0.0]
       p1: [27.0, 1.0, 1.0]
       prescription: P
       type: Producer
       type_region: box
       value: 100.0
+
+    # P3:
+    #   p0: [9.0, 0.0, 0.0]
+    #   p1: [17.0, 1.0, 1.0]
+    #   prescription: P
+    #   type: Producer
+    #   type_region: box
+    #   value: 100.0
 
 monophasic_data:
   gama: 10.0

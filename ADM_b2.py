@@ -398,7 +398,6 @@ volumes_without_grav_level_0 = ml_data['volumes_without_grav_level_0']
 data_impress['verif_rest'][:] = 0.0
 data_impress['verif_rest'][volumes_without_grav_level_0] = 1.0
 
-
 t0=time.time()
 # b2 = g_source_total_volumes.copy()
 b2 = b.copy()
@@ -413,6 +412,7 @@ b2[volumes_without_grav_level_0] = 0
 # b2[wells['ws_p']] = 0
 # cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, np.ones_like(b2))
 cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
+# cfs[data_impress['LEVEL'] == 0] = 0.0
 # cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, np.zeros_like(b2))
 # cfs[wells['ws_p']] = 0
 # cfs[:] = 0
@@ -864,7 +864,9 @@ ep_haji_L2=[]
 ep_haji_Linf=[]
 
 
-neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
+# neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
+# neta_lim_finescale=0.05
+neta_lim_finescale=np.inf
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
 delta_sat_max=np.load('flying/delta_sat_max.npy')[0]
 
@@ -964,8 +966,10 @@ while verif:
     b2 = b.copy()
     b2[wells2['ws_p']] = 0.0
     b2[volumes_without_grav_level_0] = 0.0
+    b2[data_impress['LEVEL'] == 0] = 0.0
 
     cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
+    cfs[data_impress['LEVEL'] == 0] = 0.0
     data_impress['gama'][:]=cfs
 
     t00=time.time()
@@ -1093,11 +1097,11 @@ while verif:
     )
 
     data_impress['erro'][:] = np.absolute(local_pressure_pf - pf)
-    data_impress['vug'][:] = 0.0
+    data_impress['fw_vol'][:] = 0.0
     print()
     print(flux_coarse_volumes_pf)
     for primal_id, coarse_flux in enumerate(flux_coarse_volumes_pf):
-        data_impress['vug'][data_impress['GID_1']==primal_id] = coarse_flux
+        data_impress['fw_vol'][data_impress['GID_1']==primal_id] = coarse_flux
 
     velocity_w_internal_faces, velocity_o_internal_faces = biphasic.get_velocity_w_and_o_internal_faces(
         velocity_internal_faces,
@@ -1286,5 +1290,5 @@ while verif:
     # # Twithout = b1['Tini'].copy()
     # cont += 1
 
-    if loop % 10 == 0:
+    if loop % 3 == 0:
         pdb.set_trace()
