@@ -1,7 +1,9 @@
 import numpy as np
-from scipy import optimize
+from scipy.special import comb
 from pymoab import rng
 from .impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
+
+from itertools import chain
 
 class VugGenerator(object):
     def __init__(self, mesh_file, ellipsis_params_range, num_ellipsoids=10, num_fractures=5):
@@ -19,6 +21,8 @@ class VugGenerator(object):
         self.mesh = FineScaleMesh(mesh_file)
         self.ellipsis_params_range = ellipsis_params_range
         self.num_ellipsoids = num_ellipsoids
+        if num_fractures > comb(self.num_ellipsoids, 2):
+            raise ValueError("The number of fractures must be inferior to the number of possible pairs of ellipsoids.")
         self.num_fractures = num_fractures
 
     def run(self):
@@ -35,7 +39,6 @@ class VugGenerator(object):
         None
 
         """
-        random_rng = np.random.default_rng()
         centroids = self.mesh.volumes.center[:]
         xs, ys, zs = centroids[:, 0], centroids[:, 1], centroids[:, 2]
         x_range = xs.min(), xs.max()
@@ -43,7 +46,31 @@ class VugGenerator(object):
         z_range = zs.min(), zs.max()
         centers, params, angles = self.get_random_ellipsoids(x_range, y_range, z_range)
 
-        # Compute vugs.
+        vols_per_ellipsoid = self.compute_vugs(centers, angles, params, centroids)
+        self.compute_fractures(vols_per_ellipsoid, centers, angles, params, centroids)
+
+    def compute_vugs(self, centers, angles, params, centroids):
+        """
+        Generates random ellipsoids and computes the volumes inside those
+        ellipsoids. If a volumes is inside a vug, the property "vug" from
+        the mesh data structure is set to 1.
+        
+        Inputs
+        ------
+        centers (numpy array): Array containing the cartesian coordinates of
+        each ellipsoid center.
+        angles (numpy array): Array containing the values (in radians) of the
+        three rotation angles with respect to the cartesian axis.
+        params (numpy array): Array containing the parameters of each ellipsoid, i.e,
+        the size of the axis;
+        centroids (numpy array): The centroids of the volumes compouding the mesh.
+
+        Output
+        ------
+        vols_per_ellipsoid (list): A list of Pymoab's ranges describing the volumes
+        inside each ellipsoid.
+
+        """
         vols_per_ellipsoid = []
         for center, param, angle in zip(centers, params, angles):
             R = self.get_rotation_matrix(angle)
@@ -54,30 +81,60 @@ class VugGenerator(object):
             vols_per_ellipsoid.append(self.mesh.core.all_volumes[vols_in_vug < 1])
             self.mesh.vug[vols_in_vug < 1] = 1
         
-        # Compute fractures.
+        return vols_per_ellipsoid
+
+    def compute_fractures(self, vols_per_ellipsoid, centers, angles, params, centroids):
+        """
+        Generates random fractures, i.e, cylinders connecting two vugs, 
+        and computes the volumes inside them. If a volumes is inside a 
+        fracture, then the property "fracture" from the mesh data 
+        structure is set to 1.
+        
+        Inputs
+        ------
+        vols_per_ellipsoid (list): A list of Pymoab's ranges describing the volumes
+        inside each ellipsoid.
+        centers (numpy array): Array containing the cartesian coordinates of
+        each ellipsoid center.
+        angles (numpy array): Array containing the values (in radians) of the
+        three rotation angles with respect to the cartesian axis.
+        params (numpy array): Array containing the parameters of each ellipsoid, i.e,
+        the size of the axis;
+        centroids (numpy array): The centroids of the volumes compouding the mesh.
+
+        Output
+        ------
+        None
+
+        """
+        random_rng = np.random.default_rng()
         selected_pairs = []
         for i in range(self.num_fractures):
+            # Find a pair of ellipsoids that are not overlapped and are
+            # not already connected by a fracture.
             while True:
                 e1, e2 = random_rng.choice(np.arange(self.num_ellipsoids), size=2, replace=False)
                 if (e1, e2) not in selected_pairs and \
                         rng.intersect(vols_per_ellipsoid[e1], vols_per_ellipsoid[e2]).empty():
                     selected_pairs.append((e1, e2))
                     break
-            # Cálculo do cilindro correspondente à fratura.
-            L = np.linalg.norm(centers[e1] - centers[e2])
-            r = 5 / np.sqrt(L)
+            # Calculating the cylinder's parameters.
+            L = np.linalg.norm(centers[e1] - centers[e2])   # Length
+            r = 10 / L  # Radius
+            # Calculating the distance from the centroids to the main axis of the cylinder.
             u = centroids - centers[e1]
             v = centroids - centers[e2]
             ds = np.cross(u, v) / L
             ds = np.sqrt((ds**2).sum(axis=1))
-            # Cálculo da projeção dos centroides na reta definida pelos centros
-            # de e1 e e2.
+            # Calculating the size of the projection of the centroids onto the line
+            # defined by the ellipsoids's centers.
             w = centers[e2] - centers[e1]
             proj_centroids = u.dot(w) / np.linalg.norm(w)
-            # Se a distância do centroide à reta definida pelos centros de e1 e e2 for
-            # menor que r e a magnitude da projeção do centroide sobre a mesma reta estiver
-            # entre (0, L), então o volume pertence à fratura.
-            self.mesh.fracture[(ds < r) & (proj_centroids < L) & (proj_centroids > 0)] = 1
+            # If the distance from the centroid to the cylinder's axis is less than the radius
+            # and the size of the projection is in the interval (0, L), i.e., between the centers
+            # and the volume is not already part of a vug, then it is a fracture.
+            all_vugs = self.mesh.vug[:].flatten()
+            self.mesh.vug[(ds < r) & (proj_centroids < L) & (proj_centroids > 0) & (all_vugs == 0)] = 2
 
     def write_file(self, path="results/vugs.vtk"):
         """
