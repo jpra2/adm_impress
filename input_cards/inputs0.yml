@@ -124,7 +124,7 @@ Wells:
 
     P2:
       p0: [0.0, 0.0, 0.0]
-      p1: [1.0, 1.0, 1.0]
+      p1: [27.0, 1.0, 1.0]
       prescription: P
       type: Producer
       type_region: box

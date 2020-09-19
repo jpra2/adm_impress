@@ -867,8 +867,8 @@ ep_haji_Linf=[]
 
 
 # neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
-# neta_lim_finescale=0.05
-neta_lim_finescale=np.inf
+neta_lim_finescale=0.05
+# neta_lim_finescale=np.inf
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
 delta_sat_max=np.load('flying/delta_sat_max.npy')[0]
 
@@ -1036,6 +1036,8 @@ while verif:
     data_impress['tpfa_pressure'][:] = pf
     data_impress['erro_p'][:] = np.absolute(pf-padm)
 
+    t0 = time.time()
+
     flux_coarse_volumes, total_flux_internal_faces, velocity_internal_faces, local_pressure = conservation_test.conservation_with_gravity(
         elements.volumes,
         data_impress['GID_1'],
@@ -1058,11 +1060,14 @@ while verif:
         ml_data['vertex_level_1'],
         g_source_total_internal_faces,
         g_total_velocity_internal_faces,
-        wells2['ws_p'],
-        wells2['values_p'],
-        wells2['ws_q'],
-        wells2['values_q']
+        wells_p=wells2['ws_p'],
+        vals_p=wells2['values_p'],
+        wells_q=wells2['ws_q'],
+        vals_q=wells2['values_q'],
+        loop=loop
     )
+    t1 = time.time()
+    print(f'\ntime coarse flux: {t1-t0}\n')
 
     data_impress['verif_po'][:] = local_pressure
     data_impress['flux_volumes_test'][:] = 0.0
@@ -1092,10 +1097,11 @@ while verif:
         ml_data['vertex_level_1'],
         g_source_total_internal_faces,
         g_total_velocity_internal_faces,
-        wells2['ws_p'],
-        wells2['values_p'],
-        wells2['ws_q'],
-        wells2['values_q']
+        wells_p=wells2['ws_p'],
+        vals_p=wells2['values_p'],
+        wells_q=wells2['ws_q'],
+        vals_q=wells2['values_q'],
+        loop=loop
     )
 
     data_impress['erro'][:] = np.absolute(local_pressure_pf - pf)
