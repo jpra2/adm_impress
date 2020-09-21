@@ -45,18 +45,18 @@ set_porosity: true
 Porosity:
   r1:
     type: all
-    value: 0.3
+    value: 0.2
 
 Saturation:
   r1:
     type: all
-    value: 0.2
+    value: 0.0
 
   r3:
     type: wells
     type1_well: Injector
     type2_well: null
-    value: 0.8
+    value: 1.0
 
 Wells:
   P1:
@@ -73,7 +73,7 @@ Wells:
     p0: [1060.0, 0.0, 168.0]
     p1: [1080.0, 10.0, 170.0]
 
-    prescription: P
+    prescription: Q
     type: Injector
     type_region: box
     value: 10000000.0

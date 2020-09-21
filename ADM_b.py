@@ -572,8 +572,7 @@ while verif:
     ev_L2.append(np.linalg.norm(abs(vf-vadm).max(axis=1))/np.linalg.norm(abs(vf).max(axis=1)))
     ev_Linf.append(abs(vf-vadm).max()/abs(vf).max())
 
-
-
+    
     eadm_2=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
     eadm_inf=abs(pms-pf).max()/pf.max()
     el2.append(eadm_2)
