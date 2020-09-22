@@ -15,7 +15,7 @@ def conservation_with_gravity(self,
     coarse_internal_faces, map_internal_faces, abs_u_normal_faces,
     gravity_vector, keq_faces,
     rho_w, rho_o, hi, g_source_total_volumes, coarse_vertexes, g_source_total_internal_faces, g_velocity_internal_faces,
-    wells_p=[], vals_p=[], wells_q=[], vals_q=[]):
+    wells_p=[], vals_p=[], wells_q=[], vals_q=[], loop=0):
 
     all_primal_ids = np.unique(primal_ids)
     cids = coarse_primal_ids_org.copy()
@@ -40,6 +40,7 @@ def conservation_with_gravity(self,
         presc_q[wells_q] = vals_q
 
     flux2 = np.zeros(n_internal_faces)
+    pare= True
 
     for primal_id in all_primal_ids:
 
@@ -93,6 +94,8 @@ def conservation_with_gravity(self,
         # neuman problemg_velocity_intersect_faces
         presc_flux_vols = PhisicalProperties.get_total_g_source_volumes(volumes, volumes_adj_internal_faces, flux2)[vols]
         flux_coarse_volumes[primal_id] = presc_flux_vols.sum()
+        # if pare == True and loop > 0:
+        #     import pdb; pdb.set_trace()
 
         adj_internal_faces_coarse = volumes_adj_internal_faces[map_coarse_internal_faces]
         local_adj_internal = local_ids[adj_internal_faces_coarse]
@@ -246,8 +249,8 @@ class ConservationTest:
             presc_flux_vols = PhisicalProperties.get_total_g_source_volumes(volumes, volumes_adj_internal_faces, flux2)[vols]
             c_flux = presc_flux_vols.sum()
             # if abs(c_flux) > min_value:
-            if loop==1 and pare==True:
-                pdb.set_trace()
+            # if loop>6 and pare==True:
+            #     pdb.set_trace()
 
             flux_coarse_volumes[primal_id] = c_flux
 
@@ -256,7 +259,8 @@ class ConservationTest:
             local_adj_internal = local_ids[adj_internal_faces_coarse]
             g_source_internal = g_source_total_internal_faces[map_coarse_internal_faces]
             g_source_local_volumes = PhisicalProperties.get_total_g_source_volumes(local_ids[vols], local_adj_internal, g_source_internal)
-            local_source_term = g_source_local_volumes + presc_flux_vols
+            # import pdb; pdb.set_trace()
+            local_source_term = presc_flux_vols + g_source_local_volumes
 
             if set_p & set(vols):
                 volsp = np.intersect1d(vols, wells_p)

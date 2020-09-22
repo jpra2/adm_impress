@@ -306,6 +306,8 @@ wells2.add_gravity_2(
 )
 
 g_source_total_internal_faces = biphasic_data['g_source_w_internal_faces'] + biphasic_data['g_source_o_internal_faces']
+
+
 g_source_total_volumes = phisical_properties.get_total_g_source_volumes(
     elements.volumes,
     elements.get('volumes_adj_internal_faces'),
@@ -400,6 +402,7 @@ data_impress['verif_rest'][volumes_without_grav_level_0] = 1.0
 
 t0=time.time()
 b2 = g_source_total_volumes.copy()
+
 # b2 = b.copy()
 # b2[wells2['ws_p']] = 0.0
 # b2[wells[]]
@@ -867,8 +870,8 @@ ep_haji_Linf=[]
 
 
 # neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
-neta_lim_finescale=0.05
-# neta_lim_finescale=np.inf
+# neta_lim_finescale=0.05
+neta_lim_finescale=np.inf
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
 delta_sat_max=np.load('flying/delta_sat_max.npy')[0]
 
@@ -965,14 +968,7 @@ while verif:
         T
     )
 
-    b2 = g_source_total_volumes.copy()
-    # b2[wells2['ws_p']] = 0.0
-    b2[volumes_without_grav_level_0] = 0.0
-    # b2[data_impress['LEVEL'] == 0] = 0.0
 
-    cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
-    cfs[data_impress['LEVEL'] == 0] = 0.0
-    data_impress['gama'][:]=cfs
 
     t00=time.time()
     transmissibility=data_impress['transmissibility']
@@ -1022,6 +1018,30 @@ while verif:
         adm_method.set_saturation_level_uniform(delta_sat_max)
 
     t0=time.time()
+
+    ############
+    ## testting correction function
+    int_facs=elements.internal_faces
+    int_adjs=elements.get('volumes_adj_internal_faces')
+    # import pdb; pdb.set_trace()
+    some_fine = (data_impress['LEVEL'][int_adjs]==0).sum(axis=1)>0
+    g_source_total_internal_faces = biphasic_data['g_source_w_internal_faces'] + biphasic_data['g_source_o_internal_faces']
+    g_source_total_internal_faces[some_fine]==0
+    g_source_total_volumes = phisical_properties.get_total_g_source_volumes(
+                elements.volumes,
+                elements.get('volumes_adj_internal_faces'),
+                g_source_total_internal_faces)
+
+    ###############
+
+    b2 = g_source_total_volumes.copy()
+    # b2[wells2['ws_p']] = 0.0
+    b2[volumes_without_grav_level_0] = 0.0
+    # b2[data_impress['LEVEL'] == 0] = 0.0
+    # b2[data_impress['LEVEL'] == 0] = 0.0
+    cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
+    # cfs[data_impress['LEVEL'] == 0] = 0.0
+    data_impress['gama'][:]=cfs
 
     OP_ADM = adm_method['adm_prolongation_level_1']
     OR_ADM = adm_method['adm_restriction_level_1']
