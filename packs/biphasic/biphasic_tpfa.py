@@ -347,7 +347,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
 
     def update_sat(self):
         saturations0 = self.data_impress['saturation'].copy()
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         saturations = saturations0.copy()
         ids = np.arange(len(saturations))

@@ -19,11 +19,10 @@ def remove_previous_files():
     os.mkdir('results/biphasic/finescale/vtks')
 
 def run_test_cases():
-    vpis_for_save=np.arange(0.0,0.021,0.01)
-    # vpis_for_save=np.array([0.0])
-
+    vpis_for_save=np.arange(0.0,0.041,0.01)
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     os.system("python testting2_biphasic.py")
+
     crs=[[9,9,1],[5, 11, 1],[9, 19, 1],[13, 27, 1]]
     np.save('flying/all_crs.npy',np.array(crs))
     # neta_lim_dual_values=     [ np.inf,    0.5,    1.0,    2.0,   10.0,  100.0]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
@@ -33,8 +32,9 @@ def run_test_cases():
     phiK_raz_lim_values=      [ np.inf,    3.0]#,    3.0,    3.0,    3.0,    3.0,     3.0,    5.0,    5.0,    5.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf,    3.0,    3.0,    3.0,    3.0,    3.0,   10.0,   10.0,   10.0,   10.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
     delta_sat_max=            [    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,     1.1,    1.1,    1.1,    1.1,    1.1,    1.1,     1.1,    0.1,    0.3,     0.5]#    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
     cr_inds=                  [      0,      0]#,      0,      0,      0,      0,       0,      0,      0,      0,      0,      0,       0,      0,      0,       0]
-    # for i in range(len(neta_lim_dual_values)):
-    if False:
+
+    for i in range(len(neta_lim_dual_values)):
+    # if False:
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
         np.save('flying/neta_lim_dual.npy',np.array([neta_lim_dual_values[i]]))
@@ -78,9 +78,9 @@ def organize_results():
 
 
 def print_results(all_cases):
-    units={'vpi':'vpi [%]','wor':'wor []','t_comp':'comp_time [s]','delta_t':'time-step []',
+    units={'vpi':'PVI [%]','wor':'wor []','t_comp':'comp_time [s]','delta_t':'time-step []',
         'n1_adm':'Nadm/Nf[%]','el2':r'$||e_p||_2$'+' [%]','elinf':r'$||e_p||_\infty$'+' [%]', 'es_L2':'es_L2 [%]',
-        'es_Linf':'es_Linf [%]', 'vpis_for_save':'vpi [%]','coupl':"Percentage of enrichment [%]",
+        'es_Linf':'es_Linf [%]', 'vpis_for_save':'PVI [%]','coupl':"Percentage of enrichment [%]",
         'refinement':"Percentage at fine-scale [%]", 'ep_haji_L2':'ep_rel_ms_L2[]',
         'ep_haji_Linf':'ep_rel_ms_Linf[]','er_L2':r'$||e_r||_2$'+' []','er_Linf':r'$||e_r||_\infty$'+' []',
         'ev_L2':r'$||e_v||_2$'+' [%]','ev_Linf':r'$||e_v||_\infty$'+' [%]'}
@@ -99,9 +99,10 @@ def print_results(all_cases):
         plt.close('all')
         ymin=np.inf
         ymax=-np.inf
-        #all_cases[:,0]
-        # for case in all_cases:#[np.array([-1, 1, 4])]:
-        for case in all_cases[np.array([-1, 1, 4])]:
+        #all_cases[:,0
+        for case in all_cases[np.array([-1, 0])]:
+        # import pdb; pdb.set_trace()
+        # for case in all_cases[0]:
             case_name=case[0]
             case_data=case[1]
             if case_name!='finescale':
@@ -316,9 +317,6 @@ def print_results(all_cases):
                         pp=np.arange(0,np.array(pp).max()+5,5)
                         # positions.append(.5)
                     all_ticks=np.array(pp).astype(int)
-
-                    # all_ticks=np.array(pp).astype(int)
-
 
 
                 labels = positions.astype(int).astype(str)
