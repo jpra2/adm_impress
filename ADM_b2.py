@@ -26,6 +26,7 @@ from packs.tpfa.biphasic.load_or_preprocess_biphasic import preprocessar, carreg
 from packs.tpfa.biphasic import TpfaBiphasicCons
 from packs.tpfa.monophasic import TpfaMonophasic
 from packs.multiscale.test_conservation import ConservationTest
+from packs.multiscale.update_correction_function import get_cfs
 
 def save_multilevel_results():
     t_comp.append(t1-t0)
@@ -400,38 +401,6 @@ volumes_without_grav_level_0 = ml_data['volumes_without_grav_level_0']
 data_impress['verif_rest'][:] = 0.0
 data_impress['verif_rest'][volumes_without_grav_level_0] = 1.0
 
-def get_cfs(g_source_total_volumes, volumes_without_grav_level_0, wells2, data_impress, local_lu_matrices, As):
-
-    t0=time.time()
-    b2 = g_source_total_volumes.copy()
-    b2[volumes_without_grav_level_0] = 0
-    b2[wells2['ws_q']] += wells2['values_q']
-
-    # b2 = b.copy()
-    # b2[wells2['ws_p']] = 0.0
-    # b2[wells[]]
-    # b2[data_impress['LEVEL']==0] = 0.0
-
-    # b2[data_impress['DUAL_1'] == 2] = 0.0
-
-    # b2=np.ones_like(b2)10000
-    # b2[wells['ws_q']] = -b[wells['ws_q']]
-    # b2[wells['ws_p']] = 0
-    # cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, np.ones_like(b2))
-    cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
-    cfs[data_impress['LEVEL']==0] = 0.0
-    # cfs[data_impress['LEVEL'] == 0] = 0.0
-    # cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, np.zeros_like(b2))
-    # cfs[wells['ws_p']] = 0
-    # cfs[:] = 0
-    data_impress['gama']=cfs
-    print('cf {}'.format(time.time()-t0))
-    return cfs
-# import pdb; pdb.set_trace()
-#############################
-
-cfs = get_cfs(g_source_total_volumes, volumes_without_grav_level_0, wells2, data_impress, local_lu_matrices, As)
-
 # mlo=tpfalize(M,mlo,data_impress)
 mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
@@ -447,7 +416,28 @@ adm_method.equalize_levels()
 # adm_method.set_adm_mesh()
 gids_0 = data_impress['GID_0']
 
+# data_impress['LEVEL'][wells2['ws_q']]=1
 adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
+
+###########
+# testting correction function
+int_facs=elements.internal_faces
+int_adjs=elements.get('volumes_adj_internal_faces')
+# import pdb; pdb.set_trace()
+
+some_fine = (data_impress['LEVEL'][int_adjs]==0).sum(axis=1)>0
+
+g_source_total_internal_faces_cf = g_source_total_internal_faces
+g_source_total_internal_faces_cf[some_fine]=0
+g_source_total_volumes_cf = phisical_properties.get_total_g_source_volumes(
+            elements.volumes,
+            elements.get('volumes_adj_internal_faces'),
+            g_source_total_internal_faces_cf)
+
+##############
+
+cfs = get_cfs(g_source_total_volumes_cf, volumes_without_grav_level_0, wells2, data_impress, local_lu_matrices, As)
+
 # adm_method.set_initial_mesh(mlo, T, b)
 #
 # meshset_volumes = M.core.mb.create_meshset()
@@ -886,6 +876,8 @@ delta_sat_max=np.load('flying/delta_sat_max.npy')[0]
 # import pdb; pdb.set_trace()
 verif = True
 loop = 0
+erros_l2=[]
+erros_linf=[]
 while verif:
     # pdb.set_trace()
 
@@ -997,14 +989,13 @@ while verif:
 
 
 
+    # data_impress['LEVEL'][wells2['ws_q']]=1
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
-
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
 
     t0=time.time()
-    for level in range(1, n_levels):
-        adm_method.organize_ops_adm(mlo, level)
+
     '''# or_adm=adm_method._data['adm_restriction_level_1']
     # op_adm=adm_method._data['adm_prolongation_level_1']
 
@@ -1015,6 +1006,7 @@ while verif:
     # np.concatenate(np.array(critical_groups)'''
     # adm_method.set_level_wells_3()
     adm_method.set_level_wells_only()
+    # data_impress['LEVEL'][wells2['ws_q']] = 1
 
     if type_of_refinement=='uni':
         if len(vols_orig)>0:
@@ -1023,22 +1015,25 @@ while verif:
     else:
         adm_method.set_saturation_level_uniform(delta_sat_max)
 
+    for level in range(1, n_levels):
+        adm_method.organize_ops_adm(mlo, level)
+
     t0=time.time()
 
-    ############
-    ## testting correction function
+    ###########
+    # testting correction function
     int_facs=elements.internal_faces
     int_adjs=elements.get('volumes_adj_internal_faces')
     # import pdb; pdb.set_trace()
     some_fine = (data_impress['LEVEL'][int_adjs]==0).sum(axis=1)>0
-    g_source_total_internal_faces = biphasic_data['g_source_w_internal_faces'] + biphasic_data['g_source_o_internal_faces']
-    g_source_total_internal_faces[some_fine]==0
-    g_source_total_volumes = phisical_properties.get_total_g_source_volumes(
+    g_source_total_internal_faces_cf = g_source_total_internal_faces
+    g_source_total_internal_faces_cf[some_fine]=0
+    g_source_total_volumes_cf = phisical_properties.get_total_g_source_volumes(
                 elements.volumes,
                 elements.get('volumes_adj_internal_faces'),
-                g_source_total_internal_faces)
+                g_source_total_internal_faces_cf)
 
-    ###############
+    ##############
 
     # b2 = g_source_total_volumes.copy()
     # # b2[wells2['ws_p']] = 0.0
@@ -1049,7 +1044,7 @@ while verif:
     # # cfs[data_impress['LEVEL'] == 0] = 0.0
     # data_impress['gama'][:]=cfs
 
-    cfs = get_cfs(g_source_total_volumes, volumes_without_grav_level_0, wells2, data_impress, local_lu_matrices, As)
+    cfs = get_cfs(g_source_total_volumes_cf, volumes_without_grav_level_0, wells2, data_impress, local_lu_matrices, As)
 
     OP_ADM = adm_method['adm_prolongation_level_1']
     OR_ADM = adm_method['adm_restriction_level_1']
@@ -1063,7 +1058,8 @@ while verif:
 
     data_impress['tpfa_pressure'][:] = pf
     data_impress['erro_p'][:] = np.absolute(pf-padm)
-
+    erros_l2.append(np.linalg.norm(pf-padm)/np.linalg.norm(pf))
+    erros_linf.append(abs(pf-padm).max()/pf.max())
     t0 = time.time()
 
     flux_coarse_volumes, total_flux_internal_faces, velocity_internal_faces, local_pressure = conservation_test.conservation_with_gravity(
@@ -1225,8 +1221,8 @@ while verif:
 
     current_data['current'] = np.array([(prod_o, prod_w, wor, delta_t, dvpi, loop, accumulate.global_identifier)], dtype=dty)
     accumulate.insert_data(current_data['current'])
-    data_impress.update_variables_to_mesh()
-    M.core.mb.write_file('results/trash_'+ str(loop) + '.vtk', [meshset_volumes])
+    # data_impress.update_variables_to_mesh()
+    # M.core.mb.write_file('results/trash_'+ str(loop) + '.vtk', [meshset_volumes])
     # pdb.set_trace()
 
 
@@ -1326,6 +1322,17 @@ while verif:
     # T, b = b1.get_T_and_b()
     # # Twithout = b1['Tini'].copy()
     # cont += 1
-
+    data_impress.update_variables_to_mesh()
+    M.core.mb.write_file('results/trash_'+ str(loop) + '.vtk', [meshset_volumes])
     if loop % 3 == 0:
+        plt.plot(100*np.array(erros_l2))
+        plt.savefig('results/trash_l2.svg')
+        plt.tight_layout()
+        plt.close('all')
+        plt.plot(100*np.array(erros_linf))
+        plt.savefig('results/trash_linf.svg')
+        plt.tight_layout()
+        plt.close('all')
+
+
         pdb.set_trace()

@@ -248,7 +248,7 @@ class Wells(DataManager):
                 elif tipo == 'Producer':
                     ws_prod.append(vols)
 
-        self['ws_q_sep'] = np.array(ws_q).astype(np.int32)
+        self['ws_q_sep'] = ws_q
         self['ws_p_sep'] = np.array(ws_p)
         self['values_p_sep'] = np.array(values_p)
         self['values_p_ini_sep'] = self['values_p_sep'].copy()
@@ -296,8 +296,10 @@ class Wells(DataManager):
         # ws_inj = np.concatenate(ws_inj)
         # ws_prod = np.concatenate(ws_prod)
 
-        self['ws_p'] = ws_p.astype(np.int64)
-        self['ws_q'] = ws_q.astype(np.int64)
+        # self['ws_p'] = ws_p.astype(np.int64)
+        # self['ws_q'] = ws_q.astype(np.int64)
+        self['ws_p'] = ws_p
+        self['ws_q'] = ws_q
         self['ws_inj'] = ws_inj.astype(np.int64)
         self['ws_prod'] = ws_prod.astype(np.int64)
         self['values_p'] = values_p
@@ -347,6 +349,7 @@ class Wells(DataManager):
 
         self.mesh.core.mb.tag_set_data(self.tags['P'], M.core.all_volumes[self['ws_p']], self['values_p'])
         self.mesh.core.mb.tag_set_data(self.tags['Q'], M.core.all_volumes[self['ws_q']], self['values_q'])
+        # pass
 
     def correct_wells(self):
         if len(self['ws_q']) == 0:

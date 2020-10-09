@@ -122,27 +122,27 @@ Wells:
     #   type_region: box
     #   value: 100.0
     # P1:
-    #   p0: [8.0, 0.0, 0.0]
-    #   p1: [9.0, 1.0, 1.0]
-    #   prescription: P
-    #   type: Producer
-    #   type_region: box
-    #   value: 100.0
-
-    P2:
-      p0: [0.0, 0.0, 0.0]
-      p1: [27.0, 1.0, 1.0]
-      prescription: P
-      type: Producer
-      type_region: box
-      value: 100.0
-    # P3:
     #   p0: [0.0, 0.0, 26.0]
     #   p1: [27.0, 1.0, 27.0]
     #   prescription: Q
     #   type: Injector
     #   type_region: box
-    #   value: 100000.0
+    #   value: 10000000.0
+
+    P2:
+      p0: [0.0, 0.0, 0.0]
+      p1: [1.0, 1.0, 1.0]
+      prescription: P
+      type: Producer
+      type_region: box
+      value: 100.0
+    P3:
+      p0: [26.0, 0.0, 0.0]
+      p1: [27.0, 1.0, 1.0]
+      prescription: P
+      type: Producer
+      type_region: box
+      value: 100.0
     # P3:
     #   p0: [9.0, 0.0, 0.0]
     #   p1: [17.0, 1.0, 1.0]
