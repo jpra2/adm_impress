@@ -1,6 +1,7 @@
 # mesh_name: mesh/isotropic/99x99x1.msh
 # mesh_name: mesh/9x1x9.h5m
-mesh_name: mesh/27x1x27.h5m
+# mesh_name: mesh/27x1x27.h5m
+mesh_name: mesh/28x1x28.h5m
 
 n_test: 0
 state: 0
@@ -89,7 +90,7 @@ Saturation:
   r2:
     type: box
     p0: [0.0, 0.0, 0.0]
-    p1: [27.0, 1.0, 14.0]
+    p1: [28.0, 1.0, 14.0]
     value: 0.2
 
   # r3:
@@ -136,13 +137,13 @@ Wells:
       type: Producer
       type_region: box
       value: 100.0
-    # P3:
-    #   p0: [0.0, 0.0, 11.0]
-    #   p1: [1.0, 1.0, 13.0]
-    #   prescription: q
-    #   type: Producer
-    #   type_region: box
-    #   value: 0.0
+    P3:
+      p0: [0.0, 0.0, 5.0]
+      p1: [5.0, 1.0, 14.0]
+      prescription: Q
+      type: Producer
+      type_region: box
+      value: 0.0
     # P3:
     #   p0: [9.0, 0.0, 0.0]
     #   p1: [17.0, 1.0, 1.0]
