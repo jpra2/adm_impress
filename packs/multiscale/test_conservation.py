@@ -14,7 +14,7 @@ def conservation_with_gravity(self,
     coarse_faces, coarse_intersect_faces, areas, coarse_primal_ids_org, volumes_adj_internal_faces,
     coarse_internal_faces, map_internal_faces, abs_u_normal_faces,
     gravity_vector, keq_faces,
-    rho_w, rho_o, hi, g_source_total_volumes, coarse_vertexes, g_source_total_internal_faces, g_velocity_internal_faces,
+    rho_w, rho_o, hi, g_source_total_volumes, coarse_vertexes, g_source_total_internal_faces, g_velocity_internal_faces, faces_volumes, boundary_faces,
     wells_p=[], vals_p=[], wells_q=[], vals_q=[], loop=0):
 
     all_primal_ids = np.unique(primal_ids)
@@ -87,6 +87,7 @@ def conservation_with_gravity(self,
         velocity_internal_faces[map_intersect_faces] = resp2
         flux_internal_faces[map_intersect_faces] = resp
         flux2[map_intersect_faces] = resp
+
 
 
         #
@@ -166,7 +167,7 @@ class ConservationTest:
         coarse_faces, coarse_intersect_faces, areas, coarse_primal_ids_org, volumes_adj_internal_faces,
         coarse_internal_faces, map_internal_faces, abs_u_normal_faces,
         gravity_vector, keq_faces,
-        rho_w, rho_o, hi, g_source_total_volumes, coarse_vertexes, g_source_total_internal_faces, g_velocity_internal_faces,
+        rho_w, rho_o, hi, g_source_total_volumes, coarse_vertexes, g_source_total_internal_faces, g_velocity_internal_faces, faces_volumes, boundary_faces,
         wells_p=[], vals_p=[], wells_q=[], vals_q=[], loop=0):
 
         min_value = 1e-8
@@ -185,6 +186,7 @@ class ConservationTest:
         transmissibility_internal_faces = np.absolute(global_transmissibility[volumes_adj_internal_faces[:,0], volumes_adj_internal_faces[:,1]].toarray().flatten())
         set_p = set(wells_p)
         set_q = set(wells_q)
+        set_all_wells = set_p | set_q
         if len(set_p) > 0:
             presc_p = np.zeros(n_volumes)
             presc_p[wells_p] = vals_p
@@ -194,11 +196,14 @@ class ConservationTest:
             presc_q[wells_q] = vals_q
 
         flux2 = np.zeros(n_internal_faces)
+        flux3 = flux2.copy()
         pare = True
+
 
         for primal_id in all_primal_ids:
 
             flux2[:] = 0.0
+            coarse_flux_2 = 0.0
             vols = volumes[primal_ids == primal_id]
             set_vols = set(vols)
             n_vols = len(vols)
@@ -242,12 +247,40 @@ class ConservationTest:
             flux_internal_faces[map_intersect_faces] = resp
             flux2[map_intersect_faces] = resp
 
+            if set_all_wells & set(vols):
+                flux3[:] = 0.0
+                volsp = np.array(list(set_all_wells & set(vols)))
+                faces_volsp = faces_volumes[volsp]
+                all_intfaces_volsp = np.setdiff1d(np.unique(faces_volsp.flatten()), boundary_faces)
+                volumes_adjs_faces_volsp = volumes_adj_internal_faces[map_internal_faces[all_intfaces_volsp]]
+
+                delta_p3 = pressure[volumes_adjs_faces_volsp]
+                abs_u_normal_faces_volsp = abs_u_normal_faces[all_intfaces_volsp]
+                areas_faces_volsp = areas[all_intfaces_volsp]
+                g_velocity_faces_volsp = g_velocity_internal_faces[map_internal_faces[all_intfaces_volsp]]
+                ni3 = len(all_intfaces_volsp)
+                adj_intersect_intern_vols = np.zeros(ni, dtype=int)
+                transmissibility_faces_volsp = transmissibility_internal_faces[map_internal_faces[all_intfaces_volsp]]
+
+                flux_faces_volsp, vel_faces_volsp = self.get_upscale_flux(
+                    delta_p3,
+                    abs_u_normal_faces_volsp,
+                    areas_faces_volsp,
+                    ni3,
+                    g_velocity_faces_volsp,
+                    transmissibility_faces_volsp
+                )
+
+                flux3[map_internal_faces[all_intfaces_volsp]] = flux_faces_volsp
+
+                presc_flux_wells = PhisicalProperties.get_total_g_source_volumes(volumes, volumes_adj_internal_faces, flux3)[volsp]
+                coarse_flux_2 = presc_flux_wells.sum()
 
             #
             # ################################################################
             # neuman problemg_velocity_intersect_faces
             presc_flux_vols = PhisicalProperties.get_total_g_source_volumes(volumes, volumes_adj_internal_faces, flux2)[vols]
-            c_flux = presc_flux_vols.sum()
+            c_flux = presc_flux_vols.sum() - coarse_flux_2
             # if abs(c_flux) > min_value:
             # if loop>6 and pare==True:
             #     pdb.set_trace()

@@ -240,7 +240,7 @@ class Wells(DataManager):
 
                 elif prescription == 'P':
                     val = value
-                    ws_p.append(vols.astype(np.int32))
+                    ws_p.append(vols.astype(np.int64))
                     values_p.append(np.repeat(val, nv))
 
                 if tipo == 'Injector':
@@ -249,7 +249,7 @@ class Wells(DataManager):
                     ws_prod.append(vols)
 
         self['ws_q_sep'] = ws_q
-        self['ws_p_sep'] = np.array(ws_p)
+        self['ws_p_sep'] = ws_p
         self['values_p_sep'] = np.array(values_p)
         self['values_p_ini_sep'] = self['values_p_sep'].copy()
         self['values_q_sep'] = np.array(values_q)
