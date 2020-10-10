@@ -248,8 +248,8 @@ class Wells(DataManager):
                 elif tipo == 'Producer':
                     ws_prod.append(vols)
 
-        self['ws_q_sep'] = np.array(ws_q).astype(np.int32)
-        self['ws_p_sep'] = np.array(ws_p)
+        self['ws_q_sep'] = ws_q
+        self['ws_p_sep'] = ws_p
         self['values_p_sep'] = np.array(values_p)
         self['values_p_ini_sep'] = self['values_p_sep'].copy()
         self['values_q_sep'] = np.array(values_q)

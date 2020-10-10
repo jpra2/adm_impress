@@ -41,6 +41,7 @@ def preprocessar(M, data_impress, wells):
     map_internal_faces = np.repeat(-1, len(elements.faces))
     map_internal_faces[elements.internal_faces] = np.arange(len(elements.internal_faces))
     elements.insert('map_internal_faces', map_internal_faces, 'array')
+    elements.insert('volumes_to_faces', M.volumes.bridge_adjacencies(elements.volumes, 3, 2), 'array')
 
     n_vols = len(elements.volumes)
 
