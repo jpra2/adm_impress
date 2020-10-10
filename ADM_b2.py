@@ -1125,6 +1125,8 @@ while verif:
         ml_data['vertex_level_1'],
         g_source_total_internal_faces,
         g_total_velocity_internal_faces,
+        elements.get('volumes_to_faces'),
+        elements.boundary_faces,
         wells_p=wells2['ws_p'],
         vals_p=wells2['values_p'],
         wells_q=wells2['ws_q'],
@@ -1170,6 +1172,7 @@ while verif:
         elements.volumes,
         elements.get('volumes_adj_internal_faces')
     )
+    # pdb.set_trace()
     data_impress['flux_volumes'][:] = flux_total_volumes
 
     flux_w_volumes = biphasic.get_flux_phase_volumes(
