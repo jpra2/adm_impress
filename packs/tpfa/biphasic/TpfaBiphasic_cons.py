@@ -462,8 +462,10 @@ class TpfaBiphasicCons:
         flux_w_faces[testw] = 0.0
         flux_o_faces[testo] = 0.0
         flux_total[test3] = 0.0
-        tw = flux_w_faces > 0
-        to = flux_o_faces > 0
+        # tw = flux_w_faces > 0
+        # to = flux_o_faces > 0
+        tw = flux_w_faces >= 0
+        to = flux_o_faces >= 0
         upwind_w = np.full((len(internal_faces), 2), False, dtype=bool)
         upwind_o = upwind_w.copy()
 
