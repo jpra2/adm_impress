@@ -503,6 +503,8 @@ class TpfaBiphasicCons:
             upwind_o[tt] = upgo
 
         else:
+            tw = flux_w_faces >= 0
+            to = flux_o_faces >= 0
             upwind_w[tw, 0] = True
             upwind_o[to, 0] = True
             tw = ~tw

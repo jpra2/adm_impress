@@ -12,7 +12,7 @@ import pdb
 import time
 from packs.multiscale.test_conservation import ConservationTest
 
-test_coarse_flux = True
+test_coarse_flux = False
 if test_coarse_flux == True:
     conservation_test = ConservationTest()
 
@@ -180,6 +180,17 @@ while loop <= loop_max:
         )
 
     ###
+    upwind_w_vec, upwind_o_vec = biphasic.visualize_upwind_vec(
+        elements.internal_faces,
+        geom['abs_u_normal_faces'][elements.internal_faces],
+        geom['centroid_volumes'],
+        elements.get('volumes_adj_internal_faces'),
+        biphasic_data['upwind_w'],
+        biphasic_data['upwind_o']
+    )
+    data_impress['upwind_w_faces_vec'][elements.internal_faces] = upwind_w_vec
+    data_impress['upwind_o_faces_vec'][elements.internal_faces] = upwind_o_vec
+
     biphasic_data['mob_w_internal_faces'] = mob_w[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_w']]]
     biphasic_data['mob_o_internal_faces'] = mob_o[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_o']]]
 
@@ -330,9 +341,9 @@ while loop <= loop_max:
         pdb.set_trace()
 
 
-    if loop == 0:
-        loop += 1
-        continue
+    # if loop == 0:
+    #     loop += 1
+    #     continue
 
     flux_total_volumes = monophasic.get_total_flux_volumes(
         total_flux_internal_faces,
@@ -357,10 +368,13 @@ while loop <= loop_max:
         elements.volumes,
         flux_total_volumes
     )
+    # M.core.print(folder='results', file='test_f
+    data_impress['flux_w_volumes'][:] = flux_w_volumes
+    data_impress['flux_o_volumes'][:] = flux_o_volumes
 
     biphasic_data['saturation_last'] = biphasic_data['saturation'].copy()
 
-    delta_t, biphasic_data['saturation'] = biphasic.update_saturation(
+    delta_t, biphasic_data['saturation'][:] = biphasic.update_saturation(
         flux_w_volumes,
         rock_data['porosity'],
         geom['volume'],
@@ -403,8 +417,6 @@ while loop <= loop_max:
     # M.core.print(folder='results', file='test_faces_'+str(loop), extension='.vtk', config_input='input_cards/print_settings2.yml')
     print_test_faces(name2)
 
-    # pdb.set_trace()
-
     if loop % 100 == 0:
         accumulate.export(local_key_identifier='loop')
         current_data.export_to_npz()
@@ -414,7 +426,7 @@ while loop <= loop_max:
         all_datas = accumulate.load_all_datas()
         pdb.set_trace()
 
-    if loop % 40 == 0:
+    if loop % 3 == 0:
         pdb.set_trace()
 
 
