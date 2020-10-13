@@ -15,7 +15,7 @@ biphasic: true
 load_biphasic_data: false
 deletar_results: true
 deletar_npyfiles_flying: False
-multilevel_data: false
+multilevel_data: true
 load_multilevel_data: false
 load_operators: false
 get_correction_term: false
