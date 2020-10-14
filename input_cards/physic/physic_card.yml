@@ -1,4 +1,4 @@
 
 # gravity: True
 # gravity_vector: [0.0, 0.0, 0.0]
-gravity_vector: [0.0, 0.0, -10.0]
+gravity_vector: [0.0, 0.0, -100000.0]
