@@ -12,7 +12,7 @@ import pdb
 import time
 from packs.multiscale.test_conservation import ConservationTest
 
-test_coarse_flux = True
+test_coarse_flux = False
 if test_coarse_flux == True:
     conservation_test = ConservationTest()
 

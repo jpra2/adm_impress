@@ -876,6 +876,7 @@ ep_haji_Linf=[]
 neta_lim_finescale=np.inf
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
 delta_sat_max=np.load('flying/delta_sat_max.npy')[0]
+delta_sat_max = 0.1
 
 # pdb.set_trace()
 
