@@ -5,6 +5,6 @@ wor_max: null
 vpi_max: null
 t_max: null
 delta_t_max: null
-delta_sat_max: 0.4
+delta_sat_max: 0.1
 show_vtk_for_vpis: [0.0, 0.5, 0.75]
 variables_to_show_in_npz: null
