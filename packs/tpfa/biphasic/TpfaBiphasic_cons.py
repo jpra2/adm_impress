@@ -449,7 +449,7 @@ class TpfaBiphasicCons:
         '''
 
 
-        k0 = 9e-2
+        k0 = 9e-3
         min_abs = np.min(np.absolute(total_flux_internal_faces))
         v0 = volumes_adj_internal_faces
         # saturation = self.data_impress['saturation']
@@ -462,45 +462,133 @@ class TpfaBiphasicCons:
         flux_w_faces[testw] = 0.0
         flux_o_faces[testo] = 0.0
         flux_total[test3] = 0.0
+
         tw = flux_w_faces > 0
         to = flux_o_faces > 0
+        ttotal = flux_total > 0
+
         upwind_w = np.full((len(internal_faces), 2), False, dtype=bool)
         upwind_o = upwind_w.copy()
 
+        upt = upwind_o.copy()
+        upt[:,0] = True
+
         if gravity == True:
+            # n_zero_condition = (~test3) & (~testw) & (~testo)
+            # pdb.set_trace()
+            #
+            # # internal_faces = self.elements_lv0['internal_faces']
+            #
+            # v1 = ttotal & tw & n_zero_condition
+            # v2 = ttotal & to & n_zero_condition
+            #
+            # upwind_w[v1, 0] = True
+            # upwind_o[v2, 0] = True
+            #
+            # v1 = ttotal & (~tw) & n_zero_condition
+            # v2 = ttotal & (~to) & n_zero_condition
+            #
+            # upwind_w[v1, 1] = True
+            # upwind_o[v2, 1] = True
+            #
+            # v1 = (~ttotal) & (~tw) & n_zero_condition
+            # v2 = (~ttotal) & (~to) & n_zero_condition
+            #
+            # upwind_w[v1, 1] = True
+            # upwind_o[v2, 1] = True
+            #
+            # v1 = (~ttotal) & (tw) & n_zero_condition
+            # v2 = (~ttotal) & (to) & n_zero_condition
+            #
+            # upwind_w[v1, 0] = True
+            # upwind_o[v2, 0] = True
 
-            # internal_faces = self.elements_lv0['internal_faces']
+            # pdb.set_trace()
 
-            upwind_w[tw, 0] = True
-            upwind_o[to, 0] = True
+            v1 = (~test3) & (testw) & to
+            v2 = (~test3) & (testo) & tw
 
-            tw = ~tw
-            to = ~to
-            upwind_w[tw, 1] = True
-            upwind_o[to, 1] = True
+            upwind_w[v1, 0] = True
+            upwind_o[v2, 0] = True
 
-            tt = np.absolute(flux_total) < k0
-            upwind_w[tt] = False
-            upwind_o[tt] = False
+            v1 = (~test3) & (testw) & (~to)
+            v2 = (~test3) & (testo) & (~tw)
 
-            centroids = centroid_volumes[v0[tt]]
-            delta_z = centroids[:,1] - centroids[:,0]
-            delta_z = delta_z[:,2]
+            upwind_w[v1, 1] = True
+            upwind_o[v2, 1] = True
 
-            upgw = np.full((tt.sum(), 2), False, dtype=bool)
-            upgo = np.full((tt.sum(), 2), False, dtype=bool)
+            v1 = (~test3) & (~testw) & tw
+            v2 = (~test3) & (~testo) & to
 
-            tz = delta_z >= 0
+            upwind_w[v1, 0] = True
+            upwind_o[v2, 0] = True
 
-            upgw[tz, 1] = True
-            upgo[tz, 0] = True
+            v1 = (~test3) & (~testw) & (~tw)
+            v2 = (~test3) & (~testo) & (~to)
 
-            tz = ~tz
-            upgw[tz, 0] = True
-            upgo[tz, 1] = True
+            upwind_w[v1, 1] = True
+            upwind_o[v2, 1] = True
 
-            upwind_w[tt] = upgw
-            upwind_o[tt] = upgo
+            tt = test3
+            if tt.sum() > 0:
+
+                upwind_w[tt] = False
+                upwind_o[tt] = False
+
+                centroids = centroid_volumes[v0[tt]]
+                delta_z = centroids[:,1] - centroids[:,0]
+                delta_z = delta_z[:,2]
+
+                upgw = np.full((tt.sum(), 2), False, dtype=bool)
+                upgo = np.full((tt.sum(), 2), False, dtype=bool)
+
+                tz = delta_z >= 0
+
+                upgw[tz, 1] = True
+                upgo[tz, 0] = True
+
+                tz = ~tz
+                upgw[tz, 0] = True
+                upgo[tz, 1] = True
+
+                upwind_w[tt] = upgw
+                upwind_o[tt] = upgo
+
+            ##############################################
+            ## antigo
+            # upwind_w[tw, 0] = True
+            # upwind_o[to, 0] = True
+            #
+            # tw = ~tw
+            # to = ~to
+            # upwind_w[tw, 1] = True
+            # upwind_o[to, 1] = True
+            #
+            # tt = np.absolute(flux_total) < k0
+            # upwind_w[tt] = False
+            # upwind_o[tt] = False
+            #
+            # centroids = centroid_volumes[v0[tt]]
+            # delta_z = centroids[:,1] - centroids[:,0]
+            # delta_z = delta_z[:,2]
+            #
+            # upgw = np.full((tt.sum(), 2), False, dtype=bool)
+            # upgo = np.full((tt.sum(), 2), False, dtype=bool)
+            #
+            # tz = delta_z >= 0
+            #
+            # upgw[tz, 1] = True
+            # upgo[tz, 0] = True
+            #
+            # tz = ~tz
+            # upgw[tz, 0] = True
+            # upgo[tz, 1] = True
+            #
+            # upwind_w[tt] = upgw
+            # upwind_o[tt] = upgo
+            #########################################
+
+
 
         else:
             upwind_w[tw, 0] = True
@@ -509,6 +597,13 @@ class TpfaBiphasicCons:
             to = ~to
             upwind_w[tw, 1] = True
             upwind_o[to, 1] = True
+
+        # verif1 = upwind_w[:,0] ^ upwind_w[:,1]
+        # verif2 = upwind_o[:,0] ^ upwind_o[:,1]
+        # verif1 = ~verif1
+        # verif2 = ~verif2
+
+        # pdb.set_trace()
 
         self.test_upwind_dup(upwind_w, upwind_o)
         return upwind_w, upwind_o

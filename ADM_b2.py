@@ -992,8 +992,6 @@ while verif:
         # vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
         # vols_orig=np.array([])
 
-
-
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
 
