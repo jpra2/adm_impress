@@ -876,7 +876,7 @@ ep_haji_Linf=[]
 neta_lim_finescale=np.inf
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
 delta_sat_max=np.load('flying/delta_sat_max.npy')[0]
-delta_sat_max=0.1
+delta_sat_max = 0.1
 
 # pdb.set_trace()
 
@@ -991,8 +991,6 @@ while verif:
         #
         # vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
         # vols_orig=np.array([])
-
-
 
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
