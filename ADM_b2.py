@@ -1323,5 +1323,5 @@ while verif:
     # # Twithout = b1['Tini'].copy()
     # cont += 1
 
-    if loop % 3 == 0:
+    if loop % 70 == 0:
         pdb.set_trace()

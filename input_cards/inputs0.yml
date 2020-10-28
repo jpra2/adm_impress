@@ -84,19 +84,19 @@ Porosity:
 Saturation:
   r1:
     type: all
+    value: 0.8
+
+  r2:
+    type: box
+    p0: [0.0, 0.0, 0.0]
+    p1: [27.0, 1.0, 14.0]
     value: 0.2
 
-  # r2:
-  #   type: box
-  #   p0: [0.0, 0.0, 0.0]
-  #   p1: [27.0, 1.0, 14.0]
-  #   value: 0.2
-
-  r3:
-    type: wells
-    type1_well: Injector
-    type2_well: null
-    value: 0.8
+  # r3:
+  #   type: wells
+  #   type1_well: Injector
+  #   type2_well: null
+  #   value: 0.8
 
 Wells:
   # P2:
@@ -130,19 +130,19 @@ Wells:
     #   value: 100.0
 
     P2:
-      p0: [26.0, 0.0, 26.0]
-      p1: [27.0, 1.0, 27.0]
+      p0: [0.0, 0.0, 0.0]
+      p1: [27.0, 1.0, 1.0]
       prescription: P
       type: Producer
       type_region: box
       value: 100.0
-    P3:
-      p0: [0.0, 0.0, 26.0]
-      p1: [1.0, 1.0, 27.0]
-      prescription: Q
-      type: Injector
-      type_region: box
-      value: 20000.0
+    # P3:
+    #   p0: [0.0, 0.0, 26.0]
+    #   p1: [1.0, 1.0, 27.0]
+    #   prescription: Q
+    #   type: Injector
+    #   type_region: box
+    #   value: 20000.0
     # P3:
     #   p0: [9.0, 0.0, 0.0]
     #   p1: [17.0, 1.0, 1.0]
