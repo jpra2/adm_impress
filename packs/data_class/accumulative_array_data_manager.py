@@ -80,3 +80,11 @@ class AccumulativeArrayDataManager:
                         all_datas.append(f[name].value)
 
         return all_datas
+
+    def get_array_from_name(self, array, name):
+        datas = []
+        for data in array:
+            # data2 = data[name]
+            datas.append(data[name])
+
+        return np.array(datas).flatten()

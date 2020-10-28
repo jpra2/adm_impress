@@ -137,6 +137,33 @@ wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data,
 # wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate = carregar()
 # pdb.set_trace()
 
+import matplotlib.pyplot as plt
+all_datas = accumulate.load_all_datas()
+po = accumulate.get_array_from_name(all_datas, 'prod_o')
+pw = accumulate.get_array_from_name(all_datas, 'prod_w')
+looops = accumulate.get_array_from_name(all_datas, 'loop')
+dvpii = accumulate.get_array_from_name(all_datas, 'dvpi')
+woor = accumulate.get_array_from_name(all_datas, 'wor')
+
+dty2 = [('prod_o', float), ('prod_w', float), ('wor', float), ('dvpi', float), ('loop', int), ('vpi', float)]
+array2 = np.zeros(len(looops), dtype=dty2)
+array2['prod_o'] = po
+array2['prod_w'] = pw
+array2['loop'] = looops
+array2['dvpi'] = dvpii
+array2['wor'] = woor
+# pdb.set_trace()
+array2 = np.sort(array2, order='loop')
+array2['vpi'] = np.cumsum(array2['dvpi'])
+plt.plot(array2['vpi'][0:43], array2['wor'][0:43], label='Fine scale')
+plt.savefig('results/finescale_case1.png')
+array3 = np.load('results/case1_aadm.npy')
+plt.plot(array3['vpi'][0:43], array3['wor'][0:43], label='A-ADM')
+plt.legend()
+plt.savefig('results/case1_comparative.png')
+
+pdb.set_trace()
+
 
 ###############################################
 monophasic = TpfaMonophasic()
@@ -409,25 +436,26 @@ while loop <= loop_max:
     data_impress['flux_w_volumes'] = flux_w_volumes
     data_impress['flux_o_volumes'] = flux_o_volumes
 
-    name = 'results/test_volumes_' + str(loop) + '.vtk'
-    print_test_volumes(name)
-    # M.core.print(folder='results', file='test_volumes_'+str(loop), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    # name = 'results/test_volumes_' + str(loop) + '.vtk'
+    # print_test_volumes(name)
+    # # M.core.print(folder='results', file='test_volumes_'+str(loop), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    #
+    # name2 = 'results/test_faces_' + str(loop) + '.vtk'
+    # # M.core.print(folder='results', file='test_faces_'+str(loop), extension='.vtk', config_input='input_cards/print_settings2.yml')
+    # print_test_faces(name2)
 
-    name2 = 'results/test_faces_' + str(loop) + '.vtk'
-    # M.core.print(folder='results', file='test_faces_'+str(loop), extension='.vtk', config_input='input_cards/print_settings2.yml')
-    print_test_faces(name2)
-
-    if loop % 100 == 0:
+    if loop % 50 == 0:
         accumulate.export(local_key_identifier='loop')
         current_data.export_to_npz()
         current_data['current']['global_identifier'] = accumulate.global_identifier
+        pdb.set_trace()
 
     if loop % 200 == 0:
         all_datas = accumulate.load_all_datas()
         pdb.set_trace()
 
-    if loop % 3 == 0:
-        pdb.set_trace()
+    # if loop % 3 == 0:
+    #     pdb.set_trace()
 
 
 
