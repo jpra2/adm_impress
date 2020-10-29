@@ -23,7 +23,7 @@ def set_permeability_and_phi_spe10(M):
     centroids = M.volumes.center(M.volumes.all)
 
     # ijk0 = np.array([centroids[:, 0]//20.0, centroids[:, 1]//10.0, centroids[:, 2]//2.0])
-    ijk0 = np.array([centroids[:, 0]//1.0, centroids[:, 1]//1.0, centroids[:, 2]//2.0])
+    ijk0 = np.array([centroids[:, 0]//1.0, centroids[:, 1]//1.0, centroids[:, 2]//1.0])
     ee = ijk0[0] + ijk0[1]*nx + ijk0[2]*nx*ny
     ee = ee.astype(np.int32)
 

@@ -10,7 +10,7 @@ def get_coupled_dual_volumes(mlo,T, M, data_impress,neta_lim=0.0, ind=0):
     Tc2.setdiag(0)
     DTc=1/np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
     if (DTc>0).sum()>0 and abs(Tc[DTc>0].sum())<0.01:
-        print((DTc>0).sum(),"diagonais positivas !!!!!!!!!!!")        
+        print((DTc>0).sum(),"diagonais positivas !!!!!!!!!!!")
         DTc[DTc>0]=-abs(DTc).max()
 
     lines=np.arange(Tc.shape[0])
@@ -68,8 +68,8 @@ def get_coupled_dual_volumes(mlo,T, M, data_impress,neta_lim=0.0, ind=0):
         ddp_j=dp[:,j[k]]
         ddp=(ddp_i.sum(axis=1)>0) & (ddp_j.sum(axis=1)>0)
         duais_coup=np.arange(len(ddp))[np.array(ddp).T[0]]
-        if len(duais_coup)>2:
-            import pdb; pdb.set_trace()
+        # if len(duais_coup)>2:
+        #     import pdb; pdb.set_trace()
         if len(duais_coup)==1:
             duais_coup=np.repeat(duais_coup[0],2)
         if len(duais_coup)==2:

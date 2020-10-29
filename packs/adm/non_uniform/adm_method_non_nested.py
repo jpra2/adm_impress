@@ -430,7 +430,7 @@ class AdmNonNested(AdmMethod):
 
         self.data_impress['LEVEL'] = levels.copy()
 
-    def set_level_wells_3(self):
+    def set_level_wells_primal(self):
         self.data_impress['LEVEL'][:] = 1
         gid1_wells=self.data_impress['GID_1'][self.all_wells_ids]
         pos=np.zeros_like(self.data_impress['LEVEL'])
@@ -438,16 +438,9 @@ class AdmNonNested(AdmMethod):
             pos+=self.data_impress['GID_1']==g1
         vols_to_lv0=self.data_impress['GID_0'][pos>0]
 
-        # vols_to_lv0=np.unique(np.hstack(self.elements_lv0['volumes_face_volumes'][vols_to_lv0]))
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
         self.data_impress['LEVEL'][vols_to_lv0] = 0
-        # gid0 = self.data_impress['GID_0']
-        # gid1 = self.data_impress['GID_1']
-        #
-        # gids_wells = np.unique(gid1[self.all_wells_ids])
-        # for gid in gids_wells:
-        #     volumes = gid0[gid1==gid]
-        #     self.data_impress['LEVEL'][volumes] = 0
+
     def set_level_wells_only(self):
         self.data_impress['LEVEL'][:] = 1
         self.data_impress['LEVEL'][self.all_wells_ids] = 0

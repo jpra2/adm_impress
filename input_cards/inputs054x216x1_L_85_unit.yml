@@ -1,7 +1,7 @@
 # mesh_name: mesh/45x45x45.msh
 # mesh_name: mesh/9x9x9.msh
 # mesh_name: mesh/isotropic/100x100x1m.msh
-mesh_name: mesh/66x66x11.h5m
+mesh_name: mesh/54x216x1_L_85_unit.h5m
 # mesh_name: mesh/isotropic/21x21x1.msh
 n_test: 0
 state: 0
@@ -25,8 +25,8 @@ _debug: True
 Crs:
   # Cr1: [9, 19, 1]
   # Cr2: [30, 50, 1]
-  Cr1: [5, 5, 5]
-  Cr2: [66, 66, 11]
+  Cr1: [9, 9, 1]
+  Cr2: [27, 27, 1]
 
 read_permeability: true
 file_name_permeability: spe10_perms_and_phi.npz
@@ -60,8 +60,8 @@ Saturation:
 
 Wells:
   P1:
-    p0: [0.0, 65.0, 0.0]
-    p1: [1.0, 66.0, 1.0]
+    p0: [0.0, 215.0, 168.0]
+    p1: [1.0, 216.0, 170.0]
 
     prescription: P
     type: Producer
@@ -70,22 +70,13 @@ Wells:
 
 
   P2:
-    p0: [65.0, 65.0, 0.0]
-    p1: [66.0, 66.0, 1.0]
-
-    prescription: P
-    type: Producer
-    type_region: box
-    value: 0.0
-
-  P3:
-    p0: [32.0, 0.0, 10.0]
-    p1: [33.0, 1.0, 11.0]
+    p0: [53.0, 0.0, 168.0]
+    p1: [54.0, 1.0, 170.0]
 
     prescription: P
     type: Injector
     type_region: box
-    value: 1.0
+    value: 10000000.0
 
 monophasic_data:
   gama: 100.0

@@ -162,7 +162,7 @@ def mostrar(i, data_impress, M, op1, rest1):
     data_impress['verif_rest'] = el0
     rr = set(np.where(l0>0)[0])
     rr2 = set(np.where(el0>0)[0])
-    
+
 
 def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     l0 = np.concatenate(op[:,i].toarray())
@@ -252,6 +252,7 @@ adm_method.restart_levels()
 # adm_method.set_level_wells()
 # adm_method.set_level_wells_2()
 adm_method.set_level_wells_only()
+# adm_method.set_level_wells_primal()
 adm_method.equalize_levels()
 
 # adm_method.verificate_levels()
@@ -463,6 +464,8 @@ np.save('results/biphasic/ms/'+ms_case+'/coupl'+'.npy',np.array([coupl]))
 
 # adm_method.set_level_wells_3()
 adm_method.set_level_wells_only()
+
+# adm_method.set_level_wells_primal()
 vals_n1_adm=[]
 vals_vpi=[]
 vals_delta_t=[]
@@ -523,6 +526,7 @@ while verif:
     # np.concatenate(np.array(critical_groups)'''
     # adm_method.set_level_wells_3()
     adm_method.set_level_wells_only()
+    # adm_method.set_level_wells_primal()
 
     if type_of_refinement=='uni':
         if len(vols_orig)>0:
@@ -542,8 +546,9 @@ while verif:
 
     b1.run_2()
     t1=time.time()
-    print(b1.wor, adm_method.n1_adm)
+
     pms=data_impress['pressure']
+
     if neta_lim_finescale==np.inf:
         np.save('flying/original_ms_solution.npy',pms)
 
@@ -569,19 +574,19 @@ while verif:
     ev_L2.append(np.linalg.norm(abs(vf-vadm).max(axis=1))/np.linalg.norm(abs(vf).max(axis=1)))
     ev_Linf.append(abs(vf-vadm).max()/abs(vf).max())
 
-
+    data_impress['erro_p'][:]=abs(pms-pf)
     eadm_2=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
     eadm_inf=abs(pms-pf).max()/pf.max()
     el2.append(eadm_2)
     elinf.append(eadm_inf)
-
+    print(eadm_2)
     p_wells=pms[wells['all_wells']]
-    # pms=(pms-p_wells.min())/(p_wells.max()-p_wells.min())
+    pms=(pms-p_wells.min())/(p_wells.max()-p_wells.min())
     data_impress['pressure']=pms
     data_impress['DUAL_PRESSURE'][data_impress['DUAL_1']>=2]=pms[data_impress['DUAL_1']>=2]
 
     p_wells=pf[wells['all_wells']]
-    # pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
+    pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
     data_impress['tpfa_pressure']=pf
 
     save_multilevel_results()
@@ -596,21 +601,42 @@ while verif:
         es_L2.append(np.linalg.norm(sat_f-sat_adm)/np.linalg.norm(sat_f))
         es_Linf.append(abs(sat_f-sat_adm).max()/sat_f.max())
 
-
         print(b1.vpi,'vpi')
         print("Creating_file")
-        meshset_plot_faces=M.core.mb.create_meshset()
+
+        # creating meshset for plot "faces" file
+        meshset_plot_coarse=M.core.mb.create_meshset()
+        meshset_plot_fine=M.core.mb.create_meshset()
         lv=data_impress['LEVEL']
         gid_coarse=data_impress['GID_1']
+        internal_edges=M.edges.internal
+        boundary_edges=M.edges.boundary
+
+        vols_edges=M.edges.bridge_adjacencies(internal_edges,1,3)
+        gid_1_vols_edges=gid_coarse[vols_edges]
+        ge=gid_1_vols_edges
+        edsi=internal_edges[(ge[:,0]!=ge[:,1]) & (ge[:,0]!=ge[:,2]) & (ge[:,0]!=ge[:,3])]
+
         bounds_coarse=int_faces[gid_coarse[ad0]!=gid_coarse[ad1]]
+        ebc=np.unique(np.concatenate(M.faces.bridge_adjacencies(bounds_coarse,1,1)))
+        ebce=np.intersect1d(ebc,boundary_edges)
+
+        edges_to_plot=np.array(M.core.all_edges)[np.concatenate([ebce,edsi])]
+
         lvs0=int_faces[(lv[ad0]==0) | (lv[ad1]==0)]
-        facs_plot=np.concatenate([bounds_coarse,lvs0])
-        M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
+        # facs_plot=np.concatenate([bounds_coarse,lvs0])
+        faces_to_plot=np.array(M.core.all_faces)[lvs0]
+        # entities_to_plot=np.concatenate([edges_to_plot, faces_to_plot])
+        M.core.mb.add_entities(meshset_plot_coarse,edges_to_plot)
+        M.core.mb.add_entities(meshset_plot_fine,faces_to_plot)
+        ####################################
+
         data_impress.update_variables_to_mesh()
         file_count=str(int(100*vpis_for_save[count_save]))
 
         M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
-        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
+        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/coarse_'+file_count+'.vtk', [meshset_plot_coarse])
+        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/fines_'+file_count+'.vtk', [meshset_plot_fine])
         if vpis_for_save[count_save]==vpis_for_save.max():
             export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor,
             t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1],
