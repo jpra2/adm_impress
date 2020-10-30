@@ -26,10 +26,15 @@ def get_cf_f(LUf, q, cfe, gidse, Tfe):
 def get_cf_i(LUi, q, cf_e_e, cf_f_f, cf_f_e, gids_e, gids_f, Tif, Tie):
     gidsi, cf_i_i=solve_correction(LUi,q)
     qf=np.zeros_like(cf_f_f)
-    qf[gidsi]=-Tif*cf_f_f[gidsf]
+    qf[gidsi]=-Tif*cf_f_f[gids_f]
     gidsi, cf_i_f=solve_correction(LUi,qf)
     qe = np.zeros_like(cf_f_f)
-    qe[gids_i]=-Tie*cf_e_e[gids_e]-Tif*cf_f_e[gids_e]
+    try:
+        # qe[gids_i]=-Tie*cf_e_e[gids_e]-Tif*cf_f_e[gids_e]
+        qe[gidsi]=-Tie*cf_e_e[gids_e]-Tif*cf_f_e[gids_f]
+    except:
+        import pdb
+        pdb.set_trace()
     gidsi, cf_i_e=solve_correction(LUi,qe)
     return cf_i_i+cf_i_f+cf_i_e
 
