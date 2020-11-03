@@ -95,7 +95,7 @@ class Data(DataManager):
                     exec(command)
                 except:
                     print(command)
-                    import pdb; pdb.set_trace()
+                    #import pdb; pdb.set_trace()
 
     def load_variables_from_mesh(self, names=None):
 

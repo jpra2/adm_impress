@@ -213,8 +213,9 @@ class Wells(DataManager):
         mb.tag_set_data(self.tags['INJ'], ws_inj, np.repeat(1, len(ws_inj)))
         mb.tag_set_data(self.tags['PROD'], ws_prod, np.repeat(1, len(ws_prod)))
         mb.tag_set_data(self.tags['P'], ws_p, values_p)
+
         if len(ws_q) > 0:
-            mb.tag_set_data(self.tags['Q'], ws_q, values_q)
+            mb.tag_set_data(self.tags['Q'], ws_q, values_q[0,:])
 
     def load_tags(self):
         assert not self._loaded
@@ -249,6 +250,7 @@ class Wells(DataManager):
         facs_nn = self['facs_nn']
         k_harm_faces = M.data['k_harm'].copy()
         k_max = k_harm_faces.max()
+
         k_harm_faces[facs_nn] = np.repeat(k_max, len(facs_nn))
 
         areas = M.data['area']
@@ -268,6 +270,7 @@ class Wells(DataManager):
             contador = collections.Counter(fc_n)
             facs_nn = np.array([k for k, v in contador.items() if v > 1], dtype=np.int64)
             self['facs_nn'] = facs_nn
+
         else:
             self['facs_nn'] = np.array([], dtype=np.int64)
 

@@ -5,13 +5,9 @@ from packs.directories import data_loaded
 import numpy as np
 import os
 
-dd = InfoManager('input_cards/inputs_compositional.yml', 'input_cards/inputs0.yml')
-dd2 = InfoManager('input_cards/variable_inputs_compositional.yml','input_cards/variable_input.yml')
-dd['load_data'] = True
-dd.save_obj()
-dd2.save_obj()
+data_loaded['load_data'] = True
 
-if dd['deletar_results']:
+if data_loaded['deletar_results']:
 
     results = 'results'
     ff = os.listdir(results)

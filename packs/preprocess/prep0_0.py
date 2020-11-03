@@ -102,8 +102,7 @@ class Preprocess0:
         dist_cent = np.dot(normals, hs)
 
         v = np.ones([3,1])
-        dd = np.argwhere(np.round(normals@v, 2)!=1)
-        
+        dd = np.argwhere(np.round(normals@v, 1)!=1)
         if len(dd)>0:
             inclined_faces_normals = normals[dd.ravel()]
             xz_face = np.argwhere(inclined_faces_normals[:,1]==0).ravel()
@@ -127,7 +126,6 @@ class Preprocess0:
     def set_permeability_and_phi(self, M):
 
         data_loaded = direc.data_loaded
-
         read = data_loaded[direc.names_data_loaded_lv0[0]]
         set_perm = data_loaded[direc.names_data_loaded_lv0[5]]
         set_phi = data_loaded[direc.names_data_loaded_lv0[6]]

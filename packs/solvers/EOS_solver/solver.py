@@ -8,37 +8,38 @@ class CubicRoots:
         pass
 
     def run(self, coef):
-        self.get_delta(coef)
-        self.get_omegas()
-        self.get_model_roots()
-        real_roots = self.get_actual_roots(coef)
+        Q, delta = self.get_delta(coef)
+        omegas = self.get_omegas()
+        X = self.get_model_roots(omegas, Q, delta)
+        real_roots = self.get_actual_roots(coef, X)
         return real_roots
 
     def get_delta(self, coef):
-        self.Q = 2 * coef[1]**3 / 27 - coef[1] * coef[2] / 3 + coef[3]
+        Q = 2 * coef[1]**3 / 27 - coef[1] * coef[2] / 3 + coef[3]
         P = - coef[1]**2 / 3 + coef[2]
-        self.delta = (self.Q / 2)**2 + (P / 3)**3
+        delta = (Q / 2)**2 + (P / 3)**3
+        return Q, delta
 
     def get_omegas(self):
         omega = (-1 + 1j*np.sqrt(3))/2
-        self.omegas  = np.array([[1,1],[omega,omega**2],[omega**2,omega**3]])
+        omegas  = np.array([[1,1],[omega,omega**2],[omega**2,omega]])
+        return omegas
 
-    def get_model_roots(self):
-        xs_args = np.empty([2,len(self.Q)])
-        xs_args[0,:] = - self.Q/2 + self.delta**(1/2)
-        xs_args[1,:] = - self.Q/2 - self.delta**(1/2)
+    def get_model_roots(self, omegas, Q, delta):
+        xs_args = np.empty([2,len(Q)], dtype=np.complex)
 
+        aux = np.ones(len(Q), dtype=np.complex) #creating for errors that was having in sqrt numpy function
+        aux[delta < 0] = 1j
+        delta[delta < 0] = -delta[delta < 0]
+        
+        xs_args[0,:] = - Q/2 + (delta)**(1/2) * aux
+        xs_args[1,:] = - Q/2 - (delta)**(1/2) * aux
         real_args = np.isreal(xs_args)
-        real_index = np.where(real_args == True)[0]
-        complex_index2 = np.where(real_args ==  False)[0]
-        xs_args[real_index] = np.cbrt(xs_args[real_index])
-        xs_args[complex_index2] = (xs_args[complex_index2])**(1/3)
+        xs_args[real_args] = np.cbrt(np.real(xs_args[real_args])) + 0j
+        xs_args[~real_args] = (xs_args[~real_args])**(1/3)
+        X = omegas@xs_args
+        return X
 
-        self.X = self.omegas@xs_args
-
-    def get_actual_roots(self, coef):
-        reais = np.isreal(self.X)
-        r_pos = np.where(reais==True)
-        Xreais = np.real(self.X[r_pos[:]])
-        real_roots = Xreais - coef[1]/3
-        return real_roots
+    def get_actual_roots(self, coef, X):
+        roots = X.T - coef[1][:,np.newaxis]/3
+        return roots
