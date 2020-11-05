@@ -109,7 +109,7 @@ class VugGenerator(object):
         """
         random_rng = np.random.default_rng()
         selected_pairs = []
-        for i in range(self.num_fractures):
+        for _ in range(self.num_fractures):
             # Find a pair of ellipsoids that are not overlapped and are
             # not already connected by a fracture.
             while True:
