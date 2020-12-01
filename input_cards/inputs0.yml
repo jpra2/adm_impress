@@ -73,10 +73,10 @@ Wells:
     p0: [53.0, 0.0, 168.0]
     p1: [54.0, 1.0, 170.0]
 
-    prescription: Q
+    prescription: P
     type: Injector
     type_region: box
-    value: 10000000.0
+    value: 20000000.0
 
 monophasic_data:
   gama: 100.0

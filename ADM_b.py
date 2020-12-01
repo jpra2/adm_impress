@@ -162,7 +162,7 @@ def mostrar(i, data_impress, M, op1, rest1):
     data_impress['verif_rest'] = el0
     rr = set(np.where(l0>0)[0])
     rr2 = set(np.where(el0>0)[0])
-    
+
 
 def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     l0 = np.concatenate(op[:,i].toarray())
@@ -251,7 +251,8 @@ adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, element
 adm_method.restart_levels()
 # adm_method.set_level_wells()
 # adm_method.set_level_wells_2()
-adm_method.set_level_wells_only()
+adm_method.set_level_wells_3()
+# adm_method.set_level_wells_only()
 adm_method.equalize_levels()
 
 # adm_method.verificate_levels()
@@ -461,8 +462,8 @@ data_impress['coupled_flag'][data_impress['DUAL_1']>=2]=0
 coupl=100*(data_impress['coupled_flag']==1).sum()/len(data_impress['coupled_flag'])
 np.save('results/biphasic/ms/'+ms_case+'/coupl'+'.npy',np.array([coupl]))
 
-# adm_method.set_level_wells_3()
-adm_method.set_level_wells_only()
+adm_method.set_level_wells_3()
+# adm_method.set_level_wells_only()
 vals_n1_adm=[]
 vals_vpi=[]
 vals_delta_t=[]
@@ -521,8 +522,8 @@ while verif:
     # map1[idl1]=data_impress['GID_1']
     # monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim,map1)
     # np.concatenate(np.array(critical_groups)'''
-    # adm_method.set_level_wells_3()
-    adm_method.set_level_wells_only()
+    adm_method.set_level_wells_3()
+    # adm_method.set_level_wells_only()
 
     if type_of_refinement=='uni':
         if len(vols_orig)>0:
@@ -566,6 +567,7 @@ while verif:
 
     vf=np.load('flying/velocity_faces_finescale.npy')
     vadm=data_impress['velocity_faces']
+
     ev_L2.append(np.linalg.norm(abs(vf-vadm).max(axis=1))/np.linalg.norm(abs(vf).max(axis=1)))
     ev_Linf.append(abs(vf-vadm).max()/abs(vf).max())
 
