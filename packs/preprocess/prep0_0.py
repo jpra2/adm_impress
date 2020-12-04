@@ -4,6 +4,9 @@ from ..directories import data_loaded
 from ..utils.utils_old import get_box
 from math import pi
 import numpy as np
+from sympy.parsing.sympy_parser import parse_expr
+from sympy import symbols, lambdify
+
 # from .preprocess1 import set_saturation_regions
 
 
@@ -20,11 +23,15 @@ def set_permeability_and_phi_spe10(M):
     # centroids = M.data.centroids[direc.entities_lv0[3]]
     centroids = M.volumes.center(M.volumes.all)
 
-    ijk0 = np.array([centroids[:, 0]//20.0, centroids[:, 1]//10.0, centroids[:, 2]//2.0])
+    # ijk0 = np.array([centroids[:, 0]//20.0, centroids[:, 1]//10.0, centroids[:, 2]//2.0])
+    ijk0 = np.array([centroids[:, 0]//1.0, centroids[:, 1]//1.0, centroids[:, 2]//2.0])
     ee = ijk0[0] + ijk0[1]*nx + ijk0[2]*nx*ny
     ee = ee.astype(np.int32)
 
     M.data[M.data.variables_impress['permeability']] = ks[ee] #permeabilidade
+    M.data[M.data.variables_impress['perm_z']] = ks[ee][:,-1]
+    M.data[M.data.variables_impress['perm_x']] = ks[ee][:,0]
+
     M.data[M.data.variables_impress['poro']] = phi[ee]  #porosidade
 
 class Preprocess0:
@@ -34,7 +41,7 @@ class Preprocess0:
     '''
 
     def __init__(self, M, elements_lv0):
-        self.mesh = M
+
         self.elements_lv0 = elements_lv0
 
         for key, item in direc.variables_impress.items():
@@ -42,6 +49,8 @@ class Preprocess0:
 
         self.run(M)
         M.data.export_to_npz()
+        np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
+        M.data.update_variables_to_mesh()
 
     def set_area_hex_structured(self, M):
         """ Resolver Isso para malha diagonal amanha"""
@@ -153,6 +162,83 @@ class Preprocess0:
                 n_volumes = M.data.len_entities['volumes']
                 # valor = valor.reshape([n, tamanho_variavel])
                 M.data[M.data.variables_impress['permeability']] = np.repeat(value, n_volumes, axis=0)
+            elif tipo == 'ring':
+                ###########################################
+                c0=d0['c0']
+                r0=d0['r0']
+                r1=d0['r1']
+                x0=c0[0]
+                y0=c0[1]
+                z0=c0[2]
+
+                x=centroids[:,0]
+                y=centroids[:,1]
+                z=centroids[:,2]
+                cir_0=(x-x0)**2+(y-x0)**2+(z-z0)**2>r0**2
+                cir_1=(x-x0)**2+(y-x0)**2+(z-z0)**2<r1**2
+                indices=np.arange(len(centroids))[cir_0 & cir_1]
+                n_volumes = len(indices)
+                M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
+
+                np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
+
+            elif tipo == 'cartesian_region':
+                indices=np.repeat(False,len(centroids))
+                x_inf=d0['x_inf']
+                x_sup=d0['x_sup']
+                y_inf=d0['y_inf']
+                y_sup=d0['y_sup']
+                z_inf=d0['z_inf']
+                z_sup=d0['z_sup']
+                xc=centroids[:,0]
+                yc=centroids[:,1]
+                zc=centroids[:,2]
+                x, y, z = symbols('x y z')
+                for i in range(len(x_inf)):
+                    x_i=parse_expr(x_inf[i])
+                    x_s=parse_expr(x_sup[i])
+                    y_i=parse_expr(y_inf[i])
+                    y_s=parse_expr(y_sup[i])
+                    z_i=parse_expr(z_inf[i])
+                    z_s=parse_expr(z_sup[i])
+                    fx_i=lambdify([x,y,z],x_i)(xc,yc,zc)
+                    fx_s=lambdify([x,y,z],x_s)(xc,yc,zc)
+                    fy_i=lambdify([x,y,z],y_i)(xc,yc,zc)
+                    fy_s=lambdify([x,y,z],y_s)(xc,yc,zc)
+                    fz_i=lambdify([x,y,z],z_i)(xc,yc,zc)
+                    fz_s=lambdify([x,y,z],z_s)(xc,yc,zc)
+                    inds=(xc>fx_i) & (xc<fx_s) & (yc>fy_i) & (yc<fy_s) & (zc>fz_i) & (zc<fz_s)
+                    indices=indices | inds
+                indices=np.arange(len(centroids))[indices]
+                n_volumes = len(indices)
+
+                M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
+                np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
+            elif tipo == 'polar_region':
+                r, t = symbols('r t')
+                indices=np.repeat(False,len(centroids))
+                for i in range(len(d0['center'])):
+                    center=d0['center'][i]
+                    r_inf=parse_expr(d0['r_inf'][i])
+                    r_sup=parse_expr(d0['r_sup'][i])
+                    t_inf=parse_expr(d0['t_inf'][i])
+                    t_sup=parse_expr(d0['t_sup'][i])
+                    xc=centroids[:,0]-center[0]
+                    yc=centroids[:,1]-center[1]
+                    zc=centroids[:,2]-center[2]
+                    rs=np.sqrt(xc*xc+yc*yc)
+                    ts=np.arccos(xc/rs)
+                    ts[yc<0]=2*3.141592653589793-ts[yc<0]
+                    r_i=lambdify([r, t], r_inf)(rs,ts)
+                    r_s=lambdify([r, t], r_sup)(rs,ts)
+                    t_i=lambdify([r, t], t_inf)(rs,ts)
+                    t_s=lambdify([r, t], t_sup)(rs,ts)
+                    inds = (rs>r_i) & (rs<r_s) & (ts>t_i) & (ts<t_s)
+                    indices=indices | inds
+                indices=np.arange(len(centroids))[indices]
+                n_volumes = len(indices)
+                M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
+                np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
 
             elif tipo == direc.types_region_data_loaded[1]:
                 p0 = d0[direc.names_data_loaded_lv2[2]]
@@ -161,7 +247,7 @@ class Preprocess0:
                 indices = get_box(centroids, points)
                 n_volumes = len(indices)
                 M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
-
+                np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
     def set_phi_regions(self, M):
         # TODO: atualizar essa funcao
         centroids = M.data['centroid_volumes']
@@ -175,6 +261,7 @@ class Preprocess0:
             if tipo == direc.types_region_data_loaded[0]:
                 n_volumes = M.data.len_entities['volumes']
                 M.data[M.data.variables_impress['poro']] = np.repeat(value, n_volumes)
+                M.data['poro'] = np.repeat(value, n_volumes)
 
             elif tipo == direc.types_region_data_loaded[1]:
                 p0 = d0[direc.names_data_loaded_lv2[2]]
@@ -218,6 +305,12 @@ class Preprocess0:
         hi = np.zeros((ni, 2))
         hi[:, 0] = ((hs[vols_viz_internal_faces[:, 0]]*u_normal_internal_faces).sum(axis=1))/2
         hi[:, 1] = ((hs[vols_viz_internal_faces[:, 1]]*u_normal_internal_faces).sum(axis=1))/2
+
+        # keq_internal_faces = ((ks0/hi[:,0])*(ks1/hi[:,1]))/((ks0/hi[:,0]) + (ks1/hi[:,1]))
+
+        #Make unitary dimentions#Atemçao
+        # hi=np.ones_like(hi)
+
         k_harm_faces[internal_faces] = hi.sum(axis=1)/(hi[:, 0]/ks0 + hi[:, 1]/ks1)
 
         u_normal_b_faces = u_normal[boundary_faces]
@@ -226,6 +319,7 @@ class Preprocess0:
         ks0 = ks0.reshape([nb, 3, 3]) * u_normal_b_faces.reshape([nb, 1, 3])
         ks0 = ks0.sum(axis=2).sum(axis=1)
         k_harm_faces[boundary_faces] = ks0
+        # k_harm_faces[boundary_faces] = 0.0
 
         M.data[M.data.variables_impress['k_harm']] = k_harm_faces
 
@@ -248,9 +342,11 @@ class Preprocess0:
         M.data['NODES'] = M.data['centroid_nodes'].copy()
 
     def set_pretransmissibility(self, M):
-        areas = M.data['area']
+        areas = M.data['area'].copy()
+        areas=np.ones_like(areas)
         k_harm_faces = M.data['k_harm']
-        dist_cent = M.data['dist_cent']
+        dist_cent = M.data['dist_cent'].copy()
+        # dist_cent = np.ones_like(dist_cent)
         pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
         M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
         # M.data.update_variables_to_mesh([M.data.variables_impress['pretransmissibility']])
@@ -258,6 +354,25 @@ class Preprocess0:
     def initial_gama(self, M):
         gama_mono = data_loaded['monophasic_data']['gama']
         M.data['gama'] = np.repeat(gama_mono, len(M.data['gama']))
+
+    def adj_matrix_volumes_volumes(self, M):
+
+        vols = self.elements_lv0['volumes']
+        n = len(vols)
+        vizs = M.volumes.bridge_adjacencies(vols, 2, 3)
+        adj_matrix = np.full((n, n), False, dtype=bool)
+        lines = []
+        cols = []
+        for v, viz in zip(vols, vizs):
+            n2 = len(viz)
+            lines.append(np.repeat(v, n2).astype(int))
+            cols.append(viz)
+
+        lines = np.concatenate(lines)
+        cols = np.concatenate(cols)
+        data = np.full(len(cols), True, dtype=bool)
+        adj_matrix[lines, cols] = data
+        self.elements_lv0['adj_matrix_volumes_volumes'] = adj_matrix
 
     def run(self, M):
         self.update_centroids_and_unormal(M)
@@ -267,3 +382,4 @@ class Preprocess0:
         self.set_pretransmissibility(M)
         self.set_transmissibility_monophasic(M)
         self.initial_gama(M)
+        self.adj_matrix_volumes_volumes(M)

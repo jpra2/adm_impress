@@ -72,11 +72,15 @@ class Data(DataManager):
                 data = np.zeros(n_entity)
             elif format == 'int':
                 data = np.zeros(n_entity, dtype=np.int32)
+            elif format == 'bool':
+                data = np.full(n_entity, False, dtype=bool)
+            else:
+                raise TypeError('\nTipo nao listado\n')
             if n > 1:
                 data = np.repeat(data, n).reshape([n_entity, n])
 
             self[name] = data
-            self._data[name] = data
+            # self._data[name] = data
             variables_impress[name] = name
 
         self.variables_impress = variables_impress
@@ -89,13 +93,27 @@ class Data(DataManager):
                 exec(command)
 
         else:
+            # import pdb; pdb.set_trace()
             for name in self._data.keys():
                 command = 'self.mesh.' + name + '[:] = ' + 'self._data["' + name + '"]'
                 try:
                     exec(command)
                 except:
-                    print(command)
-                    #import pdb; pdb.set_trace()
+                    n=len(self._data[name])
+                    try:
+                        command_2 = 'self.mesh.' + name + '[0:n-1] = ' + 'self._data["' + name + '"][0:n-1]'
+                        exec(command_2)
+                        command_3 = 'self.mesh.' + name + '[n-1] = ' + 'self._data["' + name + '"][n-1]'
+                        exec(command_3)
+                    except:
+
+                        print(name)
+                        print(command)
+                        import pdb; pdb.set_trace()
+
+
+
+            command = 'self.mesh.' + name + '.update_all()'
 
     def load_variables_from_mesh(self, names=None):
 

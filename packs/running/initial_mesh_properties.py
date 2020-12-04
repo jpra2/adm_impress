@@ -8,38 +8,75 @@ from ..preprocess.prep0_0 import Preprocess0
 from ..directories import data_loaded
 from ..multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 import numpy as np
+import os
 
 # import pdb; pdb.set_trace()
 
-def initial_mesh(load=False, convert=False):
+def initial_mesh():
 
     global data_loaded
 
+    load = data_loaded['load_data']
+    convert = data_loaded['convert_english_to_SI']
     multilevel_data = data_loaded['multilevel_data']
     load_multilevel_data = data_loaded['load_multilevel_data']
 
     if multilevel_data and load_multilevel_data:
+        t0=time.time()
+        print("creating M")
         from ..load.preprocessor_load import init_mesh
-        M = init_mesh('flying/multilevel_data-all_.h5m')
+        # M = init_mesh('flying/multilevel_data-all.h5m')
+        import time
+
+        M = init_mesh('saves/initial_mesh.h5m')
+        print("time to create M: {} seconds".format(time.time()-t0))
+        t0=time.time()
         elements_lv0 = ElementsLv0(M, load=load)
+        print("time_to_create elements_lv0: {}".format(time.time()-t0))
+        print("creating data impress")
         data_impress = Data(M, elements_lv0, load=load)
+        print("time_to_create data_impress: {}".format(time.time()-t0))
+        print("creating ml_data")
+        t0=time.time()
         if not load:
+            print("preprocess0")
+            t0=time.time()
             Preprocess0(M, elements_lv0)
+            print(time.time()-t0,"preprocess0")
         ml_data = MultilevelData(data_impress, M, load=load_multilevel_data)
         ml_data.load_tags()
+        print("time_to_create ml_data: {}".format(time.time()-t0))
 
     else:
-        from ..load.preprocessor0 import M
+        if load:
+            import time
+            print("creating M")
+            t0=time.time()
+            from ..load.preprocessor_load import init_mesh
+            M = init_mesh('saves/initial_mesh.h5m')
+            print("time to create M: {} seconds".format(time.time()-t0))
+        else:
+            import time
+            print("creating M")
+            t0=time.time()
+            from ..load.preprocessor0 import M
+            print("time to create M: {} seconds".format(time.time()-t0))
+        t0=time.time()
         elements_lv0 = ElementsLv0(M, load=load)
+        print("time_to_create elements_lv0: {}".format(time.time()-t0))
+        t0=time.time()
         data_impress = Data(M, elements_lv0, load=load)
+        print("time_to_create elements_data_impress: {}".format(time.time()-t0))
+        t0=time.time()
         if not load:
             Preprocess0(M, elements_lv0)
         if multilevel_data:
             ml_data = MultilevelData(data_impress, M)
             ml_data.run()
-            ml_data.save_mesh()
+            # ml_data.save_mesh()
+        print("time_to_create ml_data: {}".format(time.time()-t0))
 
-    wells = Wells(M, load=load)
+    wells = Wells(M, elements_lv0, load=load)
 
     biphasic = data_loaded['biphasic']
     load_biphasic_data = data_loaded['load_biphasic_data']
@@ -59,5 +96,13 @@ def initial_mesh(load=False, convert=False):
         wells.update_values_to_mesh()
         data_impress.update_variables_to_mesh()
         wells.export_all_datas_to_npz()
+        M.save_variables('initial_mesh')
+        del data_impress['permeability']
+
+    if data_loaded['deletar_results'] == True:
+        results_file = 'results'
+        for arq in os.listdir(results_file):
+            if arq.endswith('.vtk'):
+                os.remove(os.path.join(results_file, arq))
 
     return M, elements_lv0, data_impress, wells

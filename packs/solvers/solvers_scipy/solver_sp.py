@@ -11,9 +11,9 @@ class SolverSp:
 
         # print('\nSolving direct solver spsolve\n')
 
-        A2 = A.tocsc().copy()
+        # A2 = A.tocsc().copy()
 
-        solution = linalg.spsolve(A2,b)
+        solution = linalg.spsolve(A.tocsc(),b)
 
         return solution
 

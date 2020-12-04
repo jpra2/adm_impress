@@ -168,6 +168,13 @@ mass_oil_production:
   type: volumes
 mass_water_production:
   data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+velocity:
+  type: faces
+  data size: 3
   data type: float
   level: 0
   sparse: true

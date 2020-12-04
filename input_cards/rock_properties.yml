@@ -1,0 +1,25 @@
+read_permeability: true
+file_name_permeability: spe10_perms_and_phi.npz
+set_permeability: false
+Permeability:
+  r1:
+    type: all
+    value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+
+  # r2:
+  #   type: box
+  #   p0: [0.0, 0.0, 0.0]
+  #   p1: [20.0, 10.0, 54.0]
+  #   value: [100.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 100.0]
+
+set_porosity: true
+Porosity:
+  r1:
+    type: all
+    value: 0.3
+
+  # r2:
+  #   type: box
+  #   p0: [0.0, 0.0, 0.0]
+  #   p1: [20.0, 10.0, 54.0]
+  #   value: 0.1

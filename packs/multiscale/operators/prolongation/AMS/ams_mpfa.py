@@ -6,26 +6,30 @@ from scipy.sparse import linalg
 
 class AMSMpfa(AMSTpfa):
 
-    def __init__(self,
-        internals,
-        faces,
-        edges,
-        vertices,
-        gids: 'global_ids',
-        primal_ids: 'primal_ids',
-        load=False,
-        data_name='AMSMpfa_'):
-
-        super().__init__(
-            internals,
-            faces,
-            edges,
-            vertices,
-            gids,
-            primal_ids,
-            load=load,
-            data_name=data_name
-        )
+    # def __init__(self,
+    #     internals,
+    #     faces,
+    #     edges,
+    #     vertices,
+    #     gids: 'global_ids',
+    #     primal_ids: 'primal_ids',
+    #     load=False,
+    #     data_name='AMSMpfa_',
+    #     tpfalizar=False,
+    #     get_correction_term=False):
+    #
+    #     super().__init__(
+    #         internals,
+    #         faces,
+    #         edges,
+    #         vertices,
+    #         gids,
+    #         primal_ids,
+    #         load=load,
+    #         data_name=data_name,
+    #         tpfalizar=tpfalizar,
+    #         get
+    #     )
 
     def get_as(self, T_wire):
 
@@ -122,6 +126,9 @@ class AMSMpfa(AMSTpfa):
         return self.GT*op*self.G2
 
     def run(self, T: 'transmissibility matrix'):
+
+        if self.tpfalizar:
+            return super().run(T)
 
         T_wire = self.G*T*self.GT
         As = self.get_as(T_wire)
