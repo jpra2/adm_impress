@@ -26,12 +26,12 @@ def run_test_cases():
     crs=[[9,9,1],[5, 11, 1],[9, 19, 1],[13, 27, 1]]
     np.save('flying/all_crs.npy',np.array(crs))
     # neta_lim_dual_values=     [ np.inf,    0.5,    1.0,    2.0,   10.0,  100.0]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
-    neta_lim_dual_values=     [   10.0,    50.0,  100.0, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#,   10.0,  100.0, np.inf]#,    1.0,    1.0,    5.0,    5.0,     5.0,    1.0,    1.0,    1.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
-    neta_lim_finescale_values=[    1.0,     1.0,    1.0,    1.0,    0.1,    0.3,    0.5,    0.7,    1.0,    1.0,    1.0,    1.0]#,    1.0,    1.0,    1.0]#,    3.0,    5.0,    1.0,    3.0,     5.0,    1.0,    3.0,    5.0,    1.0,    3.0,     5.0,    5.0,    5.0,     5.0]# np.inf,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    type_of_refinement_values=[  'uni',   'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',   'uni',  'uni',  'uni',  'uni',  'uni',  'uni',   'uni',  'uni',  'uni',   'uni']#  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
-    phiK_raz_lim_values=      [   50.0,    50.0,   50.0,   50.0,   50.0,   50.0,   50.0,   50.0,   50.0,   50.0,   10.0,  100.0]#,    3.0,    3.0,    3.0]#,    3.0,    3.0,    3.0,    3.0,     3.0,    5.0,    5.0,    5.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf,    3.0,    3.0,    3.0,    3.0,    3.0,   10.0,   10.0,   10.0,   10.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    delta_sat_max=            [    1.1,     1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    0.3,    0.5,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,     1.1,    1.1,    1.1,    1.1,    1.1,    1.1,     1.1,    0.1,    0.3,     0.5]#    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
-    cr_inds=                  [      0,       0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0]#,      0,      0,      0]#,      0,      0,      0,      0,       0,      0,      0,      0,      0,      0,       0,      0,      0,       0]
+    neta_lim_dual_values=     [ np.inf, np.inf, np.inf, np.inf, np.inf,    1.0,    1.0,    1.0]#,   10.0,  100.0, np.inf]#,    1.0,    1.0,    5.0,    5.0,     5.0,    1.0,    1.0,    1.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
+    neta_lim_finescale_values=[    0.5,    0.7,    1.5,    2.0,    3.0,    1.5,    2.0,    3.0]#,    1.0,    1.0,    1.0]#,    3.0,    5.0,    1.0,    3.0,     5.0,    1.0,    3.0,    5.0,    1.0,    3.0,     5.0,    5.0,    5.0,     5.0]# np.inf,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    type_of_refinement_values=[  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',   'uni',  'uni',  'uni',  'uni',  'uni',  'uni',   'uni',  'uni',  'uni',   'uni']#  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
+    phiK_raz_lim_values=      [    3.0,    3.0,    3.0,    3.0,    3.0,    3.0,    3.0,    3.0]#,    3.0,    3.0,    3.0]#,    3.0,    3.0,    3.0,    3.0,     3.0,    5.0,    5.0,    5.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf,    3.0,    3.0,    3.0,    3.0,    3.0,   10.0,   10.0,   10.0,   10.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    delta_sat_max=            [    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,     1.1,    1.1,    1.1,    1.1,    1.1,    1.1,     1.1,    0.1,    0.3,     0.5]#    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
+    cr_inds=                  [      0,      0,      0,      0,      0,      0,      0,      0]#,      0,      0,      0]#,      0,      0,      0,      0,       0,      0,      0,      0,      0,      0,       0,      0,      0,       0]
 
     for i in range(len(neta_lim_dual_values)):
     # if False:
@@ -461,78 +461,64 @@ def print_results_3(all_cases):
     variables=all_cases[1][1].keys()
 
     cases4print=['finescale',
-                'neta_1.0_alpha_1.0_type_uni_beta_3.0_delta_1.1_CR_0s',
-                'neta_10.0_alpha_1.0_type_uni_beta_3.0_delta_1.1_CR_0s',
-                'neta_100.0_alpha_1.0_type_uni_beta_3.0_delta_1.1_CR_0s',
-                'neta_inf_alpha_1.0_type_uni_beta_3.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_0.1_type_uni_beta_3.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_0.3_type_uni_beta_3.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_0.5_type_uni_beta_3.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_0.7_type_uni_beta_3.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_1.0_type_uni_beta_10.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_1.0_type_uni_beta_50.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_1.0_type_uni_beta_100.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_1.0_type_uni_beta_inf_delta_1.1_CR_0s',
-                'neta_1.0_alpha_1.0_type_uni_beta_3.0_delta_0.1_CR_0s',
-                'neta_1.0_alpha_1.0_type_uni_beta_3.0_delta_0.2_CR_0s',
-                'neta_1.0_alpha_1.0_type_uni_beta_3.0_delta_0.3_CR_0s',
-                'neta_1.0_alpha_1.0_type_uni_beta_3.0_delta_0.5_CR_0s',
-                'neta_1.0_alpha_0.1_type_uni_beta_50.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_0.3_type_uni_beta_50.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_0.5_type_uni_beta_50.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_0.7_type_uni_beta_50.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_1.0_type_uni_beta_50.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_10.0_type_uni_beta_50.0_delta_1.1_CR_0s',
-                'neta_1.0_alpha_1.0_type_uni_beta_50.0_delta_0.1_CR_0s',
-                'neta_1.0_alpha_1.0_type_uni_beta_50.0_delta_0.3_CR_0',
-                'neta_1.0_alpha_1.0_type_uni_beta_50.0_delta_0.5_CR_0',
-                'neta_1.0_alpha_1.0_type_uni_beta_50.0_delta_1.1_CR_0',
-                'neta_50.0_alpha_1.0_type_uni_beta_3.0_delta_1.1_CR_0s',
-                'neta_inf_alpha_1.0_type_uni_beta_3.0_delta_0.3_CR_0',
+                'neta_inf_alpha_0.1_type_uni_beta_3.0_delta_1.1_CR_0',
                 'neta_inf_alpha_1.0_type_uni_beta_3.0_delta_1.1_CR_0',
+                'neta_inf_alpha_2.0_type_uni_beta_3.0_delta_1.1_CR_0',
+                'neta_inf_alpha_3.0_type_uni_beta_3.0_delta_1.1_CR_0',
+                'neta_1.0_alpha_0.1_type_uni_beta_3.0_delta_1.1_CR_0',
+                'neta_1.0_alpha_1.0_type_uni_beta_3.0_delta_1.1_CR_0',
+                'neta_1.0_alpha_2.0_type_uni_beta_3.0_delta_1.1_CR_0',
+                'neta_1.0_alpha_3.0_type_uni_beta_3.0_delta_1.1_CR_0',
                 ]
 
 
     names4print={cases4print[0]:'Reference',
-                cases4print[1]:r'$\eta^{lim}=1$',
-                cases4print[2]:r'$\eta^{lim}=10$',
-                cases4print[3]:r'$\eta^{lim}=100$',
-                cases4print[4]:r'$\eta^{lim}=\infty$',
-                cases4print[5]:r'$\alpha^{lim}=0.1s$',
-                cases4print[6]:r'$\alpha^{lim}=0.3s$',
-                cases4print[7]:r'$\alpha^{lim}=0.5s$',
-                cases4print[8]:r'$\alpha^{lim}=0.7s$',
-                cases4print[9]:r'$\beta^{lim}=10$',
-                cases4print[10]:r'$\beta^{lim}=50$',
-                cases4print[11]:r'$\beta^{lim}=100$',
-                cases4print[12]:r'$\beta^{lim}=inf$',
-                cases4print[13]:r'$\gamma^{lim}=0.1$',
-                cases4print[14]:r'$\gamma^{lim}=0.2$',
-                cases4print[15]:r'$\gamma^{lim}=0.3$',
-                cases4print[16]:r'$\gamma^{lim}=0.5$',
-                cases4print[17]:r'$\alpha^{lim}=0.1$',
-                cases4print[18]:r'$\alpha^{lim}=0.3$',
-                cases4print[19]:r'$\alpha^{lim}=0.5$',
-                cases4print[20]:r'$\alpha^{lim}=0.7$',
-                cases4print[21]:r'$\alpha^{lim}=1.0$',
-                cases4print[22]:r'$\alpha^{lim}=10.0$',
-                cases4print[23]:r'$\gamma^{lim}=0.1$',
-                cases4print[24]:r'$\gamma^{lim}=0.3$',
-                cases4print[25]:r'$\gamma^{lim}=0.5$',
-                cases4print[26]:r'$\gamma^{lim}=\infty$',
-                cases4print[27]:r'$\eta^{lim}=50$',
-                cases4print[28]:r'$\gamma^{lim}=0.s3$',
-                cases4print[29]:r'$\gamma^{lim}=s\infty$',}
+                cases4print[1]:'AMS   : '+r'$\alpha^{lim}=0.1$',
+                cases4print[2]:'AMS   : '+r'$\alpha^{lim}=1.0$',
+                cases4print[3]:'AMS   : '+r'$\alpha^{lim}=2.0$',
+                cases4print[4]:'AMS   : '+r'$\alpha^{lim}=3.0$',
+                cases4print[5]:'A-AMS: '+r'$\alpha^{lim}=0.1$',
+                cases4print[6]:'A-AMS: '+r'$\alpha^{lim}=1.0$',
+                cases4print[7]:'A-AMS: '+r'$\alpha^{lim}=2.0$',
+                cases4print[8]:'A-AMS: '+r'$\alpha^{lim}=3.0$'
 
-    markers4print={cases4print[0]:'o',
-                    cases4print[1]:'v',
+                }
+
+    markers4print={cases4print[0]:'+',
+                    cases4print[1]:'x',
                     cases4print[2]:'x',
-                    cases4print[3]:'d',
-                    cases4print[4]:'D'}
+                    cases4print[3]:'x',
+                    cases4print[4]:'x',
+                    cases4print[5]:'d',
+                    cases4print[6]:'d',
+                    cases4print[7]:'d',
+                    cases4print[8]:'d',}
 
+
+    colors4print={cases4print[0]:'orange',
+                    cases4print[1]:'red',
+                    cases4print[2]:'green',
+                    cases4print[3]:'blue',
+                    cases4print[4]:'black',
+                    cases4print[5]:'red',
+                    cases4print[6]:'green',
+                    cases4print[7]:'blue',
+                    cases4print[8]:'black',}
+
+    linestyles4print={cases4print[0]:'solid',
+                    cases4print[1]:(0,(1,2)),
+                    cases4print[2]:(0,(1,2,2,2)),
+                    cases4print[3]:(0,(1,2,4,2)),
+                    cases4print[4]:(0,(1,2,8,2)),
+                    cases4print[5]:(0,(1,2)),
+                    cases4print[6]:(0,(1,2,2,2)),
+                    cases4print[7]:(0,(1,2,4,2)),
+                    cases4print[8]:(0,(1,2,8,2)),
+                    }
 
     markeverys=3
-    markevery=300
+    markevery=500
+    markersize=20
 
     single_vars={}
     for u in units.keys():
@@ -585,12 +571,14 @@ def print_results_3(all_cases):
                     if variable!="n1_adm" and variable!="el2" and variable!="elinf" and variable!='es_L2'and variable!='es_Linf' and variable!='refinement' and variable!='coupl':
 
                         try:
-                            plt.plot(100*case_data['vpi'], case_data[variable],label=names4print[case_name], linewidth=5)
+                            plt.plot(100*case_data['vpi'], case_data[variable],label=names4print[case_name], linewidth=5, marker=markers4print[case_name],
+                             markevery=markevery,color=colors4print[case_name], markersize=markersize, linestyle=linestyles4print[case_name])
                         except:
                             pass
                 else:
                     if variable=='n1_adm':
-                        plt.plot(100*case_data['vpi'], 100*case_data[variable][:-1]/case_data[variable][-1], style, label=names4print[case_name], linewidth=5)
+                        plt.plot(100*case_data['vpi'], 100*case_data[variable][:-1]/case_data[variable][-1], style, label=names4print[case_name], linewidth=5,
+                         marker=markers4print[case_name], markevery=markevery, color=colors4print[case_name], markersize=markersize, linestyle=linestyles4print[case_name])
                         plt.xlabel(units['vpi'])
                         plt.ylabel(units[variable])
 
@@ -601,7 +589,8 @@ def print_results_3(all_cases):
                         if case_data[variable].max()>ymax:
                             ymax=case_data[variable].max()
                         try:
-                            plt.plot(100*case_data['vpi'], case_data[variable],style,label=names4print[case_name], linewidth=5)
+                            plt.plot(100*case_data['vpi'], case_data[variable],style,label=names4print[case_name], linewidth=5, marker=markers4print[case_name],
+                             markevery=markevery, color=colors4print[case_name], markersize=markersize, linestyle=linestyles4print[case_name])
                         except:
                             pass
 
@@ -614,7 +603,8 @@ def print_results_3(all_cases):
                         if case_data[variable].max()>ymax:
                             ymax=case_data[variable].max()
 
-                        plt.plot(100*case_data['vpis_for_save'], case_data[variable],style,label=case_name, linewidth=5)
+                        plt.plot(100*case_data['vpis_for_save'], case_data[variable],style,label=names4print[case_name], linewidth=5,markevery=markeverys,
+                        marker=markers4print[case_name], color=colors4print[case_name], markersize=markersize, linestyle=linestyles4print[case_name])
 
                         plt.xlabel(units['vpis_for_save'])
                         plt.ylabel(units[variable])
@@ -648,7 +638,14 @@ def print_results_3(all_cases):
             plt.legend()
             plt.gcf().set_size_inches(20,20)
             plt.tick_params(colors='black')
-
+            ss=plt.gca().get_legend_handles_labels()
+            '''Organizes plot legend'''
+            handles, labels = plt.gca().get_legend_handles_labels()
+            ind_sort=np.argsort(labels)
+            slabels=np.array(labels)[ind_sort].tolist()
+            shandles=np.array(handles)[ind_sort].tolist()
+            plt.legend(shandles, slabels)
+            '''end'''
             plt.savefig('results/biphasic/'+variable+'.svg', bbox_inches='tight')
 
     for var in single_vars:
