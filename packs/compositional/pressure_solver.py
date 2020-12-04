@@ -3,6 +3,7 @@ from ..directories import data_loaded
 from ..utils import constants as ctes
 from scipy import linalg
 import scipy.sparse as sp
+from scipy.sparse.linalg import spsolve
 
 class TPFASolver:
     def __init__(self, fprop):
@@ -10,9 +11,8 @@ class TPFASolver:
 
     def get_pressure(self, M, wells, fprop, delta_t):
         T = self.update_transmissibility(M, wells, fprop, delta_t)
-        import pdb; pdb.set_trace()
         D = self.update_independent_terms(M, fprop, wells, delta_t)
-        self.update_pressure(T, D, fprop)
+        self.P = self.update_pressure(T, D, fprop)
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop)
         self.update_flux_wells(fprop, wells, delta_t)
         return self.P, Ft_internal_faces, self.q
@@ -72,13 +72,13 @@ class TPFASolver:
         T.setdiag(T.diagonal().flatten() + (ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP))
 
         # self.T_noCC = np.copy(T) #Transmissibility without contour conditions
-        self.T_noCC = T.toarray() #Transmissibility without contour conditions (deixei assim para evitar problemas posteriores)
+        self.T_noCC = T.tocsc()
 
         ''' Includding contour conditions '''
         T[wells['ws_p'],:] = 0
         T[wells['ws_p'], wells['ws_p']] = 1
 
-        return T
+        return T.tocsc()
 
     def pressure_independent_term(self, fprop):
         vector = ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP
@@ -141,7 +141,9 @@ class TPFASolver:
         return independent_terms
 
     def update_pressure(self, T, D, fprop):
-        self.P = linalg.solve(T,D)
+        # P = linalg.solve(T,D)
+        P = spsolve(T,D)
+        return P
 
     def update_total_flux_internal_faces(self, M, fprop):
         Pot_hid = self.P + fprop.Pcap
