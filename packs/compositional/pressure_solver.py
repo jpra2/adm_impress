@@ -10,6 +10,7 @@ class TPFASolver:
 
     def get_pressure(self, M, wells, fprop, delta_t):
         T = self.update_transmissibility(M, wells, fprop, delta_t)
+        import pdb; pdb.set_trace()
         D = self.update_independent_terms(M, fprop, wells, delta_t)
         self.update_pressure(T, D, fprop)
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop)
@@ -44,7 +45,8 @@ class TPFASolver:
         ''' Transmissibility '''
         t0 = (self.t0_internal_faces_prod).sum(axis = 1)
         t0 = t0 * ctes.pretransmissibility_internal_faces
-        T = np.zeros([ctes.n_volumes, ctes.n_volumes])
+        # T = np.zeros([ctes.n_volumes, ctes.n_volumes])
+        T = sp.lil_matrix((ctes.n_volumes, ctes.n_volumes))
 
         # Look for a way of doing this not using a loop!!!
         for i in range(ctes.n_components):
@@ -52,19 +54,30 @@ class TPFASolver:
             cols = np.array([ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
             data = np.array([-t0[i,:], -t0[i,:], +t0[i,:], +t0[i,:]]).flatten()
 
-            Ta = (sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_volumes, ctes.n_volumes))).toarray()
-            T += Ta * self.dVtk[i,:, np.newaxis]
+            # Ta = (sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_volumes, ctes.n_volumes))).toarray()
+            Ta = sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_volumes, ctes.n_volumes))
+            # T += Ta * self.dVtk[i,:, np.newaxis]
+            T += Ta.multiply(self.dVtk[i,:, np.newaxis])
 
-        T = T * delta_t
+        # T = T * delta_t
+        T *= delta_t
         ''' Transmissibility diagonal term '''
-        diag = np.diag((ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP))
-        T += diag
+        # diag = np.diag((ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP))
+        # T += diag
 
-        self.T_noCC = np.copy(T) #Transmissibility without contour conditions
-        
+        # diagT = T.diagonal().flatten()
+        # diagT += ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP
+        # T.setdiag(diagT)
+
+        T.setdiag(T.diagonal().flatten() + (ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP))
+
+        # self.T_noCC = np.copy(T) #Transmissibility without contour conditions
+        self.T_noCC = T.toarray() #Transmissibility without contour conditions (deixei assim para evitar problemas posteriores)
+
         ''' Includding contour conditions '''
         T[wells['ws_p'],:] = 0
         T[wells['ws_p'], wells['ws_p']] = 1
+
         return T
 
     def pressure_independent_term(self, fprop):

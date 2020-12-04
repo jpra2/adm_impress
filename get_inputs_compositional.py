@@ -33,7 +33,7 @@ class FluidProperties:
         self.rho_j = np.empty_like(self.Csi_j)
         self.Nk = np.empty([ctes.n_components, ctes.n_volumes])
         self.Nj = np.zeros([1, ctes.n_phases, ctes.n_volumes])
-        self.update_initial_porous_volume()
+        self.Vp = self.update_initial_porous_volume()
         self.P = self.P * np.ones(ctes.n_volumes)
         self.P[wells['ws_p']] = wells['values_p']
         self.Sw = M.data['saturation']
@@ -42,10 +42,13 @@ class FluidProperties:
             self.z = self.z * np.ones(ctes.n_volumes)
             self.L = np.empty(len(self.P))
             self.V = np.empty(len(self.P))
-        else: z = []
+        else:
+            z = []
 
     def update_initial_porous_volume(self):
-        self.Vp = ctes.porosity * ctes.Vbulk * (1 + ctes.Cf*(self.P - ctes.Pf))
+        # self.Vp = ctes.porosity * ctes.Vbulk * (1 + ctes.Cf*(self.P - ctes.Pf))
+        Vp = ctes.porosity * ctes.Vbulk * (1 + ctes.Cf*(self.P - ctes.Pf))
+        return Vp
 
     '''
     def inputs_fluid_properties(self):
