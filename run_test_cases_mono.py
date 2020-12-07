@@ -26,12 +26,12 @@ def run_test_cases():
     crs=[[9,9,1],[5, 11, 1],[9, 19, 1],[13, 27, 1]]
     np.save('flying/all_crs.npy',np.array(crs))
     # neta_lim_dual_values=     [ np.inf,    0.5,    1.0,    2.0,   10.0,  100.0]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
-    neta_lim_dual_values=     [ np.inf, np.inf, np.inf, np.inf, np.inf,    1.0,    1.0,    1.0]#,   10.0,  100.0, np.inf]#,    1.0,    1.0,    5.0,    5.0,     5.0,    1.0,    1.0,    1.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
-    neta_lim_finescale_values=[    0.5,    0.7,    1.5,    2.0,    3.0,    1.5,    2.0,    3.0]#,    1.0,    1.0,    1.0]#,    3.0,    5.0,    1.0,    3.0,     5.0,    1.0,    3.0,    5.0,    1.0,    3.0,     5.0,    5.0,    5.0,     5.0]# np.inf,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    type_of_refinement_values=[  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',   'uni',  'uni',  'uni',  'uni',  'uni',  'uni',   'uni',  'uni',  'uni',   'uni']#  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
-    phiK_raz_lim_values=      [    3.0,    3.0,    3.0,    3.0,    3.0,    3.0,    3.0,    3.0]#,    3.0,    3.0,    3.0]#,    3.0,    3.0,    3.0,    3.0,     3.0,    5.0,    5.0,    5.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf,    3.0,    3.0,    3.0,    3.0,    3.0,   10.0,   10.0,   10.0,   10.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    delta_sat_max=            [    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,     1.1,    1.1,    1.1,    1.1,    1.1,    1.1,     1.1,    0.1,    0.3,     0.5]#    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
-    cr_inds=                  [      0,      0,      0,      0,      0,      0,      0,      0]#,      0,      0,      0]#,      0,      0,      0,      0,       0,      0,      0,      0,      0,      0,       0,      0,      0,       0]
+    neta_lim_dual_values=     [ np.inf]#,   10.0,  100.0, np.inf]#,    1.0,    1.0,    5.0,    5.0,     5.0,    1.0,    1.0,    1.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
+    neta_lim_finescale_values=[    1.0]#,    1.0,    1.0,    1.0]#,    3.0,    5.0,    1.0,    3.0,     5.0,    1.0,    3.0,    5.0,    1.0,    3.0,     5.0,    5.0,    5.0,     5.0]# np.inf,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    type_of_refinement_values=[  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',   'uni',  'uni',  'uni',  'uni',  'uni',  'uni',   'uni',  'uni',  'uni',   'uni']#  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
+    phiK_raz_lim_values=      [    3.0]#,    3.0,    3.0,    3.0]#,    3.0,    3.0,    3.0,    3.0,     3.0,    5.0,    5.0,    5.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf,    3.0,    3.0,    3.0,    3.0,    3.0,   10.0,   10.0,   10.0,   10.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    delta_sat_max=            [    0.5]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,     1.1,    1.1,    1.1,    1.1,    1.1,    1.1,     1.1,    0.1,    0.3,     0.5]#    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
+    cr_inds=                  [      0]#,      0,      0,      0]#,      0,      0,      0,      0,       0,      0,      0,      0,      0,      0,       0,      0,      0,       0]
 
     for i in range(len(neta_lim_dual_values)):
     # if False:
@@ -453,72 +453,73 @@ def print_results_2(all_cases):
 
 def print_results_3(all_cases):
     units={'vpi':'PVI [%]','wor':'wor []','t_comp':'comp_time [s]','delta_t':'time-step []',
-        'n1_adm':r'$N^{A-ADM}/N^f$[%]','el2':r'$||e_p||_2$'+' [%]','elinf':r'$||e_p||_\infty$'+' [%]', 'es_L2':'es_L2 [%]',
-        'es_Linf':'es_Linf [%]', 'vpis_for_save':'PVI [%]','coupl':"Percentage of enrichment [%]",
+        'n1_adm':r'$N^{A-ADM}/N^f$[%]','el2':r'$||e_p||_2$'+' [%]','elinf':r'$||e_p||_\infty$'+' [%]', 'es_L2':r'$||e_s||_2$'+' [%]',
+        'es_Linf':r'$||e_s||_\infty$'+' [%]', 'vpis_for_save':'PVI [%]','coupl':"Percentage of enrichment [%]",
         'refinement':"Percentage at fine-scale [%]", 'ep_haji_L2':'ep_rel_ms_L2[]',
         'ep_haji_Linf':'ep_rel_ms_Linf[]','er_L2':r'$||e_r||_2$'+' []','er_Linf':r'$||e_r||_\infty$'+' []',
         'ev_L2':r'$||e_v||_2$'+' [%]','ev_Linf':r'$||e_v||_\infty$'+' [%]'}
     variables=all_cases[1][1].keys()
 
     cases4print=['finescale',
-                'neta_inf_alpha_0.1_type_uni_beta_3.0_delta_1.1_CR_0',
+                'neta_inf_alpha_1.0_type_uni_beta_3.0_delta_0.1_CR_0s',
+                'neta_inf_alpha_1.0_type_uni_beta_3.0_delta_0.3_CR_0',
+                'neta_inf_alpha_1.0_type_uni_beta_3.0_delta_0.5_CR_0',
                 'neta_inf_alpha_1.0_type_uni_beta_3.0_delta_1.1_CR_0',
-                'neta_inf_alpha_2.0_type_uni_beta_3.0_delta_1.1_CR_0',
-                'neta_inf_alpha_3.0_type_uni_beta_3.0_delta_1.1_CR_0',
-                'neta_1.0_alpha_0.1_type_uni_beta_3.0_delta_1.1_CR_0',
+                'neta_1.0_alpha_1.0_type_uni_beta_3.0_delta_0.1_CR_0s',
+                'neta_1.0_alpha_1.0_type_uni_beta_3.0_delta_0.3_CR_0',
+                'neta_1.0_alpha_1.0_type_uni_beta_3.0_delta_0.5_CR_0',
                 'neta_1.0_alpha_1.0_type_uni_beta_3.0_delta_1.1_CR_0',
-                'neta_1.0_alpha_2.0_type_uni_beta_3.0_delta_1.1_CR_0',
-                'neta_1.0_alpha_3.0_type_uni_beta_3.0_delta_1.1_CR_0',
                 ]
 
 
-    names4print={cases4print[0]:'Reference',
-                cases4print[1]:'AMS   : '+r'$\alpha^{lim}=0.1$',
-                cases4print[2]:'AMS   : '+r'$\alpha^{lim}=1.0$',
-                cases4print[3]:'AMS   : '+r'$\alpha^{lim}=2.0$',
-                cases4print[4]:'AMS   : '+r'$\alpha^{lim}=3.0$',
-                cases4print[5]:'A-AMS: '+r'$\alpha^{lim}=0.1$',
-                cases4print[6]:'A-AMS: '+r'$\alpha^{lim}=1.0$',
-                cases4print[7]:'A-AMS: '+r'$\alpha^{lim}=2.0$',
-                cases4print[8]:'A-AMS: '+r'$\alpha^{lim}=3.0$'
 
+    names4print={cases4print[0]:'Reference',
+                cases4print[1]:'AMS   : '+r'$\gamma^{lim}=0.1$',
+                cases4print[2]:'AMS   : '+r'$\gamma^{lim}=0.3$',
+                cases4print[3]:'AMS   : '+r'$\gamma^{lim}=0.5$',
+                cases4print[4]:'AMS   : '+r'$\gamma^{lim}=\infty$',
+                cases4print[5]:'A-AMS: '+r'$\gamma^{lim}=0.1$',
+                cases4print[6]:'A-AMS: '+r'$\gamma^{lim}=0.3$',
+                cases4print[7]:'A-AMS: '+r'$\gamma^{lim}=0.5$',
+                cases4print[8]:'A-AMS: '+r'$\gamma^{lim}=\infty$',
                 }
 
-    markers4print={cases4print[0]:'+',
-                    cases4print[1]:'x',
-                    cases4print[2]:'x',
-                    cases4print[3]:'x',
-                    cases4print[4]:'x',
-                    cases4print[5]:'d',
-                    cases4print[6]:'d',
-                    cases4print[7]:'d',
-                    cases4print[8]:'d',}
+
+    markers4print={cases4print[0]:'*',
+                    cases4print[1]:'$0.1$',
+                    cases4print[2]:'$0.3$',
+                    cases4print[3]:'$0.5$',
+                    cases4print[4]:'$\infty$',
+                    cases4print[5]:'$0.1$',
+                    cases4print[6]:'$0.3$',
+                    cases4print[7]:'$0.5$',
+                    cases4print[8]:'$\infty$',}
 
 
-    colors4print={cases4print[0]:'orange',
-                    cases4print[1]:'red',
-                    cases4print[2]:'green',
-                    cases4print[3]:'blue',
-                    cases4print[4]:'black',
-                    cases4print[5]:'red',
-                    cases4print[6]:'green',
-                    cases4print[7]:'blue',
-                    cases4print[8]:'black',}
+    colors4print={cases4print[0]:'magenta',
+                    cases4print[1]:'green',
+                    cases4print[2]:'black',
+                    cases4print[3]:'red',
+                    cases4print[4]:'blue',
+                    cases4print[5]:'green',
+                    cases4print[6]:'black',
+                    cases4print[7]:'red',
+                    cases4print[8]:'blue',}
 
     linestyles4print={cases4print[0]:'solid',
-                    cases4print[1]:(0,(1,2)),
-                    cases4print[2]:(0,(1,2,2,2)),
-                    cases4print[3]:(0,(1,2,4,2)),
-                    cases4print[4]:(0,(1,2,8,2)),
+                    cases4print[1]:'solid',
+                    cases4print[2]:'solid',
+                    cases4print[3]:'solid',
+                    cases4print[4]:'solid',
                     cases4print[5]:(0,(1,2)),
                     cases4print[6]:(0,(1,2,2,2)),
                     cases4print[7]:(0,(1,2,4,2)),
                     cases4print[8]:(0,(1,2,8,2)),
                     }
 
-    markeverys=3
-    markevery=500
-    markersize=20
+    markeverys=15
+    markevery=1500
+    markersize=40
 
     single_vars={}
     for u in units.keys():
