@@ -518,8 +518,36 @@ def insert_well_pressure_restriction2(well: Well,T: sp.csc_matrix, q: np.ndarray
     return T, q
 
 
+def insert_well_flow_rate_prescription(well: Well,T: sp.csc_matrix, q: np.ndarray):
+    # g_acc = get_g_acc_z()
+
+    # coefs = -1 * well.wi * (well.mobilities.sum(axis=1))
+    coefs = well.get_total_coefs()
+    T[well.volumes_ids, well.volumes_ids] += coefs
+    # source = np.zeros(len(well.volumes_ids))
+    #
+    # for phase in range(well.n_phases):
+    #     # source += 1 * well.wi * well.mobilities[:,phase] * (well.pbh + (well.rho[phase] * g_acc * (well.z_well - well.centroids[:,2])))
+    #     source += 1 * well.wi * well.mobilities[:, phase] * (
+    #                 well.rho[phase] * g_acc * (well.z_well - well.centroids[:, 2]))
+
+    source = well.get_source_gravity()
+
+    q[well.volumes_ids] = source
+
+    ff = find(T)
+    n_gids = len(q) + 1
+    gid_well = n_gids - 1
+    q2 = np.zeros(n_gids)
+    T = sp.lil_matrix((n_gids, n_gids))
 
 
+    T[ff[0], ff[1]] = ff[2]
+    repeated_gid_well = np.repeat(gid_well, len(well.volumes_ids))
+    # T[well.volumes_ids, repeated_gid_well] = -coefs
+    T[repeated_gid_well, well.volumes_ids] = coefs
+    T[gid_well, gid_well] = -coefs.sum()
+    q2[:gid_well] = q
+    q2[gid_well] = well.flow_rate + source.sum()
 
-
-
+    return T, q2
