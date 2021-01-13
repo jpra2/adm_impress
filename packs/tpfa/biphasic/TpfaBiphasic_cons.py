@@ -292,7 +292,9 @@ class TpfaBiphasicCons:
         phis = porosity
         volume = vol_volumes
 
-        delta_t = (cfl*(volume*phis)/flux_volumes).min()
+        with np.errstate(divide='ignore'):
+            delta_t = (cfl*(volume*phis)/flux_volumes).min()
+
         return delta_t
 
     def update_delta_t2(self, total_velocity_internal_faces, hi):
