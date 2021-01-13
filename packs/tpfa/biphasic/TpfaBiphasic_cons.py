@@ -240,7 +240,10 @@ class TpfaBiphasicCons:
         volume = vol_volumes
 
         test = flux_w_volumes/(volume*phis)
-        test = np.absolute(test[np.absolute(test)>0]).max()
+        try:
+            test = np.absolute(test[np.absolute(test)>0]).max()
+        except Exception as e:
+            import pdb; pdb.set_trace()
         delta_t = delta_sat_max/test
         return delta_t
 

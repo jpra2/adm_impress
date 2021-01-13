@@ -136,8 +136,8 @@ def carregar():
     return wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate
 ########################################
 
-wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate = preprocessar()
-# wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate = carregar()
+# wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate = preprocessar()
+wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate = carregar()
 # pdb.set_trace()
 
 
@@ -199,7 +199,7 @@ def setting_well_model():
     list_w_ids = wells['ws_p_sep']
     list_w_centroids = [geom['centroid_volumes'][w_id] for w_id in list_w_ids]
     list_w_block_dimensions = [geom['block_dimension'][w_id] for w_id in list_w_ids]
-    list_type_prescription = ['pressure', 'pressure']
+    list_type_prescription = ['flow_rate', 'pressure']
     list_w_values = [1000000.0, 1000.0]
     list_w_directions = ['z', 'z']
     list_w_types = ['injector', 'producer']
@@ -328,9 +328,17 @@ while loop <= loop_max:
     # import pdb; pdb.set_trace()
 
     T_with_boundary, b = get_linear_problem(well_models, T, g_source_total_volumes, elements.volumes)
+    import pdb; pdb.set_trace()
+
+    import scipy.sparse as sp
+    norm_T = sp.linalg.norm(T_with_boundary, np.inf)
+    norm_invT = sp.linalg.norm(sp.linalg.inv(T_with_boundary), np.inf)
+    cond = norm_T*norm_invT
 
     pressure1 = solver.direct_solver(T_with_boundary, b)
     pressure = pressure1[elements.volumes]
+
+    import pdb; pdb.set_trace()
 
 
     total_velocity_internal_faces = biphasic.get_total_velocity_internal_faces(
@@ -488,6 +496,10 @@ while loop <= loop_max:
     w2 = well_models[1]
     p1 = pressure[w1.volumes_ids]
     p2 = pressure[w2.volumes_ids]
+    AllWells.update_wells_pbh(well_models, pressure1, elements.volumes)
+    pwells = pressure1[elements.volumes.max() + 1:]
+    q1 = flux_total_volumes[w1.volumes_ids]
+    q2 = flux_total_volumes[w2.volumes_ids]
     import pdb; pdb.set_trace()
 
     if loop % 100 == 0:

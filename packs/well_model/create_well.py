@@ -138,6 +138,31 @@ class AllWells:
         for i, well in enumerate(AllWells.wells.values()):
             well.id_int = i
 
+    @classmethod
+    def update_wells_pbh(cls, wells, pressure1, volumes):
+        """
+
+        :param wells: list of all wells
+        :param pressure1: pressure field with well pressures
+        :param volumes: ids of all volumes of the mesh
+        """
+        i = 1
+
+
+        for well in wells:
+            if well.type_prescription == 'pressure':
+                continue
+            elif well.type_prescription == 'flow_rate':
+                well_pressure = pressure1[volumes.max() + i]
+                well.pbh = well_pressure
+                i += 1
+            else:
+                raise NotImplementedError
+
+
+
+
+
 
 
 class Well:
@@ -184,7 +209,12 @@ class Well:
             self.pbh = self.value
             self.flow_rate = None
         else:
-            self.flow_rate = value
+            if well_type == 'injector':
+                self.flow_rate = -value
+            elif well_type == 'producer':
+                self.flow_rate = value
+            else:
+                raise NotImplementedError
             self.pbh = None
         AllWells.wells[self.id_text] = weakref.proxy(self)
 
@@ -448,8 +478,6 @@ def get_g_acc_z():
     return g_acc
 
 
-
-
 def insert_well_pressure_restriction(well: Well, T: sp.csc_matrix, q: np.ndarray):
     """
 
@@ -509,15 +537,6 @@ def insert_well_pressure_restriction2(well: Well,T: sp.csc_matrix, q: np.ndarray
     return T2, q2
 
 
-
-
-
-
-
-
-    return T, q
-
-
 def insert_well_flow_rate_prescription(well: Well,T: sp.csc_matrix, q: np.ndarray):
     # g_acc = get_g_acc_z()
 
@@ -532,7 +551,6 @@ def insert_well_flow_rate_prescription(well: Well,T: sp.csc_matrix, q: np.ndarra
     #                 well.rho[phase] * g_acc * (well.z_well - well.centroids[:, 2]))
 
     source = well.get_source_gravity()
-
     q[well.volumes_ids] = source
 
     ff = find(T)
@@ -543,11 +561,13 @@ def insert_well_flow_rate_prescription(well: Well,T: sp.csc_matrix, q: np.ndarra
 
 
     T[ff[0], ff[1]] = ff[2]
+    del ff
     repeated_gid_well = np.repeat(gid_well, len(well.volumes_ids))
-    # T[well.volumes_ids, repeated_gid_well] = -coefs
-    T[repeated_gid_well, well.volumes_ids] = coefs
-    T[gid_well, gid_well] = -coefs.sum()
+    T[well.volumes_ids, repeated_gid_well] = -coefs
+
+    T[repeated_gid_well, well.volumes_ids] = -coefs
+    T[gid_well, gid_well] = coefs.sum()
     q2[:gid_well] = q
     q2[gid_well] = well.flow_rate + source.sum()
 
-    return T, q2
+    return T.tocsc(), q2
