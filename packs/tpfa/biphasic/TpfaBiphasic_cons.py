@@ -268,7 +268,6 @@ class TpfaBiphasicCons:
 
         dists_int = hi.sum(axis=1)
         vel_internal_faces = np.linalg.norm(total_velocity_internal_faces*abs_u_normal_internal_faces, axis=1)
-
         v0 = viz_int[:, 0]
         v1 = viz_int[:, 1]
         df = np.absolute(fw_vol[v1] - fw_vol[v0])
@@ -281,7 +280,10 @@ class TpfaBiphasicCons:
         df = df[ids_2]
         ds = ds[ids_2]
         dfds = df/ds
-        delta_t = (cfl*(dists_int/(vel_internal_faces*dfds))).min()
+        try:
+            delta_t = (cfl*(dists_int/(vel_internal_faces*dfds))).min()
+        except ValueError:
+            delta_t = np.inf
         return delta_t
 
     def update_delta_t_dep0(self, total_flux_volumes, porosity, vol_volumes):
@@ -304,7 +306,8 @@ class TpfaBiphasicCons:
         cfl = self.simulation_infos.data['cfl']
         abs_velocity = np.absolute(total_velocity_internal_faces)
         dx = hi.sum(axis=1)
-        deltas_t = cfl*(dx/abs_velocity)
+        with np.errstate(divide='ignore'):
+            deltas_t = cfl*(dx/abs_velocity)
         delta_t = deltas_t.min()
         return delta_t
 
@@ -596,6 +599,8 @@ class TpfaBiphasicCons:
 
 
         else:
+            tw = flux_w_faces >= 0
+            to = flux_o_faces >= 0
             upwind_w[tw, 0] = True
             upwind_o[to, 0] = True
             tw = ~tw

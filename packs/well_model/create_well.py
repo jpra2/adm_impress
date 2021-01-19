@@ -246,7 +246,8 @@ class Well:
         n_cols = 3
         len_vols = len(self.volumes_ids)
         if value.shape[0] != len_vols:
-            raise ValueError(f'lenght of centroids ({value.shape[0]}) different from volumes ({len_vols})')
+            import pdb; pdb.set_trace()
+            raise ValueError('lenght of centroids ({0}) different from volumes ({1})'.format((value.shape[0], len_vols)))
         if value.shape[1] != n_cols:
             raise ValueError(f'n columns of centroids must be 3')
         self._centroids = value
@@ -328,8 +329,8 @@ class Well:
             if self.direction == 'z':
                 k00 = well_permeability[:, 0, 0]
                 k11 = well_permeability[:, 1, 1]
-                h0 = self.centroids[:, 0]
-                h1 = self.centroids[:, 1]
+                h0 = self.block_dimension[:, 0]
+                h1 = self.block_dimension[:, 1]
             else:
                 # TODO: add more functionality
                 raise NotImplementedError
@@ -440,7 +441,7 @@ def get_linear_problem(wells_list, T, gravity_source_term, volumes_ids):
     # cols = []
     # data = []
 
-
+    # import pdb; pdb.set_trace()
     for well in wells_list:
         if well.type_prescription == 'pressure':
             T2, q2 = insert_well_pressure_restriction(well, T2, q2)
@@ -541,6 +542,7 @@ def insert_well_flow_rate_prescription(well: Well,T: sp.csc_matrix, q: np.ndarra
     # g_acc = get_g_acc_z()
 
     # coefs = -1 * well.wi * (well.mobilities.sum(axis=1))
+    # import pdb; pdb.set_trace()
     coefs = well.get_total_coefs()
     T[well.volumes_ids, well.volumes_ids] += coefs
     # source = np.zeros(len(well.volumes_ids))
@@ -559,15 +561,13 @@ def insert_well_flow_rate_prescription(well: Well,T: sp.csc_matrix, q: np.ndarra
     q2 = np.zeros(n_gids)
     T = sp.lil_matrix((n_gids, n_gids))
 
-
     T[ff[0], ff[1]] = ff[2]
     del ff
     repeated_gid_well = np.repeat(gid_well, len(well.volumes_ids))
     T[well.volumes_ids, repeated_gid_well] = -coefs
-
     T[repeated_gid_well, well.volumes_ids] = -coefs
     T[gid_well, gid_well] = coefs.sum()
     q2[:gid_well] = q
-    q2[gid_well] = well.flow_rate + source.sum()
+    q2[gid_well] = well.flow_rate - source.sum()
 
     return T.tocsc(), q2
