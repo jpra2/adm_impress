@@ -19,7 +19,7 @@ class DebugPeacemanWellModel(GlobalDebug):
 class AllWells:
     wells = dict()
     database_name = os.path.join('flying', 'wells_database_' + only_mesh_name + '.csv')
-    database_name_h5 = os.path.join('flying', 'wells_database_' + only_mesh_name + '.h5')
+    # database_name_h5 = os.path.join('flying', 'wells_database_' + only_mesh_name + '.h5')
 
     @classmethod
     def create_database(cls):
@@ -148,6 +148,28 @@ class AllWells:
         """
         i = 1
 
+
+        for well in wells:
+            if well.type_prescription == 'pressure':
+                continue
+            elif well.type_prescription == 'flow_rate':
+                well_pressure = pressure1[volumes.max() + i]
+                well.pbh = well_pressure
+                i += 1
+            else:
+                raise NotImplementedError
+
+    @classmethod
+    def update_wells_flow_rate(cls, wells, flux_volumes, volumes):
+        raise NotImplementedError
+        # TODO: add more functionality
+        """
+
+        :param wells: list of all wells
+        :param pressure1: pressure field with well pressures
+        :param volumes: ids of all volumes of the mesh
+        """
+        i = 1
 
         for well in wells:
             if well.type_prescription == 'pressure':
@@ -380,16 +402,6 @@ class Well:
             return coefs * self.pbh
         else:
             raise ValidationError('this function is only for pressure restriction')
-
-
-
-
-    def calculate_flow_rate(self):
-        if self.type_prescription == 'flow_rate':
-            pass
-        else:
-            # TODO: add more functionality
-            raise NotImplementedError
 
     def __del__(self):
         # print(f'\n Well {self.id_text} was deleted \n')

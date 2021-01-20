@@ -371,6 +371,7 @@ class Wells(DataManager):
         M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
 
     def get_facs_nn(self):
+
         assert not self._loaded
         M = self.mesh
         wells_q = self['ws_q']
@@ -391,7 +392,7 @@ class Wells(DataManager):
         self.create_tags()
         self.get_wells()
         self.set_infos()
-        self.get_facs_nn()
-        self.correct_wells()
+        # self.get_facs_nn()
+        # self.correct_wells()
         self.loaded()
         pass
