@@ -165,30 +165,28 @@ def init_well_model(w_ids, w_centroids, w_block_dimensions, types_prescription,
 
         well = Well()
         well.set_well(w_id, centroids, block_dimension, type_prescription=type_prescription, value=value,
-                      direction=direction, well_type=w_type, z_well=z_well)
-        well.update_req(well.calculate_req(well_permeability=w_permeability))
-        well.wi = well.calculate_WI(well.block_dimension, well.req, well.well_radius, w_permeability, well.direction)
+                      direction=direction, well_type=w_type, z_well=z_well, n_phases=2,
+                      well_permeability=w_permeability, rho_phases=[1000, 100])
+        # well.update_req(well.calculate_req(well_permeability=w_permeability))
+        # well.wi = well.calculate_WI(well.block_dimension, well.req, well.well_radius, w_permeability, well.direction)
         set_phase_infos(well)
         well.mobilities = mobilities
 
         list_of_wells.append(well)
 
-    AllWells.create_database()
-
     return list_of_wells
 
 def load_well_model():
     list_wells = AllWells.load_wells_from_database()
-    for well in list_wells:
-        set_phase_infos(well)
 
+    import pdb; pdb.set_trace()
 
     return list_wells
 
 def set_phase_infos(well):
-    well.update_n_phases(2)
+    # well.update_n_phases(2)
     well.phases = ['water', 'oil']
-    well.rho = [1000, 100]
+    # well.rho = [1000, 100]
 
 
 def setting_well_model():
@@ -202,20 +200,26 @@ def setting_well_model():
     list_w_block_dimensions = [geom['block_dimension'][w_id] for w_id in list_w_ids]
     list_type_prescription = ['flow_rate', 'pressure']
     # list_type_prescription = ['pressure', 'pressure']
-    list_w_values = [3500.0, 10000.0]
+    list_w_values = [0.0, 10000.0]
     list_w_directions = ['z', 'z']
     list_w_types = ['injector', 'producer']
     list_w_permeability = [rock_data['permeability'][w_id] for w_id in list_w_ids]
     list_w_mobilities = [np.array([mob_w[w_id], mob_o[w_id]]).T for w_id in list_w_ids]
-    list_z_wells = [geom['centroid_volumes'][w_id][:,2].max() for w_id in list_w_ids]
+    list_z_wells = [geom['centroid_volumes'][w_id][:,2].min() for w_id in list_w_ids]
 
-    return init_well_model(list_w_ids, list_w_centroids, list_w_block_dimensions,
+    all_wells = init_well_model(list_w_ids, list_w_centroids, list_w_block_dimensions,
                            list_type_prescription, list_w_values, list_w_directions,
                            list_w_types, list_w_permeability, list_w_mobilities, list_z_wells)
 
+    AllWells.create_database()
 
-well_models = setting_well_model()
-# well_models = load_well_model()
+    return all_wells
+
+
+# well_models = setting_well_model()
+
+well_models = load_well_model()
+import pdb; pdb.set_trace()
 ######################################################
 
 solver = SolverSp()
@@ -508,6 +512,10 @@ while loop <= loop_max:
     p1 = pressure[w1.volumes_ids]
     p2 = pressure[w2.volumes_ids]
     AllWells.update_wells_pbh(well_models, pressure1, elements.volumes)
+    '''
+        update: wells flow_rate
+        genererate wells report
+    '''
     pwells = pressure1[elements.volumes.max() + 1:]
     q1 = flux_total_volumes[w1.volumes_ids]
     q2 = flux_total_volumes[w2.volumes_ids]

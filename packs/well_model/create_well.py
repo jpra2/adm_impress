@@ -40,6 +40,11 @@ class AllWells:
         list_block_dimension = []
         list_z_well = []
         list_id_int = []
+        list_n_phases = []
+        list_rho_phases = []
+        list_mobilities = []
+        list_phases = []
+
         for id_text in cls.wells.keys():
             well = AllWells.wells[id_text]
             list_ids.append(well.id_text)
@@ -60,6 +65,11 @@ class AllWells:
             list_z_well.append(well.z_well)
             list_id_int.append(well.id_int)
 
+            list_n_phases.append(well.n_phases)
+            list_rho_phases.append(well.rho)
+            list_mobilities.append(well.mobilities)
+            list_phases.append(well.phases)
+
         df = pd.DataFrame({
             'ids': list_ids,
             'volumes_ids': list_volumes_ids,
@@ -77,7 +87,11 @@ class AllWells:
             'wi': list_wi,
             'block_dimension': list_block_dimension,
             'z_well': list_z_well,
-            'id_int' : list_id_int
+            'id_int' : list_id_int,
+            'n_phases': list_n_phases,
+            'rho_phases': list_rho_phases,
+            'mobilities': list_mobilities,
+            'phases': list_phases
         })
 
         df.to_csv(cls.database_name, index=False)
@@ -118,15 +132,25 @@ class AllWells:
             block_dimension = block_dimension.replace(' ', ',')
             block_dimension = np.array(eval(block_dimension))
             z_well = line['z_well']
+            n_phases = line['n_phases']
+            rho_phases = eval(line['rho_phases'])
+            mobilities = line['mobilities'].replace('\n', '')
+            mobilities = mobilities.replace(' ', ',')
+            mobilities = np.array(eval(mobilities))
+            phases = eval(line['phases'])
+
             well = Well()
             well.set_well(volumes_ids2, centroids2, block_dimension, type_prescription=type_prescription,
                           value=value, dim=dim, direction=direction, well_type=well_type,
-                          model=model, well_radius=radius, id_text=str(line['ids']), z_well=z_well)
+                          model=model, well_radius=radius, id_text=str(line['ids']), z_well=z_well, n_phases=n_phases,
+                          rho_phases=rho_phases, initialize=False)
             well.pbh = pbh
             well.flow_rate = flow_rate
             well.req = req
             well.wi = wi
             well.id_int = line['id_int']
+            well.phases = phases
+            well.mobilities = mobilities
 
             list_of_wells.append(well)
 
@@ -182,18 +206,14 @@ class AllWells:
                 raise NotImplementedError
 
 
-
-
-
-
-
 class Well:
     type_prescription_list = ['pressure', 'flow_rate']
     type_direction_list = ['x', 'y', 'z']
     well_types = ['injector', 'producer']
 
     def set_well(self, volumes_ids: np.ndarray, centroids: np.ndarray, block_dimension: np.ndarray, type_prescription='pressure', value=0.0, dim=3, direction='z',
-                 well_type='injector', model='peaceman', well_radius=0.05, id_text='', z_well=1.0):
+                 well_type='injector', model='peaceman', well_radius=0.1, id_text='', z_well=1.0, n_phases=1,
+                 well_permeability=None, rho_phases=None, initialize=True):
         '''
 
         :param volumes_ids:
@@ -222,7 +242,9 @@ class Well:
         self.direction = direction
         self.well_type = well_type
         self.model = model
-        self._n_phases = 0
+        self._n_phases = n_phases
+        self.mobilities = np.zeros((len(volumes_ids), n_phases))
+        self.phases = ['phase_' + str(i) for i in range(n_phases)]
         self.well_radius = well_radius
         self.block_dimension = block_dimension.copy()
         self.z_well = z_well
@@ -238,7 +260,23 @@ class Well:
             else:
                 raise NotImplementedError
             self.pbh = None
+
+        if initialize is True:
+            if well_permeability is None:
+                print('\n Update the equivalent radius and Well Index \n')
+                raise NotImplementedError
+            else:
+                self.req = self.calculate_req(well_permeability=well_permeability)
+                self.wi = self.calculate_WI(self.block_dimension, self.req, self.well_radius, well_permeability, self.direction)
+
+        if rho_phases is None:
+            print('\n Update phase densities \n')
+            self.rho = np.zeros(n_phases)
+        else:
+            self.rho = rho_phases
+
         AllWells.wells[self.id_text] = weakref.proxy(self)
+
 
     def update_volumes(self, volumes_ids, centroids, block_dimension):
         self.volumes_ids = volumes_ids
@@ -338,7 +376,7 @@ class Well:
     def wi(self, value):
         self._wi = value
 
-    def calculate_req(self, **kwargs):
+    def calculate_req(self, well_permeability=None):
         '''
 
         :param kwargs:
@@ -347,7 +385,9 @@ class Well:
         :return: equivalent radius of well
         '''
         if self.model == 'peaceman':
-            well_permeability = kwargs.get('well_permeability')
+            if well_permeability is None:
+                raise ValueError('well_permeability is None')
+            # well_permeability = kwargs.get('well_permeability')
             if self.direction == 'z':
                 k00 = well_permeability[:, 0, 0]
                 k11 = well_permeability[:, 1, 1]
@@ -380,6 +420,7 @@ class Well:
         wi = peaceman.get_WI_vec(h, k00, k11, req, well_radius)
 
         return DebugPeacemanWellModel.return_ones(wi)
+
 
     def get_total_coefs(self):
         k = -1
@@ -419,6 +460,9 @@ class Well:
 
 
 
+
+
+
 def test_type_prescription(type_prescription):
     if type_prescription not in Well.type_prescription_list:
         raise NameError(f'type_prescription must be in {Well.type_prescription_list}')
@@ -443,6 +487,7 @@ def test_well_type(well_type):
 def test_id_text(id_text):
     if id_text in AllWells.wells.keys():
         raise NameError(f'id_text not must be in {AllWells.wells.keys()}')
+
 
 
 def get_linear_problem(wells_list, T, gravity_source_term, volumes_ids):
