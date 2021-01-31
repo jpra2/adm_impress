@@ -184,26 +184,64 @@ class AllWells:
                 raise NotImplementedError
 
     @classmethod
-    def update_wells_flow_rate(cls, wells, flux_volumes, volumes):
-        raise NotImplementedError
-        # TODO: add more functionality
+    def update_wells_flow_rate(cls, wells, flux_volumes):
         """
 
-        :param wells: list of all wells
-        :param pressure1: pressure field with well pressures
-        :param volumes: ids of all volumes of the mesh
+        :param wells: wells list
+        :param flux_volumes: total flux volumes
+        :param volumes: ids volumes
         """
-        i = 1
 
         for well in wells:
-            if well.type_prescription == 'pressure':
+            if well.type_prescription == 'flow_rate':
                 continue
-            elif well.type_prescription == 'flow_rate':
-                well_pressure = pressure1[volumes.max() + i]
-                well.pbh = well_pressure
-                i += 1
+            elif well.type_prescription == 'pressure':
+                well_flux = flux_volumes[well.volumes_ids].sum()
+                well.flow_rate = well_flux
             else:
                 raise NotImplementedError
+
+    @classmethod
+    def update_flux_phases(cls, wells, **kwargs):
+        name = 'flux_phase_'
+        w1: Well = wells[0]
+        n_phases = w1.n_phases
+
+        phases_flux = []
+
+        for i in range(n_phases):
+            phases_flux.append(kwargs.get(name + str(i)))
+
+        phases_flux = np.array(phases_flux)
+        total_flux = phases_flux.sum(axis=0)
+
+        cpp = phases_flux.copy()
+
+
+        for well in wells:
+            if well.well_type == 'producer':
+                continue
+            elif well.well_type == 'injector':
+                soma = well.mobilities.sum(axis=1)
+                propo = well.mobilities/soma
+                for i in range(n_phases):
+                    phases_flux[i][well.volumes_ids] = -total_flux[well.volumes_ids]*propo[:,i] + phases_flux[i][well.volumes_ids]
+            else:
+                raise NotImplementedError
+
+        import pdb; pdb.set_trace()
+        return phases_flux
+
+
+
+
+
+
+
+
+
+
+
 
 
 class Well:
@@ -546,7 +584,6 @@ def insert_well_pressure_restriction(well: Well, T: sp.csc_matrix, q: np.ndarray
     :return:
     """
     # g_acc = get_g_acc_z()
-
     # coefs = -1 * well.wi * (well.mobilities.sum(axis=1))
     coefs = well.get_total_coefs()
     # T[well.volumes_ids, well.volumes_ids] += coefs

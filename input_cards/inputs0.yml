@@ -86,7 +86,7 @@ Porosity:
 Saturation:
   r1:
     type: all
-    value: 0.8
+    value: 0.2
 
 #  r2:
 #    type: box

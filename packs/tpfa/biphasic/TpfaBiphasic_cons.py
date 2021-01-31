@@ -221,13 +221,20 @@ class TpfaBiphasicCons:
         flux_volumes[all_wells] -= total_flux_volumes[all_wells]*fw_phase[all_wells]
         return flux_volumes
 
+    def get_flux_phase_volumes_with_wells(self, flux_phase_internal_faces, all_wells, flux_frac_phase_volumes, volumes_adj_internal_faces, volumes, total_flux_volumes):
+
+        # fw_phase = flux_frac_phase_volumes
+        flux_volumes = TpfaMonophasic.get_total_flux_volumes(flux_phase_internal_faces, volumes, volumes_adj_internal_faces)
+        # flux_volumes[all_wells] -= total_flux_volumes[all_wells]*fw_phase[all_wells]
+        return flux_volumes
+
     def update_delta_t(self, flux_w_volumes, porosity, vol_volumes, total_flux_volumes, total_velocity_internal_faces, flux_frac_w_volumes, saturation, volumes_adj_internal_faces, hi, abs_u_normal_internal_faces):
 
         deltas_t = []
         deltas_t.append(self.update_delta_t_for_delta_sat_max(flux_w_volumes, porosity, vol_volumes))
         deltas_t.append(self.update_delta_t_dep0(total_flux_volumes, porosity, vol_volumes))
         deltas_t.append(self.update_delta_t_new(porosity, vol_volumes, total_velocity_internal_faces, flux_frac_w_volumes, saturation, volumes_adj_internal_faces, hi, abs_u_normal_internal_faces))
-        deltas_t.append(self.update_delta_t2(np.linalg.norm(total_velocity_internal_faces*abs_u_normal_internal_faces, axis=1), hi))
+        deltas_t.append(self.update_delta_t2(np.linalg.norm(total_velocity_internal_faces*abs_u_normal_internal_faces, axis=1), hi)*0.8)
 
         delta_t = min(deltas_t)
 
@@ -363,6 +370,7 @@ class TpfaBiphasicCons:
         ids = np.arange(len(saturations))
 
         fw_volumes = -flux_w_volumes
+        # fw_volumes = flux_w_volumes
 
         volumes = vol_volumes
         phis = porosity
@@ -407,6 +415,7 @@ class TpfaBiphasicCons:
         ## teste variacao maxima de saturacao
         test = ids2[np.absolute(delta_sat) > delta_sat_max+0.000001]
         if len(test) > 0:
+            import pdb; pdb.set_trace()
             return 1, True
         del test
         ##############
@@ -421,6 +430,7 @@ class TpfaBiphasicCons:
 
         ## teste dos limites
         if min_sat < Swc - deltt or max_sat > 1-Sor + deltt:
+            import pdb; pdb.set_trace()
             return 1, True
 
         return 0, saturations

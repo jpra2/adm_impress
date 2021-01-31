@@ -179,8 +179,6 @@ def init_well_model(w_ids, w_centroids, w_block_dimensions, types_prescription,
 def load_well_model():
     list_wells = AllWells.load_wells_from_database()
 
-    import pdb; pdb.set_trace()
-
     return list_wells
 
 def set_phase_infos(well):
@@ -191,16 +189,18 @@ def set_phase_infos(well):
 
 def setting_well_model():
 
-    krw, kro = biphasic.get_krw_and_kro(biphasic_data['saturation'])
+    saturation = biphasic_data['saturation'].copy()
+    saturation[wells['ws_q_sep'][0]] = 0.8
+    krw, kro = biphasic.get_krw_and_kro(saturation)
     mob_w, mob_o = biphasic.get_mobilities_w_o(krw, kro)
 
     list_w_ids = [wells['ws_q_sep'][0], wells['ws_p_sep'][0]]
     # list_w_ids = [wells['ws_p_sep'][0], wells['ws_p_sep'][1]]
     list_w_centroids = [geom['centroid_volumes'][w_id] for w_id in list_w_ids]
     list_w_block_dimensions = [geom['block_dimension'][w_id] for w_id in list_w_ids]
-    list_type_prescription = ['flow_rate', 'pressure']
-    # list_type_prescription = ['pressure', 'pressure']
-    list_w_values = [0.0, 10000.0]
+    # list_type_prescription = ['flow_rate', 'pressure']
+    list_type_prescription = ['pressure', 'pressure']
+    list_w_values = [100000.0, 1000.0]
     list_w_directions = ['z', 'z']
     list_w_types = ['injector', 'producer']
     list_w_permeability = [rock_data['permeability'][w_id] for w_id in list_w_ids]
@@ -216,10 +216,9 @@ def setting_well_model():
     return all_wells
 
 
-# well_models = setting_well_model()
+well_models = setting_well_model()
 
-well_models = load_well_model()
-import pdb; pdb.set_trace()
+# well_models = load_well_model()
 ######################################################
 
 solver = SolverSp()
@@ -232,8 +231,8 @@ while loop <= loop_max:
 
     biphasic_data['krw'], biphasic_data['kro'] = biphasic.get_krw_and_kro(biphasic_data['saturation'])
     mob_w, mob_o = biphasic.get_mobilities_w_o(biphasic_data['krw'], biphasic_data['kro'])
-    for well in well_models:
-        well.update_mobilities(np.array([mob_w[well.volumes_ids], mob_o[well.volumes_ids]]).T)
+    # for well in well_models:
+    #     well.update_mobilities(np.array([mob_w[well.volumes_ids], mob_o[well.volumes_ids]]).T)
 
     if loop == 0:
 
@@ -444,33 +443,70 @@ while loop <= loop_max:
         elements.get('volumes_adj_internal_faces')
     )
 
-    flux_w_volumes = biphasic.get_flux_phase_volumes(
+    # flux_w_volumes = biphasic.get_flux_phase_volumes(
+    #     flux_w_internal_faces,
+    #     wells['all_wells'],
+    #     mob_w/(mob_w+mob_o),
+    #     elements.get('volumes_adj_internal_faces'),
+    #     elements.volumes,
+    #     flux_total_volumes
+    # )
+
+    flux_w_volumes = biphasic.get_flux_phase_volumes_with_wells(
         flux_w_internal_faces,
         wells['all_wells'],
-        mob_w/(mob_w+mob_o),
+        mob_w / (mob_w + mob_o),
         elements.get('volumes_adj_internal_faces'),
         elements.volumes,
         flux_total_volumes
     )
 
-    flux_o_volumes = biphasic.get_flux_phase_volumes(
+    # flux_o_volumes = biphasic.get_flux_phase_volumes(
+    #     flux_o_internal_faces,
+    #     wells['all_wells'],
+    #     mob_o/(mob_w+mob_o),
+    #     elements.get('volumes_adj_internal_faces'),
+    #     elements.volumes,
+    #     flux_total_volumes
+    # )
+
+    flux_o_volumes = biphasic.get_flux_phase_volumes_with_wells(
         flux_o_internal_faces,
         wells['all_wells'],
-        mob_o/(mob_w+mob_o),
+        mob_o / (mob_w + mob_o),
         elements.get('volumes_adj_internal_faces'),
         elements.volumes,
         flux_total_volumes
     )
+
+    ###########
+    flux_phases = AllWells.update_flux_phases(well_models, flux_phase_0=flux_w_volumes, flux_phase_1=flux_o_volumes)
+    ## flux_phases[0] = flux_w_volumes
+    ## flux_phases[1] = flux_o_volumes
+    #############
 
     biphasic_data['saturation_last'] = biphasic_data['saturation'].copy()
 
+    # delta_t, biphasic_data['saturation'] = biphasic.update_saturation(
+    #     flux_w_volumes,
+    #     rock_data['porosity'],
+    #     geom['volume'],
+    #     flux_total_volumes,
+    #     total_velocity_internal_faces,
+    #     mob_w/(mob_w + mob_o),
+    #     biphasic_data['saturation_last'],
+    #     elements.get('volumes_adj_internal_faces'),
+    #     geom['hi'],
+    #     geom['abs_u_normal_faces'][elements.internal_faces]
+    # )
+
     delta_t, biphasic_data['saturation'] = biphasic.update_saturation(
-        flux_w_volumes,
+        flux_phases[0],
         rock_data['porosity'],
         geom['volume'],
         flux_total_volumes,
         total_velocity_internal_faces,
-        mob_w/(mob_w + mob_o),
+        mob_w / (mob_w + mob_o),
         biphasic_data['saturation_last'],
         elements.get('volumes_adj_internal_faces'),
         geom['hi'],
@@ -493,7 +529,8 @@ while loop <= loop_max:
     current_data['current'] = np.array([(prod_o, prod_w, wor, delta_t, dvpi, loop, accumulate.global_identifier)], dtype=dty)
     accumulate.insert_data(current_data['current'])
 
-    data_impress['saturation'][:] = biphasic_data['saturation_last']
+    data_impress['saturation_last'][:] = biphasic_data['saturation_last']
+    data_impress['saturation'][:] = biphasic_data['saturation']
     data_impress['flux_volumes'][:] = flux_total_volumes
     data_impress['pressure'][:] = pressure
     data_impress['flux_w_volumes'][:] = flux_w_volumes
@@ -512,6 +549,7 @@ while loop <= loop_max:
     p1 = pressure[w1.volumes_ids]
     p2 = pressure[w2.volumes_ids]
     AllWells.update_wells_pbh(well_models, pressure1, elements.volumes)
+    AllWells.update_wells_flow_rate(well_models, flux_total_volumes)
     '''
         update: wells flow_rate
         genererate wells report
@@ -519,7 +557,7 @@ while loop <= loop_max:
     pwells = pressure1[elements.volumes.max() + 1:]
     q1 = flux_total_volumes[w1.volumes_ids]
     q2 = flux_total_volumes[w2.volumes_ids]
-    if loop == 2:
+    if loop >= 2:
         import pdb; pdb.set_trace()
     # import pdb; pdb.set_trace()
 
