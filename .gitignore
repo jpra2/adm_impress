@@ -19,6 +19,7 @@
 !1x1x100_m.msh
 *.txt
 !const_definitions.txt
+!requirements.txt
 *.csv
 *.png
 *_tt.py
