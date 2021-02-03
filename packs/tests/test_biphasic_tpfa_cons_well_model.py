@@ -194,17 +194,17 @@ def set_phase_infos(well):
 def setting_well_model():
 
     saturation = biphasic_data['saturation'].copy()
-    # saturation[wells['ws_q_sep'][0]] = 1.0
-    saturation[wells['ws_p_sep'][0]] = 1.0
+    saturation[wells['ws_q_sep'][0]] = 1.0
+    # saturation[wells['ws_p_sep'][0]] = 1.0
     krw, kro = biphasic.get_krw_and_kro(saturation)
     mob_w, mob_o = biphasic.get_mobilities_w_o(krw, kro)
 
-    # list_w_ids = [wells['ws_q_sep'][0], wells['ws_p_sep'][0]]
-    list_w_ids = [wells['ws_p_sep'][0], wells['ws_p_sep'][1]]
+    list_w_ids = [wells['ws_q_sep'][0], wells['ws_p_sep'][0]]
+    # list_w_ids = [wells['ws_p_sep'][0], wells['ws_p_sep'][1]]
     list_w_centroids = [geom['centroid_volumes'][w_id] for w_id in list_w_ids]
     list_w_block_dimensions = [geom['block_dimension'][w_id] for w_id in list_w_ids]
-    # list_type_prescription = ['flow_rate', 'pressure']
-    list_type_prescription = ['pressure', 'pressure']
+    list_type_prescription = ['flow_rate', 'pressure']
+    # list_type_prescription = ['pressure', 'pressure']
     list_w_values = [10000000.0, 100000.0]
     list_w_directions = ['z', 'z']
     list_w_types = ['injector', 'producer']
@@ -232,7 +232,7 @@ solver = SolverSp()
 loop_max = 100000
 loop = current_data['current']['loop'][0]
 
-pressure_mat = sio.loadmat('data/ex2/pressure.mat')['pr'].flatten()
+pressure_mat = sio.loadmat('data/ex4/pressure.mat')['pr'].flatten()
 centroids_mat = sio.loadmat('data/ex1/centroids.mat')['rr']
 pressure_comp = np.zeros(len(pressure_mat))
 
@@ -373,12 +373,12 @@ while loop <= loop_max:
         pressure_comp[test_f] = pressure[i]
 
     erro = abs(pressure_comp - pressure_mat)
-    np.save('data/ex2/erro.npy', erro)
-    np.save('data/ex2/pressure_comp.npy', pressure_comp)
+    np.save('data/ex4/erro.npy', erro)
+    np.save('data/ex4/pressure_comp.npy', pressure_comp)
     
     norma_inf = np.linalg.norm(erro, np.inf)
     norma_l2 = np.linalg.norm(erro)
-    np.save('data/ex2/normas.npy', np.array([norma_inf, norma_l2]))
+    np.save('data/ex4/normas.npy', np.array([norma_inf, norma_l2]))
 
     import pdb; pdb.set_trace()
 
