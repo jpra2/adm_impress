@@ -197,6 +197,7 @@ class TpfaBiphasicCons:
         mobo2 = mobility_o_internal_faces.reshape(ni, 1)
         keq2 = keq_internal_faces.reshape(ni, 1)
         hi2 = hi.sum(axis=1).reshape(ni, 1)
+        import pdb; pdb.set_trace()
         fw2 = mobw2/(mobw2 + mobo2)
         fo2 = 1 - fw2
         k1 = keq2*gravity_vector*(rho_w - rho_o)*hi2

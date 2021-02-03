@@ -13,6 +13,8 @@ import time
 from packs.multiscale.test_conservation import ConservationTest
 from packs.well_model.create_well import AllWells, Well, get_linear_problem
 
+import scipy.io as sio
+
 
 test_coarse_flux = False
 if test_coarse_flux == True:
@@ -230,6 +232,10 @@ solver = SolverSp()
 loop_max = 100000
 loop = current_data['current']['loop'][0]
 
+pressure_mat = sio.loadmat('data/ex1/pressure.mat')['pr'].flatten()
+centroids_mat = sio.loadmat('data/ex1/centroids.mat')['rr']
+pressure_comp = np.zeros(len(pressure_mat))
+
 while loop <= loop_max:
 
     biphasic_data['krw'], biphasic_data['kro'] = biphasic.get_krw_and_kro(biphasic_data['saturation'])
@@ -355,8 +361,26 @@ while loop <= loop_max:
     # norm_invT = sp.linalg.norm(sp.linalg.inv(T_with_boundary), np.inf)
     # cond = norm_T*norm_invT
 
+    # import pdb; pdb.set_trace()
     pressure1 = solver.direct_solver(T_with_boundary, b)
     pressure = pressure1[elements.volumes]
+
+    for i, centro in enumerate(geom['centroid_volumes']):
+        test0 = centroids_mat[:,0] == centro[0]
+        test1 = centroids_mat[:,1] == centro[1]
+        test2 = centroids_mat[:,2] == centro[2]
+        test_f = (test0 & test1) & test2
+        pressure_comp[test_f] = pressure[i]
+
+    erro = abs(pressure_comp - pressure_mat)
+    np.save('data/ex1/erro1.npy', erro)
+    np.save('data/ex1/pressure_comp_1.npy', pressure_comp)
+    
+    norma_inf = np.linalg.norm(erro, np.inf)
+    norma_l2 = np.linalg.norm(erro)
+    np.save('data/ex1/normas_1.npy', np.array([norma_inf, norma_l2]))
+
+    import pdb; pdb.set_trace()
 
     total_velocity_internal_faces = biphasic.get_total_velocity_internal_faces(
         pressure,

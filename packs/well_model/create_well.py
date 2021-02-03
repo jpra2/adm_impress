@@ -223,6 +223,7 @@ class AllWells:
                 continue
             elif well.well_type == 'injector':
                 soma = well.mobilities.sum(axis=1)
+                soma = soma.reshape(len(soma), 1)
                 propo = well.mobilities/soma
                 for i in range(n_phases):
                     phases_flux[i][well.volumes_ids] = -total_flux[well.volumes_ids]*propo[:,i] + phases_flux[i][well.volumes_ids]
@@ -454,7 +455,6 @@ class Well:
         k00 = well_perbeability[:,i1k,i1k]
         k11 = well_perbeability[:,i2k,i2k]
         h = block_dimension[:, ih]
-        import pdb; pdb.set_trace()
 
         wi = peaceman.get_WI_vec(h, k00, k11, req, well_radius)
 
