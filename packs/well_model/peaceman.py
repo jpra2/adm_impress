@@ -23,5 +23,5 @@ def get_WI_vec(h, k00, k11, req, well_radius, s=0):
     :return: wi
     """
 
-    wi = 2 * np.pi * ((h * np.sqrt(k00 / k11)) / (np.log(req / np.repeat(well_radius, len(req))) + s))
+    wi = 2 * np.pi * ((h * np.sqrt(k00 * k11)) / (np.log(req / np.repeat(well_radius, len(req))) + s))
     return wi

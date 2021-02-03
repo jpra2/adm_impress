@@ -215,7 +215,7 @@ class AllWells:
         phases_flux = np.array(phases_flux)
         total_flux = phases_flux.sum(axis=0)
 
-        cpp = phases_flux.copy()
+        # cpp = phases_flux.copy()
 
 
         for well in wells:
@@ -454,6 +454,7 @@ class Well:
         k00 = well_perbeability[:,i1k,i1k]
         k11 = well_perbeability[:,i2k,i2k]
         h = block_dimension[:, ih]
+        import pdb; pdb.set_trace()
 
         wi = peaceman.get_WI_vec(h, k00, k11, req, well_radius)
 

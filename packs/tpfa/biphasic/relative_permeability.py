@@ -14,23 +14,27 @@ class BrooksAndCorey:
 
     def _stemp(self, S):
 
-        inds = np.arange(len(S))
+        # inds = np.arange(len(S))
+        #
+        # ite = inds[S > 1 - self.Sor + self.ds]
+        # ite2 = inds[S < self.Swc - self.ds]
+        #
+        # if len(ite) > 0 or len(ite2) > 0:
+        #     raise ValueError('Saturation Not supported')
+        #
+        # S[ite] = 1 - self.Sor
+        # S[ite2] = self.Swc
+        # return (S - self.Swc) / (1 - self.Swc - self.Sor)
 
-        ite = inds[S > 1 - self.Sor + self.ds]
-        ite2 = inds[S < self.Swc - self.ds]
-
-        if len(ite) > 0 or len(ite2) > 0:
-            raise ValueError('Saturation Not supported')
-
-        S[ite] = 1 - self.Sor
-        S[ite2] = self.Swc
-        return (S - self.Swc) / (1 - self.Swc - self.Sor)
+        return S
 
     def _krw(self, S_temp):
-        return self.krw0*(np.power(S_temp, self.n_w))
+        # return self.krw0*(np.power(S_temp, self.n_w))
+        return np.power(S_temp, self.n_w)
 
     def _kro(self, S_temp):
-        return self.kro0*(np.power(1 - S_temp, self.n_o))
+        # return self.kro0*(np.power(1 - S_temp, self.n_o))
+        return np.power(S_temp, self.n_o)
 
     def calculate(self, saturations):
         n = len(saturations)

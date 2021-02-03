@@ -152,6 +152,8 @@ def init_well_model(w_ids, w_centroids, w_block_dimensions, types_prescription,
                     w_values, w_directions, w_types, w_permeabilities, w_mobilities, z_wells):
 
     list_of_wells = []
+    rho_w = biphasic.properties.rho_w
+    rho_o = biphasic.properties.rho_o
     for i, w_id in enumerate(w_ids):
         centroids = w_centroids[i]
         block_dimension = w_block_dimensions[i]
@@ -166,7 +168,7 @@ def init_well_model(w_ids, w_centroids, w_block_dimensions, types_prescription,
         well = Well()
         well.set_well(w_id, centroids, block_dimension, type_prescription=type_prescription, value=value,
                       direction=direction, well_type=w_type, z_well=z_well, n_phases=2,
-                      well_permeability=w_permeability, rho_phases=[1000, 100])
+                      well_permeability=w_permeability, rho_phases=[rho_w, rho_o])
         # well.update_req(well.calculate_req(well_permeability=w_permeability))
         # well.wi = well.calculate_WI(well.block_dimension, well.req, well.well_radius, w_permeability, well.direction)
         set_phase_infos(well)
@@ -190,17 +192,18 @@ def set_phase_infos(well):
 def setting_well_model():
 
     saturation = biphasic_data['saturation'].copy()
-    saturation[wells['ws_q_sep'][0]] = 0.8
+    # saturation[wells['ws_q_sep'][0]] = 1.0
+    saturation[wells['ws_p_sep'][0]] = 1.0
     krw, kro = biphasic.get_krw_and_kro(saturation)
     mob_w, mob_o = biphasic.get_mobilities_w_o(krw, kro)
 
-    list_w_ids = [wells['ws_q_sep'][0], wells['ws_p_sep'][0]]
-    # list_w_ids = [wells['ws_p_sep'][0], wells['ws_p_sep'][1]]
+    # list_w_ids = [wells['ws_q_sep'][0], wells['ws_p_sep'][0]]
+    list_w_ids = [wells['ws_p_sep'][0], wells['ws_p_sep'][1]]
     list_w_centroids = [geom['centroid_volumes'][w_id] for w_id in list_w_ids]
     list_w_block_dimensions = [geom['block_dimension'][w_id] for w_id in list_w_ids]
     # list_type_prescription = ['flow_rate', 'pressure']
     list_type_prescription = ['pressure', 'pressure']
-    list_w_values = [100000.0, 1000.0]
+    list_w_values = [10000000.0, 100000.0]
     list_w_directions = ['z', 'z']
     list_w_types = ['injector', 'producer']
     list_w_permeability = [rock_data['permeability'][w_id] for w_id in list_w_ids]
