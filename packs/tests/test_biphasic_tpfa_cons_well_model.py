@@ -232,7 +232,7 @@ solver = SolverSp()
 loop_max = 100000
 loop = current_data['current']['loop'][0]
 
-pressure_mat = sio.loadmat('data/ex1/pressure.mat')['pr'].flatten()
+pressure_mat = sio.loadmat('data/ex2/pressure.mat')['pr'].flatten()
 centroids_mat = sio.loadmat('data/ex1/centroids.mat')['rr']
 pressure_comp = np.zeros(len(pressure_mat))
 
@@ -373,12 +373,12 @@ while loop <= loop_max:
         pressure_comp[test_f] = pressure[i]
 
     erro = abs(pressure_comp - pressure_mat)
-    np.save('data/ex1/erro1.npy', erro)
-    np.save('data/ex1/pressure_comp_1.npy', pressure_comp)
+    np.save('data/ex2/erro.npy', erro)
+    np.save('data/ex2/pressure_comp.npy', pressure_comp)
     
     norma_inf = np.linalg.norm(erro, np.inf)
     norma_l2 = np.linalg.norm(erro)
-    np.save('data/ex1/normas_1.npy', np.array([norma_inf, norma_l2]))
+    np.save('data/ex2/normas.npy', np.array([norma_inf, norma_l2]))
 
     import pdb; pdb.set_trace()
 
