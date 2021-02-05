@@ -13,6 +13,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
+folder=np.load('flying/folder.npy')[0]
 
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
@@ -50,7 +51,7 @@ def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp
     names=['vpi','n1_adm', 'delta_t', 'wor', 't_comp', 'el2', 'elinf', 'es_L2',
         'es_Linf', 'vpis_for_save','ep_haji_L2','ep_haji_Linf', 'er_L2', 'er_Linf', 'ev_L2', 'ev_Linf']
     for i in range(len(vars)):
-        np.save('results/biphasic/ms/'+ms_case+names[i]+'.npy',vars[i])
+        np.save('results/'+folder+'/ms/'+ms_case+names[i]+'.npy',vars[i])
 
 
 def plot_operator(T,OP_AMS, primals):
@@ -460,7 +461,7 @@ data_impress['coupled_flag'][data_impress['DUAL_1']>=2]=0
 
 
 coupl=100*(data_impress['coupled_flag']==1).sum()/len(data_impress['coupled_flag'])
-np.save('results/biphasic/ms/'+ms_case+'/coupl'+'.npy',np.array([coupl]))
+np.save('results/'+folder+'/ms/'+ms_case+'/coupl'+'.npy',np.array([coupl]))
 
 adm_method.set_level_wells_3()
 # adm_method.set_level_wells_only()
@@ -590,7 +591,7 @@ while verif:
 
     if vpis_for_save[count_save]<b1.vpi:
         refinement=100*((data_impress['LEVEL']==0).sum()-len(p_wells))/len(data_impress['LEVEL'])
-        np.save('results/biphasic/ms/'+ms_case+'/refinement'+'.npy',np.array([refinement]))
+        np.save('results/'+folder+'/ms/'+ms_case+'/refinement'+'.npy',np.array([refinement]))
 
         sat_f=np.load('flying/saturation_'+str(vpis_for_save[count_save])+'.npy')
         sat_adm=data_impress['saturation']
@@ -611,8 +612,8 @@ while verif:
         data_impress.update_variables_to_mesh()
         file_count=str(int(100*vpis_for_save[count_save]))
 
-        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
-        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
+        M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
+        M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
         if vpis_for_save[count_save]==vpis_for_save.max():
             export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor,
             t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1],

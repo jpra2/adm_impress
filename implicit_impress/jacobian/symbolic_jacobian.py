@@ -18,6 +18,7 @@ class symbolic_J:
 
         T, S_up, Sw, So, Swn, Son, Dt, k, phi, p_i, p_j, Dx, Dy=sym.symbols("T S Sw So Swn Son Dt k phi p_i p_j Dx Dy")
         if relative_permeability_model=='BrooksAndCorey':
+
             krw=((Sw - Swc)/(1 - Swc - Sor))**n_o
             kro=(1-(Sw - Swc)/(1 - Swc - Sor))**n_w
 
@@ -35,4 +36,3 @@ class symbolic_J:
         self.J=J
         self.c_o=sym.diff(self.acum_o,Sw)
         self.c_w=sym.diff(self.acum_w,Sw)
-        

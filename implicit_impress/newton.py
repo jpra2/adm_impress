@@ -4,6 +4,8 @@ from scipy.sparse import linalg
 from implicit_impress.jacobian.symbolic_jacobian import symbolic_J as s_J
 from implicit_impress.jacobian.impress_assembly import assembly
 import sympy as sym
+# import pandas as pd
+
 T, S_up, Sw, So, Swn, Son, Dt, k, phi, p_i, p_j, Dx, Dy=sym.symbols("T S Sw So Swn Son Dt k phi p_i p_j Dx Dy")
 class newton():
     def __init__(self,M):
@@ -43,8 +45,9 @@ class newton():
                 print('First Data file')
                 data=self.data
                 self.iterac+=1
-            df = pd.DataFrame (data)
-            df.to_excel(filepath, index=False)
+            import pdb; pdb.set_trace()
+            # df = pd.DataFrame (data)
+            # df.to_excel(filepath, index=False)
 
     def iteration(self,M):
         n=len(M.volumes.all)

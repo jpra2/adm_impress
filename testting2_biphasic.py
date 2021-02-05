@@ -7,6 +7,7 @@ import time
 import numpy as np
 M, elements_lv0, data_impress, wells = initial_mesh()
 b1 = BiphasicTpfa(M, data_impress, elements_lv0, wells)
+folder=np.load('flying/folder.npy')[0]
 def export_finescale_results(vals_vpi,vals_delta_t,vals_wor, t_comp):
     vals_vpi=np.array(vals_vpi)
     vals_delta_t=np.array(vals_delta_t)
@@ -15,7 +16,7 @@ def export_finescale_results(vals_vpi,vals_delta_t,vals_wor, t_comp):
     vars=[vpi,vals_delta_t,vals_wor, t_comp]
     names=['vpi','delta_t', 'wor', 't_comp']
     for i in range(len(vars)):
-        np.save('results/biphasic/finescale/'+names[i]+'.npy',vars[i])
+        np.save('results/'+folder+'/finescale/'+names[i]+'.npy',vars[i])
 # b1.run()
 # import pdb; pdb.set_trace()
 n = 1
@@ -68,7 +69,7 @@ while verif:
         if vpis_for_save[count_save]==vpis_for_save.max():
             export_finescale_results(vpi, delta_t, wor,t_comp)
             verif=False
-        M.core.mb.write_file('results/biphasic/finescale/vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
+        M.core.mb.write_file('results/'+folder+'/finescale/vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
         count_save+=1
 
     # if cont % n2 == 0:
