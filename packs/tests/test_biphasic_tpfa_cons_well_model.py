@@ -142,7 +142,7 @@ wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data,
 # wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate = carregar()
 # pdb.set_trace()
 
-dados_mat = sio.loadmat('data/dados_p3.mat')
+dados_mat = sio.loadmat('data/dados_p4.mat')
 pressure_mat = dados_mat['dados']['pr'][0][0].flatten()
 centroids_mat = dados_mat['dados']['cents'][0][0]
 centroids_mat[:,2] = 20 - centroids_mat[:,2]
