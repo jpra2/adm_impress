@@ -151,11 +151,14 @@ presc_right_side = dados_mat['dados']['presc_right_side'][0][0]
 centroids_right_side = dados_mat['dados']['centroids_right_side'][0][0]
 centroids_right_side[:,2] = 20 - centroids_right_side[:,2]
 pressure_comp = np.zeros(len(elements.volumes))
+centroids_comp = np.zeros(geom['centroid_volumes'].shape)
 for i, centsxz in enumerate(zip(cci, cck)):
     verifx = geom['centroid_volumes'][:,0] == centsxz[0]
     verifz = geom['centroid_volumes'][:,2] == centsxz[1]
     verif = verifx & verifz
     pressure_comp[verif] = pressure_mat[i]
+    centroids_comp[verif] = centroids_mat[i]
+
 
 
 
@@ -400,6 +403,7 @@ while loop <= loop_max:
     erro = erro1 / np.max(np.absolute(pressure_comp))
     ninf = np.linalg.norm(erro, np.inf)
     nl2 = np.linalg.norm(erro1) / np.linalg.norm(pressure_comp)
+    w1 = well_models[0]
 
     import pdb;
 
