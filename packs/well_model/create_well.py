@@ -326,7 +326,12 @@ class Well:
         self.n_phases = n_phases
 
     def update_mobilities(self, mobilities):
-        self.mobilities = mobilities
+        if self.well_type == 'injector':
+            pass
+        elif self.well_type == 'producer':
+            self.mobilities = mobilities
+        else:
+            raise NotImplementedError
 
     def update_req(self, req):
         self.req = req
@@ -415,6 +420,10 @@ class Well:
     def wi(self, value):
         self._wi = value
 
+    @property
+    def dZ(self):
+        return self.z_well - self.centroids[:, 2]
+
     def calculate_req(self, well_permeability=None):
         '''
 
@@ -460,7 +469,6 @@ class Well:
 
         return DebugPeacemanWellModel.return_ones(wi)
 
-
     def get_total_coefs(self):
         k = -1
         return k * self.wi * (self.mobilities.sum(axis=1))
@@ -470,9 +478,8 @@ class Well:
         source = np.zeros(len(self.volumes_ids))
 
         for phase in range(self.n_phases):
-            # source += 1 * well.wi * well.mobilities[:,phase] * (well.pbh + (well.rho[phase] * g_acc * (well.z_well - well.centroids[:,2])))
-            source += 1 * self.wi * self.mobilities[:, phase] * (
-                    self.rho[phase] * g_acc * (self.z_well - self.centroids[:, 2]))
+            source += self.wi * self.mobilities[:, phase] * (
+                    self.rho[phase] * g_acc * (self.dZ))
 
         return source
 
@@ -482,6 +489,35 @@ class Well:
             return coefs * self.pbh
         else:
             raise ValidationError('this function is only for pressure restriction')
+
+    @property
+    def fraction_mobility(self):
+        soma = self.mobilities.sum(axis=1)
+        soma = soma.reshape(len(soma), 1)
+        fraction = self.mobilities / soma
+        return fraction
+
+    @property
+    def rho_mix(self):
+        if self.well_type == 'injector':
+            rhoMix = np.mean((self.fraction_mobility * self.rho).sum(axis=1))
+        elif self.well_type == 'producer':
+            rhoMix = (self.wi * self.fraction_mobility * self.rho).sum() / self.wi.sum()
+        else:
+            raise NotImplementedError
+
+        return rhoMix
+
+    @property
+    def pressure_drop(self):
+        g_acc_z = get_g_acc_z()
+        dp = g_acc_z * self.dZ * self.rho_mix
+        return dp
+
+
+
+
+
 
     def __del__(self):
         # print(f'\n Well {self.id_text} was deleted \n')
@@ -584,20 +620,10 @@ def insert_well_pressure_restriction(well: Well, T: sp.csc_matrix, q: np.ndarray
     :param volumes_ids: all fine volumes ids
     :return:
     """
-    # g_acc = get_g_acc_z()
-    # coefs = -1 * well.wi * (well.mobilities.sum(axis=1))
-    coefs = well.get_total_coefs()
-    # T[well.volumes_ids, well.volumes_ids] += coefs
+    coefs = well.get_total_coefs() # WI*sum(mobilities)
     T[well.volumes_ids, well.volumes_ids] += coefs
-    # source = coefs * well.pbh
-    #
-    # for phase in range(well.n_phases):
-    #     # source += 1 * well.wi * well.mobilities[:,phase] * (well.pbh + (well.rho[phase] * g_acc * (well.z_well - well.centroids[:,2])))
-    #     source += 1 * well.wi * well.mobilities[:,phase] * (well.rho[phase] * g_acc * (well.z_well - well.centroids[:,2]))
-
     source = well.get_coefs_mult_pbh() + well.get_source_gravity()
-
-    q[well.volumes_ids] = source
+    q[well.volumes_ids] += source
 
     return T, q
 
@@ -605,7 +631,7 @@ def insert_well_pressure_restriction(well: Well, T: sp.csc_matrix, q: np.ndarray
 def insert_well_pressure_restriction2(well: Well,T: sp.csc_matrix, q: np.ndarray):
 
     # coefs = -1 * well.wi * (well.mobilities.sum(axis=1))
-    coefs = well.get_total_coefs()
+    coefs = well.get_total_coefs() # = WI*sum(mobilities)
     T[well.volumes_ids, well.volumes_ids] += coefs
     # source = np.zeros(len(well.volumes_ids))
     #
