@@ -33,6 +33,8 @@ impress(copia)/
 .idea/
 ./venv
 *.mat
+!dados_p1.mat
+!dados_p2.mat
 
 
 
