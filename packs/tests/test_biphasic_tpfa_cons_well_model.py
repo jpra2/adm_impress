@@ -142,6 +142,22 @@ wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data,
 # wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate = carregar()
 # pdb.set_trace()
 
+dados_mat = sio.loadmat('data/dados_p3.mat')
+pressure_mat = dados_mat['dados']['pr'][0][0].flatten()
+centroids_mat = dados_mat['dados']['cents'][0][0]
+centroids_mat[:,2] = 20 - centroids_mat[:,2]
+cci, ccj, cck = centroids_mat.T
+presc_right_side = dados_mat['dados']['presc_right_side'][0][0]
+centroids_right_side = dados_mat['dados']['centroids_right_side'][0][0]
+centroids_right_side[:,2] = 20 - centroids_right_side[:,2]
+pressure_comp = np.zeros(len(elements.volumes))
+for i, centsxz in enumerate(zip(cci, cck)):
+    verifx = geom['centroid_volumes'][:,0] == centsxz[0]
+    verifz = geom['centroid_volumes'][:,2] == centsxz[1]
+    verif = verifx & verifz
+    pressure_comp[verif] = pressure_mat[i]
+
+
 
 ###############################################
 monophasic = TpfaMonophasic()
@@ -194,17 +210,17 @@ def set_phase_infos(well):
 def setting_well_model():
 
     saturation = biphasic_data['saturation'].copy()
-    saturation[wells['ws_q_sep'][0]] = 1.0
-    # saturation[wells['ws_p_sep'][0]] = 1.0
+    # saturation[wells['ws_q_sep'][0]] = 1.0
+    saturation[wells['ws_p_sep'][0]] = 1.0
     krw, kro = biphasic.get_krw_and_kro(saturation)
     mob_w, mob_o = biphasic.get_mobilities_w_o(krw, kro)
 
-    list_w_ids = [wells['ws_q_sep'][0], wells['ws_p_sep'][0]]
-    # list_w_ids = [wells['ws_p_sep'][0], wells['ws_p_sep'][1]]
+    # list_w_ids = [wells['ws_q_sep'][0], wells['ws_p_sep'][0]]
+    list_w_ids = [wells['ws_p_sep'][0], wells['ws_p_sep'][1]]
     list_w_centroids = [geom['centroid_volumes'][w_id] for w_id in list_w_ids]
     list_w_block_dimensions = [geom['block_dimension'][w_id] for w_id in list_w_ids]
-    list_type_prescription = ['flow_rate', 'pressure']
-    # list_type_prescription = ['pressure', 'pressure']
+    # list_type_prescription = ['flow_rate', 'pressure']
+    list_type_prescription = ['pressure', 'pressure']
     list_w_values = [10000000.0, 100000.0]
     list_w_directions = ['z', 'z']
     list_w_types = ['injector', 'producer']
@@ -232,9 +248,9 @@ solver = SolverSp()
 loop_max = 100000
 loop = current_data['current']['loop'][0]
 
-pressure_mat = sio.loadmat('data/ex4/pressure.mat')['pr'].flatten()
-centroids_mat = sio.loadmat('data/ex1/centroids.mat')['rr']
-pressure_comp = np.zeros(len(pressure_mat))
+# pressure_mat = sio.loadmat('data/ex4/pressure.mat')['pr'].flatten()
+# centroids_mat = sio.loadmat('data/ex1/centroids.mat')['rr']
+# pressure_comp = np.zeros(len(pressure_mat))
 
 while loop <= loop_max:
 
@@ -365,20 +381,29 @@ while loop <= loop_max:
     pressure1 = solver.direct_solver(T_with_boundary, b)
     pressure = pressure1[elements.volumes]
 
-    for i, centro in enumerate(geom['centroid_volumes']):
-        test0 = centroids_mat[:,0] == centro[0]
-        test1 = centroids_mat[:,1] == centro[1]
-        test2 = centroids_mat[:,2] == centro[2]
-        test_f = (test0 & test1) & test2
-        pressure_comp[test_f] = pressure[i]
+    # for i, centro in enumerate(geom['centroid_volumes']):
+    #     test0 = centroids_mat[:,0] == centro[0]
+    #     test1 = centroids_mat[:,1] == centro[1]
+    #     test2 = centroids_mat[:,2] == centro[2]
+    #     test_f = (test0 & test1) & test2
+    #     pressure_comp[test_f] = pressure[i]
 
-    erro = abs(pressure_comp - pressure_mat)
-    np.save('data/ex4/erro.npy', erro)
-    np.save('data/ex4/pressure_comp.npy', pressure_comp)
-    
-    norma_inf = np.linalg.norm(erro, np.inf)
-    norma_l2 = np.linalg.norm(erro)
-    np.save('data/ex4/normas.npy', np.array([norma_inf, norma_l2]))
+    # erro = abs(pressure_comp - pressure_mat)
+    # np.save('data/ex4/erro.npy', erro)
+    # np.save('data/ex4/pressure_comp.npy', pressure_comp)
+    #
+    # norma_inf = np.linalg.norm(erro, np.inf)
+    # norma_l2 = np.linalg.norm(erro)
+    # np.save('data/ex4/normas.npy', np.array([norma_inf, norma_l2]))
+
+    erro1 = np.absolute(pressure_comp - pressure)
+    erro = erro1 / np.max(np.absolute(pressure_comp))
+    ninf = np.linalg.norm(erro, np.inf)
+    nl2 = np.linalg.norm(erro1) / np.linalg.norm(pressure_comp)
+
+    import pdb;
+
+    pdb.set_trace()
 
     import pdb; pdb.set_trace()
 

@@ -37,7 +37,7 @@ set_permeability: true
 Permeability:
   r1:
         type: all
-        value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+        value: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
 
   # r2:
   #   type: cartesian_region
@@ -87,7 +87,7 @@ Porosity:
 Saturation:
   r1:
     type: all
-    value: 1.0
+    value: 0.0
 
 #  r2:
 #    type: box
@@ -138,14 +138,14 @@ Wells:
       prescription: P
       type: 'Producer'
       type_region: box
-      value: 105000.0
+      value: 100000.0
     P3:
       p0: [0.0, 0.0, 0.0]
       p1: [1.0, 1.0, 20.0]
-      prescription: Q
+      prescription: P
       type: 'Injector'
       type_region: box
-      value: 200000
+      value: 10000000.0
     # P3:
     #   p0: [9.0, 0.0, 0.0]
     #   p1: [17.0, 1.0, 1.0]
