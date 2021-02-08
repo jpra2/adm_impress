@@ -35,7 +35,10 @@ impress(copia)/
 *.mat
 !dados_p1.mat
 !dados_p2.mat
-
+!dados_p3.mat
+!dados_p4.mat
+!dados_p5.mat
+!dados_p6.mat
 
 
 
