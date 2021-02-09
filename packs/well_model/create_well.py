@@ -481,6 +481,16 @@ class Well:
             source += self.wi * self.mobilities[:, phase] * (
                     self.rho[phase] * g_acc * (self.dZ))
 
+        # if self.well_type == 'injector':
+        #     fraction = self.fraction_mobility(self.mobilities)
+        #     rhoMix = self.rho_mix(self.mobilities)
+        # elif self.well_type == 'producer':
+        #     fraction = self.fraction_mobility(vols_mobilities[self.volumes_ids])
+        #     rhoMix = self.rho_mix(vols_mobilities[self.volumes_ids])
+        #
+        # source += self.wi * (rhoMix * g_acc * (self.dZ))
+        # import pdb; pdb.set_trace()
+
         return source
 
     def get_coefs_mult_pbh(self):
@@ -499,12 +509,14 @@ class Well:
 
     @property
     def rho_mix(self):
-        if self.well_type == 'injector':
-            rhoMix = np.mean((self.fraction_mobility * self.rho).sum(axis=1))
-        elif self.well_type == 'producer':
-            rhoMix = (self.wi * self.fraction_mobility * self.rho).sum() / self.wi.sum()
-        else:
-            raise NotImplementedError
+        rhoMix = (self.wi * self.fraction_mobility * self.rho).sum() / self.wi.sum()
+        # if self.well_type == 'injector':
+        #     rhoMix = np.mean((self.fraction_mobility * self.rho).sum(axis=1))
+        # elif self.well_type == 'producer':
+        #
+        #     rhoMix = (self.wi * self.fraction_mobility * self.rho).sum() / self.wi.sum()
+        # else:
+        #     raise NotImplementedError
 
         return rhoMix
 

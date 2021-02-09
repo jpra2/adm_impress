@@ -264,7 +264,6 @@ while loop <= loop_max:
     mob_w, mob_o = biphasic.get_mobilities_w_o(biphasic_data['krw'], biphasic_data['kro'])
     for well in well_models:
         well.update_mobilities(np.array([mob_w[well.volumes_ids], mob_o[well.volumes_ids]]).T)
-        dp = well.pressure_drop
 
     if loop == 0:
 
