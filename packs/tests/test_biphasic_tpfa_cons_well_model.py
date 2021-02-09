@@ -230,9 +230,11 @@ def setting_well_model():
     list_w_types = ['injector', 'producer']
     list_w_permeability = [rock_data['permeability'][w_id] for w_id in list_w_ids]
     list_w_mobilities = [np.array([mob_w[w_id], mob_o[w_id]]).T for w_id in list_w_ids]
+    centroid_nodes = geom['centroid_nodes']
+    zmax = centroid_nodes.max(axis=0)[2]
     # list_z_wells = [geom['centroid_volumes'][w_id][:,2].min() for w_id in list_w_ids]
     # list_z_wells = [geom['centroid_volumes'][w_id][:,2].max() for w_id in list_w_ids]
-    list_z_wells = [2 for w_id in list_w_ids]
+    list_z_wells = [zmax for w_id in list_w_ids]
 
     all_wells = init_well_model(list_w_ids, list_w_centroids, list_w_block_dimensions,
                            list_type_prescription, list_w_values, list_w_directions,

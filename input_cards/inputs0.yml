@@ -2,8 +2,9 @@
 # mesh_name: mesh/9x1x9.h5m
 # mesh_name: mesh/27x1x27.h5m
 #mesh_name: mesh/3x1x1.h5m
-mesh_name: mesh/3x1x2.h5m
-#mesh_name: mesh/20x1x20.h5m
+#mesh_name: mesh/3x1x2.h5m
+mesh_name: mesh/20x1x20.h5m
+#mesh_name: mesh/3x1x3.h5m
 
 n_test: 0
 state: 0
@@ -134,14 +135,14 @@ Wells:
 
     P2:
       p0: [0.0, 0.0, 0.0]
-      p1: [1.0, 1.0, 2.0]
+      p1: [1.0, 1.0, 20.0]
       prescription: P
       type: 'Injector'
       type_region: box
       value: 10000000.0
     P3:
-      p0: [ 2.0, 0.0, 0.0 ]
-      p1: [ 3.0, 1.0, 2.0 ]
+      p0: [ 19.0, 0.0, 0.0 ]
+      p1: [ 20.0, 1.0, 20.0 ]
       prescription: P
       type: 'Producer'
       type_region: box
