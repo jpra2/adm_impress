@@ -536,7 +536,7 @@ while verif:
     t0=time.time()
     adm_method.solve_multiscale_pressure(T, b)
 
-    adm_method.set_pms_flux(wells, neumann_subds)
+    adm_method.set_pms_flux(wells, neumann_subds) #
 
     b1.get_velocity_faces()
 
