@@ -526,11 +526,6 @@ class Well:
         dp = g_acc_z * self.dZ * self.rho_mix
         return dp
 
-
-
-
-
-
     def __del__(self):
         # print(f'\n Well {self.id_text} was deleted \n')
         AllWells.wells.pop(self.id_text)
@@ -686,7 +681,7 @@ def insert_well_flow_rate_prescription(well: Well,T: sp.csc_matrix, q: np.ndarra
     #                 well.rho[phase] * g_acc * (well.z_well - well.centroids[:, 2]))
 
     source = well.get_source_gravity()
-    q[well.volumes_ids] = source
+    q[well.volumes_ids] += source
 
     ff = find(T)
     n_gids = len(q) + 1

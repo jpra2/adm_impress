@@ -136,10 +136,10 @@ Wells:
     P2:
       p0: [0.0, 0.0, 0.0]
       p1: [1.0, 1.0, 20.0]
-      prescription: P
+      prescription: Q
       type: 'Injector'
       type_region: box
-      value: 10000000.0
+      value: 10000.0
     P3:
       p0: [ 19.0, 0.0, 0.0 ]
       p1: [ 20.0, 1.0, 20.0 ]

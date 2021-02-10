@@ -142,7 +142,7 @@ wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data,
 # wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate = carregar()
 # pdb.set_trace()
 
-dados_mat = sio.loadmat('data/dados_p4.mat')
+dados_mat = sio.loadmat('data/dados_p6.mat')
 pressure_mat = dados_mat['dados']['pr'][0][0].flatten()
 centroids_mat = dados_mat['dados']['cents'][0][0]
 centroids_mat[:,2] = 20 - centroids_mat[:,2]
@@ -213,19 +213,19 @@ def set_phase_infos(well):
 def setting_well_model():
 
     saturation = biphasic_data['saturation'].copy()
-    # saturation[wells['ws_q_sep'][0]] = 1.0
-    saturation[wells['ws_p_sep'][0]] = 1.0
+    saturation[wells['ws_q_sep'][0]] = 1.0
+    # saturation[wells['ws_p_sep'][0]] = 1.0
     krw, kro = biphasic.get_krw_and_kro(saturation)
     mob_w, mob_o = biphasic.get_mobilities_w_o(krw, kro)
 
-    # list_w_ids = [wells['ws_q_sep'][0], wells['ws_p_sep'][0]]
-    list_w_ids = [wells['ws_p_sep'][0], wells['ws_p_sep'][1]]
+    list_w_ids = [wells['ws_q_sep'][0], wells['ws_p_sep'][0]]
+    # list_w_ids = [wells['ws_p_sep'][0], wells['ws_p_sep'][1]]
     list_w_centroids = [geom['centroid_volumes'][w_id] for w_id in list_w_ids]
     list_w_block_dimensions = [geom['block_dimension'][w_id] for w_id in list_w_ids]
-    # list_type_prescription = ['flow_rate', 'pressure']
-    list_type_prescription = ['pressure', 'pressure']
-    list_w_values = [10000000.0, 100000.0]
-    # list_w_values = [10000.0, 100000.0] # para vazao prescrita
+    list_type_prescription = ['flow_rate', 'pressure']
+    # list_type_prescription = ['pressure', 'pressure']
+    # list_w_values = [10000000.0, 100000.0]
+    list_w_values = [10000.0, 100000.0] # para vazao prescrita
     list_w_directions = ['z', 'z']
     list_w_types = ['injector', 'producer']
     list_w_permeability = [rock_data['permeability'][w_id] for w_id in list_w_ids]
