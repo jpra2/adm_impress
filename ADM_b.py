@@ -555,7 +555,7 @@ while verif:
 
         po=np.load('flying/original_ms_solution.npy')
         vo=np.load('flying/velocity_faces_AMS.npy')
-
+    
     er_L2.append(np.linalg.norm(T*pms-b)/np.linalg.norm(T*po-b))
 
     er_Linf.append((T*pms-b).max()/(T*po-b).max())
@@ -596,6 +596,7 @@ while verif:
         sat_adm=data_impress['saturation']
 
         es_L2.append(np.linalg.norm(sat_f-sat_adm)/np.linalg.norm(sat_f))
+
         es_Linf.append(abs(sat_f-sat_adm).max()/sat_f.max())
 
 
