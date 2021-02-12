@@ -19,7 +19,7 @@ class newton():
 
         for j in range(8):
             self.assembly=assembly(M,0.00001)
-            self.pvi_def=0.15-0.02*j
+            self.pvi_def=0.02+0.02*j
             ni=int(self.pvi_lim/self.pvi_def)
 
             self.qov=[]
@@ -43,8 +43,8 @@ class newton():
                 print('First Data file')
                 data=self.data
                 self.iterac+=1
-            df = pd.DataFrame (data)
-            df.to_excel(filepath, index=False)
+            # df = pd.DataFrame (data)
+            # df.to_excel(filepath, index=False)
 
     def iteration(self,M):
         n=len(M.volumes.all)
@@ -78,7 +78,7 @@ class newton():
             Mp1=Jpp1-Jps1*linalg.spsolve(Jss1,Jsp1)
 
             qp1=(scipy.sparse.csc_matrix(Fp).T-scipy.sparse.csc_matrix(Jps1*linalg.spsolve(Jss1,Fs)).T).toarray().transpose()[0]
-
+            
             dp1=linalg.spsolve(Mp1,qp1)
             ds1=linalg.spsolve(Jss1,Fs-Jsp1*dp1)
 

@@ -29,8 +29,6 @@ class assembly():
         Swn1s=M.swn1s[:].transpose()[0]
         # vols=np.repeat(1.0,self.n) #Volume de cada um dos volumes
 
-        pv=M.pressure
-
         ID_vol=GID_volumes
         symbolic_J=s_J()
         c_o=symbolic_J.c_o
@@ -48,7 +46,7 @@ class assembly():
         cols.append(n+ID_vol)
         data.append(sym.lambdify((Dx,Dy,phi,Dt),c_w)(self.Dx,self.Dy,0.3,np.repeat(self.dt,self.n)))
         # J[n+ID_vol][n+ID_vol]+=float(F_Jacobian().c_w.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt}))
-        # import pdb; pdb.set_trace()
+
         linesq=[]
         dataq=[]
         linesq.append(ID_vol)
@@ -93,6 +91,7 @@ class assembly():
         id_up[up1]=ids1[up1]
 
         Ts=np.ones(self.nfi)
+        
 
         J00=sym.lambdify((T,Sw),self.F_Jacobian.J[0][0])(Ts,swf)
         # J00=float(self.F_Jacobian[0][0].subs({T:1, Sw:swf}))

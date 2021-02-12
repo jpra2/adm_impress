@@ -5,8 +5,6 @@ import shutil
 import matplotlib
 from matplotlib import ticker
 
-
-
 font = {'size'   : 50}
 matplotlib.rc('font', **font)
 def remove_previous_files():
