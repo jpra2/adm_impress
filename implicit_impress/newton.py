@@ -78,7 +78,7 @@ class newton():
             Mp1=Jpp1-Jps1*linalg.spsolve(Jss1,Jsp1)
 
             qp1=(scipy.sparse.csc_matrix(Fp).T-scipy.sparse.csc_matrix(Jps1*linalg.spsolve(Jss1,Fs)).T).toarray().transpose()[0]
-            
+
             dp1=linalg.spsolve(Mp1,qp1)
             ds1=linalg.spsolve(Jss1,Fs-Jsp1*dp1)
 
@@ -127,7 +127,7 @@ class newton():
     def set_properties(self,M):
         n=len(M.volumes.all)
         # M.mb.tag_set_data(M.k_eq,self.internal_faces,np.repeat(1.0,len(self.internal_faces)))
-        M.k_eq[:]=np.repeat(1.0,n)
+        M.k_eq[:]=M.k_harm[:][0]
         # M.mb.tag_set_data(M.phi,M.all_volumes,np.repeat(0.3,len(M.all_volumes)))
         M.phi[:]=np.repeat(0.3,n)
         # M.mb.tag_set_data(M.swns,M.all_volumes,np.repeat(0.2,len(M.all_volumes)))

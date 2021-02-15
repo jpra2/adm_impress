@@ -13,6 +13,7 @@ class assembly():
         self.Dx=1.0
         self.Dy=1.0
         self.Dz=1.0
+        # M.swn1s[:]=M.swns[:]
         self.F_Jacobian=s_J()
         self.dt=timestep
         J,q=self.get_jacobian_matrix(M)
@@ -25,8 +26,14 @@ class assembly():
         count=0
         J=np.zeros((2*n,2*n),dtype=float)
         q=np.zeros(2*n)
+        
         Swns=M.swns[:].transpose()[0]
         Swn1s=M.swn1s[:].transpose()[0]
+        Swns[Swns<0]=0
+        Swns[Swns>1]=1
+        Swn1s[Swn1s<0]=0
+        Swn1s[Swn1s>1]=1
+        # import pdb; pdb.set_trace()
         # vols=np.repeat(1.0,self.n) #Volume de cada um dos volumes
 
         ID_vol=GID_volumes
@@ -58,8 +65,8 @@ class assembly():
         dataq.append(sym.lambdify((Dx,Dy,phi,Dt,Sw,Swn),self.F_Jacobian.acum_w)(self.Dx,self.Dy,0.3,self.dt,Swns,Swn1s))
         # q[n+ID_vol]+=float(F_Jacobian().acum_w.subs({Dx:self.Dx, Dy:self.Dy, phi:0.3, Dt:self.dt, Sw:Swns[count], Swn:Swn1s[count]}))
 
-        fac=M.faces.internal
-        M.core
+        # fac=M.faces.internal
+        # M.core
         Adjs=M.faces.bridge_adjacencies(M.faces.internal_elements[:],2,3)
         Adjs=np.array(Adjs)
         adj0=np.array(Adjs[:,0])
@@ -90,8 +97,7 @@ class assembly():
         id_up[up0]=ids0[up0]
         id_up[up1]=ids1[up1]
 
-        Ts=np.ones(self.nfi)
-        
+        Ts=M.k_harm[M.faces.internal].T[0]
 
         J00=sym.lambdify((T,Sw),self.F_Jacobian.J[0][0])(Ts,swf)
         # J00=float(self.F_Jacobian[0][0].subs({T:1, Sw:swf}))
@@ -106,15 +112,15 @@ class assembly():
         # J11=float(self.F_Jacobian[1][1].subs({T:1, Sw:swf, p_i:pv, p_j:pj}))
 
         linesq.append(ID_vol)
-        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),self.F_Jacobian.F_o)(Ts,swns1, pf0, pf1))
+        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),self.F_Jacobian.F_o)(Ts,swf, pf0, pf1))
         linesq.append(id_j)
-        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),self.F_Jacobian.F_o)(Ts,swns1, pf1, pf0))
+        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),self.F_Jacobian.F_o)(Ts,swf, pf1, pf0))
         # q[ID_vol]-=float(F_Jacobian().F_o.subs({T:1.0, Sw:Swns1[count_fac], p_i:pv, p_j:pj}))
 
         linesq.append(n+ID_vol)
-        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),self.F_Jacobian.F_w)(Ts,swns1, pf0, pf1))
+        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),self.F_Jacobian.F_w)(Ts,swf, pf0, pf1))
         linesq.append(n+id_j)
-        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),self.F_Jacobian.F_w)(Ts,swns1, pf1, pf0))
+        dataq.append(-sym.lambdify((T,Sw, p_i, p_j),self.F_Jacobian.F_w)(Ts,swf, pf1, pf0))
         # q[n+ID_vol]-=float(F_Jacobian().F_w.subs({T:1.0, Sw:Swns1[count_fac], p_i:pv, p_j:pj}))
         # import pdb; pdb.set_trace()
         lines.append(ID_vol)

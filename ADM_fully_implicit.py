@@ -40,54 +40,130 @@ adm_method.set_level_wells()
 # adm_method.equalize_levels()
 gids_0 = data_impress['GID_0']
 adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
-OP_AMS=mlo['prolongation_level_1']
-OR_AMS=mlo['restriction_level_1']
+# OP_AMS=mlo['prolongation_level_1']
+# OR_AMS=mlo['restriction_level_1']
 adm_method.organize_ops_adm(mlo, 1)
-OP_ADM = adm_method['adm_prolongation_level_1']
-OR_ADM = adm_method['adm_restriction_level_1']
+# OP_ADM = adm_method['adm_prolongation_level_1']
+# OR_ADM = adm_method['adm_restriction_level_1']
 
-def newton_iteration(M, time_step, rel_tol=1e-8):
+
+def newton_iteration_ADM(M, time_step, rel_tol=1e-5):
     converged=False
     count=0
+    dt=time_step
     while not converged:
-        FIM=assembly(M,time_step)
+        adm_method.restart_levels()
+        adm_method.set_level_wells_only()
+        adm_method.set_saturation_level_simple(delta_sat_max)
+        adm_method.set_adm_mesh_non_nested(gids_0[adm_method.data_impress['LEVEL']==0])
+        adm_method.organize_ops_adm(mlo, 1)
+
+        OP_ADM = adm_method._data['adm_prolongation_level_1']
+        OR_ADM = adm_method._data['adm_restriction_level_1']
+        R, P = get_R_and_P(OR_ADM, OP_ADM)
+
+        FIM=assembly(M, dt)
         J=FIM.J
         q=FIM.q
-        sol=-ADM_solver(J, q, R, P)
+        sol=-P*ADM_solver(J, q, R, P)
+
         n=int(len(q)/2)
         M.pressure[:]+=np.array([sol[0:n]]).T
         M.swns[:]+=np.array([sol[n:]]).T
-        M.swns[:][M.swns[:]<0.0]=0.0
-        converged=(abs(np.linalg.norm(sol)/np.linalg.norm(np.concatenate([M.pressure[:],M.swns[:]]).T[0])))<rel_tol
+
+        data_impress['saturation']=M.swns[:].T[0]
+
+        converged=max(abs(sol[n:]))<rel_tol
         count+=1
-    print(count,(abs(np.linalg.norm(sol)/np.linalg.norm(np.concatenate([M.pressure[:],M.swns[:]]).T[0]))))
+        if count>10:
+            pass
+        print(count,max(abs(sol[n:])))
+    sats=M.swns[:].T[0]
+    sats=OR_ADM.T*(OR_ADM*sats/np.array(OR_ADM.sum(axis=1)).T[0])
+    M.swns[:]=sats
+    # import pdb; pdb.set_trace()
+
+
+def newton_iteration_fs(M, time_step, rel_tol=1e-5):
+    converged=False
+    count=0
+    while not converged:
+        # M.swns[:][M.swns[:]>1.0]=1.0
+        # M.swns[:][M.swns[:]<0.0]=0.0
+        # M.swn1s[:][M.swn1s[:]>1.0]=1.0
+        # M.swn1s[:][M.swn1s[:]<0.0]=0.0
+        FIM=assembly(M, time_step)
+        J=FIM.J
+        q=FIM.q
+        sol=-sp.linalg.spsolve(J, q)
+
+        n=int(len(q)/2)
+        M.pressure[:]+=np.array([sol[0:n]]).T
+        M.swns[:]+=np.array([sol[n:]]).T
+        M.swns[:][M.swns[:]>1.0]=1.0
+        M.swns[:][M.swns[:]<0.0]=0.0
+
+
+        data_impress['saturation']=M.swns[:].T[0]
+
+        converged=max(abs(sol[n:]))<rel_tol
+        count+=1
+        print(count,max(abs(sol[n:])))
+
+    print(count,max(abs(sol[n:])))
+
+def get_R_and_P(OR_ADM, OP_ADM):
+    lp, cp, dp = sp.find(OP_ADM)
+    lr, cr, dr = sp.find(OR_ADM)
+    n_f, n_ADM=OP_ADM.shape
+    lP=np.concatenate([lp, cr+n_f])
+    cP=np.concatenate([cp, lr+n_ADM])
+    dP=np.concatenate([dp, dr])
+
+    lR=np.concatenate([lr, lr+n_ADM])
+    cR=np.concatenate([cr, cr+n_f])
+    dR=np.concatenate([dr, dr])
+
+    R=sp.csc_matrix((dR, (lR, cR)), shape=(2*n_ADM, 2*n_f))
+    P=sp.csc_matrix((dP, (lP, cP)), shape=(2*n_f, 2*n_ADM))
+    return R, P
+
 def ADM_solver(J, q, R, P):
-    sol=P*sp.linalg.spsolve(R*J*P,R*q)
+    sol=sp.linalg.spsolve(R*J*P,R*q)
     return sol
 
-lp, cp, dp = sp.find(OP_ADM)
-lr, cr, dr = sp.find(OR_ADM)
-n_f, n_ADM=OP_ADM.shape
-lP=np.concatenate([lp, cr+n_f])
-cP=np.concatenate([cp, lr+n_ADM])
-dP=np.concatenate([dp, dr])
-
-lR=np.concatenate([lr, lr+n_ADM])
-cR=np.concatenate([cr, cr+n_f])
-dR=np.concatenate([dr, dr])
-
-R=sp.csc_matrix((dR, (lR, cR)), shape=(2*n_ADM, 2*n_f))
-P=sp.csc_matrix((dP, (lP, cP)), shape=(2*n_f, 2*n_ADM))
-
-time_step=0.00001
+delta_sat_max=0.1
+time_step=0.00002
 for i in range(50):
+    if i==2:
+        time_step*=10
+
     M.swn1s[:]=M.swns[:]
     M.swn1s[-1]=1.0
-    newton_iteration(M, time_step)
+
+    newton_iteration_ADM(M, time_step)
+
     data_impress['pressure']=M.pressure[:]
     data_impress['swns']=M.swns[:]
+    data_impress['swn1s']=M.swn1s[:]
     meshset_volumes=M.core.mb.create_meshset()
     M.core.mb.add_entities(meshset_volumes,np.array(M.core.all_volumes))
     data_impress.update_variables_to_mesh()
     M.core.mb.write_file('results/biphasic/FIM_'+str(i)+'.vtk', [meshset_volumes])
+
+    int_faces=M.faces.internal
+    adjs=M.faces.bridge_adjacencies(int_faces,2,3)
+    ad0=adjs[:,0]
+    ad1=adjs[:,1]
+    meshset_plot_faces=M.core.mb.create_meshset()
+    lv=data_impress['LEVEL']
+    gid_coarse=data_impress['GID_1']
+    bounds_coarse=int_faces[gid_coarse[ad0]!=gid_coarse[ad1]]
+    lvs0=int_faces[(lv[ad0]==0) | (lv[ad1]==0)]
+    facs_plot=np.concatenate([bounds_coarse,lvs0])
+    M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
+    data_impress.update_variables_to_mesh()
+    M.core.mb.write_file('results/biphasic/FIMf_'+str(i)+'.vtk', [meshset_plot_faces])
+
+    print(i)
 import pdb; pdb.set_trace()
