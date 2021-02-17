@@ -318,7 +318,7 @@ class TpfaBiphasicCons:
         delta_t = deltas_t.min()
         return delta_t
 
-    def update_saturation(self, flux_w_volumes, porosity, vol_volumes, total_flux_volumes, total_velocity_internal_faces, flux_frac_w_volumes, saturation0, volumes_adj_internal_faces, hi, abs_u_normal_internal_faces):
+    def update_saturation(self, flux_w_volumes, porosity, vol_volumes, total_flux_volumes, total_velocity_internal_faces, flux_frac_w_volumes, saturation0, volumes_adj_internal_faces, hi, abs_u_normal_internal_faces, dt=None):
         cont = 0
         max_loops = 100
 
@@ -334,6 +334,11 @@ class TpfaBiphasicCons:
             hi,
             abs_u_normal_internal_faces
         )
+
+        if dt is None:
+            pass
+        else:
+            delta_t = min(dt, delta_t)
 
         verif = -1
 
@@ -491,7 +496,7 @@ class TpfaBiphasicCons:
         upt = upwind_o.copy()
         upt[:,0] = True
 
-        if gravity == True:
+        if gravity is True:
             # n_zero_condition = (~test3) & (~testw) & (~testo)
             # pdb.set_trace()
             #

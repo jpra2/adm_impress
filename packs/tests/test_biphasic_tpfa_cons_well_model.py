@@ -245,6 +245,10 @@ def setting_well_model():
     return all_wells
 
 
+dT = 1e-7
+t = 0
+Tmax = 1e-5
+
 well_models = setting_well_model()
 
 # well_models = load_well_model()
@@ -255,6 +259,12 @@ solver = SolverSp()
 
 loop_max = 100000
 loop = current_data['current']['loop'][0]
+
+centroids_save = geom['centroid_volumes']
+all_pressures = np.zeros(len(centroids_save))
+all_saturations = all_pressures.copy()
+all_saturations[:] = biphasic_data['saturation'][:]
+
 
 # pressure_mat = sio.loadmat('data/ex4/pressure.mat')['pr'].flatten()
 # centroids_mat = sio.loadmat('data/ex1/centroids.mat')['rr']
@@ -388,33 +398,7 @@ while loop <= loop_max:
     # import pdb; pdb.set_trace()
     pressure1 = solver.direct_solver(T_with_boundary, b)
     pressure = pressure1[elements.volumes]
-
-    # for i, centro in enumerate(geom['centroid_volumes']):
-    #     test0 = centroids_mat[:,0] == centro[0]
-    #     test1 = centroids_mat[:,1] == centro[1]
-    #     test2 = centroids_mat[:,2] == centro[2]
-    #     test_f = (test0 & test1) & test2
-    #     pressure_comp[test_f] = pressure[i]
-
-    # erro = abs(pressure_comp - pressure_mat)
-    # np.save('data/ex4/erro.npy', erro)
-    # np.save('data/ex4/pressure_comp.npy', pressure_comp)
-    #
-    # norma_inf = np.linalg.norm(erro, np.inf)
-    # norma_l2 = np.linalg.norm(erro)
-    # np.save('data/ex4/normas.npy', np.array([norma_inf, norma_l2]))
-
-    erro1 = np.absolute(pressure_comp - pressure)
-    erro = erro1 / np.max(np.absolute(pressure_comp))
-    ninf = np.linalg.norm(erro, np.inf)
-    nl2 = np.linalg.norm(erro1) / np.linalg.norm(pressure_comp)
-    w1 = well_models[0]
-
-    import pdb;
-
-    pdb.set_trace()
-
-    import pdb; pdb.set_trace()
+    all_pressures = np.vstack((all_pressures, pressure))
 
     total_velocity_internal_faces = biphasic.get_total_velocity_internal_faces(
         pressure,
@@ -458,7 +442,7 @@ while loop <= loop_max:
 
     total_flux_internal_faces = flux_w_internal_faces + flux_o_internal_faces
 
-    if test_coarse_flux == True:
+    if test_coarse_flux is True:
         ml_data = M.multilevel_data
         flux_coarse_volumes_pf, total_flux_internal_faces_pf, velocity_internal_faces_pf, local_pressure_pf = conservation_test.conservation_with_gravity(
             elements.volumes,
@@ -492,7 +476,6 @@ while loop <= loop_max:
         print(np.allclose(local_pressure_pf, pressure))
         print()
         pdb.set_trace()
-
 
     if loop == 0:
         loop += 1
@@ -571,8 +554,11 @@ while loop <= loop_max:
         biphasic_data['saturation_last'],
         elements.get('volumes_adj_internal_faces'),
         geom['hi'],
-        geom['abs_u_normal_faces'][elements.internal_faces]
+        geom['abs_u_normal_faces'][elements.internal_faces],
+        dt=dT
     )
+
+    all_saturations = np.vstack((all_saturations, biphasic_data['saturation']))
 
     prod_w, prod_o, wor, dvpi = biphasic.get_production_w_o(
         flux_total_volumes,
@@ -598,12 +584,12 @@ while loop <= loop_max:
     data_impress['flux_o_volumes'][:] = flux_o_volumes
 
     name = 'results/test_volumes_' + str(loop) + '.vtk'
-    print_test_volumes(name)
+    # print_test_volumes(name)
     # M.core.print(folder='results', file='test_volumes_'+str(loop), extension='.vtk', config_input='input_cards/print_settings0.yml')
 
     name2 = 'results/test_faces_' + str(loop) + '.vtk'
     # M.core.print(folder='results', file='test_faces_'+str(loop), extension='.vtk', config_input='input_cards/print_settings2.yml')
-    print_test_faces(name2)
+    # print_test_faces(name2)
 
     w1 = well_models[0]
     w2 = well_models[1]
@@ -611,30 +597,44 @@ while loop <= loop_max:
     p2 = pressure[w2.volumes_ids]
     AllWells.update_wells_pbh(well_models, pressure1, elements.volumes)
     AllWells.update_wells_flow_rate(well_models, flux_total_volumes)
+
     '''
         update: wells flow_rate
         genererate wells report
     '''
+
     pwells = pressure1[elements.volumes.max() + 1:]
     q1 = flux_total_volumes[w1.volumes_ids]
     q2 = flux_total_volumes[w2.volumes_ids]
-    if loop >= 2:
-        import pdb; pdb.set_trace()
+
+    # if loop >= 2:
+    #     import pdb; pdb.set_trace()
     # import pdb; pdb.set_trace()
 
-    if loop % 100 == 0:
-        accumulate.export(local_key_identifier='loop')
-        current_data.export_to_npz()
-        current_data['current']['global_identifier'] = accumulate.global_identifier
+    # if loop % 100 == 0:
+    #     accumulate.export(local_key_identifier='loop')
+    #     current_data.export_to_npz()
+    #     current_data['current']['global_identifier'] = accumulate.global_identifier
+    #
+    # if loop % 200 == 0:
+    #     all_datas = accumulate.load_all_datas()
+    #     pdb.set_trace()
+    #
+    # if loop % 40 == 0:
+    #     import pdb; pdb.set_trace()
 
-    if loop % 200 == 0:
-        all_datas = accumulate.load_all_datas()
-        pdb.set_trace()
+    t += dT
 
-    if loop % 40 == 0:
-        import pdb; pdb.set_trace()
+    if t >= Tmax:
+        loop = loop_max + 1
 
 
+
+# np.save(os.path.join('data', 'pressures_p7_g.npy'), all_pressures)
+# np.save(os.path.join('data', 'centroids.npy'), centroids_save)
+np.save(os.path.join('data', 'saturations_p7_g.npy'), all_saturations)
+
+import pdb; pdb.set_trace()
 
 
 

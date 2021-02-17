@@ -215,9 +215,6 @@ class AllWells:
         phases_flux = np.array(phases_flux)
         total_flux = phases_flux.sum(axis=0)
 
-        # cpp = phases_flux.copy()
-
-
         for well in wells:
             if well.well_type == 'producer':
                 continue
@@ -230,8 +227,11 @@ class AllWells:
             else:
                 raise NotImplementedError
 
-        import pdb; pdb.set_trace()
         return phases_flux
+
+    @classmethod
+    def generate_report(cls, wells):
+        pass
 
 
 
@@ -509,7 +509,7 @@ class Well:
 
     @property
     def rho_mix(self):
-        rhoMix = (self.wi * self.fraction_mobility * self.rho).sum() / self.wi.sum()
+        rhoMix = (self.wi * (self.fraction_mobility * self.rho).sum(axis=1)).sum() / self.wi.sum()
         # if self.well_type == 'injector':
         #     rhoMix = np.mean((self.fraction_mobility * self.rho).sum(axis=1))
         # elif self.well_type == 'producer':
@@ -539,6 +539,10 @@ class Well:
     def test_n_phases(self):
         if self.n_phases == 0:
             raise ValueError('Update the number of phases')
+
+    def report(self):
+        pass
+
 
 
 
@@ -673,12 +677,6 @@ def insert_well_flow_rate_prescription(well: Well,T: sp.csc_matrix, q: np.ndarra
     # import pdb; pdb.set_trace()
     coefs = well.get_total_coefs()
     T[well.volumes_ids, well.volumes_ids] += coefs
-    # source = np.zeros(len(well.volumes_ids))
-    #
-    # for phase in range(well.n_phases):
-    #     # source += 1 * well.wi * well.mobilities[:,phase] * (well.pbh + (well.rho[phase] * g_acc * (well.z_well - well.centroids[:,2])))
-    #     source += 1 * well.wi * well.mobilities[:, phase] * (
-    #                 well.rho[phase] * g_acc * (well.z_well - well.centroids[:, 2]))
 
     source = well.get_source_gravity()
     q[well.volumes_ids] += source
