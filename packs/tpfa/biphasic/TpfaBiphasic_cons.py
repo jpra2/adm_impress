@@ -318,7 +318,7 @@ class TpfaBiphasicCons:
         delta_t = deltas_t.min()
         return delta_t
 
-    def update_saturation(self, flux_w_volumes, porosity, vol_volumes, total_flux_volumes, total_velocity_internal_faces, flux_frac_w_volumes, saturation0, volumes_adj_internal_faces, hi, abs_u_normal_internal_faces, dt=None):
+    def update_saturation(self, flux_w_volumes, porosity, vol_volumes, total_flux_volumes, total_velocity_internal_faces, flux_frac_w_volumes, saturation0, volumes_adj_internal_faces, hi, abs_u_normal_internal_faces, dt=None, loop=None):
         cont = 0
         max_loops = 100
 
@@ -351,6 +351,8 @@ class TpfaBiphasicCons:
                 delta_t
             )
             if verif == 1:
+                print(loop)
+                import pdb; pdb.set_trace()
                 delta_t = self.reduce_delta_t(delta_t)
 
             if cont == max_loops:
@@ -435,7 +437,7 @@ class TpfaBiphasicCons:
 
         ## teste dos limites
         if min_sat < Swc - deltt or max_sat > 1-Sor + deltt:
-            import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             return 1, True
 
         return 0, saturations

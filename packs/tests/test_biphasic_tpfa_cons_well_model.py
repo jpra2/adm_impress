@@ -409,6 +409,9 @@ while loop <= loop_max:
         geom['abs_u_normal_faces'][elements.internal_faces],
         biphasic_data['g_velocity_w_internal_faces'] + biphasic_data['g_velocity_o_internal_faces']
     )
+    # vif = total_velocity_internal_faces
+
+    # import pdb; pdb.set_trace()
 
     data_impress['velocity_faces'][elements.internal_faces] = total_velocity_internal_faces
     data_impress['pressure'] = pressure
@@ -528,6 +531,8 @@ while loop <= loop_max:
     ## flux_phases[0] = flux_w_volumes
     ## flux_phases[1] = flux_o_volumes
     #############
+    flux_w_volumes[:] = flux_phases[0][:] * biphasic.properties.rho_w
+    flux_o_volumes[:] = flux_phases[1][:] * biphasic.properties.rho_o
 
     biphasic_data['saturation_last'] = biphasic_data['saturation'].copy()
 
@@ -545,7 +550,7 @@ while loop <= loop_max:
     # )
 
     delta_t, biphasic_data['saturation'] = biphasic.update_saturation(
-        flux_phases[0],
+        flux_w_volumes,
         rock_data['porosity'],
         geom['volume'],
         flux_total_volumes,
@@ -555,8 +560,15 @@ while loop <= loop_max:
         elements.get('volumes_adj_internal_faces'),
         geom['hi'],
         geom['abs_u_normal_faces'][elements.internal_faces],
-        dt=dT
+        dt=dT,
+        loop=loop
     )
+
+    # sat = biphasic_data['saturation']
+    # print(sat)
+    # print()
+    #
+    # import pdb; pdb.set_trace()
 
     all_saturations = np.vstack((all_saturations, biphasic_data['saturation']))
 
@@ -628,11 +640,15 @@ while loop <= loop_max:
     if t >= Tmax:
         loop = loop_max + 1
 
+    if loop == 94:
+        loop = loop_max + 1
+
 
 
 # np.save(os.path.join('data', 'pressures_p7_g.npy'), all_pressures)
+np.save(os.path.join('data', 'pressures_p7_g_2.npy'), all_pressures)
 # np.save(os.path.join('data', 'centroids.npy'), centroids_save)
-np.save(os.path.join('data', 'saturations_p7_g.npy'), all_saturations)
+np.save(os.path.join('data', 'saturations_p7_g_2.npy'), all_saturations)
 
 import pdb; pdb.set_trace()
 
