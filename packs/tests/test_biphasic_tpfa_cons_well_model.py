@@ -640,15 +640,15 @@ while loop <= loop_max:
     if t >= Tmax:
         loop = loop_max + 1
 
-    if loop == 94:
-        loop = loop_max + 1
+    # if loop == 94:
+    #     loop = loop_max + 1
 
 
 
 # np.save(os.path.join('data', 'pressures_p7_g.npy'), all_pressures)
-np.save(os.path.join('data', 'pressures_p7_g_2.npy'), all_pressures)
+np.save(os.path.join('data', 'pressures_p7_g_3.npy'), all_pressures)
 # np.save(os.path.join('data', 'centroids.npy'), centroids_save)
-np.save(os.path.join('data', 'saturations_p7_g_2.npy'), all_saturations)
+np.save(os.path.join('data', 'saturations_p7_g_3.npy'), all_saturations)
 
 import pdb; pdb.set_trace()
 

@@ -216,16 +216,20 @@ class AllWells:
         total_flux = phases_flux.sum(axis=0)
 
         for well in wells:
-            if well.well_type == 'producer':
-                continue
-            elif well.well_type == 'injector':
-                soma = well.mobilities.sum(axis=1)
-                soma = soma.reshape(len(soma), 1)
-                propo = well.mobilities/soma
-                for i in range(n_phases):
-                    phases_flux[i][well.volumes_ids] = -total_flux[well.volumes_ids]*propo[:,i] + phases_flux[i][well.volumes_ids]
-            else:
-                raise NotImplementedError
+            soma = well.mobilities.sum(axis=1)
+            soma = soma.reshape(len(soma), 1)
+            propo = well.mobilities / soma
+            for i in range(n_phases):
+                phases_flux[i][well.volumes_ids] = -total_flux[well.volumes_ids] * propo[:, i] + phases_flux[i][well.volumes_ids]
+
+            # if well.well_type == 'producer':
+            #     for i in range(n_phases):
+            #         phases_flux[i][well.volumes_ids] = -total_flux[well.volumes_ids]*propo[:,i] + phases_flux[i][well.volumes_ids]
+            # elif well.well_type == 'injector':
+            #     for i in range(n_phases):
+            #         phases_flux[i][well.volumes_ids] = -total_flux[well.volumes_ids]*propo[:,i] + phases_flux[i][well.volumes_ids]
+            # else:
+            #     raise NotImplementedError
 
         return phases_flux
 

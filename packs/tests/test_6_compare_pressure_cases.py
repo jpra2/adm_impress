@@ -4,18 +4,32 @@ import os
 import matplotlib.pyplot as plt
 
 data_path = 'data'
-file_pressure_impress = os.path.join(data_path, 'pressures_p7.npy')
-file_pressures_impress_g = os.path.join(data_path, 'pressures_p7_g.npy')
+# file_pressure_impress = os.path.join(data_path, 'pressures_p7.npy')
+# file_pressure_impress = os.path.join(data_path, 'pressures_p7_2.npy')
+file_pressure_impress = os.path.join(data_path, 'pressures_p7_3.npy')
+# file_pressures_impress_g = os.path.join(data_path, 'pressures_p7_g.npy')
+# file_pressures_impress_g = os.path.join(data_path, 'pressures_p7_g_2.npy')
+file_pressures_impress_g = os.path.join(data_path, 'pressures_p7_g_3.npy')
 file_centroids_imp = os.path.join(data_path, 'centroids.npy')
 file_dados_mat = os.path.join(data_path, 'dados_p7.mat')
 file_dados_mat_g = os.path.join(data_path, 'dados_p7_g.mat')
-file_sat_impress = os.path.join(data_path, 'saturations_p7.npy')
-file_sat_g_impress = os.path.join(data_path, 'saturations_p7_g.npy')
+# file_sat_impress = os.path.join(data_path, 'saturations_p7.npy')
+# file_sat_impress = os.path.join(data_path, 'saturations_p7_2.npy')
+file_sat_impress = os.path.join(data_path, 'saturations_p7_3.npy')
+# file_sat_g_impress = os.path.join(data_path, 'saturations_p7_g.npy')
+# file_sat_g_impress = os.path.join(data_path, 'saturations_p7_g_2.npy')
+file_sat_g_impress = os.path.join(data_path, 'saturations_p7_g_3.npy')
+
+nl = 87
 
 pressures_p7 = np.load(file_pressure_impress)[1:]
 pressures_p7_g = np.load(file_pressures_impress_g)[1:]
 sat_w_impress = np.load(file_sat_impress)
 sat_w_g_impress = np.load(file_sat_g_impress)
+pressures_p7 = pressures_p7[0:nl]
+pressures_p7_g = pressures_p7_g[0:nl]
+sat_w_impress = sat_w_impress[0:nl]
+sat_w_g_impress = sat_w_g_impress[0:nl]
 centroids_impress = np.load(file_centroids_imp)
 dados_p7 = sio.loadmat(file_dados_mat)['dados']
 dados_p7_g = sio.loadmat(file_dados_mat_g)['dados']
@@ -75,6 +89,11 @@ pressures_p7_g_mat_comp = organize_data_list_by_index(pressures_p7_g_mat, organi
 sat_water_p7_mat_comp = organize_data_list_by_index(sat_water_p7, organize_index)
 sat_water_p7_g_mat_comp = organize_data_list_by_index(sat_water_p7_g, organize_index)
 
+pressures_p7_mat_comp = pressures_p7_mat_comp[0:nl]
+pressures_p7_g_mat_comp = pressures_p7_g_mat_comp[0:nl]
+sat_water_p7_mat_comp = sat_water_p7_mat_comp[0:nl]
+sat_water_p7_g_mat_comp = sat_water_p7_g_mat_comp[0:nl]
+
 def get_erros(data_comp, correct_data):
 
     linf = []
@@ -112,7 +131,7 @@ nums = np.arange(len(linf_p7))
 
 fig, ax = plt.subplots(nrows=2, ncols=2)
 # fig.tight_layout()
-plt.subplots_adjust(hspace=0.4, wspace=0.4)
+plt.subplots_adjust(hspace=0.5, wspace=0.4)
 
 # ax[0][0] = fig.add_subplot(2,2,1)
 ax[0][0].plot(nums, linf_p7)
@@ -147,12 +166,12 @@ ax[1][1].set_ylim([0, l2_sat_p7.max()*(1.1)])
 ax[1][1].set_xlim([0, nums.max()*(1.1)])
 
 plt.suptitle('Vazão pressão sem gravidade')
-# plt.savefig(os.path.join('data', 'graf1.png'))
-plt.show()
+plt.savefig(os.path.join('data', 'graf3.png'))
+# plt.show()
 
 fig, ax = plt.subplots(nrows=2, ncols=2)
 # fig.tight_layout()
-plt.subplots_adjust(hspace=0.4, wspace=0.4)
+plt.subplots_adjust(hspace=0.5, wspace=0.4)
 
 ax[0][0].plot(nums, linf_p7_g)
 ax[0][0].set_title('Pressão')
@@ -183,8 +202,8 @@ ax[1][1].set_ylim([0, l2_sat_p7_g.max()*(1.1)])
 ax[1][1].set_xlim([0, nums.max()*(1.1)])
 
 plt.suptitle('Vazão pressão com gravidade')
-# plt.savefig(os.path.join('data', 'graf2.png'))
-plt.show()
+plt.savefig(os.path.join('data', 'graf4.png'))
+# plt.show()
 
 
 
@@ -194,4 +213,4 @@ plt.show()
 
 
 
-import pdb; pdb.set_trace()
+# import pdb; pdb.set_trace()

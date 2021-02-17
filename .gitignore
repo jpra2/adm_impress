@@ -4,6 +4,14 @@
 !data/pressures_p7_g.npy
 !data/saturations_p7.npy
 !data/saturations_p7_g.npy
+!data/pressures_p7_2.npy
+!data/pressures_p7_g_2.npy
+!data/saturations_p7_2.npy
+!data/saturations_p7_g_2.npy
+!data/pressures_p7_3.npy
+!data/pressures_p7_g_3.npy
+!data/saturations_p7_3.npy
+!data/saturations_p7_g_3.npy
 *.npz
 !spe10_perms_and_phi.npz
 *.dat
