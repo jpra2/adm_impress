@@ -67,6 +67,12 @@ def preprocessar():
     map_internal_faces = np.repeat(-1, len(elements.faces))
     map_internal_faces[elements.internal_faces] = np.arange(len(elements.internal_faces))
     elements.insert('map_internal_faces', map_internal_faces, 'array')
+    vb = elements.get('volumes_adj_boundary_faces')
+    neighborship = np.zeros((len(elements.internal_faces)+len(elements.boundary_faces), 2), dtype=np.int)
+    neighborship[elements.internal_faces] = elements.get('volumes_adj_internal_faces')
+    neighborship[elements.boundary_faces] = np.array([vb, vb]).T
+    elements.insert('neighborship_faces', neighborship, 'array')
+    del neighborship, vb
 
     n_vols = len(elements.volumes)
 
@@ -84,6 +90,11 @@ def preprocessar():
     geom['areas'] = preprocess.get_areas_faces(elements.faces, points_faces)
     geom['u_direction_internal_faces'] = preprocess.get_u_normal_internal_faces(elements.get('volumes_adj_internal_faces'), geom['abs_u_normal_faces'][elements.internal_faces], geom['centroid_volumes'])
     geom['hi'] = preprocess.get_h_internal_faces(geom['block_dimension'], elements.get('volumes_adj_internal_faces'), geom['abs_u_normal_faces'][elements.internal_faces])
+    geom['h'] = np.zeros((len(elements.internal_faces) + len(elements.boundary_faces), 2))
+    geom['h'][elements.internal_faces] = geom['hi']
+    hb = preprocess.get_h_boundary_faces(geom['block_dimension'], elements.get('volumes_adj_boundary_faces'), np.absolute(geom['abs_u_normal_faces'][elements.boundary_faces]))
+    geom['h'][elements.boundary_faces] = np.array([hb, hb]).T
+    del hb
 
     rock_data = RockData()
     rock_data['permeability'] = perms.copy()
@@ -100,8 +111,22 @@ def preprocessar():
         geom['block_dimension']
     )
 
+    rock_data['k_faces'] = preprocess.get_permeability_faces_from_diagonal_permeability(
+        elements.volumes,
+        elements.faces,
+        elements.get('volumes_adj_internal_faces'),
+        elements.get('volumes_adj_boundary_faces'),
+        geom['abs_u_normal_faces'],
+        rock_data['permeability'],
+        elements.internal_faces,
+        geom['block_dimension']
+    )
+
     biphasic_data = BiphasicData()
     biphasic_data['saturation'] = M.saturation[:].flatten()
+    biphasic_data['one_sided_mobility_faces_w'] = np.zeros(geom['h'].shape)
+    biphasic_data['one_sided_mobility_faces_o'] = np.zeros(geom['h'].shape)
+    biphasic_data['one_sided_total_mobility_faces'] = np.zeros(geom['h'].shape)
 
     simulation_data = SimulationData()
     # simulation_data['nkga_internal_faces'] = phisical_properties.get_nkga(rock_data['keq_faces'][elements.internal_faces], geom['u_direction_internal_faces'], geom['areas'][elements.internal_faces])
@@ -142,22 +167,6 @@ wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data,
 # wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate = carregar()
 # pdb.set_trace()
 
-dados_mat = sio.loadmat('data/dados_p6.mat')
-pressure_mat = dados_mat['dados']['pr'][0][0].flatten()
-centroids_mat = dados_mat['dados']['cents'][0][0]
-centroids_mat[:,2] = 20 - centroids_mat[:,2]
-cci, ccj, cck = centroids_mat.T
-presc_right_side = dados_mat['dados']['presc_right_side'][0][0]
-centroids_right_side = dados_mat['dados']['centroids_right_side'][0][0]
-centroids_right_side[:,2] = 20 - centroids_right_side[:,2]
-pressure_comp = np.zeros(len(elements.volumes))
-centroids_comp = np.zeros(geom['centroid_volumes'].shape)
-for i, centsxz in enumerate(zip(cci, cck)):
-    verifx = geom['centroid_volumes'][:,0] == centsxz[0]
-    verifz = geom['centroid_volumes'][:,2] == centsxz[1]
-    verif = verifx & verifz
-    pressure_comp[verif] = pressure_mat[i]
-    centroids_comp[verif] = centroids_mat[i]
 
 
 
@@ -245,7 +254,7 @@ def setting_well_model():
     return all_wells
 
 
-dT = 1e-7
+dT = 1e-9
 t = 0
 Tmax = 1e-5
 
@@ -276,6 +285,13 @@ while loop <= loop_max:
     mob_w, mob_o = biphasic.get_mobilities_w_o(biphasic_data['krw'], biphasic_data['kro'])
     for well in well_models:
         well.update_mobilities(np.array([mob_w[well.volumes_ids], mob_o[well.volumes_ids]]).T)
+
+    biphasic_data['one_sided_mobility_faces_w'][elements.internal_faces] = mob_w[elements.get('neighborship_faces')[elements.internal_faces]]
+    biphasic_data['one_sided_mobility_faces_w'][elements.boundary_faces] = mob_w[elements.get('neighborship_faces')[elements.boundary_faces]]
+    biphasic_data['one_sided_mobility_faces_o'][elements.internal_faces] = mob_o[elements.get('neighborship_faces')[elements.internal_faces]]
+    biphasic_data['one_sided_mobility_faces_o'][elements.boundary_faces] = mob_o[elements.get('neighborship_faces')[elements.boundary_faces]]
+    biphasic_data['one_sided_total_mobility_faces'] = biphasic_data['one_sided_mobility_faces_w'] + biphasic_data['one_sided_mobility_faces_o']
+
 
     if loop == 0:
 
@@ -318,17 +334,31 @@ while loop <= loop_max:
     biphasic_data['mob_w_internal_faces'] = mob_w[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_w']]]
     biphasic_data['mob_o_internal_faces'] = mob_o[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_o']]]
 
+    # biphasic_data['transmissibility_faces'] = biphasic.get_transmissibility_faces(
+    #     geom['areas'],
+    #     elements.internal_faces,
+    #     elements.boundary_faces,
+    #     elements.get('volumes_adj_internal_faces'),
+    #     elements.get('volumes_adj_boundary_faces'),
+    #     biphasic_data['mob_w_internal_faces'],
+    #     biphasic_data['mob_o_internal_faces'],
+    #     mob_w,
+    #     mob_o,
+    #     rock_data['keq_faces']
+    # )
+
     biphasic_data['transmissibility_faces'] = biphasic.get_transmissibility_faces(
         geom['areas'],
         elements.internal_faces,
         elements.boundary_faces,
         elements.get('volumes_adj_internal_faces'),
         elements.get('volumes_adj_boundary_faces'),
-        biphasic_data['mob_w_internal_faces'],
-        biphasic_data['mob_o_internal_faces'],
         mob_w,
         mob_o,
-        rock_data['keq_faces']
+        rock_data['keq_faces'],
+        rock_data['k_faces'],
+        biphasic_data['one_sided_total_mobility_faces'],
+        geom['h']
     )
 
     biphasic_data['g_velocity_w_internal_faces'], biphasic_data['g_velocity_o_internal_faces'] = biphasic.get_g_velocity_w_o_internal_faces(
@@ -484,6 +514,8 @@ while loop <= loop_max:
         loop += 1
         continue
 
+    p1 = pressure
+
     flux_total_volumes = monophasic.get_total_flux_volumes(
         total_flux_internal_faces,
         elements.volumes,
@@ -564,11 +596,12 @@ while loop <= loop_max:
         loop=loop
     )
 
-    # sat = biphasic_data['saturation']
+    sat = biphasic_data['saturation']
+    sata = biphasic_data['saturation_last']
     # print(sat)
     # print()
     #
-    # import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
 
     all_saturations = np.vstack((all_saturations, biphasic_data['saturation']))
 
@@ -646,9 +679,9 @@ while loop <= loop_max:
 
 
 # np.save(os.path.join('data', 'pressures_p7_g.npy'), all_pressures)
-np.save(os.path.join('data', 'pressures_p7_g_3.npy'), all_pressures)
+# np.save(os.path.join('data', 'pressures_p7_g_3.npy'), all_pressures)
 # np.save(os.path.join('data', 'centroids.npy'), centroids_save)
-np.save(os.path.join('data', 'saturations_p7_g_3.npy'), all_saturations)
+# np.save(os.path.join('data', 'saturations_p7_g_3.npy'), all_saturations)
 
 import pdb; pdb.set_trace()
 

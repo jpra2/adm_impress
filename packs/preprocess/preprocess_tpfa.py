@@ -49,8 +49,8 @@ class TpfaPreprocess:
         ks0 = permeability[vols_viz_boundary_faces]
         ks0 = ks0.reshape([nb, 3, 3]) * u_normal_b_faces.reshape([nb, 1, 3])
         ks0 = ks0.sum(axis=2).sum(axis=1)
-        # keq_faces[boundary_faces] = ks0/hb
-        keq_faces[boundary_faces] = np.zeros(nb)
+        keq_faces[boundary_faces] = ks0/hb
+        # keq_faces[boundary_faces] = np.zeros(nb)
 
         return keq_faces
 
@@ -73,6 +73,7 @@ class TpfaPreprocess:
 
         hb = np.empty(nb)
         hb[:] = ((hs[vols_viz_boundary_faces] * u_normal_boundary_faces).sum(axis=1))/2
+        hb = hb/2
 
         return hb
 
@@ -180,3 +181,49 @@ class TpfaPreprocess:
             perms_resp[i,1] = np.dot(np.dot(perms_adjs[i, 1], abs_u[i]), abs_u[i])
 
         return perms_resp
+
+    def get_permeability_faces_from_diagonal_permeability(self, volumes, faces, volumes_adj_internal_faces, volumes_adj_boundary_faces, unit_normal_vector, permeability, internal_faces, block_dimension):
+
+        '''
+            volumes: volumes
+            faces: faces
+            volumes_adj_faces: volumes vizinhos de face
+            unit_normal_vector: vetor normal unitario das faces
+            permeability: permeabilidade dos volumes
+            internal_faces: faces_internas
+            block_dimension: dimensões dos volumes
+
+            output:
+                eq_perm: permeabilidade equivalente nas faces
+
+        '''
+
+        boundary_faces = np.setdiff1d(faces, internal_faces)
+        k_faces = np.empty((len(internal_faces) + len(boundary_faces), 2))
+        u_normal = unit_normal_vector
+
+        u_normal_internal_faces = np.absolute(unit_normal_vector[internal_faces])
+        v0 = volumes_adj_internal_faces
+        ni = len(internal_faces)
+
+        ks0 = permeability[v0[:, 0]]
+        ks1 = permeability[v0[:, 1]]
+
+        ks0 = ks0 * u_normal_internal_faces.reshape([ni, 1, 3])
+        ks1 = ks1 * u_normal_internal_faces.reshape([ni, 1, 3])
+
+        ks0 = ks0.sum(axis=2).sum(axis=1)
+        ks1 = ks1.sum(axis=2).sum(axis=1)
+
+        k_faces[internal_faces] = np.array([ks0, ks1]).T
+
+        vols_viz_boundary_faces = volumes_adj_boundary_faces
+
+        u_normal_b_faces = np.absolute(u_normal[boundary_faces])
+        nb = len(boundary_faces)
+        ks0 = permeability[vols_viz_boundary_faces]
+        ks0 = ks0.reshape([nb, 3, 3]) * u_normal_b_faces.reshape([nb, 1, 3])
+        ks0 = ks0.sum(axis=2).sum(axis=1)
+        k_faces[boundary_faces] = np.array([ks0, ks0]).T
+
+        return k_faces
