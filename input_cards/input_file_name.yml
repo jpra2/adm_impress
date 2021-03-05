@@ -1,0 +1,3 @@
+name_file: 'input_cards/inputs_compositional_3k_moortgart_256.yml'
+variable_file: 'input_cards/variable_inputs_compositional.yml'
+simulation_type: 'compositional'

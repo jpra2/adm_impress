@@ -1,0 +1,143 @@
+#Buckley Leverett's horizontal case
+mesh_name: 500x1x1_b.msh
+name_save_file: 'results_Buckley_Leverett_case_FR'
+
+compositional: True
+hidrocarbon_components: True
+compressible_fluid: False
+water_component: True
+use_vpi: True
+
+
+
+load_compositional_data: False
+load_data: False
+convert_english_to_SI: False
+set_porosity: true
+set_permeability: true
+read_permeability: false
+gravity: false
+deletar_results: false
+load_operators: false
+monophasic_data: false
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+
+# Case 3 of Li M.Sc. Thesis with case studies
+compositional_data:
+  #  Pensar em um jeito de reorganizar isso
+  CFL: 0.5
+  MUSCL:
+    set: True
+  FR:
+    set: False
+    order: 3
+  vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
+  time_to_save: [0.0]
+  maximum_time: 0.0
+  phase_viscosity: LorenzBrayClark
+  relative_permeability: BrooksAndCorey
+  capillary_pressure: Chang
+  equation_of_state: PengRobinson
+
+  rock_compressibility: 0
+  Pf: 13.79E6
+
+  #capillary pressure data - no need - not working
+  Cpc: 62052.84
+  Epc: 2
+
+  time_data:
+    deltaPlim: 7
+    deltaNlim: 0.05
+    deltaSlim: 0.05
+    deltaVlim: 1
+    delta_t_ini: 0.1
+    delta_tmax: 1000
+    delta_tmin: 0.0001
+    #2.765
+
+  water_data:
+    mi_W: 1e-3
+    rho_W: 999.55
+    Mw_w: 18.015e-3
+    Cw: 0
+    Pw: 13.789514E6
+    mobility: True
+    # if water is mobile: True, if not, False
+
+  residual_saturations:
+    Sorw: 0.35
+    Sorg: 0
+    Swr: 0.2
+    Sgr: 0
+
+  relative_permeability_data:
+    krw0: 0.2
+    krg0: 0
+    kro0: 1.0
+    n_o: 2.
+    n_g: 0
+    n_w: 2.
+
+#decane critical molar density is 1640 mol/m3
+  component_data:
+    z: [1.]
+    Tc: [619.2778]
+    Pc: [2109795.734]
+    vc: [0.000603]
+    Mw: [142.276e-3]
+    w: [0.4890]
+    Bin: [0]
+    Pv: [0.]
+    Pb_guess: [0.]
+    vshift_parameter: [0.085]
+
+#water saturation data
+Saturation:
+  r1:
+    type: all
+    value: 0.2
+
+Porosity:
+  r1:
+    type: all
+    value: 0.2
+
+#Permeability in m^2
+Permeability:
+  r1:
+    type: all
+    value: [4.9346165e-13, 0, 0, 0, 4.9346165e-13, 0, 0, 0, 4.9346165e-13]
+
+Pressure:
+  r1:
+    type: all
+    value: 13.79E6
+
+Temperature:
+  r1:
+    type: all
+    value: 288.70556
+
+
+Wells:
+  P1:
+    p0: [0.0, 0.0, 0]
+    p1: [0.0012192, 0.03048, 0.03048]
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: 3.2774128e-8
+    z: [0., 1.]
+    ksi_total: 55484.31862337
+    value_type: volumetric
+
+  P2:
+    p0: [0.6083808, 0.0, 0.0]
+    p1: [0.6096, 0.03048, 0.03048]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 13.79E6

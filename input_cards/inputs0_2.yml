@@ -1,0 +1,112 @@
+# mesh_name: mesh/45x45x45.msh
+mesh_name: mesh/27x27x27.msh
+n_test: 0
+state: 0
+type_of_solution: fine_scale
+gravity: false
+# load_biphasic: false
+# load_data: false
+load_data: true
+convert_english_to_SI: false
+# load_mesh: false
+monophasic: true
+biphasic: false
+# biphasic: true
+load_biphasic_data: false
+
+# deletar_results: true
+deletar_results: false
+
+# multilevel_data: false
+multilevel_data: true
+load_multilevel_data: false
+# load_multilevel_data: true
+load_operators: true
+# load_operators: false
+
+_debug: True
+
+Crs:
+  Cr1: [3, 3, 3]
+  Cr2: [9, 9, 9]
+
+read_permeability: false
+file_name_permeability: spe10_perms_and_phi.npz
+set_permeability: true
+Permeability:
+  r1:
+    type: all
+    value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+
+  # r2:
+  #   type: box
+  #   p0: [0.0, 0.0, 0.0]
+  #   p1: [20.0, 10.0, 54.0]
+  #   value: [100.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 100.0]
+
+set_porosity: true
+
+Porosity:
+  r1:
+    type: all
+    value: 0.3
+
+  # r2:
+  #   type: box
+  #   p0: [0.0, 0.0, 0.0]
+  #   p1: [20.0, 10.0, 54.0]
+  #   value: 0.1
+
+Saturation:
+  r1:
+    type: all
+    value: 0.2
+  r2:
+    type: wells
+    type1_well: Injector
+    type2_well: null
+    value: 1.0
+
+  # r3:
+  #   type: wells
+  #   type1_well: Injector
+  #   type2_well: 'P'
+  #   value: 1.0
+
+Wells:
+  P1:
+    p0: [0.0, 0.0, 0.0]
+    p1: [20.0, 10.0, 54.0]
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: 1000000.0
+  P3:
+    p0: [520.0, 260.0, 0.0]
+    p1: [540.0, 270.0, 54.0]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 1.0
+
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+
+biphasic_data:
+  Sor: 0.2
+  Swc: 0.2
+  cfl: 0.9
+  gama_o: 500000.0
+  gama_w: 500000.0
+  kro0: 1.0
+  krw0: 1.0
+  loop_maximo: null
+  loops_para_gravar: 2
+  mi_o: 0.005
+  mi_w: 0.001
+  n_o: 2.0
+  n_w: 2.0
+  relative_permeability: BrooksAndCorey
+  tempo_maximo: null
+  vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
