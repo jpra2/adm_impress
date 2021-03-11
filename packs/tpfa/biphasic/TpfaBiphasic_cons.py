@@ -84,7 +84,7 @@ class TpfaBiphasicCons:
         if verif1.sum() > 0 or verif2.sum() > 0:
             raise ValueError('Duplicidade no upwind')
 
-    def get_transmissibility_faces_dep(self, areas_faces, internal_faces, boundary_faces, volumes_adj_internal_faces, volumes_adj_boundary_faces, mobility_w_internal_faces, mobility_o_internal_faces, mob_w, mob_o, keq_faces):
+    def get_transmissibility_faces(self, areas_faces, internal_faces, boundary_faces, volumes_adj_internal_faces, volumes_adj_boundary_faces, mobility_w_internal_faces, mobility_o_internal_faces, mob_w, mob_o, keq_faces):
 
         transmissibility = np.empty(len(areas_faces))
         transmissibility[internal_faces] = (mobility_w_internal_faces + mobility_o_internal_faces)*keq_faces[internal_faces]*areas_faces[internal_faces]
@@ -92,7 +92,7 @@ class TpfaBiphasicCons:
 
         return transmissibility
 
-    def get_transmissibility_faces(self, areas_faces, internal_faces, boundary_faces, volumes_adj_internal_faces, volumes_adj_boundary_faces, mob_w, mob_o, keq_faces, k_faces, one_sided_total_mobility, h_faces):
+    def get_transmissibility_faces_mrst(self, areas_faces, internal_faces, boundary_faces, volumes_adj_internal_faces, volumes_adj_boundary_faces, mob_w, mob_o, keq_faces, k_faces, one_sided_total_mobility, h_faces):
 
 
         kmob = (k_faces / h_faces) * one_sided_total_mobility

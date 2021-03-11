@@ -214,6 +214,16 @@ def dados_unitarios(data_impress):
     data_impress['pretransmissibility'] = data_impress['transmissibility'].copy()
     data_impress.export_to_npz()
 
+
+def update_wells_ids(wells_list:Well, adm_ids):
+
+    for well in wells_list:
+        new_ids = adm_ids[well.volumes_ids]
+        well.update_volumes_ids(new_ids)
+
+
+
+
 load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 n = data_loaded['n_test']
@@ -320,10 +330,10 @@ t = 0
 Tmax = 1e-5
 
 well_models = setting_well_model()
-w1 = well_models[0]
-w2 = well_models[1]
+# w1 = well_models[0]
+# w2 = well_models[1]
 
-import pdb; pdb.set_trace()
+# import pdb; pdb.set_trace()
 
 
 biphasic_data['krw'], biphasic_data['kro'] = biphasic.get_krw_and_kro(biphasic_data['saturation'])
@@ -527,14 +537,7 @@ adm_method.restart_levels()
 # adm_method.set_level_wells()
 # adm_method.set_level_wells_2()
 adm_method.set_level_wells_only()
-adm_method.equalize_levels()# T_with_boundary, b = monophasic.get_linear_problem(
-#     wells2['ws_p'],
-#     wells2['ws_q'],
-#     wells2['values_p'],
-#     wells2['values_q'],
-#     g_source_total_volumes,
-#     T
-# )
+adm_method.equalize_levels()
 
 # adm_method.verificate_levels()
 # adm_method.set_adm_mesh()
@@ -1061,14 +1064,13 @@ while verif:
         elements.volumes
     )
 
-    # T_with_boundary, b = monophasic.get_linear_problem(
-    #     wells2['ws_p'],
-    #     wells2['ws_q'],
-    #     wells2['values_p'],
-    #     wells2['values_q'],
-    #     g_source_total_volumes,
-    #     T
-    # )
+    T_with_boundary, b = get_linear_problem(well_models, T, g_source_total_volumes)
+
+
+
+
+
+
 
     t00=time.time()
     transmissibility=data_impress['transmissibility']
@@ -1097,14 +1099,7 @@ while verif:
     t0=time.time()
     for level in range(1, n_levels):
         adm_method.organize_ops_adm(mlo, level)
-    '''# or_adm=adm_m    if type_of_refinement=='uni':
-        if len(vols_orig)>0:
-            adm_method.set_monotonizing_level(vols_orig)
-        adm_method.set_saturation_level_simple(delta_sat_max)
-    else:
-        adm_method.set_saturation_level_uniform(delta_sat_max)
-
-    t0=time.time()ethod._data['adm_restriction_level_1']
+    '''# or_adm=adm_method._data['adm_restriction_level_1']
     # op_adm=adm_method._data['adm_prolongation_level_1']
 
     # idl1=data_impress['LEVEL_ID_1']
@@ -1151,17 +1146,37 @@ while verif:
     OP_ADM = adm_method['adm_prolongation_level_1']
     OR_ADM = adm_method['adm_restriction_level_1']
 
+    # import pdb; pdb.set_trace()
 
-    Tcadm=OR_ADM*T_with_boundary*OP_ADM
-    bcadm = OR_ADM*(b - T_with_boundary*cfs)
-    pcadm=linalg.spsolve(Tcadm,bcadm)
-    padm=OP_ADM*pcadm + cfs
+    Tcadm=OR_ADM*T*OP_ADM
+    bb=b[data_impress['GID_0']]
+    bcadm = OR_ADM*(bb - T*cfs)
+    bcadm = np.concatenate([bcadm, b[len(bb):]])
+
+
+
+
+    update_wells_ids(well_models, data_impress['LEVEL_ID_1'])
+    len_coarse_vols = data_impress['LEVEL_ID_1'].max() + 1
+
+    Tcadm2, bcadm2_ = get_linear_problem(well_models, Tcadm, bcadm[0:len_coarse_vols])
+
+    pcadm=linalg.spsolve(Tcadm2,bcadm)
+    pcadm2 = pcadm[0:len_coarse_vols]
+    padm=OP_ADM*pcadm2 + cfs
+
     pf = linalg.spsolve(T_with_boundary,b)
+    pf = pf[data_impress['GID_0']]
+    # pf = np.ones(data_impress['GID_0'].max() + 1)
     # padm=pf
     data_impress['pms_adm_pressure'][:] = padm
+    data_impress['vug'][:] = padm
 
     data_impress['tpfa_pressure'][:] = pf
     data_impress['erro_p'][:] = np.absolute(pf-padm)
+    data_impress.update_variables_to_mesh()
+
+    import pdb; pdb.set_trace()
 
     t0 = time.time()
 

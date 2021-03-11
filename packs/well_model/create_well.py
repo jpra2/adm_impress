@@ -321,10 +321,12 @@ class Well:
         AllWells.wells[self.id_text] = weakref.proxy(self)
 
 
-    def update_volumes(self, volumes_ids, centroids, block_dimension):
-        self.volumes_ids = volumes_ids
-        self.centroids = centroids
-        self.block_dimension = block_dimension
+    def update_volumes(self, volumes_ids, centroids):
+        self.volumes_ids[:] = volumes_ids
+        self.centroids[:] = centroids
+
+    def update_volumes_ids(self, volumes_ids):
+        self.volumes_ids[:] = volumes_ids
 
     def update_n_phases(self, n_phases):
         self.n_phases = n_phases
@@ -580,7 +582,7 @@ def test_id_text(id_text):
 
 
 
-def get_linear_problem(wells_list, T, gravity_source_term, volumes_ids):
+def get_linear_problem(wells_list, T, gravity_source_term, volumes_ids=None):
 
     T2 = T.copy()
     q2 = gravity_source_term.copy()
