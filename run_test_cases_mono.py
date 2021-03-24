@@ -23,21 +23,19 @@ def remove_previous_files():
     os.mkdir('results/'+folder+'/finescale/vtks')
 
 def run_test_cases():
-    vpis_for_save=np.arange(0.0,1.001,0.01)
-    # vpis_for_save=np.array([0.0,0.00001])
+    # vpis_for_save=np.arange(0.0,1.001,0.01)
+    vpis_for_save=np.array([0.0,0.00001])
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     # os.system('python testting2_biphasic.py')
 
     crs=[[9,9,1],[5, 11, 1],[9, 19, 1],[13, 27, 1]]
     np.save('flying/all_crs.npy',np.array(crs))
-    # neta_lim_dual_values=     [ np.inf,    0.5,    1.0,    2.0,   10.0,  100.0]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
-    neta_lim_dual_values=     [ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf,  np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#,    1.0,    1.0,    5.0,    5.0,     5.0,    1.0,    1.0,    1.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
-    neta_lim_finescale_values=[    1.0,    1.0,    1.0,    1.0,    1.0,    1.0,    1.0,    1.0,     0.3,    0.3,    0.3,    0.3,    0.3,    0.3,    0.3,    0.3]#,    3.0,    5.0,    1.0,    3.0,     5.0,    1.0,    3.0,    5.0,    1.0,    3.0,     5.0,    5.0,    5.0,     5.0]# np.inf,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0,    0.5,    1.0,    5.0,    1.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    type_of_refinement_values=[  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',   'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',   'uni',  'uni',  'uni',  'uni',  'uni',  'uni',   'uni',  'uni',  'uni',   'uni']#  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
-    phiK_raz_lim_values=      [ np.inf, np.inf, np.inf, np.inf,   10.0,   10.0,   10.0,   10.0,  np.inf, np.inf, np.inf, np.inf,   10.0,   10.0,   10.0,   10.0]#,    3.0,    3.0,    3.0,    3.0,     3.0,    5.0,    5.0,    5.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf,    3.0,    3.0,    3.0,    3.0,    3.0,   10.0,   10.0,   10.0,   10.0,   10.0]#, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    delta_sat_max=            [    0.1,    0.3,    0.5,    1.1,    0.1,    0.3,    0.5,    1.1,     0.1,    0.3,    0.5,    1.1,    0.1,    0.3,    0.5,    1.1]#,    1.1,    1.1,    1.1,    1.1,     1.1,    1.1,    1.1,    1.1,    1.1,    1.1,     1.1,    0.1,    0.3,     0.5]#    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1]#,    1.1,    1.1,    1.1,    1.1,    1.0,    1.0,    1.0]
-    cr_inds=                  [      0,      0,      0,      0,      0,      0,      0,      0,       0,      0,      0,      0,      0,      0,      0,      0]#,      0,      0,      0,      0,       0,      0,      0,      0,      0,      0,       0,      0,      0,       0]
-
+    neta_lim_dual_values=     [  100.0]
+    neta_lim_finescale_values=[ np.inf]
+    type_of_refinement_values=[  'uni']
+    phiK_raz_lim_values=      [ np.inf]
+    delta_sat_max=            [ np.inf]
+    cr_inds=                  [      0]
     for i in range(len(neta_lim_dual_values)):
     # if False:
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
@@ -203,8 +201,8 @@ def print_results(all_cases):
             plt.savefig('results/'+folder+'/'+variable+'.svg', bbox_inches=12)
 
     for var in single_vars:
-        abcissa_var='neta'
-        control_variable='beta'
+        abcissa_var='alpha'
+        control_variable='delta'
 
         all_abcissa=np.array(single_vars[abcissa_var])
         pos=all_abcissa<10000
@@ -540,7 +538,6 @@ def print_results_3(all_cases):
 
     for variable in variables:
         plt.close('all')
-
         plt.rcParams['axes.edgecolor'] = 'black'
         plt.rcParams['axes.linewidth'] = 5
         plt.gca().tick_params(which='minor', length=10, width=5)
@@ -548,10 +545,7 @@ def print_results_3(all_cases):
 
         ymin=np.inf
         ymax=-np.inf
-        #all_cases[:,0]
-        # import pdb; pdb.set_trace()
-        # for case in all_cases[np.array([0,1,2,3,4,5,8,9,10])]:
-        # for case in all_cases[np.array([1,4,-1])]:
+
         max_neta=1
         for case in all_cases:
             case_name=case[0]
@@ -657,7 +651,7 @@ def print_results_3(all_cases):
             plt.savefig('results/'+folder+'/'+variable+'.svg', bbox_inches='tight')
 
     for var in single_vars:
-        abcissa_var='neta'
+        abcissa_var='alpha'
         control_variable='beta'
 
         all_abcissa=np.array(single_vars[abcissa_var])
@@ -705,10 +699,6 @@ def print_results_3(all_cases):
                 except:
                     ordenada=np.repeat(ordenada[0],len(ind_sort))
 
-                # plt.xscale('log')
-                # if var not in linear_yaxis:
-                #     plt.yscale('log')
-
                 abc=abcissa[abcissa!=30]
                 ord=ordenada[abcissa!=30]
                 if control_variable=='beta':
@@ -720,12 +710,8 @@ def print_results_3(all_cases):
                     control_val = int(control_vals[control])
                     control_val = str(all_crs[control_val][0])+', '+str(all_crs[control_val][1])
 
-                # if control in [1,2]:
                 plt.plot(abc, ord,label=label.format(control_val),marker='o',markersize=15, linewidth=5)
-                # plt.plot(abc, ord, marker='o',markersize=15, linewidth=5)
 
-                # plt.grid(axis='both', which='major', ls='-',lw=3)
-                # plt.grid(axis='both', which='minor', ls='--', alpha=0.4, lw=2)
                 plt.rcParams['axes.edgecolor'] = 'black'
                 plt.rcParams['axes.linewidth'] = 1
 
@@ -733,9 +719,6 @@ def print_results_3(all_cases):
                 positions=positions[positions!=30]
                 labels = positions.astype(str)
 
-
-                # plt.gca().xaxis.set_major_locator(ticker.FixedLocator(positions))
-                # plt.gca().xaxis.set_major_formatter(ticker.FixedFormatter(labels))
 
                 if var!='refinement' and var!='coupl':
                     positions = 10**np.arange(int(np.log10(all_ordenada).min()), int(np.log10(all_ordenada).max())+1)
@@ -772,29 +755,6 @@ def print_results_3(all_cases):
                     else:
                         at.append(int(v))
 
-
-                # # all_ticks=at
-                # # if var in linear_yaxis:
-                # #     positions=np.array([])
-                # #     labels=np.array([])
-                # #     if var=='refinement':
-                # #         pp.append(1)
-                # #         pp.append(10)
-                # #     if var=='coupl':
-                # #         pp=np.arange(0,np.array(pp).max()+5,5)
-                # #         # positions.append(.5)
-                # #     all_ticks=np.array(pp).astype(int)
-                #
-                #
-                # labels = positions.astype(int).astype(str)
-                # plt.gca().yaxis.set_major_locator(ticker.FixedLocator(positions))
-                # plt.gca().yaxis.set_major_formatter(ticker.FixedFormatter(labels))
-                #
-                # plt.gca().yaxis.set_minor_locator(ticker.FixedLocator(pp))
-                # plt.gca().yaxis.set_minor_formatter(ticker.FixedFormatter(all_ticks))
-                # plt.legend()
-                # plt.gca().xaxis.set_minor_formatter(ticker.NullFormatter())
-                # ticks=plt.gca().get_yticks()
                 control+=1
             # plt.xscale('log')
             plt.gca().tick_params(which='minor', length=10)
@@ -806,3 +766,43 @@ def print_results_3(all_cases):
             plt.gcf().set_size_inches(15,15)
 
             plt.savefig('results/single_phase/'+var+'.svg', bbox_inches='tight')
+
+def print_results_single(all_cases):
+    units={'vpi':'PVI [%]','wor':'wor []','t_comp':'comp_time [s]','delta_t':'time-step []',
+        'n1_adm':r'$N^{A-ADM}/N^f$[%]','el2':r'$||e_p||_2$'+' [%]','elinf':r'$||e_p||_\infty$'+' [%]', 'es_L2':r'$||e_s||_2$'+' [%]',
+        'es_Linf':r'$||e_s||_\infty$'+' [%]', 'vpis_for_save':'PVI [%]','coupl':'Percentage of enrichment [%]',
+        'refinement':'Percentage at fine-scale [%]', 'ep_haji_L2':'ep_rel_ms_L2[]',
+        'ep_haji_Linf':'ep_rel_ms_Linf[]','er_L2':r'$||e_r||_2$'+' []','er_Linf':r'$||e_r||_\infty$'+' []',
+        'ev_L2':r'$||e_v||_2$'+' [%]','ev_Linf':r'$||e_v||_\infty$'+' [%]'}
+    variables=all_cases[1][1].keys()
+    single_vars={}
+    for u in units.keys():
+        single_vars[u]=[]
+    single_vars['neta']=[]
+    single_vars['alpha']=[]
+    single_vars['beta']=[]
+    single_vars['delta']=[]
+    single_vars['CR']=[]
+    names_single_vars=['neta', 'beta', 'alpha', 'delta', 'CR']
+    plot_vars=[['el2', 'elinf'],
+                ['neta', 'neta']]
+    for variable in single_vars:
+        for case in all_cases:
+            case_name=case[0]
+            case_data=case[1]
+            if case_name!='finescale' and variable in names_single_vars:
+                input_params=np.array(case_name.split('_'))
+                pos=np.where(input_params==variable)[0][0]+1
+                single_vars[variable].append(float(input_params[pos]))
+            elif case_name!='finescale':
+                try:
+                    single_vars[variable].append(case_data[variable][1])
+                except:
+                    pass
+
+    for ordenada_name, abcissa_name in zip(plot_vars[0],plot_vars[1]):
+        abcissas=single_vars[abcissa_name]
+        ordenadas=single_vars[ordenada_name]
+        plt.close('all')
+        plt.plot(abcissas, ordenadas)
+        plt.savefig('results/single_phase/'+ordenada_name+'.svg', bbox_inches='tight')
