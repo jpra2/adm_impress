@@ -23,7 +23,7 @@ types_simulation = ['compositional', 'biphasic', 'monophasic']
 # variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
 #                      'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
 
-variables_impress = {'poro': 'phi'}
+variables_impress = {'poro': 'poro'}
 
 impress = 'impress'
 tcc = 'tcc'
@@ -75,7 +75,7 @@ with open ('input_cards/input_file_name.yml','r') as f:
 
 with open(name_input_file_load, 'r') as f:
     data_loaded = yaml.safe_load(f)
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
 with open(file_adm_mesh_def, 'r') as f:
     file_adm_mesh_def = yaml.safe_load(f)

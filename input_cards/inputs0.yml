@@ -1,3 +1,12 @@
+Crs:
+  Cr1:
+  - 3
+  - 1
+  - 1
+  Cr2:
+  - 3
+  - 1
+  - 1
 Permeability:
   r1:
     type: all
@@ -139,6 +148,7 @@ mesh_name: 12x1x1_b.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
+n_levels: 2
 name_save_file: results_Buckley_Leverett_caset
 read_permeability: false
 set_permeability: true

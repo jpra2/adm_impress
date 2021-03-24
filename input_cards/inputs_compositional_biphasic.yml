@@ -8,8 +8,13 @@ compressible_fluid: False
 water_component: True
 use_vpi: True
 
-
-
+###############################
+# Multilevel infos
+n_levels: 2
+Crs:
+  Cr1: [3, 1, 1]
+  Cr2: [3, 1, 1]
+#############################
 load_compositional_data: False
 load_data: False
 convert_english_to_SI: False

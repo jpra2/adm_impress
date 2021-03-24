@@ -1,3 +1,27 @@
+COARSE_GID_1:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+COARSE_GID_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+COARSE_LOCAL_ID_1:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+COARSE_LOCAL_ID_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
 NODES:
   data size: 3
   data type: float
@@ -168,13 +192,6 @@ mass_oil_production:
   type: volumes
 mass_water_production:
   data size: 1
-  data type: int
-  sparse: True
-  level: 0
-
-velocity:
-  type: faces
-  data size: 3
   data type: float
   level: 0
   sparse: true

@@ -2,6 +2,7 @@ import pdb
 from packs.directories import data_loaded
 from run_compositional import run_simulation
 import time
+from packs.multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -24,6 +25,12 @@ convert = data_loaded['convert_english_to_SI']
 t = time.time()
 sim = run_simulation(name_current, name_all)
 M, data_impress, wells, fprop, load = sim.initialize(load, convert, mesh)
+# import pdb; pdb.set_trace()
+load_multilevel_data = False
+ml_data = MultilevelData(data_impress, M, load=load_multilevel_data)
+ml_data.run()
+# ml_data.load_tags()
+import pdb; pdb.set_trace()
 
 while run_criteria < stop_criteria:# and loop < loop_max:
     sim.run(M, wells, fprop, load)
