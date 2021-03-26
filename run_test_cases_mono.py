@@ -7,7 +7,7 @@ from matplotlib import ticker
 
 
 
-font = {'size'   : 50}
+font = {'size'   : 30}
 matplotlib.rc('font', **font)
 folder='biphasic'
 # folder='single_phase_L1'
@@ -30,7 +30,7 @@ def run_test_cases():
 
     crs=[[9,9,1],[5, 11, 1],[9, 19, 1],[13, 27, 1]]
     np.save('flying/all_crs.npy',np.array(crs))
-    neta_lim_dual_values=     [  100.0]
+    neta_lim_dual_values=     [    5.0]
     neta_lim_finescale_values=[ np.inf]
     type_of_refinement_values=[  'uni']
     phiK_raz_lim_values=      [ np.inf]
@@ -619,21 +619,13 @@ def print_results_3(all_cases):
                         ymin=1e-2
                 if ymax>0:
                     ymax=10**int(np.log10(ymax)+1)
-                # plt.yscale('log')
+
                 y_ticks=plt.gca().get_yticks()[:-1]
                 y_ticks=np.concatenate(np.vstack([y_ticks,np.append(y_ticks[1:]/2,y_ticks[-1])]).T)[:-1]
                 plt.gca().set_yticks(y_ticks)
                 ticks=plt.gca().get_yticks()
 
                 pos_ymax=(ticks<ymax).sum()
-                # t_ymin=ticks[ticks>=ymin].min()
-                #
-                # t_ymax=ticks[pos_ymax]
-                # plt.yticks(ticks)
-
-                # plt.gca().set_yticklabels(['{:.0f}%'.format(x) for x in plt.gca().get_yticks()])
-                # plt.ylim(t_ymin,t_ymax)
-
 
             plt.grid(linewidth=3)
 
@@ -767,7 +759,7 @@ def print_results_3(all_cases):
 
             plt.savefig('results/single_phase/'+var+'.svg', bbox_inches='tight')
 
-def print_results_single(all_cases):
+def collect_single_phase_data(all_cases):
     units={'vpi':'PVI [%]','wor':'wor []','t_comp':'comp_time [s]','delta_t':'time-step []',
         'n1_adm':r'$N^{A-ADM}/N^f$[%]','el2':r'$||e_p||_2$'+' [%]','elinf':r'$||e_p||_\infty$'+' [%]', 'es_L2':r'$||e_s||_2$'+' [%]',
         'es_Linf':r'$||e_s||_\infty$'+' [%]', 'vpis_for_save':'PVI [%]','coupl':'Percentage of enrichment [%]',
@@ -784,9 +776,8 @@ def print_results_single(all_cases):
     single_vars['delta']=[]
     single_vars['CR']=[]
     names_single_vars=['neta', 'beta', 'alpha', 'delta', 'CR']
-    plot_vars=[['el2', 'elinf'],
-                ['neta', 'neta']]
-    for variable in single_vars:
+
+    for variable in single_vars.keys():
         for case in all_cases:
             case_name=case[0]
             case_data=case[1]
@@ -796,13 +787,78 @@ def print_results_single(all_cases):
                 single_vars[variable].append(float(input_params[pos]))
             elif case_name!='finescale':
                 try:
-                    single_vars[variable].append(case_data[variable][1])
+                    single_vars[variable].append(case_data[variable][0])
                 except:
                     pass
+        single_vars[variable]=np.array(single_vars[variable])
+    return single_vars
 
-    for ordenada_name, abcissa_name in zip(plot_vars[0],plot_vars[1]):
+def round_to_1(x):
+
+    vals=-np.floor(np.log10(abs(x))).astype('int')
+    for i in range(len(x)):
+        x[i]=np.round(x[i], vals[i])
+    return x
+
+def format_plot(scales, abcissas, ordenadas):
+    x_scale, y_scale = scales.split('_')
+    if x_scale=='lin':
+        x_scale='linear'
+    if y_scale=='lin':
+        y_scale='linear'
+    plt.xscale(x_scale)
+    plt.yscale(y_scale)
+
+    plt.grid(which='major', lw=2, color='black')
+    plt.grid(which='minor', lw=1, color='gray')
+
+    if y_scale=='log':
+        major_ticks=np.log10(ordenadas).astype('int')
+        major_ticks=10**np.arange(major_ticks.min(),major_ticks.max()+1)
+
+        plt.gca().yaxis.set_major_locator(ticker.FixedLocator(major_ticks))
+        plt.gca().set_yticklabels(['{:.0f}%'.format(x) for x in np.concatenate([major_ticks])])
+
+        minor_ticks=np.unique(np.array(ordenadas).astype('int'))
+        s_minor_ticks=np.arange(major_ticks.max(),max(2.01*major_ticks.max(),ordenadas.max()*1.101),10**(np.log10(major_ticks.max())))[1:]
+        minor_ticks=round_to_1(minor_ticks)
+        a_minor_ticks=np.concatenate([np.arange(major_ticks[i],major_ticks[i+1],major_ticks[i])[1:] for i in range(len(major_ticks)-1)])
+        a_minor_ticks=np.concatenate([a_minor_ticks, s_minor_ticks])
+
+        amt=a_minor_ticks.astype('str')
+        minor_ticks=np.append(minor_ticks,a_minor_ticks.max())
+        a_minor_formats=[]
+        plot_mantissa=['2', '4', '7']
+        plt.yticks(fontsize=50)
+        for i in range(len(a_minor_ticks)):
+            if (amt[i][0] in plot_mantissa) or (a_minor_ticks[i]==a_minor_ticks.max()):
+                a_minor_formats.append('{:.0f}%'.format(a_minor_ticks[i]))
+            else:
+                a_minor_formats.append('')
+
+                plt.gca().yaxis.set_minor_locator(ticker.FixedLocator(a_minor_ticks))
+                plt.gca().yaxis.set_minor_formatter(ticker.FixedFormatter(a_minor_formats))
+                plt.ylim(minor_ticks.min(),minor_ticks.max()*1.1)
+
+    plt.gcf().set_size_inches(15,15)
+
+
+def print_results_single(all_cases):
+    single_vars = collect_single_phase_data(all_cases)
+
+    plot_vars=[[    'neta',    'neta'],     # Abcissas
+               [     'el2',   'elinf'],     # Ordenadas
+               [ 'lin_lin', 'lin_log']]     # Escalas dos Eixos
+
+    for abcissa_name, ordenada_name, scales in zip(plot_vars[0],plot_vars[1], plot_vars[2]):
+        plt.close('all')
         abcissas=single_vars[abcissa_name]
         ordenadas=single_vars[ordenada_name]
-        plt.close('all')
-        plt.plot(abcissas, ordenadas)
+
+        ind_sort=np.argsort(abcissas)
+        abcissas=abcissas[ind_sort]
+        ordenadas=ordenadas[ind_sort]
+        # import pdb; pdb.set_trace()
+        plt.plot(abcissas, ordenadas, lw=5)
+        format_plot(scales, abcissas, ordenadas)
         plt.savefig('results/single_phase/'+ordenada_name+'.svg', bbox_inches='tight')

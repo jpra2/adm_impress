@@ -313,7 +313,6 @@ def save_matrices_as_png(matrices, names):
                     c='{:.2f}'.format(c)
                     plt.text(j, i, str(c), va='center', ha='center',fontsize=15, color = 'lime',weight='bold')
 
-
         plt.savefig('results/'+name+'.png')
 
 def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines0):

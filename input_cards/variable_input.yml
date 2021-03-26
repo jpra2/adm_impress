@@ -631,6 +631,34 @@ non_physical_value_5:
   sparse: True
   level: 0
 
+non_physical_value_6:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_7:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_8:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_9:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
 non_physical_value_999:
   type: volumes
   data size: 1

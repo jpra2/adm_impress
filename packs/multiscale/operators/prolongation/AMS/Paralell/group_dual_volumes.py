@@ -10,17 +10,15 @@ def get_coupled_dual_volumes(mlo,T, M, data_impress,neta_lim=0.0, ind=0):
     Tc2.setdiag(0)
     DTc=1/np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
     if (DTc>0).sum()>0 and abs(Tc[DTc>0].sum())<0.01:
-        print((DTc>0).sum(),"diagonais positivas !!!!!!!!!!!")        
+        print((DTc>0).sum(),"diagonais positivas !!!!!!!!!!!")
         DTc[DTc>0]=-abs(DTc).max()
 
     lines=np.arange(Tc.shape[0])
     dia=csc_matrix((DTc,(lines,lines)),shape=Tc.shape)
     netas=dia*Tc2
     fn=find(netas)
-
-    # import pdb; pdb.set_trace()
     superates_tol=fn[2]>neta_lim
-    # import pdb; pdb.set_trace()
+
     nsp=fn[2][superates_tol]
     i=fn[1][superates_tol]
     j=fn[0][superates_tol]
