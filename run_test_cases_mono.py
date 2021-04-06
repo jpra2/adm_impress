@@ -28,24 +28,25 @@ def run_test_cases():
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     # os.system('python testting2_biphasic.py')
 
-    crs=[[9,9,1],[5, 11, 1],[9, 19, 1],[13, 27, 1]]
+    crs=[[3, 3, 1], [5, 5, 1], [7, 7, 1], [9,9,1]]
     np.save('flying/all_crs.npy',np.array(crs))
-    neta_lim_dual_values=     [    5.0]
-    neta_lim_finescale_values=[ np.inf]
-    type_of_refinement_values=[  'uni']
-    phiK_raz_lim_values=      [ np.inf]
-    delta_sat_max=            [ np.inf]
-    cr_inds=                  [      0]
+    beta_lim_dual_values=     [  100.0,  500.0, 1000.0, 1500.0, 2000.0,10000.0]
+    neta_lim_dual_values=     [    2.0,    2.0,    2.0,    2.0,    2.0,    2.0]
+    neta_lim_finescale_values=[ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    type_of_refinement_values=[  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
+    phiK_raz_lim_values=      [ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    delta_sat_max=            [ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    cr_inds=                  [      3,      3,      3,      3,      3,      3]
     for i in range(len(neta_lim_dual_values)):
-    # if False:
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
         np.save('flying/neta_lim_dual.npy',np.array([neta_lim_dual_values[i]]))
+        np.save('flying/beta_lim_dual.npy',np.array([beta_lim_dual_values[i]]))
         np.save('flying/type_of_refinement.npy',np.array([type_of_refinement_values[i]]))
         np.save('flying/phiK_raz_lim.npy',np.array([phiK_raz_lim_values[i]]))
         np.save('flying/crs.npy',np.array(crs[cr_inds[i]]))
         ms_case='neta_'+str(neta_lim_dual_values[i])+'_alpha_'+str(neta_lim_finescale_values[i])+\
-        '_type_'+type_of_refinement_values[i]+'_beta_'+str(phiK_raz_lim_values[i])+\
+        '_type_'+type_of_refinement_values[i]+'_beta_'+str(phiK_raz_lim_values[i])+'_betad_'+str(beta_lim_dual_values[i])+\
         '_delta_'+str(delta_sat_max[i])+'_CR_'+str(cr_inds[i])+'/'
         os.makedirs('results/'+folder+'/ms/'+ms_case,exist_ok=True)
         os.makedirs('results/'+folder+'/ms/'+ms_case+'vtks',exist_ok=True)
@@ -97,7 +98,8 @@ def print_results(all_cases):
     single_vars['beta']=[]
     single_vars['delta']=[]
     single_vars['CR']=[]
-    names_single_vars=['neta', 'beta', 'alpha', 'delta', 'CR']
+    single_vars['betad']=[]
+    names_single_vars=['neta', 'beta', 'alpha', 'delta', 'CR', 'betad']
 
     for variable in variables:
         plt.close('all')
@@ -775,7 +777,8 @@ def collect_single_phase_data(all_cases):
     single_vars['beta']=[]
     single_vars['delta']=[]
     single_vars['CR']=[]
-    names_single_vars=['neta', 'beta', 'alpha', 'delta', 'CR']
+    single_vars['betad']=[]
+    names_single_vars=['neta', 'beta', 'alpha', 'delta', 'CR', 'betad']
 
     for variable in single_vars.keys():
         for case in all_cases:
@@ -783,6 +786,7 @@ def collect_single_phase_data(all_cases):
             case_data=case[1]
             if case_name!='finescale' and variable in names_single_vars:
                 input_params=np.array(case_name.split('_'))
+
                 pos=np.where(input_params==variable)[0][0]+1
                 single_vars[variable].append(float(input_params[pos]))
             elif case_name!='finescale':
@@ -821,6 +825,7 @@ def format_plot(scales, abcissas, ordenadas):
 
         minor_ticks=np.unique(np.array(ordenadas).astype('int'))
         s_minor_ticks=np.arange(major_ticks.max(),max(2.01*major_ticks.max(),ordenadas.max()*1.101),10**(np.log10(major_ticks.max())))[1:]
+
         minor_ticks=round_to_1(minor_ticks)
         a_minor_ticks=np.concatenate([np.arange(major_ticks[i],major_ticks[i+1],major_ticks[i])[1:] for i in range(len(major_ticks)-1)])
         a_minor_ticks=np.concatenate([a_minor_ticks, s_minor_ticks])
@@ -844,21 +849,58 @@ def format_plot(scales, abcissas, ordenadas):
 
 
 def print_results_single(all_cases):
-    single_vars = collect_single_phase_data(all_cases)
+    units={'vpi':'PVI [%]','wor':'wor []','t_comp':'comp_time [s]','delta_t':'time-step []',
+        'n1_adm':r'$N^{A-ADM}/N^f$[%]','el2':r'$||e_p||_2$'+' [%]','elinf':r'$||e_p||_\infty$'+' [%]', 'es_L2':r'$||e_s||_2$'+' [%]',
+        'es_Linf':r'$||e_s||_\infty$'+' [%]', 'vpis_for_save':'PVI [%]','coupl':'Percentage of enrichment [%]',
+        'refinement':'Percentage at fine-scale [%]', 'ep_haji_L2':'ep_rel_ms_L2[]',
+        'ep_haji_Linf':'ep_rel_ms_Linf[]','er_L2':r'$||e_r||_2$'+' []','er_Linf':r'$||e_r||_\infty$'+' []',
+        'ev_L2':r'$||e_v||_2$'+' [%]','ev_Linf':r'$||e_v||_\infty$'+' [%]', 'neta':r'$\epsilon$ []', 'betad':r'$\epsilon$ []'}
 
-    plot_vars=[[    'neta',    'neta'],     # Abcissas
-               [     'el2',   'elinf'],     # Ordenadas
-               [ 'lin_lin', 'lin_log']]     # Escalas dos Eixos
+    single_vars = collect_single_phase_data(all_cases)
+    ab='neta'
+
+    plot_vars=[[        ab,        ab,        ab,         ab],     # Abcissas
+               [     'el2',   'elinf',   'coupl',   'n1_adm'],     # Ordenadas
+               [ 'lin_lin', 'lin_log', 'lin_lin', 'lin_lin']]     # Escalas dos Eixos
+
+    control_var='betad'
+    # legends={0:'CR = 3x3',1:'CR = 5x5', 2:'CR = 7x7', 3:'CR = 9x9'}
+    legends={}
+    for v in np.unique(single_vars[control_var]):
+        legends[v]=control_var+' = '+str(v)
+
+
+    # from curvas_de_nivel import plot_curva
+    # plot_curva(single_vars['neta'], single_vars['betad'],single_vars['elinf'])
+    # import pdb; pdb.set_trace()
 
     for abcissa_name, ordenada_name, scales in zip(plot_vars[0],plot_vars[1], plot_vars[2]):
         plt.close('all')
-        abcissas=single_vars[abcissa_name]
-        ordenadas=single_vars[ordenada_name]
+        sv=single_vars[control_var]
+        all_abcissas=single_vars[abcissa_name]
+        all_ordenadas=single_vars[ordenada_name]
+        all_elinf=single_vars['elinf']
+        # all_ordenadas=all_ordenadas[all_abcissas<2500]
+        # sv=sv[all_abcissas<2500]
+        # all_abcissas=all_abcissas[all_abcissas<2500]
+        for i in np.sort(np.unique(sv)):
+            inds=np.where(sv==i)[0]
+            abcissas=all_abcissas[inds]
+            ordenadas=all_ordenadas[inds]
+            elinf=all_elinf[inds]
+            ind_sort=np.argsort(abcissas)
+            abcissas=abcissas[ind_sort]
+            ordenadas=ordenadas[ind_sort]
+            elinf=elinf[ind_sort]
+            try:
+                plt.plot(abcissas, ordenadas, lw=5, label=legends[i])
+                plt.scatter(abcissas[elinf<30],ordenadas[elinf<30],lw=10)
+            except:
+                import pdb; pdb.set_trace()
 
-        ind_sort=np.argsort(abcissas)
-        abcissas=abcissas[ind_sort]
-        ordenadas=ordenadas[ind_sort]
-        # import pdb; pdb.set_trace()
-        plt.plot(abcissas, ordenadas, lw=5)
-        format_plot(scales, abcissas, ordenadas)
+        format_plot(scales, all_abcissas, all_ordenadas)
+        plt.legend()
+
+        plt.xlabel(units[abcissa_name])
+        plt.ylabel(units[ordenada_name])
         plt.savefig('results/single_phase/'+ordenada_name+'.svg', bbox_inches='tight')

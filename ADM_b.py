@@ -20,6 +20,10 @@ from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 # from packs.biphasic.biphasic_tpfa import BiphasicTpfa
 from packs.biphasic.biphasic_ms.biphasic_multiscale import BiphasicTpfaMultiscale
 
+def tpfalize_matrix(Mat, ids_coarse):
+    lcd=sp.find(mat)
+    import pdb; pdb.set_trace()
+
 def save_multilevel_results():
     t_comp.append(t1-t0)
     vals_n1_adm.append(adm_method.n1_adm)
@@ -242,7 +246,36 @@ tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
 neta_lim=np.load('flying/neta_lim_dual.npy')[0]
 elements_lv0['neta_lim']=neta_lim
+
+OP_AMS=mlo['prolongation_level_1']
+phiks=np.array(OP_AMS[data_impress['GID_0'],data_impress['GID_1']])[0]
+r_phiks=(1-phiks)/phiks
+
+maxs=sp.csc_matrix((r_phiks,(data_impress['GID_0'],data_impress['GID_1'])),shape=OP_AMS.shape).max(axis=0).toarray()[0]
+
+M.maxs=maxs
+
+###########
+dual_flags=data_impress['DUAL_1']
+gids0=data_impress['GID_0']
+gids1=data_impress['GID_1']
+adjs=M.faces.bridge_adjacencies(M.faces.internal,2,3)
+ads=adjs[(gids1[adjs][:,0]!=gids1[adjs][:,1]) & (dual_flags[adjs[:,0]]<=2) & (dual_flags[adjs[:,0]]<=2)]
+vals=r_phiks[ads]
+maxs_ds=vals.max(axis=1)
+
+
+aa=data_impress['GID_1']
+mexs=np.zeros(aa.max()+1)
+np.maximum.at(mexs,aa,r_phiks)
+##############
+# import pdb; pdb.set_trace()
+# data_impress['nfn'][:]=maxs[data_impress['GID_1']]
+data_impress['nfn'][ads[:,0]]=maxs_ds
+data_impress['nfn'][ads[:,1]]=maxs_ds
+M.edges_and_vals=[maxs_ds,gids1[ads]]
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
+# OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=20)
 
 # mlo=tpfalize(M,mlo,data_impress)
 mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
@@ -547,7 +580,6 @@ while verif:
     pms=data_impress['pressure']
     if neta_lim_finescale==np.inf:
         np.save('flying/original_ms_solution.npy',pms)
-
         po=pms.copy()
         vo=data_impress['velocity_faces']
         np.save('flying/velocity_faces_AMS.npy',vo)
@@ -608,11 +640,14 @@ while verif:
         lvs0=int_faces[(lv[ad0]==0) | (lv[ad1]==0)]
         facs_plot=np.concatenate([bounds_coarse,lvs0])
         M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
+        # import pdb; pdb.set_trace()
+        # data_impress['raz_pos'][:]=0
+        # data_impress['raz_pos'][data_impress['DUAL_1']==2]=data_impress['raz_phi'][data_impress['DUAL_1']==2]
         data_impress.update_variables_to_mesh()
         file_count=str(int(100*vpis_for_save[count_save]))
 
-        M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
-        M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
+        # M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
+        # M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
         if vpis_for_save[count_save]==vpis_for_save.max():
             export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor,
             t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1],

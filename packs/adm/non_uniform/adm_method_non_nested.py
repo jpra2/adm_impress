@@ -188,7 +188,7 @@ class AdmNonNested(AdmMethod):
         self.data_impress['LEVEL'] = levels.copy()
 
     def set_saturation_level_imposed_joined_coarse(self):
-
+        
         levels = self.data_impress['LEVEL'].copy()
         dual_flag = self.data_impress['DUAL_1'].copy()
         gid1 = self.data_impress['GID_1']
@@ -441,15 +441,9 @@ class AdmNonNested(AdmMethod):
         # vols_to_lv0=np.unique(np.hstack(self.elements_lv0['volumes_face_volumes'][vols_to_lv0]))
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
         self.data_impress['LEVEL'][vols_to_lv0] = 0
-        # gid0 = self.data_impress['GID_0']
-        # gid1 = self.data_impress['GID_1']
-        #
-        # gids_wells = np.unique(gid1[self.all_wells_ids])
-        # for gid in gids_wells:
-        #     volumes = gid0[gid1==gid]
-        #     self.data_impress['LEVEL'][volumes] = 0
+
     def set_level_wells_only(self):
-        
+
         self.data_impress['LEVEL'][:] = 1
         self.data_impress['LEVEL'][self.all_wells_ids] = 0
 
@@ -931,7 +925,6 @@ class AdmNonNested(AdmMethod):
         # del master
         self.data_impress['flux_faces'] = ms_flux_faces
         self.data_impress['pcorr'] = pcorr
-
 
     def plot_operator(self, OP_ADM, OP_AMS, v):
 

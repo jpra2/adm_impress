@@ -527,6 +527,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
         # self.update_gama()
         T, b = self.get_T_and_b()
         p = self.solver.direct_solver(T, b)
+
         self.data_impress['pressure'] = p
         self.get_flux_faces_and_volumes()
         self.run_2(save = save)
@@ -537,7 +538,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties):
     def run_2(self, save=False):
         ######
         ## run for adm_method
-        ######
+        ######        
         t0=time.time()
         self.update_flux_w_and_o_volumes()
         self.update_delta_t()
