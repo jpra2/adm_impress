@@ -17,6 +17,7 @@ get_correction_term = data_loaded['get_correction_term']
 n_levels = int(data_loaded['n_levels'])
 _debug = data_loaded['_debug']
 biphasic = data_loaded['biphasic']
+
 neta_lim=1.0
 
 M, elements_lv0, data_impress, wells = initial_mesh()
@@ -47,10 +48,12 @@ adm_method.organize_ops_adm(mlo, 1)
 # OR_ADM = adm_method['adm_restriction_level_1']
 
 
-def newton_iteration_ADM(M, time_step, rel_tol=1e-5):
+def newton_iteration_ADM(M, time_step, wells, rel_tol=1e-5):
     converged=False
     count=0
     dt=time_step
+    # import pdb; pdb.set_trace()
+    M.pressure[wells['ws_p']]=wells['values_p']
     while not converged:
         adm_method.restart_levels()
         adm_method.set_level_wells_only()
@@ -62,7 +65,7 @@ def newton_iteration_ADM(M, time_step, rel_tol=1e-5):
         OR_ADM = adm_method._data['adm_restriction_level_1']
         R, P = get_R_and_P(OR_ADM, OP_ADM)
 
-        FIM=assembly(M, dt)
+        FIM=assembly(M, dt, wells)
         J=FIM.J
         q=FIM.q
         sol=-P*ADM_solver(J, q, R, P)
@@ -71,7 +74,7 @@ def newton_iteration_ADM(M, time_step, rel_tol=1e-5):
         M.pressure[:]+=np.array([sol[0:n]]).T
         M.swns[:]+=np.array([sol[n:]]).T
 
-        data_impress['saturation']=M.swns[:].T[0]
+        # data_impress['saturation']=M.swns[:].T[0]
 
         converged=max(abs(sol[n:]))<rel_tol
         count+=1
@@ -87,6 +90,7 @@ def newton_iteration_ADM(M, time_step, rel_tol=1e-5):
 def newton_iteration_fs(M, time_step, rel_tol=1e-5):
     converged=False
     count=0
+
     while not converged:
         # M.swns[:][M.swns[:]>1.0]=1.0
         # M.swns[:][M.swns[:]<0.0]=0.0
@@ -139,9 +143,10 @@ for i in range(50):
         time_step*=10
 
     M.swn1s[:]=M.swns[:]
-    M.swn1s[-1]=1.0
+    M.swn1s[wells['ws_inj']]=1.0
+    M.swns[wells['ws_inj']]=1.0
 
-    newton_iteration_ADM(M, time_step)
+    newton_iteration_ADM(M, time_step, wells)
 
     data_impress['pressure']=M.pressure[:]
     data_impress['swns']=M.swns[:]

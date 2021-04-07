@@ -6,7 +6,7 @@ import sympy as sym
 
 T, S_up, Sw, So, Swn, Son, Dt, k, phi, p_i, p_j, Dx, Dy=sym.symbols("T S Sw So Swn Son Dt k phi p_i p_j Dx Dy")
 class assembly():
-    def __init__(self,M,timestep):
+    def __init__(self,M,timestep, wells):
         self.n=len(M.volumes.all)
         self.nfi=len(M.faces.internal)
         self.vazao=10000.0
@@ -17,16 +17,38 @@ class assembly():
         self.F_Jacobian=s_J()
         self.dt=timestep
         J,q=self.get_jacobian_matrix(M)
-        self.J=self.apply_dirichlet(J,[0,self.n])
-        self.q=q
+        self.J, self.q= self.apply_BC(J, q, wells)
+
+        # self.J=self.apply_dirichlet(J,[0])#,self.n])
+        # self.q=q
+        # if abs(J2-self.J).sum() >0:
+        #     import pdb; pdb.set_trace()
+        # if abs(q2-self.q).sum() != abs(self.vazao):
+        #     import pdb; pdb.set_trace()
+
+    def apply_BC(self,J3,q3,wells):
+        J2=J3.tolil()
+        q2=q3.copy()
+
+        J2[wells['ws_p'],:]=0
+        J2[wells['ws_p'], wells['ws_p']]=1
+        q2[wells['ws_p']]=0
+        # J2[wells['ws_p']+self.n,:]=0
+        # J2[wells['ws_p']+self.n, wells['ws_p']+self.n]=1
+        # q2[wells['ws_p']+self.n]=0
+        J2[wells['ws_inj']+self.n,:]=0
+        J2[wells['ws_inj']+self.n, wells['ws_inj']+self.n]=1
+        q2[wells['ws_inj']+self.n]=0
+
+        q2[self.n+wells['ws_q']]-=wells['values_q']
+        J2=J2.tocsc()
+        return J2,q2
 
     def get_jacobian_matrix(self,M):
         GID_volumes=M.volumes.all
         n=len(GID_volumes)
         count=0
-        J=np.zeros((2*n,2*n),dtype=float)
-        q=np.zeros(2*n)
-        
+
         Swns=M.swns[:].transpose()[0]
         Swn1s=M.swn1s[:].transpose()[0]
         Swns[Swns<0]=0
@@ -181,10 +203,10 @@ class assembly():
         q=scipy.sparse.csc_matrix((dataq,(linesq,np.zeros(len(linesq)))),shape=(2*self.n,1))
 
         q=q.transpose().toarray()[0]
-        q[n]=0.0
 
-        q[0]=0.0
-        q[-1]-=self.vazao
+        #
+        # q[0]=0.0
+        # q[-1]-=self.vazao
         # self.iterac+=1
         return(J, q)
 

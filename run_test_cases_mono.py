@@ -17,12 +17,12 @@ def remove_previous_files():
     os.mkdir('results/biphasic/finescale/vtks')
 
 def run_test_cases():
-    vpis_for_save=np.arange(0.0,1.001,0.01)
-    # vpis_for_save=np.array([0.0,0.00001])
+    # vpis_for_save=np.arange(0.0,1.001,0.01)
+    vpis_for_save=np.array([0.0,0.00001])
     np.save('flying/vpis_for_save.npy',vpis_for_save)
-    # os.system("python testting2_biphasic.py")
+    os.system("python testting2_biphasic.py")
 
-    crs=[[3,1,3],[5, 11, 1],[9, 19, 1],[13, 27, 1]]
+    crs=[[9, 9, 1],[5, 11, 1],[9, 19, 1],[13, 27, 1]]
     np.save('flying/all_crs.npy',np.array(crs))
     # neta_lim_dual_values=     [ np.inf,    0.5,    1.0,    2.0,   10.0,  100.0]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
     neta_lim_dual_values=     [ np.inf]#, np.inf, np.inf]#,  100.0, np.inf]#,    1.0,    1.0,    5.0,    5.0,     5.0,    1.0,    1.0,    1.0,    5.0,    5.0,     5.0,    5.0,    5.0,     5.0]# np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]#, np.inf, np.inf, np.inf]#,    2.0,    5.0,   10.0,  100.0,   500.0,1000.0, np.inf]
