@@ -7,8 +7,8 @@ kro0: 1.0
 krw0: 1.0
 loop_maximo: null
 loops_para_gravar: 2
-mi_o: 0.001
-mi_w: 0.001
+mi_o: 0.000015
+mi_w: 0.00001
 n_o: 2.0
 n_w: 2.0
 relative_permeability: BrooksAndCorey

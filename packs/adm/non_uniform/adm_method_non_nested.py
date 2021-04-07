@@ -451,6 +451,7 @@ class AdmNonNested(AdmMethod):
         self.data_impress['LEVEL'][gids_to_monotonize]=0
 
     def organize_ops_adm(self, mlo, level, _pcorr=None):
+
         OP_AMS_lcd=mlo['prolongation_lcd_level_1']
         # OP_AMS=mlo['prolongation_level_1'].tolil()
         OR_AMS=mlo['restriction_level_1']
@@ -469,7 +470,6 @@ class AdmNonNested(AdmMethod):
             # t0=time.time()
             # OP_ADM1, OR_ADM1, pcorr1 = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
             OP_ADM, OR_ADM, pcorr =self.organize(level,lcd, _pcorr=_pcorr)
-
 
             self._data[self.adm_op_n + str(level)] = OP_ADM
             self._data[self.adm_rest_n + str(level)] = OR_ADM

@@ -566,6 +566,20 @@ while verif:
         adm_method.set_saturation_level_uniform(delta_sat_max)
 
     t0=time.time()
+    # from implicit_impress.jacobian.symbolic_jacobian import symbolic_J as s_J
+    from implicit_impress.jacobian.impress_assembly import assembly
+
+    # M.pressure[:]=np.array([OP_ADM*linalg.spsolve(OR_ADM*T*OP_ADM,OR_ADM*b)]).T
+    # JJ=assembly(M,0.00001)
+    # J=JJ.J
+    # nvols=int(J.shape[0]/2)
+    # Jsp=J[nvols:,nvols:]
+    # Jpp=J[0:nvols,0:nvols]
+    # Jss=J[nvols:,nvols:]
+    # Fs=JJ.q[nvols:]
+    # S=(OR_ADM*Fs-OR_ADM*Jsp*OR_ADM.T*linalg.spsolve(OR_ADM*T*OP_ADM,OR_ADM*b))/(OR_ADM*OR_ADM.T)[np.arange(OR_ADM.shape[0]),np.arange(OR_ADM.shape[0])]
+    # import pdb; pdb.set_trace()
+
     adm_method.solve_multiscale_pressure(T, b)
 
     adm_method.set_pms_flux(wells, neumann_subds) #
@@ -628,6 +642,7 @@ while verif:
         sat_adm=data_impress['saturation']
 
         es_L2.append(np.linalg.norm(sat_f-sat_adm)/np.linalg.norm(sat_f))
+
         es_Linf.append(abs(sat_f-sat_adm).max()/sat_f.max())
 
 

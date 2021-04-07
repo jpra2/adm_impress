@@ -21,7 +21,7 @@ class newton():
 
         for j in range(8):
             self.assembly=assembly(M,0.00001)
-            self.pvi_def=0.15-0.02*j
+            self.pvi_def=0.02+0.02*j
             ni=int(self.pvi_lim/self.pvi_def)
 
             self.qov=[]
@@ -45,7 +45,6 @@ class newton():
                 print('First Data file')
                 data=self.data
                 self.iterac+=1
-            import pdb; pdb.set_trace()
             # df = pd.DataFrame (data)
             # df.to_excel(filepath, index=False)
 
@@ -130,7 +129,7 @@ class newton():
     def set_properties(self,M):
         n=len(M.volumes.all)
         # M.mb.tag_set_data(M.k_eq,self.internal_faces,np.repeat(1.0,len(self.internal_faces)))
-        M.k_eq[:]=np.repeat(1.0,n)
+        M.k_eq[:]=M.k_harm[:][0]
         # M.mb.tag_set_data(M.phi,M.all_volumes,np.repeat(0.3,len(M.all_volumes)))
         M.phi[:]=np.repeat(0.3,n)
         # M.mb.tag_set_data(M.swns,M.all_volumes,np.repeat(0.2,len(M.all_volumes)))
