@@ -1,3 +1,4 @@
+from implicit_impress.jacobian.symbolic_jacobian import symbolic_J as s_J
 from packs.running.initial_mesh_properties import initial_mesh
 from packs.directories import data_loaded
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
@@ -47,63 +48,56 @@ adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
 adm_method.organize_ops_adm(mlo, 1)
 # OP_ADM = adm_method['adm_prolongation_level_1']
 # OR_ADM = adm_method['adm_restriction_level_1']
+#
+adjs=M.faces.bridge_adjacencies(M.faces.internal_elements[:],2,3)
+Ts=M.k_harm[M.faces.internal].T[0]
+F_Jacobian = s_J()
+vec=np.zeros_like(M.faces.all)
+vec[M.faces.internal]=1
 
-# @profile
 def newton_iteration_ADM(M, time_step, wells, rel_tol=1e-5):
     converged=False
     count=0
     dt=time_step
-    M.pressure[wells['ws_p']]=wells['values_p']
+    data_impress['pressure'][wells['ws_p']]=wells['values_p']
     while not converged:
         adm_method.restart_levels()
         adm_method.set_level_wells_only()
         adm_method.set_saturation_level_simple(delta_sat_max)
         adm_method.set_adm_mesh_non_nested(gids_0[adm_method.data_impress['LEVEL']==0])
         adm_method.organize_ops_adm(mlo, 1)
-
         OP_ADM = adm_method._data['adm_prolongation_level_1']
         OR_ADM = adm_method._data['adm_restriction_level_1']
-
         R, P = get_R_and_P(OR_ADM, OP_ADM)
-
-        FIM=assembly(M, dt, wells)
+        FIM=assembly(adjs, Ts, data_impress, dt, wells, F_Jacobian)
         J=FIM.J
         q=FIM.q
         sol=-P*ADM_solver(J, q, R, P)
-
         n=int(len(q)/2)
-        M.pressure[:]+=np.array([sol[0:n]]).T
-        M.swns[:]+=np.array([sol[n:]]).T
-
-        data_impress['saturation']=M.swns[:].T[0]
-        M.saturation=M.swns[:].T[0]
-
+        data_impress['pressure']+=sol[0:n]
+        data_impress['swns']+=sol[n:]
+        data_impress['saturation']=data_impress['swns'].copy()
         converged=max(abs(sol[n:]))<rel_tol
         count+=1
         if count>10:
             pass
         print(count,max(abs(sol[n:])))
-    sats=M.swns[:].T[0]
+    sats=data_impress['swns']
     sats=get_sat_averager(sats,data_impress)
     # sats=OR_ADM.T*(OR_ADM*sats/np.array(OR_ADM.sum(axis=1)).T[0])
-    M.swns[:]=sats
-    data_impress['saturation']=M.swns[:].T[0]
-    M.saturation=M.swns[:].T[0]
-
+    data_impress['swns']=sats.copy()
+    data_impress['saturation']=sats.copy()
 
 def get_sat_averager(sats, data_impress):
     gids0=data_impress['GID_0']
     gids1=data_impress['GID_1']
     level=data_impress['LEVEL']
     gids_adm_c=data_impress['LEVEL_ID_1']
-    vec=np.zeros_like(M.faces.all)
-    vec[M.faces.internal]=1
     for i in np.unique(data_impress['LEVEL_ID_1'][level==1]):
         vols=gids0[gids_adm_c==i]
         t00=time.time()
         faces=np.unique(np.concatenate(elements_lv0['volumes_face_faces'][vols]))
         faces=faces[vec[faces]==1]
-
         t0=time.time()
         adjs=np.vstack(elements_lv0['faces_face_volumes'][faces])
         adjs_int=adjs[(gids_adm_c[adjs[:,0]]==i) & (gids_adm_c[adjs[:,1]]==i)]
@@ -142,6 +136,9 @@ def newton_iteration_fs(M, time_step, rel_tol=1e-5):
         M.swns[:][M.swns[:]>1.0]=1.0
         M.swns[:][M.swns[:]<0.0]=0.0
 
+        data_impress['pressure']+=sol[0:n]
+        data_impress['swns'][data_impress['swns']>1]=1.0
+        data_impress['swns'][data_impress['swns']<0]=0.0
         # data_impress['saturation']=M.swns[:].T[0]
 
         converged=max(abs(sol[n:]))<rel_tol
@@ -197,7 +194,7 @@ delta_sat_max=0.1
 time_step=0.0001
 
 
-continue_old_simulation=True
+continue_old_simulation=False
 if continue_old_simulation:
     try:
         vect = np.load('flying/saturations.npy')
@@ -217,17 +214,22 @@ else:
 
 i0=i
 
-while i<500:
+while i<100:
     print('Time-step: ',i)
     if (i==2) or ((i==i0) and (i>2)):
         time_step*=10
     M.swn1s[:]=M.swns[:]
     M.swn1s[wells['ws_inj']]=1.0
     M.swns[wells['ws_inj']]=1.0
+
+    data_impress['swn1s']=data_impress['swns'].copy()
+    data_impress['swn1s'][wells['ws_inj']]=1.0
+    data_impress['swns'][wells['ws_inj']]=1.0
+
     np.save('flying/saturations.npy', np.append(M.swn1s[:],i))
     np.save('flying/pressures.npy', M.pressure[:].T[0])
     newton_iteration_ADM(M, time_step, wells)
-    if i in np.arange(0,500,20):
+    if i in np.arange(1,500,20):
         print_results()
     if i>500:
         import pdb; pdb.set_trace()

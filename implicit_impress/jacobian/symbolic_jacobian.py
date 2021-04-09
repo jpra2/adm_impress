@@ -36,3 +36,14 @@ class symbolic_J:
         self.J=J
         self.c_o=sym.diff(self.acum_o,Sw)
         self.c_w=sym.diff(self.acum_w,Sw)
+
+        self.c_o=(sym.lambdify((Dx,Dy,phi,Dt),self.c_o))
+        self.c_w=(sym.lambdify((Dx,Dy,phi,Dt),self.c_w))
+        self.acum_o = sym.lambdify((Dx,Dy,phi,Dt,Sw,Swn),self.acum_o)
+        self.acum_w = sym.lambdify((Dx,Dy,phi,Dt,Sw,Swn),self.acum_w)
+        self.J[0][0] = sym.lambdify((T,Sw),self.J[0][0])
+        self.J[0][1] = sym.lambdify((T,Sw, p_i, p_j),self.J[0][1])
+        self.J[1][0] = sym.lambdify((T,Sw),self.J[1][0])
+        self.J[1][1] = sym.lambdify((T,Sw, p_i, p_j),self.J[1][1])
+        self.F_o = sym.lambdify((T,Sw, p_i, p_j),self.F_o)
+        self.F_w = sym.lambdify((T,Sw, p_i, p_j),self.F_w)
