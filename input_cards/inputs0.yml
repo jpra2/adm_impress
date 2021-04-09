@@ -72,7 +72,7 @@ Wells:
     prescription: P
     type: Producer
     type_region: box
-    value: 1.0
+    value: 0.0
 
 monophasic_data:
   gama: 100.0

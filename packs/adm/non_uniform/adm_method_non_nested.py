@@ -168,9 +168,10 @@ class AdmNonNested(AdmMethod):
         saturation = self.data_impress['saturation']
         internal_faces = self.elements_lv0['internal_faces']
         v0 = self.elements_lv0['neig_internal_faces']
+        gids1=self.data_impress['GID_1'][v0]
         ds = saturation[v0]
         ds = np.absolute(ds[:,1] - ds[:,0])
-        inds = ds >= delta_sat_max
+        inds = (ds >= delta_sat_max) & ((gids1[:,0]==gids1[:,1]) | (saturation[v0].min(axis=1)<saturation[v0].min()+0.2))
         levels[v0[inds][:,0]] = 0
         levels[v0[inds][:,1]] = 0
         self.data_impress['LEVEL'] = levels.copy()
@@ -188,7 +189,7 @@ class AdmNonNested(AdmMethod):
         self.data_impress['LEVEL'] = levels.copy()
 
     def set_saturation_level_imposed_joined_coarse(self):
-        
+
         levels = self.data_impress['LEVEL'].copy()
         dual_flag = self.data_impress['DUAL_1'].copy()
         gid1 = self.data_impress['GID_1']
