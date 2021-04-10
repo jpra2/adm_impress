@@ -59,7 +59,6 @@ def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-5):
     converged=False
     count=0
     dt=time_step
-
     while not converged:
         adm_method.restart_levels()
         adm_method.set_level_wells_only()
@@ -116,6 +115,21 @@ def get_sat_averager(sats, data_impress):
                 sats[gv] = sats[gv].sum()/len(gv)
     return sats
 
+def newton_iteration_finescale(data_impress, time_step, wells, rel_tol=1e-5):
+    converged=False
+    count=0
+    dt=time_step
+    while not converged:
+        FIM=assembly(adjs, Ts, data_impress, dt, wells, F_Jacobian)
+        J=FIM.J
+        q=FIM.q
+        sol=-sp.linalg.spsolve(J, q)
+        n=int(len(q)/2)
+        data_impress['pressure']+=sol[0:n]
+        data_impress['swns']+=sol[n:]
+        converged=max(abs(sol[n:]))<rel_tol
+        count+=1
+        print(count,max(abs(sol[n:])))
 
 def newton_iteration_fs(M, time_step, rel_tol=1e-5):
     converged=False
@@ -128,10 +142,10 @@ def newton_iteration_fs(M, time_step, rel_tol=1e-5):
         sol=-sp.linalg.spsolve(J, q)
 
         n=int(len(q)/2)
-        M.pressure[:]+=np.array([sol[0:n]]).T
-        M.swns[:]+=np.array([sol[n:]]).T
-        M.swns[:][M.swns[:]>1.0]=1.0
-        M.swns[:][M.swns[:]<0.0]=0.0
+        # M.pressure[:]+=np.array([sol[0:n]]).T
+        # M.swns[:]+=np.array([sol[n:]]).T
+        # M.swns[:][M.swns[:]>1.0]=1.0
+        # M.swns[:][M.swns[:]<0.0]=0.0
 
         data_impress['pressure']+=sol[0:n]
         data_impress['swns'][data_impress['swns']>1]=1.0
@@ -213,6 +227,7 @@ i0=i
 data_impress['swn1s'][wells['ws_inj']]=1.0
 data_impress['swns'][wells['ws_inj']]=1.0
 data_impress['pressure'][wells['ws_p']]=wells['values_p']
+data_impress2=data_impress._data.copy()
 
 while i<501:
     print('Time-step: ',i)
@@ -223,6 +238,7 @@ while i<501:
     np.save('flying/saturations.npy', np.append(M.swn1s[:],i))
     np.save('flying/pressures.npy', M.pressure[:].T[0])
     newton_iteration_ADM(data_impress, time_step, wells)
+    newton_iteration_finescale(data_impress2, time_step, wells)
     if i//20 ==i/20:
         print_results()
     i+=1
