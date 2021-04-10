@@ -55,11 +55,11 @@ F_Jacobian = s_J()
 vec=np.zeros_like(M.faces.all)
 vec[M.faces.internal]=1
 
-def newton_iteration_ADM(M, time_step, wells, rel_tol=1e-5):
+def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-5):
     converged=False
     count=0
     dt=time_step
-    data_impress['pressure'][wells['ws_p']]=wells['values_p']
+
     while not converged:
         adm_method.restart_levels()
         adm_method.set_level_wells_only()
@@ -74,6 +74,7 @@ def newton_iteration_ADM(M, time_step, wells, rel_tol=1e-5):
         q=FIM.q
         sol=-P*ADM_solver(J, q, R, P)
         n=int(len(q)/2)
+
         data_impress['pressure']+=sol[0:n]
         data_impress['swns']+=sol[n:]
         data_impress['saturation']=data_impress['swns'].copy()
@@ -121,10 +122,6 @@ def newton_iteration_fs(M, time_step, rel_tol=1e-5):
     count=0
 
     while not converged:
-        # M.swns[:][M.swns[:]>1.0]=1.0
-        # M.swns[:][M.swns[:]<0.0]=0.0
-        # M.swn1s[:][M.swn1s[:]>1.0]=1.0
-        # M.swn1s[:][M.swn1s[:]<0.0]=0.0
         FIM=assembly(M, time_step)
         J=FIM.J
         q=FIM.q
@@ -162,17 +159,17 @@ def get_R_and_P(OR_ADM, OP_ADM):
     R=sp.csc_matrix((dR, (lR, cR)), shape=(2*n_ADM, 2*n_f))
     P=sp.csc_matrix((dP, (lP, cP)), shape=(2*n_f, 2*n_ADM))
     return R, P
-
+@profile
 def print_results():
-    data_impress['pressure']=M.pressure[:]
-    data_impress['swns']=M.swns[:]
-    data_impress['swn1s']=M.swn1s[:]
+    M.pressure[:]=data_impress['pressure']
+    M.swns[:]=data_impress['swns']
+    M.swn1s[:]=data_impress['swn1s']
     meshset_volumes=M.core.mb.create_meshset()
     M.core.mb.add_entities(meshset_volumes,np.array(M.core.all_volumes))
     data_impress.update_variables_to_mesh()
     M.core.mb.write_file('results/biphasic/FIM_'+str(i)+'.vtk', [meshset_volumes])
     int_faces=M.faces.internal
-    adjs=M.faces.bridge_adjacencies(int_faces,2,3)
+    # adjs=M.faces.bridge_adjacencies(int_faces,2,3)
     ad0=adjs[:,0]
     ad1=adjs[:,1]
     meshset_plot_faces=M.core.mb.create_meshset()
@@ -213,25 +210,19 @@ else:
     print('Started a new simulation as ordened!')
 
 i0=i
+data_impress['swn1s'][wells['ws_inj']]=1.0
+data_impress['swns'][wells['ws_inj']]=1.0
+data_impress['pressure'][wells['ws_p']]=wells['values_p']
 
-while i<100:
+while i<501:
     print('Time-step: ',i)
     if (i==2) or ((i==i0) and (i>2)):
-        time_step*=10
-    M.swn1s[:]=M.swns[:]
-    M.swn1s[wells['ws_inj']]=1.0
-    M.swns[wells['ws_inj']]=1.0
+        time_step*=5
 
     data_impress['swn1s']=data_impress['swns'].copy()
-    data_impress['swn1s'][wells['ws_inj']]=1.0
-    data_impress['swns'][wells['ws_inj']]=1.0
-
     np.save('flying/saturations.npy', np.append(M.swn1s[:],i))
     np.save('flying/pressures.npy', M.pressure[:].T[0])
-    newton_iteration_ADM(M, time_step, wells)
-    if i in np.arange(1,500,20):
+    newton_iteration_ADM(data_impress, time_step, wells)
+    if i//20 ==i/20:
         print_results()
-    if i>500:
-        import pdb; pdb.set_trace()
-        print('to continue subract "i (i-=NUMBER)"')
     i+=1
