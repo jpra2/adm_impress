@@ -26,9 +26,10 @@ class assembly():
     def apply_BC(self,lines, cols, data, q):
         n=int(len(q)/2)
         wells=self.wells
+
         q[wells['ws_p']]=0
         q[wells['ws_inj']+n]=0
-        q[n+wells['ws_q']]-=wells['values_q']
+        q[wells['ws_q']]=-wells['values_q']
         for l in wells['ws_p']:
             data[lines==l]=0
             lines=np.append(lines,l)

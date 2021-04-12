@@ -79,8 +79,8 @@ monophasic_data:
   mi: 1.0
 
 biphasic_data:
-  Sor: 0.2
-  Swc: 0.2
+  Sor: 0.0
+  Swc: 0.0
   cfl: 0.9
   gama_o: 1000.0
   gama_w: 1000.0
