@@ -93,6 +93,7 @@ class assembly():
         id_up[up0]=ids0[up0]
         id_up[up1]=ids1[up1]
         Ts=self.Ts
+
         J00=self.F_Jacobian.J[0][0](Ts,swf)
         # J00=float(self.F_Jacobian[0][0].subs({T:1, Sw:swf}))
         J01=self.F_Jacobian.J[0][1](Ts,swf, pf0, pf1)
@@ -101,6 +102,7 @@ class assembly():
         # J10=float(self.F_Jacobian[1][0].subs({T:1, Sw:swf}))
         J11=self.F_Jacobian.J[1][1](Ts,swf, pf0, pf1)
         # J11=float(self.F_Jacobian[1][1].subs({T:1, Sw:swf, p_i:pv, p_j:pj}))
+        print(abs(J00).sum(),abs(J01).sum(),abs(J10).sum(),abs(J11).sum(),'saqui')
         linesq.append(ID_vol)
         dataq.append(-self.F_Jacobian.F_o(Ts,swf, pf0, pf1))
         linesq.append(id_j)
