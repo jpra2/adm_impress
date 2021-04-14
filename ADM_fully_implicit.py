@@ -7,8 +7,6 @@ from packs.biphasic.biphasic_ms.biphasic_multiscale import BiphasicTpfaMultiscal
 from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 from implicit_impress.jacobian.impress_assembly import assembly
-import matplotlib.pyplot as plt
-from run_test_cases_mono import format_plot
 import scipy.sparse as sp
 import numpy as np
 import time
@@ -57,14 +55,10 @@ F_Jacobian = s_J()
 vec=np.zeros_like(M.faces.all)
 vec[M.faces.internal]=1
 
-def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-10):
-    print(data_impress['swns'].sum(),'admsum')
+def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-5):
     converged=False
     count=0
     dt=time_step
-    data_impress['swn1s']=data_impress['swns'].copy()
-    p=data_impress['pressure'].copy()
-    s=data_impress['swns'].copy()
     while not converged:
         adm_method.restart_levels()
         adm_method.set_level_wells_only()
@@ -80,22 +74,19 @@ def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-10):
         sol=-P*ADM_solver(J, q, R, P)
         n=int(len(q)/2)
 
-        p+=sol[0:n]
-        s+=sol[n:]
-        print(s.sum(),'sums')
+        data_impress['pressure']+=sol[0:n]
+        data_impress['swns']+=sol[n:]
         data_impress['saturation']=data_impress['swns'].copy()
-
         converged=max(abs(sol[n:]))<rel_tol
         count+=1
         if count>10:
             pass
         print(count,max(abs(sol[n:])))
-    sats=s.copy()
+    sats=data_impress['swns']
     sats=get_sat_averager(sats,data_impress)
     # sats=OR_ADM.T*(OR_ADM*sats/np.array(OR_ADM.sum(axis=1)).T[0])
     data_impress['swns']=sats.copy()
     data_impress['saturation']=sats.copy()
-    return data_impress['pressure'], data_impress['swns']
 
 def get_sat_averager(sats, data_impress):
     gids0=data_impress['GID_0']
@@ -125,11 +116,9 @@ def get_sat_averager(sats, data_impress):
     return sats
 
 def newton_iteration_finescale(data_impress, time_step, wells, rel_tol=1e-5):
-    print(data_impress['swns'].sum(),'fssum')
     converged=False
-    count=0
+    count=0 
     dt=time_step
-    data_impress['swn1s']=data_impress['swns'].copy()
     while not converged:
         FIM=assembly(adjs, Ts, data_impress, dt, wells, F_Jacobian)
         J=FIM.J
@@ -141,7 +130,6 @@ def newton_iteration_finescale(data_impress, time_step, wells, rel_tol=1e-5):
         converged=max(abs(sol[n:]))<rel_tol
         count+=1
         print(count,max(abs(sol[n:])))
-    return data_impress['pressure'], data_impress['swns']
 
 def newton_iteration_fs(M, time_step, rel_tol=1e-5):
     converged=False
@@ -186,14 +174,14 @@ def get_R_and_P(OR_ADM, OP_ADM):
     P=sp.csc_matrix((dP, (lP, cP)), shape=(2*n_f, 2*n_ADM))
     return R, P
 @profile
-def print_results(data_impress,name):
+def print_results():
     M.pressure[:]=data_impress['pressure']
     M.swns[:]=data_impress['swns']
     M.swn1s[:]=data_impress['swn1s']
     meshset_volumes=M.core.mb.create_meshset()
     M.core.mb.add_entities(meshset_volumes,np.array(M.core.all_volumes))
     data_impress.update_variables_to_mesh()
-    M.core.mb.write_file('results/biphasic_FIM/'+name+str(i)+'.vtk', [meshset_volumes])
+    M.core.mb.write_file('results/biphasic/FIM_'+str(i)+'.vtk', [meshset_volumes])
     int_faces=M.faces.internal
     # adjs=M.faces.bridge_adjacencies(int_faces,2,3)
     ad0=adjs[:,0]
@@ -206,7 +194,7 @@ def print_results(data_impress,name):
     facs_plot=np.concatenate([bounds_coarse,lvs0])
     M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
     data_impress.update_variables_to_mesh()
-    M.core.mb.write_file('results/biphasic_FIM/'+name+'f_'+str(i)+'.vtk', [meshset_plot_faces])
+    M.core.mb.write_file('results/biphasic/FIMf_'+str(i)+'.vtk', [meshset_plot_faces])
     print('File saved at time-step', i)
 
 def ADM_solver(J, q, R, P):
@@ -214,7 +202,6 @@ def ADM_solver(J, q, R, P):
     return sol
 
 delta_sat_max=0.1
-# time_step=0.001*(0.3*len(data_impress['pressure']))
 time_step=0.0001
 
 
@@ -240,64 +227,18 @@ i0=i
 data_impress['swn1s'][wells['ws_inj']]=1.0
 data_impress['swns'][wells['ws_inj']]=1.0
 data_impress['pressure'][wells['ws_p']]=wells['values_p']
-data_impress_ADM=data_impress._data.copy()
-data_impress_fs=data_impress_ADM.copy()
-del data_impress
-ep_l2=[0]
-ep_linf=[0]
-es_l2=[0]
-es_linf=[0]
-vpi=[0]
-pva=[0]
-max_vpi=0.001
+data_impress2=data_impress._data.copy()
 
-while max(vpi)<max_vpi:
-    print('Time-step {}, vpi/vpi_max {}/{}'.format(i,max(vpi),max_vpi) )
+while i<501:
+    print('Time-step: ',i)
     if (i==2) or ((i==i0) and (i>2)):
         time_step*=5
 
-    # np.save('flying/saturations.npy', np.append(M.swn1s[:],i))
-    # np.save('flying/pressures.npy', M.pressure[:].T[0])
-    print(data_impress_fs['swns'].sum(),'soksk')
-    data_impress_ADM['pressure'], data_impress_ADM['swns'] = newton_iteration_ADM(data_impress_ADM, time_step, wells)
-    print(data_impress_fs['swns'].sum(),'soksk2')
-    # SADM=data_impress_ADM['swns']
-    # Sfs=data_impress_fs['swns']
-    # print(SADM.sum(),Sfs.sum(),'sum_sats')
-    data_impress_fs['pressure'], data_impress_fs['swns'] = newton_iteration_finescale(data_impress_fs, time_step, wells)
-
-    # PADM=data_impress_ADM['pressure']
-    # Pfs=data_impress_fs['pressure']
-    SADM=data_impress_ADM['swns']
-    Sfs=data_impress_fs['swns']
-    print(SADM.sum(),Sfs.sum(),'sum_sats')
-    # vpi.append(data_impress_ADM['swns'].sum()*0.3/len(data_impress_ADM['swns']))
-    # ep_l2.append(np.linalg.norm(PADM-Pfs)/np.linalg.norm(Pfs))
-    # ep_linf.append(abs(PADM-Pfs).max()/abs(Pfs).max())
-    # es_l2.append(np.linalg.norm(SADM-Sfs)/np.linalg.norm(Sfs))
-    # es_linf.append(abs(SADM-Sfs).max()/abs(Sfs).max())
-    # pva.append((data_impress_ADM['LEVEL_ID_1'].max()+1)/len(PADM))
-
-    # if i//500 ==i/500:
-    #     print_results(data_impress, 'FIM_ADM_')
-    #     data_impress['pressure']=data_impress2['pressure'].copy()
-    #     data_impress['swns']=data_impress2['swns'].copy()
-    #     data_impress['swn1s']=data_impress2['swn1s'].copy()
-    #     print_results(data_impress, 'FIM_fs_')
-    # i+=1
-
-# ab=vpi
-#
-# plot_vars=[[        ab,        ab,        ab,         ab,         ab],     # Abcissas
-#            [     ep_l2,   ep_linf,     es_l2,    es_linf,        pva],     # Ordenadas
-#            [ 'lin_lin', 'lin_lin', 'lin_lin',  'lin_lin',  'lin_lin'],
-#            [   'ep_l2', 'ep_linf',   'es_l2',  'es_linf',      'pva']]     # Escalas dos Eixos
-# for i in range(len(plot_vars[0])):
-#     try:
-#         plt.close('all')
-#         plt.plot(plot_vars[0][i],plot_vars[1][i])
-#         format_plot(plot_vars[2][i],plot_vars[0][i],plot_vars[1][i])
-#         plt.savefig('results/biphasic_FIM/'+plot_vars[3][i]+'.svg', bbox_inches='tight')
-#     except:
-        # import pdb; pdb.set_trace()
-import pdb; pdb.set_trace()
+    data_impress['swn1s']=data_impress['swns'].copy()
+    np.save('flying/saturations.npy', np.append(M.swn1s[:],i))
+    np.save('flying/pressures.npy', M.pressure[:].T[0])
+    newton_iteration_ADM(data_impress, time_step, wells)
+    newton_iteration_finescale(data_impress2, time_step, wells)
+    if i//20 ==i/20:
+        print_results()
+    i+=1
