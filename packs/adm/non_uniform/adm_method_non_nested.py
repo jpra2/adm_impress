@@ -170,8 +170,11 @@ class AdmNonNested(AdmMethod):
         v0 = self.elements_lv0['neig_internal_faces']
         gids1=self.data_impress['GID_1'][v0]
         ds = saturation[v0]
+        # ds = ds.sum(axis=1)
         ds = np.absolute(ds[:,1] - ds[:,0])
-        inds = (ds >= delta_sat_max) & ((gids1[:,0]==gids1[:,1]) | (saturation[v0].min(axis=1)<saturation[v0].min()+0.2))
+
+        inds = (ds >= delta_sat_max) & (saturation[v0].min(axis=1)<min(saturation[v0].min(),0)+0.3)
+        # inds = ds >= delta_sat_max
         levels[v0[inds][:,0]] = 0
         levels[v0[inds][:,1]] = 0
         self.data_impress['LEVEL'] = levels.copy()
