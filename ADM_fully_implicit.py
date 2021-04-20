@@ -83,7 +83,7 @@ def get_sat_averager(sats, data_impress):
                 sats[gv] = sats[gv].sum()/len(gv)
     return sats
 
-def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-5):
+def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-3):
     converged=False
     count=0
     dt=time_step
@@ -124,7 +124,7 @@ def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-5):
         print(max(abs(sol[n:][not_prod])),max(abs(sol)),'ADM')
 
         count+=1
-        if count>10:
+        if count>20:
             print('excedded maximum number of iterations ADM')
             import pdb; pdb.set_trace()
             break
@@ -139,7 +139,7 @@ def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-5):
     data_impress['swns'][sats<0]=0.0
 
 
-def newton_iteration_finescale(data_impress, time_step, wells, rel_tol=1e-5):
+def newton_iteration_finescale(data_impress, time_step, wells, rel_tol=1e-3):
     converged=False
     count=0
     dt=time_step
@@ -162,7 +162,7 @@ def newton_iteration_finescale(data_impress, time_step, wells, rel_tol=1e-5):
         converged=max(abs(sol[n:][not_prod]))<rel_tol
         print(max(abs(sol[n:][not_prod])),max(abs(sol)),'fs')
         count+=1
-        if count>10:
+        if count>20:
             print('excedded maximum number of iterations finescale')
             import pdb; pdb.set_trace()
             break
@@ -275,9 +275,9 @@ time_step=0.1
 # time_step=1.0
 count_save=0
 wells['viz_prod']=np.concatenate(elements_lv0['volumes_face_volumes'][wells['ws_prod']])
-delta_sat_max=0.05
-max_vpi=0.05
-vpis_for_save=np.arange(0,0.5,0.01)
+delta_sat_max=0.03
+max_vpi=0.9
+vpis_for_save=np.arange(0,0.91,0.1)
 
 ep_l2=[]
 ep_linf=[]
@@ -292,12 +292,16 @@ while (i==1) or (max(vpi)<max_vpi):
         time_step*=2
     if i==10:
         time_step*=2.5
-
+    if i==20:
+        time_step*=2
+    if i==100:
+        time_step*=4
     newton_iteration_finescale(data_impress_fs, time_step, wells)
 
     newton_iteration_ADM(data_impress, time_step, wells)
 
-    vpi_n-=wells['values_q'].sum()*time_step/(len(data_impress['pressure'])*0.3*1000)
+    # vpi_n-=wells['values_q'].sum()*time_step/(len(data_impress['pressure'])*0.3)
+    vpi_n=(data_impress['swns'].sum()+1)/(len(data_impress['pressure']))
     padm=data_impress['pressure']
     pf=data_impress_fs['pressure']
     sadm=data_impress['swns']

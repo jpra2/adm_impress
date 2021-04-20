@@ -173,7 +173,7 @@ class AdmNonNested(AdmMethod):
         # ds = ds.sum(axis=1)
         ds = np.absolute(ds[:,1] - ds[:,0])
 
-        inds = (ds >= delta_sat_max) & (saturation[v0].min(axis=1)<min(saturation[v0].min(),0)+0.3)
+        inds = (ds >= delta_sat_max) & (saturation[v0].min(axis=1)<min(saturation[v0].min(),0)+0.5)
         # inds = ds >= delta_sat_max
         levels[v0[inds][:,0]] = 0
         levels[v0[inds][:,1]] = 0
