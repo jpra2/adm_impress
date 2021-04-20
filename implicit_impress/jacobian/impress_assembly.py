@@ -29,7 +29,7 @@ class assembly():
 
         q[wells['ws_p']]=0
         q[wells['ws_inj']+n]=0
-        q[wells['ws_q']]=-wells['values_q']
+        # q[wells['ws_q']]=-wells['values_q']
         for l in wells['ws_p']:
             data[lines==l]=0
             lines=np.append(lines,l)
