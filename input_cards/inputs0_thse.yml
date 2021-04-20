@@ -59,10 +59,10 @@ Wells:
     p0: [53.0, 0.0, 168.0]
     p1: [54.0, 1.0, 170.0]
 
-    prescription: P
+    prescription: Q
     type: Injector
     type_region: box
-    value: 1.0
+    value: 100.0
 
 
   P2:
@@ -88,7 +88,7 @@ biphasic_data:
   krw0: 1.0
   loop_maximo: null
   loops_para_gravar: 2
-  mi_o: 0.05
+  mi_o: 0.01
   mi_w: 0.01
   n_o: 2.0
   n_w: 2.0

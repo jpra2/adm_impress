@@ -16,7 +16,7 @@ class assembly():
         self.Dz=1.0
         self.F_Jacobian=F_Jacobian
         self.dt=timestep
-        self.pressure=data_impress['pressure']
+        self.pressure=data_impress['pressure'].copy()
         self.swns=data_impress['swns'].copy()
         self.swn1s=data_impress['swn1s'].copy()
         self.adjs = adjs
