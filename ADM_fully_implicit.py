@@ -56,61 +56,6 @@ Ts=M.k_harm[M.faces.internal].T[0]
 F_Jacobian = s_J()
 vec=np.zeros_like(M.faces.all)
 vec[M.faces.internal]=1
-
-def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-5):
-    converged=False
-    count=0
-    dt=time_step
-    data_impress['swn1s']=data_impress['swns'].copy()
-    adm_method.data_impress['saturation']=data_impress['swns'].copy()
-    all_ids=data_impress['GID_0']
-    not_prod=np.setdiff1d(all_ids,wells['ws_prod'])
-    while not converged:
-        adm_method.restart_levels()
-        adm_method.set_level_wells_only()
-        # adm_method.set_level_wells_3()
-        adm_method.set_saturation_level_simple(delta_sat_max)
-        adm_method.set_adm_mesh_non_nested(gids_0[adm_method.data_impress['LEVEL']==0])
-        adm_method.organize_ops_adm(mlo, 1)
-        OP_ADM = adm_method._data['adm_prolongation_level_1']
-        OR_ADM = adm_method._data['adm_restriction_level_1']
-        R, P = get_R_and_P(OR_ADM, OP_ADM)
-        if count==0:
-            print(OP_ADM.shape)
-        FIM=assembly(adjs, Ts, data_impress, dt, wells, F_Jacobian)
-        J=FIM.J
-        q=FIM.q
-        sol=ADM_solver(J, q, R, P)
-        if count==0 and data_impress['swns'].sum()==1:
-            sol[data_impress['LEVEL_ID_1'][wells['ws_p']]]=-wells['values_p'].copy()
-        sol=P*sol
-        if count==0 and data_impress['swns'].sum()==1:
-            sol[wells['ws_p']]=0
-        print(count,abs(sol).max())
-        n=int(len(q)/2)
-
-        data_impress['pressure']-=sol[0:n]
-        data_impress['swns']-=sol[n:]
-        # print_results(data_impress,'teste',0)
-        # import pdb; pdb.set_trace()
-        # data_impress['saturation']=abs(data_impress['swns']-data_impress['swn1s'])
-        adm_method.data_impress['saturation']=data_impress['swns'].copy()
-
-        converged=max(abs(sol[n:][not_prod]))<rel_tol
-        # converged=max(abs(sol[n:]))<rel_tol
-        count+=1
-        if count>10:
-            pass
-    print(count)
-    data_impress['swns'][wells['ws_prod']]=data_impress['swns'][wells['viz_prod']].sum()/len(wells['viz_prod'])
-    sats=data_impress['swns'].copy()
-    sats=get_sat_averager(sats,data_impress)
-    # sats=OR_ADM.T*(OR_ADM*sats/np.array(OR_ADM.sum(axis=1)).T[0])
-    data_impress['swns']=sats.copy()
-    data_impress['swns'][sats>1]=1.0
-    data_impress['swns'][sats<0]=0.0
-
-
 def get_sat_averager(sats, data_impress):
     gids0=data_impress['GID_0']
     gids1=data_impress['GID_1']
@@ -138,15 +83,72 @@ def get_sat_averager(sats, data_impress):
                 sats[gv] = sats[gv].sum()/len(gv)
     return sats
 
+def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-5):
+    converged=False
+    count=0
+    dt=time_step
+    data_impress['swn1s']=data_impress['swns'].copy()
+    adm_method.data_impress['saturation']=data_impress['swns'].copy()
+    all_ids=data_impress['GID_0']
+    not_prod=np.setdiff1d(all_ids,wells['all_wells'])
+    while not converged:
+        data_impress['swns'][wells['ws_inj']]=1
+        adm_method.restart_levels()
+        adm_method.set_level_wells_only()
+        # adm_method.set_level_wells_3()
+        adm_method.set_saturation_level_simple(delta_sat_max)
+        adm_method.set_adm_mesh_non_nested(gids_0[adm_method.data_impress['LEVEL']==0])
+        adm_method.organize_ops_adm(mlo, 1)
+        OP_ADM = adm_method._data['adm_prolongation_level_1']
+        OR_ADM = adm_method._data['adm_restriction_level_1']
+        R, P = get_R_and_P(OR_ADM, OP_ADM)
+        if count==0:
+            print(OP_ADM.shape)
+        FIM=assembly(adjs, Ts, data_impress, dt, wells, F_Jacobian)
+        J=FIM.J
+        q=FIM.q
+        sol=ADM_solver(J, q, R, P)
+        if count==0 and data_impress['swns'].sum()==1:
+            sol[data_impress['LEVEL_ID_1'][wells['ws_p']]]=-wells['values_p'].copy()
+        sol=P*sol
+        if count==0 and data_impress['swns'].sum()==1:
+            sol[wells['ws_p']]=0
+
+        n=int(len(q)/2)
+
+        data_impress['pressure']-=sol[0:n]
+        data_impress['swns']-=sol[n:]
+        data_impress['swns'][wells['ws_inj']]=1
+        adm_method.data_impress['saturation']=data_impress['swns'].copy()
+
+        converged=max(abs(sol[n:][not_prod]))<rel_tol
+        print(max(abs(sol[n:][not_prod])),max(abs(sol)),'ADM')
+
+        count+=1
+        if count>2:
+            print('exedded maximum number of iterations')
+            break
+
+    data_impress['swns'][wells['ws_prod']]=data_impress['swns'][wells['viz_prod']].sum()/len(wells['viz_prod'])
+    sats=data_impress['swns'].copy()
+    sats=get_sat_averager(sats,data_impress)
+    # sats=OR_ADM.T*(OR_ADM*sats/np.array(OR_ADM.sum(axis=1)).T[0])
+    data_impress['swns']=sats.copy()
+    data_impress['swns'][sats>1]=1.0
+    data_impress['swns'][sats<0]=0.0
+
 def newton_iteration_finescale(data_impress, time_step, wells, rel_tol=1e-5):
     converged=False
     count=0
     dt=time_step
     data_impress['swn1s']=data_impress['swns'].copy()
     all_ids=data_impress['GID_0']
-    not_prod=np.setdiff1d(all_ids,wells['ws_prod'])
+    not_prod=np.setdiff1d(all_ids,wells['all_wells'])
     while not converged:
+        data_impress['swns'][wells['ws_inj']]=1
+
         FIM=assembly(adjs, Ts, data_impress, dt, wells, F_Jacobian)
+
         J=FIM.J
         q=FIM.q
         sol=-sp.linalg.spsolve(J, q)
@@ -154,37 +156,14 @@ def newton_iteration_finescale(data_impress, time_step, wells, rel_tol=1e-5):
         data_impress['pressure']+=sol[0:n]
 
         data_impress['swns']+=sol[n:]
+        data_impress['swns'][wells['ws_inj']]=1
         converged=max(abs(sol[n:][not_prod]))<rel_tol
+        print(max(abs(sol[n:][not_prod])),max(abs(sol)),'fs')
         count+=1
+
     data_impress['swns'][wells['ws_prod']]=data_impress['swns'][wells['viz_prod']].sum()/len(wells['viz_prod'])
-    print(count,'fs')
 
-def newton_iteration_fs(M, time_step, rel_tol=1e-5):
-    converged=False
-    count=0
 
-    while not converged:
-        FIM=assembly(M, time_step)
-        J=FIM.J
-        q=FIM.q
-        sol=-sp.linalg.spsolve(J, q)
-
-        n=int(len(q)/2)
-        # M.pressure[:]+=np.array([sol[0:n]]).T
-        # M.swns[:]+=np.array([sol[n:]]).T
-        # M.swns[:][M.swns[:]>1.0]=1.0
-        # M.swns[:][M.swns[:]<0.0]=0.0
-
-        data_impress['pressure']+=sol[0:n]
-        data_impress['swns'][data_impress['swns']>1]=1.0
-        data_impress['swns'][data_impress['swns']<0]=0.0
-        # data_impress['saturation']=M.swns[:].T[0]
-
-        converged=max(abs(sol[n:]))<rel_tol
-        count+=1
-        print(count,max(abs(sol[n:])))
-
-    print(count,max(abs(sol[n:])))
 
 def get_R_and_P(OR_ADM, OP_ADM):
     lp, cp, dp = sp.find(OP_ADM)
@@ -282,10 +261,14 @@ def run_simulation(data_impress, simulation):
     p=[]
     s=[]
     i=1
-    time_step=0.08
-    # time_step=0.0001
+
+    # time_step=0.08
+    # time_step=0.1
+    time_step=1
     count_save=0
+
     while (i==1) or (max(vpi)<max_vpi):
+        wells['count']=i-1
         if i==5:
             time_step*=2
         if i==10:
@@ -313,8 +296,9 @@ wells['viz_prod']=np.concatenate(elements_lv0['volumes_face_volumes'][wells['ws_
 delta_sat_max=0.05
 max_vpi=0.15
 vpis_for_save=np.arange(0,0.16,0.01)
-p_ADM, s_ADM, vpi_ADM, pva_ADM = run_simulation(data_impress, 'ADM')
 p_fs, s_fs, vpi_fs, _ = run_simulation(data_impress, 'finescale')
+p_ADM, s_ADM, vpi_ADM, pva_ADM = run_simulation(data_impress, 'ADM')
+
 
 try:
     inds=np.arange(min(len(vpi_fs),len(vpi_ADM)))

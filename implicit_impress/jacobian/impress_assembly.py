@@ -29,13 +29,14 @@ class assembly():
 
         q[wells['ws_p']]=0
         q[wells['ws_inj']+n]=0
-        # q[wells['ws_q']]=-wells['values_q']
+        if wells['count']==0:
+            q[wells['ws_q']]+=wells['values_q']
         for l in wells['ws_p']:
             data[lines==l]=0
             lines=np.append(lines,l)
             cols=np.append(cols,l)
             data=np.append(data,1)
-        for l in wells['ws_inj']:
+        for l in np.setdiff1d(wells['ws_inj'],wells['ws_q']):
             data[lines==l+n]=0
             lines=np.append(lines,l+n)
             cols=np.append(cols,l+n)
