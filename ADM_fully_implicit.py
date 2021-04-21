@@ -94,8 +94,8 @@ def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-3):
     while not converged:
         data_impress['swns'][wells['ws_inj']]=1
         adm_method.restart_levels()
-        adm_method.set_level_wells_only()
-        # adm_method.set_level_wells_3()
+        # adm_method.set_level_wells_only()
+        adm_method.set_level_wells_3()
         adm_method.set_saturation_level_simple(delta_sat_max)
         adm_method.set_adm_mesh_non_nested(gids_0[adm_method.data_impress['LEVEL']==0])
         adm_method.organize_ops_adm(mlo, 1)
@@ -126,7 +126,8 @@ def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-3):
         count+=1
         if count>20:
             print('excedded maximum number of iterations ADM')
-            import pdb; pdb.set_trace()
+            return False, count
+            # import pdb; pdb.set_trace()
             break
 
 
@@ -137,7 +138,7 @@ def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-3):
     data_impress['swns']=sats.copy()
     data_impress['swns'][sats>1]=1.0
     data_impress['swns'][sats<0]=0.0
-
+    return True, count
 
 def newton_iteration_finescale(data_impress, time_step, wells, rel_tol=1e-3):
     converged=False
@@ -164,11 +165,11 @@ def newton_iteration_finescale(data_impress, time_step, wells, rel_tol=1e-3):
         count+=1
         if count>20:
             print('excedded maximum number of iterations finescale')
-            import pdb; pdb.set_trace()
-            break
+            return False, count
+
 
     data_impress['swns'][wells['ws_prod']]=data_impress['swns'][wells['viz_prod']].sum()/len(wells['viz_prod'])
-
+    return True, count
 
 
 def get_R_and_P(OR_ADM, OP_ADM):
@@ -271,13 +272,13 @@ p=[]
 s=[]
 i=1
 # time_step=0.08
-time_step=0.1
+time_step=0.0005
 # time_step=1.0
 count_save=0
 wells['viz_prod']=np.concatenate(elements_lv0['volumes_face_volumes'][wells['ws_prod']])
 delta_sat_max=0.03
-max_vpi=0.9
-vpis_for_save=np.arange(0,0.91,0.1)
+max_vpi=0.8
+vpis_for_save=np.arange(0,0.91,0.01)
 
 ep_l2=[]
 ep_linf=[]
@@ -294,11 +295,26 @@ while (i==1) or (max(vpi)<max_vpi):
         time_step*=2.5
     if i==20:
         time_step*=2
-    if i==100:
-        time_step*=4
-    newton_iteration_finescale(data_impress_fs, time_step, wells)
 
-    newton_iteration_ADM(data_impress, time_step, wells)
+    converged=False
+    while not converged:
+        p_adm_ant=data_impress['pressure'].copy()
+        s_adm_ant=data_impress['swns'].copy()
+        p_fs_ant=data_impress_fs['pressure'].copy()
+        s_fs_ant=data_impress_fs['swns'].copy()
+        adm_conv, fs_iters=newton_iteration_finescale(data_impress_fs, time_step, wells)
+        fs_conv, adm_iters=newton_iteration_ADM(data_impress, time_step, wells)
+        converged= adm_conv & fs_conv
+        if not converged:
+            print('reducing time-step from {} to {}'.format(time_step,time_step/1.5))
+            time_step/=1.5
+            data_impress['pressure']=p_adm_ant.copy()
+            data_impress['swns']=s_adm_ant.copy()
+            data_impress['pressure']=p_fs_ant.copy()
+            data_impress['swns']=s_fs_ant.copy()
+        elif max(fs_iters,adm_iters)<4:
+            print('increasing time-step from {} to {}'.format(time_step,1.5*time_step))
+            time_step*=1.5
 
     # vpi_n-=wells['values_q'].sum()*time_step/(len(data_impress['pressure'])*0.3)
     vpi_n=(data_impress['swns'].sum()+1)/(len(data_impress['pressure']))
@@ -315,7 +331,7 @@ while (i==1) or (max(vpi)<max_vpi):
     pva_ADM.append((data_impress['LEVEL_ID_1'].max()+1)/len(data_impress_ADM['swns']))
     # print('simulation: {}, time-step: {}, vpi: {}'.format(simulation, i, vpi_n))
     print(vpi_n,i,'volume poroso injetado e iteração')
-    if (count_save<len(vpis_for_save)-1) and (vpi_n>vpis_for_save[count_save]):
+    if (count_save<len(vpis_for_save)) and (vpi_n>vpis_for_save[count_save]):
         print_results(data_impress,'FIM_'+'ADM'+'_',count_save)
         print_results(data_impress_fs,'FIM_'+'finescale'+'_',count_save)
         count_save+=1

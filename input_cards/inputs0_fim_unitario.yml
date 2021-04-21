@@ -1,7 +1,7 @@
 # mesh_name: mesh/45x45x45.msh
 # mesh_name: mesh/9x9x9.msh
 # mesh_name: mesh/isotropic/100x100x1m.msh
-mesh_name: mesh/54x216x1_L_1_unit.h5m
+mesh_name: mesh/54x216x1_L_85_unit.h5m
 # mesh_name: mesh/isotropic/21x21x1.msh
 n_test: 0
 state: 0
@@ -56,8 +56,8 @@ Saturation:
 
 Wells:
   P1:
-    p0: [53.0, 0.0, 0.0]
-    p1: [54.0, 1.0, 2.0]
+    p0: [53.0, 0.0, 168.0]
+    p1: [54.0, 1.0, 170.0]
 
     prescription: P
     type: Injector
@@ -66,8 +66,8 @@ Wells:
 
 
   P2:
-    p0: [0.0, 215.0, 0.0]
-    p1: [1.0, 216.0, 2.0]
+    p0: [0.0, 215.0, 168.0]
+    p1: [1.0, 216.0, 170.0]
 
     prescription: P
     type: Producer
