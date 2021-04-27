@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import shutil
 import matplotlib
 from matplotlib import ticker
+from mpl_toolkits.mplot3d import Axes3D
 
 
 
@@ -30,8 +31,8 @@ def run_test_cases():
 
     crs=[[3, 3, 1], [5, 5, 1], [7, 7, 1], [9,9,1]]
     np.save('flying/all_crs.npy',np.array(crs))
-    beta_lim_dual_values=     [  100.0,  500.0, 1000.0, 1500.0, 2000.0,10000.0]
-    neta_lim_dual_values=     [    2.0,    2.0,    2.0,    2.0,    2.0,    2.0]
+    beta_lim_dual_values=     [ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
+    neta_lim_dual_values=     [    0.1,    0.3,    0.5,    0.7,    1.0,    2.0]
     neta_lim_finescale_values=[ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
     type_of_refinement_values=[  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
     phiK_raz_lim_values=      [ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
@@ -84,7 +85,7 @@ def organize_results():
 def print_results(all_cases):
     units={'vpi':'PVI [%]','wor':'wor []','t_comp':'comp_time [s]','delta_t':'time-step []',
         'n1_adm':'Na-adm/Nf[%]','el2':r'$||e_p||_2$'+' [%]','elinf':r'$||e_p||_\infty$'+' [%]', 'es_L2':'es_L2 [%]',
-        'es_Linf':'es_Linf [%]', 'vpis_for_save':'PVI [%]','coupl':'Percentage of enrichment [%]',
+        'es_Linf':'es_Linf [%]', 'vpis_for_save':'PVI [%]','coupl':'Recalculated basis functions [%]',
         'refinement':'Percentage at fine-scale [%]', 'ep_haji_L2':'ep_rel_ms_L2[]',
         'ep_haji_Linf':'ep_rel_ms_Linf[]','er_L2':r'$||e_r||_2$'+' []','er_Linf':r'$||e_r||_\infty$'+' []',
         'ev_L2':r'$||e_v||_2$'+' [%]','ev_Linf':r'$||e_v||_\infty$'+' [%]'}
@@ -250,10 +251,6 @@ def print_results(all_cases):
                     ordenada=ordenada[ind_sort]
                 except:
                     ordenada=np.repeat(ordenada[0],len(ind_sort))
-
-                # plt.xscale('log')
-                # if var not in linear_yaxis:
-                #     plt.yscale('log')
 
                 abc=abcissa[abcissa!=30]
                 ord=ordenada[abcissa!=30]
@@ -859,20 +856,21 @@ def print_results_single(all_cases):
     single_vars = collect_single_phase_data(all_cases)
     ab='neta'
 
-    plot_vars=[[        ab,        ab,        ab,         ab],     # Abcissas
-               [     'el2',   'elinf',   'coupl',   'n1_adm'],     # Ordenadas
-               [ 'lin_lin', 'lin_log', 'lin_lin', 'lin_lin']]     # Escalas dos Eixos
+    plot_vars=[[        ab,        ab,        ab,         ab,         ab],     # Abcissas
+               [     'el2',   'elinf',   'coupl',   'n1_adm',    'betad'],     # Ordenadas
+               [ 'lin_lin', 'lin_lin', 'lin_lin',  'lin_lin', 'lin_lin']]     # Escalas dos Eixos
 
-    control_var='betad'
+    control_var='CR'
     # legends={0:'CR = 3x3',1:'CR = 5x5', 2:'CR = 7x7', 3:'CR = 9x9'}
     legends={}
     for v in np.unique(single_vars[control_var]):
-        legends[v]=control_var+' = '+str(v)
-
-
-    # from curvas_de_nivel import plot_curva
-    # plot_curva(single_vars['neta'], single_vars['betad'],single_vars['elinf'])
-    # import pdb; pdb.set_trace()
+        if control_var=='betad':
+            if v == np.inf:
+                legends[v]=r'$\beta = \infty$'
+            else:
+                legends[v]=r'$\beta$ = '+str(int(v))
+        else:
+            legends[v]=control_var+' = '+str(v)
 
     for abcissa_name, ordenada_name, scales in zip(plot_vars[0],plot_vars[1], plot_vars[2]):
         plt.close('all')
@@ -880,9 +878,7 @@ def print_results_single(all_cases):
         all_abcissas=single_vars[abcissa_name]
         all_ordenadas=single_vars[ordenada_name]
         all_elinf=single_vars['elinf']
-        # all_ordenadas=all_ordenadas[all_abcissas<2500]
-        # sv=sv[all_abcissas<2500]
-        # all_abcissas=all_abcissas[all_abcissas<2500]
+        all_coupl=single_vars['coupl']
         for i in np.sort(np.unique(sv)):
             inds=np.where(sv==i)[0]
             abcissas=all_abcissas[inds]
@@ -893,8 +889,19 @@ def print_results_single(all_cases):
             ordenadas=ordenadas[ind_sort]
             elinf=elinf[ind_sort]
             try:
-                plt.plot(abcissas, ordenadas, lw=5, label=legends[i])
-                plt.scatter(abcissas[elinf<30],ordenadas[elinf<30],lw=10)
+
+                p=plt.plot(abcissas, ordenadas, lw=5, label=legends[i])
+                color=p[0].get_color()
+
+                teta=180*np.arctan((ordenadas[-1]-ordenadas[-2])/(abcissas[-1]-abcissas[-2]))/np.pi
+
+                dx=len(legends[i])/2
+                dy=0.5
+                # plt.text(abcissas[-2:].sum()/2-dx, ordenadas[-2:].sum()/2-dy, legends[i],backgroundcolor='white',color=color,rotation=teta)
+                # plt.scatter(abcissas[elinf<40],ordenadas[elinf<40],lw=10,color='red')
+                plt.scatter(abcissas[elinf<30],ordenadas[elinf<30],lw=10,color='red')
+                plt.scatter(abcissas[elinf<20],ordenadas[elinf<20],lw=10,color='green')
+                plt.scatter(abcissas[elinf<10],ordenadas[elinf<10],lw=10,color='blue')
             except:
                 import pdb; pdb.set_trace()
 
@@ -904,3 +911,32 @@ def print_results_single(all_cases):
         plt.xlabel(units[abcissa_name])
         plt.ylabel(units[ordenada_name])
         plt.savefig('results/single_phase/'+ordenada_name+'.svg', bbox_inches='tight')
+
+        for abcissa_name, ordenada_name, scales in zip(plot_vars[0],plot_vars[1], plot_vars[2]):
+            plt.close('all')
+            sv=single_vars[control_var]
+            all_abcissas=single_vars[abcissa_name]
+            all_ordenadas=single_vars[ordenada_name]
+            all_elinf=single_vars['elinf']
+
+            fig=plt.figure()
+            ax=Axes3D(fig)
+            for i in np.sort(np.unique(sv)):
+                inds=np.where(sv==i)[0]
+                abcissas=all_abcissas[inds]
+                ordenadas=all_ordenadas[inds]
+                elinf=all_elinf[inds]
+                coupls=all_coupl[inds]
+                ind_sort=np.argsort(abcissas)
+                abcissas=abcissas[ind_sort]
+                ordenadas=ordenadas[ind_sort]
+                elinf=elinf[ind_sort]
+                inds=elinf<100
+                abcissas=abcissas[inds]
+                ordenadas=ordenadas[inds]
+                coupls=coupls[inds]
+                elinf=elinf[inds]
+                ax.scatter(abcissas, ordenadas,coupls)
+                ax.plot(abcissas, ordenadas,coupls, label=control_var+' = '+str(i))
+            # ax.legend()
+            # plt.savefig('results/single_phase/'+ordenada_name+'_3d.svg', bbox_inches='tight')

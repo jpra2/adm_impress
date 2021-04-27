@@ -12,7 +12,7 @@ from pymoab import types
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-
+from mpl_toolkits import mplot3d
 folder=np.load('flying/folder.npy')[0]
 
 # from packs.adm.adm_method import AdmMethod
@@ -30,6 +30,34 @@ def save_multilevel_results():
     vals_vpi.append(b1.vpi)
     vals_delta_t.append(b1.delta_t)
     vals_wor.append(b1.wor)
+
+def plot_field(di, field):
+
+    x=di['centroid_volumes'][:,1]
+    y=di['centroid_volumes'][:,0]
+    z=di['pressure']
+    nx=len(np.unique(x))
+    ny=len(np.unique(y))
+    X=x.reshape(ny,nx)
+    Y=y.reshape(ny,nx)
+    Z=z.reshape(ny,nx)
+    plt.close('all')
+
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.xaxis.set_tick_params(labelsize=15)
+    ax.yaxis.set_tick_params(labelsize=15)
+    ax.zaxis.set_tick_params(labelsize=15)
+    ax.view_init(30, 120)
+    import pdb; pdb.set_trace()
+    ax.plot_surface(X, Y, Z, cmap='jet',alpha=0.8)#,rstride=100,cstride=100)
+    fig.colorbar(plt.cm.ScalarMappable(cmap='jet'), ax=ax,fraction=0.1)
+    plt.savefig('results/single_phase/contour.svg',transparent=True)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+    ax.set_title('3D contour')
+
 
 def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp,
     el2, elinf, es_L2, es_Linf,vpis_for_save, ep_haji_L2,ep_haji_Linf, er_L2, er_Linf,
@@ -631,7 +659,7 @@ while verif:
     p_wells=pf[wells['all_wells']]
     # pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
     data_impress['tpfa_pressure']=pf
-
+    plot_field(data_impress,'pressure')
     save_multilevel_results()
 
     if vpis_for_save[count_save]<b1.vpi:
@@ -647,22 +675,23 @@ while verif:
 
 
         print(b1.vpi,'vpi')
-        print("Creating_file")
-        meshset_plot_faces=M.core.mb.create_meshset()
-        lv=data_impress['LEVEL']
-        gid_coarse=data_impress['GID_1']
-        bounds_coarse=int_faces[gid_coarse[ad0]!=gid_coarse[ad1]]
-        lvs0=int_faces[(lv[ad0]==0) | (lv[ad1]==0)]
-        facs_plot=np.concatenate([bounds_coarse,lvs0])
-        M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
+        # print("Creating_file")
+        # meshset_plot_faces=M.core.mb.create_meshset()
+        # lv=data_impress['LEVEL']
+        # gid_coarse=data_impress['GID_1']
+        # bounds_coarse=int_faces[gid_coarse[ad0]!=gid_coarse[ad1]]
+        # lvs0=int_faces[(lv[ad0]==0) | (lv[ad1]==0)]
+        # facs_plot=np.concatenate([bounds_coarse,lvs0])
+        # M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
         # import pdb; pdb.set_trace()
         # data_impress['raz_pos'][:]=0
         # data_impress['raz_pos'][data_impress['DUAL_1']==2]=data_impress['raz_phi'][data_impress['DUAL_1']==2]
-        data_impress.update_variables_to_mesh()
-        file_count=str(int(100*vpis_for_save[count_save]))
+        # data_impress.update_variables_to_mesh()
+        # file_count=str(int(100*vpis_for_save[count_save]))
 
         # M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
         # M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
+
         if vpis_for_save[count_save]==vpis_for_save.max():
             export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor,
             t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1],
@@ -670,6 +699,7 @@ while verif:
             verif=False
         print("File created at time-step: ",cont)
         count_save+=1
+
 
     # if cont % nn == 0 or count_save==len(vpis_for_save)-1:
     #     export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save])
