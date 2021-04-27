@@ -179,6 +179,30 @@ class AdmNonNested(AdmMethod):
         levels[v0[inds][:,1]] = 0
         self.data_impress['LEVEL'] = levels.copy()
 
+    def set_saturation_level_homogeneo(self,delta_sat_max=0.1):
+        levels = self.data_impress['LEVEL'].copy()
+        saturation = self.data_impress['saturation']
+        internal_faces = self.elements_lv0['internal_faces']
+        v0 = self.elements_lv0['neig_internal_faces']
+        gids1=self.data_impress['GID_1'][v0]
+        gids_coarse=self.data_impress['GID_1']
+        ds = saturation[v0]
+        # ds = ds.sum(axis=1)
+        ds = np.absolute(ds[:,1] - ds[:,0])
+
+
+        inds = (ds >= delta_sat_max) & (saturation[v0].min(axis=1)<min(saturation[v0].min(),0)+0.5)
+        # inds = ds >= delta_sat_max
+
+        levels[v0[inds][:,0]] = 0
+        levels[v0[inds][:,1]] = 0
+
+        gids_fin=np.unique(gids_coarse[levels==0])
+        for gid in gids_fin:
+            levels[gids_coarse==gid]=0
+
+        self.data_impress['LEVEL'] = levels.copy()
+
     def set_saturation_level_uniform(self, delta_max=0.1):
         levels = self.data_impress['LEVEL'].copy()
         gids1 = self.data_impress['GID_1']

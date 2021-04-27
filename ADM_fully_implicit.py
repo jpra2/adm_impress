@@ -96,7 +96,7 @@ def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-3):
         adm_method.restart_levels()
         # adm_method.set_level_wells_only()
         adm_method.set_level_wells_3()
-        adm_method.set_saturation_level_simple(delta_sat_max)
+        adm_method.set_saturation_level_homogeneo(delta_sat_max)
         adm_method.set_adm_mesh_non_nested(gids_0[adm_method.data_impress['LEVEL']==0])
         adm_method.organize_ops_adm(mlo, 1)
         OP_ADM = adm_method._data['adm_prolongation_level_1']
