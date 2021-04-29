@@ -1,5 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 12x1x1_b.msh
+# mesh_name: 12x1x1.h5m
 name_save_file: 'results_Buckley_Leverett_caset'
 
 compositional: True
@@ -14,6 +15,9 @@ n_levels: 2
 Crs:
   Cr1: [3, 1, 1]
   Cr2: [3, 1, 1]
+get_correction_term: false
+load_operators: false
+load_multilevel_data: false
 #############################
 load_compositional_data: False
 load_data: False
