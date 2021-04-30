@@ -13,6 +13,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
+from mpl_toolkits.mplot3d import Axes3D
 folder=np.load('flying/folder.npy')[0]
 
 # from packs.adm.adm_method import AdmMethod
@@ -36,27 +37,27 @@ def plot_field(di, field):
     x=di['centroid_volumes'][:,1]
     y=di['centroid_volumes'][:,0]
     z=di['pressure']
+    zd=di['DUAL_1']
+    zc=di['coupled_flag']
     nx=len(np.unique(x))
     ny=len(np.unique(y))
     X=x.reshape(ny,nx)
     Y=y.reshape(ny,nx)
     Z=z.reshape(ny,nx)
-    plt.close('all')
 
+    plt.close('all')
     fig = plt.figure()
     ax = plt.axes(projection='3d')
     ax.xaxis.set_tick_params(labelsize=15)
     ax.yaxis.set_tick_params(labelsize=15)
     ax.zaxis.set_tick_params(labelsize=15)
     ax.view_init(30, 120)
-    import pdb; pdb.set_trace()
-    ax.plot_surface(X, Y, Z, cmap='jet',alpha=0.8)#,rstride=100,cstride=100)
-    fig.colorbar(plt.cm.ScalarMappable(cmap='jet'), ax=ax,fraction=0.1)
-    plt.savefig('results/single_phase/contour.svg',transparent=True)
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
-    ax.set_title('3D contour')
+    z[z<0.0]=np.nan
+    z[z>1.0]=np.nan
+    ax.plot_surface(X, Y, Z, cmap='jet',alpha=0.8, vmin=0.0,vmax=1.0)
+    fig.colorbar(plt.cm.ScalarMappable(cmap='jet'), ax=ax,fraction=0.03)
+    plt.savefig('results/'+folder+'/ms/'+ms_case+'/'+field+'.svg',transparent=True)
+
 
 
 def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp,
@@ -660,6 +661,7 @@ while verif:
     # pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
     data_impress['tpfa_pressure']=pf
     plot_field(data_impress,'pressure')
+    plot_field(data_impress,'tpfa_pressure')
     save_multilevel_results()
 
     if vpis_for_save[count_save]<b1.vpi:

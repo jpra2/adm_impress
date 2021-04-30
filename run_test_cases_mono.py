@@ -31,13 +31,13 @@ def run_test_cases():
 
     crs=[[3, 3, 1], [5, 5, 1], [7, 7, 1], [9,9,1]]
     np.save('flying/all_crs.npy',np.array(crs))
-    beta_lim_dual_values=     [ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    neta_lim_dual_values=     [    0.1,    0.3,    0.5,    0.7,    1.0,    2.0]
-    neta_lim_finescale_values=[ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    type_of_refinement_values=[  'uni',  'uni',  'uni',  'uni',  'uni',  'uni']
-    phiK_raz_lim_values=      [ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    delta_sat_max=            [ np.inf, np.inf, np.inf, np.inf, np.inf, np.inf]
-    cr_inds=                  [      3,      3,      3,      3,      3,      3]
+    beta_lim_dual_values=     [ np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf]
+    neta_lim_dual_values=     [ np.inf,    1.0]#,    0.5,    0.7,    1.0,    2.0]
+    neta_lim_finescale_values=[ np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf]
+    type_of_refinement_values=[  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni']
+    phiK_raz_lim_values=      [ np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf]
+    delta_sat_max=            [ np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf]
+    cr_inds=                  [      3,      3]#,      3,      3,      3,      3]
     for i in range(len(neta_lim_dual_values)):
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
