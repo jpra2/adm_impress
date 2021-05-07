@@ -83,6 +83,7 @@ def get_sat_averager(sats, data_impress):
                 sats[gv] = sats[gv].sum()/len(gv)
     return sats
 
+# @profile
 def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-3):
     converged=False
     count=0
@@ -127,9 +128,7 @@ def newton_iteration_ADM(data_impress, time_step, wells, rel_tol=1e-3):
         if count>20:
             print('excedded maximum number of iterations ADM')
             return False, count
-            # import pdb; pdb.set_trace()
             break
-
 
     data_impress['swns'][wells['ws_prod']]=data_impress['swns'][wells['viz_prod']].sum()/len(wells['viz_prod'])
     sats=data_impress['swns'].copy()
@@ -170,7 +169,6 @@ def newton_iteration_finescale(data_impress, time_step, wells, rel_tol=1e-3):
 
     data_impress['swns'][wells['ws_prod']]=data_impress['swns'][wells['viz_prod']].sum()/len(wells['viz_prod'])
     return True, count
-
 
 def get_R_and_P(OR_ADM, OP_ADM):
     lp, cp, dp = sp.find(OP_ADM)
@@ -228,7 +226,6 @@ def plot_matrix(Mat, name):
     plt.yticks(np.unique(data[0]),size=5)
     plt.savefig('results/biphasic_FIM/'+name+'.svg')
 
-
 def ADM_solver(J, q, R, P):
     # plot_matrix(R*J*P,'coarse')
     # plot_matrix(J,'fine')
@@ -277,7 +274,7 @@ time_step=0.0005
 count_save=0
 wells['viz_prod']=np.concatenate(elements_lv0['volumes_face_volumes'][wells['ws_prod']])
 delta_sat_max=0.03
-max_vpi=0.8
+max_vpi=0.01
 vpis_for_save=np.arange(0,0.91,0.01)
 
 ep_l2=[]

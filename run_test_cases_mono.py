@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 
-font = {'size'   : 30}
+font = {'size'   :40}
 matplotlib.rc('font', **font)
 folder='biphasic'
 # folder='single_phase_L1'
@@ -25,19 +25,19 @@ def remove_previous_files():
 
 def run_test_cases():
     # vpis_for_save=np.arange(0.0,1.001,0.01)
-    vpis_for_save=np.array([0.0,0.00001])
+    vpis_for_save=np.array([0.0, 0.005,0.01])
     np.save('flying/vpis_for_save.npy',vpis_for_save)
-    # os.system('python testting2_biphasic.py')
+    os.system('python testting2_biphasic.py')
 
     crs=[[3, 3, 1], [5, 5, 1], [7, 7, 1], [9,9,1]]
     np.save('flying/all_crs.npy',np.array(crs))
-    beta_lim_dual_values=     [ np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf]
-    neta_lim_dual_values=     [ np.inf,    1.0]#,    0.5,    0.7,    1.0,    2.0]
-    neta_lim_finescale_values=[ np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf]
-    type_of_refinement_values=[  'uni',  'uni']#,  'uni',  'uni',  'uni',  'uni']
-    phiK_raz_lim_values=      [ np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf]
-    delta_sat_max=            [ np.inf, np.inf]#, np.inf, np.inf, np.inf, np.inf]
-    cr_inds=                  [      3,      3]#,      3,      3,      3,      3]
+    beta_lim_dual_values=     [ np.inf]
+    neta_lim_dual_values=     [    1.0]
+    neta_lim_finescale_values=[    1.0]
+    type_of_refinement_values=[  'uni']
+    phiK_raz_lim_values=      [    3.0]
+    delta_sat_max=            [ np.inf]
+    cr_inds=                  [      3]
     for i in range(len(neta_lim_dual_values)):
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
@@ -199,13 +199,13 @@ def print_results(all_cases):
             plt.gca().tick_params(which='major', length=15)
 
             plt.grid()
-            plt.legend()
+            # plt.legend()
             plt.gcf().set_size_inches(20,20)
             plt.savefig('results/'+folder+'/'+variable+'.svg', bbox_inches=12)
 
     for var in single_vars:
         abcissa_var='alpha'
-        control_variable='delta'
+        control_variable='beta'
 
         all_abcissa=np.array(single_vars[abcissa_var])
         pos=all_abcissa<10000
@@ -236,7 +236,7 @@ def print_results(all_cases):
             plt.close('all')
             fig=plt.figure()
             plt.grid()
-            plt.xlabel(r'$\epsilon$ []',labelpad=-20)
+            plt.xlabel(r'$\eta^{lim}$ []',labelpad=-20)
             if var not in ['neta', 'alpha', 'beta', 'delta']:
                 plt.ylabel(units[var])#, labelpad=-20)
 
@@ -330,7 +330,7 @@ def print_results(all_cases):
 
                 plt.gca().yaxis.set_minor_locator(ticker.FixedLocator(pp))
                 plt.gca().yaxis.set_minor_formatter(ticker.FixedFormatter(all_ticks))
-                plt.legend()
+                # plt.legend()
                 plt.gca().xaxis.set_minor_formatter(ticker.NullFormatter())
                 # ticks=plt.gca().get_yticks()
                 control+=1
@@ -385,7 +385,10 @@ def print_results_2(all_cases):
         for case in all_cases:
             case_name=case[0]
             case_data=case[1]
-            case_data['vpi']
+            try:
+                case_data['vpi']
+            except:
+                import pdb; pdb.set_trace()
             if case_name[3]!='i':
                 style='-.'
             else:
@@ -448,7 +451,7 @@ def print_results_2(all_cases):
             plt.gca().tick_params(which='major', length=15)
 
             plt.grid()
-            plt.legend()
+            # plt.legend()
             plt.gcf().set_size_inches(15,15)
             plt.savefig('results/'+folder+'/'+variable+'.svg')
 
@@ -628,7 +631,7 @@ def print_results_3(all_cases):
 
             plt.grid(linewidth=3)
 
-            plt.legend()
+            # plt.legend()
             plt.gcf().set_size_inches(20,20)
             plt.tick_params(colors='black')
             ss=plt.gca().get_legend_handles_labels()
@@ -637,7 +640,7 @@ def print_results_3(all_cases):
             ind_sort=np.argsort(labels)
             slabels=np.array(labels)[ind_sort].tolist()
             shandles=np.array(handles)[ind_sort].tolist()
-            plt.legend(shandles, slabels)
+            # plt.legend(shandles, slabels)
             '''end'''
             plt.savefig('results/'+folder+'/'+variable+'.svg', bbox_inches='tight')
 
@@ -674,7 +677,7 @@ def print_results_3(all_cases):
             plt.close('all')
             fig=plt.figure()
             plt.grid()
-            plt.xlabel(r'$\epsilon$ []',labelpad=-20)
+            plt.xlabel(r'$\eta^{lim}$ []',labelpad=-20)
             # if var not in ['neta', 'alpha', 'beta', 'delta']:
             #     plt.ylabel(units[var])#, labelpad=-20)
 
@@ -758,7 +761,7 @@ def print_results_3(all_cases):
 
             plt.savefig('results/single_phase/'+var+'.svg', bbox_inches='tight')
 
-def collect_single_phase_data(all_cases):
+def collect_single_phase_data(all_cases, single=True):
     units={'vpi':'PVI [%]','wor':'wor []','t_comp':'comp_time [s]','delta_t':'time-step []',
         'n1_adm':r'$N^{A-ADM}/N^f$[%]','el2':r'$||e_p||_2$'+' [%]','elinf':r'$||e_p||_\infty$'+' [%]', 'es_L2':r'$||e_s||_2$'+' [%]',
         'es_Linf':r'$||e_s||_\infty$'+' [%]', 'vpis_for_save':'PVI [%]','coupl':'Percentage of enrichment [%]',
@@ -776,21 +779,22 @@ def collect_single_phase_data(all_cases):
     single_vars['CR']=[]
     single_vars['betad']=[]
     names_single_vars=['neta', 'beta', 'alpha', 'delta', 'CR', 'betad']
-
     for variable in single_vars.keys():
         for case in all_cases:
             case_name=case[0]
             case_data=case[1]
             if case_name!='finescale' and variable in names_single_vars:
                 input_params=np.array(case_name.split('_'))
-
                 pos=np.where(input_params==variable)[0][0]+1
                 single_vars[variable].append(float(input_params[pos]))
             elif case_name!='finescale':
+
                 try:
                     single_vars[variable].append(case_data[variable][0])
                 except:
                     pass
+
+
         single_vars[variable]=np.array(single_vars[variable])
     return single_vars
 
@@ -843,6 +847,10 @@ def format_plot(scales, abcissas, ordenadas):
                 plt.ylim(minor_ticks.min(),minor_ticks.max()*1.1)
 
     plt.gcf().set_size_inches(15,15)
+    pos=['left', 'right', 'bottom', 'top']
+    for p in pos:
+        plt.gca().spines[p].set_color('black')
+        plt.gca().spines[p].set_linewidth(3)
 
 
 def print_results_single(all_cases):
@@ -851,17 +859,20 @@ def print_results_single(all_cases):
         'es_Linf':r'$||e_s||_\infty$'+' [%]', 'vpis_for_save':'PVI [%]','coupl':'Percentage of enrichment [%]',
         'refinement':'Percentage at fine-scale [%]', 'ep_haji_L2':'ep_rel_ms_L2[]',
         'ep_haji_Linf':'ep_rel_ms_Linf[]','er_L2':r'$||e_r||_2$'+' []','er_Linf':r'$||e_r||_\infty$'+' []',
-        'ev_L2':r'$||e_v||_2$'+' [%]','ev_Linf':r'$||e_v||_\infty$'+' [%]', 'neta':r'$\epsilon$ []', 'betad':r'$\epsilon$ []'}
+        'ev_L2':r'$||e_v||_2$'+' [%]','ev_Linf':r'$||e_v||_\infty$'+' [%]', 'neta':r'$\eta^{lim}$ []', 'betad':r'$\eta^{lim}$ []',
+        'alpha':r'$\alpha^{lim}$ []', 'beta':r'$\beta^{lim}$'}
 
     single_vars = collect_single_phase_data(all_cases)
-    ab='neta'
+
+    ab='beta'
 
     plot_vars=[[        ab,        ab,        ab,         ab,         ab],     # Abcissas
                [     'el2',   'elinf',   'coupl',   'n1_adm',    'betad'],     # Ordenadas
-               [ 'lin_lin', 'lin_lin', 'lin_lin',  'lin_lin', 'lin_lin']]     # Escalas dos Eixos
+               [ 'lin_lin', 'lin_log', 'lin_lin',  'lin_lin', 'lin_lin']]     # Escalas dos Eixos
 
-    control_var='CR'
+    control_var='alpha'
     # legends={0:'CR = 3x3',1:'CR = 5x5', 2:'CR = 7x7', 3:'CR = 9x9'}
+
     legends={}
     for v in np.unique(single_vars[control_var]):
         if control_var=='betad':
@@ -869,6 +880,11 @@ def print_results_single(all_cases):
                 legends[v]=r'$\beta = \infty$'
             else:
                 legends[v]=r'$\beta$ = '+str(int(v))
+        if control_var=='alpha':
+            if v == np.inf:
+                legends[v]=r'$\alpha = \infty$'
+            else:
+                legends[v]=r'$\alpha^{lim}$ = '+str(v)
         else:
             legends[v]=control_var+' = '+str(v)
 
@@ -889,36 +905,25 @@ def print_results_single(all_cases):
             ordenadas=ordenadas[ind_sort]
             elinf=elinf[ind_sort]
             try:
-
                 p=plt.plot(abcissas, ordenadas, lw=5, label=legends[i])
                 color=p[0].get_color()
-
                 teta=180*np.arctan((ordenadas[-1]-ordenadas[-2])/(abcissas[-1]-abcissas[-2]))/np.pi
-
                 dx=len(legends[i])/2
                 dy=0.5
-                # plt.text(abcissas[-2:].sum()/2-dx, ordenadas[-2:].sum()/2-dy, legends[i],backgroundcolor='white',color=color,rotation=teta)
-                # plt.scatter(abcissas[elinf<40],ordenadas[elinf<40],lw=10,color='red')
-                plt.scatter(abcissas[elinf<30],ordenadas[elinf<30],lw=10,color='red')
-                plt.scatter(abcissas[elinf<20],ordenadas[elinf<20],lw=10,color='green')
-                plt.scatter(abcissas[elinf<10],ordenadas[elinf<10],lw=10,color='blue')
+                plt.scatter(abcissas[elinf<1000],ordenadas[elinf<1000],lw=10,color='blue')
             except:
                 import pdb; pdb.set_trace()
-
         format_plot(scales, all_abcissas, all_ordenadas)
         plt.legend()
-
-        plt.xlabel(units[abcissa_name])
-        plt.ylabel(units[ordenada_name])
-        plt.savefig('results/single_phase/'+ordenada_name+'.svg', bbox_inches='tight')
-
+        plt.xlabel(units[abcissa_name], fontsize=60)
+        plt.ylabel(units[ordenada_name],fontsize=60)
+        plt.savefig('results/single_phase/'+ordenada_name+'.svg', bbox_inches='tight', transparent=True)
         for abcissa_name, ordenada_name, scales in zip(plot_vars[0],plot_vars[1], plot_vars[2]):
             plt.close('all')
             sv=single_vars[control_var]
             all_abcissas=single_vars[abcissa_name]
             all_ordenadas=single_vars[ordenada_name]
             all_elinf=single_vars['elinf']
-
             fig=plt.figure()
             ax=Axes3D(fig)
             for i in np.sort(np.unique(sv)):
@@ -938,5 +943,33 @@ def print_results_single(all_cases):
                 elinf=elinf[inds]
                 ax.scatter(abcissas, ordenadas,coupls)
                 ax.plot(abcissas, ordenadas,coupls, label=control_var+' = '+str(i))
-            # ax.legend()
-            # plt.savefig('results/single_phase/'+ordenada_name+'_3d.svg', bbox_inches='tight')
+
+def print_results_two_phase(all_cases_results):
+    ab='vpi'
+    plot_vars=[[        ab,        ab,        ab,         ab,         ab,         ab],     # Abcissas
+               [     'el2',   'elinf',     'wor',   'n1_adm',    'es_L2',  'es_Linf'],     # Ordenadas
+               [ 'lin_lin', 'lin_lin', 'lin_lin',  'lin_lin',  'lin_lin',  'lin_lin']]     # Escalas dos Eixos
+
+    tf_results={}
+    for variable in plot_vars[1]:
+        tf_results[variable]=[]
+        plt.close('all')
+        for case in all_cases_results:
+            case_name=case[0]
+            case_data=case[1]
+            try:
+                plt.plot(case_data[ab], case_data[variable], label=case_name)
+
+            except:
+                pass
+            if case_name!='finescale':
+                try:
+                    format_plot('lin_lin',case_data[ab],case_data[variable])
+                except:
+                    import pdb; pdb.set_trace()
+        plt.savefig('results/single_phase/'+variable+'.svg', bbox_inches='tight', transparent=True)
+
+
+
+    import pdb; pdb.set_trace()
+    pd=1

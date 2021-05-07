@@ -63,7 +63,7 @@ def plot_field(di, field):
 def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp,
     el2, elinf, es_L2, es_Linf,vpis_for_save, ep_haji_L2,ep_haji_Linf, er_L2, er_Linf,
     ev_L2,ev_Linf):
-    vals_n1_adm=np.array(vals_n1_adm+[len(data_impress['GID_0'])])
+    vals_n1_adm=100*np.array(vals_n1_adm+[len(data_impress['GID_0'])])/len(data_impress['pressure'])
     vals_vpi=np.array(vals_vpi)
     vals_delta_t=np.array(vals_delta_t)
     vals_wor=np.array(vals_wor)
@@ -619,7 +619,7 @@ while verif:
 
     b1.run_2()
     t1=time.time()
-    print(b1.wor, adm_method.n1_adm)
+    print(b1.wor, b1.vpi, adm_method.n1_adm)
     pms=data_impress['pressure']
     if neta_lim_finescale==np.inf:
         np.save('flying/original_ms_solution.npy',pms)
@@ -660,8 +660,8 @@ while verif:
     p_wells=pf[wells['all_wells']]
     # pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
     data_impress['tpfa_pressure']=pf
-    plot_field(data_impress,'pressure')
-    plot_field(data_impress,'tpfa_pressure')
+    # plot_field(data_impress,'pressure')
+    # plot_field(data_impress,'tpfa_pressure')
     save_multilevel_results()
 
     if vpis_for_save[count_save]<b1.vpi:
@@ -677,22 +677,22 @@ while verif:
 
 
         print(b1.vpi,'vpi')
-        # print("Creating_file")
-        # meshset_plot_faces=M.core.mb.create_meshset()
-        # lv=data_impress['LEVEL']
-        # gid_coarse=data_impress['GID_1']
-        # bounds_coarse=int_faces[gid_coarse[ad0]!=gid_coarse[ad1]]
-        # lvs0=int_faces[(lv[ad0]==0) | (lv[ad1]==0)]
-        # facs_plot=np.concatenate([bounds_coarse,lvs0])
-        # M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
-        # import pdb; pdb.set_trace()
-        # data_impress['raz_pos'][:]=0
-        # data_impress['raz_pos'][data_impress['DUAL_1']==2]=data_impress['raz_phi'][data_impress['DUAL_1']==2]
-        # data_impress.update_variables_to_mesh()
-        # file_count=str(int(100*vpis_for_save[count_save]))
+        print("Creating_file")
+        meshset_plot_faces=M.core.mb.create_meshset()
+        lv=data_impress['LEVEL']
+        gid_coarse=data_impress['GID_1']
+        bounds_coarse=int_faces[gid_coarse[ad0]!=gid_coarse[ad1]]
+        lvs0=int_faces[(lv[ad0]==0) | (lv[ad1]==0)]
+        facs_plot=np.concatenate([bounds_coarse,lvs0])
+        M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
 
-        # M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
-        # M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
+        data_impress['raz_pos'][:]=0
+        data_impress['raz_pos'][data_impress['DUAL_1']==2]=data_impress['raz_phi'][data_impress['DUAL_1']==2]
+        data_impress.update_variables_to_mesh()
+        file_count=str(int(100*vpis_for_save[count_save]))
+
+        M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
+        M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
 
         if vpis_for_save[count_save]==vpis_for_save.max():
             export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor,
