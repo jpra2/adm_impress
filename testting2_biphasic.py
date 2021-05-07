@@ -28,7 +28,9 @@ cont = 1
 cont2 = 1
 verif = True
 vpis_for_save=np.load('flying/vpis_for_save.npy')
+vpis_for_vtk=np.load('flying/vpis_for_vtk.npy')
 count_save=0
+count_vtk=0
 pp=1000
 meshset_volumes = M.core.mb.create_meshset()
 M.core.mb.add_entities(meshset_volumes, M.core.all_volumes)
@@ -52,7 +54,7 @@ while verif:
     vpi.append(b1.vpi)
     delta_t.append(b1.delta_t)
     wor.append(b1.wor)
-    print(f'\n loop: {b1.loop}\n')
+    print(f'\n loop: {b1.loop}\n', 'vpi: ',b1.vpi)
     np.save('flying/velocity_faces_finescale.npy',data_impress['velocity_faces'])
     # if cont % n == 0:
     #     cont = 1
@@ -63,14 +65,17 @@ while verif:
     # if cont % pp == 0:
     if vpis_for_save[count_save]<b1.vpi:
         np.save('flying/saturation_'+str(vpis_for_save[count_save])+'.npy', data_impress['saturation'])
+        count_save+=1
+
+    if len(vpis_for_vtk)>0 and vpis_for_vtk[count_vtk]<b1.vpi:
         data_impress.update_variables_to_mesh()
         # M.core.mb.write_file('results/testt_'+str(cont)+'.vtk', [meshset_volumes])
-        file_count=str(int(100*vpis_for_save[count_save]))
-        if vpis_for_save[count_save]==vpis_for_save.max():
+        file_count=str(int(100*vpis_for_vtk[count_vtk]))
+        if vpis_for_vtk[count_vtk]==vpis_for_vtk.max():
             export_finescale_results(vpi, delta_t, wor,t_comp)
             verif=False
         M.core.mb.write_file('results/'+folder+'/finescale/vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
-        count_save+=1
+        count_vtk+=1
 
     # if cont % n2 == 0:
     #     export_finescale_results(vpi, delta_t, wor,t_comp)

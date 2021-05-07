@@ -23,21 +23,24 @@ def remove_previous_files():
     os.mkdir('results/'+folder+'/finescale')
     os.mkdir('results/'+folder+'/finescale/vtks')
 
+vpis_for_vtk =np.arange(0.0, 0.801,0.1)
+vpis_for_save=np.arange(0.0, 0.80001,0.001)
 def run_test_cases():
     # vpis_for_save=np.arange(0.0,1.001,0.01)
-    vpis_for_save=np.array([0.0, 0.005,0.01])
+
     np.save('flying/vpis_for_save.npy',vpis_for_save)
+    np.save('flying/vpis_for_vtk.npy',vpis_for_vtk)
     os.system('python testting2_biphasic.py')
 
     crs=[[3, 3, 1], [5, 5, 1], [7, 7, 1], [9,9,1]]
     np.save('flying/all_crs.npy',np.array(crs))
-    beta_lim_dual_values=     [ np.inf]
-    neta_lim_dual_values=     [    1.0]
-    neta_lim_finescale_values=[    1.0]
-    type_of_refinement_values=[  'uni']
-    phiK_raz_lim_values=      [    3.0]
-    delta_sat_max=            [ np.inf]
-    cr_inds=                  [      3]
+    beta_lim_dual_values=     [ np.inf, np.inf]
+    neta_lim_dual_values=     [    1.0, np.inf]
+    neta_lim_finescale_values=[    1.0,    1.0]
+    type_of_refinement_values=[  'uni',  'uni']
+    phiK_raz_lim_values=      [    3.0,    3.0]
+    delta_sat_max=            [ np.inf, np.inf]
+    cr_inds=                  [      3,      3]
     for i in range(len(neta_lim_dual_values)):
         np.save('flying/delta_sat_max.npy',np.array([delta_sat_max[i]]))
         np.save('flying/neta_lim_finescale.npy',np.array([neta_lim_finescale_values[i]]))
@@ -945,28 +948,46 @@ def print_results_single(all_cases):
                 ax.plot(abcissas, ordenadas,coupls, label=control_var+' = '+str(i))
 
 def print_results_two_phase(all_cases_results):
+    units={'vpi':'PVI [%]','wor':'wor []','t_comp':'comp_time [s]','delta_t':'time-step []',
+        'n1_adm':r'$N^{A-ADM}/N^f$[%]','el2':r'$||e_p||_2$'+' [%]','elinf':r'$||e_p||_\infty$'+' [%]', 'es_L2':r'$||e_s||_2$'+' [%]',
+        'es_Linf':r'$||e_s||_\infty$'+' [%]', 'vpis_for_save':'PVI [%]','coupl':'Percentage of enrichment [%]',
+        'refinement':'Percentage at fine-scale [%]', 'ep_haji_L2':'ep_rel_ms_L2[]',
+        'ep_haji_Linf':'ep_rel_ms_Linf[]','er_L2':r'$||e_r||_2$'+' []','er_Linf':r'$||e_r||_\infty$'+' []',
+        'ev_L2':r'$||e_v||_2$'+' [%]','ev_Linf':r'$||e_v||_\infty$'+' [%]', 'neta':r'$\eta^{lim}$ []', 'betad':r'$\eta^{lim}$ []',
+        'alpha':r'$\alpha^{lim}$ []', 'beta':r'$\beta^{lim}$'}
+    titles={'neta_1.0_alpha_1.0_type_uni_beta_3.0_betad_inf_delta_inf_CR_3': 'A-AMS',
+    'neta_inf_alpha_1.0_type_uni_beta_3.0_betad_inf_delta_inf_CR_3':'AMS', 'finescale':'reference'}
     ab='vpi'
     plot_vars=[[        ab,        ab,        ab,         ab,         ab,         ab],     # Abcissas
                [     'el2',   'elinf',     'wor',   'n1_adm',    'es_L2',  'es_Linf'],     # Ordenadas
                [ 'lin_lin', 'lin_lin', 'lin_lin',  'lin_lin',  'lin_lin',  'lin_lin']]     # Escalas dos Eixos
-
+    lw=3
     tf_results={}
     for variable in plot_vars[1]:
         tf_results[variable]=[]
         plt.close('all')
         for case in all_cases_results:
+
             case_name=case[0]
             case_data=case[1]
-            try:
-                plt.plot(case_data[ab], case_data[variable], label=case_name)
-
-            except:
-                pass
-            if case_name!='finescale':
+            if case_name!='finescale' or variable=='wor':
                 try:
-                    format_plot('lin_lin',case_data[ab],case_data[variable])
+                    plt.plot(case_data[ab], case_data[variable], label=titles[case_name],lw=lw)
                 except:
-                    import pdb; pdb.set_trace()
+                    try:
+                        plt.plot(case_data[ab], case_data[variable][:-1], label=titles[case_name],lw=lw)
+                    except:
+                        try:
+                            plt.plot(vpis_for_save, case_data[variable], label=titles[case_name],lw=lw)
+                        except:
+                            import pdb; pdb.set_trace()
+
+
+            if case_name!='finescale':
+                format_plot('lin_lin',case_data[ab],case_data[variable])
+        plt.legend()
+        plt.xlabel(units[ab], fontsize=60)
+        plt.ylabel(units[variable],fontsize=60)
         plt.savefig('results/single_phase/'+variable+'.svg', bbox_inches='tight', transparent=True)
 
 

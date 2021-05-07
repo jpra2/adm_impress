@@ -495,7 +495,9 @@ nn = 1000
 pp = 1000
 cont = 1
 vpis_for_save=np.load('flying/vpis_for_save.npy')
+vpis_for_vtk=np.load('flying/vpis_for_vtk.npy')
 count_save=0
+count_vtk=0
 
 verif = True
 pare = False
@@ -663,18 +665,16 @@ while verif:
     # plot_field(data_impress,'pressure')
     # plot_field(data_impress,'tpfa_pressure')
     save_multilevel_results()
-
     if vpis_for_save[count_save]<b1.vpi:
+        sat_adm=data_impress['saturation']
+        sat_f=np.load('flying/saturation_'+str(vpis_for_save[count_save])+'.npy')
+        es_L2.append(np.linalg.norm(sat_f-sat_adm)/np.linalg.norm(sat_f))
+        es_Linf.append(abs(sat_f-sat_adm).max()/sat_f.max())
+        count_save+=1
+
+    if len(vpis_for_vtk)>0 and vpis_for_vtk[count_vtk]<b1.vpi:
         refinement=100*((data_impress['LEVEL']==0).sum()-len(p_wells))/len(data_impress['LEVEL'])
         np.save('results/'+folder+'/ms/'+ms_case+'/refinement'+'.npy',np.array([refinement]))
-
-        sat_f=np.load('flying/saturation_'+str(vpis_for_save[count_save])+'.npy')
-        sat_adm=data_impress['saturation']
-
-        es_L2.append(np.linalg.norm(sat_f-sat_adm)/np.linalg.norm(sat_f))
-
-        es_Linf.append(abs(sat_f-sat_adm).max()/sat_f.max())
-
 
         print(b1.vpi,'vpi')
         print("Creating_file")
@@ -689,18 +689,18 @@ while verif:
         data_impress['raz_pos'][:]=0
         data_impress['raz_pos'][data_impress['DUAL_1']==2]=data_impress['raz_phi'][data_impress['DUAL_1']==2]
         data_impress.update_variables_to_mesh()
-        file_count=str(int(100*vpis_for_save[count_save]))
+        file_count=str(int(100*vpis_for_vtk[count_vtk]))
 
         M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
         M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
 
-        if vpis_for_save[count_save]==vpis_for_save.max():
+        if vpis_for_vtk[count_vtk]==vpis_for_vtk.max():
             export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor,
-            t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1],
+            t_comp, el2, elinf, es_L2, es_Linf,vpis_for_vtk[:count_vtk+1],
             ep_haji_L2,ep_haji_Linf, er_L2, er_Linf,ev_L2,ev_Linf)
             verif=False
         print("File created at time-step: ",cont)
-        count_save+=1
+        count_vtk+=1
 
 
     # if cont % nn == 0 or count_save==len(vpis_for_save)-1:
