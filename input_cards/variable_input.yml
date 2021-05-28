@@ -214,12 +214,6 @@ flux_grav_faces:
   level: 0
   sparse: true
   type: faces
-flux_grav_o_faces_vec:
-  data size: 3
-  data type: float
-  level: 0
-  sparse: true
-  type: faces
 flux_grav_volumes:
   data size: 1
   data type: float
@@ -280,12 +274,6 @@ flux_w_faces:
   level: 0
   sparse: true
   type: faces
-flux_w_faces_vec:
-  data size: 3
-  data type: float
-  level: 0
-  sparse: true
-  type: faces
 flux_w_volumes:
   data size: 1
   data type: float
@@ -316,12 +304,6 @@ gama:
   level: 0
   sparse: true
   type: volumes
-gama_faces:
-  data size: 1
-  data type: float
-  level: 0
-  sparse: true
-  type: faces
 hs:
   data size: 3
   data type: float

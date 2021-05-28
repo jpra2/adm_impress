@@ -450,6 +450,7 @@ class AdmNonNested(AdmMethod):
         #     volumes = gid0[gid1==gid]
         #     self.data_impress['LEVEL'][volumes] = 0
     def set_level_wells_only(self):
+        
         self.data_impress['LEVEL'][:] = 1
         self.data_impress['LEVEL'][self.all_wells_ids] = 0
 

@@ -89,7 +89,7 @@ def plot_net_flux(OR_AMS,OP_AMS):
     phi_diag=OP_AMS_c[gids0,gids1].toarray()[0]
     OP_AMS_c[gids0,gids1]=0
     phi_off=OP_AMS_c.tocsc().max(axis=1).T.toarray()[0]
-    # import pdb; pdb.set_trace()
+
 
     data_impress['raz_diag'] = ((1-phi_diag)/phi_diag)*abs((diagf-diag_orig)/diag_orig)
 
@@ -99,13 +99,13 @@ def plot_net_flux(OR_AMS,OP_AMS):
     mm2=mm.copy()
     # mm[mm>0]=0
     mm2[mm<0]=0
-    # import pdb; pdb.set_trace()
+
     # mms=np.array(mm.sum(axis=1)).T[0]
     mms=-(mm.max(axis=1)-mm.min(axis=1)).T.toarray()[0]
     mms2=np.array(mm.sum(axis=1)).T[0]
     data_impress['raz_flux_tag']=mms/diags_f
     # if (mms/diags_f).max() > 1:
-    #     import pdb; pdb.set_trace()
+
     data_impress['raz_pos']=mms2/diags_f
 
 def get_finescale_netas():
@@ -173,8 +173,7 @@ def mostrar(i, data_impress, M, op1, rest1):
     data_impress['verif_rest'] = el0
     rr = set(np.where(l0>0)[0])
     rr2 = set(np.where(el0>0)[0])
-    if rr & rr2 != rr2:
-        import pdb; pdb.set_trace()
+
 
 def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     l0 = np.concatenate(op[:,i].toarray())
@@ -200,7 +199,7 @@ def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     data_impress['verif_rest'] = el2
     data_impress.update_variables_to_mesh(['verif_po', 'verif_rest'])
     # M.core.print(file='results/test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
-    import pdb; pdb.set_trace()
+
 
 def dados_unitarios(data_impress):
     data_impress['hs'] = np.ones(len(data_impress['hs'])*3).reshape([len(data_impress['hs']), 3])
@@ -348,8 +347,8 @@ data_impress['transmissibility'] = biphasic_data['transmissibility_faces'].copy(
 multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 mlo = multilevel_operators
 
-# T, b = b1.get_T_and_b()
-# import pdb; pdb.set_trace()
+T, b = b1.get_T_and_b()
+
 try:
     perms=np.load("flying/permeability.npy")
     perms_xx=perms[:,0]
@@ -426,7 +425,8 @@ adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, element
 adm_method.restart_levels()
 # adm_method.set_level_wells()
 # adm_method.set_level_wells_2()
-adm_method.set_level_wells_only()
+adm_method.set_level_wells_3()
+# adm_method.set_level_wells_only()
 adm_method.equalize_levels()
 
 # adm_method.verificate_levels()
@@ -520,7 +520,6 @@ def save_matrices_as_png_with_highlighted_lines(matrices, names, Lines0):
 
 
         if matrix.shape[0]>4:
-            # import pdb; pdb.set_trace()
             Lines=[data_impress['GID_0'][data_impress['GID_1']==l] for l in Lines0]
         else:
             Lines=[[l] for l in Lines0]
@@ -572,7 +571,7 @@ data_impress.update_variables_to_mesh()
 matrices=[T,Tc,OP_AMS,T*OP_AMS, OP_ADM, Tcadm,T*OP_ADM]
 names=['T','Tc','OP_AMS', 'TP', 'OP_ADM', 'Tcadm','TP_ADM']
 save_matrices_as_png(matrices,names)
-# import pdb; pdb.set_trace()
+
 diags=np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
 
 gids1=data_impress['GID_1']
@@ -590,7 +589,7 @@ matricesh=[T,OP_AMS,T*OP_AMS,Tc, mat_neta,dia_vec, max_neta]
 namesh=['T_hi','OP_AMS_hi','TP_hi','Tc_hi','neta','dia_vec','max_neta']
 lines=[0,1,2,3]
 save_matrices_as_png_with_highlighted_lines(matricesh,namesh, lines)
-# import pdb; pdb.set_trace()
+
 '''
 
 # pf=linalg.spsolve(T,b)
@@ -706,7 +705,6 @@ try:
     l_groups=np.concatenate([np.repeat(i,len(critical_groups[i])) for i in range(len(critical_groups))])
     groups_c=np.concatenate(critical_groups)
 except:
-    # import pdb; pdb.set_trace()
     l_groups=np.array([0])
     groups_c=np.array([0])
     # l_groups=np.repeat(0,len(critical_groups[0]))
@@ -734,6 +732,8 @@ M.core.mb.write_file('results/biphasic/ms/'+ms_case+'/vtks/coupled_vols.vtk',[co
 
 # adm_method.set_level_wells_3()
 adm_method.set_level_wells_only()
+adm_method.set_level_wells_3()
+# adm_method.set_level_wells_only()
 vals_n1_adm=[]
 vals_vpi=[]
 vals_delta_t=[]
@@ -756,8 +756,6 @@ neta_lim_finescale=np.load('flying/neta_lim_finescale.npy')[0]
 type_of_refinement=np.load('flying/type_of_refinement.npy')[0]
 delta_sat_max=np.load('flying/delta_sat_max.npy')[0]
 
-
-# import pdb; pdb.set_trace()
 while verif:
 
     t00=time.time()
@@ -795,8 +793,8 @@ while verif:
     # map1[idl1]=data_impress['GID_1']
     # monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim,map1)
     # np.concatenate(np.array(critical_groups)'''
-    # adm_method.set_level_wells_3()
-    adm_method.set_level_wells_only()
+    adm_method.set_level_wells_3()
+    # adm_method.set_level_wells_only()
 
     if type_of_refinement=='uni':
         if len(vols_orig)>0:
@@ -841,9 +839,9 @@ while verif:
 
     vf=np.load('flying/velocity_faces_finescale.npy')
     vadm=data_impress['velocity_faces']
+
     ev_L2.append(np.linalg.norm(abs(vf-vadm).max(axis=1))/np.linalg.norm(abs(vf).max(axis=1)))
     ev_Linf.append(abs(vf-vadm).max()/abs(vf).max())
-
 
 
     eadm_2=np.linalg.norm(abs(pms-pf))/np.linalg.norm(pf)
@@ -852,12 +850,12 @@ while verif:
     elinf.append(eadm_inf)
 
     p_wells=pms[wells['all_wells']]
-    pms=(pms-p_wells.min())/(p_wells.max()-p_wells.min())
+    # pms=(pms-p_wells.min())/(p_wells.max()-p_wells.min())
     data_impress['pressure']=pms
     data_impress['DUAL_PRESSURE'][data_impress['DUAL_1']>=2]=pms[data_impress['DUAL_1']>=2]
 
     p_wells=pf[wells['all_wells']]
-    pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
+    # pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
     data_impress['tpfa_pressure']=pf
 
     save_multilevel_results()

@@ -226,12 +226,13 @@ class Wells(DataManager):
                 limites = np.array([p0, p1])
                 vols = get_box(centroids, limites)
                 nv = len(vols)
+
                 if prescription == 'Q':
                     try:
                         val = value/nv
                     except:
                         print("Nenhum volumes corresponde ao poço")
-                        import pdb; pdb.set_trace()
+                    
                     if tipo == 'Injector':
                         val *= -1
 
@@ -322,8 +323,9 @@ class Wells(DataManager):
         mb.tag_set_data(self.tags['INJ'], ws_inj, np.repeat(1, len(ws_inj)))
         mb.tag_set_data(self.tags['PROD'], ws_prod, np.repeat(1, len(ws_prod)))
         mb.tag_set_data(self.tags['P'], ws_p, values_p)
+
         if len(ws_q) > 0:
-            mb.tag_set_data(self.tags['Q'], ws_q, values_q)
+            mb.tag_set_data(self.tags['Q'], ws_q, values_q[0,:])
 
     def load_tags(self):
         assert not self._loaded
@@ -358,10 +360,8 @@ class Wells(DataManager):
         facs_nn = self['facs_nn']
         k_harm_faces = M.data['k_harm'].copy()
         k_max = k_harm_faces.max()
-        try:
-            k_harm_faces[facs_nn] = np.repeat(k_max, len(facs_nn))
-        except:
-            return 0
+
+        k_harm_faces[facs_nn] = np.repeat(k_max, len(facs_nn))
 
         areas = M.data['area']
         dist_cent = M.data['dist_cent']

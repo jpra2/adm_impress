@@ -4,7 +4,7 @@ class GenarateVugs:
         centro=[300,500,700]
         abc=[1,3,2]
         self.get_comparation_parameters(M,centro,abc)
-        centers, abcs=self.get_aleatory_parameters(10,[1,3])
+        centers, abcs=self.get_aleatory_parameters(10,[5,15]) #(num_vugs,[vmin, vmax])
         for i in range(len(centers)):
             self.get_comparation_parameters(M,centers[i],abcs[i])
 
@@ -25,6 +25,7 @@ class GenarateVugs:
             +(y-centro[1])*(y-centro[1])/(params[1]*params[1])\
             +(z-centro[2])*(z-centro[2])/(params[2]*params[2])<1
         M.vug[vugs]=1
+        
     def get_aleatory_parameters(self,n,lim_abc):
         xmin=self.x.min()
         xmax=self.x.max()
