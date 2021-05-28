@@ -1,9 +1,10 @@
-import pdb
 from packs.directories import data_loaded
 from run_compositional_adm import run_simulation
 import time
 from packs.multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
+from packs.compositional.compositional_params import Params
+from packs.adm.adm_method import AdmMethod
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -14,6 +15,7 @@ n_levels = data_loaded['n_levels']
 get_correction_term = data_loaded['get_correction_term']
 load_operators = data_loaded['load_operators']
 load_multilevel_data = data_loaded['load_multilevel_data']
+params = Params()
 
 if data_loaded['use_vpi']:
     stop_criteria = max(data_loaded['compositional_data']['vpis_para_gravar_vtk'])
@@ -33,19 +35,38 @@ M, data_impress, wells, fprop, load, elements_lv0 = sim.initialize(load, convert
 # import pdb; pdb.set_trace()
 # load_multilevel_data = False
 ml_data = MultilevelData(data_impress, M, load=load_multilevel_data)
+
 ml_data.run()
 
 mlo = MultilevelOperators(n_levels, data_impress, elements_lv0, ml_data, load=load_operators, get_correction_term=get_correction_term)
 
 # ml_data.load_tags()
-import pdb; pdb.set_trace()
+# import pdb; pdb.set_trace()
 
+params['area'] = data_impress['area']
+params['pretransmissibility'] = data_impress['pretransmissibility']
 
 
 while run_criteria < stop_criteria:# and loop < loop_max:
+    params['pressure'] = fprop.P
+    params['mobilities'] = fprop.mobilities
+    params['composition'] = fprop.Csi_j
+    params['mol_number'] = fprop.Nk
+    params['Sg'] = fprop.Sg
+    params['Sw'] = fprop.Sw
+    params['So'] = fprop.So
+    params['z'] = fprop.z
+    params['porous_volume'] = fprop.Vp
+    params['total_volume'] = fprop.Vt
+
+
+    # import pdb; pdb.set_trace()
+
     sim.run(M, wells, fprop, load, 
             multilevel_data=ml_data, 
-            multilevel_operators=mlo)
+            multilevel_operators=mlo,
+            params=params)
+
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'
         run_criteria = sim.vpi
@@ -67,6 +88,11 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         simulation time plus delta_t is equal to the final time'
         if sim.t + sim.delta_t > t_next:
             sim.delta_t = t_next - sim.t
+
+    params['mobilities_internal_faces'] = fprop.mobilities_internal_faces
+    params['composition_internal_faces'] = fprop.Csi_j_internal_faces
+    params['xkj_internal_faces'] = fprop.xkj_internal_faces
+    params['rho_phase_internal_faces'] = fprop.rho_j_internal_faces
 
     loop = sim.loop
     print(sim.t)

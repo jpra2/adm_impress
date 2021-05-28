@@ -134,6 +134,56 @@ pressure:
   sparse: True
   level: 0
 
+ms_pressure:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+pressure_error:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+DUAL_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+DUAL_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+GID_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+GID_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+GID_0:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+
 weight:
   type: volumes
   data size: 3

@@ -11,12 +11,16 @@ from packs.utils.test_functions import test_kwargs_keys
 class CompositionalFVM:
     
     _kwargs_keys = {
-        '__call__': set(['multilevel_data',
-                     'multilevel_operators'])
+        '__call__': [
+            'multilevel_data',
+            'multilevel_operators'
+        ]
     }
 
     def __call__(self, M, wells, fprop, delta_t, **kwargs):
-        test_kwargs_keys(CompositionalFVM._kwargs_keys['__call__'], kwargs.keys())
+        # test_kwargs_keys(CompositionalFVM._kwargs_keys['__call__'], kwargs.keys())
+        # import pdb; pdb.set_trace()
+        params=kwargs.get('params')
         self.update_gravity_term(fprop)
         if ctes.MUSCL: self.get_faces_properties_average(fprop)
         else: self.get_faces_properties_upwind(fprop)
@@ -24,13 +28,16 @@ class CompositionalFVM:
         r = 0.8 # enter the while loop
         # psolve = TPFASolver(fprop)
         psolve = AdmTpfaCompositionalSolver(fprop)
+        # params['dVtdP'] = AdmTpfaCompositionalSolver.dVtP
+        # params['dVtdNk'] = AdmTpfaCompositionalSolver.dVtk
         P_old = np.copy(fprop.P)
         Nk_old = np.copy(fprop.Nk)
         while (r!=1.):
             fprop.Nk = np.copy(Nk_old)
             fprop.P, total_flux_internal_faces, self.q = psolve.get_pressure(M, wells, fprop, delta_t,
                                                                              multilevel_data=kwargs.get('multilevel_data'),
-                                                                             multilevel_operators=kwargs.get('multilevel_operators'))
+                                                                             multilevel_operators=kwargs.get('multilevel_operators'),
+                                                                             params=params)
             #self.update_composition(fprop, delta_t)
             #wave_velocity = MUSCL().run(M, fprop, wells, P_old, total_flux_internal_faces)
             #self.update_composition_RK3_1(fprop, fprop.Nk, delta_t)

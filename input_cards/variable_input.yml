@@ -22,6 +22,36 @@ COARSE_LOCAL_ID_2:
   level: 0
   sparse: true
   type: volumes
+DUAL_1:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+DUAL_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+GID_0:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+GID_1:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+GID_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
 NODES:
   data size: 3
   data type: float
@@ -196,6 +226,12 @@ mass_water_production:
   level: 0
   sparse: true
   type: volumes
+ms_pressure:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 permeability:
   data size: 9
   data type: float
@@ -209,6 +245,12 @@ poro:
   sparse: true
   type: volumes
 pressure:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pressure_error:
   data size: 1
   data type: float
   level: 0

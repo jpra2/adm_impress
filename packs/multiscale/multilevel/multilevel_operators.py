@@ -11,6 +11,8 @@ from ...multiscale.operators.prolongation.AMS import paralel_ams_new0 as paralel
 from ...multiscale.ms_utils.matrices_for_correction import MatricesForCorrection as mfc
 
 from ..operators.prolongation.AMS.Paralell.coupled_ams import OP_AMS
+from packs.multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
+from packs.utils.test_functions import test_instance
 
 def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
 
@@ -68,20 +70,24 @@ class MultilevelOperators(DataManager):
         ml_data,
         data_name='MultilevelOperators.npz',
         load=False,
-        get_correction_term=False):
+        get_correction_term=False,
+        return_correction_matrix=False):
 
         super().__init__(data_name=data_name, load=load)
         self.load = load
+        test_instance(ml_data, MultilevelData)
 
         self.ml_data = ml_data
 
         self.n_levels = n_levels
         self.data_impress = data_impress
         self.get_correction_term = get_correction_term
+        self.return_cmatrix = return_correction_matrix
         self.elements_lv0 = elements_lv0
 
         self.restriction = 'restriction_level_'
         self.prolongation = 'prolongation_level_'
+        self.cmatrix = 'correction_matrix_level_'
 
         self.infos_level = 'infos_level_'
         self.gid_n = 'gid'
@@ -98,12 +104,15 @@ class MultilevelOperators(DataManager):
         if load == True:
             for n in range(n_levels):
                 prol_name = self.prolongation + str(n+1)
-
                 rest_name = self.restriction + str(n+1)
+                cmat_name = self.cmatrix + str(n+1)
+
                 OP = sp.load_npz(os.path.join('flying', prol_name + '.npz'))
                 OR = sp.load_npz(os.path.join('flying', rest_name + '.npz'))
+                Cmatrix = sp.load_npz(os.path.join('flying', cmat_name + '.npz'))
                 self._data[prol_name] = OP                
                 self._data[rest_name] = OR
+                self._data[cmat_name] = Cmatrix
         else:
             pass
             # self.export_to_npz()
@@ -172,10 +181,16 @@ class MultilevelOperators(DataManager):
                                                  tpfalizar=tpfalizar,
                                                  get_correction_term=get_correction_term)
 
-    def run(self, T: 'fine transmissibility without boundary conditions',
+    def run(
+        self,
+        T: 'fine transmissibility without boundary conditions',
         total_source_term: 'total fine source term'=None,
-        q_grav: 'fine gravity source term'=None):
+        _grav: 'fine gravity source term'=None,
+        return_correction_matrix=False
+    ):
+    
         T_ant = T.copy()
+        total_source_term_2 = total_source_term.copy()
         for n in range(1, self.n_levels):
             level = n
             if self.get_correction_term:
@@ -190,14 +205,26 @@ class MultilevelOperators(DataManager):
                 Eps_matrix = None
                 total_source_term = None
 
-            OP, pcorr = self.operators[str(level)].run(T_ant, total_source_term=total_source_term, B_matrix=B_matrix, Eps_matrix=Eps_matrix)
+            ##############
+            ## Cmatrix is the multiscale correction matrix
+            #############
+
+            OP, pcorr, Cmatrix = self.operators[str(level)].run(
+                T_ant,
+                total_source_term=total_source_term_2,
+                B_matrix=B_matrix,
+                Eps_matrix=Eps_matrix,
+                return_correction_matrix=return_correction_matrix
+            )
             # import pdb; pdb.set_trace()
             self._data[self.prolongation + str(level)] = OP
             self._data[self.pcorr_n + str(level)] = pcorr
+            self._data[self.cmatrix + str(level)] = Cmatrix
             OR = self._data[self.restriction + str(level)]
 
             sp.save_npz(os.path.join('flying', self.prolongation + str(level) + '.npz'), OP)
             sp.save_npz(os.path.join('flying', self.restriction + str(level) + '.npz'), OR)
+            sp.save_npz(os.path.join('flying', self.cmatrix + str(level) + '.npz'), Cmatrix)
 
             if level == self.n_levels-1:
                 continue
@@ -206,6 +233,7 @@ class MultilevelOperators(DataManager):
             cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
+            total_source_term_2 = OR*total_source_term_2
 
         self.export_to_npz()
 
@@ -322,3 +350,22 @@ class MultilevelOperators(DataManager):
         print("tempo total para cálculo do OP {} segundos".format(time.time()-t0))
 
         return OP
+
+    def get_prolongation_by_level(self, level):
+        return self[self.prolongation + str(level)]
+
+    def get_restriction_by_level(self, level):
+        return self[self.restriction + str(level)]
+
+    def get_pcorr_by_level(self, level):
+        return self[self.pcorr_n + str(level)]
+
+    def solve_pressure(self, T: 'fine_transmissibility', total_source_term):
+
+        for level in range(1, self.n_levels):
+
+            if level == self.n_levels-1:
+                prolongation = self.get_prolongation_by_level(level)
+                restriction = self.get_restriction_by_level(level)
+                pcorr = self.get_pcorr_by_level(pcorr)
+                continue

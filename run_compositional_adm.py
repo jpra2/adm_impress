@@ -8,20 +8,22 @@ from packs.compositional.properties_calculation import PropertiesCalc
 from packs.compositional.update_time import delta_time
 from get_inputs_compositional import FluidProperties
 from packs.utils import constants as ctes
+from packs.compositional.compositional_params import Params
 import os
 import numpy as np
 import time
-from packs.utils.test_functions import test_kwargs_keys
+from packs.utils.test_functions import test_kwargs_keys, test_instance
 
 class run_simulation:
     
     _kwargs_keys = {
         'run': set(['multilevel_data',
-                     'multilevel_operators'])
+                     'multilevel_operators']),
     }
     
     '''Class created to compute simulation properties at each simulation time'''
     def __init__(self, name_current, name_all):
+
         self.name_current_results =os.path.join(direc.flying, name_current + '.npy')
         self.name_all_results = os.path.join(direc.flying, name_all)
         self.loop = 0
@@ -37,13 +39,15 @@ class run_simulation:
         self.all_results = self.get_empty_current_compositional_results()
         self.p1 = PropertiesCalc()
 
-    def initialize(self, load, convert, mesh):
+    def initialize(self, load, convert, mesh, **kwargs):
         ''' Function to initialize mesh (preprocess) get and compute initial mesh \
         properties '''
+
         M, elements_lv0, data_impress, wells = initial_mesh(mesh, load=load, convert=convert)
         ctes.init(M, wells)
         ctes.component_properties()
         fprop = self.get_initial_properties(M, wells)
+
         return M, data_impress, wells, fprop, load, elements_lv0
 
     def get_initial_properties(self, M, wells):
@@ -73,7 +77,9 @@ class run_simulation:
     def run(self, M, wells, fprop, load, **kwargs):
         ''' Function created to compute reservoir and fluid properties at each \
         time step '''
-        test_kwargs_keys(self._kwargs_keys['run'], kwargs.keys())
+
+        # test_kwargs_keys(self._kwargs_keys['run'], kwargs.keys())
+        params = kwargs.get('params')
 
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
@@ -83,14 +89,15 @@ class run_simulation:
 
         self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t,
                                           multilevel_data=kwargs.get('multilevel_data'),
-                                          multilevel_operators=kwargs.get('multilevel_operators'))
+                                          multilevel_operators=kwargs.get('multilevel_operators'),
+                                          params=params)
 
         self.t += self.delta_t
 
         '----------------- Perform Phase stability test and flash -------------'
 
         if ctes.load_k and ctes.compressible_k:
-            fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
+                fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
             self.p2.run(wells, fprop.P, fprop.z)

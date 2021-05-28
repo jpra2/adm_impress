@@ -37,7 +37,7 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
                     p_homog=initial_homog_primal+np.cumsum(np.repeat(crs[i][j]*d_j[j],n_homog_prim+2))-crs[i][j]*d_j[j]
                     Pij=np.append(Pij,p_homog)
             else:
-                import pdb; pdb.set_trace()
+                
                 Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
 
             Pij[-1] = max_j[j]

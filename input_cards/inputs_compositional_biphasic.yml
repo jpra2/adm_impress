@@ -1,5 +1,6 @@
 #Buckley Leverett's horizontal case
-mesh_name: 12x1x1_b.msh
+# mesh_name: 12x1x1_b.msh
+mesh_name: 27x1x1.h5m
 # mesh_name: 12x1x1.h5m
 name_save_file: 'results_Buckley_Leverett_caset'
 
@@ -10,15 +11,16 @@ water_component: True
 use_vpi: True
 
 ###############################
-# Multilevel infos
+## Multilevel infos
 n_levels: 2
 Crs:
   Cr1: [3, 1, 1]
-  Cr2: [3, 1, 1]
+  Cr2: [9, 1, 1]
 get_correction_term: false
 load_operators: false
 load_multilevel_data: false
 #############################
+
 load_compositional_data: False
 load_data: False
 convert_english_to_SI: False
@@ -69,7 +71,8 @@ compositional_data:
     rho_W: 999.55
     Mw_w: 18.015e-3
     Cw: 0
-    Pw: 13.789514E6
+#    Pw: 13.789514E6
+    Pw: 13.79E6
     mobility: True
     # if water is mobile: True, if not, False
 
@@ -128,22 +131,43 @@ Temperature:
     value: 288.70556
 
 
+#Wells:
+#  P1:
+#    p0: [0.0, 0.0, -0.03048]
+#    p1: [0.0508, 0.03048, 0.0]
+#    prescription: Q
+#    type: Injector
+#    type_region: box
+#    value: 3.2774128e-8
+#    z: [0., 1.]
+#    ksi_total: 55484.31862337
+#    value_type: volumetric
+#
+#  P2:
+#    p0: [0.5588, 0.0, -0.03048]
+#    p1: [0.6096, 0.03048, 0.0]
+#    prescription: P
+#    type: Producer
+#    type_region: box
+#    value: 13.79E6
+
 Wells:
   P1:
-    p0: [0.0, 0.0, -0.03048]
-    p1: [0.0508, 0.03048, 0.0]
+    p0: [0.0, 0.0, 0]
+    p1: [1, 1, 1]
     prescription: Q
     type: Injector
     type_region: box
-    value: 3.2774128e-8
+    value: 1E-10
     z: [0., 1.]
     ksi_total: 55484.31862337
     value_type: volumetric
 
   P2:
-    p0: [0.5588, 0.0, -0.03048]
-    p1: [0.6096, 0.03048, 0.0]
+    p0: [26.0, 0.0, 0.0]
+    p1: [27.0, 1.0, 1.0]
     prescription: P
     type: Producer
     type_region: box
-    value: 13.79E6
+    value: 1
+
