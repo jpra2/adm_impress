@@ -1,8 +1,10 @@
+import os.path
+
 from packs.compositional.pressure_solver import TPFASolver
 from packs.utils.test_functions import test_kwargs_keys, test_instance
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from ..utils import constants as ctes
-from packs.multiscale.ms_utils.multiscale_solver import multilevel_pressure_solver
+from packs.multiscale.ms_utils.multiscale_functions import multilevel_pressure_solver, insert_prolongation_operator_impress, print_mesh_volumes_data, insert_restriction_operator_impress
 import scipy.sparse as sp
 import numpy as np
 
@@ -55,9 +57,32 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         data_impress['ms_pressure'][:] = solution
         data_impress['pressure_error'][:] = error
         data_impress.update_variables_to_mesh()
-        m1 = M.core.mb.create_meshset()
-        M.core.mb.add_entities(m1, M.core.all_volumes)
-        M.core.mb.write_file('results/test_comp_1.vtk', [m1])
+        # m1 = M.core.mb.create_meshset()
+        # M.    core.mb.add_entities(m1, M.core.all_volumes)
+        # M.core.mb.write_file('results/test_comp_1.vtk', [m1])
+        insert_prolongation_operator_impress(
+            M,
+            prolongation_list[0],
+            1,
+            data_impress['GID_1'],
+            data_impress['GID_0'],
+            data_impress['GID_0'],
+        )
+
+        insert_restriction_operator_impress(
+            M,
+            restriction_list[0],
+            1,
+            data_impress['GID_1'],
+            data_impress['GID_0'],
+            data_impress['GID_0'],
+        )
+
+        print_mesh_volumes_data(
+            M,
+            os.path.join('results', 'prolongation_level_1.vtk')
+        )
+
         import pdb; pdb.set_trace()
 
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop) # pressao local

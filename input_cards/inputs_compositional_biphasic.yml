@@ -158,7 +158,8 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: 1E-10
+#    value: 1E-10
+    value: 1
     z: [0., 1.]
     ksi_total: 55484.31862337
     value_type: volumetric
@@ -169,5 +170,5 @@ Wells:
     prescription: P
     type: Producer
     type_region: box
-    value: 1
+    value: 13790000
 

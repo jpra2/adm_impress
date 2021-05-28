@@ -50,7 +50,7 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: 1E-10
+    value: 1
     value_type: volumetric
     z:
     - 0.0
@@ -67,7 +67,7 @@ Wells:
     prescription: P
     type: Producer
     type_region: box
-    value: 1
+    value: 13790000
 compositional: true
 compositional_data:
   CFL: 0.5
