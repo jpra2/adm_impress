@@ -314,8 +314,8 @@ adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, element
 adm_method.restart_levels()
 # adm_method.set_level_wells()
 # adm_method.set_level_wells_2()
-adm_method.set_level_wells_3()
-# adm_method.set_level_wells_only()
+# adm_method.set_level_wells_3()
+adm_method.set_level_wells_only()
 adm_method.equalize_levels()
 
 # adm_method.verificate_levels()
@@ -526,8 +526,8 @@ data_impress['coupled_flag'][data_impress['DUAL_1']>=2]=0
 coupl=100*(data_impress['coupled_flag']==1).sum()/len(data_impress['coupled_flag'])
 np.save('results/'+folder+'/ms/'+ms_case+'/coupl'+'.npy',np.array([coupl]))
 
-adm_method.set_level_wells_3()
-# adm_method.set_level_wells_only()
+# adm_method.set_level_wells_3()
+adm_method.set_level_wells_only()
 vals_n1_adm=[]
 vals_vpi=[]
 vals_delta_t=[]
@@ -561,10 +561,16 @@ while verif:
         data_impress['nfp'][np.unique(volumes)]=maxs
         # netasp_array=np.maximum(netasp_array,netasp_array*data_impress['raz_phi'][volumes])
         # vols_orig=volumes[netasp_array>neta_lim_finescale]
-        try:
-            vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
-        except:
-            vols_orig=data_impress['GID_0'][maxs>neta_lim_finescale]
+
+        #try:
+            # import pdb; pdb.set_trace()
+            # netasp_array[data_impress['LEVEL'][volumes]==0]=neta_lim_finescale+1
+        vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,elements_lv0, volumes,netasp_array, neta_lim_finescale)
+        # except:
+        #     print('treta')
+        #     import pdb; pdb.set_trace()
+        #     vols_orig=data_impress['GID_0'][(maxs>neta_lim_finescale) | (data_impress['LEVEL']==0)]
+
             # vols_orig=data_impress['GID_0'][data_impress['LEVEL']==0]
         #
         # vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
@@ -586,8 +592,8 @@ while verif:
     # map1[idl1]=data_impress['GID_1']
     # monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim,map1)
     # np.concatenate(np.array(critical_groups)'''
-    adm_method.set_level_wells_3()
-    # adm_method.set_level_wells_only()
+    # adm_method.set_level_wells_3()
+    adm_method.set_level_wells_only()
 
     if type_of_refinement=='uni':
         if len(vols_orig)>0:
@@ -621,13 +627,13 @@ while verif:
 
     b1.run_2()
     t1=time.time()
-    print(b1.wor, b1.vpi, adm_method.n1_adm)
+
     pms=data_impress['pressure']
-    if neta_lim_finescale==np.inf:
-        np.save('flying/original_ms_solution.npy',pms)
+    if True:
+        # np.save('flying/original_ms_solution.npy',pms)
         po=pms.copy()
         vo=data_impress['velocity_faces']
-        np.save('flying/velocity_faces_AMS.npy',vo)
+        # np.save('flying/velocity_faces_AMS.npy',vo)
     else:
 
         po=np.load('flying/original_ms_solution.npy')
@@ -708,4 +714,5 @@ while verif:
     #     verif=False
 
     T, b = b1.get_T_and_b()
+    print(b1.wor, b1.vpi, adm_method.n1_adm, time.time()-t00, eadm_2)
     cont += 1

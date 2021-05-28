@@ -56,23 +56,23 @@ Saturation:
 
 Wells:
   P1:
-    p0: [0.0, 0.0, 72.0]
-    p1: [1.0, 1.0, 74.0]
-
-    prescription: P
-    type: Producer
-    type_region: box
-    value: 0.0
-
-
-  P2:
-    p0: [53.0, 215.0, 72.0]
-    p1: [54.0, 216.0, 74.0]
+    p0: [53.0, 0.0, 72.0]
+    p1: [54.0, 1.0, 74.0]
 
     prescription: P
     type: Injector
     type_region: box
     value: 1.0
+
+
+  P2:
+    p0: [0.0, 215.0, 72.0]
+    p1: [1.0, 216.0, 74.0]
+
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 0.0
 
 monophasic_data:
   gama: 100.0

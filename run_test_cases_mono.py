@@ -23,10 +23,12 @@ def remove_previous_files():
     os.mkdir('results/'+folder+'/finescale')
     os.mkdir('results/'+folder+'/finescale/vtks')
 
-vpis_for_vtk =np.arange(0.0, 0.801,0.1)
-vpis_for_save=np.arange(0.0, 0.80001,0.001)
+vpis_for_vtk =np.arange(0.0, 0.51,0.05)
+vpis_for_save=np.arange(0.0, 0.500001,0.001)
+# vpis_for_vtk=[0.0, 0.00001]
+# vpis_for_save=[0.0,0.00001]
 def run_test_cases():
-    # vpis_for_save=np.arange(0.0,1.001,0.01)
+    # vpis_for_save=np.arange(0.0,1.001,0.01)0
 
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     np.save('flying/vpis_for_vtk.npy',vpis_for_vtk)
@@ -207,8 +209,8 @@ def print_results(all_cases):
             plt.savefig('results/'+folder+'/'+variable+'.svg', bbox_inches=12)
 
     for var in single_vars:
-        abcissa_var='alpha'
-        control_variable='beta'
+        abcissa_var='beta'
+        control_variable='alpha'
 
         all_abcissa=np.array(single_vars[abcissa_var])
         pos=all_abcissa<10000
@@ -831,6 +833,9 @@ def format_plot(scales, abcissas, ordenadas):
         s_minor_ticks=np.arange(major_ticks.max(),max(2.01*major_ticks.max(),ordenadas.max()*1.101),10**(np.log10(major_ticks.max())))[1:]
 
         minor_ticks=round_to_1(minor_ticks)
+        # import pdb; pdb.set_trace()
+        if len(major_ticks)==1:
+            major_ticks=[major_ticks[0]/10,major_ticks[0]]
         a_minor_ticks=np.concatenate([np.arange(major_ticks[i],major_ticks[i+1],major_ticks[i])[1:] for i in range(len(major_ticks)-1)])
         a_minor_ticks=np.concatenate([a_minor_ticks, s_minor_ticks])
 
@@ -867,11 +872,11 @@ def print_results_single(all_cases):
 
     single_vars = collect_single_phase_data(all_cases)
 
-    ab='beta'
+    ab='neta'
 
     plot_vars=[[        ab,        ab,        ab,         ab,         ab],     # Abcissas
                [     'el2',   'elinf',   'coupl',   'n1_adm',    'betad'],     # Ordenadas
-               [ 'lin_lin', 'lin_log', 'lin_lin',  'lin_lin', 'lin_lin']]     # Escalas dos Eixos
+               [ 'lin_lin', 'lin_lin', 'lin_lin',  'lin_lin', 'lin_lin']]     # Escalas dos Eixos
 
     control_var='alpha'
     # legends={0:'CR = 3x3',1:'CR = 5x5', 2:'CR = 7x7', 3:'CR = 9x9'}
@@ -908,12 +913,12 @@ def print_results_single(all_cases):
             ordenadas=ordenadas[ind_sort]
             elinf=elinf[ind_sort]
             try:
-                p=plt.plot(abcissas, ordenadas, lw=5, label=legends[i])
+                p=plt.plot(abcissas, ordenadas, lw=5, label=legends[i], marker='o', markersize=10)
                 color=p[0].get_color()
-                teta=180*np.arctan((ordenadas[-1]-ordenadas[-2])/(abcissas[-1]-abcissas[-2]))/np.pi
+                # teta=180*np.arctan((ordenadas[-1]-ordenadas[-2])/(abcissas[-1]-abcissas[-2]))/np.pi
                 dx=len(legends[i])/2
                 dy=0.5
-                plt.scatter(abcissas[elinf<1000],ordenadas[elinf<1000],lw=10,color='blue')
+                # plt.scatter(abcissas[elinf<1000],ordenadas[elinf<1000],lw=10,'blue')
             except:
                 import pdb; pdb.set_trace()
         format_plot(scales, all_abcissas, all_ordenadas)

@@ -23,8 +23,8 @@ convert_capillary_pressure_to: 'Pa'
 _debug: True
 
 Crs:
-  Cr1: [11, 11, 1]
-  Cr2: [33, 33, 1]
+  Cr1: [9, 9, 1]
+  Cr2: [99, 99, 1]
 
 read_permeability: false
 file_name_permeability: spe10_perms_and_phi.npz
@@ -136,20 +136,20 @@ Wells:
     p1: [100.0, 1.0, 1.0]
     # p0: [560.0, 1080.0, 168.0]
     # p1: [580.0, 1090.0, 170.0]
-    prescription: Q
+    prescription: P
     type: Injector
     type_region: box
-    value: 10000.0
+    value: 1.0
 
   P2:
-    p0: [44.0, 33.0, 0.0]
-    p1: [45.0, 34.0, 1.0]
+    p0: [44.0, 32.0, 0.0]
+    p1: [45.0, 33.0, 1.0]
     # p0: [0.0, 0.0, 168.0]
     # p1: [20.0, 10.0, 170.0]
     prescription: P
     type: Producer
     type_region: box
-    value: 1.0
+    value: 0.0
 
   # P3:
   #   p0: [1180.0, 0.0, 168.0]
