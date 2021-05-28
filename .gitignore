@@ -44,7 +44,6 @@ impress(copia)/
 *.pdf
 *.svg
 .idea/
-./venv
 *.mat
 !data/dados_p1.mat
 !data/dados_p2.mat
@@ -55,3 +54,4 @@ impress(copia)/
 !data/dados_p7.mat
 !data/dados_p7_g.mat
 *gmsh
+venv/
