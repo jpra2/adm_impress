@@ -64,7 +64,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             M,
             prolongation_list[0],
             1,
-            data_impress['GID_1'],
             data_impress['GID_0'],
             data_impress['GID_0'],
         )
@@ -73,7 +72,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             M,
             restriction_list[0],
             1,
-            data_impress['GID_1'],
             data_impress['GID_0'],
             data_impress['GID_0'],
         )

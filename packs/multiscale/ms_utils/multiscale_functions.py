@@ -1,15 +1,14 @@
 from impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
 
+
 def insert_prolongation_operator_impress(
         m_object: FineScaleMesh,
         prolongation,
         level,
-        gid_level,
         fine_scale_gid,
         previous_gid_level,
         coarse_ids=None
 ):
-
     range_coarse_volumes = range(prolongation.shape[1])
     n_fine_vols = prolongation.shape[0]
     if coarse_ids:
@@ -28,22 +27,25 @@ def insert_prolongation_operator_impress(
         tag_name = 'PROLONGATION_LEVEL_' + str(level) + '_COARSE_ID_' + str(i)
         dict_tag.update({'name_tag': tag_name})
         var = m_object.create_variable(**dict_tag)
-        var[:] = prolongation[:,i].toarray()
-        # TODO
-        # falta implementar para n levels
-        ## esta so da malha fina para o level 1
-        ##########
+        data = prolongation[:, i].toarray()
+        insert_data_from_level(
+            var,
+            data,
+            n_fine_vols,
+            fine_scale_gid,
+            previous_gid_level,
+            level
+        )
+
 
 def insert_restriction_operator_impress(
         m_object: FineScaleMesh,
         restriction,
         level,
-        gid_level,
         fine_scale_gid,
         previous_gid_level,
         coarse_ids=None
 ):
-
     range_coarse_volumes = range(restriction.shape[0])
     n_fine_vols = restriction.shape[1]
     if coarse_ids:
@@ -62,13 +64,25 @@ def insert_restriction_operator_impress(
         tag_name = 'RESTRICTION_LEVEL_' + str(level) + '_COARSE_ID_' + str(i)
         dict_tag.update({'name_tag': tag_name})
         var = m_object.create_variable(**dict_tag)
-        var[:] = restriction[i,:].toarray().flatten().reshape([n_fine_vols, 1]).astype(int)
-        # TODO
-        # falta implementar para n levels
-        ## esta so da malha fina para o level 1
-        ##########
+        data = restriction[i, :].toarray().flatten().reshape([n_fine_vols, 1]).astype(int)
+        insert_data_from_level(
+            var,
+            data,
+            n_fine_vols,
+            fine_scale_gid,
+            previous_gid_level,
+            level
+        )
 
 
+def insert_data_from_level(moab_variable, data, n_fine_vols, fine_scale_gid, previous_gid_level, level):
+    if level > 1:
+        for gid_fine in range(n_fine_vols):
+            if data[gid_fine] == 0:
+                continue
+            moab_variable[fine_scale_gid[previous_gid_level == gid_fine]] = data[gid_fine]
+    else:
+        moab_variable[:] = data
 
 
 def multilevel_pressure_solver(
