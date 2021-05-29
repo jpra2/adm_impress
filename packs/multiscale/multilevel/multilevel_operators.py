@@ -96,6 +96,9 @@ class MultilevelOperators(DataManager):
         self.pcorr_n = 'pcorr_level_'
         self.operators = dict()
 
+        self.prolongation_list = []
+        self.restriction_list = []
+
         if load == False:
             self.get_initial_infos()
 
@@ -153,10 +156,10 @@ class MultilevelOperators(DataManager):
             gid = infos[self.gid_n]
             primal_id = infos[self.primal_id_n]
             dual_id = infos[self.dual_id_n]
-            interns = gid[dual_id==0]
-            faces = gid[dual_id==1]
-            edges = gid[dual_id==2]
-            vertices = gid[dual_id==3]
+            # interns = gid[dual_id==0]
+            # faces = gid[dual_id==1]
+            # edges = gid[dual_id==2]
+            # vertices = gid[dual_id==3]
             if level == 1:
                 operator = AMSTpfa
                 tpfalizar = False
@@ -235,6 +238,7 @@ class MultilevelOperators(DataManager):
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
             total_source_term_2 = OR*total_source_term_2
 
+        self.update_operators_list()
         self.export_to_npz()
 
     def run_paralel_ant0(self, T: 'fine transmissibility without boundary conditions',
@@ -360,12 +364,16 @@ class MultilevelOperators(DataManager):
     def get_pcorr_by_level(self, level):
         return self[self.pcorr_n + str(level)]
 
-    def solve_pressure(self, T: 'fine_transmissibility', total_source_term):
-
+    def update_prolongation_list(self):
+        self.prolongation_list = []
         for level in range(1, self.n_levels):
+            self.prolongation_list.append(self.get_prolongation_by_level(level))
 
-            if level == self.n_levels-1:
-                prolongation = self.get_prolongation_by_level(level)
-                restriction = self.get_restriction_by_level(level)
-                pcorr = self.get_pcorr_by_level(pcorr)
-                continue
+    def update_restriction_list(self):
+        self.restriction_list = []
+        for level in range(1, self.n_levels):
+            self.restriction_list.append(self.get_restriction_by_level(level))
+
+    def update_operators_list(self):
+        self.update_prolongation_list()
+        self.update_restriction_list()

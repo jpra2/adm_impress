@@ -85,8 +85,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop) # pressao local
         self.update_flux_wells(fprop, wells, delta_t)
-        # params['dVtdP'] = AdmTpfaCompositionalSolver.dVtP
-        # params['dVtdNk'] = AdmTpfaCompositionalSolver.dVtk
+        params['dVtdP'] = AdmTpfaCompositionalSolver.dVtP
+        params['dVtdNk'] = AdmTpfaCompositionalSolver.dVtk
         return self.P, Ft_internal_faces, self.q
     
     def update_transmissibility(self, M, wells, fprop, delta_t):

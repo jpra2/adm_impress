@@ -7,8 +7,9 @@ from ..directories import data_loaded
 
 from packs.compositional.adm_tpfa_compositional_solver import AdmTpfaCompositionalSolver
 from packs.utils.test_functions import test_kwargs_keys
+from packs.compositional.compositionalIMPEC import CompositionalFVM
 
-class CompositionalFVM:
+class CompositionalFvmADM(CompositionalFVM):
     
     _kwargs_keys = {
         '__call__': [
@@ -61,67 +62,3 @@ class CompositionalFVM:
         self.update_composition(fprop, delta_t)
         #self.update_composition_RK3_2(fprop, fprop.Nk, delta_t)
         return delta_t
-
-    def update_gravity_term(self, fprop):
-        self.G = ctes.g * fprop.rho_j * ctes.z
-
-    def get_faces_properties_upwind(self, fprop):
-        ''' Using one-point upwind approximation '''
-        Pot_hid = fprop.P + fprop.Pcap - self.G[0,:,:]
-        Pot_hidj = Pot_hid[:,ctes.v0[:,0]]
-        Pot_hidj_up = Pot_hid[:,ctes.v0[:,1]]
-
-        fprop.mobilities_internal_faces = np.zeros([1, ctes.n_phases, ctes.n_internal_faces])
-        mobilities_vols = fprop.mobilities[:,:,ctes.v0[:,0]]
-        mobilities_vols_up = fprop.mobilities[:,:,ctes.v0[:,1]]
-        fprop.mobilities_internal_faces[0,Pot_hidj_up <= Pot_hidj] = mobilities_vols[0,Pot_hidj_up <= Pot_hidj]
-        fprop.mobilities_internal_faces[0,Pot_hidj_up > Pot_hidj] = mobilities_vols_up[0,Pot_hidj_up > Pot_hidj]
-
-        fprop.Csi_j_internal_faces = np.zeros([1, ctes.n_phases, ctes.n_internal_faces])
-        Csi_j_vols = fprop.Csi_j[:,:,ctes.v0[:,0]]
-        Csi_j_vols_up = fprop.Csi_j[:,:,ctes.v0[:,1]]
-        fprop.Csi_j_internal_faces[0,Pot_hidj_up <= Pot_hidj] = Csi_j_vols[0,Pot_hidj_up <= Pot_hidj]
-        fprop.Csi_j_internal_faces[0,Pot_hidj_up > Pot_hidj] = Csi_j_vols_up[0,Pot_hidj_up > Pot_hidj]
-
-        fprop.xkj_internal_faces = np.zeros([ctes.n_components, ctes.n_phases, ctes.n_internal_faces])
-        xkj_vols = fprop.xkj[:,:,ctes.v0[:,0]]
-        xkj_vols_up = fprop.xkj[:,:,ctes.v0[:,1]]
-        fprop.xkj_internal_faces[:,Pot_hidj_up <= Pot_hidj] = xkj_vols[:,Pot_hidj_up <= Pot_hidj]
-        fprop.xkj_internal_faces[:,Pot_hidj_up > Pot_hidj] = xkj_vols_up[:,Pot_hidj_up > Pot_hidj]
-
-
-    def get_faces_properties_average(self, fprop):
-        fprop.mobilities_internal_faces = (fprop.Vp[ctes.v0[:,0]] * fprop.mobilities[:,:,ctes.v0[:,0]] +
-                                                fprop.Vp[ctes.v0[:,1]] * fprop.mobilities[:,:,ctes.v0[:,1]]) /  \
-                                                (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])
-        fprop.Csi_j_internal_faces = (fprop.Vp[ctes.v0[:,0]] * fprop.Csi_j[:,:,ctes.v0[:,0]] +
-                                                fprop.Vp[ctes.v0[:,1]] * fprop.Csi_j[:,:,ctes.v0[:,1]]) /  \
-                                                (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])
-        fprop.xkj_internal_faces = (fprop.Vp[ctes.v0[:,0]] * fprop.xkj[:,:,ctes.v0[:,0]] +
-                                                fprop.Vp[ctes.v0[:,1]] * fprop.xkj[:,:,ctes.v0[:,1]]) /  \
-                                                (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])
-
-    def get_phase_densities_internal_faces(self, fprop):
-        fprop.rho_j_internal_faces = (fprop.Vp[ctes.v0[:,0]] * fprop.rho_j[:,:,ctes.v0[:,0]] +
-                                    fprop.Vp[ctes.v0[:,1]] * fprop.rho_j[:,:,ctes.v0[:,1]]) /  \
-                                    (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])
-
-    def update_composition(self, fprop, delta_t):
-        fprop.Nk = fprop.Nk + delta_t * (self.q + fprop.Fk_vols_total)
-        fprop.z = fprop.Nk[0:ctes.Nc,:] / np.sum(fprop.Nk[0:ctes.Nc,:], axis = 0)
-
-    def update_composition_RK2(self, fprop, Nk_old, delta_t):
-        #fprop.Nk = Nk_old + delta_t * (self.q + fprop.Fk_vols_total)
-        fprop.Nk = fprop.Nk/2 + Nk_old/2 + 1/2*delta_t * (self.q + fprop.Fk_vols_total)
-        fprop.z = fprop.Nk[0:ctes.Nc,:] / np.sum(fprop.Nk[0:ctes.Nc,:], axis = 0)
-
-    def update_composition_RK3_1(self, fprop, Nk_old, delta_t):
-        fprop.Nk = 1*fprop.Nk/4 + 3*Nk_old/4 + 1/4*delta_t * (self.q + fprop.Fk_vols_total)
-        fprop.z = fprop.Nk[0:ctes.Nc,:] / np.sum(fprop.Nk[0:ctes.Nc,:], axis = 0)
-
-    def update_composition_RK3_2(self, fprop, Nk_old, delta_t):
-        fprop.Nk = 2*fprop.Nk/3 + 1*Nk_old/3 + 2/3*delta_t * (self.q + fprop.Fk_vols_total)
-        fprop.z = fprop.Nk[0:ctes.Nc,:] / np.sum(fprop.Nk[0:ctes.Nc,:], axis = 0)
-
-        #material balance error calculation:
-        #Mb = (np.sum(fprop.Nk - Nk_n,axis=1) - np.sum(self.q,axis=1))/np.sum(self.q,axis=1)

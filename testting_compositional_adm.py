@@ -1,5 +1,5 @@
 from packs.directories import data_loaded
-from run_compositional_adm import run_simulation
+from run_compositional_adm import RunSimulationAdm
 import time
 from packs.multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
@@ -30,7 +30,7 @@ load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 
 t = time.time()
-sim = run_simulation(name_current, name_all)
+sim = RunSimulationAdm(name_current, name_all)
 M, data_impress, wells, fprop, load, elements_lv0 = sim.initialize(load, convert, mesh)
 # import pdb; pdb.set_trace()
 # load_multilevel_data = False
