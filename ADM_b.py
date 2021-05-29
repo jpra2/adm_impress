@@ -16,8 +16,10 @@ from pymoab import types
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-from packs.data_class import DualStructure
-import pdb
+from mpl_toolkits import mplot3d
+from mpl_toolkits.mplot3d import Axes3D
+folder=np.load('flying/folder.npy')[0]
+
 # from packs.adm.adm_method import AdmMethod
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 # from packs.biphasic.biphasic_tpfa import BiphasicTpfa
@@ -27,6 +29,10 @@ from packs.tpfa.biphasic import TpfaBiphasicCons
 from packs.tpfa.monophasic import TpfaMonophasic
 from packs.multiscale.test_conservation import ConservationTest
 
+def tpfalize_matrix(Mat, ids_coarse):
+    lcd=sp.find(mat)
+    import pdb; pdb.set_trace()
+
 def save_multilevel_results():
     t_comp.append(t1-t0)
     vals_n1_adm.append(adm_method.n1_adm)
@@ -34,10 +40,38 @@ def save_multilevel_results():
     vals_delta_t.append(b1.delta_t)
     vals_wor.append(b1.wor)
 
+def plot_field(di, field):
+
+    x=di['centroid_volumes'][:,1]
+    y=di['centroid_volumes'][:,0]
+    z=di['pressure']
+    zd=di['DUAL_1']
+    zc=di['coupled_flag']
+    nx=len(np.unique(x))
+    ny=len(np.unique(y))
+    X=x.reshape(ny,nx)
+    Y=y.reshape(ny,nx)
+    Z=z.reshape(ny,nx)
+
+    plt.close('all')
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.xaxis.set_tick_params(labelsize=15)
+    ax.yaxis.set_tick_params(labelsize=15)
+    ax.zaxis.set_tick_params(labelsize=15)
+    ax.view_init(30, 120)
+    z[z<0.0]=np.nan
+    z[z>1.0]=np.nan
+    ax.plot_surface(X, Y, Z, cmap='jet',alpha=0.8, vmin=0.0,vmax=1.0)
+    fig.colorbar(plt.cm.ScalarMappable(cmap='jet'), ax=ax,fraction=0.03)
+    plt.savefig('results/'+folder+'/ms/'+ms_case+'/'+field+'.svg',transparent=True)
+
+
+
 def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp,
     el2, elinf, es_L2, es_Linf,vpis_for_save, ep_haji_L2,ep_haji_Linf, er_L2, er_Linf,
     ev_L2,ev_Linf):
-    vals_n1_adm=np.array(vals_n1_adm+[len(data_impress['GID_0'])])
+    vals_n1_adm=100*np.array(vals_n1_adm+[len(data_impress['GID_0'])])/len(data_impress['pressure'])
     vals_vpi=np.array(vals_vpi)
     vals_delta_t=np.array(vals_delta_t)
     vals_wor=np.array(vals_wor)
@@ -58,7 +92,7 @@ def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp
     names=['vpi','n1_adm', 'delta_t', 'wor', 't_comp', 'el2', 'elinf', 'es_L2',
         'es_Linf', 'vpis_for_save','ep_haji_L2','ep_haji_Linf', 'er_L2', 'er_Linf', 'ev_L2', 'ev_Linf']
     for i in range(len(vars)):
-        np.save('results/biphasic/ms/'+ms_case+names[i]+'.npy',vars[i])
+        np.save('results/'+folder+'/ms/'+ms_case+names[i]+'.npy',vars[i])
 
 def plot_operator(T,OP_AMS, primals, marker='',file_prefix=None):
     OP_AMS_c=T*OP_AMS
@@ -372,9 +406,36 @@ mlo=multilevel_operators
 # neta_lim=np.load('flying/neta_lim_dual.npy')[0]
 neta_lim=10
 elements_lv0['neta_lim']=neta_lim
-#################
-group_dual_volumes_and_get_OP(mlo, T_with_boundary, M, data_impress, T, neta_lim=np.inf)
-OP_orig=mlo['prolongation_level_1']
+
+OP_AMS=mlo['prolongation_level_1']
+phiks=np.array(OP_AMS[data_impress['GID_0'],data_impress['GID_1']])[0]
+r_phiks=(1-phiks)/phiks
+
+maxs=sp.csc_matrix((r_phiks,(data_impress['GID_0'],data_impress['GID_1'])),shape=OP_AMS.shape).max(axis=0).toarray()[0]
+
+M.maxs=maxs
+
+###########
+dual_flags=data_impress['DUAL_1']
+gids0=data_impress['GID_0']
+gids1=data_impress['GID_1']
+adjs=M.faces.bridge_adjacencies(M.faces.internal,2,3)
+ads=adjs[(gids1[adjs][:,0]!=gids1[adjs][:,1]) & (dual_flags[adjs[:,0]]<=2) & (dual_flags[adjs[:,0]]<=2)]
+vals=r_phiks[ads]
+maxs_ds=vals.max(axis=1)
+
+
+aa=data_impress['GID_1']
+mexs=np.zeros(aa.max()+1)
+np.maximum.at(mexs,aa,r_phiks)
+##############
+# import pdb; pdb.set_trace()
+# data_impress['nfn'][:]=maxs[data_impress['GID_1']]
+data_impress['nfn'][ads[:,0]]=maxs_ds
+data_impress['nfn'][ads[:,1]]=maxs_ds
+M.edges_and_vals=[maxs_ds,gids1[ads]]
+OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
+# OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=20)
 
 OP=group_dual_volumes_and_get_OP(mlo, T_with_boundary, M, data_impress, T, neta_lim=neta_lim)
 
@@ -425,8 +486,8 @@ adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, element
 adm_method.restart_levels()
 # adm_method.set_level_wells()
 # adm_method.set_level_wells_2()
-adm_method.set_level_wells_3()
-# adm_method.set_level_wells_only()
+# adm_method.set_level_wells_3()
+adm_method.set_level_wells_only()
 adm_method.equalize_levels()
 
 # adm_method.verificate_levels()
@@ -485,7 +546,6 @@ def save_matrices_as_png(matrices, names):
                 if abs(c)>1e-15:
                     c='{:.2f}'.format(c)
                     plt.text(j, i, str(c), va='center', ha='center',fontsize=15, color = 'lime',weight='bold')
-
 
         plt.savefig('results/'+name+'.png')
 
@@ -690,7 +750,9 @@ nn = 1000
 pp = 1000
 cont = 1
 vpis_for_save=np.load('flying/vpis_for_save.npy')
+vpis_for_vtk=np.load('flying/vpis_for_vtk.npy')
 count_save=0
+count_vtk=0
 
 verif = True
 pare = False
@@ -717,23 +779,10 @@ data_impress['coupled_flag'][data_impress['DUAL_1']>=2]=0
 
 
 coupl=100*(data_impress['coupled_flag']==1).sum()/len(data_impress['coupled_flag'])
-
-
-np.save('results/biphasic/ms/'+ms_case+'/coupl'+'.npy',np.array([coupl]))
-
-coupled_ms=M.core.mb.create_meshset()
-M.core.mb.add_entities(coupled_ms,np.array(M.core.all_volumes)[data_impress['coupled_flag']==1])
-
-plot_operator(T,OP_AMS,np.array([66,54,25, 100,115]),marker='coupl')
-plot_operator(T,OP_orig,np.array([66,54,25,100, 115]),marker='uncoupl')
-
-M.core.mb.write_file('results/biphasic/ms/'+ms_case+'/vtks/coupled_vols.vtk',[coupled_ms])
-
+np.save('results/'+folder+'/ms/'+ms_case+'/coupl'+'.npy',np.array([coupl]))
 
 # adm_method.set_level_wells_3()
 adm_method.set_level_wells_only()
-adm_method.set_level_wells_3()
-# adm_method.set_level_wells_only()
 vals_n1_adm=[]
 vals_vpi=[]
 vals_delta_t=[]
@@ -768,10 +817,16 @@ while verif:
         data_impress['nfp'][np.unique(volumes)]=maxs
         # netasp_array=np.maximum(netasp_array,netasp_array*data_impress['raz_phi'][volumes])
         # vols_orig=volumes[netasp_array>neta_lim_finescale]
-        try:
-            vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
-        except:
-            vols_orig=data_impress['GID_0'][maxs>neta_lim_finescale]
+
+        #try:
+            # import pdb; pdb.set_trace()
+            # netasp_array[data_impress['LEVEL'][volumes]==0]=neta_lim_finescale+1
+        vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,elements_lv0, volumes,netasp_array, neta_lim_finescale)
+        # except:
+        #     print('treta')
+        #     import pdb; pdb.set_trace()
+        #     vols_orig=data_impress['GID_0'][(maxs>neta_lim_finescale) | (data_impress['LEVEL']==0)]
+
             # vols_orig=data_impress['GID_0'][data_impress['LEVEL']==0]
         #
         # vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
@@ -793,8 +848,8 @@ while verif:
     # map1[idl1]=data_impress['GID_1']
     # monotonize_adm.verify_monotonize_adm(or_adm, T, op_adm, neta_lim,map1)
     # np.concatenate(np.array(critical_groups)'''
-    adm_method.set_level_wells_3()
-    # adm_method.set_level_wells_only()
+    # adm_method.set_level_wells_3()
+    adm_method.set_level_wells_only()
 
     if type_of_refinement=='uni':
         if len(vols_orig)>0:
@@ -804,10 +859,23 @@ while verif:
         adm_method.set_saturation_level_uniform(delta_sat_max)
 
     t0=time.time()
+    # from implicit_impress.jacobian.symbolic_jacobian import symbolic_J as s_J
+    from implicit_impress.jacobian.impress_assembly import assembly
 
-    adm_method.solve_multiscale_pressure(T, b, pcorr=pcorr)
+    # M.pressure[:]=np.array([OP_ADM*linalg.spsolve(OR_ADM*T*OP_ADM,OR_ADM*b)]).T
+    # JJ=assembly(M,0.00001)
+    # J=JJ.J
+    # nvols=int(J.shape[0]/2)
+    # Jsp=J[nvols:,nvols:]
+    # Jpp=J[0:nvols,0:nvols]
+    # Jss=J[nvols:,nvols:]
+    # Fs=JJ.q[nvols:]
+    # S=(OR_ADM*Fs-OR_ADM*Jsp*OR_ADM.T*linalg.spsolve(OR_ADM*T*OP_ADM,OR_ADM*b))/(OR_ADM*OR_ADM.T)[np.arange(OR_ADM.shape[0]),np.arange(OR_ADM.shape[0])]
+    # import pdb; pdb.set_trace()
 
-    adm_method.set_pms_flux(wells, neumann_subds)
+    adm_method.solve_multiscale_pressure(T, b)
+
+    adm_method.set_pms_flux(wells, neumann_subds) #
 
     b1.get_velocity_faces()
 
@@ -815,14 +883,13 @@ while verif:
 
     b1.run_2()
     t1=time.time()
-    print(b1.wor, adm_method.n1_adm)
-    pms=data_impress['pressure']
-    if neta_lim_finescale==np.inf:
-        np.save('flying/original_ms_solution.npy',pms)
 
+    pms=data_impress['pressure']
+    if True:
+        # np.save('flying/original_ms_solution.npy',pms)
         po=pms.copy()
         vo=data_impress['velocity_faces']
-        np.save('flying/velocity_faces_AMS.npy',vo)
+        # np.save('flying/velocity_faces_AMS.npy',vo)
     else:
 
         po=np.load('flying/original_ms_solution.npy')
@@ -857,19 +924,19 @@ while verif:
     p_wells=pf[wells['all_wells']]
     # pf=(pf-p_wells.min())/(p_wells.max()-p_wells.min())
     data_impress['tpfa_pressure']=pf
-
+    # plot_field(data_impress,'pressure')
+    # plot_field(data_impress,'tpfa_pressure')
     save_multilevel_results()
-
     if vpis_for_save[count_save]<b1.vpi:
-        refinement=100*((data_impress['LEVEL']==0).sum()-len(p_wells))/len(data_impress['LEVEL'])
-        np.save('results/biphasic/ms/'+ms_case+'/refinement'+'.npy',np.array([refinement]))
-
-        sat_f=np.load('flying/saturation_'+str(vpis_for_save[count_save])+'.npy')
         sat_adm=data_impress['saturation']
-
+        sat_f=np.load('flying/saturation_'+str(vpis_for_save[count_save])+'.npy')
         es_L2.append(np.linalg.norm(sat_f-sat_adm)/np.linalg.norm(sat_f))
         es_Linf.append(abs(sat_f-sat_adm).max()/sat_f.max())
+        count_save+=1
 
+    if len(vpis_for_vtk)>0 and vpis_for_vtk[count_vtk]<b1.vpi:
+        refinement=100*((data_impress['LEVEL']==0).sum()-len(p_wells))/len(data_impress['LEVEL'])
+        np.save('results/'+folder+'/ms/'+ms_case+'/refinement'+'.npy',np.array([refinement]))
 
         print(b1.vpi,'vpi')
         print("Creating_file")
@@ -880,21 +947,29 @@ while verif:
         lvs0=int_faces[(lv[ad0]==0) | (lv[ad1]==0)]
         facs_plot=np.concatenate([bounds_coarse,lvs0])
         M.core.mb.add_entities(meshset_plot_faces,np.array(M.core.all_faces)[facs_plot])
-        data_impress.update_variables_to_mesh()
-        file_count=str(int(100*vpis_for_save[count_save]))
 
-        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
-        M.core.mb.write_file('results/biphasic/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
-        if vpis_for_save[count_save]==vpis_for_save.max():
+        data_impress['raz_pos'][:]=0
+        data_impress['raz_pos'][data_impress['DUAL_1']==2]=data_impress['raz_phi'][data_impress['DUAL_1']==2]
+        data_impress.update_variables_to_mesh()
+        file_count=str(int(100*vpis_for_vtk[count_vtk]))
+
+        M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/volumes_'+file_count+'.vtk', [meshset_volumes])
+        M.core.mb.write_file('results/'+folder+'/ms/'+ms_case+'vtks/faces_'+file_count+'.vtk', [meshset_plot_faces])
+
+        if vpis_for_vtk[count_vtk]==vpis_for_vtk.max():
             export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor,
-            t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save+1],
+            t_comp, el2, elinf, es_L2, es_Linf,vpis_for_vtk[:count_vtk+1],
             ep_haji_L2,ep_haji_Linf, er_L2, er_Linf,ev_L2,ev_Linf)
             verif=False
         print("File created at time-step: ",cont)
-        count_save+=1
+        count_vtk+=1
 
+
+    # if cont % nn == 0 or count_save==len(vpis_for_save)-1:
+    #     export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp, el2, elinf, es_L2, es_Linf,vpis_for_save[:count_save])
+    #     verif=False
 
 
     T, b = b1.get_T_and_b()
-    # Twithout = b1['Tini'].copy()
+    print(b1.wor, b1.vpi, adm_method.n1_adm, time.time()-t00, eadm_2)
     cont += 1

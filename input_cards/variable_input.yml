@@ -602,10 +602,38 @@ transmissibility:
   data size: 1
   data type: float
   level: 0
-  sparse: true
-  type: faces
-u_normal:
-  data size: 3
+
+non_physical_value_6:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_7:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_8:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_9:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_999:
+  type: volumes
+  data size: 1
   data type: float
   level: 0
   sparse: true

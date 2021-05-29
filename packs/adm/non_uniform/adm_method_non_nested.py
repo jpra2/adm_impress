@@ -169,11 +169,39 @@ class AdmNonNested(AdmMethod):
         saturation = self.data_impress['saturation']
         internal_faces = self.elements_lv0['internal_faces']
         v0 = self.elements_lv0['neig_internal_faces']
+        gids1=self.data_impress['GID_1'][v0]
         ds = saturation[v0]
+        # ds = ds.sum(axis=1)
         ds = np.absolute(ds[:,1] - ds[:,0])
-        inds = ds >= delta_sat_max
+
+        inds = (ds >= delta_sat_max) & (saturation[v0].min(axis=1)<min(saturation[v0].min(),0)+0.5)
+        # inds = ds >= delta_sat_max
         levels[v0[inds][:,0]] = 0
         levels[v0[inds][:,1]] = 0
+        self.data_impress['LEVEL'] = levels.copy()
+
+    def set_saturation_level_homogeneo(self,delta_sat_max=0.1):
+        levels = self.data_impress['LEVEL'].copy()
+        saturation = self.data_impress['saturation']
+        internal_faces = self.elements_lv0['internal_faces']
+        v0 = self.elements_lv0['neig_internal_faces']
+        gids1=self.data_impress['GID_1'][v0]
+        gids_coarse=self.data_impress['GID_1']
+        ds = saturation[v0]
+        # ds = ds.sum(axis=1)
+        ds = np.absolute(ds[:,1] - ds[:,0])
+
+
+        inds = (ds >= delta_sat_max) & (saturation[v0].min(axis=1)<min(saturation[v0].min(),0)+0.5)
+        # inds = ds >= delta_sat_max
+
+        levels[v0[inds][:,0]] = 0
+        levels[v0[inds][:,1]] = 0
+
+        gids_fin=np.unique(gids_coarse[levels==0])
+        for gid in gids_fin:
+            levels[gids_coarse==gid]=0
+
         self.data_impress['LEVEL'] = levels.copy()
 
     def set_saturation_level_uniform(self, delta_max=0.1):
@@ -442,15 +470,9 @@ class AdmNonNested(AdmMethod):
         # vols_to_lv0=np.unique(np.hstack(self.elements_lv0['volumes_face_volumes'][vols_to_lv0]))
         self.data_impress['LEVEL'][self.all_wells_ids] = np.zeros(len(self.all_wells_ids))
         self.data_impress['LEVEL'][vols_to_lv0] = 0
-        # gid0 = self.data_impress['GID_0']
-        # gid1 = self.data_impress['GID_1']
-        #
-        # gids_wells = np.unique(gid1[self.all_wells_ids])
-        # for gid in gids_wells:
-        #     volumes = gid0[gid1==gid]
-        #     self.data_impress['LEVEL'][volumes] = 0
+
     def set_level_wells_only(self):
-        
+
         self.data_impress['LEVEL'][:] = 1
         self.data_impress['LEVEL'][self.all_wells_ids] = 0
 
@@ -458,6 +480,7 @@ class AdmNonNested(AdmMethod):
         self.data_impress['LEVEL'][gids_to_monotonize]=0
 
     def organize_ops_adm(self, mlo, level, _pcorr=None):
+
         OP_AMS_lcd=mlo['prolongation_lcd_level_1']
         # OP_AMS=mlo['prolongation_level_1'].tolil()
         OR_AMS=mlo['restriction_level_1']
@@ -476,7 +499,6 @@ class AdmNonNested(AdmMethod):
             # t0=time.time()
             # OP_ADM1, OR_ADM1, pcorr1 = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
             OP_ADM, OR_ADM, pcorr =self.organize(level,lcd, _pcorr=_pcorr)
-
 
             self._data[self.adm_op_n + str(level)] = OP_ADM
             self._data[self.adm_rest_n + str(level)] = OR_ADM
@@ -932,7 +954,6 @@ class AdmNonNested(AdmMethod):
         # del master
         self.data_impress['flux_faces'] = ms_flux_faces
         self.data_impress['pcorr'] = pcorr
-
 
     def plot_operator(self, OP_ADM, OP_AMS, v):
 

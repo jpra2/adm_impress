@@ -431,6 +431,35 @@ class AdmMethod(DataManager, TpfaFlux2):
 
         return OP_ADM, OR_ADM, pcorr
 
+    def tpfalize_matrix(self, Mat):
+        adjs=self.elements_lv0['neig_internal_faces']
+        idsc=self.data_impress['LEVEL_ID_1']
+        f1=sp.find(Mat)
+
+        lins, diags=f1[0][f1[0]==f1[1]], f1[2][f1[0]==f1[1]]
+        control=f1[2]/diags[lins][f1[0]]
+
+        lim=np.load('flying/neta_lim_dual.npy')[0]
+        # lim=0.99*control.max()
+        adjsc=np.vstack([f1[0][control<=lim],f1[1][control<=lim]]).T
+        # adjsc=idsc[adjs]
+        adjsc=adjsc[adjsc[:,0]!=adjsc[:,1]]
+
+        ad0=np.concatenate([adjsc[:,0],adjsc[:,1]])
+        ad1=np.concatenate([adjsc[:,1],adjsc[:,0]])
+        ad0, ad1=ad0[ad0>ad1], ad1[ad0>ad1]
+        ad0, ad1=np.unique(np.array([ad0, ad1]), axis=1)
+        vals0=np.array(Mat[ad0,ad1])[0]
+        vals1=np.array(Mat[ad1,ad0])[0]
+        lines = np.concatenate([    ad0,    ad1,    ad0,    ad1])
+        cols  = np.concatenate([    ad1,    ad0,    ad0,    ad1])
+        data  = np.concatenate([  vals0,  vals1, -vals0, -vals1])
+        Mat2   = csc_matrix((data, (lines, cols)),shape=Mat.shape)
+        lines_diric=np.arange(Mat.shape[0])[(Mat.min(axis=1).toarray()==0).T[0]]
+        Mat2[lines_diric,lines_diric]=1
+        return(Mat2)
+
+
     def solve_multiscale_pressure(self, T: 'fine transmissibility matrix', b: 'fine source term'):
 
         T_adm = T.copy()

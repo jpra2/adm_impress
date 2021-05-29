@@ -5,6 +5,7 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
     cr1 = direc.data_loaded['Crs']['Cr1']
     cr2 = direc.data_loaded['Crs']['Cr2']
     # cr1 = np.load('flying/crs.npy').tolist()
+    # cr1 = [5, 5, 1]
     crs = [cr1, cr2]
 
     # import pdb; pdb.set_trace()

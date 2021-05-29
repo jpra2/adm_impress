@@ -557,7 +557,7 @@ class BiphasicTpfa(FineScaleTpfaPressureSolver, biphasicProperties, testsGeneral
     def run_2(self, save=False):
         ######
         ## run for adm_method
-        ######
+        ######        
         t0=time.time()
         self.update_flux_w_and_o_volumes()
         self.test_flux_faces()
