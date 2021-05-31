@@ -1,3 +1,15 @@
+ADM_COARSE_ID_LEVEL_1:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+ADM_COARSE_ID_LEVEL_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
 COARSE_GID_1:
   data size: 1
   data type: int
@@ -47,6 +59,30 @@ GID_1:
   sparse: true
   type: volumes
 GID_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+LEVEL:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+LEVEL_ID_0:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+LEVEL_ID_1:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+LEVEL_ID_2:
   data size: 1
   data type: int
   level: 0
@@ -172,6 +208,12 @@ hs:
   level: 0
   sparse: true
   type: volumes
+initial_diag:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 k_harm:
   data size: 1
   data type: float
@@ -232,6 +274,12 @@ ms_pressure:
   level: 0
   sparse: true
   type: volumes
+nfp:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 permeability:
   data size: 9
   data type: float
@@ -262,6 +310,24 @@ pretransmissibility:
   level: 0
   sparse: true
   type: faces
+raz_flux_tag:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+raz_phi:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+ref_param:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 saturation:
   data size: 1
   data type: float
@@ -292,6 +358,18 @@ u_normal:
   level: 0
   sparse: true
   type: faces
+val_diric:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+val_neum:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 velocity_faces:
   data size: 3
   data type: float

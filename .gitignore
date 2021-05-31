@@ -8,7 +8,6 @@
 *.h5m
 !27x1x1.h5m
 *.h5
-*.imp
 !9x9x9.h5m
 *.vtk
 *.msh

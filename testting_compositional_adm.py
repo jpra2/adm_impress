@@ -4,7 +4,8 @@ import time
 from packs.multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.compositional.compositional_params import Params
-from packs.adm.adm_method import AdmMethod
+from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
+from packs.multiscale.preprocess.prep_neumann import NeumannSubdomains
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -39,7 +40,8 @@ ml_data = MultilevelData(data_impress, M, load=load_multilevel_data)
 ml_data.run()
 
 mlo = MultilevelOperators(n_levels, data_impress, elements_lv0, ml_data, load=load_operators, get_correction_term=get_correction_term)
-
+neumann_subds = NeumannSubdomains(elements_lv0, ml_data, data_impress, wells)
+adm = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 # ml_data.load_tags()
 # import pdb; pdb.set_trace()
 
@@ -60,12 +62,14 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['total_volume'] = fprop.Vt
 
 
-    # import pdb; pdb.set_trace()
-
     sim.run(M, wells, fprop, load, 
             multilevel_data=ml_data, 
             multilevel_operators=mlo,
-            params=params)
+            params=params,
+            adm_method=adm,
+            neumann_subds=neumann_subds,
+            data_impress=data_impress,
+            elements_lv0=elements_lv0)
 
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'

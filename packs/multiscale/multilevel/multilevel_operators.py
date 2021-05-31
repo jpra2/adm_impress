@@ -88,6 +88,7 @@ class MultilevelOperators(DataManager):
         self.restriction = 'restriction_level_'
         self.prolongation = 'prolongation_level_'
         self.cmatrix = 'correction_matrix_level_'
+        self.prolongation_lcd = 'prolongation_lcd_level_'
 
         self.infos_level = 'infos_level_'
         self.gid_n = 'gid'
@@ -223,6 +224,7 @@ class MultilevelOperators(DataManager):
             self._data[self.prolongation + str(level)] = OP
             self._data[self.pcorr_n + str(level)] = pcorr
             self._data[self.cmatrix + str(level)] = Cmatrix
+            self._data[self.prolongation_lcd + str(level)] = sp.find(OP)
             OR = self._data[self.restriction + str(level)]
 
             sp.save_npz(os.path.join('flying', self.prolongation + str(level) + '.npz'), OP)

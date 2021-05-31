@@ -115,6 +115,8 @@ def multilevel_pressure_solver(
     for OP in prolongation_list:
         solution = OP * solution
 
+    prolongation_list.reverse()
+
     return solution
 
 

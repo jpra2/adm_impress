@@ -54,9 +54,12 @@ class RunSimulationAdm(run_simulation):
     def run(self, M, wells, fprop, load, **kwargs):
         ''' Function created to compute reservoir and fluid properties at each \
         time step '''
+        # adm_method = kwargs.get('adm_method')
+        # neumann_subds = kwargs.get('neumann_subds')
+        # data_impress = kwargs.get('data_impress')
 
         # test_kwargs_keys(self._kwargs_keys['run'], kwargs.keys())
-        params = kwargs.get('params')
+        # params = kwargs.get('params')
 
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
@@ -64,10 +67,15 @@ class RunSimulationAdm(run_simulation):
         '---- Get pressure field and new time step (if the past time step does \
         not obey the CFL condition) -------------------------------------------'
 
-        self.delta_t = CompositionalFvmADM()(M, wells, fprop, self.delta_t,
-                                          multilevel_data=kwargs.get('multilevel_data'),
-                                          multilevel_operators=kwargs.get('multilevel_operators'),
-                                          params=params)
+        # self.delta_t = CompositionalFvmADM()(M, wells, fprop, self.delta_t,
+        #                                   multilevel_data=kwargs.get('multilevel_data'),
+        #                                   multilevel_operators=kwargs.get('multilevel_operators'),
+        #                                   params=params,
+        #                                   adm_method=adm_method,
+        #                                   neumann_subds=neumann_subds,
+        #                                   data_impress=data_impress)
+
+        self.delta_t = CompositionalFvmADM()(M, wells, fprop, self.delta_t, **kwargs)
 
         self.t += self.delta_t
 
