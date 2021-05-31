@@ -36,7 +36,7 @@ def run_test_cases():
 
     crs=[[3, 3, 1], [5, 5, 1], [7, 7, 1], [9,9,1]]
     np.save('flying/all_crs.npy',np.array(crs))
-    beta_lim_dual_values=     [ np.inf, np.inf]
+    beta_lim_dual_values=     [ np.inf, np.inf] #sl
     neta_lim_dual_values=     [ np.inf, np.inf]
     neta_lim_finescale_values=[    1.0, np.inf]
     type_of_refinement_values=[  'uni',  'uni']
