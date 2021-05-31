@@ -23,22 +23,22 @@ def remove_previous_files():
     os.mkdir('results/'+folder+'/finescale')
     os.mkdir('results/'+folder+'/finescale/vtks')
 
-vpis_for_vtk =np.arange(0.0, 0.51,0.05)
-vpis_for_save=np.arange(0.0, 0.500001,0.001)
-# vpis_for_vtk=[0.0, 0.00001]
-# vpis_for_save=[0.0,0.00001]
+# vpis_for_vtk =np.arange(0.0, 0.51,0.05)
+# vpis_for_save=np.arange(0.0, 0.500001,0.001)
+vpis_for_vtk=[0.0, 0.00001]
+vpis_for_save=[0.0,0.00001]
 def run_test_cases():
     # vpis_for_save=np.arange(0.0,1.001,0.01)0
 
     np.save('flying/vpis_for_save.npy',vpis_for_save)
     np.save('flying/vpis_for_vtk.npy',vpis_for_vtk)
-    os.system('python testting2_biphasic.py')
+    # os.system('python testting2_biphasic.py')
 
     crs=[[3, 3, 1], [5, 5, 1], [7, 7, 1], [9,9,1]]
     np.save('flying/all_crs.npy',np.array(crs))
     beta_lim_dual_values=     [ np.inf, np.inf]
-    neta_lim_dual_values=     [    1.0, np.inf]
-    neta_lim_finescale_values=[    1.0,    1.0]
+    neta_lim_dual_values=     [ np.inf, np.inf]
+    neta_lim_finescale_values=[    1.0, np.inf]
     type_of_refinement_values=[  'uni',  'uni']
     phiK_raz_lim_values=      [    3.0,    3.0]
     delta_sat_max=            [ np.inf, np.inf]
@@ -872,7 +872,7 @@ def print_results_single(all_cases):
 
     single_vars = collect_single_phase_data(all_cases)
 
-    ab='neta'
+    ab='beta'
 
     plot_vars=[[        ab,        ab,        ab,         ab,         ab],     # Abcissas
                [     'el2',   'elinf',   'coupl',   'n1_adm',    'betad'],     # Ordenadas
@@ -914,6 +914,7 @@ def print_results_single(all_cases):
             elinf=elinf[ind_sort]
             try:
                 p=plt.plot(abcissas, ordenadas, lw=5, label=legends[i], marker='o', markersize=10)
+                # p=plt.plot(abcissas, ordenadas, lw=5, marker='o', markersize=10)
                 color=p[0].get_color()
                 # teta=180*np.arctan((ordenadas[-1]-ordenadas[-2])/(abcissas[-1]-abcissas[-2]))/np.pi
                 dx=len(legends[i])/2
