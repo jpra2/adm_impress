@@ -273,8 +273,8 @@ time_step=0.0005
 # time_step=1.0
 count_save=0
 wells['viz_prod']=np.concatenate(elements_lv0['volumes_face_volumes'][wells['ws_prod']])
-delta_sat_max=0.03
-max_vpi=0.01
+# delta_sat_max=0.03
+max_vpi=0.001
 vpis_for_save=np.arange(0,0.91,0.01)
 
 ep_l2=[]

@@ -12,7 +12,7 @@ from scipy.sparse import csc_matrix, csgraph
 from .paralell_neumann_numpy import masterNeumanNonNested
 
 class AdmNonNested(AdmMethod):
-
+    @profile
     def set_adm_mesh_non_nested(self, v0=[], v1=[], pare=False):
         levels = self.data_impress['LEVEL'].copy()
         gids_0 = self.data_impress['GID_0']
@@ -497,7 +497,7 @@ class AdmNonNested(AdmMethod):
             lcd=OP_AMS_lcd
             # t0=time.time()
             # OP_ADM1, OR_ADM1, pcorr1 = self.organize_ops_adm_level_1(OP_AMS, OR_AMS, level, _pcorr=_pcorr)
-            OP_ADM, OR_ADM, pcorr =self.organize(level,lcd, _pcorr=_pcorr)
+            OP_ADM, OR_ADM, pcorr =self.get_OR_and_OP(lcd,level, _pcorr=_pcorr)
 
             self._data[self.adm_op_n + str(level)] = OP_ADM
             self._data[self.adm_rest_n + str(level)] = OR_ADM
@@ -637,7 +637,7 @@ class AdmNonNested(AdmMethod):
             import pdb; pdb.set_trace()
         return OP_ADM, OR_ADM, pcorr
 
-    def organize(self, level, mm,_pcorr=None):
+    def get_OR_and_OP(self, mm, level=1,_pcorr=None):
         gid_0 = self.data_impress['GID_0']
         gid_level = self.data_impress['GID_' + str(level)]
         adm_id = self.data_impress['LEVEL_ID_' + str(level)]
@@ -686,7 +686,7 @@ class AdmNonNested(AdmMethod):
         if OP_ADM.sum()<OP_ADM.shape[0]-0.1:
             print("verify ADM prolongation operator organization")
             import pdb; pdb.set_trace()
-        return OP_ADM, OR_ADM, pcorr
+        return OR_ADM, OP_ADM, pcorr
 
     def organize_ops_adm_level_1_dep(self, OP_AMS, OR_AMS, level, _pcorr=None):
         gid_0 = self.data_impress['GID_0']
