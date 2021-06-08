@@ -1,10 +1,9 @@
 import numpy as np
-from ..directories import data_loaded
-from ..utils import constants as ctes
-from .stability_check import StabilityCheck
-from .properties_calculation import PropertiesCalc
+from packs.utils import constants as ctes
+from packs.compositional.stability_check import StabilityCheck
+from packs.compositional.IMPEC.properties_calculation import PropertiesCalc
 import scipy.sparse as sp
-from multiprocessing import Pool
+
 
 class FOUM:
     """ Class created for computing flux accondingly to the First Order Upwind \

@@ -1,5 +1,5 @@
 from impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
-
+import numpy as np
 
 def insert_prolongation_operator_impress(
         m_object: FineScaleMesh,
@@ -124,3 +124,25 @@ def print_mesh_volumes_data(m_object: FineScaleMesh, file_name):
     m1 = m_object.core.mb.create_meshset()
     m_object.core.mb.add_entities(m1, m_object.core.all_volumes)
     m_object.core.mb.write_file(file_name, [m1])
+
+
+def update_local_problem(neumann_subds, fine_scale_transmissibility_no_bc, fprop):
+    """
+        neumann_subds: local primal subdomains
+        fine_scale_transmissibility_no_cc: fine scale transmissibility without boundary conditions
+    """
+    Tglobal = fine_scale_transmissibility_no_bc
+    for subd in neumann_subds:
+        subd.Tlocal_no_bc = update_local_transmissibility(Tglobal, subd.volumes)
+
+def update_local_transmissibility(Tglobal, gids):
+
+    n = len(gids)
+    l2 = np.repeat(gids, n).reshape(n, n)
+    l3 = np.tile(gids, n).reshape(n, n)
+
+    Tlocal = Tglobal[l2, l3]
+    Tlocal.setdiag(np.zeros(n))
+    Tlocal.setdiag(-Tlocal.sum(axis=1))
+
+    return Tlocal

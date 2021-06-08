@@ -1,10 +1,10 @@
 import os.path
 
-from packs.compositional.pressure_solver import TPFASolver
-from packs.utils.test_functions import test_kwargs_keys, test_instance
+from packs.compositional.IMPEC.pressure_solver import TPFASolver
+from packs.utils.test_functions import test_instance
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
-from ..utils import constants as ctes
-from packs.multiscale.ms_utils.multiscale_functions import multilevel_pressure_solver, insert_prolongation_operator_impress, print_mesh_volumes_data, insert_restriction_operator_impress
+from packs.utils import constants as ctes
+from packs.multiscale.ms_utils.multiscale_functions import multilevel_pressure_solver, print_mesh_volumes_data, update_local_problem
 import scipy.sparse as sp
 import numpy as np
 from packs.adm.non_uniform import monotonic_adm_subds
@@ -94,6 +94,12 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             restriction_list
         )
 
+        update_local_problems(neumann_subds.neumann_subds, T_noCC, fprop)
+
+
+
+        import pdb; pdb.set_trace()
+
         self.P = self.update_pressure(T, D, fprop) # OP*padm
         error = np.absolute(self.P - solution) / self.P
         data_impress = M.data
@@ -124,6 +130,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             M,
             os.path.join('results', 'prolongation_level_1.vtk')
         )
+
+
 
         import pdb; pdb.set_trace()
 

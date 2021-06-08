@@ -1,7 +1,7 @@
-from ..directories import data_loaded
-from ..utils import relative_permeability2, phase_viscosity, capillary_pressure
-from ..utils import constants as ctes
-from . import equation_of_state
+from packs.directories import data_loaded
+from packs.utils import relative_permeability2, phase_viscosity, capillary_pressure
+from packs.utils import constants as ctes
+from packs.compositional import equation_of_state
 import numpy as np
 
 

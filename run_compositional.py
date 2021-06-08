@@ -1,9 +1,9 @@
 from packs.directories import data_loaded
 from packs import directories as direc
 from packs.running.compositional_initial_mesh_properties import initial_mesh
-from packs.compositional.compositionalIMPEC import CompositionalFVM
+from packs.compositional.IMPEC.compositionalIMPEC import CompositionalFVM
 from packs.compositional.stability_check import StabilityCheck
-from packs.compositional.properties_calculation import PropertiesCalc
+from packs.compositional.IMPEC.properties_calculation import PropertiesCalc
 from packs.compositional.update_time import delta_time
 from get_inputs_compositional import FluidProperties
 from packs.utils import constants as ctes

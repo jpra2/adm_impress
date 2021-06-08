@@ -1,9 +1,9 @@
-from .pressure_solver import TPFASolver
-from .flux_calculation import FOUM, MUSCL
-from .update_time import delta_time
+from packs.compositional.IMPEC.pressure_solver import TPFASolver
+from packs.compositional.IMPEC.flux_calculation import FOUM, MUSCL
+from packs.compositional.update_time import delta_time
 import numpy as np
-from ..utils import constants as ctes
-from ..directories import data_loaded
+from packs.utils import constants as ctes
+from packs.directories import data_loaded
 
 class CompositionalFVM:
 
@@ -13,7 +13,9 @@ class CompositionalFVM:
         else: self.get_faces_properties_upwind(fprop)
         self.get_phase_densities_internal_faces(fprop)
         r = 0.8 # enter the while loop
-        psolve = TPFASolver(fprop)
+        dVjdNk, dVjdP = self.dVt_derivatives(fprop)
+        psolve = TPFASolver(dVjdNk, dVjdP)
+        # psolve = TPFASolver(fprop)
         P_old = np.copy(fprop.P)
         Nk_old = np.copy(fprop.Nk)
         while (r!=1.):
@@ -106,3 +108,29 @@ class CompositionalFVM:
 
         #material balance error calculation:
         #Mb = (np.sum(fprop.Nk - Nk_n,axis=1) - np.sum(self.q,axis=1))/np.sum(self.q,axis=1)
+
+    def dVt_derivatives(self, fprop):
+        dVjdNk = np.zeros((ctes.n_components, ctes.n_phases, ctes.n_volumes))
+        dVjdP = np.empty((1, ctes.n_phases, ctes.n_volumes))
+        if ctes.load_k:
+            self.EOS = ctes.EOS_class(fprop.T)
+            if not ctes.compressible_k:
+                dVjdNk[0:ctes.Nc, 0, :] = 1 / fprop.Csi_j[0, 0, :]
+                dVjdNk[0:ctes.Nc, 1, :] = np.zeros_like(dVjdNk[0:ctes.Nc, 0])  # 1 / fprop.Csi_j[0,1,:]
+                dVjdP[0, 0, :] = np.zeros(ctes.n_volumes)
+                dVjdP[0, 1, :] = np.zeros_like(dVjdP[0, 0, :])
+            else:
+                dVjdP[0, 0, :], dVjdP[0, 1, :], dVjdNk[0:ctes.Nc, 0, :], dVjdNk[0:ctes.Nc, 1,
+                                                                         :] = self.EOS.get_all_derivatives(fprop)
+                # dVtP = dVjdP.sum(axis=0)
+        # else:
+        # dVjdP[0,:] = np.zeros(ctes.n_volumes); dVjdP[1,:] = np.zeros(ctes.n_volumes)
+        # dVjdNk[:,0,:] = np.zeros((ctes.n_components, ctes.n_volumes));
+        # dVjdNk[:,1,:] =  np.zeros_like(dVldNk)
+
+        if ctes.load_w:
+            dVjdNk[ctes.n_components - 1, 2, :] = 1 / fprop.Csi_j[0, ctes.n_phases - 1, :]
+            dVjdP[0, 2, :] = - fprop.Nk[ctes.n_components - 1, :] * fprop.Csi_W0 * ctes.Cw / (fprop.Csi_W) ** 2
+
+        # else: dVjdP[2,:] = np.zeros(ctes.n_volumes)
+        return dVjdNk, dVjdP

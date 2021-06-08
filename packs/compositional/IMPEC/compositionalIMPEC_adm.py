@@ -1,13 +1,11 @@
-from .pressure_solver import TPFASolver
-from .flux_calculation import FOUM, MUSCL
-from .update_time import delta_time
+from packs.compositional.IMPEC.flux_calculation import FOUM, MUSCL
+from packs.compositional.update_time import delta_time
 import numpy as np
-from ..utils import constants as ctes
-from ..directories import data_loaded
+from packs.utils import constants as ctes
+from packs.directories import data_loaded
 
-from packs.compositional.adm_tpfa_compositional_solver import AdmTpfaCompositionalSolver
-from packs.utils.test_functions import test_kwargs_keys
-from packs.compositional.compositionalIMPEC import CompositionalFVM
+from packs.compositional.IMPEC.adm_tpfa_compositional_solver import AdmTpfaCompositionalSolver
+from packs.compositional.IMPEC.compositionalIMPEC import CompositionalFVM
 
 class CompositionalFvmADM(CompositionalFVM):
     
@@ -31,7 +29,9 @@ class CompositionalFvmADM(CompositionalFVM):
         self.get_phase_densities_internal_faces(fprop)
         r = 0.8 # enter the while loop
         # psolve = TPFASolver(fprop)
-        psolve = AdmTpfaCompositionalSolver(fprop)
+        dVjdNk, dVjdP = self.dVt_derivatives(fprop)
+        # psolve = AdmTpfaCompositionalSolver(fprop)
+        psolve = AdmTpfaCompositionalSolver(dVjdNk, dVjdP)
         # params['dVtdP'] = AdmTpfaCompositionalSolver.dVtP
         # params['dVtdNk'] = AdmTpfaCompositionalSolver.dVtk
         P_old = np.copy(fprop.P)
@@ -59,6 +59,31 @@ class CompositionalFvmADM(CompositionalFVM):
             r = delta_t_new/delta_t
             delta_t = delta_t_new
 
-        self.update_composition(fprop, delta_t)
-        #self.update_composition_RK3_2(fprop, fprop.Nk, delta_t)
+        ##### remove
+        # self.update_composition(fprop, delta_t)
+        # # self.update_composition_RK3_2(fprop, fprop.Nk, delta_t)
+        # return delta_t
+        #####
+
+        ########## new
+        import pdb; pdb.set_trace()
+        if not ctes.FR:
+
+            fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, q,
+                                                           fprop.Fk_vols_total, delta_t)
+            # wave_velocity = UPW.wave_velocity_upw(M, fprop, fprop.mobilities, fprop.rho_j, fprop.xkj,
+            #    fprop.Csi_j, total_flux_internal_faces)
+
+        else:
+            fprop.Nk = Nk;
+            fprop.z = z;
+            fprop.Nk_SP = Nk_SP
+
+        fprop.wave_velocity = wave_velocity
+        fprop.total_flux_internal_faces = total_flux_internal_faces
+        if any(fprop.xkj.sum(axis=0).flatten() > 1 + 1e-10): import pdb; pdb.set_trace()
+        if len(fprop.Nk[fprop.Nk < 0]) > 0: import pdb; pdb.set_trace()
+        # if fprop.P[0]<fprop.P[1] or fprop.P[1]<fprop.P[2]: import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         return delta_t
+        ####### end new
