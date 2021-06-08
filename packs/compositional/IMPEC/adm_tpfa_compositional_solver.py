@@ -8,6 +8,7 @@ from packs.multiscale.ms_utils.multiscale_functions import multilevel_pressure_s
 import scipy.sparse as sp
 import numpy as np
 from packs.adm.non_uniform import monotonic_adm_subds
+from packs.compositional.IMPEC.global_pressure_solver import GlobalIMPECPressureSolver
 
 
 
@@ -33,6 +34,23 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # )
         
         T, T_noCC = self.update_transmissibility(M, wells, fprop, delta_t)
+        T_noCC_2 = GlobalIMPECPressureSolver.mount_transmissibility_no_bc(
+            fprop.xkj_internal_faces,
+            fprop.Csi_j_internal_faces,
+            fprop.mobilities_internal_faces,
+            ctes.Vbulk,
+            ctes.porosity,
+            ctes.Cf,
+            delta_t,
+            self.dVtP,
+            self.dVtk,
+            ctes.pretransmissibility_internal_faces,
+            ctes.n_volumes,
+            ctes.n_components,
+            ctes.v0
+        )
+        print(np.allclose(sp.find(T_noCC), sp.find(T_noCC_2)))
+        import pdb; pdb.set_trace()
         D = self.update_independent_terms(M, fprop, wells, delta_t)
         mlo: MultilevelOperators = kwargs.get('multilevel_operators')
         test_instance(mlo, MultilevelOperators)

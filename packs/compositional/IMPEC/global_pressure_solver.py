@@ -10,7 +10,21 @@ class GlobalIMPECPressureSolver:
                                      pretransmissibility_internal_faces, n_volumes, n_components,
                                      internal_faces_adjacencies):
         """
-            return the transmissibility matrix without boundary conditions
+
+        @param xkj_internal_faces:
+        @param Csi_j_internal_faces:
+        @param mobilities_internal_faces:
+        @param Vbulk: Volume of each mesh volumes
+        @param porosity: porosity of volumes
+        @param Cf:
+        @param delta_t: time step
+        @param dVtdP:
+        @param dVtdk:
+        @param pretransmissibility_internal_faces: static params of face transmissibility
+        @param n_volumes: number of volumes
+        @param n_components: number of components
+        @param internal_faces_adjacencies: volumes adjacencies of internal faces
+        @return: T: transmissibility matrix without boundary conditions - T
         """
 
         v0 = internal_faces_adjacencies
