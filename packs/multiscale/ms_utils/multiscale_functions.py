@@ -1,5 +1,6 @@
 from impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
 import numpy as np
+import scipy.sparse as sp
 
 def insert_prolongation_operator_impress(
         m_object: FineScaleMesh,
@@ -126,23 +127,32 @@ def print_mesh_volumes_data(m_object: FineScaleMesh, file_name):
     m_object.core.mb.write_file(file_name, [m1])
 
 
-def update_local_problem(neumann_subds, fine_scale_transmissibility_no_bc, fprop):
+def update_local_problem(neumann_subds, fine_scale_transmissibility_no_bc, diagonal_term):
     """
-        neumann_subds: local primal subdomains
-        fine_scale_transmissibility_no_cc: fine scale transmissibility without boundary conditions
+        @param neumann_subds: local primal subdomains structure
+        @param fine_scale_transmissibility_no_bc: fine scale transmissibility without boundary conditions
+        @param diagonal_term: diagonal term of fine scale transmissibility
     """
+
+
     Tglobal = fine_scale_transmissibility_no_bc
     for subd in neumann_subds:
-        subd.Tlocal_no_bc = update_local_transmissibility(Tglobal, subd.volumes)
+        subd.Tlocal_no_bc = update_local_transmissibility(Tglobal, subd.volumes, diagonal_term[subd.volumes])
 
-def update_local_transmissibility(Tglobal, gids):
+def update_local_transmissibility(Tglobal, gids, diagonal_term) -> sp.csc_matrix:
+    """
 
+    @param Tglobal: global fine scale transmissibility
+    @param gids: global ids of local volumes
+    @param diagonal_term: diagonal term of local volumes
+    @return: Tlocal local transmisssibility matrix
+    """
     n = len(gids)
-    l2 = np.repeat(gids, n).reshape(n, n)
-    l3 = np.tile(gids, n).reshape(n, n)
+    lines = np.repeat(gids, n).reshape(n, n)
+    cols = np.tile(gids, n).reshape(n, n)
 
-    Tlocal = Tglobal[l2, l3]
+    Tlocal = Tglobal[lines, cols]
     Tlocal.setdiag(np.zeros(n))
-    Tlocal.setdiag(-Tlocal.sum(axis=1))
-
-    return Tlocal
+    diagonal = np.array(-Tlocal.sum(axis=1)).flatten() + diagonal_term
+    Tlocal.setdiag(diagonal)
+    return Tlocal.tocsc()

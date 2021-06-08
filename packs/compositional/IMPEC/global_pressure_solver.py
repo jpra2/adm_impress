@@ -8,21 +8,21 @@ class GlobalIMPECPressureSolver:
     def mount_transmissibility_no_bc(xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces,
                                      Vbulk, porosity, Cf, delta_t, dVtdP, dVtdk,
                                      pretransmissibility_internal_faces, n_volumes, n_components,
-                                     internal_faces_adjacencies):
+                                     internal_faces_adjacencies) -> sp.csc_matrix:
         """
 
-        @param xkj_internal_faces:
-        @param Csi_j_internal_faces:
-        @param mobilities_internal_faces:
-        @param Vbulk: Volume of each mesh volumes
-        @param porosity: porosity of volumes
-        @param Cf:
+        @param xkj_internal_faces: concentration of component in phase (n_components, n_phases, n_internal_faces)
+        @param Csi_j_internal_faces: molar densities of phases (1, n_phases, n_internal_faces)
+        @param mobilities_internal_faces: (1, n_phases, n_internal_faces)
+        @param Vbulk: Volume of each mesh volumes (n_volumes)
+        @param porosity: porosity of volumes (n_volumes)
+        @param Cf: rock compressibility (cte)
         @param delta_t: time step
-        @param dVtdP:
-        @param dVtdk:
+        @param dVtdP: volume derivatives with respect to pressure (n_volumes)
+        @param dVtdk: volume derivatives with respect to component mol number (n_components, n_volumes)
         @param pretransmissibility_internal_faces: static params of face transmissibility
         @param n_volumes: number of volumes
-        @param n_components: number of components
+        @param n_components: number of hydrocarbon components
         @param internal_faces_adjacencies: volumes adjacencies of internal faces
         @return: T: transmissibility matrix without boundary conditions - T
         """
@@ -49,4 +49,4 @@ class GlobalIMPECPressureSolver:
 
         T.setdiag(T.diagonal().flatten() + (Vbulk * porosity * Cf - dVtdP))
 
-        return T
+        return T.tocsc()
