@@ -38,6 +38,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # import pdb; pdb.set_trace()
         D = self.update_independent_terms(M, fprop, wells, delta_t)
 
+        import pdb; pdb.set_trace()
+
         # test_instance(mlo, MultilevelOperators)
         # mlo.run(T_noCC, np.zeros(len(D)), np.zeros(len(D)))
         mlo.run(T_noCC, D, np.zeros(len(D)), return_correction_matrix=False)
