@@ -2,6 +2,7 @@ from impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
 import numpy as np
 import scipy.sparse as sp
 
+
 def insert_prolongation_operator_impress(
         m_object: FineScaleMesh,
         prolongation,
@@ -127,25 +128,39 @@ def print_mesh_volumes_data(m_object: FineScaleMesh, file_name):
     m_object.core.mb.write_file(file_name, [m1])
 
 
-def update_local_problem(neumann_subds, fine_scale_transmissibility_no_bc, diagonal_term):
+def update_local_problem(neumann_subds, fine_scale_transmissibility_no_bc, diagonal_term, adm_pressure,
+                         Ft_internal_faces, map_internal_faces, gids_volumes):
     """
         @param neumann_subds: local primal subdomains structure
         @param fine_scale_transmissibility_no_bc: fine scale transmissibility without boundary conditions
         @param diagonal_term: diagonal term of fine scale transmissibility
+        @param adm_pressure: adm pressure in fine scale
+        @param Ft_internal_faces: total flux internal faces
+        @param map_internal_faces: map for internal faces
+        @param gids_volumes: all volumes gids
     """
-
+    n_gids = len(gids_volumes)
 
     Tglobal = fine_scale_transmissibility_no_bc
     for subd in neumann_subds:
         subd.Tlocal_no_bc = update_local_transmissibility(Tglobal, subd.volumes, diagonal_term[subd.volumes])
+        subd.adm_pressure = adm_pressure[subd.volumes]
+        subd.flux_prescription = update_flux_prescription(
+            n_gids,
+            Ft_internal_faces,
+            subd.intersect_faces,
+            subd.adjs_intersect_faces,
+            map_internal_faces,
+            subd.volumes
+        )
+
 
 def update_local_transmissibility(Tglobal, gids, diagonal_term) -> sp.csc_matrix:
     """
-
-    @param Tglobal: global fine scale transmissibility
-    @param gids: global ids of local volumes
-    @param diagonal_term: diagonal term of local volumes
-    @return: Tlocal local transmisssibility matrix
+        @param Tglobal: global fine scale transmissibility
+        @param gids: global ids of local volumes
+        @param diagonal_term: diagonal term of local volumes
+        @return: Tlocal local transmisssibility matrix
     """
     n = len(gids)
     lines = np.repeat(gids, n).reshape(n, n)
@@ -156,3 +171,22 @@ def update_local_transmissibility(Tglobal, gids, diagonal_term) -> sp.csc_matrix
     diagonal = np.array(-Tlocal.sum(axis=1)).flatten() + diagonal_term
     Tlocal.setdiag(diagonal)
     return Tlocal.tocsc()
+
+
+def update_flux_prescription(n_gids, ft_internal_faces, intersect_faces, adjacencies_intersect_faces,
+                             map_internal_faces, volumes_in_primal):
+    """
+
+    @param n_gids: number of global gids
+    @param ft_internal_faces: total flux internal faces
+    @param intersect_faces: intersect faces of primal
+    @param adjacencies_intersect_faces: volumes adjacencies of intersect faces
+    @param map_internal_faces: remap internal faces
+    @param volumes_in_primal: fine volumes in primal coarse volume
+    @return: local flux prescription
+    """
+    v0 = adjacencies_intersect_faces
+    flux = np.zeros(n_gids)
+    flux[v0[:, 0]] += ft_internal_faces[0][map_internal_faces[intersect_faces]]
+    flux[v0[:, 1]] -= ft_internal_faces[0][map_internal_faces[intersect_faces]]
+    return flux[volumes_in_primal]

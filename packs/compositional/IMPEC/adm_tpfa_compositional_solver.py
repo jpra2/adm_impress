@@ -27,6 +27,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         neumann_subds = kwargs.get('neumann_subds')
         data_impress= kwargs.get('data_impress')
         elements_lv0 = kwargs.get('elements_lv0')
+        mlo: MultilevelOperators = kwargs.get('multilevel_operators')
 
         # test_kwargs_keys(
         #     AdmTpfaCompositionalSolver._kwargs_keys['get_pressure'],
@@ -34,26 +35,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # )
         
         T, T_noCC = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
-        T_noCC_2 = GlobalIMPECPressureSolver.mount_transmissibility_no_bc(
-            fprop.xkj_internal_faces,
-            fprop.Csi_j_internal_faces,
-            fprop.mobilities_internal_faces,
-            ctes.Vbulk,
-            ctes.porosity,
-            ctes.Cf,
-            delta_t,
-            self.dVtP,
-            self.dVtk,
-            ctes.pretransmissibility_internal_faces,
-            ctes.n_volumes,
-            ctes.n_components,
-            ctes.v0
-        )
-        print(np.allclose(sp.find(T_noCC), sp.find(T_noCC_2)))
         # import pdb; pdb.set_trace()
         D = self.update_independent_terms(M, fprop, wells, delta_t)
-        mlo: MultilevelOperators = kwargs.get('multilevel_operators')
-        test_instance(mlo, MultilevelOperators)
+
+        # test_instance(mlo, MultilevelOperators)
         # mlo.run(T_noCC, np.zeros(len(D)), np.zeros(len(D)))
         mlo.run(T_noCC, D, np.zeros(len(D)), return_correction_matrix=False)
         n_levels = 2
@@ -112,8 +97,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             restriction_list
         )
 
-        update_local_problem(neumann_subds.neumann_subds, T_noCC, params['diagonal_term'])
-
         self.P = self.update_pressure(T, D, fprop) # OP*padm
         error = np.absolute(self.P - solution) / self.P
         data_impress = M.data
@@ -147,6 +130,17 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         Ft_internal_faces = self.update_total_flux_internal_faces(fprop, self.P) # pressao local
         Ft_internal_faces_adm = self.update_total_flux_internal_faces(fprop, solution) # pressao local
+        Ft_faces = np.zeros(len(elements_lv0['faces']))
+        Ft_faces[elements_lv0['internal_faces']] = Ft_internal_faces_adm
+        update_local_problem(
+            neumann_subds.neumann_subds,
+            T_noCC,
+            params['diagonal_term'],
+            solution,
+            Ft_internal_faces_adm,
+            elements_lv0['remaped_internal_faces'],
+            elements_lv0['volumes']
+        )
         import pdb; pdb.set_trace()
         self.update_flux_wells(fprop, wells, delta_t)
         params['dVtdP'] = AdmTpfaCompositionalSolver.dVtP
