@@ -52,22 +52,45 @@ class GlobalIMPECPressureSolver:
         return T.tocsc()
 
     @staticmethod
-    def mount_independent_term(Vbulk, porosity, Cf, dVtdP, P, n_volumes, n_components, n_phases, internal_faces_adjacencies, dVtdk, z_centroids, xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces, pretransmissibility_internal_faces, Pcap, Vp, Vt):
+    def mount_independent_term(Vbulk, porosity, Cf, dVtdP, P, n_volumes, n_components, n_phases, internal_faces_adjacencies, dVtdk, z_centroids, xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces, pretransmissibility_internal_faces, Pcap, Vp, Vt, well_volumes_flux_prescription, values_flux_prescription, delta_t, g, well_volumes_pressure_prescription, pressure_prescription, bhp_ind, rho_j, rho_j_internal_faces):
+        """
+
+        @param Vbulk: Volume of each mesh volumes (n_volumes)
+        @param porosity: porosity of volumes (n_volumes)
+        @param Cf: rock compressibility (cte)
+        @param dVtdP: volume derivatives with respect to pressure (n_volumes)
+        @param P: pressure field
+        @param n_volumes: number of volumes
+        @param n_components: number of components
+        @param n_phases: number of phases
+        @param internal_faces_adjacencies: volumes adjacencies of internal faces
+        @param dVtdk: volume derivatives with respect to component mol number (n_components, n_volumes)
+        @param z_centroids:  negative z centroids of volumes = -z_mesh_centroids
+        @param xkj_internal_faces: concentration of component in phase (n_components, n_phases, n_internal_faces)
+        @param Csi_j_internal_faces: molar densities of phases (1, n_phases, n_internal_faces)
+        @param mobilities_internal_faces: (1, n_phases, n_internal_faces)
+        @param pretransmissibility_internal_faces: static params of face transmissibility
+        @param Pcap: capipllary pressure of phases (n_phases, n_volumes)
+        @param Vp: porous volume (n_volumes)
+        @param Vt: fluid volume (n_volumes)
+        @param well_volumes_flux_prescription: gids of volumes with flux prescription
+        @param values_flux_prescription: values of flux prescription
+        @param delta_t: time step
+        @param g: gravity acc in z direction
+        @param well_volumes_pressure_prescription: gids of volumes with pressure prescription
+        @param pressure_prescription: pressure prescription
+        @param bhp_ind: z minimum
+        @param rho_j: density of phases (n_phases, n_volumes)
+        @param rho_j_internal_faces: density of phases in internal_faces (1, n_phases, n_volumes)
+        @return: independent terms
+        """
         pressure_term = GlobalIMPECPressureSolver.pressure_independent_term(Vbulk, porosity, Cf, dVtdP, P)
-        gravity_term = GlobalIMPECPressureSolver.gravity_independent_term(n_volumes, n_components, internal_faces_adjacencies, dVtdk, z_centroids)
-        capillary_term = GlobalIMPECPressureSolver.capillary_independent_term(xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces, pretransmissibility_internal_faces, n_components, n_phases, n_volumes, dVtdk, Pcap)
+        gravity_term = GlobalIMPECPressureSolver.gravity_independent_term(xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces, rho_j_internal_faces, pretransmissibility_internal_faces, n_volumes, n_components, internal_faces_adjacencies, dVtdk, z_centroids, g)
+        capillary_term = GlobalIMPECPressureSolver.capillary_independent_term(xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces, pretransmissibility_internal_faces, n_components, n_phases, n_volumes, dVtdk, Pcap, internal_faces_adjacencies)
         volume_term = GlobalIMPECPressureSolver.volume_discrepancy_independent_term(Vp, Vt)
-
-
-    def update_independent_terms(self, M, fprop, wells, delta_t):
-        self.pressure_term = self.pressure_independent_term(fprop)
-        self.capillary_term, self.gravity_term = self.capillary_and_gravity_independent_term(fprop)
-        self.volume_term = self.volume_discrepancy_independent_term(fprop)
-        well_term = self.well_term(fprop, wells)
-        independent_terms = self.pressure_term - self.volume_term  + delta_t * \
-        well_term - delta_t * (self.capillary_term + self.gravity_term)
-        independent_terms[wells['ws_p']] = wells['values_p'] + ctes.g * \
-        fprop.rho_j[0,0,wells['ws_p']] * (ctes.z[wells['ws_p']] - ctes.z[ctes.bhp_ind])
+        well_term = GlobalIMPECPressureSolver.well_term(well_volumes_flux_prescription, values_flux_prescription, n_components, n_volumes, dVtdk)
+        independent_terms = pressure_term - volume_term + delta_t * well_term - delta_t * (capillary_term + gravity_term)
+        independent_terms[well_volumes_pressure_prescription] = pressure_prescription + g * rho_j[0, 0, well_volumes_pressure_prescription] * (z_centroids[well_volumes_flux_prescription] - z_centroids[bhp_ind])
         return independent_terms
 
     @staticmethod
@@ -161,5 +184,26 @@ class GlobalIMPECPressureSolver:
         """
         volume_discrepancy_term = Vp - Vt
         return volume_discrepancy_term
+
+    @staticmethod
+    def well_term(well_volumes_flux_prescription, values_flux_prescription, n_components, n_volumes, dVtdk):
+        """
+
+        @param well_volumes_flux_prescription: gids of volumes with flux prescription
+        @param values_flux_prescription: values of flux prescription
+        @param n_components: number of components
+        @param n_volumes: number of volumes
+        @param dVtdk: volume derivatives with respect to component mol number (n_components, n_volumes)
+        @return: well term
+        """
+        _q = np.zeros([n_components, n_volumes])
+        well_term = np.zeros(n_volumes)
+
+        if len(well_volumes_flux_prescription) > 0:
+            _q[:, well_volumes_flux_prescription] = values_flux_prescription
+            well_term[well_volumes_flux_prescription] = np.sum(dVtdk[:, well_volumes_flux_prescription] *
+                                              _q[:, well_volumes_flux_prescription], axis=0)
+        return well_term
+
 
 

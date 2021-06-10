@@ -37,6 +37,36 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         T, T_noCC = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
         # import pdb; pdb.set_trace()
         D = self.update_independent_terms(M, fprop, wells, delta_t)
+        D2 = GlobalIMPECPressureSolver.mount_independent_term(
+            ctes.Vbulk,
+            ctes.porosity,
+            ctes.Cf,
+            self.dVtP,
+            fprop.P,
+            ctes.n_volumes,
+            ctes.n_components,
+            3,
+            ctes.v0,
+            self.dVtk,
+            ctes.z,
+            fprop.xkj_internal_faces,
+            fprop.Csi_j_internal_faces,
+            fprop.mobilities_internal_faces,
+            ctes.pretransmissibility_internal_faces,
+            fprop.Pcap,
+            fprop.Vp,
+            fprop.Vt,
+            wells['ws_q'],
+            wells['values_q'],
+            delta_t,
+            ctes.g,
+            wells['ws_p'],
+            wells['values_p'],
+            ctes.bhp_ind,
+            fprop.rho_j,
+            fprop.rho_j_internal_faces
+        )
+        print(np.allclose(D, D2))
 
         import pdb; pdb.set_trace()
 
