@@ -6,6 +6,7 @@ from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.compositional.compositional_params import Params
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 from packs.multiscale.preprocess.prep_neumann import NeumannSubdomains
+from packs.utils import constants as ctes
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -48,6 +49,35 @@ adm = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 params['area'] = data_impress['area']
 params['pretransmissibility'] = data_impress['pretransmissibility']
 
+local_problem_params = {
+    'Vbulk': ctes.Vbulk,
+    'porosity': ctes.porosity,
+    'Cf': ctes.Cf,
+    'dVtdP': None,
+    'P': None,
+    'n_volumes': ctes.n_volumes,
+    'n_components': ctes.n_components,
+    'n_phases': 3,
+    'internal_faces_adjacencies': ctes.v0,
+    'dVtdk': None,
+    'z_centroids': ctes.z,
+    'xkj_internal_faces': None,
+    'Csi_j_internal_faces': None,
+    'mobilities_internal_faces': None,
+    'pretransmissibility_internal_faces': ctes.pretransmissibility_internal_faces,
+    'Pcap': None,
+    'Vp': None,
+    'Vt': None,
+    'well_volumes_flux_prescription': wells['ws_q'],
+    'values_flux_prescription': wells['values_q'],
+    'delta_t': None,
+    'g': ctes.g,
+    'well_volumes_pressure_prescription': wells['ws_p'],
+    'pressure_prescription': wells['values_p'],
+    'bhp_ind': ctes.bhp_ind,
+    'rho_j': None,
+    'rho_j_internal_faces': None
+}
 
 while run_criteria < stop_criteria:# and loop < loop_max:
     params['pressure'] = fprop.P
@@ -69,7 +99,8 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             adm_method=adm,
             neumann_subds=neumann_subds,
             data_impress=data_impress,
-            elements_lv0=elements_lv0)
+            elements_lv0=elements_lv0,
+            local_problem_params=local_problem_params)
 
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'
