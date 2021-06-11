@@ -11,6 +11,26 @@ from packs.adm.non_uniform import monotonic_adm_subds
 from packs.compositional.IMPEC.global_pressure_solver import GlobalIMPECPressureSolver
 
 
+def update_local_parameters(dt, fprop, **kwargs):
+    params = kwargs.get('params')
+    kwargs.update({
+        'dVtdP': params['dVtdP'],
+        'dVtdk': params['dVtdNk'],
+        'P': fprop.P,
+        'xkj_internal_faces': fprop.xkj_internal_faces,
+        'Csi_j_internal_faces': fprop.Csi_j_internal_faces,
+        'mobilities_internal_faces': fprop.mobilities_internal_faces,
+        'Pcap': fprop.Pcap,
+        'Vp': fprop.Vp,
+        'Vt': fprop.Vt,
+        'delta_t': dt,
+        'rho_j': fprop.rho_j,
+        'rho_j_internal_faces': fprop.rho_j_internal_faces
+    })
+    return kwargs
+
+
+
 
 class AdmTpfaCompositionalSolver(TPFASolver):
     
@@ -22,6 +42,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
     }
     
     def get_pressure(self, M, wells, fprop, delta_t, **kwargs):
+
         adm_method = kwargs.get('adm_method')
         params = kwargs.get('params')
         neumann_subds = kwargs.get('neumann_subds')
@@ -36,8 +57,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         
         T, T_noCC = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
         # import pdb; pdb.set_trace()
-        params['dVtdP'] = AdmTpfaCompositionalSolver.dVtP
-        params['dVtdNk'] = AdmTpfaCompositionalSolver.dVtk
         D = self.update_independent_terms(M, fprop, wells, delta_t)
         # D2 = GlobalIMPECPressureSolver.mount_independent_term(
         #     ctes.Vbulk,
@@ -76,7 +95,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # mlo.run(T_noCC, np.zeros(len(D)), np.zeros(len(D)))
         mlo.run(T_noCC, D, np.zeros(len(D)), return_correction_matrix=False)
         n_levels = 2
-        data_impress['transmissibility'][elements_lv0['internal_faces']] = ctes.pretransmissibility_internal_faces
+        transm_int_fac = np.array(T_noCC[ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
+        # data_impress['transmissibility'][elements_lv0['internal_faces']] = ctes.pretransmissibility_internal_faces
+        data_impress['transmissibility'][elements_lv0['internal_faces']] = transm_int_fac
+        data_impress['transmissibility'][elements_lv0['boundary_faces']] = 0
 
         preprocessed_primal_objects, critical_groups = monotonic_adm_subds.get_preprossed_monotonic_primal_objects(
             data_impress, elements_lv0, mlo.get_prolongation_by_level(1), neumann_subds.neumann_subds, phiK_raz_lim=3)
@@ -166,6 +188,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         Ft_internal_faces_adm = self.update_total_flux_internal_faces(fprop, solution) # pressao local
         Ft_faces = np.zeros(len(elements_lv0['faces']))
         Ft_faces[elements_lv0['internal_faces']] = Ft_internal_faces_adm
+
+        kwargs = update_local_parameters(delta_t, fprop, **kwargs)
         update_local_problem(
             neumann_subds.neumann_subds,
             T_noCC,
@@ -173,7 +197,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             solution,
             Ft_internal_faces_adm,
             elements_lv0['remaped_internal_faces'],
-            elements_lv0['volumes']
+            elements_lv0['volumes'],
+            **kwargs
         )
         import pdb; pdb.set_trace()
         self.update_flux_wells(fprop, wells, delta_t)

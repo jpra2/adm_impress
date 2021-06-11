@@ -120,15 +120,15 @@ class PrimalSubdomain:
     def create_primal_subdomain(self,elements_lv0, ml_data, data_impress, gidc, local_vertex):
         remaped_internal_faces = elements_lv0['remaped_internal_faces']
         neig_internal_faces = elements_lv0['neig_internal_faces']
-        gid0 = data_impress['GID_0']
+        # gid0 = data_impress['GID_0']
         all_gids_coarse = data_impress['GID_1']
         all_intern_boundary_volumes = ml_data['internal_boundary_fine_volumes_level_1']
         all_intersect_faces = ml_data['coarse_intersect_faces_level_1']
         all_intern_faces = ml_data['coarse_internal_faces_level_1']
-        all_faces = ml_data['coarse_faces_level_1']
+        # all_faces = ml_data['coarse_faces_level_1']
         all_fine_vertex = ml_data['fine_vertex_coarse_volumes_level_1']
         coarse_ids = ml_data['coarse_primal_id_level_1']
-        gids_level = np.unique(all_gids_coarse)
+        # gids_level = np.unique(all_gids_coarse)
 
         intersect_faces = all_intersect_faces[coarse_ids==gidc][0] # faces na interseccao
         adjs_intersect_faces = neig_internal_faces[remaped_internal_faces[intersect_faces]]
@@ -149,6 +149,7 @@ class PrimalSubdomain:
         volumes=np.unique(adjs)
         map_volumes=np.repeat(-1,adjs.max()+1)
         map_volumes[volumes]=range(len(volumes))
+        self.map_volumes = map_volumes
         ind_diric_local=map_volumes[vertex]
         l=map_volumes[adjs[:,0]]
         c=map_volumes[adjs[:,1]]

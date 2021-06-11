@@ -1,6 +1,7 @@
 from impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
 import numpy as np
 import scipy.sparse as sp
+from packs.compositional.IMPEC.global_pressure_solver import GlobalIMPECPressureSolver as gips
 
 
 def insert_prolongation_operator_impress(
@@ -128,10 +129,10 @@ def print_mesh_volumes_data(m_object: FineScaleMesh, file_name):
     m_object.core.mb.write_file(file_name, [m1])
 
 
-def update_local_problem(neumann_subds, fine_scale_transmissibility_no_bc, diagonal_term, adm_pressure,
-                         Ft_internal_faces, map_internal_faces, gids_volumes):
+def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, diagonal_term, adm_pressure,
+                         Ft_internal_faces, map_internal_faces, gids_volumes, **kwargs):
     """
-        @param neumann_subds: local primal subdomains structure
+        @param neumann_subds_list: local primal subdomains structure
         @param fine_scale_transmissibility_no_bc: fine scale transmissibility without boundary conditions
         @param diagonal_term: diagonal term of fine scale transmissibility
         @param adm_pressure: adm pressure in fine scale
@@ -140,9 +141,10 @@ def update_local_problem(neumann_subds, fine_scale_transmissibility_no_bc, diago
         @param gids_volumes: all volumes gids
     """
     n_gids = len(gids_volumes)
+    elements_lv0 = kwargs.get('elements_lv0')
 
     Tglobal = fine_scale_transmissibility_no_bc
-    for subd in neumann_subds:
+    for subd in neumann_subds_list:
         subd.Tlocal_no_bc = update_local_transmissibility(Tglobal, subd.volumes, diagonal_term[subd.volumes])
         subd.adm_pressure = adm_pressure[subd.volumes]
         subd.flux_prescription = update_flux_prescription(
@@ -153,6 +155,38 @@ def update_local_problem(neumann_subds, fine_scale_transmissibility_no_bc, diago
             map_internal_faces,
             subd.volumes
         )
+
+        local_rhs = gips.mount_independent_term(
+            kwargs['Vbulk'][subd.volumes],
+            kwargs['porosity'][subd.volumes],
+            kwargs['Cf'],
+            kwargs['dVtdP'][subd.volumes],
+            kwargs['P'][subd.volumes],
+            len(subd.volumes),
+            kwargs['n_components'],
+            kwargs['n_phases'],
+            subd.map_volumes[subd.adj_intern_local_faces],
+            kwargs['dVtdk'][:, subd.volumes],
+            kwargs['z_centroids'][subd.volumes],
+            kwargs['xkj_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
+            kwargs['Csi_j_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
+            kwargs['mobilities_internal_faces'][: , :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
+            kwargs['pretransmissibility_internal_faces'][elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
+            kwargs['Pcap'][:, subd.volumes],
+            kwargs['Vp'][subd.volumes],
+            kwargs['Vt'][subd.volumes],
+            [],
+            [],
+            kwargs['delta_t'],
+            kwargs['g'],
+            [],
+            [],
+            [],
+            kwargs['rho_j'][:, :, subd.volumes],
+            kwargs['rho_j_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]]
+        )
+        subd.local_rhs = local_rhs + subd.flux_prescription
+
 
 
 def update_local_transmissibility(Tglobal, gids, diagonal_term) -> sp.csc_matrix:

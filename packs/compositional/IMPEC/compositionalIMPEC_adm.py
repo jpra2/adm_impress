@@ -19,9 +19,7 @@ class CompositionalFvmADM(CompositionalFVM):
     def __call__(self, M, wells, fprop, delta_t, **kwargs):
         # test_kwargs_keys(CompositionalFVM._kwargs_keys['__call__'], kwargs.keys())
         # import pdb; pdb.set_trace()
-        adm_method = kwargs.get('adm_method')
         params=kwargs.get('params')
-        neumann_subds = kwargs.get('neumann_subds')
 
         self.update_gravity_term(fprop)
         if ctes.MUSCL: self.get_faces_properties_average(fprop)
@@ -30,10 +28,13 @@ class CompositionalFvmADM(CompositionalFVM):
         r = 0.8 # enter the while loop
         # psolve = TPFASolver(fprop)
         dVjdNk, dVjdP = self.dVt_derivatives(fprop)
+
         # psolve = AdmTpfaCompositionalSolver(fprop)
         psolve = AdmTpfaCompositionalSolver(dVjdNk, dVjdP)
-        # params['dVtdP'] = AdmTpfaCompositionalSolver.dVtP
-        # params['dVtdNk'] = AdmTpfaCompositionalSolver.dVtk
+        params.update({
+            'dVtdP': psolve.dVtP,
+            'dVtdNk': psolve.dVtk
+        })
         P_old = np.copy(fprop.P)
         Nk_old = np.copy(fprop.Nk)
         while (r!=1.):

@@ -100,7 +100,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             neumann_subds=neumann_subds,
             data_impress=data_impress,
             elements_lv0=elements_lv0,
-            local_problem_params=local_problem_params)
+            **local_problem_params)
 
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'

@@ -18,24 +18,6 @@ class RunSimulationAdm(run_simulation):
         'run': set(['multilevel_data',
                      'multilevel_operators']),
     }
-    
-    '''Class created to compute simulation properties at each simulation time'''
-    def __init__(self, name_current, name_all):
-
-        self.name_current_results =os.path.join(direc.flying, name_current + '.npy')
-        self.name_all_results = os.path.join(direc.flying, name_all)
-        self.loop = 0
-        self.vpi = 0.0
-        self.t = 0.0
-        self.oil_production = 0.
-        self.gas_production = 0.
-        self.use_vpi = data_loaded['use_vpi']
-        self.vpi_save = data_loaded['compositional_data']['vpis_para_gravar_vtk']
-        self.time_save = np.array(data_loaded['compositional_data']['time_to_save'])
-        self.delta_t = data_loaded['compositional_data']['time_data']['delta_t_ini']
-        self.mesh_name =  'compositional_'
-        self.all_results = self.get_empty_current_compositional_results()
-        self.p1 = PropertiesCalc()
 
     def initialize(self, load, convert, mesh, **kwargs):
         ''' Function to initialize mesh (preprocess) get and compute initial mesh \
@@ -72,7 +54,9 @@ class RunSimulationAdm(run_simulation):
         #                                   neumann_subds=neumann_subds,
         #                                   data_impress=data_impress)
 
-        self.delta_t = CompositionalFvmADM()(M, wells, fprop, self.delta_t, **kwargs)
+        # self.delta_t = CompositionalFvmADM()(M, wells, fprop, self.delta_t, **kwargs)
+        kwargs['delta_t'] = self.delta_t
+        self.delta_t = CompositionalFvmADM()(M, wells, fprop, **kwargs)
 
         self.t += self.delta_t
 
