@@ -226,6 +226,6 @@ def update_flux_prescription(n_gids, ft_internal_faces, intersect_faces, adjacen
     """
     v0 = adjacencies_intersect_faces
     flux = np.zeros(n_gids)
-    flux[v0[:, 0]] += ft_internal_faces[0][map_internal_faces[intersect_faces]]
-    flux[v0[:, 1]] -= ft_internal_faces[0][map_internal_faces[intersect_faces]]
+    flux[v0[:, 0]] -= ft_internal_faces[0][map_internal_faces[intersect_faces]]
+    flux[v0[:, 1]] += ft_internal_faces[0][map_internal_faces[intersect_faces]]
     return flux[volumes_in_primal]

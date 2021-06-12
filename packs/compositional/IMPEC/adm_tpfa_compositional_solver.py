@@ -153,6 +153,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             restriction_list
         )
 
+        import pdb; pdb.set_trace()
+
         self.P = self.update_pressure(T, D, fprop) # OP*padm
         error = np.absolute(self.P - solution) / self.P
         data_impress = M.data
@@ -195,13 +197,27 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             T_noCC,
             params['diagonal_term'],
             solution,
-            Ft_internal_faces_adm,
+            Ft_internal_faces,
             elements_lv0['remaped_internal_faces'],
             elements_lv0['volumes'],
             **kwargs
         )
-        master = MasterLocalSolver(neumann_subds.neumann_subds)
-        master.run()
+        master = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
+        local_solution = master.run()
+        del master
+
+        error2 = np.absolute(self.P - local_solution) / self.P
+        data_impress['verif_po'][:] = local_solution
+        data_impress['flux_volumes'][:] = error2
+        data_impress.update_variables_to_mesh()
+        print_mesh_volumes_data(
+            M,
+            os.path.join('results', 'prolongation_level_1.vtk')
+        )
+
+
+        import pdb; pdb.set_trace()
+
         import pdb; pdb.set_trace()
 
         self.update_flux_wells(fprop, wells, delta_t)

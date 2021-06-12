@@ -1,10 +1,12 @@
+from packs.solvers.solvers_scipy.solver_sp import SolverSp
+from multiprocessing import Queue
 
 def run_thing(local_solver_obj):
     local_solver_obj.run()
 
 
 class GlobalLocalSolver:
-    def __init__(self, subdomains, queue, comm, finished, id_process):
+    def __init__(self, subdomains, queue: Queue, comm, finished, id_process):
         """
         @param subdomains: list of subdomains
         @param queue: queue object
@@ -28,4 +30,9 @@ class LocalSolver1(GlobalLocalSolver):
 
     def run(self):
         self.initialize()
+        solver = SolverSp()
+        for subd in self.subdomains:
+            resp = solver.direct_solver(subd.Tlocal, subd.local_rhs)
+            self.queue.put([subd.volumes, resp])
+
         self.finish()

@@ -8,9 +8,10 @@ import queue
 
 class MasterLocalSolver:
 
-    def __init__(self, problems_list):
+    def __init__(self, problems_list, n_volumes):
         n_cpu = mp.cpu_count()
         self.n_cpu = n_cpu - 4
+        self.n_volumes = n_volumes
         n_problems = len(problems_list)
         n_problems_per_cpu = MasterLocalSolver.count_problems(n_problems, self.n_cpu)
         problems_per_cpu = MasterLocalSolver.get_problems_per_cpu(n_problems_per_cpu, problems_list)
@@ -45,7 +46,7 @@ class MasterLocalSolver:
     def init_subproblems(problems_per_cpu):
         """
 
-        @param problems_per_cpu: list of list local problems in cpu (?, n_cpu)
+        @param problems_per_cpu: list of list local problems in cpu shape = (?, n_cpu)
         @return: m2w: master to worker list communicator
                  w2m: worker to master list communicator
                  procs: list of process
@@ -61,32 +62,29 @@ class MasterLocalSolver:
         return m2w, w2m, procs, queue, values
 
     def run(self):
-
-        print(self.all_process_finished())
+        solution = np.zeros(self.n_volumes)
 
         for proc in self.procs:
             proc.start()
 
-        while(~self.all_process_finished()):
+        while(not self.all_process_finished()):
             try:
                 resp = self.queue.get_nowait()
             except queue.Empty:
-                print('\nFila vazia\n')
+                # print('\nFila vazia\n')
                 pass
             else:
-                # TODO ler dados da queue enquanto os processos estao rodando
-                pass
+                solution[resp[0]] = resp[1]
 
         for proc in self.procs:
             proc.join()
 
-        while(~self.queue.empty()):
-            # TODO ler dados da queue enquanto esta com dados dentro dela
-            pass
+        while(not self.queue.empty()):
+            resp = self.queue.get()
+            solution[resp[0]] = resp[1]
 
-        print(self.all_process_finished())
+        return solution
 
-        import pdb; pdb.set_trace()
 
     def all_process_finished(self):
         return np.all([i.value for i in self.finished])
