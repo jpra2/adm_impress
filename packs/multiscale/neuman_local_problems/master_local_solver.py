@@ -15,8 +15,6 @@ class MasterLocalSolver:
         problems_per_cpu = MasterLocalSolver.get_problems_per_cpu(n_problems_per_cpu, problems_list)
         self.m2w, self.w2m, self.procs, self.queue, self.finished = MasterLocalSolver.init_subproblems(problems_per_cpu)
 
-
-
     @staticmethod
     def count_problems(n_problems: int, n_cpu: int):
 
@@ -57,6 +55,24 @@ class MasterLocalSolver:
         queue = Queue()
         m2w, w2m = list(zip(*master2worker))
         values = [Value(c_bool, False) for _ in range(n)]
-        procs = [mp.Process(target=run_thing, args=[LocalSolver1(subdomains, queue, comm, finished, id)]) for subdomains, comm, finished in zip(problems_per_cpu, w2m, values, range(n))]
+        procs = [mp.Process(target=run_thing, args=[LocalSolver1(subdomains, queue, comm, finished, id_process)]) for subdomains, comm, finished, id_process in zip(problems_per_cpu, w2m, values, range(n))]
 
         return m2w, w2m, procs, queue, values
+
+    def run(self):
+
+        for i in self.finished:
+            print(i.value)
+
+        for proc in self.procs:
+            proc.start()
+
+        for proc in self.procs:
+            proc.join()
+
+        for i in self.finished:
+            print(i.value)
+
+        import pdb; pdb.set_trace()
+
+

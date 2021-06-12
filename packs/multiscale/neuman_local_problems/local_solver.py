@@ -4,7 +4,7 @@ def run_thing(local_solver_obj):
 
 
 class GlobalLocalSolver:
-    def __init__(self, subdomains, queue, comm, finished, id):
+    def __init__(self, subdomains, queue, comm, finished, id_process):
         """
         @param subdomains: list of subdomains
         @param queue: queue object
@@ -14,15 +14,18 @@ class GlobalLocalSolver:
         self.queue = queue
         self.comm = comm
         self.finished = finished
-        self.id = id
+        self.id_process = id_process
 
     def finish(self):
-        print(f'\nProcess {self.id} finished \n')
+        print(f'\nProcess {self.id_process} finished \n')
         self.finished.value = True
+
+    def initialize(self):
+        print(f'\nProcess {self.id_process} start \n')
 
 
 class LocalSolver1(GlobalLocalSolver):
 
     def run(self):
+        self.initialize()
         self.finish()
-        pass

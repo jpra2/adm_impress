@@ -201,6 +201,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             **kwargs
         )
         master = MasterLocalSolver(neumann_subds.neumann_subds)
+        master.run()
         import pdb; pdb.set_trace()
 
         self.update_flux_wells(fprop, wells, delta_t)
