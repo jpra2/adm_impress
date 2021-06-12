@@ -3,6 +3,7 @@ import numpy as np
 from multiprocessing import Queue, Value
 from ctypes import c_bool
 from packs.multiscale.neuman_local_problems.local_solver import LocalSolver1, run_thing
+import queue
 
 
 class MasterLocalSolver:
@@ -66,10 +67,22 @@ class MasterLocalSolver:
         for proc in self.procs:
             proc.start()
 
-        print(self.all_process_finished())
+        while(~self.all_process_finished()):
+            try:
+                resp = self.queue.get_nowait()
+            except queue.Empty:
+                print('\nFila vazia\n')
+                pass
+            else:
+                # TODO ler dados da queue enquanto os processos estao rodando
+                pass
 
         for proc in self.procs:
             proc.join()
+
+        while(~self.queue.empty()):
+            # TODO ler dados da queue enquanto esta com dados dentro dela
+            pass
 
         print(self.all_process_finished())
 
