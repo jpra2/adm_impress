@@ -61,18 +61,22 @@ class MasterLocalSolver:
 
     def run(self):
 
-        for i in self.finished:
-            print(i.value)
+        print(self.all_process_finished())
 
         for proc in self.procs:
             proc.start()
 
+        print(self.all_process_finished())
+
         for proc in self.procs:
             proc.join()
 
-        for i in self.finished:
-            print(i.value)
+        print(self.all_process_finished())
 
         import pdb; pdb.set_trace()
+
+    def all_process_finished(self):
+        return np.all([i.value for i in self.finished])
+
 
 
