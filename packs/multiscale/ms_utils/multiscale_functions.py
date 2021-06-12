@@ -185,7 +185,12 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
             kwargs['rho_j'][:, :, subd.volumes],
             kwargs['rho_j_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]]
         )
-        subd.local_rhs = local_rhs + subd.flux_prescription
+        local_rhs += subd.flux_prescription
+        local_rhs[subd.map_volumes[subd.ind_diric]] = adm_pressure[subd.ind_diric]
+        subd.local_rhs = local_rhs
+        subd.Tlocal = subd.Tlocal_no_bc.copy()
+        subd.Tlocal[subd.map_volumes[subd.ind_diric], subd.map_volumes[subd.ind_diric]] = 1
+
 
 
 

@@ -8,7 +8,7 @@ from packs.multiscale.ms_utils.multiscale_functions import multilevel_pressure_s
 import scipy.sparse as sp
 import numpy as np
 from packs.adm.non_uniform import monotonic_adm_subds
-from packs.compositional.IMPEC.global_pressure_solver import GlobalIMPECPressureSolver
+from packs.multiscale.neuman_local_problems.master_local_solver import MasterLocalSolver
 
 
 def update_local_parameters(dt, fprop, **kwargs):
@@ -179,10 +179,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     data_impress['GID_0'],
         # )
 
-        print_mesh_volumes_data(
-            M,
-            os.path.join('results', 'prolongation_level_1.vtk')
-        )
+        # print_mesh_volumes_data(
+        #     M,
+        #     os.path.join('results', 'prolongation_level_1.vtk')
+        # )
 
         Ft_internal_faces = self.update_total_flux_internal_faces(fprop, self.P) # pressao local
         Ft_internal_faces_adm = self.update_total_flux_internal_faces(fprop, solution) # pressao local
@@ -200,7 +200,9 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             elements_lv0['volumes'],
             **kwargs
         )
+        master = MasterLocalSolver(neumann_subds.neumann_subds)
         import pdb; pdb.set_trace()
+
         self.update_flux_wells(fprop, wells, delta_t)
         return self.P, Ft_internal_faces, self.q
     
