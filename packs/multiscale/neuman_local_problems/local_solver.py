@@ -11,6 +11,8 @@ class GlobalLocalSolver:
         @param subdomains: list of subdomains
         @param queue: queue object
         @param comm: communicator
+        @param finished: shared boolean value: True = process finished
+        @param id_process: process id
         """
         self.subdomains = subdomains
         self.queue = queue

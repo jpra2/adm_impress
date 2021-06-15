@@ -153,8 +153,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             restriction_list
         )
 
-        import pdb; pdb.set_trace()
-
         self.P = self.update_pressure(T, D, fprop) # OP*padm
         error = np.absolute(self.P - solution) / self.P
         data_impress = M.data
