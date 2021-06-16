@@ -90,7 +90,8 @@ class GlobalIMPECPressureSolver:
         volume_term = GlobalIMPECPressureSolver.volume_discrepancy_independent_term(Vp, Vt)
         well_term = GlobalIMPECPressureSolver.well_term(well_volumes_flux_prescription, values_flux_prescription, n_components, n_volumes, dVtdk)
         independent_terms = pressure_term - volume_term + delta_t * well_term - delta_t * (capillary_term + gravity_term)
-        independent_terms[well_volumes_pressure_prescription] = pressure_prescription + g * rho_j[0, 0, well_volumes_pressure_prescription] * (z_centroids[well_volumes_flux_prescription] - z_centroids[bhp_ind])
+        if len(well_volumes_pressure_prescription) > 0:
+            independent_terms[well_volumes_pressure_prescription] = pressure_prescription + g * rho_j[0, 0, well_volumes_pressure_prescription] * (z_centroids[well_volumes_pressure_prescription] - z_centroids[bhp_ind])
         return independent_terms
 
     @staticmethod

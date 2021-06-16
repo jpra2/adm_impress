@@ -175,18 +175,18 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
             kwargs['Pcap'][:, subd.volumes],
             kwargs['Vp'][subd.volumes],
             kwargs['Vt'][subd.volumes],
-            [],
-            [],
+            subd.map_volumes[subd.ind_neum],
+            subd.flux_prescription[subd.map_volumes[subd.ind_neum]],
             kwargs['delta_t'],
             kwargs['g'],
-            [],
-            [],
-            [],
+            subd.map_volumes[subd.ind_diric],
+            subd.adm_pressure[subd.map_volumes[subd.ind_diric]],
+            subd.map_volumes[subd.ind_diric],
             kwargs['rho_j'][:, :, subd.volumes],
             kwargs['rho_j_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]]
         )
-        local_rhs += subd.flux_prescription
-        local_rhs[subd.map_volumes[subd.ind_diric]] = adm_pressure[subd.ind_diric]
+        # local_rhs += subd.flux_prescription
+        # local_rhs[subd.map_volumes[subd.ind_diric]] = adm_pressure[subd.ind_diric]
         subd.local_rhs = local_rhs
         subd.Tlocal = subd.Tlocal_no_bc.copy()
         subd.Tlocal[subd.map_volumes[subd.ind_diric]] = 0
@@ -225,8 +225,10 @@ def update_flux_prescription(n_gids, ft_internal_faces, intersect_faces, adjacen
     @param volumes_in_primal: fine volumes in primal coarse volume
     @return: local flux prescription
     """
+    k = 4.42707412e3
     v0 = adjacencies_intersect_faces
     flux = np.zeros(n_gids)
-    flux[v0[:, 0]] -= ft_internal_faces[0][map_internal_faces[intersect_faces]]
-    flux[v0[:, 1]] += ft_internal_faces[0][map_internal_faces[intersect_faces]]
-    return flux[volumes_in_primal]
+    flux_internal_faces = ft_internal_faces[0][map_internal_faces[intersect_faces]]
+    flux[v0[:, 0]] -= flux_internal_faces
+    flux[v0[:, 1]] += flux_internal_faces
+    return flux[volumes_in_primal]*k

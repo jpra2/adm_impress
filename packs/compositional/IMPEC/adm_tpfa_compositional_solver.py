@@ -212,9 +212,9 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             M,
             os.path.join('results', 'prolongation_level_1.vtk')
         )
-
-
-        import pdb; pdb.set_trace()
+        print(self.P)
+        print(local_solution)
+        print(error2)
 
         import pdb; pdb.set_trace()
 
