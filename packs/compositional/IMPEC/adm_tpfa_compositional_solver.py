@@ -9,7 +9,7 @@ import scipy.sparse as sp
 import numpy as np
 from packs.adm.non_uniform import monotonic_adm_subds
 from packs.multiscale.neuman_local_problems.master_local_solver import MasterLocalSolver
-
+from packs.multiscale.ms_utils.multiscale_functions import update_local_transmissibility
 
 def update_local_parameters(dt, fprop, **kwargs):
     params = kwargs.get('params')
@@ -56,6 +56,9 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # )
         
         T, T_noCC = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
+        T_noCC2 = update_local_transmissibility(T_noCC, elements_lv0['volumes'], params['diagonal_term'])
+        print(np.allclose(sp.find(T_noCC), sp.find(T_noCC2)))
+        import pdb; pdb.set_trace()
         # import pdb; pdb.set_trace()
         D = self.update_independent_terms(M, fprop, wells, delta_t)
         # D2 = GlobalIMPECPressureSolver.mount_independent_term(
