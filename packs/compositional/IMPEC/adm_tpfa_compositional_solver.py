@@ -56,10 +56,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # )
         
         T, T_noCC = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
-        T_noCC2 = update_local_transmissibility(T_noCC, elements_lv0['volumes'], params['diagonal_term'])
-        print(np.allclose(sp.find(T_noCC), sp.find(T_noCC2)))
-        import pdb; pdb.set_trace()
-        # import pdb; pdb.set_trace()
         D = self.update_independent_terms(M, fprop, wells, delta_t)
         # D2 = GlobalIMPECPressureSolver.mount_independent_term(
         #     ctes.Vbulk,
@@ -155,6 +151,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             prolongation_list,
             restriction_list
         )
+        import pdb; pdb.set_trace()
 
         self.P = self.update_pressure(T, D, fprop) # OP*padm
         error = np.absolute(self.P - solution) / self.P
@@ -203,6 +200,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             elements_lv0['volumes'],
             **kwargs
         )
+        import pdb; pdb.set_trace()
         master = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
         local_solution = master.run()
         del master

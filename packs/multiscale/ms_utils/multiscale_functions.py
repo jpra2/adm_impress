@@ -185,6 +185,7 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
             kwargs['rho_j'][:, :, subd.volumes],
             kwargs['rho_j_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]]
         )
+        import pdb; pdb.set_trace()
         # local_rhs += subd.flux_prescription
         # local_rhs[subd.map_volumes[subd.ind_diric]] = adm_pressure[subd.ind_diric]
         subd.local_rhs = local_rhs
@@ -225,10 +226,13 @@ def update_flux_prescription(n_gids, ft_internal_faces, intersect_faces, adjacen
     @param volumes_in_primal: fine volumes in primal coarse volume
     @return: local flux prescription
     """
-    k = 4.42707412e3
+    # k = 4.42707412e3
+    k = 1
     v0 = adjacencies_intersect_faces
-    flux = np.zeros(n_gids)
     flux_internal_faces = ft_internal_faces[0][map_internal_faces[intersect_faces]]
-    flux[v0[:, 0]] -= flux_internal_faces
-    flux[v0[:, 1]] += flux_internal_faces
-    return flux[volumes_in_primal]*k
+
+    flux2 = np.bincount(
+        np.concatenate([v0[:, 0], v0[:, 1]]),
+        weights=np.concatenate([-flux_internal_faces, flux_internal_faces])
+    )
+    return flux2[volumes_in_primal]*k
