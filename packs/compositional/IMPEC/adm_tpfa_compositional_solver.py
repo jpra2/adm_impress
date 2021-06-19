@@ -48,6 +48,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         neumann_subds = kwargs.get('neumann_subds')
         data_impress= kwargs.get('data_impress')
         elements_lv0 = kwargs.get('elements_lv0')
+        ml_data = kwargs.get('multilevel_data')
+        all_coarse_intersect_faces = np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1']))
         mlo: MultilevelOperators = kwargs.get('multilevel_operators')
 
         # test_kwargs_keys(
@@ -151,7 +153,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             prolongation_list,
             restriction_list
         )
-        import pdb; pdb.set_trace()
 
         self.P = self.update_pressure(T, D, fprop) # OP*padm
         error = np.absolute(self.P - solution) / self.P
@@ -198,6 +199,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             Ft_internal_faces,
             elements_lv0['remaped_internal_faces'],
             elements_lv0['volumes'],
+            elements_lv0['neig_internal_faces'],
+            all_coarse_intersect_faces,
             **kwargs
         )
         import pdb; pdb.set_trace()

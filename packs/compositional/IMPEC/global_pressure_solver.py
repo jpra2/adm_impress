@@ -84,7 +84,7 @@ class GlobalIMPECPressureSolver:
         @param rho_j_internal_faces: density of phases in internal_faces (1, n_phases, n_volumes)
         @return: independent terms
         """
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         pressure_term = GlobalIMPECPressureSolver.pressure_independent_term(Vbulk, porosity, Cf, dVtdP, P)
         gravity_term = GlobalIMPECPressureSolver.gravity_independent_term(xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces, rho_j_internal_faces, pretransmissibility_internal_faces, n_volumes, n_components, internal_faces_adjacencies, dVtdk, z_centroids, g)
         capillary_term = GlobalIMPECPressureSolver.capillary_independent_term(xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces, pretransmissibility_internal_faces, n_components, n_phases, n_volumes, dVtdk, Pcap, internal_faces_adjacencies)
@@ -207,25 +207,51 @@ class GlobalIMPECPressureSolver:
                                               _q[:, well_volumes_flux_prescription], axis=0)
         return well_term
 
-
-    def update_flux(self, fprop, Ft_internal_faces, rho_j_internal_faces, mobilities_internal_faces, Pcap, adjacencies_internal_faces, z_centroids, pretransmissibility_internal_faces, g, xkj_internal_faces, Csi_j_internal_faces, n_components):
-        ''' Main function that calls others '''
+    @staticmethod
+    def update_flux(Ft_internal_faces, rho_j_internal_faces, mobilities_internal_faces, Pcap, adjacencies_internal_faces, z_centroids, pretransmissibility_internal_faces, g, xkj_internal_faces, Csi_j_internal_faces, n_components, n_volumes):
+        ''' Main function that calls others
+        @param Ft_internal_faces: total flux internal faces
+        @param rho_j_internal_faces: phase density internal faces
+        @param mobilities_internal_faces: mobilities internal faces
+        @param Pcap: capillary pressure
+        @param adjacencies_internal_faces: volumes adjacencies of internal faces
+        @param z_centroids: volumes centroids
+        @param pretransmissibility_internal_faces:
+        @param g: gravity acc
+        @param xkj_internal_faces: composition in phase internal faces
+        @param Csi_j_internal_faces: molar density internal faces
+        @param n_components: number of components
+        @param n_volumes: number of volumes
+        @return: molar balance in volumes
+        '''
         v0 = adjacencies_internal_faces
-        Fj_internal_faces = self.update_Fj_internal_faces(Ft_internal_faces,
-        rho_j_internal_faces, mobilities_internal_faces, Pcap[:, v0],
-        z_centroids[v0], pretransmissibility_internal_faces, g)
-
-        Fk_internal_faces = self.update_Fk_internal_faces(
-            xkj_internal_faces,
-            Csi_j_internal_faces, Fj_internal_faces
+        Fj_internal_faces = GlobalIMPECPressureSolver.update_Fj_internal_faces(
+            Ft_internal_faces,
+            rho_j_internal_faces,
+            mobilities_internal_faces,
+            Pcap[:, v0],
+            z_centroids[v0],
+            pretransmissibility_internal_faces,
+            g
         )
 
-        Fk_vols_total = self.update_flux_volumes(Fk_internal_faces, n_components, v0)
+        Fk_internal_faces = GlobalIMPECPressureSolver.update_Fk_internal_faces(
+            xkj_internal_faces,
+            Csi_j_internal_faces,
+            Fj_internal_faces
+        )
+
+        Fk_vols_total = GlobalIMPECPressureSolver.update_flux_volumes(
+            Fk_internal_faces,
+            n_components,
+            v0,
+            n_volumes
+        )
 
         return Fk_vols_total
 
-
-    def update_Fj_internal_faces(self, Ft_internal_faces, rho_j_internal_faces,
+    @staticmethod
+    def update_Fj_internal_faces(Ft_internal_faces, rho_j_internal_faces,
         mobilities_internal_faces, Pcap_face, z_face,
         pretransmissibility_internal_faces, g):
         ''' Function to calculate phase flux '''
@@ -243,15 +269,16 @@ class GlobalIMPECPressureSolver:
         return Fj_internal_faces
         # M.flux_faces[M.faces.internal] = Ft_internal_faces * M.faces.normal[M.faces.internal].T
 
-
-    def update_Fk_internal_faces(self, xkj_internal_faces, Csi_j_internal_faces, Fj_internal_faces):
+    @staticmethod
+    def update_Fk_internal_faces(xkj_internal_faces, Csi_j_internal_faces, Fj_internal_faces):
         ''' Function to compute component flux '''
 
         Fk_internal_faces = np.sum(xkj_internal_faces * Csi_j_internal_faces *
         Fj_internal_faces, axis = 1)
         return Fk_internal_faces
 
-    def update_flux_volumes(self, Fk_internal_faces, n_components, adjacencies_internal_faces):
+    @staticmethod
+    def update_flux_volumes(Fk_internal_faces, n_components, adjacencies_internal_faces, n_volumes):
         ''' Function to compute component flux balance through the control \
         volume interfaces'''
         v0 = adjacencies_internal_faces
