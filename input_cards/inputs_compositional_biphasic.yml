@@ -1,14 +1,12 @@
 #Buckley Leverett's horizontal case
-mesh_name: 12x1x1_b.msh
-name_save_file: 'results_Buckley_Leverett_caset'
+mesh_name: 500x1x1_b.msh
+name_save_file: 'results_Buckley_Leverett_case_IMPSAT'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: False
 water_component: True
 use_vpi: True
-
-
 
 load_compositional_data: False
 load_data: False
@@ -27,9 +25,17 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.5
+  CFL: 7
+
+  solver:
+    IMPSAT: true
+
   MUSCL:
-    set: False
+    set: false
+
+  FR:
+    set: false
+    order: 3
   vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
   time_to_save: [0.0]
   maximum_time: 0.0
@@ -47,12 +53,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 7
-    deltaNlim: 0.8
-    deltaSlim: 0.8
+    deltaNlim: 100
+    deltaSlim: 0.7
     deltaVlim: 1
-    delta_t_ini: 1.8
+    delta_t_ini: 0.5
     delta_tmax: 1000
-    delta_tmin: 0.0001
+    delta_tmin: 0.1
     #2.765
 
   water_data:
@@ -121,19 +127,20 @@ Temperature:
 
 Wells:
   P1:
-    p0: [0.0, 0.0, -0.03048]
-    p1: [0.0508, 0.03048, 0.0]
+    p0: [0.0, 0.0, 0]
+    p1: [0.0012192, 0.03048, 0.03048]
     prescription: Q
     type: Injector
     type_region: box
     value: 3.2774128e-8
     z: [0., 1.]
     ksi_total: 55484.31862337
+    injection_condition: 'surface'
     value_type: volumetric
 
   P2:
-    p0: [0.5588, 0.0, -0.03048]
-    p1: [0.6096, 0.03048, 0.0]
+    p0: [0.6083808, 0.0, 0.0]
+    p1: [0.6096, 0.03048, 0.03048]
     prescription: P
     type: Producer
     type_region: box

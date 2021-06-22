@@ -1,0 +1,131 @@
+#Compressive Oil case with 1 component in 1-D reservoir
+mesh_name: 8x1x1_compOil.msh
+name_save_file: 'results_compressive_oil_case_8_upw'
+
+compositional: True
+hidrocarbon_components: True
+compressible_fluid: True
+water_component: True
+use_vpi: False
+
+
+load_compositional_data: False
+load_data: False
+convert_english_to_SI: False
+set_porosity: true
+gravity: false
+deletar_results: false
+load_operators: false
+read_permeability: false
+monophasic_data: false
+set_permeability: True
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+
+
+# Case 3 of Li M.Sc. Thesis with case studies
+compositional_data:
+  #  Pensar em um jeito de reorganizar isso
+  CFL: 0.5
+  MUSCL:
+    set: False
+  FR:
+    set: false
+    order: 2
+  vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
+  time_to_save: [274752] #, 432000., 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0]
+  maximum_time: 274752 #1530144.0
+  phase_viscosity: LorenzBrayClark
+  relative_permeability: BrooksAndCorey
+  capillary_pressure: Chang
+  equation_of_state: PengRobinson
+
+  rock_compressibility: 7.252e-8
+  Pf: 13.78951458E6
+
+  #capillary pressure data - not ok with this
+  Cpc: 62052.84
+  Epc: 2
+
+  time_data:
+    deltaPlim: 68.9476
+    deltaNlim: .0001
+    deltaSlim: .001
+    deltaVlim: .0005
+    delta_t_ini: 10
+    delta_tmax: 10000
+    delta_tmin: 0.0001
+
+  water_data:
+    mi_W: 1e-3
+    rho_W: 999.6
+    Mw_w: 18.015e-3
+    Cw: 0
+    Pw: 13.79e6
+    mobility: False
+
+  residual_saturations:
+    Sorw: 0.1
+    Sorg: 0
+    Swr: 0.2
+    Sgr: 0
+
+  relative_permeability_data:
+    krw0: 0.4
+    krg0: 0
+    kro0: 1.0
+    n_o: 2.
+    n_g: 0
+    n_w: 3.
+
+#decane critical molar density is 1640 mol/m3
+  component_data:
+    z: [1.]
+    Tc: [619.28]
+    Pc: [2109795.64]
+    vc: [0.0006031573275]
+    Mw: [142.28e-3]
+    w: [0.4890]
+    Bin: [[0]]
+    Pv: [0]
+    Pb_guess: [9.5e6]
+    vshift_parameter: [0.085]
+
+
+#water saturation data
+Saturation:
+  r1:
+    type: all
+    value: 0.2
+
+Porosity:
+  r1:
+    type: all
+    value: 0.2
+
+#Permeability in m^2
+Permeability:
+  r1:
+    type: all
+    value: [4.934617e-13, 0, 0, 0, 4.934617e-13, 0, 0, 0, 4.934617e-13]
+
+Pressure:
+  r1:
+    type: all
+    value: 13.78951458E6
+
+Temperature:
+  r1:
+    type: all
+    value: 366.4833
+
+Wells:
+
+  P2:
+    p0: [0.0, 0.0, 0.0]
+    p1: [76.2, 3.048, 3.048]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 13.10003885E6

@@ -215,7 +215,7 @@ class Wells(DataManager):
         mb.tag_set_data(self.tags['P'], ws_p, values_p)
 
         if len(ws_q) > 0:
-            mb.tag_set_data(self.tags['Q'], ws_q, values_q[0,:])
+            mb.tag_set_data(self.tags['Q'], ws_q, values_q.sum(axis=0))
 
     def load_tags(self):
         assert not self._loaded

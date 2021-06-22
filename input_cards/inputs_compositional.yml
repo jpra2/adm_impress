@@ -1,6 +1,6 @@
 #Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 100x1x1.msh
-name_save_file: 'results_compressive_oil_caset2'
+name_save_file: 'results_compressive_oil_case_upw'
 
 compositional: True
 hidrocarbon_components: True
@@ -28,13 +28,17 @@ monophasic_data:
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
+  solver:
+    IMPSAT: false
+
   MUSCL:
-    set: False
-    DW: False
-    LLF: False
+    set: false
+  FR:
+    set: false
+    order: 3
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [274752, 432000., 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0]
-  maximum_time: 1530144.0
+  time_to_save: [274752] #, 432000., 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0]
+  maximum_time: 274752 #1530144.0
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -49,12 +53,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: .01
-    deltaSlim: .001
-    deltaVlim: .0005
-    delta_t_ini: 1000
+    deltaNlim: .1
+    deltaSlim: .1
+    deltaVlim: .001
+    delta_t_ini: 10
     delta_tmax: 10000
-    delta_tmin: 0.0001
+    delta_tmin: 100
 
   water_data:
     mi_W: 1e-3
@@ -62,6 +66,7 @@ compositional_data:
     Mw_w: 18.015e-3
     Cw: 0
     Pw: 13.79e6
+    mobility: False
 
   residual_saturations:
     Sorw: 0.1

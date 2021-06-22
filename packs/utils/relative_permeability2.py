@@ -26,7 +26,7 @@ class BrooksAndCorey:
         Sorw = np.ones_like(saturations[2]) * self.Sorw
         Swr = np.ones(saturations[2].shape) * self.Swr
 
-        Swr[saturations[2] < Swr] = saturations[2][saturations[2] < Swr]
+        Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
         Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
         Sorg[saturations[0] < self.Sorg] = saturations[0][saturations[0] < self.Sorg]
         Swr[saturations[2] < Swr] = saturations[2][saturations[2] < Swr]
@@ -40,6 +40,7 @@ class BrooksAndCorey:
         kro = self.kro0 * ((saturations[0] - Sor) / (1 - Swr - Sorw - self.Sgr)) ** self.n_o
         krg = self.krg0 * ((saturations[1] - self.Sgr) / (1 - Swr - Sorw - self.Sgr)) ** self.n_g
 
+        #self.Sor = Sor; self.Swr = Swr
         '''parachor_number = np.array([71, 191, 431]) #entry parameter in grams.mole
         self.phase_molar_densities = fprop.phase_molar_densities * 10**(-6) # mole/m³ to mole/cm³
         sigma = (np.sum(parachor_number[:,np.newaxis] * (self.phase_molar_densities[:,0,:] * fprop.component_molar_fractions[0:3,0,:]
@@ -59,6 +60,42 @@ class BrooksAndCorey:
 
     def __call__(self, fprop, saturations):
         return self.relative_permeabilities(fprop, saturations)
+
+    def dkrs_dSj(self, krs, saturations):
+        old_settings = np.seterr(all = 'ignore', divide = 'ignore')
+
+        Sorg = np.ones_like(saturations[2]) * self.Sorg
+        Sorw = np.ones_like(saturations[2]) * self.Sorw
+        Swr = np.ones(saturations[2].shape) * self.Swr
+
+
+        Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
+        Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
+        Sorg[saturations[0] < self.Sorg] = saturations[0][saturations[0] < self.Sorg]
+        Swr[saturations[2] < Swr] = saturations[2][saturations[2] < Swr]
+
+        Sor = Sorw * (1 - saturations[1] / (1 - Swr - Sorg)) + \
+                    Sorg * saturations[1] / (1 - Swr - Sorg)
+
+        Sor[saturations[0] < Sor] = saturations[0][saturations[0] < Sor]
+
+        den_w = (saturations[2] - Swr)
+        den_o = (saturations[0] - Sor)
+        den_g = (saturations[1] - self.Sgr)
+        den = np.array([den_o, den_g, den_w])
+
+        ns = np.empty((3))
+        ns = np.array([self.n_o, self.n_g, self.n_w])
+        dkrj_dSj = ns[np.newaxis,:,np.newaxis] * krs / den[np.newaxis,:]
+
+        dkrj_dSj[:,den==0] = 0
+        #dkrsdSj = np.empty((3,3,len(saturations[0])))
+        dkrsdSj = -dkrj_dSj[np.newaxis,...] * np.ones((3,3,len(saturations[0])))
+
+        np.einsum('iij->ij',dkrsdSj[0,:])[...] = dkrj_dSj[0,:]
+        np.seterr(**old_settings)
+
+        return dkrsdSj.transpose(0,2,1,3)
 
 class StoneII:
 
@@ -99,7 +136,7 @@ class StoneII:
         krog[saturations[0]<= self.Sorg] = 0
 
         kro = self.krow0 * ((krow/self.krow0 + krw) * (krog/self.krow0 + krg) - (krw + krg))
-
+        #self.krow = krow; self.krog = krog
         #kro[saturations[2]<Swr] = self.kro0 * ((saturations[0][saturations[2]<Swr] - self.Sor) / (1 - self.Sor - self.Sgr)) ** self.n_o
 
         '''Sw = np.array([Swr, 0.2899, 0.3778, 0.4667, 0.5556, 0.6444, 0.7, 0.7333, 0.8222, 0.9111, 1.])
@@ -124,3 +161,45 @@ class StoneII:
 
     def __call__(self, fprop, saturations):
         return self.relative_permeabilities(saturations)
+
+    def dkro_dSj(self, dkrowdSj, dkrwdSj, dkrogdSj, dkrgdSj, krw, krg, krog, krow):
+        dkrodSj = self.krow0 * ((1/self.krow0 * dkrowdSj + dkrwdSj) *
+                (krog/self.krow0 + krg) + (1/self.krow0 * dkrogdSj + dkrgdSj) *
+                (krow/self.krow0 + krw) - (dkrwdSj + dkrgdSj))
+        return dkrodSj
+
+    def dkrs_dSj(self, krs, saturations):
+        krw = krs[0,-1,:]
+        krg = krs[0,1,:]
+
+        krow = self.krow0 * ((1 - saturations[2] - self.Sorw) / (1 - self.Swr - self.Sorw)) ** self.n_ow
+        krog = self.krog0 * ((1. - saturations[1] - self.Sorg - self.Swr) / (1 - self.Swr - self.Sgr - self.Sorg)) ** self.n_og
+
+        krow[saturations[2]<= self.Swr] = self.krow0
+        krow[saturations[0]<= self.Sorw] = 0
+        krog[saturations[0]<= self.Sorg] = 0
+
+        dkrwdSw = krw * self.n_w / (saturations[2] - self.Swr)
+        dkrwdSw[saturations[2] <= self.Swr] = 0
+        dkrgdSg = krg * self.n_g / (saturations[1] - self.Sgr)
+        dkrowdSw = - krow * self.n_ow / (1 - saturations[2] - self.Sorw)
+        dkrwdSo = -dkrwdSw
+        dkrwdSg = -dkrwdSw
+        dkrgdSo = -dkrgdSg
+        dkrgdSw = -dkrgdSg
+        dkrowdSo = - dkrowdSw
+        dkrowdSg = - dkrowdSw
+        dkrogdSg = - krog * self.n_og / (1. - saturations[1] - self.Sorg - self.Swr)
+        dkrogdSw = - dkrogdSg
+        dkrogdSo = - dkrogdSg
+
+        dkrodSo = self.dkro_dSj(dkrowdSo, dkrwdSo, dkrogdSo, dkrgdSo, krw, krg, krog, krow)
+        dkrodSw = self.dkro_dSj(dkrowdSw, dkrwdSw, dkrogdSw, dkrgdSw, krw, krg, krog, krow)
+        dkrodSg = self.dkro_dSj(dkrowdSg, dkrwdSg, dkrogdSg, dkrgdSg, krw, krg, krog, krow)
+
+        dkrsdSj = np.empty((3,3,len(saturations[0])))
+
+        dkrsdSj[0,:] = np.array([dkrodSo,dkrodSg,dkrodSw])
+        dkrsdSj[1,:] = np.array([dkrgdSo,dkrgdSg,dkrgdSw])
+        dkrsdSj[2,:] = np.array([dkrwdSo,dkrwdSg,dkrwdSw])
+        return dkrsdSj
