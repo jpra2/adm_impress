@@ -1,0 +1,156 @@
+#Arquivo Tutorial para preencher dados de entrada
+mesh_name: 500x1x1_6k.msh  #nome da malha no arquivo mesh/
+name_save_file: 'results_water_inj_6k_modified_case'
+
+compositional: True
+hidrocarbon_components: True
+#hidrocarbon_components: True se houver componentes hidrocarbonetos (qualquer componente que não seja água);
+compressible_fluid: True
+#compressible_fluid: True se for pra considerar a compressibilidade do flux_calculation_conditions
+water_component: True
+#water_component: True se houver água (água for móvel)
+use_vpi: False
+
+load_compositional_data: False
+load_data: False
+convert_english_to_SI: False
+set_porosity: true
+gravity: false
+deletar_results: false
+load_operators: false
+read_permeability: false
+monophasic_data: false
+set_permeability: True
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+
+compositional_data:
+  #  Pensar em um jeito de reorganizar isso
+  CFL: 1
+  MUSCL:
+    set: False
+  FR:
+    set: True
+    order: 3
+  vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
+  time_to_save: [8640000, 17280000]
+  maximum_time: 17280000 # tempo máximo de simulação
+  phase_viscosity: LorenzBrayClark # Só este modelo por enquanto
+  relative_permeability: StoneII # Pode ser o modelo de StoneII ou de Corey
+  capillary_pressure: Chang # manter
+  equation_of_state: PengRobinson #até o momento só tem essa EOS
+
+  rock_compressibility: 0 # Compressibilidade da rocha
+  Pf: 101325 # pressão de referência onde a compressibilidade foi dada, \
+            # normalmente a pressão inicial OU 101325 Pa (olhar bem o problema)
+
+  #capillary pressure data - não mexer ainda
+  Cpc: 62052.84
+  Epc: 2
+
+  # Dados empiricos para calculo do passo de tempo
+  time_data:
+    deltaPlim: 68.9476
+    deltaNlim: .1
+    deltaSlim: .002
+    deltaVlim: .1
+    delta_t_ini: 100
+    delta_tmax: 86400
+    delta_tmin: 10
+
+  # Dados da água
+  water_data:
+    mi_W: 1e-3 # viscosidade
+    rho_W: 1000.73 # densidade mássica
+    Mw_w: 18.015e-3 # Peso molecular - cte
+    Cw: 0 # compressibilidade da água [1/Pa]
+    Pw: 10.34e6 # pressão de referência onde a compressibilidade é tomada (mesma
+                # lógica de Pf)
+
+  # As saturações residuais e os dados de permeabilidade relativa mudam de acordo com o modelo
+  residual_saturations:
+    Sorw: 0.1
+    Sorg: 0.
+    Swr: 0.3
+    Sgr: 0.
+
+  relative_permeability_data:
+    krw0: 0.4
+    krow0: 0.9
+    krog0: 0.9
+    krg0: 0.9
+
+    n_og: 2.
+    n_ow: 2.
+    n_w: 2.
+    n_g: 2.
+
+#  C1 C3 C6 C10 C15 C20 - dados do componente
+  component_data:
+    z: [0.5, 0.03, 0.07, 0.2, 0.15, 0.05] # composição global
+    Tc: [190.6, 369.8, 507.4, 617.6, 708, 768] # Temperatura critica K
+    Pc: [4600155, 4245517.5, 2968822.5, 2107560.0, 1.47e6, 1.17e6] # Pressão critica
+    vc: [0.000099, 0.000203, 0.00037, 0.000603, 0.000895, 0.00169] # volume molar crítico
+    Mw: [16.042e-3, 44.1e-3, 86.178e-3, 142.276e-3, 212.41e-3, 282.5e-3] # Peso molecular kg/mol
+    w: [0.008, 0.152, 0.299, 0.4890, 0.685, 0.912] # fator acentrico
+    # coef de interação binária
+    Bin: [[0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.]]
+    Pv: [8e6, 0., 0., 0., 0., 0.] # pressão de vapor dos componentes(só entrar com
+                                  # a pressão de vapor dos componentes cuja Tc < T)
+    vshift_parameter: [0.0, 0.0, 0.0, 0., 0., 0.] #deixar zero por enquanto
+    Pb_guess: 12e6 #isso varia com a mistura - é o chute inicial da pressão do ponto de bolha
+
+#Campo de saturação de água inicial
+Saturation:
+  r1:
+    type: all
+    value: 0.3
+
+# campo de porosidade
+Porosity:
+  r1:
+    type: all
+    value: 0.35
+
+#Campo de Permeabilidade in m^2
+Permeability:
+  r1:
+    type: all
+    value: [1e-14, 0, 0, 0, 1e-14, 0, 0, 0, 1e-14]
+
+# Campo de pressão inicial [Pa]
+Pressure:
+  r1:
+    type: all
+    value: 10.34e6
+
+# Temperatura [K]
+Temperature:
+  r1:
+    type: all
+    value: 344.25
+
+# Poços
+Wells:
+  P1:
+    p0: [0.0, 0.0, -10] #vetor 0
+    p1: [5.4624, 10.66875, 0.0] # vetor 1 onde de 0 a 1 percorre a diagonal do
+                                # bloco (ou blocos) onde o poço está perfurado
+    prescription: Q
+    type: Injector # Tipo: Injector ou Producer
+    type_region: box # região tipo box é onde da p0 e p1
+    value: 0.00041377314814814814 # valor da variavel prescita, pode ser em m3/s ou mol/s, prescrever em value_type abaixo
+    z: [0., 0., 0., 0., 0., 0., 1.] # composição do fluido injetado (a ordem será: z = Nk/sum(Nk)
+                                    # PRIMEIRO os componentes hidrocarbonetos, na ordem do
+                                    # que foi escrito em component_data e POR ULTIMO a água )
+    ksi_total: 55549.8 # densidade molar total do fluido injetado
+    value_type: volumetric # se o fluxo for dado em mol/s ou m3/s (preferir m3 quando souber Csi_total)
+
+  P2:
+    p0: [2725.7376, 0.0, -10]
+    p1: [2731.2, 10.66875, 0.0]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 8.960e6 # Valor da variável prescrita

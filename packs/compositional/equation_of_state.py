@@ -24,51 +24,75 @@ class PengRobinson:
 
     def coefficients_cubic_EOS_vectorized(self, l, P):
         self.bm = np.sum(l * self.b[:,np.newaxis], axis = 0)
-        l_reshape = np.ones((self.aalpha_ik).shape)[:,:,np.newaxis] * l[:,np.newaxis,:]
+        l_reshape = np.ones_like(self.aalpha_ik)[:,:,np.newaxis] * l[:,np.newaxis,:]
         self.aalpha = (l_reshape * l[np.newaxis,:,:] * self.aalpha_ik[:,:,np.newaxis]).sum(axis=0).sum(axis=0)
-        B = self.bm * P / (ctes.R* self.T)
-        A = self.aalpha * P / (ctes.R* self.T) ** 2
+        oper = P / (ctes.R* self.T)
+        B = self.bm * oper
+        A = self.aalpha * oper / (ctes.R* self.T)
         self.psi = (l_reshape * self.aalpha_ik[:,:,np.newaxis]).sum(axis = 0)
         return A, B
 
     def Z_vectorized(self, A, B, ph):
         coef = np.empty([4,len(B.ravel())])
+        B_square = B * B
+
         coef[0,:] = 1
         coef[1,:] = -(1 - B)
-        coef[2,:] = (A - 2*B - 3*B**2)
-        coef[3,:] = -(A*B - B**2 - B**3)
+        coef[2,:] = (A - 2*B - 3*B_square)
+        coef[3,:] = -(A*B - B_square - B_square * B)
         Z = CubicRoots().run(coef)
         root = np.isreal(Z)
-        n_reais = np.sum(root*1, axis = 1)
+        n_reais = np.sum(root.astype(np.int), axis=1)
 
-        aux_reais = (n_reais<3) & (n_reais>1)
-        if any(aux_reais): Z[~root[aux_reais]] = Z[root[aux_reais]][0]
+        'if n_reais == 2'
+        aux_reais = (n_reais==2)
+        Z_reais_n2 = np.reshape(Z[aux_reais][root[aux_reais]],(len(aux_reais[aux_reais]),2))
+        Z_aux_reais = Z[aux_reais]
+        Z_aux_reais[~root[aux_reais]] = np.max(Z_reais_n2,axis=1, initial=0)
+        Z[aux_reais] = Z_aux_reais
 
-        Z[~root[n_reais==1]] = np.repeat(Z[root[n_reais == 1]], 2)
+        'if n_reais==1'
+
+        aux_reais = (n_reais==1)
+        Z_aux_reais = Z[aux_reais]
+        Z_aux_reais[~root[aux_reais]] = np.repeat(Z[aux_reais][root[aux_reais]], 2)
+        Z[aux_reais] = Z_aux_reais
+
+        'if any Z<0'
 
         aux_neg = np.zeros(Z.shape,dtype=bool)
-        aux_neg[Z<0] = True
-        Z[aux_neg] = Z[~aux_neg][0]
-        Zsave = Z
+        aux_neg[Z<B[:,np.newaxis]] = True
+        aux_neg_sum = aux_neg.sum(axis=1)
+        lines_Zneg1 = (aux_neg_sum == 1).astype(bool)
+        lines_Zneg2 = (aux_neg_sum == 2).astype(bool)
+        Zneg1 = Z[lines_Zneg1]
+        Zneg1[Zneg1<B[lines_Zneg1,np.newaxis]] = np.max(Z[lines_Zneg1],axis=1, initial=0)
+        Z[lines_Zneg1] = Zneg1
+        Zneg2 = Z[lines_Zneg2]
+        Zneg2[Zneg2<B[lines_Zneg2,np.newaxis]] = np.repeat(np.max(Z[lines_Zneg2],axis=1, initial=0),2)
+        Z[lines_Zneg2] = Zneg2
+
+        #Zsave = Z
         Z = np.min(Z, axis = 1) * ph + np.max(Z, axis = 1) * (1 - ph)
         Z = np.real(Z)
+
         return Z
 
     def lnphi(self, l, P, ph):
         xkj = l
         A, B = self.coefficients_cubic_EOS_vectorized(l, P)
         Z = self.Z_vectorized(A, B, ph)
-        dd = (Z[np.newaxis,:] + (1 - 2 ** (1/2)) * B[np.newaxis,:])
         lnphi = self.lnphi_calculation(A, B, Z)
+        if any(np.isnan(lnphi).ravel()): import pdb; pdb.set_trace()
         return lnphi
 
     def lnphi_calculation(self, A, B, Z):
-        lnphi = self.b[:,np.newaxis] / self.bm[np.newaxis,:] * (Z[np.newaxis,:] - 1) - \
-        np.log((Z[np.newaxis,:] - B[np.newaxis,:])) - A[np.newaxis,:] / (2 * (2
-        ** (1/2)) * B[np.newaxis,:]) * (2 * self.psi / self.aalpha[np.newaxis,:] - \
-        self.b[:,np.newaxis] / self.bm[np.newaxis,:]) * np.log((Z[np.newaxis,:] + (1 +
-        2 ** (1/2)) * B[np.newaxis,:]) / (Z[np.newaxis,:] + (1 - 2 ** (1/2)) * B[np.newaxis,:]))
-
+        b_bm = self.b[:,np.newaxis] / self.bm[np.newaxis,:]
+        lnphi = b_bm * (Z[np.newaxis,:] - 1) - np.log((Z[np.newaxis,:] -
+                B[np.newaxis,:])) - A[np.newaxis,:] / (2 * (2 ** (1/2)) * B[np.newaxis,:]) \
+                * (2 * self.psi / self.aalpha[np.newaxis,:] - b_bm) * \
+                np.log((Z[np.newaxis,:] + (1 + 2 ** (1/2)) * B[np.newaxis,:]) /
+                (Z[np.newaxis,:] + (1 - 2 ** (1/2)) * B[np.newaxis,:]))
         return lnphi
 
 
@@ -92,23 +116,25 @@ class PengRobinson:
         dZldP, dZvdP, dZldNk, dZvdNk = self.dZ_dP_dNk(dZldP_parcial,
                 dZvdP_parcial, dZldnij_parcial, dZvdnij_parcial, dnildP,
                 dnivdP, dnildNk, dnivdNk)
-        dVtdP, dVtdNk = self.dVt_dP_dNk(dnldP, dnvdP, dnldNk, dnvdNk, dZldP,
+        dVldP, dVvdP, dVldNk, dVvdNk = self.dVj_dP_dNk(dnldP, dnvdP, dnldNk, dnvdNk, dZldP,
                         dZvdP, dZldNk, dZvdNk, P, T, Zl, Zv, Nl, Nv)
-        return dVtdNk, dVtdP
+        return dVldP, dVvdP, dVldNk, dVvdNk
 
     def get_phase_derivatives(self, P, T, xij, Nj, ph):
         A, B = self.coefficients_cubic_EOS_vectorized(xij, P)
         Z = self.Z_vectorized(A, B, ph)
-        dAdP = self.dA_dP()
-        dBdP = self.dB_dP()
+
+        self.Z_square = Z * Z
+        self.B_square = B * B
+
+        dAdP = self.dA_dP(T)
+        dBdP = self.dB_dP(T)
         dbdnij = self.db_dnij(Nj)
         dadnij = self.da_dnij(Nj, xij)
         dAdnij = self.dA_dnij(P, T, Nj, dadnij)
         dBdnij = self.dB_dnij(P, T, Nj, dbdnij)
-        dZdP_parcial = self.dZ_dP_parcial(dAdP, dBdP, Z, A, B)
-        dZdnij_parcial = self.dZ_dnij_parcial(dAdnij, dBdnij, Z, A, B)
-        dlnphidP = self.dlnphi_dP(dAdP, dBdP, dZdP_parcial, Z, A, B)
-        dlnphidnij = self.dlnphi_dnij(dAdnij, dBdnij, dZdnij_parcial, Z, A, B, dbdnij, dadnij, Nj, P)
+        dZdP_parcial, dZdnij_parcial = self.dZ_dP_dnij_parcial(dAdP, dBdP, dAdnij, dBdnij, Z, A, B)
+        dlnphidP, dlnphidnij = self.dlnphi_dP_dnij(dAdP, dBdP, dZdP_parcial,dAdnij, dBdnij, dZdnij_parcial, Z, A, B, dbdnij, dadnij, Nj, P)
         dlnfijdP = self.dlnfij_dP(P, dlnphidP)
         dlnfijdnij = self.dlnfij_dnij(dlnphidnij, xij, Nj)
         return dlnfijdP, dlnfijdnij, dZdP_parcial, dZdnij_parcial, Z
@@ -135,57 +161,55 @@ class PengRobinson:
         dBdnij = P[np.newaxis,np.newaxis,:] / (ctes.R * T) * dbdnij
         return dBdnij
 
-    def dA_dP(self):
-        dAdP = self.aalpha / (ctes.R * self.T) ** 2
+    def dA_dP(self, T):
+        dAdP = self.aalpha / (ctes.R * T) ** 2
         return dAdP
 
-    def dB_dP(self):
-        dBdP = self.bm / (ctes.R * self.T)
+    def dB_dP(self, T):
+        dBdP = self.bm / (ctes.R * T)
         return dBdP
 
-    def dZ_dP_parcial(self, dAdP, dBdP, Z, A, B): #OK
+    def dZ_dP_dnij_parcial(self, dAdP, dBdP, dAdnij, dBdnij, Z, A, B): #OK
+
+        'coefs'
         coef0 = -(Z - B)
-        coef1 = -(Z ** 2 - (6 * B + 2) * Z - A + 2 * B + 3 * B **2)
-        coef2 = 3 * Z ** 2 - 2 * Z * (1 - B) + (A - 3 * B ** 2 - 2 * B)
+        coef1 = -(self.Z_square - (6 * B + 2) * Z - A + 2 * B + 3 * self.B_square)
+        coef2 = 3 * self.Z_square - 2 * Z * (1 - B) + (A - 3 * self.B_square - 2 * B)
+
+        'dZ_dP'
         dZdP =  (dAdP * coef0 + dBdP * coef1) / coef2
-        return dZdP
 
-    def dZ_dnij_parcial(self,dAdnij, dBdnij, Z, A, B):
-        coef0 = -(Z - B)
-        coef1 = -(Z ** 2 - (6 * B + 2) * Z - A + 2 * B + 3 * B **2)
-        coef2 = 3 * Z ** 2 - 2 * Z * (1 - B) + (A - 3 * B ** 2 - 2 * B)
+        'dZ_dnij'
         dZdnij = (dAdnij * coef0 + dBdnij * coef1) / coef2
-        return dZdnij
+        return dZdP, dZdnij
 
-    def dlnphi_dP(self, dAdP, dBdP, dZdP, Z, A, B): #OK i guess
+    def dlnphi_dP_dnij(self, dAdP, dBdP, dZdP,dAdnij, dBdnij, dZdnij, Z, A, B, dbdnij, dadnij, Nj, P): #OK i guess
         #ai = np.sum(self.aalpha_ik, axis=1)
         coef0 = self.b[:,np.newaxis] / self.bm #coef8
         coef1 = 1 / (Z - B) #coef5
         coef2 = 2 * self.psi / self.aalpha - coef0 #coef0
         coef3 = np.log((Z + (1 + 2**(1/2))*B)/(Z + (1 - 2**(1/2))*B)) #coef1
-        coef4 = 2 * (2 **(1/2)) / (Z**2 + 2*Z*B - B**2) #coef2
+        coef4 = 2 * (2 **(1/2)) / (self.Z_square + 2*Z*B - self.B_square) #coef2
 
-        dlnphiijdP = coef0 * dZdP - coef1 * (dZdP - dBdP) - coef2 / (2*(2 **(1/2))) * ((B * dAdP - A * dBdP) /  (B **2) * coef3 +
+        dlnphiijdP = coef0 * dZdP - coef1 * (dZdP - dBdP) - coef2 / (2*(2 **(1/2))) \
+                    * ((B * dAdP - A * dBdP) /  (self.B_square) * coef3 +
                     A / B *  coef4 * (Z * dBdP - B * dZdP))
-        return dlnphiijdP
-
-    def dlnphi_dnij(self, dAdnij, dBdnij, dZdnij, Z, A, B, dbdnij, dadnij, Nj, P):
-        coef0 = self.b[:,np.newaxis] / self.bm #coef8
-        coef1 = 1 / (Z - B) #coef5
-        coef2 = 2 * self.psi / self.aalpha - coef0 #coef0
-        coef3 = np.log((Z + (1 + 2**(1/2))*B)/(Z + (1 - 2**(1/2))*B)) #coef1
-        coef4 = 2 * (2 **(1/2)) / (Z**2 + 2*Z*B - B**2) #coef2
 
         dlnphiijdnij = np.empty((ctes.Nc, ctes.Nc, len(P)))
         dlnphiijdnij[:,:,Nj==0] = 0
 
-        aux1 = coef0[:,np.newaxis,:] / self.bm * (self.bm * dZdnij - (Z - 1) * dbdnij) - coef1 * (dZdnij - dBdnij)
-        aux2_1 = coef2[:,np.newaxis,:] * ((B * dAdnij - A * dBdnij) / B**2 * coef3 + A / B * coef4 * (Z * dBdnij - B * dZdnij))
-        aux2_2_1 =  2 * (self.aalpha_ik[:,:,np.newaxis] - (Nj / self.aalpha * dadnij + 1) * self.psi[:,np.newaxis,:])
+        aux1 = coef0[:,np.newaxis,:] / self.bm * (self.bm * dZdnij - (Z - 1) \
+                * dbdnij) - coef1 * (dZdnij - dBdnij)
+        aux2_1 = coef2[:,np.newaxis,:] * ((B * dAdnij - A * dBdnij) / self.B_square * coef3 \
+                + A / B * coef4 * (Z * dBdnij - B * dZdnij))
+        aux2_2_1 =  2 * (self.aalpha_ik[:,:,np.newaxis] - (Nj / self.aalpha * dadnij + 1) \
+                * self.psi[:,np.newaxis,:])
         aux2_2_2 = coef0[:,np.newaxis,:] / self.bm * dbdnij
-        dlnphiijdnij[:,:,Nj!=0] = aux1[:,:,Nj!=0] - 1 / (2 * (2 **(1/2))) * (aux2_1[:,:,Nj!=0] + A[Nj!=0] / B[Nj!=0] * coef3[Nj!=0] *
-                                (aux2_2_1 [:,:,Nj!=0] / (Nj[Nj!=0] * self.aalpha[Nj!=0]) + aux2_2_2[:,:,Nj!=0]))
-        return dlnphiijdnij
+        dlnphiijdnij[:,:,Nj!=0] = aux1[:,:,Nj!=0] - 1 / (2 * (2 **(1/2))) * \
+                (aux2_1[:,:,Nj!=0] + A[Nj!=0] / B[Nj!=0] * coef3[Nj!=0] *
+                (aux2_2_1 [:,:,Nj!=0] / (Nj[Nj!=0] * self.aalpha[Nj!=0]) + \
+                aux2_2_2[:,:,Nj!=0]))
+        return dlnphiijdP, dlnphiijdnij
 
     def dlnfij_dP(self, P, dlnphidP):
         dlnfijdP = dlnphidP + 1 / P[np.newaxis,:]
@@ -193,7 +217,8 @@ class PengRobinson:
 
     def dlnfij_dnij(self, dlnphidnij, xij, Nj):
         dlnfijdnij = np.empty(dlnphidnij.shape)
-        dlnfijdnij[:,:,Nj!=0] = (dlnphidnij[:,:,Nj!=0] + 1 / xij[:,np.newaxis,Nj!=0] * (np.identity(ctes.Nc)[:,:,np.newaxis] -
+        dlnfijdnij[:,:,Nj!=0] = (dlnphidnij[:,:,Nj!=0] + 1 / xij[:,np.newaxis,Nj!=0] * \
+                                (np.identity(ctes.Nc)[:,:,np.newaxis] -
                                 xij[:,np.newaxis, Nj!=0]) / Nj[Nj!=0])
 
         dlnfijdnij[:,:,Nj==0] = 0
@@ -249,8 +274,10 @@ class PengRobinson:
         dZvdNk = np.sum(dZvdnij[0][:,np.newaxis,:] * dnivdNk, axis = 0)
         return dZldP, dZvdP, dZldNk, dZvdNk
 
-    def dVt_dP_dNk(self, dnldP, dnvdP, dnldNk, dnvdNk, dZldP, dZvdP, dZldNk, dZvdNk, P, T, Zl, Zv, Nl, Nv):
+    def dVj_dP_dNk(self, dnldP, dnvdP, dnldNk, dnvdNk, dZldP, dZvdP, dZldNk, dZvdNk, P, T, Zl, Zv, Nl, Nv):
         coef = ctes.R * T / P
-        dVtdP = coef * (Nl * dZldP + Nv * dZvdP + Zl * dnldP + Zv * dnvdP - (Zl * Nl / P + Zv * Nv / P))
-        dVtdNk = coef * (Nl * dZldNk + Nv * dZvdNk + Zl * dnldNk + Zv * dnvdNk)
-        return dVtdP, dVtdNk
+        dVldP = coef * (Nl * dZldP + Zl * dnldP - (Zl * Nl / P))
+        dVvdP = coef * (Nv * dZvdP + Zv * dnvdP - (Zv * Nv / P))
+        dVldNk = coef * (Nl * dZldNk + Zl * dnldNk)
+        dVvdNk = coef * (Nv * dZvdNk + Zv * dnvdNk)
+        return dVldP, dVvdP, dVldNk, dVvdNk

@@ -1,0 +1,132 @@
+#Oil injection in oil reservoir 2-D with 1 oil component
+mesh_name: 25x25x1.msh
+name_save_file: 'results_2d_injection_25_caset2'
+
+n_test: 0
+compositional: True
+hidrocarbon_components: True
+compressible_fluid: True
+water_component: True
+use_vpi: False
+
+load_data: False
+convert_english_to_SI: False
+set_porosity: true
+set_permeability: true
+#gravity: false
+deletar_results: false
+load_operators: false
+read_permeability: false
+set_permeability: True
+multilevel_data: False
+load_multilevel_data: False
+gravity: false
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+
+# Case 3 of Li M.Sc. Thesis with case studies
+compositional_data:
+  #  Pensar em um jeito de reorganizar isso
+  CFL: 0.5
+  MUSCL:
+    set: False
+    DW: False
+    LLF: False
+  vpis_para_gravar_vtk: [0.0038]
+  time_to_save: [31536000.]
+  maximum_time: 31536000.
+  phase_viscosity: LorenzBrayClark
+  relative_permeability: BrooksAndCorey
+  capillary_pressure: Chang
+  equation_of_state: PengRobinson
+
+  rock_compressibility: 7.252e-8
+  Pf: 13.78951458E6e6
+
+  #capillary pressure data - not ok with this
+  Cpc: 62052.84
+  Epc: 2
+
+  time_data:
+    deltaPlim: 68.9476
+    deltaNlim: .1
+    deltaSlim: .1
+    deltaVlim: .1
+    delta_t_ini: 1000
+    delta_tmax: 70000
+    delta_tmin: 0.0001
+
+  #rever isso de Cw=0 e Pw
+  water_data:
+    mi_W: 1e-3
+    rho_W: 999.6
+    Mw_w: 18.015e-3
+    Cw: 0
+    Pw: 101325
+
+  residual_saturations:
+    Sorw: 0.2
+    Sorg: 0
+    Swr: 0.2
+    Sgr: 0
+
+  relative_permeability_data:
+    krw0: 0.4
+    krg0: 0
+    kro0: 1.0
+    n_o: 2
+    n_g: 0
+    n_w: 3
+
+#decane critical molar density is 1640 mol/m3
+  component_data:
+    z: [1.]
+    Tc: [619.28]
+    Pc: [2109795.64]
+    vc: [0.0006031573275]
+    Mw: [142.28e-3]
+    w: [0.4890]
+    Bin: [[0]]
+    Pv: [0]
+    vshift_parameter: [0.0]
+    Pb_guess: [9.5e6]
+
+#water saturation data
+Saturation:
+  r1:
+    type: all
+    value: 0.2
+
+Porosity:
+  r1:
+    type: all
+    value: 0.2
+
+#Permeability in m^2
+Permeability:
+  r1:
+    type: all
+    value: [1.48038495e-15, 0, 0, 0, 1.48038495e-15, 0, 0, 0, 1.48038495e-15]
+
+Pressure:
+  r1:
+    type: all
+    value: 13.78951458E6 #confirmar
+
+Temperature:
+  r1:
+    type: all
+    value: 366.4833
+
+Wells:
+  P1:
+    p0: [292.608, 292.608, -0.3048]
+    p1: [316.992, 316.992, 0.0]
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: 2.720252624e-6
+    z: [1., 0.]
+    ksi_total: 4587.37164401
+    value_type: volumetric

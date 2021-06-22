@@ -42,16 +42,17 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             'This is made so time to save is equal to the simulation time - this \
             only works (for now) if time to save is in seconds and not vpi'
             t_next = sim.time_save[sim.time_save > sim.t]
-            if len(t_next)>1: t_next = t_next[0]
+            if len(t_next)>=1: t_next = t_next[0]
 
         'If the current simulation time plus the computed time-step is bigger \
         than the final simulation time, correct the time-step so the current \
         simulation time plus delta_t is equal to the final time'
         if sim.t + sim.delta_t > t_next:
             sim.delta_t = t_next - sim.t
-
     loop = sim.loop
     print(sim.t)
+    
+
 
 tf = time.time()
 print('Total computational time: ', tf-t) #total simulation time

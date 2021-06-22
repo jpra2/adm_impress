@@ -39,9 +39,17 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.5
+  CFL: 7
+
+  solver:
+    IMPSAT: true
+
   MUSCL:
-    set: False
+    set: false
+
+  FR:
+    set: false
+    order: 3
   vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
   time_to_save: [0.0]
   maximum_time: 0.0
@@ -59,12 +67,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 7
-    deltaNlim: 0.8
-    deltaSlim: 0.8
+    deltaNlim: 100
+    deltaSlim: 0.7
     deltaVlim: 1
-    delta_t_ini: 1.8
+    delta_t_ini: 0.5
     delta_tmax: 1000
-    delta_tmin: 0.0001
+    delta_tmin: 0.1
     #2.765
 
   water_data:
@@ -163,6 +171,7 @@ Wells:
     value: 1
     z: [0., 1.]
     ksi_total: 55484.31862337
+    injection_condition: 'surface'
     value_type: volumetric
 
   P2:
