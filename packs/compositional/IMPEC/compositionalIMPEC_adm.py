@@ -1,4 +1,4 @@
-from packs.compositional.IMPEC.flux_calculation import FOUM, MUSCL
+from packs.compositional.IMPEC.flux_calculation import Flux, MUSCL
 from packs.compositional.update_time import delta_time
 import numpy as np
 from packs.utils import constants as ctes
@@ -6,6 +6,7 @@ from packs.directories import data_loaded
 
 from packs.compositional.IMPEC.adm_tpfa_compositional_solver import AdmTpfaCompositionalSolver
 from packs.compositional.IMPEC.compositionalIMPEC import CompositionalFVM
+from .composition_solver import Euler
 
 class CompositionalFvmADM(CompositionalFVM):
     
@@ -21,9 +22,9 @@ class CompositionalFvmADM(CompositionalFVM):
         # import pdb; pdb.set_trace()
         params=kwargs.get('params')
 
-        self.update_gravity_term(fprop)
+        G = self.update_gravity_term(fprop)
         if ctes.MUSCL: self.get_faces_properties_average(fprop)
-        else: self.get_faces_properties_upwind(fprop)
+        else: self.get_faces_properties_upwind(fprop, G)
         self.get_phase_densities_internal_faces(fprop)
         r = 0.8 # enter the while loop
         # psolve = TPFASolver(fprop)
@@ -41,7 +42,7 @@ class CompositionalFvmADM(CompositionalFVM):
         while (r!=1.):
             print(f'\nr: {r}\n')
             fprop.Nk = np.copy(Nk_old)
-            fprop.P, total_flux_internal_faces, self.q = psolve.get_pressure(M, wells, fprop, delta_t, **kwargs)
+            fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells, fprop, delta_t, P_old, **kwargs)
             pressures.append(fprop.P)
             #self.update_composition(fprop, delta_t)
             #wave_velocity = MUSCL().run(M, fprop, wells, P_old, total_flux_internal_faces)
@@ -50,10 +51,11 @@ class CompositionalFvmADM(CompositionalFVM):
                 order = data_loaded['compositional_data']['MUSCL']['order']
                 wave_velocity = MUSCL().run(M, fprop, wells, P_old, total_flux_internal_faces, order)
             else:
-                FOUM().update_flux(fprop, total_flux_internal_faces,
-                                     fprop.rho_j_internal_faces,
-                                     fprop.mobilities_internal_faces)
-                wave_velocity = []
+                UPW = Flux()
+                fprop.Fk_vols_total = UPW.update_flux(M, fprop, total_flux_internal_faces,
+                                                      fprop.rho_j_internal_faces, fprop.mobilities_internal_faces)
+                wave_velocity = UPW.wave_velocity_upw(M, fprop, fprop.mobilities, fprop.rho_j, fprop.xkj,
+                                                      fprop.Csi_j, total_flux_internal_faces)
 
             ''' For the composition calculation the time step might be different\
              because it treats composition explicitly and this explicit models \

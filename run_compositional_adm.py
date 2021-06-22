@@ -1,13 +1,8 @@
-from packs.directories import data_loaded
-from packs import directories as direc
 from packs.running.compositional_initial_mesh_properties import initial_mesh
-# from packs.compositional.compositionalIMPEC import CompositionalFVM
 from packs.compositional.IMPEC.compositionalIMPEC_adm import CompositionalFvmADM
-from packs.compositional.IMPEC.properties_calculation import PropertiesCalc
 from packs.compositional.update_time import delta_time
 from packs.utils import constants as ctes
 from run_compositional import run_simulation
-import os
 import numpy as np
 import time
 # from packs.utils.test_functions import test_kwargs_keys, test_instance

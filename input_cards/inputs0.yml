@@ -11,15 +11,15 @@ Permeability:
   r1:
     type: all
     value:
-    - 9.869233e-15
+    - 4.9346165e-13
     - 0
     - 0
     - 0
-    - 9.869233e-15
+    - 4.9346165e-13
     - 0
     - 0
     - 0
-    - 9.869233e-15
+    - 4.9346165e-13
 Porosity:
   r1:
     type: all
@@ -27,50 +27,48 @@ Porosity:
 Pressure:
   r1:
     type: all
-    value: 6.9e6
+    value: 13.79E6
 Saturation:
   r1:
     type: all
-    value: 0.0
+    value: 0.2
 Temperature:
   r1:
     type: all
-    value: 311
+    value: 288.70556
 Wells:
   P1:
-    injection_condition: reservoir
-    ksi_total: 3099.342953950803
+    injection_condition: surface
+    ksi_total: 55484.31862337
     p0:
     - 0.0
     - 0.0
     - 0
     p1:
-    - 0.1
+    - 1
     - 1
     - 1
     prescription: Q
     type: Injector
     type_region: box
-    value: 1.967592592592593e-06
+    value: 1
     value_type: volumetric
     z:
-    - 0.9
-    - 0.1
     - 0.0
-    - 0.0
+    - 1.0
   P2:
     p0:
-    - 49.9
+    - 26.0
     - 0.0
-    - 0
+    - 0.0
     p1:
-    - 50
-    - 1
-    - 1
+    - 27.0
+    - 1.0
+    - 1.0
     prescription: P
     type: Producer
     type_region: box
-    value: 6.9e6
+    value: 13790000
 compositional: true
 compositional_data:
   CFL: 0.9
@@ -78,94 +76,73 @@ compositional_data:
   Epc: 2
   FR:
     order: 3
-    set: true
+    set: false
   MUSCL:
     set: false
-  Pf: 101325
+  Pf: 13.79E6
   capillary_pressure: Chang
   component_data:
     Bin:
-    - - 0.0
-      - 0.0
-      - 0.0
-    - - 0.0
-      - 0.0
-      - 0.0
-    - - 0.0
-      - 0.0
-      - 0.0
+    - 0
     Mw:
-    - 0.016043
-    - 0.03007
-    - 0.044096
-    Pb_guess: 2e6
-    Pc:
-    - 4599000
-    - 4873000
-    - 4248000
-    Pv:
-    - 8e6
+    - 0.142276
+    Pb_guess:
     - 0.0
+    Pc:
+    - 2109795.734
+    Pv:
     - 0.0
     Tc:
-    - 190.56
-    - 305.32
-    - 369.83
+    - 619.2778
     vc:
-    - 9.85988846e-05
-    - 0.000145500276
-    - 0.000200001177
+    - 0.000603
     vshift_parameter:
-    - 0.0
-    - 0.0
-    - 0.0
+    - 0.085
     w:
-    - 0.0115
-    - 0.0995
-    - 0.1523
+    - 0.489
     z:
-    - 0.0
-    - 0.25
-    - 0.75
+    - 1.0
   equation_of_state: PengRobinson
-  maximum_time: 2592000
+  maximum_time: 0.0
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   relative_permeability_data:
-    krg0: 1
+    krg0: 0
     kro0: 1.0
-    krw0: 0.0
-    n_g: 1.0
-    n_o: 1.0
-    n_w: 0.0
+    krw0: 0.2
+    n_g: 0
+    n_o: 2.0
+    n_w: 2.0
   residual_saturations:
-    Sgr: 0.0
-    Sorg: 0.0
-    Sorw: 0.0
-    Swr: 0.0
+    Sgr: 0
+    Sorg: 0
+    Sorw: 0.35
+    Swr: 0.2
   rock_compressibility: 0
   solver:
     IMPSAT: false
   time_data:
-    deltaNlim: 1
-    deltaPlim: 68.9476
-    deltaSlim: 0.25
-    deltaVlim: 0.0001
-    delta_t_ini: 26.4
-    delta_tmax: 86400
-    delta_tmin: 8.64
+    deltaNlim: 100
+    deltaPlim: 7
+    deltaSlim: 0.7
+    deltaVlim: 1
+    delta_t_ini: 0.5
+    delta_tmax: 1000
+    delta_tmin: 0.1
   time_to_save:
-  - 2592000
+  - 0.0
   vpis_para_gravar_vtk:
-  - 0.51
+  - 0.1
+  - 0.15
+  - 0.2
   water_data:
     Cw: 0
     Mw_w: 0.018015
-    Pw: 10.34e6
+    Pw: 13.79E6
     mi_W: 1e-3
-    mobility: false
-    rho_W: 1000.73
-compressible_fluid: true
+    mobility: true
+    rho_W: 999.55
+compressible_fluid: false
 convert_english_to_SI: false
 deletar_results: false
 get_correction_term: false
@@ -175,13 +152,14 @@ load_compositional_data: false
 load_data: true
 load_multilevel_data: false
 load_operators: false
-mesh_name: 500x1x1_3k.msh
+mesh_name: 27x1x1.h5m
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_Hoteit_Firoo_3k_500_FR
+n_levels: 2
+name_save_file: results_Buckley_Leverett_caset
 read_permeability: false
 set_permeability: true
 set_porosity: true
-use_vpi: false
+use_vpi: true
 water_component: true

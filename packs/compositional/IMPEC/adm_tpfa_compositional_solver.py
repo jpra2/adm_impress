@@ -41,7 +41,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         ]
     }
     
-    def get_pressure(self, M, wells, fprop, delta_t, **kwargs):
+    def get_pressure(self, M, wells, fprop, delta_t, Pold, **kwargs):
 
         adm_method = kwargs.get('adm_method')
         params = kwargs.get('params')
@@ -58,7 +58,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # )
         
         T, T_noCC = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
-        D = self.update_independent_terms(M, fprop, wells, delta_t)
+        D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
         # D2 = GlobalIMPECPressureSolver.mount_independent_term(
         #     ctes.Vbulk,
         #     ctes.porosity,
@@ -153,7 +153,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             restriction_list
         )
 
-        self.P = self.update_pressure(T, D, fprop) # OP*padm
+        self.P = self.update_pressure(T, D) # OP*padm
         error = np.absolute(self.P - solution) / self.P
         data_impress = M.data
         data_impress['pressure'][:] = self.P
