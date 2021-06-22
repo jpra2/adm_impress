@@ -136,7 +136,7 @@ compositional_data:
     mi_W: 1e-3
     mobility: true
     rho_W: 999.55
-compressible_fluid: false
+compressible_fluid: true
 convert_english_to_SI: false
 deletar_results: false
 get_correction_term: false

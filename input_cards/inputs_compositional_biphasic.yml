@@ -6,7 +6,8 @@ name_save_file: 'results_Buckley_Leverett_caset'
 
 compositional: True
 hidrocarbon_components: True
-compressible_fluid: False
+#compressible_fluid: False
+compressible_fluid: True
 water_component: True
 use_vpi: True
 

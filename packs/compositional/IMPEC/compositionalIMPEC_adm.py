@@ -39,8 +39,7 @@ class CompositionalFvmADM(CompositionalFVM):
         Nk_old = np.copy(fprop.Nk)
         pressures = []
         while (r!=1.):
-            print(r)
-            import pdb; pdb.set_trace()
+            print(f'\nr: {r}\n')
             fprop.Nk = np.copy(Nk_old)
             fprop.P, total_flux_internal_faces, self.q = psolve.get_pressure(M, wells, fprop, delta_t, **kwargs)
             pressures.append(fprop.P)
@@ -71,7 +70,6 @@ class CompositionalFvmADM(CompositionalFVM):
         #####
 
         ########## new
-        import pdb; pdb.set_trace()
         if not ctes.FR:
 
             fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, q,
@@ -91,4 +89,5 @@ class CompositionalFvmADM(CompositionalFVM):
         # if fprop.P[0]<fprop.P[1] or fprop.P[1]<fprop.P[2]: import pdb; pdb.set_trace()
         # import pdb; pdb.set_trace()
         return delta_t
+        import pdb; pdb.set_trace()
         ####### end new
