@@ -142,7 +142,7 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
         @param adjacencies_internal_faces: volumes adjacencies of internal faces
         @param all_coarse_intersect_faces: all faces in intersection between coarse volumes
     """
-    n_gids = len(gids_volumes)
+
     v0 = adjacencies_internal_faces
     elements_lv0 = kwargs.get('elements_lv0')
 
@@ -164,14 +164,12 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
         kwargs['n_volumes']
     )
 
-
     for subd in neumann_subds_list:
         subd.Tlocal_no_bc = update_local_transmissibility(Tglobal, subd.volumes, diagonal_term[subd.volumes])
         subd.adm_pressure = adm_pressure[subd.volumes]
         local_flux_prescription = global_molar_flux_prescription[:, subd.volumes]
-        import pdb; pdb.set_trace()
 
-        local_rhs = Gips.mount_independent_term(
+        subd.local_rhs = Gips.mount_independent_term(
             kwargs['Vbulk'][subd.volumes],
             kwargs['porosity'][subd.volumes],
             kwargs['Cf'],
@@ -200,15 +198,13 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
             kwargs['rho_j'][:, :, subd.volumes],
             kwargs['rho_j_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]]
         )
-        import pdb; pdb.set_trace()
         # local_rhs += subd.flux_prescription
         # local_rhs[subd.map_volumes[subd.ind_diric]] = adm_pressure[subd.ind_diric]
-        subd.local_rhs = local_rhs
-        subd.Tlocal = subd.Tlocal_no_bc.copy()
-        subd.Tlocal[subd.map_volumes[subd.ind_diric]] = 0
-        subd.Tlocal[subd.map_volumes[subd.ind_diric], subd.map_volumes[subd.ind_diric]] = 1
-
-
+        # subd.local_rhs = local_rhs
+        subd.Tlocal = set_matrix_pressure_prescription(
+            subd.Tlocal_no_bc,
+            subd.map_volumes[subd.ind_diric]
+        )
 
 
 def update_local_transmissibility(Tglobal, gids, diagonal_term) -> sp.csc_matrix:
@@ -251,3 +247,9 @@ def update_flux_prescription(n_gids, ft_internal_faces, intersect_faces, adjacen
         weights=np.concatenate([-flux_internal_faces, flux_internal_faces])
     )
     return flux2[volumes_in_primal]*k
+
+def set_matrix_pressure_prescription(transmissibility_matrix_no_bc: sp.csc_matrix, gids_pressure_prescription):
+    t2 = transmissibility_matrix_no_bc.copy()
+    t2[gids_pressure_prescription] = 0
+    t2[gids_pressure_prescription, gids_pressure_prescription] = 1
+    return t2

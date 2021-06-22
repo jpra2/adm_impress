@@ -37,9 +37,13 @@ class CompositionalFvmADM(CompositionalFVM):
         })
         P_old = np.copy(fprop.P)
         Nk_old = np.copy(fprop.Nk)
+        pressures = []
         while (r!=1.):
+            print(r)
+            import pdb; pdb.set_trace()
             fprop.Nk = np.copy(Nk_old)
             fprop.P, total_flux_internal_faces, self.q = psolve.get_pressure(M, wells, fprop, delta_t, **kwargs)
+            pressures.append(fprop.P)
             #self.update_composition(fprop, delta_t)
             #wave_velocity = MUSCL().run(M, fprop, wells, P_old, total_flux_internal_faces)
             #self.update_composition_RK3_1(fprop, fprop.Nk, delta_t)

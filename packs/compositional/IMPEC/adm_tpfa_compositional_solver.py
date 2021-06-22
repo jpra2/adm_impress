@@ -116,7 +116,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         np.maximum.at(maxs, volumes, netasp_array)
         data_impress['nfp'][np.unique(volumes)] = maxs
 
-
         neta_lim_finescale = 1
         vols_orig = monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups, data_impress,
                                                                elements_lv0, volumes, netasp_array, neta_lim_finescale)        # adm_method.set_level_wells_3()
@@ -185,10 +184,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     os.path.join('results', 'prolongation_level_1.vtk')
         # )
 
-        Ft_internal_faces = self.update_total_flux_internal_faces(fprop, self.P) # pressao local
+        # Ft_internal_faces = self.update_total_flux_internal_faces(fprop, self.P) # pressao local
         Ft_internal_faces_adm = self.update_total_flux_internal_faces(fprop, solution) # pressao local
-        Ft_faces = np.zeros(len(elements_lv0['faces']))
-        Ft_faces[elements_lv0['internal_faces']] = Ft_internal_faces_adm
+        Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
+        Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
 
         kwargs = update_local_parameters(delta_t, fprop, **kwargs)
         update_local_problem(
@@ -196,14 +195,13 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             T_noCC,
             params['diagonal_term'],
             solution,
-            Ft_internal_faces,
+            Ft_internal_faces_adm,
             elements_lv0['remaped_internal_faces'],
             elements_lv0['volumes'],
             elements_lv0['neig_internal_faces'],
             all_coarse_intersect_faces,
             **kwargs
         )
-        import pdb; pdb.set_trace()
         master = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
         local_solution = master.run()
         del master
@@ -211,18 +209,19 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         error2 = np.absolute(self.P - local_solution) / self.P
         data_impress['verif_po'][:] = local_solution
         data_impress['flux_volumes'][:] = error2
+
+        ft_internal_faces_local_solution = self.update_total_flux_internal_faces(fprop, local_solution)
+        other_faces = np.setdiff1d(elements_lv0['internal_faces'], all_coarse_intersect_faces)
+        Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][other_faces]] = ft_internal_faces_local_solution[:, elements_lv0['remaped_internal_faces'][other_faces]]
+
         data_impress.update_variables_to_mesh()
-        print_mesh_volumes_data(
-            M,
-            os.path.join('results', 'prolongation_level_1.vtk')
-        )
-        print(self.P)
-        print(local_solution)
-        print(error2)
+        # print_mesh_volumes_data(
+        #     M,
+        #     os.path.join('results', 'prolongation_level_1.vtk')
+        # )
 
-        import pdb; pdb.set_trace()
+        self.update_flux_wells(fprop, wells, delta_t, solution)
 
-        self.update_flux_wells(fprop, wells, delta_t)
         return self.P, Ft_internal_faces, self.q
     
     def update_transmissibility(self, M, wells, fprop, delta_t, **kwargs):
@@ -283,3 +282,16 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             * ctes.pretransmissibility_internal_faces * ((Pot_hidj_up - Pot_hidj) -
             ctes.g * fprop.rho_j_internal_faces * (z_up - z)), axis = 1)
         return Ft_internal_faces
+
+    def update_flux_wells(self, fprop, wells, delta_t, pressure):
+        wp = wells['ws_p']
+
+        if len(wp) >= 1:
+            well_term = (self.T_noCC[wp, :] @ pressure - self.pressure_term[wp] +
+                         self.volume_term[wp]) / delta_t + self.capillary_term[wp] + \
+                         self.gravity_term[wp]
+            mob_ratio = fprop.mobilities[:, :, wp] / \
+                        np.sum(fprop.mobilities[:, :, wp], axis=1)
+            self.q[:, wp] = np.sum(fprop.xkj[:, :, wp] * mob_ratio *
+                                   fprop.Csi_j[:, :, wp] * well_term, axis=1)
+            fprop.q_phase = mob_ratio * well_term
