@@ -76,7 +76,8 @@ local_problem_params = {
     'pressure_prescription': wells['values_p'],
     'bhp_ind': ctes.bhp_ind,
     'rho_j': None,
-    'rho_j_internal_faces': None
+    'rho_j_internal_faces': None,
+    'm_object': M
 }
 
 while run_criteria < stop_criteria:# and loop < loop_max:

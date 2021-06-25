@@ -101,6 +101,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         data_impress['transmissibility'][elements_lv0['internal_faces']] = transm_int_fac
         data_impress['transmissibility'][elements_lv0['boundary_faces']] = 0
 
+        ######################
         preprocessed_primal_objects, critical_groups = monotonic_adm_subds.get_preprossed_monotonic_primal_objects(
             data_impress, elements_lv0, mlo.get_prolongation_by_level(1), neumann_subds.neumann_subds, phiK_raz_lim=3)
 
@@ -132,6 +133,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         for level in range(1, n_levels):
             adm_method.organize_ops_adm(mlo, level)
+        ##################
 
         # import pdb; pdb.set_trace()
 
@@ -184,7 +186,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     os.path.join('results', 'prolongation_level_1.vtk')
         # )
 
-        # Ft_internal_faces = self.update_total_flux_internal_faces(fprop, self.P) # pressao local
+        Ft_internal_faces_orig = self.update_total_flux_internal_faces(fprop, self.P) # pressao local
         Ft_internal_faces_adm = self.update_total_flux_internal_faces(fprop, solution) # pressao local
         Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
@@ -194,8 +196,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             neumann_subds.neumann_subds,
             T_noCC,
             params['diagonal_term'],
-            solution,
-            Ft_internal_faces_adm,
+            self.P,
+            Ft_internal_faces_orig,
             elements_lv0['remaped_internal_faces'],
             elements_lv0['volumes'],
             elements_lv0['neig_internal_faces'],
@@ -205,20 +207,23 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         master = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
         local_solution = master.run()
         del master
+        # import pdb; pdb.set_trace()
 
         error2 = np.absolute(self.P - local_solution) / self.P
         data_impress['verif_po'][:] = local_solution
-        data_impress['flux_volumes'][:] = error2
+        data_impress['verif_rest'][:] = error2
+        # data_impress['flux_volumes'][:] = error2
 
         ft_internal_faces_local_solution = self.update_total_flux_internal_faces(fprop, local_solution)
         other_faces = np.setdiff1d(elements_lv0['internal_faces'], all_coarse_intersect_faces)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][other_faces]] = ft_internal_faces_local_solution[:, elements_lv0['remaped_internal_faces'][other_faces]]
 
         data_impress.update_variables_to_mesh()
-        # print_mesh_volumes_data(
-        #     M,
-        #     os.path.join('results', 'prolongation_level_1.vtk')
-        # )
+        print_mesh_volumes_data(
+            M,
+            os.path.join('results', 'prolongation_level_1.vtk')
+        )
+        import pdb; pdb.set_trace()
 
         self.update_flux_wells(fprop, wells, delta_t, solution)
 

@@ -145,6 +145,7 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
 
     v0 = adjacencies_internal_faces
     elements_lv0 = kwargs.get('elements_lv0')
+    m_object = kwargs.get('m_object')
 
     Tglobal = fine_scale_transmissibility_no_bc
     ft_internal_faces_for_prescription = np.zeros(Ft_internal_faces.shape)
@@ -163,6 +164,7 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
         kwargs['n_components'],
         kwargs['n_volumes']
     )
+    m_object.data['flux_volumes'][:] = global_molar_flux_prescription[0]
 
     for subd in neumann_subds_list:
         subd.Tlocal_no_bc = update_local_transmissibility(Tglobal, subd.volumes, diagonal_term[subd.volumes])
