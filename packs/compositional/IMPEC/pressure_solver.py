@@ -18,10 +18,8 @@ class TPFASolver:
         return Pnew, Ft_internal_faces, self.q
 
     def dVt_derivatives(self, dVjdNk, dVjdP):
-
         self.dVtP = dVjdP.sum(axis=1)[0]
         self.dVtk = dVjdNk.sum(axis=1)
-
 
     def update_transmissibility(self, M, wells, fprop, delta_t):
         self.t0_internal_faces_prod = fprop.xkj_internal_faces * \
@@ -63,7 +61,7 @@ class TPFASolver:
     def capillary_and_gravity_independent_term(self, fprop):
 
         t0_j = self.t0_internal_faces_prod * \
-        ctes.pretransmissibility_internal_faces
+            ctes.pretransmissibility_internal_faces
         t0_k = ctes.g * np.sum(fprop.rho_j_internal_faces * t0_j, axis=1)
 
         # Look for a better way to do this !!!
@@ -131,7 +129,6 @@ class TPFASolver:
         Ft_internal_faces = - np.sum(fprop.mobilities_internal_faces
             * ctes.pretransmissibility_internal_faces * ((Pot_hidj_up - Pot_hidj) -
             ctes.g * fprop.rho_j_internal_faces * (z_up - z)), axis = 1)
-        
         return Ft_internal_faces
 
     def update_flux_wells(self, fprop, Pnew, wells, delta_t):
