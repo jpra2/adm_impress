@@ -16,6 +16,9 @@ class delta_time:
         CFL_p = data_loaded['compositional_data']['CFL']
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
         CFL = delta_t * np.max(abs(wave_velocity))
+        #if CFL>100:
+            #print(np.max(abs(wave_velocity)))
+
         if ctes.FR:
             from packs.compositional import prep_FR as ctes_FR
             CFL = CFL*(2*(ctes_FR.n_points-1)+1)
@@ -24,7 +27,6 @@ class delta_time:
         #           abs(fprop.component_flux_vols_total[wells['ws_inj']])))
         if (CFL > CFL_p): delta_t = delta_t / 2
         delta_tmin = data_loaded['compositional_data']['time_data']['delta_tmin']
-
         #delta_tcfl = np.nanmin(CFL * (fprop.Nk) / fprop.component_flux_vols_total, axis = 1) #make nan
         np.seterr(**old_settings)
         return delta_t

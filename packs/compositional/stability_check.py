@@ -32,7 +32,7 @@ class StabilityCheck:
         '-------------------- Get new time-step parameters --------------------'
         self.P = P
         self.z = z
-        self.z[z==0] = 1e-30
+        self.z[z<=0] = 1e-30
         #ponteiro_flash[np.sum(self.z==0, dtype=bool)] = True
 
         if not pflash and any(~ponteiro_flash) and ctes.Nc>1:

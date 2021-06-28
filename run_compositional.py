@@ -95,11 +95,11 @@ class run_simulation:
         '----------------- Perform Phase stability test and flash -------------'
 
         if ctes.load_k and ctes.compressible_k:
-            #self.p2 = StabilityCheck(fprop.P, fprop.T)
+            self.p2 = StabilityCheck(fprop.P, fprop.T)
             fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
-            self.p2.run(fprop.P, np.copy(fprop.z))
+            self.p2.run_init(fprop.P, np.copy(fprop.z))
 
             if any(([wells['inj_cond']=='reservoir'])):
                 z = (wells['z'][wells['inj_cond']=='reservoir']).T
