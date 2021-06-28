@@ -37,7 +37,8 @@ for  arq in arquivos:
         xC3 = np.concatenate((xC3,xC31))
 
 
-        datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw_852.npy', allow_pickle=True)
+        datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw_945.npy', allow_pickle=True)
+        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_500 = data[6]
             Sg_500 = data[7]
@@ -48,6 +49,19 @@ for  arq in arquivos:
             xkj_500[:,1,Sg_500==0] = 0
             xkj_500[:,0,So_500==0] = 0
             x_500 = np.linspace(0,50,len(So_500))
+
+        datas = np.load('flying/results_Hoteit_Firoo_3k_500_MUSCL_28322.npy', allow_pickle=True)
+        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_500_MUSCL = data[6]
+            Sg_500_MUSCL = data[7]
+            z_500_MUSCL = data[10]
+            xkj_500_MUSCL = data[13]
+            P_500_MUSCL = data[4]
+
+            xkj_500_MUSCL[:,1,Sg_500_MUSCL==0] = 0
+            xkj_500_MUSCL[:,0,So_500_MUSCL==0] = 0
+            #x_500 = np.linspace(0,50,len(So_500))
 
         datas = np.load('flying/results_Hoteit_Firoo_3k_5000_upw_7382.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
@@ -94,10 +108,11 @@ for  arq in arquivos:
 
         plt.figure(4)
         plt.plot(x_500, xkj_500[2,1,:], 'b')
+        plt.plot(x_500, xkj_500_MUSCL[2,1,:], 'm')
         plt.plot(x_axis_xC3, xC3, 'k')
         plt.plot(x_CMG, yC3H8_CMG, 'y')
-        plt.plot(x_5000, xkj_5000[2,1,:], 'r')
-        plt.legend(('FOU 500', 'Reference', 'CMG-5000', 'FOU-5000'))
+        #plt.plot(x_5000, xkj_5000[2,1,:], 'r')
+        plt.legend(('FOU 500', 'MUSCL 500', 'Reference', 'CMG-5000', 'FOU-5000'))
         plt.grid()
         plt.ylabel('Propane molar fraction in gas phase')
         plt.xlabel('Dimensionless distance')
