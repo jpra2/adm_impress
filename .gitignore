@@ -30,7 +30,7 @@ impress(copia)/
 *.pdf
 *.svg
 .idea/
-.venv/
+venv/
 
 
 
