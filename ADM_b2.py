@@ -26,6 +26,7 @@ from packs.tpfa.biphasic.load_or_preprocess_biphasic import preprocessar, carreg
 from packs.tpfa.biphasic import TpfaBiphasicCons
 from packs.tpfa.monophasic import TpfaMonophasic
 from packs.multiscale.test_conservation import ConservationTest
+from ADM_b2_funcs import multiscale_cf_calc, multiscale_prolongation_operator, print_mesh_volumes_results, cf_remove_volumes_by_level
 
 def save_multilevel_results():
     t_comp.append(t1-t0)
@@ -361,73 +362,105 @@ try:
 except:
     pass
 
-if load_operators:
-    pass
-else:
-    # multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
-    multilevel_operators.run_paralel(T, M.multilevel_data['dual_structure_level_1'], 0, False)
+# if load_operators:
+#     pass
+# else:
+#     # multilevel_operators.run_paralel(b1['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
+#     multilevel_operators.run_paralel(T, M.multilevel_data['dual_structure_level_1'], 0, False)
 
 
 # PP2=mlo['prolongation_level_'+str(1)]
 
-mlo=multilevel_operators
+# mlo=multilevel_operators
 
 # tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 # tpfa_solver.run()
 # neta_lim=np.load('flying/neta_lim_dual.npy')[0]
 neta_lim=10
+# neta_lim=np.inf
 elements_lv0['neta_lim']=neta_lim
 #################
-group_dual_volumes_and_get_OP(mlo, T_with_boundary, M, data_impress, T, neta_lim=np.inf)
-OP_orig=mlo['prolongation_level_1']
+# group_dual_volumes_and_get_OP(mlo, T_with_boundary, M, data_impress, T, neta_lim=np.inf)
+# OP_orig=mlo['prolongation_level_1']
 
-OP=group_dual_volumes_and_get_OP(mlo, T_with_boundary, M, data_impress, T, neta_lim=neta_lim)
+# OP=group_dual_volumes_and_get_OP(mlo, T_with_boundary, M, data_impress, T, neta_lim=neta_lim)
 
 ##########################
 ams_tpfa = AMSTpfa(data_impress['GID_0'], data_impress['GID_1'], data_impress['DUAL_1'])
 # Twire = ams_tpfa.get_Twire(T)
 # As = ams_tpfa.get_as_off_diagonal(Twire)
-As = ams_tpfa.get_as_off_diagonal(ams_tpfa.get_Twire(T))
+# As = ams_tpfa.get_as_off_diagonal(ams_tpfAs = ams_tpfa.get_as_off_diagonal(ams_tpfa.get_Twire(T))a.get_Twire(T))
 separated_dual_structures = DualStructure(load=True)['dual_structure']
 local_lu_matrices = LocalLU()
 # pdb.set_trace()
-transmissibility = data_impress['transmissibility']
-# transmissibility = np.ones(len(data_impress['transmissibility']))
-local_lu_matrices.update_lu_objects(separated_dual_structures, transmissibility)
 
 ml_data = M.multilevel_data
 volumes_without_grav_level_0 = ml_data['volumes_without_grav_level_0']
 data_impress['verif_rest'][:] = 0.0
 data_impress['verif_rest'][volumes_without_grav_level_0] = 1.0
+transmissibility = data_impress['transmissibility']
+
+As = multiscale_prolongation_operator(
+    mlo,
+    False,
+    M.multilevel_data,
+    T,
+    T_with_boundary,
+    M,
+    data_impress,
+    neta_lim,
+    ams_tpfa,
+    local_lu_matrices,
+    separated_dual_structures,
+    transmissibility,
+    update_op=True
+)
+
+cfs = multiscale_cf_calc(
+    g_source_total_volumes,
+    volumes_without_grav_level_0,
+    local_lu_matrices.local_lu_and_global_ids,
+    data_impress,
+    As,
+    cf_keyword='gama',
+    update_cf=True
+)
+cfs = cf_remove_volumes_by_level(cfs, data_impress['GID_0'][data_impress['LEVEL']==0])
+
+
+# transmissibility = np.ones(len(data_impress['transmissibility']))
+
+# local_lu_matrices.update_lu_objects(separated_dual_structures, transmissibility)
+
 
 t0=time.time()
-b2 = g_source_total_volumes.copy()
+# b2 = g_source_total_volumes.copy()
 
 # b2 = b.copy()
 # b2[wells2['ws_p']] = 0.0
 # b2[wells[]]
-b2[volumes_without_grav_level_0] = 0
+# b2[volumes_without_grav_level_0] = 0
 # b2[data_impress['LEVEL']==0] = 0.0
 
 # b2[data_impress['DUAL_1'] == 2] = 0.0
-
 # b2=np.ones_like(b2)10000
 # b2[wells['ws_q']] = -b[wells['ws_q']]
 # b2[wells['ws_p']] = 0
 # cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, np.ones_like(b2))
-cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
+# cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
+
 # cfs[data_impress['LEVEL']==0] = 0.0
 # cfs[data_impress['LEVEL'] == 0] = 0.0
 # cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, np.zeros_like(b2))
 # cfs[wells['ws_p']] = 0
 # cfs[:] = 0
-data_impress['gama'][:] = cfs
-print('cf {}'.format(time.time()-t0))
+# data_impress['gama'][:] = cfs
+# print('cf {}'.format(time.time()-t0))
 # import pdb; pdb.set_trace()
 #############################
 
 # mlo=tpfalize(M,mlo,data_impress)
-mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
+# mlo['prolongation_lcd_level_1']=sp.find(mlo['prolongation_level_1'])
 # adm_method = AdmMethod(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 adm_method = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 
@@ -557,10 +590,11 @@ bc=OR_AMS*(b - T_with_boundary*cfs)
 from scipy.sparse import linalg
 pc=linalg.spsolve(Tc,bc)
 
-adm_method.organize_ops_adm(mlo, 1)
-pms=OP_AMS*pc + cfs
-OP_ADM = adm_method['adm_prolongation_level_1']
 
+pms=OP_AMS*pc + cfs
+
+adm_method.organize_ops_adm(mlo, 1)
+OP_ADM = adm_method['adm_prolongation_level_1']
 OR_ADM = adm_method['adm_restriction_level_1']
 # Tcadm=OR_ADM*T*OP_ADM
 Tcadm=OR_ADM*T_with_boundary*OP_ADM
@@ -609,7 +643,7 @@ print("erro_adm: {}, erro_ams: {}".format(eadm,eams))
 data_impress['pressure'] = padm
 # data_impress['tpfa_pressure'] = adm_method.solver.direct_solver(T, b)
 data_impress['tpfa_pressure'] = pf.copy()
-data_impress['erro_p'] = padm-pf
+data_impress['erro_p'] = np.absolute(pf-padm)/(np.absolute(pf).max())
 
 conservation_test = ConservationTest()
 
@@ -788,9 +822,11 @@ flux_o_volumes = biphasic.get_flux_phase_volumes(
 # current_data['current'] = np.array([(prod_o, prod_w, wor, delta_t, dvpi, loop, accumulate.global_identifier)], dtype=dty)
 # accumulate.insert_data(current_data['current'])
 
-data_impress.update_variables_to_mesh()
+# print_mesh_volumes_results(M, data_impress, meshset_volumes, 'trash_0.vtk')
+
+# data_impress.update_variables_to_mesh()
 # M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
-M.core.mb.write_file('results/trash_0'+'.vtk', [meshset_volumes])
+# M.core.mb.write_file('results/trash_0'+'.vtk', [meshset_volumes])
 # pdb.set_trace()
 ########## for plotting faces adm resolution in a faces file
 int_faces=M.faces.internal
@@ -814,7 +850,8 @@ count_save=0
 verif = True
 pare = False
 np.save('results/jac_iterarion.npy',np.array([0]))
-phis_k=OP_AMS[data_impress['GID_0'],data_impress['GID_1']].toarray()[0]
+# phis_k=OP_AMS[data_impress['GID_0'],data_impress['GID_1']].toarray()[0]
+phis_k=np.array(OP_AMS[data_impress['GID_0'],data_impress['GID_1']]).flatten()
 data_impress['raz_pos']=(1-phis_k)/phis_k
 
 # phiK_raz_lim=np.load('flying/phiK_raz_lim.npy')[0]
@@ -833,6 +870,7 @@ except:
 # else:
 #     l_groups=np.array(critical_groups)
 #     groups_c=critical_groups
+
 ms_case=np.load("flying/ms_case.npy")[0]
 data_impress['coupled_flag'][data_impress['DUAL_1']>=2]=0
 
@@ -970,11 +1008,31 @@ while verif:
         g_source_total_volumes,
         T
     )
-
-
-
+    
+    
     t00=time.time()
-    transmissibility=data_impress['transmissibility']
+    
+    transmissibility[:] = data_impress['transmissibility']
+    
+    As = multiscale_prolongation_operator(
+        mlo,
+        False,
+        M.multilevel_data,
+        T,
+        T_with_boundary,
+        M,
+        data_impress,
+        neta_lim,
+        ams_tpfa,
+        local_lu_matrices,
+        separated_dual_structures,
+        transmissibility,
+        As=As,
+        update_op=True
+    )
+    
+    
+    
     if type_of_refinement=='uni':
         volumes, netasp_array=monotonic_adm_subds.get_monotonizing_volumes(preprocessed_primal_objects, transmissibility)
         maxs=np.zeros(len(np.unique(volumes)))
@@ -996,6 +1054,32 @@ while verif:
 
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
+    
+    ############
+    ## testting correction function
+    int_facs=elements.internal_faces
+    int_adjs=elements.get('volumes_adj_internal_faces')
+    # import pdb; pdb.set_trace()
+    some_fine = (data_impress['LEVEL'][int_adjs]==0).sum(axis=1)>0
+    g_source_total_internal_faces = biphasic_data['g_source_w_internal_faces'] + biphasic_data['g_source_o_internal_faces']
+    # g_source_total_internal_faces[some_fine]==0
+    g_source_total_volumes = phisical_properties.get_total_g_source_volumes(
+                elements.volumes,
+                elements.get('volumes_adj_internal_faces'),
+                g_source_total_internal_faces)
+
+    ###############
+    
+    cfs = multiscale_cf_calc(
+        g_source_total_volumes,
+        volumes_without_grav_level_0,
+        local_lu_matrices.local_lu_and_global_ids,
+        data_impress,
+        As,
+        cf_keyword='gama',
+        update_cf=True
+    )
+    cfs = cf_remove_volumes_by_level(cfs, data_impress['GID_0'][data_impress['LEVEL']==0])
 
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
 
@@ -1022,30 +1106,17 @@ while verif:
 
     t0=time.time()
 
-    ############
-    ## testting correction function
-    int_facs=elements.internal_faces
-    int_adjs=elements.get('volumes_adj_internal_faces')
-    # import pdb; pdb.set_trace()
-    some_fine = (data_impress['LEVEL'][int_adjs]==0).sum(axis=1)>0
-    g_source_total_internal_faces = biphasic_data['g_source_w_internal_faces'] + biphasic_data['g_source_o_internal_faces']
-    g_source_total_internal_faces[some_fine]==0
-    g_source_total_volumes = phisical_properties.get_total_g_source_volumes(
-                elements.volumes,
-                elements.get('volumes_adj_internal_faces'),
-                g_source_total_internal_faces)
 
-    ###############
-
-    b2 = g_source_total_volumes.copy()
+    # b2 = g_source_total_volumes.copy()
     # b2[wells2['ws_p']] = 0.0
-    b2[volumes_without_grav_level_0] = 0.0
+    # b2[volumes_without_grav_level_0] = 0.0
     # b2[data_impress['LEVEL'] == 0] = 0.0
     # b2[data_impress['LEVEL'] == 0] = 0.0
-    cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
-    cfs[data_impress['LEVEL'] == 0] = 0.0
-    data_impress['gama'][:]=cfs
-
+    # cfs = get_correction_function(local_lu_matrices.local_lu_and_global_ids, As, b2)
+    # cfs[data_impress['LEVEL'] == 0] = 0.0
+    # data_impress['gama'][:]=cfs
+    
+    
     OP_ADM = adm_method['adm_prolongation_level_1']
     OR_ADM = adm_method['adm_restriction_level_1']
     Tcadm=OR_ADM*T_with_boundary*OP_ADM
@@ -1057,7 +1128,7 @@ while verif:
     data_impress['pms_adm_pressure'][:] = padm
 
     data_impress['tpfa_pressure'][:] = pf
-    data_impress['erro_p'][:] = np.absolute(pf-padm)
+    data_impress['erro_p'][:] = np.absolute(pf-padm)/(np.absolute(pf).max())
 
     t0 = time.time()
 
@@ -1098,7 +1169,7 @@ while verif:
     data_impress['flux_volumes_test'][:] = 0.0
     for primal_id, coarse_flux in enumerate(flux_coarse_volumes):
         data_impress['flux_volumes_test'][data_impress['GID_1']==primal_id] = coarse_flux
-    print(flux_coarse_volumes)
+    # print(flux_coarse_volumes)
 
     flux_coarse_volumes_pf, total_flux_internal_faces_pf, velocity_internal_faces_pf, local_pressure_pf = conservation_test.conservation_with_gravity(
         elements.volumes,
@@ -1133,8 +1204,8 @@ while verif:
 
     data_impress['erro'][:] = np.absolute(local_pressure_pf - pf)
     data_impress['fw_vol'][:] = 0.0
-    print()
-    print(flux_coarse_volumes_pf)
+    # print()
+    # print(flux_coarse_volumes_pf)
     for primal_id, coarse_flux in enumerate(flux_coarse_volumes_pf):
         data_impress['fw_vol'][data_impress['GID_1']==primal_id] = coarse_flux
 
@@ -1223,8 +1294,9 @@ while verif:
 
     current_data['current'] = np.array([(prod_o, prod_w, wor, delta_t, dvpi, loop, accumulate.global_identifier)], dtype=dty)
     accumulate.insert_data(current_data['current'])
-    data_impress.update_variables_to_mesh()
-    M.core.mb.write_file('results/trash_'+ str(loop) + '.vtk', [meshset_volumes])
+    # data_impress.update_variables_to_mesh()
+    print_mesh_volumes_results(M, data_impress, meshset_volumes, 'trash' + str(loop) + '.vtk')
+    # M.core.mb.write_file('results/trash_'+ str(loop) + '.vtk', [meshset_volumes])
     # pdb.set_trace()
 
 
