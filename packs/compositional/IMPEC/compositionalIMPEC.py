@@ -12,11 +12,11 @@ class CompositionalFVM:
     def __call__(self, M, wells, fprop, delta_t, t):
         G = self.update_gravity_term(fprop)
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
-        if ctes.MUSCL or ctes.FR: self.get_faces_properties_harmonic_average(fprop, G) #self.get_faces_properties_weighted_average(fprop, G)
+        if ctes.MUSCL: self.get_faces_properties_weighted_average(fprop, G) #self.get_faces_properties_harmonic_average(fprop, G)
+        elif ctes.FR: self.get_faces_properties_weighted_average(fprop, G)
         else: self.get_faces_properties_upwind(fprop, G) #self.get_faces_properties_harmonic_average(fprop, G)
-        #self.get_faces_properties_weighted_average(fprop, G)
         self.get_phase_densities_internal_faces(fprop)
-        #import pdb; pdb.set_trace()
+
         r = 0.8 # enter the while loop
 
         dVjdNk, dVjdP = self.dVt_derivatives(fprop)
@@ -67,7 +67,7 @@ class CompositionalFVM:
         if any(fprop.xkj.sum(axis=0).flatten()>1+1e-10): import pdb; pdb.set_trace()
         if any(fprop.Nk.flatten()<-1e-50): import pdb; pdb.set_trace()
         if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
-        #if any(total_flux_internal_faces.flatten()<0): import pdb; pdb.set_trace()
+        #if any(total_flux_internal_faces.flatten()<-1e-6): import pdb; pdb.set_trace()
         #if (Nk_old[0,0]>fprop.Nk[0,0]): import pdb; pdb.set_trace()
         #import pdb; pdb.set_trace()
         return delta_t
@@ -140,13 +140,14 @@ class CompositionalFVM:
         fprop.Csi_j_internal_faces[a<0] = Csi_j_vols_up[a<0]'''
 
     def get_faces_properties_harmonic_average(self, fprop, G):
-        fprop.mobilities_internal_faces = self.harmonic_average(fprop.mobilities)
+        #fprop.mobilities_internal_faces = self.harmonic_average(fprop.mobilities)
+        fprop.mobilities_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.mobilities)
         fprop.Csi_j_internal_faces = self.harmonic_average(fprop.Csi_j)
         fprop.xkj_internal_faces = self.harmonic_average(fprop.xkj)
 
     def get_faces_properties_weighted_average(self, fprop, G):
-        fprop.mobilities_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.mobilities)
-        #fprop.mobilities_internal_faces = self.weighted_by_volume_average(fprop, fprop.mobilities)
+        #fprop.mobilities_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.mobilities)
+        fprop.mobilities_internal_faces = self.weighted_by_volume_average(fprop, fprop.mobilities)
         fprop.Csi_j_internal_faces = self.weighted_by_volume_average(fprop, fprop.Csi_j)
         fprop.xkj_internal_faces = self.weighted_by_volume_average(fprop, fprop.xkj)
 
