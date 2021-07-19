@@ -10,8 +10,8 @@ def insert_prolongation_operator_impress(
         level,
         fine_scale_gid,
         previous_gid_level,
-        coarse_ids=None
-):
+        coarse_ids=None):
+    
     range_coarse_volumes = range(prolongation.shape[1])
     n_fine_vols = prolongation.shape[0]
     if coarse_ids:
@@ -47,8 +47,8 @@ def insert_restriction_operator_impress(
         level,
         fine_scale_gid,
         previous_gid_level,
-        coarse_ids=None
-):
+        coarse_ids=None):
+    
     range_coarse_volumes = range(restriction.shape[0])
     n_fine_vols = restriction.shape[1]
     if coarse_ids:
@@ -92,8 +92,8 @@ def multilevel_pressure_solver(
         fine_scale_transmissibility,
         fine_scale_source_term,
         prolongation_list: list,
-        restriction_list: list
-):
+        restriction_list: list):
+    
     from packs.solvers.solvers_scipy.solver_sp import SolverSp
     solver = SolverSp()
 
@@ -209,7 +209,7 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
         )
 
 
-def update_local_transmissibility(Tglobal, gids, diagonal_term) -> sp.csc_matrix:
+def update_local_transmissibility(Tglobal, gids, diagonal_term_local) -> sp.csc_matrix:
     """
         @param Tglobal: global fine scale transmissibility
         @param gids: global ids of local volumes
@@ -222,7 +222,7 @@ def update_local_transmissibility(Tglobal, gids, diagonal_term) -> sp.csc_matrix
 
     Tlocal = Tglobal[lines, cols]
     Tlocal.setdiag(np.zeros(n))
-    diagonal = np.array(-Tlocal.sum(axis=1)).flatten() + diagonal_term
+    diagonal = np.array(-Tlocal.sum(axis=1)).flatten() + diagonal_term_local
     Tlocal.setdiag(diagonal)
     return Tlocal.tocsc()
 
@@ -255,3 +255,15 @@ def set_matrix_pressure_prescription(transmissibility_matrix_no_bc: sp.csc_matri
     t2[gids_pressure_prescription] = 0
     t2[gids_pressure_prescription, gids_pressure_prescription] = 1
     return t2
+
+def map_global_id_to_local_id(gids):
+    
+    unique_gids = np.unique(gids)
+    
+    global_map = np.zeros(gids.max() + 1, dtype=int)
+    for i, gid in enumerate(unique_gids):
+        global_map[gid] = i
+    
+    local_gids = global_map[gids]
+    
+    return local_gids

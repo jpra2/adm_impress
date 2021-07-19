@@ -6,6 +6,7 @@ from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.compositional.compositional_params import Params
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 from packs.multiscale.preprocess.prep_neumann import NeumannSubdomains
+from packs.multiscale.preprocess.dual_domains import create_dual_subdomains
 from packs.utils import constants as ctes
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
@@ -45,6 +46,8 @@ neumann_subds = NeumannSubdomains(elements_lv0, ml_data, data_impress, wells)
 adm = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 # ml_data.load_tags()
 # import pdb; pdb.set_trace()
+dual_subdomains = create_dual_subdomains(ml_data['dual_structure_level_1'], ml_data['fine_dual_id_level_1'], ml_data['fine_primal_id_level_1'])
+import pdb; pdb.set_trace()
 
 params['area'] = data_impress['area']
 params['pretransmissibility'] = data_impress['pretransmissibility']

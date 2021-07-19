@@ -190,8 +190,7 @@ class MultilevelOperators(DataManager):
         T: 'fine transmissibility without boundary conditions',
         total_source_term: 'total fine source term'=None,
         _grav: 'fine gravity source term'=None,
-        return_correction_matrix=False
-    ):
+        return_correction_matrix=False):
     
         T_ant = T.copy()
         total_source_term_2 = total_source_term.copy()
@@ -310,6 +309,9 @@ class MultilevelOperators(DataManager):
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
 
+    def run_paralel_2(self, T_fine_without_bc, dual_subdomains):
+        
+    
     def get_OP_paralel(self, level,dual_volumes, local_couple, couple_bound):
         #
         # dual_structure = self.ml_data['dual_structure_level_'+str(level)]
