@@ -310,6 +310,7 @@ class MultilevelOperators(DataManager):
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
 
     def run_paralel_2(self, T_fine_without_bc, dual_subdomains):
+        pass
         
     
     def get_OP_paralel(self, level,dual_volumes, local_couple, couple_bound):

@@ -19,7 +19,7 @@ class DualSubdomain:
         self.Tlocal = Tlocal.tocsc()
         self.local_update = np.full(n, False, dtype=bool)
         self.local_ids = np.arange(n)
-        self.local_coarse_id = map_global_id_to_local_id(coarse_id)
+        self.local_coarse_id, self.rmap_lcid_cid = map_global_id_to_local_id(coarse_id)
         
         self.ams_solver = AMSTpfa(
             self.local_ids[self.dual_id == 0],
@@ -50,31 +50,57 @@ class DualSubdomain:
     def reinitialize_local_update(self):
         self.local_update[:] = False
 
-    
+    def test_update(self):
+        if np.any(self.local_update):
+            return True
+        else:
+            return False
 
-def get_bool_updated_dual_subdomains(dual_subdomains):
+
+class DualSubdomainMethods:
     
-    updated_dual_subdomains = np.full(len(dual_subdomains), False, dtype=bool)
-    
-    for i, dual in enumerate(dual_domains):
-        if np.any(dual.local_update):
-            updated_dual_subdomains[i] = True
-    
-    return np.array(updated_dual_subdomains)
+    @staticmethod
+    def get_bool_update_dual_subdomains(dual_subdomains):
         
+        dual_subdomains: Sequence[DualSubdomain]
+        updated_dual_subdomains = np.array([dual.test_update() for dual in dual_subdomains], dtype=bool)
+        return updated_dual_subdomains
+
+    @staticmethod
+    def update_local_source_terms_dual_subdomains(dual_subdomains, global_source_term):
+        
+        dual_subdomains: Sequence[DualSubdomain]
+        for dual in dual_subdomains:
+            dual.update_local_source_term(global_source_term)
+            
+    @staticmethod
+    def update_matrices_dual_subdomains(dual_subdomains, Tglobal, global_diagonal_term, test=True):
+        
+        dual_subdomains: Sequence[DualSubdomain]
+        if test:    
+            for dual in dual_subdomains:
+                if dual.test_update():    
+                    dual.update_t_local(Tglobal, global_diagonal_term[dual.gids])
+                    dual.update_as(dual.Tlocal)
+        else:
+            for dual in dual_subdomains:
+                dual.update_t_local(Tglobal, global_diagonal_term[dual.gids])
+                dual.update_as(dual.Tlocal)
+    
+    @staticmethod
+    def get_subdomains_to_update(dual_subdomains):
+        
+        dual_subdomains: Sequence[DualSubdomain]
+        array_bool = DualSubdomainMethods.get_bool_update_dual_subdomains(dual_subdomains)
+        return dual_subdomains[array_bool]
+
 
 def create_dual_subdomains(dual_volumes, global_flag_dual_id, global_coarse_id):
-    
-    dual_domains = []
-    
-    for volumes in dual_volumes:
-        dual_domains.append(DualSubdomain(volumes, global_flag_dual_id[volumes], global_coarse_id[volumes]))
-    
-    dual_domains = np.array(dual_domains)
-    
-    return dual_domains
-
-
-def update_local_source_terms_dual_subdomains(dual_subdomains: Sequence[DualSubdomain], global_source_term):
-    for dual in dual_subdomains:
-        dual.update_local_source_term(global_source_term)
+        
+        dual_domains = []
+        
+        for volumes in dual_volumes:
+            dual_domains.append(DualSubdomain(volumes, global_flag_dual_id[volumes], global_coarse_id[volumes]))
+        
+        dual_domains = np.array(dual_domains)
+        return dual_domains

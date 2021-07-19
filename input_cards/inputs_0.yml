@@ -1,7 +1,8 @@
 # mesh_name: mesh/45x45x45.msh
 # mesh_name: mesh/9x9x9.msh
 # mesh_name: mesh/isotropic/100x100x1m.msh
-mesh_name: mesh/54x216x1_L_37_unit.h5m
+# mesh_name: mesh/54x216x1_L_37_unit.h5m
+mesh_name: mesh/12x1x1.h5m
 # mesh_name: mesh/isotropic/21x21x1.msh
 n_test: 0
 state: 0

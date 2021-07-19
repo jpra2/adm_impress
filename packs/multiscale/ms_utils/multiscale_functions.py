@@ -220,7 +220,7 @@ def update_local_transmissibility(Tglobal, gids, diagonal_term_local) -> sp.csc_
     lines = np.repeat(gids, n).reshape(n, n)
     cols = np.tile(gids, n).reshape(n, n)
 
-    Tlocal = Tglobal[lines, cols]
+    Tlocal = Tglobal[lines, cols].copy()
     Tlocal.setdiag(np.zeros(n))
     diagonal = np.array(-Tlocal.sum(axis=1)).flatten() + diagonal_term_local
     Tlocal.setdiag(diagonal)
@@ -258,12 +258,7 @@ def set_matrix_pressure_prescription(transmissibility_matrix_no_bc: sp.csc_matri
 
 def map_global_id_to_local_id(gids):
     
-    unique_gids = np.unique(gids)
+    rmap_local_to_global = np.unique(gids)    
+    local_gids = np.arange(len(unique_gids))
     
-    global_map = np.zeros(gids.max() + 1, dtype=int)
-    for i, gid in enumerate(unique_gids):
-        global_map[gid] = i
-    
-    local_gids = global_map[gids]
-    
-    return local_gids
+    return local_gids, rmap_local_to_global
