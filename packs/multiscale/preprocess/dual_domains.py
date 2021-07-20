@@ -20,6 +20,9 @@ class DualSubdomain:
         self.local_update = np.full(n, False, dtype=bool)
         self.local_ids = np.arange(n)
         self.local_coarse_id, self.rmap_lcid_cid = map_global_id_to_local_id(coarse_id)
+        rmap_cid_to_lid = np.zeros(self.coarse_id.max() + 1, dtype=int)
+        for i, j in zip(self.local_coarse_id, self.rmap_lcid_cid):
+             rmap_cid_to_lid[j] = i
         
         self.ams_solver = AMSTpfa(
             self.local_ids[self.dual_id == 0],
@@ -27,7 +30,7 @@ class DualSubdomain:
             self.local_ids[self.dual_id == 2],
             self.local_ids[self.dual_id == 3],
             self.local_ids,
-            self.local_coarse_id
+            rmap_cid_to_lid[self.coarse_id]
         )
         
         self.As = dict()
@@ -94,6 +97,20 @@ class DualSubdomainMethods:
         array_bool = DualSubdomainMethods.get_bool_update_dual_subdomains(dual_subdomains)
         return dual_subdomains[array_bool]
 
+    @staticmethod
+    def set_local_update(dual_subdomains, global_update):
+        
+        for dual in dual_subdomains:
+            dual: DualSubdomain
+            dual.set_update(global_update)
+            
+    @staticmethod
+    def reinitialize_update(dual_subdomains):
+        
+        for dual in dual_subdomains:
+            dual: DualSubdomain
+            dual.reinitialize_local_update()
+    
 
 def create_dual_subdomains(dual_volumes, global_flag_dual_id, global_coarse_id):
         

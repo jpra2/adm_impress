@@ -259,6 +259,6 @@ def set_matrix_pressure_prescription(transmissibility_matrix_no_bc: sp.csc_matri
 def map_global_id_to_local_id(gids):
     
     rmap_local_to_global = np.unique(gids)    
-    local_gids = np.arange(len(unique_gids))
+    local_gids = np.arange(len(rmap_local_to_global))
     
     return local_gids, rmap_local_to_global

@@ -13,6 +13,7 @@ from ...multiscale.ms_utils.matrices_for_correction import MatricesForCorrection
 from ..operators.prolongation.AMS.Paralell.coupled_ams import OP_AMS
 from packs.multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 from packs.utils.test_functions import test_instance
+from packs.multiscale.preprocess.dual_domains import DualSubdomainMethods
 
 def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
 
@@ -309,7 +310,32 @@ class MultilevelOperators(DataManager):
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
 
-    def run_paralel_2(self, T_fine_without_bc, dual_subdomains):
+    def run_paralel_2(self, T_fine_without_bc, global_source_term, dual_subdomains, global_vector_update, global_diagonal_term):
+        #########
+        ## set update for op and local matrices
+        DualSubdomainMethods.set_local_update(dual_subdomains, global_vector_update)
+        #########
+        
+        ########
+        ## update local matrices
+        DualSubdomainMethods.update_matrices_dual_subdomains(dual_subdomains, T_fine_without_bc, global_diagonal_term)
+        ########
+        
+        ########
+        ## update local source term
+        DualSubdomainMethods.update_local_source_terms_dual_subdomains(dual_subdomains, global_source_term)
+        ########
+        
+        # TODO get op and pcorr parallel from master
+        
+        #########
+        ## reinitialize local and global update
+        global_vector_update[:] = False
+        DualSubdomainMethods.reinitialize_update(dual_subdomains)
+        #########
+        
+        # TODO return OP and pcorr
+        
         pass
         
     
