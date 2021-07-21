@@ -100,7 +100,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         # test_instance(mlo, MultilevelOperators)
         # mlo.run(T_noCC, np.zeros(len(D)), np.zeros(len(D)))
-        mlo.run(T_noCC, D, np.zeros(len(D)), return_correction_matrix=False)
+        # mlo.run(T_noCC, D, np.zeros(len(D)), return_correction_matrix=False)
         mlo.run_paralel_2(
             T_noCC,
             np.zeros(len(D)),
@@ -110,7 +110,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             OP_AMS,
             1
         )
-        import pdb; pdb.set_trace()
+        
         n_levels = 2
         transm_int_fac = np.array(T_noCC[ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
         # data_impress['transmissibility'][elements_lv0['internal_faces']] = ctes.pretransmissibility_internal_faces
@@ -178,6 +178,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         data_impress['ms_pressure'][:] = solution
         data_impress['pressure_error'][:] = error
         data_impress.update_variables_to_mesh()
+        
         # m1 = M.core.mb.create_meshset()
         # M.    core.mb.add_entities(m1, M.core.all_volumes)
         # M.core.mb.write_file('results/test_comp_1.vtk', [m1])
@@ -223,7 +224,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         master = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
         local_solution = master.run()
         del master
-        # import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
 
         error2 = np.absolute(self.P - local_solution) / self.P
         data_impress['verif_po'][:] = local_solution
@@ -239,7 +240,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             M,
             os.path.join('results', 'prolongation_level_1.vtk')
         )
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         self.update_flux_wells(fprop, wells, delta_t, solution)
 

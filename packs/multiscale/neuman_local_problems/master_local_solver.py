@@ -62,7 +62,7 @@ class MasterLocalSolver(CommonMasterMethods):
         self.m2w, self.w2m, self.procs, self.queue, self.finished = self.init_subproblems(problems_per_cpu)
 
 
-    def init_subproblems(problems_per_cpu):
+    def init_subproblems(self, problems_per_cpu):
         """
 
         @param problems_per_cpu: list of list local problems in cpu shape = (?, n_cpu)

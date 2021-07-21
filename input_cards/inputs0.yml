@@ -1,11 +1,11 @@
 Crs:
   Cr1:
   - 3
-  - 3
+  - 1
   - 1
   Cr2:
   - 9
-  - 9
+  - 1
   - 1
 Permeability:
   r1:
@@ -59,11 +59,11 @@ Wells:
   P2:
     p0:
     - 26.0
-    - 26.0
+    - 0.0
     - 0.0
     p1:
     - 27.0
-    - 27.0
+    - 1.0
     - 1.0
     prescription: P
     type: Producer
@@ -152,7 +152,7 @@ load_compositional_data: false
 load_data: true
 load_multilevel_data: false
 load_operators: false
-mesh_name: 27x27x1.h5m
+mesh_name: 27x1x1.h5m
 monophasic_data:
   gama: 10000.0
   mi: 1.0
