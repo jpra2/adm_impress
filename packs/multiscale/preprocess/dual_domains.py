@@ -47,7 +47,7 @@ class DualSubdomain:
     def update_local_source_term(self, global_source_term):
         self.local_source_term = global_source_term[self.gids]
 
-    def set_update(global_update):
+    def set_update(self, global_update):
         self.local_update[:] = global_update[self.gids]
     
     def reinitialize_local_update(self):
@@ -110,8 +110,19 @@ class DualSubdomainMethods:
         for dual in dual_subdomains:
             dual: DualSubdomain
             dual.reinitialize_local_update()
-    
 
+    @staticmethod
+    def reordenate_dual_subdomains(dual_subdomains):
+        array_bool = DualSubdomainMethods.get_bool_update_dual_subdomains(dual_subdomains)
+        ids_array = np.arange(len(array_bool))
+        ids_updated = ids_array[array_bool]
+        others = np.setdiff1d(ids_array, ids_updated)
+        n_subdomains_not_update = len(others)
+        ids_reordenated = np.concatenate([others, ids_updated])
+        dual_subdomains_reordenated = dual_subdomains[ids_reordenated]
+        return dual_subdomains_reordenated, n_subdomains_not_update
+        
+        
 def create_dual_subdomains(dual_volumes, global_flag_dual_id, global_coarse_id):
         
         dual_domains = []

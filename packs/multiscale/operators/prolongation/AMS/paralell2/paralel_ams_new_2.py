@@ -11,18 +11,19 @@ from packs.multiscale.operators.prolongation.AMS.paralell2.local_operator import
 
 class MasterLocalOperator(CommonMasterMethods):
     
-    def __init__(self, problems_list: Sequence[DualSubdomain], n_volumes, diagonal_term, T_global):
+    def __init__(self, problems_list, n_volumes, **kwargs):
+        problems_list: Sequence[DualSubdomain]
         n_cpu = self.get_n_cpu()
         self.n_cpu = n_cpu - 4
+        # self.n_cpu = 1
         self.n_volumes = n_volumes
         n_problems = len(problems_list)
-        DualSubdomainMethods.update_matrices_dual_subdomains(problems_list, T_global, diagonal_term)
  
         n_problems_per_cpu = self.count_problems(n_problems, self.n_cpu)
         problems_per_cpu = self.get_problems_per_cpu(n_problems_per_cpu, problems_list)
         self.m2w, self.w2m, self.procs, self.queue, self.finished = self.init_subproblems(problems_per_cpu)
 
-    def init_subproblems(problems_per_cpu):
+    def init_subproblems(self, problems_per_cpu):
         
         """
 
@@ -41,12 +42,14 @@ class MasterLocalOperator(CommonMasterMethods):
     def all_process_finished(self):
         return np.all([i.value for i in self.finished])
     
-    def run(self, OP_AMS, n_volumes):
+    def run(self, OP_AMS):
         
-        correction_function = np.zeros(n_volumes)
+        correction_function = np.zeros(self.n_volumes)
         
         for proc in self.procs:
             proc.start()
+        
+        
 
         while(not self.all_process_finished()):
             try:
@@ -55,27 +58,41 @@ class MasterLocalOperator(CommonMasterMethods):
                 # print('\nFila vazia\n')
                 pass
             else:
-                set_data_to_op(OP_AMS, resp)
-                set_data_to_cf(correction_function, resp)
+                set_data_to_op(OP_AMS, resp[0])
+                set_data_to_cf(correction_function, resp[1])
 
         for proc in self.procs:
             proc.join()
 
         while(not self.queue.empty()):
             resp = self.queue.get()
-            set_data_to_op(OP_AMS, resp)
-            set_data_to_cf(correction_function, resp)
+            set_data_to_op(OP_AMS, resp[0])
+            set_data_to_cf(correction_function, resp[1])
 
         return OP_AMS, correction_function
         
 
 
-def set_data_to_op(OP_AMS, resp):
+def set_data_to_op_dep0(OP_AMS, resp):
     
-    if len(resp[0]) == 0:
+    print('setting_data')
+    
+    if len(resp['op_lines']) == 0:
         pass
     else:
         OP_AMS[resp['op_lines'], resp['op_cols']] = resp['op_data']
 
-def set_data_to_cf(resp, correction_function):
+def set_data_to_cf_dep0(resp, correction_function):
+    
+    print('setting cf')
+    print(resp)
     correction_function[resp['gids']] = resp['cf']
+    
+def set_data_to_op(OP_AMS, op_resp):
+    if len(op_resp['op_lines']) == 0:
+        pass
+    else:
+        OP_AMS[op_resp['op_lines'], op_resp['op_cols']] = op_resp['op_data']
+
+def set_data_to_cf(correction_function, cf_resp):
+    correction_function[cf_resp['gids']] = cf_resp['cf']

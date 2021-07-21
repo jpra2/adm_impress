@@ -8,6 +8,8 @@ from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 from packs.multiscale.preprocess.prep_neumann import NeumannSubdomains
 from packs.multiscale.preprocess.dual_domains import create_dual_subdomains
 from packs.utils import constants as ctes
+import numpy as np
+import scipy.sparse as sp
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -47,7 +49,9 @@ adm = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 # ml_data.load_tags()
 # import pdb; pdb.set_trace()
 dual_subdomains = create_dual_subdomains(ml_data['dual_structure_level_1'], ml_data['fine_dual_id_level_1'], ml_data['fine_primal_id_level_1'])
-import pdb; pdb.set_trace()
+global_vector_update = np.full(ctes.n_volumes, True, dtype=bool)
+ncoarse_ids = len(np.unique(data_impress['GID_1']))
+OP_AMS = sp.lil_matrix((ctes.n_volumes, ncoarse_ids)).tocsc()
 
 params['area'] = data_impress['area']
 params['pretransmissibility'] = data_impress['pretransmissibility']
@@ -80,7 +84,10 @@ local_problem_params = {
     'bhp_ind': ctes.bhp_ind,
     'rho_j': None,
     'rho_j_internal_faces': None,
-    'm_object': M
+    'm_object': M,
+    'global_vector_update': global_vector_update,
+    'OP_AMS': OP_AMS,
+    'dual_subdomains': dual_subdomains
 }
 
 while run_criteria < stop_criteria:# and loop < loop_max:
@@ -94,6 +101,8 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['z'] = fprop.z
     params['porous_volume'] = fprop.Vp
     params['total_volume'] = fprop.Vt
+    
+    global_vector_update[:] = True
 
 
     sim.run(M, wells, fprop, load, 

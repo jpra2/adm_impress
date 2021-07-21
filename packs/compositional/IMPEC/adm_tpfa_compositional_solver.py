@@ -10,6 +10,9 @@ import numpy as np
 from packs.adm.non_uniform import monotonic_adm_subds
 from packs.multiscale.neuman_local_problems.master_local_solver import MasterLocalSolver
 from packs.multiscale.ms_utils.multiscale_functions import update_local_transmissibility
+from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
+from packs.multiscale.preprocess.dual_domains import DualSubdomain
+from collections.abc import Sequence
 
 def update_local_parameters(dt, fprop, **kwargs):
     params = kwargs.get('params')
@@ -43,7 +46,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
     
     def get_pressure(self, M, wells, fprop, delta_t, Pold, **kwargs):
 
-        adm_method = kwargs.get('adm_method')
+        adm_method: AdmNonNested = kwargs.get('adm_method')
         params = kwargs.get('params')
         neumann_subds = kwargs.get('neumann_subds')
         data_impress= kwargs.get('data_impress')
@@ -51,6 +54,9 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         ml_data = kwargs.get('multilevel_data')
         all_coarse_intersect_faces = np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1']))
         mlo: MultilevelOperators = kwargs.get('multilevel_operators')
+        dual_subdomains: Sequence[DualSubdomain] = kwargs.get('dual_subdomains')
+        global_vector_update = kwargs.get('global_vector_update')
+        OP_AMS = kwargs.get('OP_AMS')
 
         # test_kwargs_keys(
         #     AdmTpfaCompositionalSolver._kwargs_keys['get_pressure'],
@@ -95,6 +101,16 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # test_instance(mlo, MultilevelOperators)
         # mlo.run(T_noCC, np.zeros(len(D)), np.zeros(len(D)))
         mlo.run(T_noCC, D, np.zeros(len(D)), return_correction_matrix=False)
+        mlo.run_paralel_2(
+            T_noCC,
+            np.zeros(len(D)),
+            dual_subdomains,
+            global_vector_update,
+            params['diagonal_term'],
+            OP_AMS,
+            1
+        )
+        import pdb; pdb.set_trace()
         n_levels = 2
         transm_int_fac = np.array(T_noCC[ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
         # data_impress['transmissibility'][elements_lv0['internal_faces']] = ctes.pretransmissibility_internal_faces
