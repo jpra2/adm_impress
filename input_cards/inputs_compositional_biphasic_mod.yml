@@ -1,10 +1,14 @@
 #Buckley Leverett's horizontal case
-mesh_name: 500x1x1_b.msh
-name_save_file: 'results_Buckley_Leverett_case_FR3'
+# mesh_name: 12x1x1_b.msh
+mesh_name: 27x1x1.h5m
+# mesh_name: 27x27x1.h5m
+# mesh_name: 12x1x1.h5m
+name_save_file: 'results_Buckley_Leverett_caset'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: False
+#compressible_fluid: True
 water_component: True
 use_vpi: True
 
@@ -14,8 +18,8 @@ n_levels: 2
 Crs:
   # Cr1: [3, 3, 1]
   # Cr2: [9, 9, 1]
-  Cr1: [5, 1, 1]
-  Cr2: [10, 1, 1]
+  Cr1: [3, 1, 1]
+  Cr2: [9, 1, 1]
 get_correction_term: false
 load_operators: false
 load_multilevel_data: false
@@ -38,7 +42,7 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.5
+  CFL: 0.9
 
   solver:
     IMPSAT: false
@@ -47,7 +51,7 @@ compositional_data:
     set: false
 
   FR:
-    set: False
+    set: false
     order: 3
   vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
   time_to_save: [0.0]
@@ -79,7 +83,8 @@ compositional_data:
     rho_W: 999.55
     Mw_w: 18.015e-3
     Cw: 0
-    Pw: 13.789514E6
+#    Pw: 13.789514E6
+    Pw: 13.79E6
     mobility: True
     # if water is mobile: True, if not, False
 
@@ -138,23 +143,47 @@ Temperature:
     value: 288.70556
 
 
+#Wells:
+#  P1:
+#    p0: [0.0, 0.0, -0.03048]
+#    p1: [0.0508, 0.03048, 0.0]
+#    prescription: Q
+#    type: Injector
+#    type_region: box
+#    value: 3.2774128e-8
+#    z: [0., 1.]
+#    ksi_total: 55484.31862337
+#    value_type: volumetric
+#
+#  P2:
+#    p0: [0.5588, 0.0, -0.03048]
+#    p1: [0.6096, 0.03048, 0.0]
+#    prescription: P
+#    type: Producer
+#    type_region: box
+#    value: 13.79E6
+
 Wells:
   P1:
     p0: [0.0, 0.0, 0]
-    p1: [0.0012192, 0.03048, 0.03048]
+    p1: [1, 1, 1]
     prescription: Q
     type: Injector
     type_region: box
-    value: 3.2774128e-8
+#    value: 1E-10
+    value: 1
     z: [0., 1.]
     ksi_total: 55484.31862337
     injection_condition: 'surface'
     value_type: volumetric
 
   P2:
-    p0: [0.6083808, 0.0, 0.0]
-    p1: [0.6096, 0.03048, 0.03048]
+    # p0: [26.0, 26.0, 0.0]
+    # p1: [27.0, 27.0, 1.0]
+    p0: [26.0, 0.0, 0.0]
+    p1: [27.0, 1.0, 1.0]
     prescription: P
     type: Producer
     type_region: box
-    value: 13.79E6
+    value: 13790000
+

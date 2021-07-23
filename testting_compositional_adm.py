@@ -39,6 +39,28 @@ sim = RunSimulationAdm(name_current, name_all)
 M, data_impress, wells, fprop, load, elements_lv0 = sim.initialize(load, convert, mesh)
 # import pdb; pdb.set_trace()
 # load_multilevel_data = False
+
+
+###############
+from packs.multiscale.preprocess.dual_primal import generate_primal
+volumes_dimension = generate_primal.get_dimension_volumes(M.volumes.bridge_adjacencies(M.volumes.all, 3, 0), M.nodes.center[:])
+multilevel_info = {
+    'volumes': elements_lv0['volumes'],
+    'centroids_volumes': M.volumes.center[:],
+    'volumes_dimension': volumes_dimension,
+    # 'nodes': M.nodes.all,
+    'centroids_nodes': M.nodes.center[:],
+    'cr': np.array(data_loaded['Crs']['Cr1']),
+    # 'volumes_nodes': M.volumes.bridge_adjacencies(M.volumes.all, 3, 0),
+    'adjacencies_internal_faces': elements_lv0['neig_internal_faces'],
+    # 'internal_faces': elements_lv0['internal_faces'],
+    # 'boundary_faces': elements_lv0['boundary_faces'],
+    # 'volumes_faces': M.volumes.bridge_adjacencies(M.volumes.all, 3, 2)
+}
+primal_ids, dual_ids = generate_primal.create_dual_and_primal(**multilevel_info)
+import pdb; pdb.set_trace()
+###############
+
 ml_data = MultilevelData(data_impress, M, load=load_multilevel_data)
 
 ml_data.run()
@@ -102,7 +124,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['porous_volume'] = fprop.Vp
     params['total_volume'] = fprop.Vt
     
-    global_vector_update[:] = True
+    global_vector_update[:] = True # update the prolongation operator
 
 
     sim.run(M, wells, fprop, load, 

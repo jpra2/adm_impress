@@ -49,8 +49,6 @@ class MasterLocalOperator(CommonMasterMethods):
         for proc in self.procs:
             proc.start()
         
-        
-
         while(not self.all_process_finished()):
             try:
                 resp = self.queue.get_nowait()

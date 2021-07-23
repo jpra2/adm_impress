@@ -109,7 +109,6 @@ class Flux:
         #ponteiro[arg_vols] = True
         #alpha2 = RiemannSolvers(ctes.v0, ctes.pretransmissibility_internal_faces).\
         #         LR_wave_velocity(M, fprop, Nk_face, P_face, Ft_internal_faces, ponteiro)
-
         return alpha
 
 class RiemannSolvers:

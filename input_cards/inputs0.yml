@@ -1,10 +1,10 @@
 Crs:
   Cr1:
-  - 3
+  - 5
   - 1
   - 1
   Cr2:
-  - 9
+  - 10
   - 1
   - 1
 Permeability:
@@ -45,33 +45,33 @@ Wells:
     - 0.0
     - 0
     p1:
-    - 1
-    - 1
-    - 1
+    - 0.0012192
+    - 0.03048
+    - 0.03048
     prescription: Q
     type: Injector
     type_region: box
-    value: 1
+    value: 3.2774128e-08
     value_type: volumetric
     z:
     - 0.0
     - 1.0
   P2:
     p0:
-    - 26.0
+    - 0.6083808
     - 0.0
     - 0.0
     p1:
-    - 27.0
-    - 1.0
-    - 1.0
+    - 0.6096
+    - 0.03048
+    - 0.03048
     prescription: P
     type: Producer
     type_region: box
-    value: 13790000
+    value: 13.79E6
 compositional: true
 compositional_data:
-  CFL: 0.9
+  CFL: 0.5
   Cpc: 62052.84
   Epc: 2
   FR:
@@ -138,7 +138,7 @@ compositional_data:
   water_data:
     Cw: 0
     Mw_w: 0.018015
-    Pw: 13.79E6
+    Pw: 13.789514E6
     mi_W: 1e-3
     mobility: true
     rho_W: 999.55
@@ -152,12 +152,12 @@ load_compositional_data: false
 load_data: true
 load_multilevel_data: false
 load_operators: false
-mesh_name: 27x1x1.h5m
+mesh_name: 500x1x1_b.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
 n_levels: 2
-name_save_file: results_Buckley_Leverett_caset
+name_save_file: results_Buckley_Leverett_case_FR3
 read_permeability: false
 set_permeability: true
 set_porosity: true

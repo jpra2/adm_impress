@@ -30,14 +30,6 @@ class LocalOperator(GlobalLocalSolver):
             op_resp['op_data'][:] = local_op[2]
             cf_resp['gids'][:] = dual.gids
             cf_resp['cf'][:] = local_pcorr
-        
-            # resp = {
-            #     'op_lines': local_op[0],
-            #     'op_cols':  local_op[1],
-            #     'op_data':  local_op[2],
-            #     'gids':     dual.gids,
-            #     'cf':       local_pcorr
-            # }
             
             resp = np.array([
                 op_resp,

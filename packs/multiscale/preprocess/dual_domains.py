@@ -42,10 +42,10 @@ class DualSubdomain:
     
     def update_as(self, Tlocal):
         As = self.ams_solver.get_as(self.ams_solver.get_twire(Tlocal))
-        self.As = As
+        self.As.update(As)
 
     def update_local_source_term(self, global_source_term):
-        self.local_source_term = global_source_term[self.gids]
+        self.local_source_term[:] = global_source_term[self.gids]
 
     def set_update(self, global_update):
         self.local_update[:] = global_update[self.gids]

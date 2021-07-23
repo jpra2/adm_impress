@@ -16,10 +16,12 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
     max_x, max_y, max_z = min_x+Lx, min_y+Ly, min_z+Lz
     min_j=[min_x, min_y, min_z]
     max_j=[max_x, max_y, max_z]
+    
+    decimals = 7
 
-    d_x=Lx/(len(np.unique(np.round(coord_nodes[:,0])))-1)
-    d_y=Ly/(len(np.unique(np.round(coord_nodes[:,1])))-1)
-    d_z=Lz/(len(np.unique(np.round(coord_nodes[:,2])))-1)
+    d_x=Lx/(len(np.unique(np.round(coord_nodes[:,0], decimals=decimals)))-1)
+    d_y=Ly/(len(np.unique(np.round(coord_nodes[:,1], decimals=decimals)))-1)
+    d_z=Lz/(len(np.unique(np.round(coord_nodes[:,2], decimals=decimals)))-1)
     d_j=[d_x, d_y, d_z]
     P=[]
     D=[]
@@ -29,7 +31,10 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
         for j in range(3):
             if uniform_dual:
                 if (max_j[j]-min_j[j])<=crs[i][j]*d_j[j]+1e-10:
-                    Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
+                    try:
+                        Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
+                    except:
+                        import pdb; pdb.set_trace()
                 else:
                     n_homog_prim=round((max_j[j]-min_j[j])/(crs[i][j]*d_j[j]))-1
                     length_non_homog_prim=max_j[j]-min_j[j]-n_homog_prim*crs[i][j]*d_j[j]
@@ -56,6 +61,7 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
         P.append(P_i)
         D.append(D_i)
     # import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
     return P, D, min_j, max_j, d_j
 
 def distribute_reservoir_partitions(P_all, D_all, nworker):
