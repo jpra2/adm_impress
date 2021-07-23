@@ -43,6 +43,7 @@ M, data_impress, wells, fprop, load, elements_lv0 = sim.initialize(load, convert
 
 ###############
 from packs.multiscale.preprocess.dual_primal import generate_primal
+from packs.multiscale.preprocess.dual_primal import create_coarse_volumes_structure
 volumes_dimension = generate_primal.get_dimension_volumes(M.volumes.bridge_adjacencies(M.volumes.all, 3, 0), M.nodes.center[:])
 multilevel_info = {
     # 'volumes': elements_lv0['volumes'],
@@ -58,10 +59,33 @@ multilevel_info = {
     # 'volumes_faces': M.volumes.bridge_adjacencies(M.volumes.all, 3, 2)
 }
 primal_ids, dual_ids = generate_primal.create_dual_and_primal(**multilevel_info)
-import pdb; pdb.set_trace()
+
+coarse_info = {
+    'fine_volumes': elements_lv0['volumes'],
+    'centroids_fine_volumes': M.volumes.center[:],
+    'primal_id': primal_ids, 
+    'adjacencies_internal_faces': elements_lv0['neig_internal_faces'],
+    'fine_nodes': M.nodes.all, 
+    'fine_volumes_nodes': M.volumes.bridge_adjacencies(M.volumes.all, 3, 0), 
+    'centroids_fine_nodes': M.nodes.center[:]    
+}
+# create_coarse_volumes_structure.create_coarse_volumes(**coarse_info)
+# import pdb; pdb.set_trace()
 ###############
 
 ml_data = MultilevelData(data_impress, M, load=load_multilevel_data)
+
+# import pdb; pdb.set_trace()
+data_impress['DUAL_1'][:] = dual_ids
+data_impress['GID_1'][:] = primal_ids
+data_impress.update_variables_to_mesh()
+m = M.core.mb.create_meshset()
+M.core.mb.add_entities(m, M.core.all_volumes)
+M.core.mb.write_file('results/test_primals.vtk', [m])
+import pdb; pdb.set_trace()
+
+
+
 
 ml_data.run()
 

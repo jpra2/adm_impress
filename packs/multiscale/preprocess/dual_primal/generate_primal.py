@@ -211,8 +211,10 @@ def identify_vertices(vertices_ids, centroids_volumes, identify_vertices_id):
         face1 = faces[i]
         for face2 in faces[i+1:nf]:
             edge = face1 & face2
-            if len(edge) > 0:
+            if len(edge) > 1:
                 edges.append(edge)
+    
+    edges = np.unique(edges)
     
     nedges = len(edges)
     
@@ -221,11 +223,9 @@ def identify_vertices(vertices_ids, centroids_volumes, identify_vertices_id):
         edge1 = edges[i]
         for edge2 in edges[i+i: nedges]:
             vert = edge1 & edge2
-            if len(vert) > 0:
+            if len(vert) == 1:
                 verts.append(vert)
     
-    faces = np.unique(faces)
-    edges = np.unique(edges)
     verts = np.unique(verts)
     
     faces = np.array([np.array(list(f)) for f in faces]).flatten()
@@ -259,16 +259,28 @@ def get_edges_by_vertices(vertices_ids: np.ndarray, centroids_volumes: np.ndarra
     ########
     ## dict for toget (dimension, id_vert)
     
+    # dict_toget = {
+    #     (1, 3): nvertices-1, # 1
+    #     (1, 2): nvertices, # 2
+    #     (2, 3): nvertices - 2, # 2
+    #     (2, 2): nvertices - 1, # 3
+    #     (2, 1): nvertices, # 4
+    #     (3, 3): nvertices - 5, # 3
+    #     (3, 2): nvertices - 4, # 4
+    #     (3, 1): nvertices - 3, # 5
+    #     (3, 0): nvertices - 2, # 6
+    # }
+    
     dict_toget = {
-        (1, 3): nvertices-1, # 1
-        (1, 2): nvertices, # 2
-        (2, 3): nvertices - 2, # 2
-        (2, 2): nvertices - 1, # 3
-        (2, 1): nvertices, # 4
-        (3, 3): nvertices - 5, # 3
-        (3, 2): nvertices - 4, # 4
-        (3, 1): nvertices - 3, # 5
-        (3, 0): nvertices - 2, # 6
+        (1, 3): 1, # 1
+        (1, 2): 2, # 2
+        (2, 3): 2, # 2
+        (2, 2): 3, # 3
+        (2, 1): 4, # 4
+        (3, 3): 3, # 3
+        (3, 2): 4, # 4
+        (3, 1): 5, # 5
+        (3, 0): 6, # 6
     }    
     ########
     
@@ -312,7 +324,7 @@ def get_faces(vertices_ids, centroids_volumes, volumes_dimension):
             indexes = np.argwhere(((centroids_volumes[:,dim] < x+delta) & (centroids_volumes[:,dim] > x-delta))).flatten()
             faces.append(indexes)
     
-    faces = np.unique(np.concatenate(faces2))
+    faces = np.unique(np.concatenate(faces))
     
     return faces
 
