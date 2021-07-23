@@ -69,20 +69,20 @@ coarse_info = {
     'fine_volumes_nodes': M.volumes.bridge_adjacencies(M.volumes.all, 3, 0), 
     'centroids_fine_nodes': M.nodes.center[:]    
 }
-# create_coarse_volumes_structure.create_coarse_volumes(**coarse_info)
-# import pdb; pdb.set_trace()
+create_coarse_volumes_structure.create_coarse_volumes(**coarse_info)
+import pdb; pdb.set_trace()
 ###############
 
 ml_data = MultilevelData(data_impress, M, load=load_multilevel_data)
 
 # import pdb; pdb.set_trace()
-data_impress['DUAL_1'][:] = dual_ids
-data_impress['GID_1'][:] = primal_ids
-data_impress.update_variables_to_mesh()
-m = M.core.mb.create_meshset()
-M.core.mb.add_entities(m, M.core.all_volumes)
-M.core.mb.write_file('results/test_primals.vtk', [m])
-import pdb; pdb.set_trace()
+# data_impress['DUAL_1'][:] = dual_ids
+# data_impress['GID_1'][:] = primal_ids
+# data_impress.update_variables_to_mesh()
+# m = M.core.mb.create_meshset()
+# M.core.mb.add_entities(m, M.core.all_volumes)
+# M.core.mb.write_file('results/test_primals.vtk', [m])
+# import pdb; pdb.set_trace()
 
 
 
