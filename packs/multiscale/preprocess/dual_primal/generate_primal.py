@@ -2,7 +2,7 @@ import numpy as np
 from packs.utils import utils_old
 import networkx as nx
 
-def create_dual_and_primal(volumes: np.ndarray, centroids_volumes: np.ndarray, volumes_dimension: np.ndarray, centroids_nodes: np.ndarray, cr: np.ndarray, adjacencies_internal_faces: np.ndarray):
+def create_dual_and_primal(centroids_volumes: np.ndarray, volumes_dimension: np.ndarray, centroids_nodes: np.ndarray, cr: np.ndarray, adjacencies_internal_faces: np.ndarray):
     dimension = get_dimension_of_problem(centroids_volumes)
     L = get_l_total(centroids_nodes)
     primal_coarse_ids = create_primal(centroids_volumes, volumes_dimension, cr, dimension)
@@ -135,10 +135,9 @@ def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.n
     
     vertices_by_direction = np.array(vertices_by_direction)
     vv = vertices_by_direction
-    
     all_vertices = np.array(np.meshgrid(vv[0], vv[1], vv[2]))
     all_vertices = all_vertices.reshape((all_vertices.shape[0], all_vertices.shape[1], all_vertices.shape[2])).T
-    all_vertices = all_vertices.reshape((all_vertices.shape[0], all_vertices.shape[-1]))
+    all_vertices = all_vertices.reshape((all_vertices.shape[0]*all_vertices.shape[1], all_vertices.shape[2]))
     indexes = []
     
     for vertice in all_vertices:
@@ -178,17 +177,17 @@ def identify_vertices(vertices_ids, centroids_volumes, identify_vertices_id):
     cents_min = centroids_vertices.min(axis=0)
     cents_max = centroids_vertices.max(axis=0)
     
-    # all_vertices = np.array(np.meshgrid(vv[0], vv[1], vv[2]))
-    all_vertices = np.array(
-        np.meshgrid(
-            np.unique([cents_min[0], cents_max[0]]),
-            np.unique([cents_min[1], cents_max[1]]),
-            np.unique([cents_min[2], cents_max[2]])
-        )
-    )
+    # # all_vertices = np.array(np.meshgrid(vv[0], vv[1], vv[2]))
+    # all_vertices = np.array(
+    #     np.meshgrid(
+    #         np.unique([cents_min[0], cents_max[0]]),
+    #         np.unique([cents_min[1], cents_max[1]]),
+    #         np.unique([cents_min[2], cents_max[2]])
+    #     )
+    # )
     
-    all_vertices = all_vertices.reshape((all_vertices.shape[0], all_vertices.shape[1], all_vertices.shape[2])).T
-    all_vertices = all_vertices.reshape((all_vertices.shape[0], all_vertices.shape[-1]))
+    # all_vertices = all_vertices.reshape((all_vertices.shape[0], all_vertices.shape[1], all_vertices.shape[2])).T
+    # all_vertices = all_vertices.reshape((all_vertices.shape[0]*all_vertices.shape[1], all_vertices.shape[2]))
     
     ######
     # identify faces
@@ -300,25 +299,20 @@ def get_faces(vertices_ids, centroids_volumes, volumes_dimension):
     
     delta = volumes_dimension.min()/4
     
-    cx = np.unique(centroids_vertices[:,0])
-    cy = np.unique(centroids_vertices[:,1])
-    cz = np.unique(centroids_vertices[:,2])
+    cents = np.array([
+        np.unique(centroids_vertices[:,0]),
+        np.unique(centroids_vertices[:,1]),
+        np.unique(centroids_vertices[:,2])    
+    ])
     
     faces = []
     
-    for x in cx:
-        indexes = np.argwhere(((centroids_volumes[:,0] < x+delta) & (centroids_volumes[:,0] > x-delta))).flatten()
-        faces.append(indexes)
+    for dim in range(3):
+        for x in cents[dim]:
+            indexes = np.argwhere(((centroids_volumes[:,dim] < x+delta) & (centroids_volumes[:,dim] > x-delta))).flatten()
+            faces.append(indexes)
     
-    for x in cy:
-        indexes = np.argwhere(((centroids_volumes[:,1] < x+delta) & (centroids_volumes[:,1] > x-delta))).flatten()
-        faces.append(indexes)
-        
-    for x in cx:
-        indexes = np.argwhere(((centroids_volumes[:,2] < x+delta) & (centroids_volumes[:,2] > x-delta))).flatten()
-        faces.append(indexes)
-    
-    faces = np.unique(np.concatenate(faces))
+    faces = np.unique(np.concatenate(faces2))
     
     return faces
 

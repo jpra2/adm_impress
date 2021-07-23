@@ -45,7 +45,7 @@ M, data_impress, wells, fprop, load, elements_lv0 = sim.initialize(load, convert
 from packs.multiscale.preprocess.dual_primal import generate_primal
 volumes_dimension = generate_primal.get_dimension_volumes(M.volumes.bridge_adjacencies(M.volumes.all, 3, 0), M.nodes.center[:])
 multilevel_info = {
-    'volumes': elements_lv0['volumes'],
+    # 'volumes': elements_lv0['volumes'],
     'centroids_volumes': M.volumes.center[:],
     'volumes_dimension': volumes_dimension,
     # 'nodes': M.nodes.all,
