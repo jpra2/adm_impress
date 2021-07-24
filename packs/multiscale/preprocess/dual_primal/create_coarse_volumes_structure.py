@@ -67,19 +67,13 @@ def get_coarse_gid_nodes(all_coarse_nodes, coarse_volumes_nodes):
     return coarse_gid_nodes, np.array(coarse_volumes_nodes)
 
 def get_coarse_volumes_info(primal_id, centroids_fine_nodes, fine_volumes_nodes, centroids_fine_volumes):
-    ############################
-    ## VOLUMES
+    
     unique_pid = np.unique(primal_id)
     all_coarse_nodes = set()
     coarse_volumes_nodes = []
     coarse_centroids = np.zeros((len(unique_pid), 3))
     
-    for pid in unique_pid:
-        gids = np.argwhere(primal_id == pid).flatten()
-        cents_tuple = get_cents_tuple(centroids_fine_nodes[fine_volumes_nodes[gids]])
-        coarse_volumes_nodes.append(cents_tuple)
-        all_coarse_nodes.update(set(cents_tuple))
-        coarse_centroids[pid] = np.mean(centroids_fine_volumes[gids], axis=0)
+    update_coarse_data(unique_pid, primal_id, centroids_fine_nodes, fine_volumes_nodes, coarse_volumes_nodes, all_coarse_nodes, centroids_fine_volumes, coarse_centroids)
     
     all_coarse_nodes = get_all_coarse_nodes_reordenated(np.array(list(all_coarse_nodes)))
     coarse_gid_nodes, coarse_volumes_nodes = get_coarse_gid_nodes(all_coarse_nodes, coarse_volumes_nodes)
@@ -91,9 +85,16 @@ def get_coarse_volumes_info(primal_id, centroids_fine_nodes, fine_volumes_nodes,
         'gids': unique_pid,
         'centroids_volumes': coarse_centroids
     }
-    ##############################
     
     return resp
+
+def update_coarse_data(unique_pid, primal_id, centroids_fine_nodes, fine_volumes_nodes, coarse_volumes_nodes, all_coarse_nodes, centroids_fine_volumes, coarse_centroids):
+    for pid in unique_pid:
+        gids = np.argwhere(primal_id == pid).flatten()
+        cents_tuple = get_cents_tuple(centroids_fine_nodes[fine_volumes_nodes[gids]])
+        coarse_volumes_nodes.append(cents_tuple)
+        all_coarse_nodes.update(set(cents_tuple))
+        coarse_centroids[pid] = np.mean(centroids_fine_volumes[gids], axis=0)
 
 def get_coarse_faces_info(fine_internal_faces, fine_boundary_faces, primal_id, adjacencies_internal_faces, adjacencies_boundary_faces, unique_pid):
     
@@ -124,7 +125,6 @@ def get_coarse_faces_info(fine_internal_faces, fine_boundary_faces, primal_id, a
     
     resp = {
         'adjacencies_faces': all_coarse_faces_adjs,
-        'volumes_faces': coarse_volumes_faces_resp,
         'boundary_faces': coarse_boundary_faces,
         'internal_faces': coarse_internal_faces,
         'faces_id': all_coarse_faces,
