@@ -2,23 +2,30 @@ from pdb import Pdb
 import numpy as np
 import scipy.sparse as sp
 
-'''
-centroids_volumes: np.ndarray, 
-volumes_dimension: np.ndarray, 
-centroids_nodes: np.ndarray, 
-cr: np.ndarray, 
-adjacencies_internal_faces: np.ndarray
-'''
+def create_coarse_structure(centroids_fine_volumes, primal_id, adjacencies_internal_faces, fine_volumes_nodes, centroids_fine_nodes, fine_internal_faces, fine_boundary_faces, adjacencies_boundary_faces, **kwargs):
+        
+    """Get the coarse structure mesh
 
-def create_coarse_structure(centroids_fine_volumes, primal_id, adjacencies_internal_faces, fine_volumes_nodes, centroids_fine_nodes, fine_internal_faces, fine_boundary_faces, adjacencies_boundary_faces):
-    
+    Args:
+        centroids_fine_volumes (np.ndarray((len(fine_volumes), 3))): centroids of fine volumes
+        primal_id (np.ndarray(len(fine_volumes))): map of primal id volumes in fine mesh 
+        adjacencies_internal_faces (np.ndarray((len(internal_faces), 2))): volumes adjacencies of internal fine faces
+        fine_volumes_nodes (np.ndarray((len(fine_volumes), 8))): map fine volumes in yours fine nodes
+        centroids_fine_nodes (np.ndarray((len(fine_nodes), 3))): centroid of fine nodes
+        fine_internal_faces (np.ndarray(len(internal_faces))): fine internal_faces
+        fine_boundary_faces (np.ndarray(len(boundary_faces))): fine boundary faces
+        adjacencies_boundary_faces_cp (np.ndarray((len(boundary_faces), 1 or 2))): volumes adjacencies of boundary fine faces
+
+    Returns:
+        resp [dict]: coarse structure mesh
+    """
     resp = get_coarse_volumes_info(primal_id, centroids_fine_nodes, fine_volumes_nodes, centroids_fine_volumes)
-    resp.update(get_coarse_faces_info(fine_internal_faces, fine_boundary_faces, primal_id, adjacencies_internal_faces, adjacencies_boundary_faces, resp['gids']))
+    resp.update(get_coarse_faces_info(fine_internal_faces, fine_boundary_faces, primal_id, adjacencies_internal_faces, get_fine_boundary_adjacencies(adjacencies_boundary_faces), resp['gids']))
     
     return resp
 
-def get_cents_tuple(centroids_nodes):
-    
+def get_cents_tuple(centroids_nodes: np.ndarray, **kwargs):
+        
     centroids_in_primal_id = centroids_nodes.reshape(
         (
             centroids_nodes.shape[0]*centroids_nodes.shape[1],
@@ -35,7 +42,7 @@ def get_cents_tuple(centroids_nodes):
         cents.shape[0]
     )
     
-    cents_tuple = [tuple(cent) for cent in cents]
+    cents_tuple: list = [tuple(cent) for cent in cents]
     
     return cents_tuple
 
@@ -181,4 +188,12 @@ def get_coarse_volumes_faces_resp(unique_pid, coarse_volumes_faces):
     coarse_volumes_faces_resp = np.array(coarse_volumes_faces_resp)
     return coarse_volumes_faces_resp
 
+def get_fine_boundary_adjacencies(adjacencies_boundary_faces):
+    if len(adjacencies_boundary_faces.shape) > 1:
+        if adjacencies_boundary_faces.shape[1] == 2:
+            return adjacencies_boundary_faces[:, 0].flatten()
+        else:
+            return adjacencies_boundary_faces.flattenn()
+    else:
+        return adjacencies_boundary_faces.flatten()
 
