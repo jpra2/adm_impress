@@ -1,4 +1,6 @@
+from pdb import Pdb
 import numpy as np
+import scipy.sparse as sp
 
 '''
 centroids_volumes: np.ndarray, 
@@ -8,44 +10,38 @@ cr: np.ndarray,
 adjacencies_internal_faces: np.ndarray
 '''
 
-def create_coarse_volumes(fine_volumes, centroids_fine_volumes, primal_id, adjacencies_internal_faces, fine_nodes, fine_volumes_nodes, centroids_fine_nodes):
-    coarse_nodes, coarse_gid_nodes, coarse_nodes_centroids, coarse_centroids = define_coarse_nodes(primal_id, fine_volumes_nodes, centroids_fine_nodes, centroids_fine_volumes)
-    import pdb; pdb.set_trace()
+def create_coarse_structure(centroids_fine_volumes, primal_id, adjacencies_internal_faces, fine_volumes_nodes, centroids_fine_nodes, fine_internal_faces, fine_boundary_faces, adjacencies_boundary_faces):
+    
+    resp = get_coarse_volumes_info(primal_id, centroids_fine_nodes, fine_volumes_nodes, centroids_fine_volumes)
+    resp.update(get_coarse_faces_info(fine_internal_faces, fine_boundary_faces, primal_id, adjacencies_internal_faces, adjacencies_boundary_faces, resp['gids']))
+    
+    return resp
 
-def define_coarse_nodes(primal_id, fine_volumes_nodes, centroids_fine_nodes, centroids_fine_volumes):
-    unique_pid = np.unique(primal_id)
-    all_coarse_nodes = set()
-    coarse_volumes_nodes = []
-    coarse_centroids = []
+def get_cents_tuple(centroids_nodes):
+    
+    centroids_in_primal_id = centroids_nodes.reshape(
+        (
+            centroids_nodes.shape[0]*centroids_nodes.shape[1],
+            centroids_nodes.shape[2]
+        )
+    )
+    
+    cmin = centroids_in_primal_id.min(axis=0)
+    cmax = centroids_in_primal_id.max(axis=0)
+    cents = np.vstack([cmin, cmax]).T
+    cents = np.array(np.meshgrid(cents[0], cents[1], cents[2]))
+    cents = cents.reshape(
+        cents.shape[3]*cents.shape[2]*cents.shape[1],
+        cents.shape[0]
+    )
+    
+    cents_tuple = [tuple(cent) for cent in cents]
+    
+    return cents_tuple
+
+def get_all_coarse_nodes_reordenated(all_coarse_nodes):
     dtype_org = [('x', np.float), ('y', np.float), ('z', np.float)]
     
-    for pid in unique_pid:
-        gids = np.argwhere(primal_id == pid).flatten()
-        centroids_in_primal_id = centroids_fine_nodes[fine_volumes_nodes[gids]]
-        centroids_in_primal_id = centroids_in_primal_id.reshape(
-            (
-                centroids_in_primal_id.shape[0]*centroids_in_primal_id.shape[1],
-                centroids_in_primal_id.shape[2]
-            )
-        )
-        
-        cmin = centroids_in_primal_id.min(axis=0)
-        cmax = centroids_in_primal_id.max(axis=0)
-        cents = np.vstack([cmin, cmax]).T
-        cents = np.array(np.meshgrid(cents[0], cents[1], cents[2]))
-        cents = cents.reshape(
-            cents.shape[3]*cents.shape[2]*cents.shape[1],
-            cents.shape[0]
-        )
-        
-        cents_tuple = [tuple(cent) for cent in cents]
-        coarse_volumes_nodes.append(cents_tuple)
-        all_coarse_nodes.update(set(cents_tuple))
-        coarse_centroid = np.mean(centroids_fine_volumes[gids], axis=0)
-        coarse_centroids.append(coarse_centroid)
-    
-    coarse_centroids = np.array(coarse_centroids)
-    all_coarse_nodes = np.array(list(all_coarse_nodes))
     all_coarse_nodes_org = np.zeros(len(all_coarse_nodes), dtype=dtype_org)
     all_coarse_nodes_org['x'] = all_coarse_nodes[:,0]
     all_coarse_nodes_org['y'] = all_coarse_nodes[:,1]
@@ -56,6 +52,10 @@ def define_coarse_nodes(primal_id, fine_volumes_nodes, centroids_fine_nodes, cen
     all_coarse_nodes[:,1] = all_coarse_nodes_org['y']
     all_coarse_nodes[:,2] = all_coarse_nodes_org['z']
     
+    return all_coarse_nodes
+    
+def get_coarse_gid_nodes(all_coarse_nodes, coarse_volumes_nodes):
+    
     cents_tuple = [tuple(cent) for cent in all_coarse_nodes]
     coarse_gid_nodes = np.arange(len(cents_tuple))
     map_gid = dict(zip(cents_tuple, coarse_gid_nodes))
@@ -64,27 +64,121 @@ def define_coarse_nodes(primal_id, fine_volumes_nodes, centroids_fine_nodes, cen
         for i, node in enumerate(coarse_nodes):
             coarse_nodes[i] = map_gid[node]
     
-    return coarse_volumes_nodes, coarse_gid_nodes, all_coarse_nodes, coarse_centroids
+    return coarse_gid_nodes, np.array(coarse_volumes_nodes)
+
+def get_coarse_volumes_info(primal_id, centroids_fine_nodes, fine_volumes_nodes, centroids_fine_volumes):
+    ############################
+    ## VOLUMES
+    unique_pid = np.unique(primal_id)
+    all_coarse_nodes = set()
+    coarse_volumes_nodes = []
+    coarse_centroids = np.zeros((len(unique_pid), 3))
     
+    for pid in unique_pid:
+        gids = np.argwhere(primal_id == pid).flatten()
+        cents_tuple = get_cents_tuple(centroids_fine_nodes[fine_volumes_nodes[gids]])
+        coarse_volumes_nodes.append(cents_tuple)
+        all_coarse_nodes.update(set(cents_tuple))
+        coarse_centroids[pid] = np.mean(centroids_fine_volumes[gids], axis=0)
     
-            
-            
+    all_coarse_nodes = get_all_coarse_nodes_reordenated(np.array(list(all_coarse_nodes)))
+    coarse_gid_nodes, coarse_volumes_nodes = get_coarse_gid_nodes(all_coarse_nodes, coarse_volumes_nodes)
     
+    resp = {
+        'centroids_nodes': all_coarse_nodes,
+        'nodes': coarse_gid_nodes,
+        'volumes_nodes': coarse_volumes_nodes,
+        'gids': unique_pid,
+        'centroids_volumes': coarse_centroids
+    }
+    ##############################
     
+    return resp
+
+def get_coarse_faces_info(fine_internal_faces, fine_boundary_faces, primal_id, adjacencies_internal_faces, adjacencies_boundary_faces, unique_pid):
     
+    all_fine_faces = np.sort(np.concatenate([fine_internal_faces, fine_boundary_faces]))
+    map_fine_internal_faces = np.repeat(-1, len(all_fine_faces))
+    map_fine_internal_faces[fine_internal_faces] = np.arange(len(fine_internal_faces))
+    adjs_coarse = primal_id[adjacencies_internal_faces]
+    adjs_coarse_ordenated = np.sort(adjs_coarse, axis=1)
+    unique_coarse_adjacencies = np.unique(adjs_coarse_ordenated, axis=0)
+    test = ~(unique_coarse_adjacencies[:, 0] == unique_coarse_adjacencies[:, 1])
+    unique_coarse_adjacencies = unique_coarse_adjacencies[test]
+    del test
+    coarse_internal_faces = np.arange(len(unique_coarse_adjacencies))    
     
+    fine_adj_coarse_boundary_faces = primal_id[adjacencies_boundary_faces].flatten()
+    unique_coarse_boundary_adjacencies = np.unique(fine_adj_coarse_boundary_faces)
+    coarse_boundary_faces = np.arange(len(coarse_internal_faces), len(coarse_internal_faces)+len(unique_coarse_boundary_adjacencies))
     
+    primal_id_coarse_faces = np.repeat(-1, len(all_fine_faces))
     
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-    import pdb; pdb.set_trace()
+    define_primal_id_coarse_internal_faces(unique_coarse_adjacencies, adjs_coarse, fine_internal_faces, primal_id_coarse_faces)
     
+    define_primal_id_coarse_boundary_faces(coarse_boundary_faces, unique_coarse_boundary_adjacencies, fine_adj_coarse_boundary_faces, fine_boundary_faces, primal_id_coarse_faces)
+        
+    all_coarse_faces, all_coarse_faces_adjs = get_coarse_faces_adjs(coarse_internal_faces, coarse_boundary_faces, unique_coarse_adjacencies, unique_coarse_boundary_adjacencies)
     
+    coarse_volumes_faces = get_coarse_volumes_faces(unique_pid, all_coarse_faces, unique_coarse_adjacencies, coarse_internal_faces, unique_coarse_boundary_adjacencies, coarse_boundary_faces)
+    
+    resp = {
+        'adjacencies_faces': all_coarse_faces_adjs,
+        'volumes_faces': coarse_volumes_faces_resp,
+        'boundary_faces': coarse_boundary_faces,
+        'internal_faces': coarse_internal_faces,
+        'faces_id': all_coarse_faces,
+        'primal_id_coarse_faces': primal_id_coarse_faces,
+        'volumes_faces': coarse_volumes_faces
+    }
+    
+    return resp
+
+def define_primal_id_coarse_internal_faces(unique_coarse_adjacencies, adjs_coarse, fine_internal_faces, primal_id_coarse_faces):
+    for i, adj in enumerate(unique_coarse_adjacencies):
+        test1 = (adjs_coarse[:,0] == adj[0]) & (adjs_coarse[:,0] == adj[1])
+        test2 = (adjs_coarse[:,1] == adj[0]) & (adjs_coarse[:,1] == adj[1])
+        test = test1 | test2
+        fine_faces = fine_internal_faces[test]
+        primal_id_coarse_faces[fine_faces] = i
+
+def define_primal_id_coarse_boundary_faces(coarse_boundary_faces, unique_coarse_boundary_adjacencies, fine_adj_coarse_boundary_faces, fine_boundary_faces, primal_id_coarse_faces):
+    for i, adj in zip(coarse_boundary_faces, unique_coarse_boundary_adjacencies):
+        test = fine_adj_coarse_boundary_faces == adj
+        boundary_faces = fine_boundary_faces[test]
+        primal_id_coarse_faces[boundary_faces] = i
+
+def get_coarse_faces_adjs(coarse_internal_faces, coarse_boundary_faces, unique_coarse_adjacencies, unique_coarse_boundary_adjacencies):
+     
+    all_coarse_faces = np.concatenate([coarse_internal_faces, coarse_boundary_faces])    
+    n_coarse_faces = len(all_coarse_faces)
+    all_coarse_faces_adjs = np.zeros((n_coarse_faces, 2), dtype=int)
+    all_coarse_faces_adjs[coarse_internal_faces] = unique_coarse_adjacencies
+    all_coarse_faces_adjs[coarse_boundary_faces, 0] = unique_coarse_boundary_adjacencies
+    all_coarse_faces_adjs[coarse_boundary_faces, 1] = -1
+    
+    return all_coarse_faces, all_coarse_faces_adjs
+
+def get_coarse_volumes_faces(unique_pid, all_coarse_faces, unique_coarse_adjacencies, coarse_internal_faces, unique_coarse_boundary_adjacencies, coarse_boundary_faces):
+    n_coarse_volumes = len(unique_pid)
+    n_coarse_faces = len(all_coarse_faces)
+    coarse_volumes_faces = sp.lil_matrix((n_coarse_volumes, n_coarse_faces), dtype=bool).tocsc()
+    coarse_volumes_faces[unique_coarse_adjacencies[:, 0], coarse_internal_faces] = True
+    coarse_volumes_faces[unique_coarse_adjacencies[:, 1], coarse_internal_faces] = True
+    coarse_volumes_faces[unique_coarse_boundary_adjacencies, coarse_boundary_faces] = True
+    coarse_volumes_faces = sp.find(coarse_volumes_faces)
+    coarse_volumes_faces = np.array([coarse_volumes_faces[0], coarse_volumes_faces[1]], dtype=int).T
+    
+    coarse_volumes_faces = get_coarse_volumes_faces_resp(unique_pid, coarse_volumes_faces)
+    
+    return coarse_volumes_faces
+    
+def get_coarse_volumes_faces_resp(unique_pid, coarse_volumes_faces):
+    coarse_volumes_faces_resp = []
+    for pid in unique_pid:
+        coarse_volumes_faces_resp.append(coarse_volumes_faces[:, 1][coarse_volumes_faces[:,0] == pid])
+    
+    coarse_volumes_faces_resp = np.array(coarse_volumes_faces_resp)
+    return coarse_volumes_faces_resp
+
+
