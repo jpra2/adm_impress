@@ -10,6 +10,7 @@ class BrooksAndCorey:
         self.n_o = float(direc.data_loaded['biphasic_data']['n_o'])
         self.krw0 = float(direc.data_loaded['biphasic_data']['krw0'])
         self.kro0 = float(direc.data_loaded['biphasic_data']['kro0'])
+        
 
     def _stemp(self, S):
         S1=S.copy()
@@ -18,6 +19,7 @@ class BrooksAndCorey:
         return (S1 - self.Swc) / (1 - self.Swc - self.Sor)
 
     def _krw(self, S_temp):
+
         return self.krw0*(np.power(S_temp, self.n_w))
 
     def _kro(self, S_temp):

@@ -1,0 +1,150 @@
+#Compressive Oil case with 1 component in 1-D reservoir
+mesh_name: 32x1x1_BL_FR.msh
+name_save_file: 'results_BL_32_FR4'
+
+compositional: True
+hidrocarbon_components: True
+compressible_fluid: False
+water_component: True
+use_vpi: false
+
+
+load_compositional_data: False
+load_data: False
+convert_english_to_SI: False
+set_porosity: true
+gravity: false
+deletar_results: false
+load_operators: false
+read_permeability: false
+monophasic_data: false
+set_permeability: True
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+
+# Case 3 of Li M.Sc. Thesis with case studies
+compositional_data:
+  #  Pensar em um jeito de reorganizar isso
+  CFL: 0.3
+  MUSCL:
+    set: false
+  FR:
+    set: true
+    order: 4
+  vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
+  time_to_save: [129600000]
+  maximum_time: 129600000
+  phase_viscosity: LorenzBrayClark
+  relative_permeability: BrooksAndCorey
+  capillary_pressure: Chang
+  equation_of_state: PengRobinson
+
+  rock_compressibility: 0
+  Pf: 13.78951458E6
+
+  #capillary pressure data - not ok with this
+  Cpc: 62052.84
+  Epc: 2
+
+  time_data:
+    deltaPlim: 68.9476
+    deltaNlim: 0.1
+    deltaSlim: 0.1
+    deltaVlim: 0.1
+    delta_t_ini: 43200
+    delta_tmax: 43200
+    delta_tmin: 43200
+
+  water_data:
+    mi_W: 1e-3
+    rho_W: 1000
+    Mw_w: 18.015e-3
+    Cw: 0
+    Pw: 13.79e6
+    mobility: True
+
+  residual_saturations:
+    Sorw: 0.
+    Sorg: 0
+    Swr: 0.
+    Sgr: 0
+
+  relative_permeability_data:
+    krw0: 1.0
+    krg0: 0
+    kro0: 1.0
+    n_o: 2.
+    n_g: 0
+    n_w: 2.
+
+#decane critical molar density is 1640 mol/m3
+  component_data:
+    z: [1.]
+    Tc: [619.28]
+    Pc: [2.5e6]
+    vc: [0.0006031573275]
+    Mw: [142.28e-3]
+    w: [0.4890]
+    Bin: [[0]]
+    Pv: [0]
+    Pb_guess: [0.0]
+    vshift_parameter: [0.085]
+
+
+#water saturation data
+Saturation:
+  r1:
+    type: all
+    value: 0.
+  r1:
+    type: box
+    p0: [0.0, 0.0, 0]
+    p1: [9.375, 1, 1]
+    value: 0
+
+
+Porosity:
+  r1:
+    type: all
+    value: 0.2
+
+#Permeability in m^2
+Permeability:
+  r1:
+    type: all
+    value: [1, 0, 0, 0, 1, 0, 0, 0, 1] #[4.934617e-13, 0, 0, 0, 4.934617e-13, 0, 0, 0, 4.934617e-13]
+
+Pressure:
+  r1:
+    type: all
+    value: 25.579E6
+
+Temperature:
+  r1:
+    type: all
+    value: 366.4833
+
+Wells:
+
+  P1:
+    p0: [0.0, 0.0, 0.0]
+    p1: [9.375, 1, 1]
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: 3e-07
+    z: [0., 1.]
+    ksi_total: 55509.29780738
+    value_type: volumetric
+
+  P2:
+    p0: [290.625, 0.0, 0]
+    p1: [300, 1, 1]
+    prescription: Q
+    type: Producer
+    type_region: box
+    value: 3e-7
+    z: [1., 0.]
+    ksi_total: 5495.18609786
+    value_type: volumetric

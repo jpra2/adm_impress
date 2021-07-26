@@ -233,8 +233,99 @@ wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data,
 #########total_gravity_velocity,
 dty = [('prod_o', float), ('prod_w', float), ('wor', float),
        ('delta_t', float), ('dvpi', float), ('loop', int), ('global_identifier', int)]
+
+
 monophasic = TpfaMonophasic()
 biphasic = TpfaBiphasicCons()
+
+
+def init_well_model(w_ids, w_centroids, w_block_dimensions, types_prescription,
+                    w_values, w_directions, w_types, w_permeabilities, w_mobilities, z_wells):
+
+    list_of_wells = []
+    rho_w = biphasic.properties.rho_w
+    rho_o = biphasic.properties.rho_o
+    for i, w_id in enumerate(w_ids):
+        centroids = w_centroids[i]
+        block_dimension = w_block_dimensions[i]
+        type_prescription = types_prescription[i]
+        value = w_values[i]
+        direction = w_directions[i]
+        w_type = w_types[i]
+        w_permeability = w_permeabilities[i]
+        mobilities = w_mobilities[i]
+        z_well = z_wells[i]
+
+        well = Well()
+        well.set_well(w_id, centroids, block_dimension, type_prescription=type_prescription, value=value,
+                      direction=direction, well_type=w_type, z_well=z_well, n_phases=2,
+                      well_permeability=w_permeability, rho_phases=[rho_w, rho_o])
+        # well.update_req(well.calculate_req(well_permeability=w_permeability))
+        # well.wi = well.calculate_WI(well.block_dimension, well.req, well.well_radius, w_permeability, well.direction)
+        set_phase_infos(well)
+        well.mobilities = mobilities
+
+        list_of_wells.append(well)
+
+    return list_of_wells
+
+def load_well_model():
+    list_wells = AllWells.load_wells_from_database()
+
+    return list_wells
+
+def set_phase_infos(well):
+    # well.update_n_phases(2)
+    well.phases = ['water', 'oil']
+    # well.rho = [1000, 100]
+
+
+def setting_well_model():
+
+    saturation = biphasic_data['saturation'].copy()
+    saturation[wells['ws_q_sep'][0]] = 1.0
+    # saturation[wells['ws_p_sep'][0]] = 1.0
+    krw, kro = biphasic.get_krw_and_kro(saturation)
+    mob_w, mob_o = biphasic.get_mobilities_w_o(krw, kro)
+
+    list_w_ids = [wells['ws_q_sep'][0], wells['ws_p_sep'][0]]
+    # list_w_ids = [wells['ws_p_sep'][0], wells['ws_p_sep'][1]]
+    list_w_centroids = [geom['centroid_volumes'][w_id] for w_id in list_w_ids]
+    list_w_block_dimensions = [geom['block_dimension'][w_id] for w_id in list_w_ids]
+    list_type_prescription = ['flow_rate', 'pressure']
+    # list_type_prescription = ['pressure', 'pressure']
+    # list_w_values = [10000000.0, 100000.0]
+    list_w_values = [10000.0, 100000.0] # para vazao prescrita
+    list_w_directions = ['z', 'z']
+    list_w_types = ['injector', 'producer']
+    list_w_permeability = [rock_data['permeability'][w_id] for w_id in list_w_ids]
+    list_w_mobilities = [np.array([mob_w[w_id], mob_o[w_id]]).T for w_id in list_w_ids]
+    centroid_nodes = geom['centroid_nodes']
+    zmax = centroid_nodes.max(axis=0)[2]
+    # list_z_wells = [geom['centroid_volumes'][w_id][:,2].min() for w_id in list_w_ids]
+    # list_z_wells = [geom['centroid_volumes'][w_id][:,2].max() for w_id in list_w_ids]
+    list_z_wells = [zmax for w_id in list_w_ids]
+
+    all_wells = init_well_model(list_w_ids, list_w_centroids, list_w_block_dimensions,
+                           list_type_prescription, list_w_values, list_w_directions,
+                           list_w_types, list_w_permeability, list_w_mobilities, list_z_wells)
+
+    AllWells.create_database()
+
+    return all_wells
+
+
+dT = 1e-9
+t = 0
+Tmax = 1e-5
+
+well_models = setting_well_model()
+w1 = well_models[0]
+w2 = well_models[1]
+
+import pdb; pdb.set_trace()
+
+
 biphasic_data['krw'], biphasic_data['kro'] = biphasic.get_krw_and_kro(biphasic_data['saturation'])
 mob_w, mob_o = biphasic.get_mobilities_w_o(biphasic_data['krw'], biphasic_data['kro'])
 biphasic_data['upwind_w'], biphasic_data['upwind_o'] = biphasic.set_initial_upwind_internal_faces(
@@ -262,11 +353,11 @@ biphasic_data['transmissibility_faces'] = biphasic.get_transmissibility_faces(
     rock_data['keq_faces']
 )
 ##############################
-biphasic_data['transmissibility_faces'][:] = 1.0
-delta_s = biphasic_data['saturation'][elements.get('volumes_adj_internal_faces')]
-delta_s = np.absolute(delta_s[:,1] - delta_s[:,0])
-delta_s = delta_s > 0
-biphasic_data['transmissibility_faces'][elements.internal_faces[delta_s]] = 2.0
+# biphasic_data['transmissibility_faces'][:] = 1.0
+# delta_s = biphasic_data['saturation'][elements.get('volumes_adj_internal_faces')]
+# delta_s = np.absolute(delta_s[:,1] - delta_s[:,0])
+# delta_s = delta_s > 0
+# biphasic_data['transmissibility_faces'][elements.internal_faces[delta_s]] = 2.0
 
 # ff = biphasic_data['transmissibility_faces'] > 1
 # print(ff.sum())
@@ -468,7 +559,14 @@ adm_method.restart_levels()
 # adm_method.set_level_wells()
 # adm_method.set_level_wells_2()
 adm_method.set_level_wells_only()
-adm_method.equalize_levels()
+adm_method.equalize_levels()# T_with_boundary, b = monophasic.get_linear_problem(
+#     wells2['ws_p'],
+#     wells2['ws_q'],
+#     wells2['values_p'],
+#     wells2['values_q'],
+#     g_source_total_volumes,
+#     T
+# )
 
 # adm_method.verificate_levels()
 # adm_method.set_adm_mesh()
@@ -1050,8 +1148,6 @@ while verif:
         # vols_orig=monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, neta_lim_finescale)
         # vols_orig=np.array([])
 
-
-
     gid_0 = data_impress['GID_0'][data_impress['LEVEL']==0]
     gid_1 = data_impress['GID_0'][data_impress['LEVEL']==1]
     
@@ -1086,7 +1182,14 @@ while verif:
     t0=time.time()
     for level in range(1, n_levels):
         adm_method.organize_ops_adm(mlo, level)
-    '''# or_adm=adm_method._data['adm_restriction_level_1']
+    '''# or_adm=adm_m    if type_of_refinement=='uni':
+        if len(vols_orig)>0:
+            adm_method.set_monotonizing_level(vols_orig)
+        adm_method.set_saturation_level_simple(delta_sat_max)
+    else:
+        adm_method.set_saturation_level_uniform(delta_sat_max)
+
+    t0=time.time()ethod._data['adm_restriction_level_1']
     # op_adm=adm_method._data['adm_prolongation_level_1']
 
     # idl1=data_impress['LEVEL_ID_1']
@@ -1119,6 +1222,8 @@ while verif:
     
     OP_ADM = adm_method['adm_prolongation_level_1']
     OR_ADM = adm_method['adm_restriction_level_1']
+
+
     Tcadm=OR_ADM*T_with_boundary*OP_ADM
     bcadm = OR_ADM*(b - T_with_boundary*cfs)
     pcadm=linalg.spsolve(Tcadm,bcadm)

@@ -28,6 +28,10 @@ monophasic_data:
 compositional_data:
   #  Pensar em um jeito de reorganizar iss
   CFL: 0.5
+  MUSCL:
+    set: False
+    DW: False
+    LLF: False
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [10, 864.]
   tempo_maximo: null

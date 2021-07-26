@@ -1,5 +1,11 @@
+from .. import directories as direc
+from ..utils.utils_old import get_box, getting_tag
+from pymoab import types
 import numpy as np
-
+from ..data_class.data_manager import DataManager
+import collections
+from ..utils.utils_old import get_box
+from .wells import Wells
 
 class WellsCompositional(Wells):
     def get_wells(self):
@@ -15,18 +21,18 @@ class WellsCompositional(Wells):
         ws_inj = [] ## pocos injetores
         ws_prod = [] ## pocos produtores
         values_p = [] ## valor da pressao prescrita
-        values_q = [] ## valor da vazao prescrita
-        values_q_type = []
-        q_composition = []
-        ksi = []
-
+        values_q = np.array([]) ## valor da vazao prescrita
+        values_q_vol =[]
+        inj_cond = []
+        z = []
         for p in data_wells:
 
             well = data_wells[p]
             type_region = well['type_region']
             tipo = well['type']
             prescription = well['prescription']
-            value = (well['value']).astype(float)
+
+            value = np.array(well['value']).astype(float)
 
             if type_region == direc.types_region_data_loaded[1]: #box
 
@@ -36,21 +42,42 @@ class WellsCompositional(Wells):
                 vols = get_box(centroids, limites)
 
                 nv = len(vols)
+                if tipo == 'Injector': z.append(well['z'])
 
                 if prescription == 'Q':
-                    val = value/nv
+
+                    val = value/nv * np.array(well['z'])
                     if tipo == 'Producer':
                         val *= -1
-                    ws_q.append(vols)
-                    values_type = np.repeat(well['value_type'], nv)
-                    values = np.repeat(value, nv)
-                    zs = np.repeat(well['z'], nv)
-                    ksis = np.repeat(well['ksi_total'], nv)
 
-                    ksi.append(ksis)
-                    q_composition.append(zs)
-                    values_q = np.append(values)
-                    values_q_type.append(values_type)
+                    inj_cond.append(well['injection_condition'])
+                    ws_q.append(vols)
+                    value_type = well['value_type']
+                    values = val
+
+
+
+                    if value_type == 'volumetric':
+                        values_q_vol.append(val)
+                        if inj_cond[-1] == 'surface':
+                            values = (1 - well['z'][-1]) * well['ksi_total'] * val
+                            values[-1] = val[-1] * well['ksi_total']
+                            values_q_vol.append(val)
+
+
+                    vals = np.repeat(values, nv)
+                    if len(values_q)>0:
+                        vals = (vals).reshape((len(well['z']),nv))
+                        values_q = np.concatenate((values_q,vals), axis=1)
+                        if inj_cond == 'surface':
+                            values_q = (vals / well['ksi_total']).sum(axis=0)
+                        values_q = np.concatenate((values_q, values_q), axis=0)
+                    else:
+
+                        values_q = np.append(values_q, vals).reshape((len(well['z']),nv))
+                        if inj_cond == 'surface':
+                            values_q = (values_q / well['ksi_total']).sum(axis=0)
+                        else: values_q = values_q
 
                 elif prescription == 'P':
                     val = value
@@ -61,6 +88,7 @@ class WellsCompositional(Wells):
                     ws_inj.append(vols)
                 elif tipo == 'Producer':
                     ws_prod.append(vols)
+
 
         ws_q = np.array(ws_q).flatten()
         ws_p = np.array(ws_p).flatten()
@@ -75,8 +103,8 @@ class WellsCompositional(Wells):
         self['ws_prod'] = ws_prod.astype(int)
         self['values_p'] = values_p
         self['values_q'] = values_q
-        self['all_wells'] = np.union1d(ws_inj, ws_prod)
+        self['all_wells'] = np.union1d(ws_inj, ws_prod).astype(int)
         self['values_p_ini'] = values_p.copy()
-        self['value_type'] = values_q_type
-        self['z'] = q_composition
-        self['ksi_total'] = ksi
+        self['values_q_vol'] = values_q_vol
+        self['inj_cond'] = np.array(inj_cond)
+        self['z'] = np.array(z)

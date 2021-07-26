@@ -11,6 +11,7 @@ import os
 import pdb
 import time
 from packs.multiscale.test_conservation import ConservationTest
+from scipy import io as sio
 
 test_coarse_flux = False
 if test_coarse_flux == True:
@@ -137,6 +138,21 @@ wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data,
 # wells2, elements, geom, rock_data, biphasic_data, simulation_data, current_data, accumulate = carregar()
 # pdb.set_trace()
 
+dados_mat = sio.loadmat('data/dados_p2.mat')
+pressure_mat = dados_mat['dados']['pr'][0][0].flatten()
+centroids_mat = dados_mat['dados']['cents'][0][0]
+centroids_mat[:,2] = 20 - centroids_mat[:,2]
+cci, ccj, cck = centroids_mat.T
+presc_right_side = dados_mat['dados']['presc_right_side'][0][0]
+centroids_right_side = dados_mat['dados']['centroids_right_side'][0][0]
+centroids_right_side[:,2] = 20 - centroids_right_side[:,2]
+pressure_comp = np.zeros(len(elements.volumes))
+# import pdb; pdb.set_trace()
+for i, centsxz in enumerate(zip(cci, cck)):
+    verifx = geom['centroid_volumes'][:,0] == centsxz[0]
+    verifz = geom['centroid_volumes'][:,2] == centsxz[1]
+    verif = verifx & verifz
+    pressure_comp[verif] = pressure_mat[i]
 
 ###############################################
 monophasic = TpfaMonophasic()
@@ -251,6 +267,18 @@ while loop <= loop_max:
         elements.volumes
     )
 
+    cci, ccj, cck = centroids_right_side.T
+    centroids_right_side_imp = geom['centroid_volumes'][wells2['ws_p']]
+    pressure_presc_imp = np.zeros(len(wells2['ws_p']))
+    # import pdb; pdb.set_trace()
+    for i, centsxz in enumerate(zip(cci, cck)):
+        verifx = centroids_right_side_imp[:,0] == centsxz[0]
+        verifz = centroids_right_side_imp[:,2] == centsxz[1]
+        verif = verifx & verifz
+        pressure_presc_imp[verif] = presc_right_side[i]
+
+    wells2['values_p'][:] = pressure_presc_imp
+
     T_with_boundary, b = monophasic.get_linear_problem(
         wells2['ws_p'],
         wells2['ws_q'],
@@ -261,6 +289,14 @@ while loop <= loop_max:
     )
 
     pressure = solver.direct_solver(T_with_boundary, b)
+    data_impress['pressure'][:] = pressure
+
+    erro1 = np.absolute(pressure_comp - pressure)
+    erro = erro1/np.max(np.absolute(pressure_comp))
+    ninf = np.linalg.norm(erro, np.inf)
+    nl2 = np.linalg.norm(erro1)/np.linalg.norm(pressure_comp)
+
+    import pdb; pdb.set_trace()
 
     total_velocity_internal_faces = biphasic.get_total_velocity_internal_faces(
         pressure,
@@ -273,7 +309,6 @@ while loop <= loop_max:
     )
 
     data_impress['velocity_faces'][elements.internal_faces] = total_velocity_internal_faces
-    data_impress['pressure'] = pressure
 
     velocity_w_internal_faces, velocity_o_internal_faces = biphasic.get_velocity_w_and_o_internal_faces(
         total_velocity_internal_faces,
@@ -289,6 +324,8 @@ while loop <= loop_max:
 
     data_impress['velocity_w_faces'][elements.internal_faces] = velocity_w_internal_faces
     data_impress['velocity_o_faces'][elements.internal_faces] = velocity_o_internal_faces
+    print_test_volumes('testttt.vtk')
+    import pdb; pdb.set_trace()
 
     flux_w_internal_faces = biphasic.test_flux(
         velocity_w_internal_faces,
@@ -405,7 +442,7 @@ while loop <= loop_max:
 
     data_impress['saturation'] = biphasic_data['saturation_last']
     data_impress['flux_volumes'] = flux_total_volumes
-    data_impress['pressure'] = pressure
+    # data_impress['pressure'] = pressure
     data_impress['flux_w_volumes'] = flux_w_volumes
     data_impress['flux_o_volumes'] = flux_o_volumes
 

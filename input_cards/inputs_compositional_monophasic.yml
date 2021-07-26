@@ -1,6 +1,6 @@
 #Water case in 1D reservoir
 mesh_name: 100x1x1_m.msh
-name_save_file: results_monophasic_compressiblew
+name_save_file: results_monophasic_incompressible_w_IMPSAT
 n_test: 0
 compositional: True
 hidrocarbon_components: False
@@ -29,10 +29,19 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   CFL: 0.5
+  
+  solver:
+    IMPSAT: True
+
+  MUSCL:
+    set: false
+  FR:
+    set: false
+    order: 3
   #  Pensar em um jeito de reorganizar isso
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [0.1, 0.10001, 0.10002, 0.10003, 0.10004, 0.5]
-  tempo_maximo: null
+  time_to_save: [10]
+  maximum_time: 10
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -51,15 +60,16 @@ compositional_data:
     deltaSlim: .0001
     deltaVlim: .00001
     delta_t_ini: 0.1
-    delta_tmax: 10
+    delta_tmax: 1
     delta_tmin: 0.0001
   #rever isso de Cw=0 e Pw
   water_data:
-    mi_W: 0.000249
+    mi_W: 1e-3
     rho_W: 716.0253128
     Mw_w: 18.015e-3
-    Cw: 1e-12
+    Cw: 0
     Pw: 0
+    mobility: True
 
   residual_saturations:
     Sorw: 0
@@ -121,8 +131,11 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: [-1.31096512e-8]
+    value: [1.31096512e-8]
+    z: [1]
+    ksi_total: 39746.06232583958
     value_type: volumetric
+    injection_condition: surface
 
   P2:
     p0: [0.603504, 0.0, 0.0]

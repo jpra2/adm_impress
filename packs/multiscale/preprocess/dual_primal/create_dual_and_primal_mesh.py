@@ -296,7 +296,11 @@ class MultilevelData(DataManager):
                 neigs_ids = []
                 primal_id = mb.tag_get_data(self.tags[primal_fine_name], vert, flat=True)[0]
                 centroid_vert = fine_centroids[dict_volumes[vert]]
+
                 centroids_coarse[primal_id] = centroid_vert
+
+
+                    # import pdb; pdb.set_trace()
 
                 coarse_volume = \
                 mb.get_entities_by_type_and_tag(0, types.MBENTITYSET, np.array([self.tags[name_tag_c]]),
@@ -405,7 +409,7 @@ class MultilevelData(DataManager):
 
         from ....utils import pymoab_utils as utpy
 
-        for i in range(n_levels):
+        for i in range(n_levels-1):
             level = i+1
             name = name_tag_faces_boundary_meshsets + str(i + 1)
             meshsets = all_meshsets[i]
@@ -423,7 +427,6 @@ class MultilevelData(DataManager):
             self._data[self.faces_boundary_meshset_level + str(i+1)] = faces_boundary
             if len(faces_boundary)>0:
                 self._data[self.neig_intersect_faces+str(level)] = M.faces.bridge_adjacencies(faces_boundary, 2, 3)
-
 
             coarse_faces = []
             coarse_internal_faces = []
@@ -443,9 +446,12 @@ class MultilevelData(DataManager):
                 coarse_internal_faces.append(internal_faces)
                 intersect_faces = np.intersect1d(faces, faces_boundary)
                 coarse_intersect_faces.append(intersect_faces)
-                boundary_faces = np.setdiff1d(faces, internal_faces)
+                # boundary_faces = np.setdiff1d(faces, internal_faces)
                 # internal_boundary_volumes = np.concatenate(M.faces.bridge_adjacencies(boundary_faces, 2, 3))
-                internal_boundary_volumes = np.concatenate(M.faces.bridge_adjacencies(intersect_faces, 2, 3))
+                # internal_boundary_volumes = np.concatenate(M.faces.bridge_adjacencies(intersect_faces, 2, 3))
+                internal_boundary_volumes = M.faces.bridge_adjacencies(intersect_faces, 2, 3)
+                if len(internal_boundary_volumes.shape) > 1:
+                    internal_boundary_volumes = np.concatenate(internal_boundary_volumes)
                 internal_boundary_volumes = np.intersect1d(internal_boundary_volumes, volumes)
                 coarse_internal_boundary_volumes.append(internal_boundary_volumes)
 

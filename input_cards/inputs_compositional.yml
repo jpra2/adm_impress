@@ -1,11 +1,11 @@
 #Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 100x1x1.msh
-name_save_file: 'results_compressive_oil_case'
+name_save_file: 'results_compressive_oil_case_upw'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
-water_component: False
+water_component: True
 use_vpi: False
 
 
@@ -13,7 +13,6 @@ load_compositional_data: False
 load_data: False
 convert_english_to_SI: False
 set_porosity: true
-set_permeability: true
 gravity: false
 deletar_results: false
 load_operators: false
@@ -29,9 +28,17 @@ monophasic_data:
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
+  solver:
+    IMPSAT: false
+
+  MUSCL:
+    set: false
+  FR:
+    set: false
+    order: 3
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [274752, 432000., 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0]
-  tempo_maximo: null
+  time_to_save: [274752] #, 432000., 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0]
+  maximum_time: 274752 #1530144.0
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -46,24 +53,25 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: .01
-    deltaSlim: .01
+    deltaNlim: .1
+    deltaSlim: .1
     deltaVlim: .001
-    delta_t_ini: 1000
-    delta_tmax: 7000
-    delta_tmin: 0.0001
+    delta_t_ini: 10
+    delta_tmax: 10000
+    delta_tmin: 100
 
   water_data:
     mi_W: 1e-3
     rho_W: 999.6
     Mw_w: 18.015e-3
     Cw: 0
-    Pw: 13.78951458E6
+    Pw: 13.79e6
+    mobility: False
 
   residual_saturations:
-    Sorw: 0
+    Sorw: 0.1
     Sorg: 0
-    Swr: 0
+    Swr: 0.2
     Sgr: 0
 
   relative_permeability_data:
@@ -82,7 +90,9 @@ compositional_data:
     vc: [0.0006031573275]
     Mw: [142.28e-3]
     w: [0.4890]
-    Bin: [0]
+    Bin: [[0]]
+    Pv: [0]
+    Pb_guess: [9.5e6]
     vshift_parameter: [0.085]
 
 
@@ -90,7 +100,7 @@ compositional_data:
 Saturation:
   r1:
     type: all
-    value: 0.
+    value: 0.2
 
 Porosity:
   r1:
@@ -114,10 +124,11 @@ Temperature:
     value: 366.4833
 
 Wells:
-  P1:
+
+  P2:
     p0: [0.0, 0.0, 0.0]
     p1: [6.096, 3.048, 3.048]
     prescription: P
     type: Producer
     type_region: box
-    value: 13100038.3
+    value: 13.1E6

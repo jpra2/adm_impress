@@ -55,7 +55,7 @@ def get_preprossed_monotonic_primal_objects(data_impress,elements_lv0, OP_AMS,ne
         prep_primal=PrepMonotonicPrimal(lines, cols, intern_global_faces, intersect_faces, lcd_OP_local, gid1, volumes, lc_exter, phi_k_exter, phiK_raz_lim, data_impress, local_vertex)
         preprocessed_primal_objects.append(prep_primal)
         for cg in prep_primal.critical_groups:
-            critical_groups.append(cg)
+            critical_groups.append(np.unique(cg))
     return preprocessed_primal_objects, critical_groups
 
 class PrepMonotonicPrimal:
@@ -101,8 +101,6 @@ class PrepMonotonicPrimal:
         data_impress['raz_phi'][volumes]=efective_phi
 
         phi_subs=1
-
-
         critical_groups=[]
         lc_exter=self.lc_exter
 
@@ -143,18 +141,13 @@ def get_monotonizing_volumes(preprocessed_primal_objects, transmissibility):
         ld=primal.ld
         cd=primal.cd
 
-        # if (lines[equals]!=le).sum()!=0 or (lines[different]!=ld).sum()!=0 or (cols[equals]!=ce).sum()!=0 or (cols[different]!=cd).sum()!=0:
-        #     import pdb; pdb.set_trace()
         ls=primal.ls
         T_numpy[ld,cd]=data[different]
-
-
 
         T_numpy[ls, ls]=np.bincount(le,weights=data[equals])[ls]
 
         ###############Just for the example
         if len(T_numpy)==8:
-            # import pdb; pdb.set_trace()
             T_numpy[primal.volumes==15]=0
             T_numpy[primal.volumes==15,primal.volumes==15]=1
         ############################
@@ -183,29 +176,45 @@ def get_monotonizing_volumes(preprocessed_primal_objects, transmissibility):
     volumes=np.concatenate(volumes)
     return volumes, netasp_array
 
-def get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,volumes,netasp_array, tol):
-    # data_impress['nfp'][:]=0
-    # import pdb; pdb.set_trace()
+def incorporate_fs_to_groups(l_groups, groups_c, critical_groups, data_impress, elements_lv0):
+    print('start to incorporate')
+    t0=time.time()
+    v0s=data_impress['GID_0'][data_impress['LEVEL']==0]
+    data_impress['nfp'][:]=-1
+    data_impress['nfp'][groups_c]=l_groups.astype('int')
+    viz=elements_lv0['volumes_face_volumes'][v0s]
+    for i in range(len(v0s)):
+        for j in data_impress['nfp'][viz[i]]:
+            if j>=0:
+                try:
+                    critical_groups[int(j)]=np.append(critical_groups[int(j)],v0s[i])
+                    l_groups=np.append(l_groups,int(j))
+                    groups_c=np.append(groups_c,v0s[i])
+                except:
+                    pass
+
+    print('finish incorporate', time.time()-t0)
+    return l_groups, groups_c, critical_groups
+
+
+def get_monotonizing_level(l_groups, groups_c, critical_groups,data_impress,elements_lv0, volumes,netasp_array, tol):
     maxs=np.zeros(len(np.unique(volumes)))
     np.maximum.at(maxs,volumes,netasp_array)
     data_impress['ref_param'][np.unique(volumes)]=maxs
     vols_orig=np.unique(volumes)[maxs>tol]
-    # data_impress['nfp'][volumes]=netasp_array
-    # vols_orig=volumes[netasp_array>tol]
+
     data_impress['LEVEL'][vols_orig]=0
 
+    # l_groups, groups_c, critical_groups=incorporate_fs_to_groups(l_groups, groups_c, critical_groups, data_impress, elements_lv0)
     t1=time.time()
     teste=True
     vols_0=np.array([])
     while teste:
         lv=len(vols_0)
-        # import pdb; pdb.set_trace()
-
         groups_lv0=np.unique(l_groups[data_impress['LEVEL'][groups_c]==0])
-        if len(groups_lv0)>0:
+        if len(groups_lv0)>0 and len(critical_groups) > 0:
             vols_lv0=np.concatenate(np.array(critical_groups)[groups_lv0])
             vols_0=np.unique(np.append(vols_0,vols_lv0))
-
         if len(vols_0)==lv:
             teste=False
         else:

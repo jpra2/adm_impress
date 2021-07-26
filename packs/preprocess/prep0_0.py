@@ -23,7 +23,8 @@ def set_permeability_and_phi_spe10(M):
     # centroids = M.data.centroids[direc.entities_lv0[3]]
     centroids = M.volumes.center(M.volumes.all)
 
-    ijk0 = np.array([centroids[:, 0]//20.0, centroids[:, 1]//10.0, centroids[:, 2]//2.0])
+    # ijk0 = np.array([centroids[:, 0]//20.0, centroids[:, 1]//10.0, centroids[:, 2]//2.0])
+    ijk0 = np.array([centroids[:, 0]//1.0, centroids[:, 1]//1.0, centroids[:, 2]//2.0])
     ee = ijk0[0] + ijk0[1]*nx + ijk0[2]*nx*ny
     ee = ee.astype(np.int32)
 
@@ -110,8 +111,7 @@ class Preprocess0:
         dist_cent = np.dot(normals, hs)
 
         v = np.ones([3,1])
-        dd = np.argwhere(np.round(normals@v, 2)!=1)
-        
+        dd = np.argwhere(np.round(normals@v, 1)!=1)
         if len(dd)>0:
             inclined_faces_normals = normals[dd.ravel()]
             xz_face = np.argwhere(inclined_faces_normals[:,1]==0).ravel()
@@ -313,6 +313,12 @@ class Preprocess0:
         hi = np.zeros((ni, 2))
         hi[:, 0] = ((hs[vols_viz_internal_faces[:, 0]]*u_normal_internal_faces).sum(axis=1))/2
         hi[:, 1] = ((hs[vols_viz_internal_faces[:, 1]]*u_normal_internal_faces).sum(axis=1))/2
+
+        # keq_internal_faces = ((ks0/hi[:,0])*(ks1/hi[:,1]))/((ks0/hi[:,0]) + (ks1/hi[:,1]))
+
+        #Make unitary dimentions#Atemçao
+        # hi=np.ones_like(hi)
+
         k_harm_faces[internal_faces] = hi.sum(axis=1)/(hi[:, 0]/ks0 + hi[:, 1]/ks1)
 
         u_normal_b_faces = u_normal[boundary_faces]
@@ -321,6 +327,7 @@ class Preprocess0:
         ks0 = ks0.reshape([nb, 3, 3]) * u_normal_b_faces.reshape([nb, 1, 3])
         ks0 = ks0.sum(axis=2).sum(axis=1)
         k_harm_faces[boundary_faces] = ks0
+        # k_harm_faces[boundary_faces] = 0.0
 
         M.data[M.data.variables_impress['k_harm']] = k_harm_faces
 
@@ -343,9 +350,11 @@ class Preprocess0:
         M.data['NODES'] = M.data['centroid_nodes'].copy()
 
     def set_pretransmissibility(self, M):
-        areas = M.data['area']
+        areas = M.data['area'].copy()
+        areas=np.ones_like(areas)
         k_harm_faces = M.data['k_harm']
-        dist_cent = M.data['dist_cent']
+        dist_cent = M.data['dist_cent'].copy()
+        # dist_cent = np.ones_like(dist_cent)
         pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
         M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
         # M.data.update_variables_to_mesh([M.data.variables_impress['pretransmissibility']])

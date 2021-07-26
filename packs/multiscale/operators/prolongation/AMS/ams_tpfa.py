@@ -38,7 +38,8 @@ class AMSTpfa:
             self.it = 0
             del B_wire, Eps_wire
 
-        T_wire = self.G*T*self.GT
+        # T_wire = self.G*T*self.GT
+        T_wire = self.get_twire(T)
         if self.tpfalizar:
             T_wire = self.tpfalize(T_wire)
         # self._data['T_wire'] = T_wire
@@ -54,7 +55,7 @@ class AMSTpfa:
             total_source_term_wire = self.G*total_source_term
             pcorr = self.get_pcorr(As, total_source_term_wire)
         else:
-            pcorr = np.array([False])
+            pcorr = np.zeros(len(total_source_term), dtype=int)
 
         return OP, pcorr
 
@@ -200,6 +201,56 @@ class AMSTpfa:
         self.it += 1
 
         return pcorr
+    
+    def get_pcorr2(self, As, total_source_term_wire):
+        ni = self.wirebasket_numbers[0]
+        nf = self.wirebasket_numbers[1]
+        ne = self.wirebasket_numbers[2]
+        nv = self.wirebasket_numbers[3]
+
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
+        
+        q2 = total_source_term_wire
+        pcorr = np.zeros(len(q2), dtype=float)
+
+        pcorr_ee = linalg.spsolve(As['Aee'], q2[nnf:nne])
+        pcorr_fe = -linalg.spsolve(As['Aff'], As['Afe']*pcorr_ee)
+        pcorr_ie = -linalg.spsolve(As['Aii'], As['Aif']*pcorr_fe)
+
+        pcorr_ff = linalg.spsolve(As['Aff'], q2[nni:nnf])
+        pcorr_if = -linalg.spsolve(As['Aii'], As['Aif']*pcorr_ff)
+
+        pcorr_ii = linalg.spsolve(As['Aii'], q2[0:nni])
+
+        pcorr[0:nni] = pcorr_ii + pcorr_if + pcorr_ie
+        pcorr[nni:nnf] = pcorr_ff + pcorr_fe
+        pcorr[nnf:nne] = pcorr_ee
+        pcorr = self.GT*pcorr
+
+        return pcorr
+    
+    def get_twire(self, T):
+        T_wire = self.G*T*self.GT
+        return T_wire
+    
+    def run2(self, As, total_source_term=None):
+        
+        
+        OP = self.get_OP_AMS_TPFA_by_AS(As)
+        
+        if self.get_correction_term:
+            total_source_term_wire = self.G*total_source_term
+            pcorr = self.get_pcorr2(As, total_source_term_wire)
+        else:
+            pcorr = np.zeros(len(total_source_term), dtype=int)
+        
+        return OP, pcorr
+        
+        
+        
 
 
 

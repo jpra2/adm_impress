@@ -33,6 +33,7 @@ def initial_mesh():
         print("creating M")
         from ..load.preprocessor_load import init_mesh
         # M = init_mesh('flying/multilevel_data-all.h5m')
+        import time
 
         M = init_mesh('saves/initial_mesh_' + only_mesh_name + '.h5m')
         print("time to create M: {} seconds".format(time.time()-t0))
@@ -92,9 +93,9 @@ def initial_mesh():
         wells = Wells(M, elements_lv0, load=load)
 
     biphasic = data_loaded['biphasic']
-    #load_biphasic_data = data_loaded['load_biphasic_data']
+    load_biphasic_data = data_loaded['load_biphasic_data']
 
-    if simulation_type == 'biphasic' and not load:
+    if biphasic and not load_biphasic_data:
         set_saturation_regions(M, wells)
         # TODO: atualizar gama
 

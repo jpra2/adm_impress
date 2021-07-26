@@ -12,7 +12,8 @@ class WellsData(DataManager):
         ## gama_vector = (rho_w + rho)
         cent_nodes = centroid_nodes
         # self.Lz = cent_nodes.max(axis=0)[2]
-        Lsmax = cent_nodes.max(axis=0)
+        # Lsmax = cent_nodes.max(axis=0)
+        Lsmax = centroid_volumes.max(axis=0)
         rho_volumes = rho_w*saturation + rho_o*(1-saturation)
         gama = -gravity_vector[2]*rho_volumes
 

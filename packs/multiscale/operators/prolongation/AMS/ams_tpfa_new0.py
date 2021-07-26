@@ -2,6 +2,7 @@ from .....data_class.data_manager import DataManager
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse import linalg
+from scipy.sparse.linalg import inv
 import time
 
 class AMSTpfa:
@@ -24,7 +25,7 @@ class AMSTpfa:
         self.get_G()
         self.G2 = get_G2(self.wirebasket_elements[3], primal_ids)
 
-    def run(self, T: 'transmissibility matrix', total_source_term=None, B_matrix=None, Eps_matrix=None):
+    def run(self, T: 'transmissibility matrix', total_source_term=None, B_matrix=None, Eps_matrix=None, return_correction_matrix=False):
 
         if self.get_correction_term:
             B_wire = self.G*B_matrix*self.GT
@@ -52,7 +53,10 @@ class AMSTpfa:
         else:
             pcorr = np.zeros(len(np.concatenate(self.wirebasket_elements)))
 
-        return OP, pcorr
+        Cmatrix = self.get_correction_matrix(As, return_correction_matrix=return_correction_matrix)
+
+
+        return OP.tocsc(), pcorr, Cmatrix
 
     def get_G(self):
         cols = np.concatenate(self.wirebasket_elements)
@@ -176,7 +180,8 @@ class AMSTpfa:
         if self.it > 0:
             self.E_wire = self.I
 
-        q2 = self.E_wire*total_source_term_wire
+        # q2 = self.E_wire*total_source_term_wire
+        q2 = total_source_term_wire
         pcorr = np.zeros(len(q2), dtype=float)
 
         pcorr_ee = linalg.spsolve(As['Aee'], q2[nnf:nne])
@@ -197,6 +202,50 @@ class AMSTpfa:
 
         return pcorr
 
+    def get_correction_matrix(self, As, return_correction_matrix=False):
+        nf = sum(self.wirebasket_numbers)
+        Cmatrix = sp.lil_matrix((nf, nf))
+
+        if not return_correction_matrix:
+            return Cmatrix.tocsc()
+
+        ni = self.wirebasket_numbers[0]
+        nf = self.wirebasket_numbers[1]
+        ne = self.wirebasket_numbers[2]
+        nv = self.wirebasket_numbers[3]
+
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+
+        # Aee_inv = linalg.spsolve(As['Aee'], sp.identity(As['Aee'].shape[0]).tocsc())
+        # Aff_inv = linalg.spsolve(As['Aff'], sp.identity(As['Aff'].shape[0]).tocsc())
+        # Aii_inv = linalg.spsolve(As['Aii'], sp.identity(As['Aff'].shape[0]).tocsc())
+
+        # Cmatrix[0:nni, 0:nni] = Aii_inv
+        # Cmatrix[nni:nnf, nni:nnf] = Aff_inv
+        # Cmatrix[nnf:nne, nnf:nne] = Aee_inv
+        # Cmatrix[nni:nnf, nnf:nne] = -Aff_inv * As['Afe'] * Aee_inv
+        # Cmatrix[0:nni, nni:nnf] = -Aii_inv * As['Aif'] * Aff_inv
+        # Cmatrix[0:nni, nnf:nne] = Aii_inv * As['Aif'] * (-Cmatrix[nni:nnf, nnf:nne])
+
+        # inversa = linalg.spsolve(As['Aee'], sp.identity(As['Aee'].shape[0]).tocsc())
+        inversa = inv(As['Aee'])
+        Cmatrix[nnf:nne, nnf:nne] = inversa
+        if nf > 0:
+            # inversa = linalg.spsolve(As['Aff'], sp.identity(As['Aff'].shape[0]).tocsc())
+            inversa = inv(As['Aff'])
+            Cmatrix[nni:nnf, nni:nnf] = inversa
+            Cmatrix[nni:nnf, nnf:nne] = -Cmatrix[nni:nnf, nni:nnf] * As['Afe'] * Cmatrix[nnf:nne, nnf:nne]
+
+        if ni > 0:
+            # inversa = linalg.spsolve(As['Aii'], sp.identity(As['Aff'].shape[0]).tocsc())
+            inversa = inv(As['Aii'])
+            Cmatrix[0:nni, 0:nni] = inversa
+            Cmatrix[0:nni, nni:nnf] = -Cmatrix[0:nni, 0:nni] * As['Aif'] * Cmatrix[nni:nnf, nni:nnf]
+            Cmatrix[0:nni, nnf:nne] = Cmatrix[0:nni, 0:nni] * As['Aif'] * (-Cmatrix[nni:nnf, nnf:nne])
+
+        return self.GT*Cmatrix.tocsc()*self.G
 
 def get_wirebasket_elements(gids, dual_flags):
 

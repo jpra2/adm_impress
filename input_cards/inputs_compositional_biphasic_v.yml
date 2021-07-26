@@ -29,9 +29,13 @@ monophasic_data:
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
+  MUSCL:
+    set: False
+    DW: False
+    LLF: False
   vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
   time_to_save: [0.0]
-  tempo_maximo: null
+  maximum_time: 0.
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -85,6 +89,7 @@ compositional_data:
     w: [0.4890]
     Bin: [0]
     vshift_parameter: [0.085]
+    Pv: [0]
 
 #water saturation data
 Saturation:
@@ -121,7 +126,9 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: [-0, -3.2774128e-8]
+    value: 3.2774128e-8
+    z: [0., 1.]
+    ksi_total: 55484.31862337
     value_type: volumetric
 
   P2:
