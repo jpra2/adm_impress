@@ -14,7 +14,7 @@ def create_coarse_structure(centroids_fine_volumes, primal_id, adjacencies_inter
         centroids_fine_nodes (np.ndarray((len(fine_nodes), 3))): centroid of fine nodes
         fine_internal_faces (np.ndarray(len(internal_faces))): fine internal_faces
         fine_boundary_faces (np.ndarray(len(boundary_faces))): fine boundary faces
-        adjacencies_boundary_faces_cp (np.ndarray((len(boundary_faces), 1 or 2))): volumes adjacencies of boundary fine faces
+        adjacencies_boundary_faces (np.ndarray((len(boundary_faces), 1 or 2))): volumes adjacencies of boundary fine faces
 
     Returns:
         resp [dict]: coarse structure mesh

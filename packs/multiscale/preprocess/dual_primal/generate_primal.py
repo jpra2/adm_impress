@@ -1,3 +1,4 @@
+from networkx.convert_matrix import _generate_weighted_edges
 import numpy as np
 from packs.utils import utils_old
 import networkx as nx
@@ -112,15 +113,20 @@ def get_coarse_volumes(all_separated_limits: np.ndarray, centroids_volumes: np.n
 
 def create_dual(centroids_volumes: np.ndarray, cr: np.ndarray, dimension: int, l_total: np.ndarray, volumes_dimension: np.ndarray, adjacencies_internal_faces: np.ndarray):
     vertices_ids = define_vertices(centroids_volumes, cr, l_total)
-    identify_vertices_id = np.repeat(0, len(vertices_ids))
-    identify_vertices(vertices_ids, centroids_volumes, identify_vertices_id)
+    # identify_vertices_id = np.repeat(0, len(vertices_ids))
+    # identify_vertices(vertices_ids, centroids_volumes, identify_vertices_id)
     
     dual_ids = np.repeat(0, len(centroids_volumes))
+    # dual_ids0 = np.repeat(0, len(centroids_volumes))
     
-    g = nx.Graph()
-    g.add_edges_from(adjacencies_internal_faces)
+    # g = nx.Graph()
+    # g.add_edges_from(adjacencies_internal_faces)
     
-    create_dual_entities(vertices_ids, dual_ids, centroids_volumes, dimension, volumes_dimension, g, identify_vertices_id)
+    # create_dual_entities(vertices_ids, dual_ids0, centroids_volumes, dimension, volumes_dimension, g, identify_vertices_id)
+    create_dual_entities2(vertices_ids, dual_ids, centroids_volumes, volumes_dimension)
+    
+    # print(np.allclose(dual_ids, dual_ids0))
+    # import pdb; pdb.set_trace()
     
     return dual_ids
 
@@ -250,6 +256,66 @@ def create_dual_entities(vertices_ids: np.ndarray, dual_ids: np.ndarray, centroi
     dual_ids[faces_ids] = 1
     dual_ids[edges_ids] = 2
     dual_ids[vertices_ids] = 3
+  
+def create_dual_entities2(vertices_ids: np.ndarray, dual_ids: np.ndarray, centroids_volumes: np.ndarray, volumes_dimension: np.ndarray):
+    centroids_vertices = centroids_volumes[vertices_ids]
+    edges = []
+    faces = [[], [], []]
+    delta = volumes_dimension.min()/4
+    mins = centroids_vertices.min(axis=0)
+    maxs = centroids_vertices.max(axis=0)
+    unique_centroids_vertices = np.array([
+        np.unique(centroids_vertices[:, 0]),
+        np.unique(centroids_vertices[:, 1]),
+        np.unique(centroids_vertices[:, 2])
+    ])
+    
+    
+    for i, centroids_vertices_direction in enumerate(unique_centroids_vertices):
+        get_faces_entities(centroids_vertices_direction, i, mins, maxs, delta, faces, centroids_volumes)
+    
+    faces = np.array(faces)
+    get_edges_entities(faces, edges)
+    edges = np.unique(np.concatenate(edges))
+    faces = np.unique(np.concatenate([
+        np.concatenate(faces[0]),
+        np.concatenate(faces[1]),
+        np.concatenate(faces[2])
+    ]))
+    
+    dual_ids[faces] = 1
+    dual_ids[edges] = 2
+    dual_ids[vertices_ids] = 3
+    
+def get_faces_entities(centroids_vertices_direction, direction, mins, maxs, delta, faces, centroids_volumes):
+    directions = np.array([0, 1, 2])
+    directions2 = np.setdiff1d(directions, direction)
+    limites = np.zeros((2, 3))
+    
+    for k in centroids_vertices_direction:
+        limites[:] = 0
+        limites[0, direction] = k - delta
+        limites[1, direction] = k + delta
+        limites[0, directions2[0]] = mins[directions2[0]] - delta
+        limites[1, directions2[0]] = maxs[directions2[0]] + delta
+        limites[0, directions2[1]] = mins[directions2[1]] - delta
+        limites[1, directions2[1]] = maxs[directions2[1]] + delta        
+        indexes = utils_old.get_box(centroids_volumes, limites)
+        faces[direction].append(indexes)
+    
+    faces[direction] = np.array(faces[direction])
+
+def get_edges_entities(faces, edges):
+    directions = np.array([0, 1, 2])
+    
+    for direction in range(3):
+        directions2 = np.setdiff1d(directions, direction)
+        faces2 = faces[directions2]
+        faces2 = np.unique(np.concatenate([np.concatenate(faces2[0]), np.concatenate(faces2[1])]))
+        conj_edges = np.intersect1d(np.concatenate(faces[direction]), faces2)
+        if conj_edges.shape[0] > 1:
+            edges.append(conj_edges)
+        
     
 def get_edges_by_vertices(vertices_ids: np.ndarray, centroids_volumes: np.ndarray, nvertices: int, g: nx.Graph, identify_vertices_ids, dimension: int):
     
