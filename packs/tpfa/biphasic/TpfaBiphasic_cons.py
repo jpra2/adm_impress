@@ -564,26 +564,30 @@ class TpfaBiphasicCons:
             upwind_w[tw, 0] = True
             upwind_o[to, 0] = True
 
-            v1 = (~test3) & (testw) & to
-            v2 = (~test3) & (testo) & tw
+            tw = ~tw
+            to = ~to
+            upwind_w[tw, 1] = True
+            upwind_o[to, 1] = True
 
-            upwind_w[v1, 0] = True
-            upwind_o[v2, 0] = True
+            tt = np.absolute(flux_total) < k0
+            upwind_w[tt] = False
+            upwind_o[tt] = False
 
-            v1 = (~test3) & (testw) & (~to)
-            v2 = (~test3) & (testo) & (~tw)
+            centroids = centroid_volumes[v0[tt]]
+            delta_z = centroids[:,1] - centroids[:,0]
+            delta_z = delta_z[:,2]
 
-            upwind_w[v1, 1] = True
-            upwind_o[v2, 1] = True
+            upgw = np.full((tt.sum(), 2), False, dtype=bool)
+            upgo = np.full((tt.sum(), 2), False, dtype=bool)
 
-            v1 = (~test3) & (~testw) & tw
-            v2 = (~test3) & (~testo) & to
+            tz = delta_z >= 0
 
-            upwind_w[v1, 0] = True
-            upwind_o[v2, 0] = True
+            upgw[tz, 1] = True
+            upgo[tz, 0] = True
 
-            v1 = (~test3) & (~testw) & (~tw)
-            v2 = (~test3) & (~testo) & (~to)
+            tz = ~tz
+            upgw[tz, 0] = True
+            upgo[tz, 1] = True
 
             upwind_w[tt] = upgw
             upwind_o[tt] = upgo

@@ -3,6 +3,7 @@ from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.multiscale.operators.prolongation.AMS.Paralell.group_dual_volumes import group_dual_volumes_and_get_OP
 import scipy.sparse as sp
 import os
+import numpy as np
 
 import time
 
@@ -35,6 +36,27 @@ def multiscale_prolongation_operator(multilevel_operators: MultilevelOperators, 
     
     return As
 
+def multiscale_prolongation_operator_v2(multilevel_operators: MultilevelOperators,  T_noCC, g_source_total_volumes, volumes_without_grav, dual_subdomains, global_vector_update, diagonal_term, OP_AMS, level, **kwargs):
+    b2 = g_source_total_volumes.copy()
+    b2[volumes_without_grav] = 0
+    mlo = multilevel_operators
+    mlo.run_paralel_2(
+            T_noCC,
+            b2,
+            dual_subdomains,
+            global_vector_update,
+            diagonal_term,
+            OP_AMS,
+            level,
+            **kwargs
+        )
+    
+    OP_AMS = mlo[mlo.prolongation + str(level)]
+    cfs = mlo[mlo.pcorr_n + str(level)]
+    
+    return OP_AMS, cfs
+
+
 
 def print_mesh_volumes_results(M, data_impress, meshset_volumes, result_name):
     data_impress.update_variables_to_mesh()
@@ -44,5 +66,16 @@ def print_mesh_volumes_results(M, data_impress, meshset_volumes, result_name):
 
 
 def cf_remove_volumes_by_level(cf, volumes):
+    
     cf[volumes] = 0
     return cf
+
+def test_var(last, new, epsilon):
+    
+    lim_inf = 1 /(1 + epsilon)
+    lim_sup = 1 + epsilon
+    razao = new/last
+    test = np.full(len(last), False, dtype=bool)
+    test[razao >= lim_sup] = True
+    test[razao <= lim_inf] = True
+    return test

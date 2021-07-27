@@ -3,6 +3,7 @@ import numpy as np
 from packs.multiscale.ms_utils.multiscale_functions import update_local_transmissibility, map_global_id_to_local_id
 from packs.multiscale.operators.prolongation.AMS.ams_tpfa import AMSTpfa
 from collections.abc import Sequence
+from scipy.sparse.linalg import splu
 
 class DualSubdomain:
     
@@ -33,7 +34,12 @@ class DualSubdomain:
             rmap_cid_to_lid[self.coarse_id]
         )
         
-        self.As = dict()
+        self.As = {
+            'Aee': sp.lil_matrix((0, 0)).tocsc(),
+            'Aff': sp.lil_matrix((0, 0)).tocsc(),
+            'Aii': sp.lil_matrix((0, 0)).tocsc()
+        }
+        self.lu_matrices = dict()
         self.local_source_term = np.zeros(len(self.gids))
         
     def update_t_local(self, Tglobal, diagonal_term):
@@ -43,7 +49,16 @@ class DualSubdomain:
     def update_as(self, Tlocal):
         As = self.ams_solver.get_as(self.ams_solver.get_twire(Tlocal))
         self.As.update(As)
+        self.update_lu_matrices()
 
+    def update_lu_matrices(self):
+        
+        self.lu_matrices.update({
+            'Aee': splu(self.As['Aee']),
+            'Aff': splu(self.As['Aff']),
+            'Aii': splu(self.As['Aii'])
+        })
+    
     def update_local_source_term(self, global_source_term):
         self.local_source_term[:] = global_source_term[self.gids]
 

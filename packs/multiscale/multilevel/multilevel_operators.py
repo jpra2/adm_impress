@@ -14,7 +14,7 @@ from ...multiscale.ms_utils.matrices_for_correction import MatricesForCorrection
 from ..operators.prolongation.AMS.Paralell.coupled_ams import OP_AMS
 from packs.multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 from packs.utils.test_functions import test_instance
-from packs.multiscale.preprocess.dual_domains import DualSubdomainMethods
+from packs.multiscale.preprocess.dual_domains import DualSubdomain, DualSubdomainMethods
 from packs.multiscale.operators.prolongation.AMS.paralell2.paralel_ams_new_2 import MasterLocalOperator
 
 def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
@@ -312,7 +312,7 @@ class MultilevelOperators(DataManager):
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
 
-    def run_paralel_2(self, T_fine_without_bc, global_source_term, dual_subdomains, global_vector_update, global_diagonal_term, OP_AMS, level):
+    def run_paralel_2(self, T_fine_without_bc, global_source_term, dual_subdomains, global_vector_update, global_diagonal_term, OP_AMS, level, **kwargs):
         #########
         ## set update for op and local matrices
         DualSubdomainMethods.set_local_update(dual_subdomains, global_vector_update)
@@ -331,7 +331,8 @@ class MultilevelOperators(DataManager):
         ############
         ## get OP_AMS and correction function
         n_volumes = len(global_source_term)
-        master = MasterLocalOperator(dual_subdomains, len(global_source_term))
+        master = MasterLocalOperator(dual_subdomains, n_volumes)
+        
         OP_AMS, correction_function = master.run(OP_AMS)
         #############
         
@@ -345,11 +346,10 @@ class MultilevelOperators(DataManager):
         self._data[self.pcorr_n + str(level)] = correction_function
         # self._data[self.cmatrix + str(level)] = Cmatrix
         self._data[self.prolongation_lcd + str(level)] = sp.find(OP_AMS)
-        OR = self._data[self.restriction + str(level)]
+        # OR = self._data[self.restriction + str(level)]
         
         # return OP_AMS, correction_function
         
-    
     def get_OP_paralel(self, level,dual_volumes, local_couple, couple_bound):
         #
         # dual_structure = self.ml_data['dual_structure_level_'+str(level)]

@@ -46,6 +46,12 @@ DUAL_2:
   level: 0
   sparse: true
   type: volumes
+DUAL_PRESSURE:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 GID_0:
   data size: 1
   data type: int
@@ -59,6 +65,12 @@ GID_1:
   sparse: true
   type: volumes
 GID_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+INITIAL_LEVEL:
   data size: 1
   data type: int
   level: 0
@@ -100,6 +112,12 @@ area:
   level: 0
   sparse: true
   type: faces
+capillary_pressure:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 centroid_edges:
   data size: 3
   data type: float
@@ -124,8 +142,38 @@ centroid_volumes:
   level: 0
   sparse: true
   type: volumes
+coupled_flag:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 dist_cent:
   data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+erro:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+erro_p:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+erro_pcorr_pdm:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+erro_v:
+  data size: 3
   data type: float
   level: 0
   sparse: true
@@ -136,8 +184,26 @@ flux:
   level: 0
   sparse: true
   type: faces
+flux_cap_faces:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_cap_volumes:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 flux_faces:
   data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_faces_vec:
+  data size: 3
   data type: float
   level: 0
   sparse: true
@@ -148,18 +214,54 @@ flux_grav_faces:
   level: 0
   sparse: true
   type: faces
+flux_grav_o_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
 flux_grav_volumes:
   data size: 1
   data type: float
   level: 0
   sparse: true
   type: volumes
-flux_o_volumes:
+flux_grav_w_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_o_faces:
   data size: 1
   data type: float
   level: 0
   sparse: true
+  type: faces
+flux_o_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_o_volumes:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: false
   type: volumes
+flux_press_o_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_press_w_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
 flux_volumes:
   data size: 1
   data type: float
@@ -174,6 +276,12 @@ flux_volumes_test:
   type: volumes
 flux_w_faces:
   data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_w_faces_vec:
+  data size: 3
   data type: float
   level: 0
   sparse: true
@@ -196,19 +304,49 @@ fw_vol:
   level: 0
   sparse: true
   type: volumes
+g_total_source_term:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 gama:
   data size: 1
   data type: float
   level: 0
   sparse: true
   type: volumes
+gama_faces:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
 hs:
   data size: 3
   data type: float
   level: 0
   sparse: true
   type: volumes
+id_fint:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: faces
+id_global:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
 initial_diag:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+k_eq:
   data size: 1
   data type: float
   level: 0
@@ -268,7 +406,7 @@ mass_water_production:
   level: 0
   sparse: true
   type: volumes
-ms_pressure:
+nfn:
   data size: 1
   data type: float
   level: 0
@@ -280,8 +418,110 @@ nfp:
   level: 0
   sparse: true
   type: volumes
+non_physical_value_0:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+non_physical_value_1:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+non_physical_value_2:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+non_physical_value_3:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+non_physical_value_4:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+non_physical_value_5:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+non_physical_value_999:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pcorr:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+perm_x:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+perm_z:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 permeability:
   data size: 9
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+perpendicular_direction_flag:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: faces
+phi:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: false
+  type: volumes
+pms:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pms_adm_pressure:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pms_flux_faces:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+pms_flux_interfaces_volumes:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pms_flux_volumes:
+  data size: 1
   data type: float
   level: 0
   sparse: true
@@ -298,18 +538,24 @@ pressure:
   level: 0
   sparse: true
   type: volumes
-pressure_error:
-  data size: 1
-  data type: float
-  level: 0
-  sparse: true
-  type: volumes
 pretransmissibility:
   data size: 1
   data type: float
   level: 0
   sparse: true
   type: faces
+pseudo_erro:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+raz_diag:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 raz_flux_tag:
   data size: 1
   data type: float
@@ -317,6 +563,12 @@ raz_flux_tag:
   sparse: true
   type: volumes
 raz_phi:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+raz_pos:
   data size: 1
   data type: float
   level: 0
@@ -340,7 +592,25 @@ saturation_last:
   level: 0
   sparse: true
   type: volumes
+swn1s:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+swns:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 test_fw:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+tpfa_pressure:
   data size: 1
   data type: float
   level: 0
@@ -358,6 +628,18 @@ u_normal:
   level: 0
   sparse: true
   type: faces
+upwind_o_faces_vec:
+  data size: 3
+  data type: int
+  level: 0
+  sparse: true
+  type: faces
+upwind_w_faces_vec:
+  data size: 3
+  data type: int
+  level: 0
+  sparse: true
+  type: faces
 val_diric:
   data size: 1
   data type: float
@@ -370,9 +652,27 @@ val_neum:
   level: 0
   sparse: true
   type: volumes
+velocity:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
 velocity_faces:
   data size: 3
   data type: float
+  level: 0
+  sparse: true
+  type: faces
+velocity_projection:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+verif_faces_flag:
+  data size: 1
+  data type: int
   level: 0
   sparse: true
   type: faces
@@ -389,6 +689,18 @@ verif_rest:
   sparse: true
   type: volumes
 volume:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+vug:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+water_pressure:
   data size: 1
   data type: float
   level: 0
