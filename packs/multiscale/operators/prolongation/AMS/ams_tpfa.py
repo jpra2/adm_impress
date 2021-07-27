@@ -38,7 +38,8 @@ class AMSTpfa:
             self.it = 0
             del B_wire, Eps_wire
 
-        T_wire = self.G*T*self.GT
+        # T_wire = self.G*T*self.GT
+        T_wire = self.get_twire(T)
         if self.tpfalizar:
             T_wire = self.tpfalize(T_wire)
         # self._data['T_wire'] = T_wire
@@ -54,7 +55,7 @@ class AMSTpfa:
             total_source_term_wire = self.G*total_source_term
             pcorr = self.get_pcorr(As, total_source_term_wire)
         else:
-            pcorr = np.array([False])
+            pcorr = np.zeros(len(total_source_term), dtype=int)
 
         return OP, pcorr
 
@@ -126,6 +127,18 @@ class AMSTpfa:
 
         return self.GT*op*self.G2
 
+    def get_OP_AMS_TPFA_by_AS_and_local_lu(self, As, local_lu):
+        
+        nv = self.wirebasket_numbers[3]
+
+        Pv = sp.identity(nv)
+        Pe = -local_lu['Aee'].solve(As['Aev']*Pv)
+        Pf = -local_lu['Aff'].solve(As['Afe']*Pe)
+        Pi = -local_lu['Aii'].solve(As['Aif']*Pf)
+        op = sp.vstack([Pi,Pf,Pe,Pv])
+
+        return self.GT*op*self.G2
+        
     def tpfalize(self, T_wire):
 
         ni = self.wirebasket_numbers[0]
@@ -200,9 +213,79 @@ class AMSTpfa:
         self.it += 1
 
         return pcorr
+    
+    def get_pcorr2(self, As, total_source_term):
+        # ni = self.wirebasket_numbers[0]
+        # nf = self.wirebasket_numbers[1]
+        # ne = self.wirebasket_numbers[2]
+        # nv = self.wirebasket_numbers[3]
 
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
+        
+        q2 = self.G*total_source_term
+        pcorr = np.zeros(len(q2), dtype=float)
 
+        pcorr_ee = linalg.spsolve(As['Aee'], q2[nnf:nne])
+        pcorr_fe = -linalg.spsolve(As['Aff'], As['Afe']*pcorr_ee)
+        pcorr_ie = -linalg.spsolve(As['Aii'], As['Aif']*pcorr_fe)
 
+        pcorr_ff = linalg.spsolve(As['Aff'], q2[nni:nnf])
+        pcorr_if = -linalg.spsolve(As['Aii'], As['Aif']*pcorr_ff)
+
+        pcorr_ii = linalg.spsolve(As['Aii'], q2[0:nni])
+
+        pcorr[0:nni] = pcorr_ii + pcorr_if + pcorr_ie
+        pcorr[nni:nnf] = pcorr_ff + pcorr_fe
+        pcorr[nnf:nne] = pcorr_ee
+        pcorr = self.GT*pcorr
+
+        return pcorr
+    
+    def get_pcorr3(self, As, total_source_term, local_lu):
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
+        
+        q2 = self.G*total_source_term
+        pcorr = np.zeros(len(q2), dtype=float)
+
+        pcorr_ee = local_lu['Aee'].solve(q2[nnf:nne])
+        pcorr_fe = -local_lu['Aff'].solve(As['Afe']*pcorr_ee)
+        pcorr_ie = -local_lu['Aii'].solve(As['Aif']*pcorr_fe)
+        
+        pcorr_ff = local_lu['Aff'].solve(q2[nni:nnf])
+        pcorr_if = -local_lu['Aii'].solve(As['Aif']*pcorr_ff)
+        
+        pcorr_ii = local_lu['Aii'].solve(q2[0:nni])
+
+        pcorr[0:nni] = pcorr_ii + pcorr_if + pcorr_ie
+        pcorr[nni:nnf] = pcorr_ff + pcorr_fe
+        pcorr[nnf:nne] = pcorr_ee
+        pcorr = self.GT*pcorr
+
+        return pcorr
+    
+    def get_twire(self, T):
+        T_wire = self.G*T*self.GT
+        return T_wire
+    
+    def run2(self, As, total_source_term=None):
+        
+        
+        OP = self.get_OP_AMS_TPFA_by_AS(As)
+        
+        if self.get_correction_term:
+            total_source_term_wire = self.G*total_source_term
+            pcorr = self.get_pcorr2(As, total_source_term_wire)
+        else:
+            pcorr = np.zeros(len(total_source_term), dtype=int)
+        
+        return OP, pcorr
+        
 
 def get_wirebasket_elements(internals, faces, edges, vertices):
 
@@ -234,3 +317,11 @@ def get_G2(vertices, primal_ids):
     G2 = sp.csc_matrix((data,(lines,cols)), shape=(nv, nv))
 
     return G2
+
+def get_local_prolongation(local_lu, local_matrix):
+    resp = []
+    for i in range(local_matrix.shape[1]):
+        resp.append(local_lu.solve(local_matrix[:, i].toarray().flatten()))
+    
+    
+        

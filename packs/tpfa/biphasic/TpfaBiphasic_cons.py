@@ -450,6 +450,7 @@ class TpfaBiphasicCons:
 
 
         k0 = 9e-2
+        gravity = True
         min_abs = np.min(np.absolute(total_flux_internal_faces))
         v0 = volumes_adj_internal_faces
         # saturation = self.data_impress['saturation']

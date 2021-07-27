@@ -1,3 +1,4 @@
+from packs.multiscale.neuman_local_problems.master_local_solver import MasterLocalSolver
 import time
 from ...data_class.data_manager import DataManager
 # from ..operators.prolongation.AMS.ams_tpfa import AMSTpfa
@@ -11,6 +12,10 @@ from ...multiscale.operators.prolongation.AMS import paralel_ams_new0 as paralel
 from ...multiscale.ms_utils.matrices_for_correction import MatricesForCorrection as mfc
 
 from ..operators.prolongation.AMS.Paralell.coupled_ams import OP_AMS
+from packs.multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
+from packs.utils.test_functions import test_instance
+from packs.multiscale.preprocess.dual_domains import DualSubdomain, DualSubdomainMethods
+from packs.multiscale.operators.prolongation.AMS.paralell2.paralel_ams_new_2 import MasterLocalOperator
 
 def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
 
@@ -68,20 +73,25 @@ class MultilevelOperators(DataManager):
         ml_data,
         data_name='MultilevelOperators.npz',
         load=False,
-        get_correction_term=False):
+        get_correction_term=False,
+        return_correction_matrix=False):
 
         super().__init__(data_name=data_name, load=load)
         self.load = load
+        test_instance(ml_data, MultilevelData)
 
         self.ml_data = ml_data
 
         self.n_levels = n_levels
         self.data_impress = data_impress
         self.get_correction_term = get_correction_term
+        self.return_cmatrix = return_correction_matrix
         self.elements_lv0 = elements_lv0
 
         self.restriction = 'restriction_level_'
         self.prolongation = 'prolongation_level_'
+        self.cmatrix = 'correction_matrix_level_'
+        self.prolongation_lcd = 'prolongation_lcd_level_'
 
         self.infos_level = 'infos_level_'
         self.gid_n = 'gid'
@@ -89,6 +99,9 @@ class MultilevelOperators(DataManager):
         self.dual_id_n = 'dual_id'
         self.pcorr_n = 'pcorr_level_'
         self.operators = dict()
+
+        self.prolongation_list = []
+        self.restriction_list = []
 
         if load == False:
             self.get_initial_infos()
@@ -98,12 +111,15 @@ class MultilevelOperators(DataManager):
         if load == True:
             for n in range(n_levels):
                 prol_name = self.prolongation + str(n+1)
-
                 rest_name = self.restriction + str(n+1)
+                cmat_name = self.cmatrix + str(n+1)
+
                 OP = sp.load_npz(os.path.join('flying', prol_name + '.npz'))
                 OR = sp.load_npz(os.path.join('flying', rest_name + '.npz'))
-                self._data[prol_name] = OP
+                Cmatrix = sp.load_npz(os.path.join('flying', cmat_name + '.npz'))
+                self._data[prol_name] = OP                
                 self._data[rest_name] = OR
+                self._data[cmat_name] = Cmatrix
         else:
             pass
             # self.export_to_npz()
@@ -144,10 +160,10 @@ class MultilevelOperators(DataManager):
             gid = infos[self.gid_n]
             primal_id = infos[self.primal_id_n]
             dual_id = infos[self.dual_id_n]
-            interns = gid[dual_id==0]
-            faces = gid[dual_id==1]
-            edges = gid[dual_id==2]
-            vertices = gid[dual_id==3]
+            # interns = gid[dual_id==0]
+            # faces = gid[dual_id==1]
+            # edges = gid[dual_id==2]
+            # vertices = gid[dual_id==3]
             if level == 1:
                 operator = AMSTpfa
                 tpfalizar = False
@@ -172,10 +188,15 @@ class MultilevelOperators(DataManager):
                                                  tpfalizar=tpfalizar,
                                                  get_correction_term=get_correction_term)
 
-    def run(self, T: 'fine transmissibility without boundary conditions',
+    def run(
+        self,
+        T: 'fine transmissibility without boundary conditions',
         total_source_term: 'total fine source term'=None,
-        q_grav: 'fine gravity source term'=None):
+        _grav: 'fine gravity source term'=None,
+        return_correction_matrix=False):
+    
         T_ant = T.copy()
+        total_source_term_2 = total_source_term.copy()
         for n in range(1, self.n_levels):
             level = n
             if self.get_correction_term:
@@ -190,14 +211,27 @@ class MultilevelOperators(DataManager):
                 Eps_matrix = None
                 total_source_term = None
 
-            OP, pcorr = self.operators[str(level)].run(T_ant, total_source_term=total_source_term, B_matrix=B_matrix, Eps_matrix=Eps_matrix)
+            ##############
+            ## Cmatrix is the multiscale correction matrix
+            #############
+
+            OP, pcorr, Cmatrix = self.operators[str(level)].run(
+                T_ant,
+                total_source_term=total_source_term_2,
+                B_matrix=B_matrix,
+                Eps_matrix=Eps_matrix,
+                return_correction_matrix=return_correction_matrix
+            )
             # import pdb; pdb.set_trace()
             self._data[self.prolongation + str(level)] = OP
             self._data[self.pcorr_n + str(level)] = pcorr
+            self._data[self.cmatrix + str(level)] = Cmatrix
+            self._data[self.prolongation_lcd + str(level)] = sp.find(OP)
             OR = self._data[self.restriction + str(level)]
 
             sp.save_npz(os.path.join('flying', self.prolongation + str(level) + '.npz'), OP)
             sp.save_npz(os.path.join('flying', self.restriction + str(level) + '.npz'), OR)
+            sp.save_npz(os.path.join('flying', self.cmatrix + str(level) + '.npz'), Cmatrix)
 
             if level == self.n_levels-1:
                 continue
@@ -206,7 +240,9 @@ class MultilevelOperators(DataManager):
             cids_neigh = self.ml_data['coarse_id_neig_face_level_'+str(level)]
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
+            total_source_term_2 = OR*total_source_term_2
 
+        self.update_operators_list()
         self.export_to_npz()
 
     def run_paralel_ant0(self, T: 'fine transmissibility without boundary conditions',
@@ -276,6 +312,44 @@ class MultilevelOperators(DataManager):
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
 
+    def run_paralel_2(self, T_fine_without_bc, global_source_term, dual_subdomains, global_vector_update, global_diagonal_term, OP_AMS, level, **kwargs):
+        #########
+        ## set update for op and local matrices
+        DualSubdomainMethods.set_local_update(dual_subdomains, global_vector_update)
+        #########
+        
+        ########
+        ## update local matrices
+        DualSubdomainMethods.update_matrices_dual_subdomains(dual_subdomains, T_fine_without_bc, global_diagonal_term)
+        ########
+        
+        ########
+        ## update local source term
+        DualSubdomainMethods.update_local_source_terms_dual_subdomains(dual_subdomains, global_source_term)
+        ########
+        
+        ############
+        ## get OP_AMS and correction function
+        n_volumes = len(global_source_term)
+        master = MasterLocalOperator(dual_subdomains, n_volumes)
+        
+        OP_AMS, correction_function = master.run(OP_AMS)
+        #############
+        
+        #########
+        ## reinitialize local and global update
+        global_vector_update[:] = False
+        DualSubdomainMethods.reinitialize_update(dual_subdomains)
+        #########
+        
+        self._data[self.prolongation + str(level)] = OP_AMS
+        self._data[self.pcorr_n + str(level)] = correction_function
+        # self._data[self.cmatrix + str(level)] = Cmatrix
+        self._data[self.prolongation_lcd + str(level)] = sp.find(OP_AMS)
+        # OR = self._data[self.restriction + str(level)]
+        
+        # return OP_AMS, correction_function
+        
     def get_OP_paralel(self, level,dual_volumes, local_couple, couple_bound):
         #
         # dual_structure = self.ml_data['dual_structure_level_'+str(level)]
@@ -322,3 +396,26 @@ class MultilevelOperators(DataManager):
         print("tempo total para calculo do OP {} segundos".format(time.time()-t0))
 
         return OP
+
+    def get_prolongation_by_level(self, level):
+        return self[self.prolongation + str(level)]
+
+    def get_restriction_by_level(self, level):
+        return self[self.restriction + str(level)]
+
+    def get_pcorr_by_level(self, level):
+        return self[self.pcorr_n + str(level)]
+
+    def update_prolongation_list(self):
+        self.prolongation_list = []
+        for level in range(1, self.n_levels):
+            self.prolongation_list.append(self.get_prolongation_by_level(level))
+
+    def update_restriction_list(self):
+        self.restriction_list = []
+        for level in range(1, self.n_levels):
+            self.restriction_list.append(self.get_restriction_by_level(level))
+
+    def update_operators_list(self):
+        self.update_prolongation_list()
+        self.update_restriction_list()

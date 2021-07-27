@@ -26,7 +26,7 @@ from packs.tpfa.biphasic.load_or_preprocess_biphasic import preprocessar, carreg
 from packs.tpfa.biphasic import TpfaBiphasicCons
 from packs.tpfa.monophasic import TpfaMonophasic
 from packs.multiscale.test_conservation import ConservationTest
-from ADM_b2_funcs import multiscale_cf_calc, multiscale_prolongation_operator, print_mesh_volumes_results, cf_remove_volumes_by_level
+from ADM_b2_funcs import multiscale_cf_calc, multiscale_prolongation_operator, print_mesh_volumes_results, cf_remove_volumes_by_level, multiscale_prolongation_operator_v2, test_var
 
 def save_multilevel_results():
     t_comp.append(t1-t0)
@@ -249,6 +249,9 @@ biphasic_data['upwind_w'], biphasic_data['upwind_o'] = biphasic.set_initial_upwi
 biphasic_data['mob_w_internal_faces'] = mob_w[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_w']]]
 biphasic_data['mob_o_internal_faces'] = mob_o[elements.get('volumes_adj_internal_faces')[biphasic_data['upwind_o']]]
 
+total_mobility_last = (mob_w + mob_o).copy()
+weighted_mobility_last = mob_w*biphasic.properties.rho_w + mob_o*biphasic.properties.rho_o
+
 biphasic_data['transmissibility_faces'] = biphasic.get_transmissibility_faces(
     geom['areas'],
     elements.internal_faces,
@@ -395,37 +398,47 @@ local_lu_matrices = LocalLU()
 # pdb.set_trace()
 
 ml_data = M.multilevel_data
+
+#########################
+from packs.multiscale.preprocess.dual_domains import create_dual_subdomains, DualSubdomainMethods
+dual_subdomains = create_dual_subdomains(ml_data['dual_structure_level_1'], ml_data['fine_dual_id_level_1'], ml_data['fine_primal_id_level_1'])
+n_volumes = len(elements_lv0['volumes'])
+global_vector_update = np.full(n_volumes, True, dtype=bool)
+ncoarse_ids = len(np.unique(data_impress['GID_1']))
+OP_AMS = sp.lil_matrix((n_volumes, ncoarse_ids)).tocsc()
+#########################################
+
 volumes_without_grav_level_0 = ml_data['volumes_without_grav_level_0']
 data_impress['verif_rest'][:] = 0.0
 data_impress['verif_rest'][volumes_without_grav_level_0] = 1.0
 transmissibility = data_impress['transmissibility']
 
-As = multiscale_prolongation_operator(
-    mlo,
-    False,
-    M.multilevel_data,
-    T,
-    T_with_boundary,
-    M,
-    data_impress,
-    neta_lim,
-    ams_tpfa,
-    local_lu_matrices,
-    separated_dual_structures,
-    transmissibility,
-    update_op=True
-)
+# As = multiscale_prolongation_operator(
+#     mlo,
+#     False,
+#     M.multilevel_data,
+#     T,
+#     T_with_boundary,
+#     M,
+#     data_impress,
+#     neta_lim,
+#     ams_tpfa,
+#     local_lu_matrices,
+#     separated_dual_structures,
+#     transmissibility,
+#     update_op=True
+# )
 
-cfs = multiscale_cf_calc(
-    g_source_total_volumes,
-    volumes_without_grav_level_0,
-    local_lu_matrices.local_lu_and_global_ids,
-    data_impress,
-    As,
-    cf_keyword='gama',
-    update_cf=True
-)
-cfs = cf_remove_volumes_by_level(cfs, data_impress['GID_0'][data_impress['LEVEL']==0])
+# cfs = multiscale_cf_calc(
+#     g_source_total_volumes,
+#     volumes_without_grav_level_0,
+#     local_lu_matrices.local_lu_and_global_ids,
+#     data_impress,
+#     As,
+#     cf_keyword='gama',
+#     update_cf=True
+# )
+# cfs = cf_remove_volumes_by_level(cfs, data_impress['GID_0'][data_impress['LEVEL']==0])
 
 
 # transmissibility = np.ones(len(data_impress['transmissibility']))
@@ -469,12 +482,27 @@ adm_method.restart_levels()
 # adm_method.set_level_wells_2()
 adm_method.set_level_wells_only()
 adm_method.equalize_levels()
+adm_method.set_saturation_level_simple(0.1)
 
 # adm_method.verificate_levels()
 # adm_method.set_adm_mesh()
 gids_0 = data_impress['GID_0']
 
 adm_method.set_adm_mesh_non_nested(gids_0[data_impress['LEVEL']==0])
+
+OP_AMS, cfs = multiscale_prolongation_operator_v2(
+    mlo,
+    T,
+    g_source_total_volumes,
+    volumes_without_grav_level_0,
+    dual_subdomains,
+    global_vector_update,
+    np.zeros(n_volumes),
+    OP_AMS,
+    1
+)
+cfs = cf_remove_volumes_by_level(cfs, data_impress['GID_0'][data_impress['LEVEL']==0])
+
 # adm_method.set_initial_mesh(mlo, T, b)
 #
 # meshset_volumes = M.core.mb.create_meshset()
@@ -921,12 +949,41 @@ delta_sat_max=0.1
 # import pdb; pdb.set_trace()
 verif = True
 loop = 0
+
+print_mesh_volumes_results(M, data_impress, meshset_volumes, 'trash' + str(loop) + '.vtk')
+
 while verif:
     # pdb.set_trace()
 
     biphasic_data['krw'], biphasic_data['kro'] = biphasic.get_krw_and_kro(biphasic_data['saturation'])
     mob_w, mob_o = biphasic.get_mobilities_w_o(biphasic_data['krw'], biphasic_data['kro'])
 
+    
+    total_mobility = mob_w + mob_o
+    weighted_mobility = mob_w*biphasic.properties.rho_w + mob_o*biphasic.properties.rho_o
+    
+    test1 = test_var(total_mobility_last, total_mobility, 0.1)
+    total_mobility_last[test1] = total_mobility[test1]
+    test2 = test_var(weighted_mobility_last, weighted_mobility, 0.1)
+    weighted_mobility_last[test2] = weighted_mobility[test2]
+    test = test1 | test2
+    global_vector_update[:] = test
+    # global_vector_update[:] = True
+    data_impress['vug'][:] = 0.0
+    DualSubdomainMethods.set_local_update(dual_subdomains, global_vector_update)
+    for dual in dual_subdomains:
+        if dual.test_update():
+            data_impress['vug'][dual.gids] = 1.0
+            total_mobility_last[dual.gids] = total_mobility[dual.gids]
+            weighted_mobility_last[dual.gids] = weighted_mobility[dual.gids]
+    nat = data_impress['vug'].sum()
+    print()
+    print(f'global vector: {nat}')
+    print()
+    import pdb; pdb.set_trace()
+    
+    
+    
     biphasic_data['upwind_w'], biphasic_data['upwind_o'] = biphasic.update_upwind_phases(
         geom['centroid_volumes'],
         elements.internal_faces,
@@ -1014,22 +1071,22 @@ while verif:
     
     transmissibility[:] = data_impress['transmissibility']
     
-    As = multiscale_prolongation_operator(
-        mlo,
-        False,
-        M.multilevel_data,
-        T,
-        T_with_boundary,
-        M,
-        data_impress,
-        neta_lim,
-        ams_tpfa,
-        local_lu_matrices,
-        separated_dual_structures,
-        transmissibility,
-        As=As,
-        update_op=True
-    )
+    # As = multiscale_prolongation_operator(
+    #     mlo,
+    #     False,
+    #     M.multilevel_data,
+    #     T,
+    #     T_with_boundary,
+    #     M,
+    #     data_impress,
+    #     neta_lim,
+    #     ams_tpfa,
+    #     local_lu_matrices,
+    #     separated_dual_structures,
+    #     transmissibility,
+    #     As=As,
+    #     update_op=True
+    # )
     
     
     
@@ -1070,18 +1127,33 @@ while verif:
 
     ###############
     
-    cfs = multiscale_cf_calc(
-        g_source_total_volumes,
-        volumes_without_grav_level_0,
-        local_lu_matrices.local_lu_and_global_ids,
-        data_impress,
-        As,
-        cf_keyword='gama',
-        update_cf=True
-    )
-    cfs = cf_remove_volumes_by_level(cfs, data_impress['GID_0'][data_impress['LEVEL']==0])
+    # cfs = multiscale_cf_calc(
+    #     g_source_total_volumes,
+    #     volumes_without_grav_level_0,
+    #     local_lu_matrices.local_lu_and_global_ids,
+    #     data_impress,
+    #     As,
+    #     cf_keyword='gama',
+    #     update_cf=True
+    # )
+    # cfs = cf_remove_volumes_by_level(cfs, data_impress['GID_0'][data_impress['LEVEL']==0])
+    
+    
 
     adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
+    
+    OP_AMS, cfs = multiscale_prolongation_operator_v2(
+        mlo,
+        T,
+        g_source_total_volumes,
+        volumes_without_grav_level_0,
+        dual_subdomains,
+        global_vector_update,
+        np.zeros(n_volumes),
+        OP_AMS,
+        1    
+    )
+    cfs = cf_remove_volumes_by_level(cfs, data_impress['GID_0'][data_impress['LEVEL']==0])
 
     t0=time.time()
     for level in range(1, n_levels):
