@@ -124,6 +124,7 @@ def create_dual_and_primal(subP, subD, min_j, max_j, d_j, cent_volumes):
     all_volumes=np.arange(len(cent_volumes))
     min_x, min_y, min_z = min_j
     max_x, max_y, max_z = max_j
+    delta = cent_volumes.min()/4
     Lx1, Ly1, Lz1 = subP[0]
     Lx2, Ly2, Lz2 = subP[1]
     Lxd1, Lyd1, Lzd1 = subD[0]
@@ -133,15 +134,15 @@ def create_dual_and_primal(subP, subD, min_j, max_j, d_j, cent_volumes):
     dual_flag_1 = []
     dual_flag_2 = []
     for i in range(len(Lx2)-1):
-        bx = np.array([[Lx2[i], min_y, min_z],[Lx2[i+1], max_y, max_z]])
+        bx = np.array([[Lx2[i]-delta, min_y - delta, min_z-delta],[Lx2[i+1]+delta, max_y+delta, max_z+delta]])
         indx=get_box(cent_volumes[all_volumes], bx)
         vx = all_volumes[indx]
         for j in range(len(Ly2)-1):
-            by = np.array([[Lx2[i], Ly2[j], min_z],[Lx2[i+1], Ly2[j+1], max_z]])
+            by = np.array([[Lx2[i]-delta, Ly2[j]-delta, min_z-delta],[Lx2[i+1]+delta, Ly2[j+1]+delta, max_z+delta]])
             indy = get_box(cent_volumes[vx], by)
             vy = vx[indy]
             for k in range(len(Lz2)-1):
-                bz = np.array([[Lx2[i], Ly2[j], Lz2[k]],[Lx2[i+1], Ly2[j+1], Lz2[k+1]]])
+                bz = np.array([[Lx2[i]-delta, Ly2[j]-delta, Lz2[k]-delta],[Lx2[i+1]+delta, Ly2[j+1]+delta, Lz2[k+1]+delta]])
                 indz = get_box(cent_volumes[vy], bz)
                 vz = vy[indz]
                 primal_2.append(vz)
@@ -167,16 +168,16 @@ def create_dual_and_primal(subP, subD, min_j, max_j, d_j, cent_volumes):
                 lz1 = Lz1[(Lz1>=Lz2[k]) & (Lz1<=Lz2[k+1])]
 
                 for l in range(len(lx1)-1):
-                    bx = np.array([[lx1[l], Ly2[j], Lz2[k]], [lx1[l+1], Ly2[j+1], Lz2[k+1]]])
+                    bx = np.array([[lx1[l]-delta, Ly2[j]-delta, Lz2[k]-delta], [lx1[l+1]+delta, Ly2[j+1]+delta, Lz2[k+1]+delta]])
                     indx=get_box(cent_volumes[vz], bx)
                     vx1 = vz[indx]
                     for m in range(len(ly1)-1):
-                        by = np.array([[lx1[l], ly1[m], Lz2[k]],[lx1[l+1], ly1[m+1], Lz2[k+1]]])
+                        by = np.array([[lx1[l]-delta, ly1[m]-delta, Lz2[k]-delta],[lx1[l+1]+delta, ly1[m+1]+delta, Lz2[k+1]+delta]])
                         indy = get_box(cent_volumes[vx1], by)
                         vy1 = vx1[indy]
 
                         for n in range(len(lz1)-1):
-                            bz = np.array([[lx1[l], ly1[m], lz1[n]],[lx1[l+1], ly1[m+1], lz1[n+1]]])
+                            bz = np.array([[lx1[l]-delta, ly1[m]-delta, lz1[n]-delta],[lx1[l+1]+delta, ly1[m+1]+delta, lz1[n+1]+delta]])
                             indz = get_box(cent_volumes[vy1], bz)
                             vz1 = vy1[indz]
                             primal_1.append(vz1)
@@ -197,6 +198,7 @@ def set_tags(M1, primal_1, primal_2, dual_flag_1, dual_flag_2):
     volumes=np.array(M1.all_volumes)
     p1=np.concatenate(primal_1)
     p2=np.concatenate(primal_2)
+    import pdb; pdb.set_trace()
     id1=[np.repeat(i,len(primal_1[i])) for i in range(len(primal_1))]
     id2=[np.repeat(i,len(primal_2[i])) for i in range(len(primal_2))]
     id1=np.concatenate(id1)

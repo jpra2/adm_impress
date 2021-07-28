@@ -17,7 +17,7 @@ import time
 
 class MultilevelData(DataManager):
 
-    def __init__(self, data_impress, M, data_name: str='MultilevelData.npz', load=False):
+    def __init__(self, data_impress, M, data_name: str='MultilevelData.npz', load=False, n_levels=1):
         carregar = load
         super().__init__(data_name=data_name, load=load)
         self.tags = dict()
@@ -25,6 +25,7 @@ class MultilevelData(DataManager):
         self._carregar = carregar
         M.multilevel_data = self
         self.mesh = M
+        self.n_levels = n_levels
 
         self.levels = data_loaded['n_levels']
         self.l1 = 1
@@ -65,7 +66,8 @@ class MultilevelData(DataManager):
         self.create_tags()
         print("Time to create tags: {} seconds".format(time.time()-t0))
         t0=time.time()
-        self.generate_dual_and_primal_any_D(M)
+        # self.generate_dual_and_primal_any_D(M)
+        self.generate_dual_and_primal_any_D_v2(M)
         print("Time to create dual: {} seconds".format(time.time()-t0))
         t0=time.time()
         self.get_elements(M)
@@ -204,6 +206,108 @@ class MultilevelData(DataManager):
         paralell_dual_and_primal.DualPrimal(M1, coord_nodes, cent_volumes, external_vertex_on_boundary=True)
         print(time.time()-t0,"tempo para criar a dual")
 
+    def generate_dual_and_primal_any_D_v2(self, M):
+        self.coarse_structures = []
+        M1=M.core
+        M1.all_centroids=M.data["centroid_volumes"]
+        M1.primal_id_tag1=self.tags["PRIMAL_ID_1"]
+        M1.primal_id_tag2=self.tags["PRIMAL_ID_2"]
+        M1.fine_to_primal1_classic_tag=self.tags["FINE_TO_PRIMAL_CLASSIC_1"]
+        M1.fine_to_primal2_classic_tag=self.tags["FINE_TO_PRIMAL_CLASSIC_2"]
+        M1.D1_tag=self.tags["D1"]
+        M1.D2_tag=self.tags["D2"]
+        
+        ###############
+        from packs.directories import data_loaded
+        from packs.multiscale.preprocess.dual_primal import generate_primal
+        from packs.multiscale.preprocess.dual_primal import create_coarse_volumes_structure
+
+        volumes_dimension = generate_primal.get_dimension_volumes(M.volumes.bridge_adjacencies(M.volumes.all, 3, 0), M.nodes.center[:])
+        multilevel_info = {
+            'centroids_volumes': M.volumes.center[:],
+            'volumes_dimension': volumes_dimension,
+            'centroids_nodes': M.nodes.center[:],
+            'cr': np.array(data_loaded['Crs']['Cr1']),
+            # 'volumes_nodes': M.volumes.bridge_adjacencies(M.volumes.all, 3, 0),
+            'adjacencies_internal_faces': M.faces.bridge_adjacencies(M.faces.internal[:], 2, 3),
+            # 'internal_faces': elements_lv0['internal_faces'],
+            # 'boundary_faces': elements_lv0['boundary_faces'],
+            # 'volumes_faces': M.volumes.bridge_adjacencies(M.volumes.all, 3, 2)
+        }
+        primal_ids, dual_ids = generate_primal.create_dual_and_primal(**multilevel_info)
+
+        coarse_info = {
+            'centroids_fine_volumes': M.volumes.center[:],
+            'primal_id': primal_ids, 
+            'adjacencies_internal_faces': M.faces.bridge_adjacencies(M.faces.internal[:], 2, 3), 
+            'fine_volumes_nodes': M.volumes.bridge_adjacencies(M.volumes.all, 3, 0), 
+            'centroids_fine_nodes': M.nodes.center[:],
+            'fine_internal_faces': M.faces.internal[:],
+            'fine_boundary_faces': M.faces.boundary[:],
+            # 'fine_volumes_faces': M.volumes.bridge_adjacencies(M.volumes.all, 3, 2),
+            # 'fine_centroids_faces': M.faces.center[:],
+            'adjacencies_boundary_faces': M.faces.bridge_adjacencies(M.faces.boundary[:], 2, 3)
+        }
+        coarse_structure = create_coarse_volumes_structure.create_coarse_structure(**coarse_info)
+        coarse_structure.update({
+            'primal_id': primal_ids,
+            'dual_id': dual_ids
+        })
+        self.coarse_structures.append(coarse_structure)
+        volumes=np.array(M1.all_volumes)
+        ###############
+        
+        M1.mb.tag_set_data(M1.fine_to_primal1_classic_tag,volumes, primal_ids)
+        M1.mb.tag_set_data(M1.D1_tag,volumes, dual_ids)
+
+        for i in range(len(np.unique(primal_ids))):
+            ms=M1.mb.create_meshset()
+            M1.mb.add_entities(ms,volumes[primal_ids == i])
+            M1.mb.tag_set_data(M1.primal_id_tag1,ms,i)
+        
+        if self.n_levels > 2:
+            for level in range(2,self.n_levels):
+                primal_id_tag = self.tags['PRIMAL_ID_' + str(level)]
+                fine_to_primal_classic_tag = self.tags['FINE_TO_PRIMAL_CLASSIC_' + str(level)]
+                dual_id_tag = self.tags['D' + str(level)]
+                
+                volumes_dimension = generate_primal.get_dimension_volumes(self.coarse_structures[level-2]['volumes_nodes'], self.coarse_structures[level-2]['centroids_nodes'])
+                multilevel_info = {
+                    'centroids_volumes': self.coarse_structures[level-2]['centroids_volumes'],
+                    'volumes_dimension': volumes_dimension,
+                    'centroids_nodes': self.coarse_structures[level-2]['centroids_nodes'],
+                    'cr': np.array(data_loaded['Crs']['Cr' + str(level)]),
+                    'adjacencies_internal_faces': self.coarse_structures[level-2]['adjacencies_faces'][self.coarse_structures[level-2]['internal_faces']]
+                }
+                primal_ids, dual_ids = generate_primal.create_dual_and_primal(**multilevel_info)
+                
+                coarse_info = {
+                    'centroids_fine_volumes': self.coarse_structures[level-2]['centroids_volumes'],
+                    'primal_id': primal_ids,
+                    'adjacencies_internal_faces': multilevel_info['adjacencies_internal_faces'],
+                    'fine_volumes_nodes': self.coarse_structures[level-2]['volumes_nodes'],
+                    'centroids_fine_nodes': self.coarse_structures[level-2]['centroids_nodes'],
+                    'fine_internal_faces': self.coarse_structures[level-2]['internal_faces'],
+                    'fine_boundary_faces': self.coarse_structures[level-2]['boundary_faces'],
+                    'adjacencies_boundary_faces': self.coarse_structures[level-2]['adjacencies_faces'][self.coarse_structures[level-2]['boundary_faces']]
+                }
+                coarse_structure = create_coarse_volumes_structure.create_coarse_structure(**coarse_info)
+                coarse_structure.update({
+                    'primal_id': primal_ids,
+                    'dual_id': dual_ids
+                })
+                self.coarse_structures.append(coarse_structure)
+                
+                vector_dual_id = create_coarse_volumes_structure.get_fine_volumes_by_coarse_information(self.coarse_structures, level, 'dual_id')
+                vector_primal_id = create_coarse_volumes_structure.get_fine_volumes_by_coarse_information(self.coarse_structures, level, 'primal_id')
+                M1.mb.tag_set_data(fine_to_primal_classic_tag, volumes, vector_primal_id)
+                M1.mb.tag_set_data(dual_id_tag, volumes, vector_dual_id)
+
+                for i in range(len(np.unique(primal_ids))):
+                    ms=M1.mb.create_meshset()
+                    M1.mb.add_entities(ms,volumes[vector_primal_id == i])
+                    M1.mb.tag_set_data(primal_id_tag,ms,i)        
+    
     def get_elements(self, M):
         assert not self._loaded
 
@@ -231,8 +335,7 @@ class MultilevelData(DataManager):
             mv = mvs[i]
             n_reord = 0
 
-            interns = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]),
-                                                      np.array([0]))
+            interns = mb.get_entities_by_type_and_tag(mv, types.MBHEX, np.array([self.tags[dual_fine_name]]), np.array([0]))
             if n not in [1]:
                 mb.tag_set_data(self.tags[tag_reord_id], interns, np.arange(n_reord, len(interns)))
             n_reord += len(interns)
@@ -322,6 +425,7 @@ class MultilevelData(DataManager):
                     gids = np.unique(mb.tag_get_data(self.tags[tags_fine[1] + str(n-1)], elems_in_meshset, flat=True))
                 elems_fora = mtu.get_bridge_adjacencies(elems_in_meshset, 2, 3)
                 elems_fora = rng.subtract(elems_fora, elems_in_meshset)
+                import pdb; pdb.set_trace()
                 ids_meshsets_vizinhos = np.unique(mb.tag_get_data(self.tags[primal_fine_name], elems_fora, flat=True))
                 for j in ids_meshsets_vizinhos:
                     m2 = mb.get_entities_by_type_and_tag(M.core.root_set, types.MBENTITYSET, np.array([self.tags[name_tag_c]]), np.array([j]))[0]
@@ -388,6 +492,7 @@ class MultilevelData(DataManager):
         self.data_impress[coarse_id_impress + str(2)] = mb.tag_get_data(self.tags['FINE_TO_PRIMAL_CLASSIC_2'], all_volumes, flat=True)
         self.data_impress[coarse_id_impress + str(1)] = mb.tag_get_data(self.tags['FINE_TO_PRIMAL_CLASSIC_1'], all_volumes, flat=True)
         self.data_impress[coarse_id_impress + str(0)] = M.volumes.all
+        import pdb; pdb.set_trace()
 
     def get_boundary_coarse_faces(self, M):
         assert not self._loaded
@@ -532,6 +637,7 @@ class MultilevelData(DataManager):
             gid_level = self.data_impress['GID_'+str(level-1)]
             coarse_id_level = self.data_impress['GID_'+str(level)]
             dual_ids = self.data_impress['DUAL_'+str(level)]
+            primal_ids = self.data_impress['GID_'+str(level)]   
             set_interns = set(gids[dual_ids==dual_ids.min()])
 
             while set_interns:

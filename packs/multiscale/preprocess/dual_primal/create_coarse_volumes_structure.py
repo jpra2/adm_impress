@@ -125,7 +125,7 @@ def get_coarse_faces_info(fine_internal_faces, fine_boundary_faces, primal_id, a
     define_primal_id_coarse_internal_faces(unique_coarse_adjacencies, adjs_coarse, fine_internal_faces, primal_id_coarse_faces)
     
     define_primal_id_coarse_boundary_faces(coarse_boundary_faces, unique_coarse_boundary_adjacencies, fine_adj_coarse_boundary_faces, fine_boundary_faces, primal_id_coarse_faces)
-        
+    
     all_coarse_faces, all_coarse_faces_adjs = get_coarse_faces_adjs(coarse_internal_faces, coarse_boundary_faces, unique_coarse_adjacencies, unique_coarse_boundary_adjacencies)
     
     coarse_volumes_faces = get_coarse_volumes_faces(unique_pid, all_coarse_faces, unique_coarse_adjacencies, coarse_internal_faces, unique_coarse_boundary_adjacencies, coarse_boundary_faces)
@@ -143,8 +143,8 @@ def get_coarse_faces_info(fine_internal_faces, fine_boundary_faces, primal_id, a
 
 def define_primal_id_coarse_internal_faces(unique_coarse_adjacencies, adjs_coarse, fine_internal_faces, primal_id_coarse_faces):
     for i, adj in enumerate(unique_coarse_adjacencies):
-        test1 = (adjs_coarse[:,0] == adj[0]) & (adjs_coarse[:,0] == adj[1])
-        test2 = (adjs_coarse[:,1] == adj[0]) & (adjs_coarse[:,1] == adj[1])
+        test1 = (adjs_coarse[:,0] == adj[0]) & (adjs_coarse[:,1] == adj[1])
+        test2 = (adjs_coarse[:,0] == adj[1]) & (adjs_coarse[:,1] == adj[0])
         test = test1 | test2
         fine_faces = fine_internal_faces[test]
         primal_id_coarse_faces[fine_faces] = i
@@ -188,12 +188,45 @@ def get_coarse_volumes_faces_resp(unique_pid, coarse_volumes_faces):
     coarse_volumes_faces_resp = np.array(coarse_volumes_faces_resp)
     return coarse_volumes_faces_resp
 
-def get_fine_boundary_adjacencies(adjacencies_boundary_faces):
+def get_fine_boundary_adjacencies(adjacencies_boundary_faces: np.ndarray):
     if len(adjacencies_boundary_faces.shape) > 1:
-        if adjacencies_boundary_faces.shape[1] == 2:
-            return adjacencies_boundary_faces[:, 0].flatten()
+        set_test = np.unique(adjacencies_boundary_faces[:, 0])
+        if len(set([-1]) & set(set_test)) > 0:
+            col = 1
         else:
-            return adjacencies_boundary_faces.flattenn()
+            col = 0
+        return adjacencies_boundary_faces[:, col].flatten()
     else:
         return adjacencies_boundary_faces.flatten()
 
+def get_fine_volumes_by_coarse_information(coarse_structures, level, info: str):
+    
+    all_infos = ['primal_id', 'dual_id']
+    if info not in all_infos:
+        raise NotImplementedError(f'Unspected. info must be in {all_infos}')
+    
+    if level == 1:
+        return coarse_structures[0][info]
+    else:
+        level_info = level-1
+        n_total = len(coarse_structures)
+        info_level = coarse_structures[level_info][info].copy()
+        for i in range(level_info):
+            n_level = n_total - (i+1)
+            id_level_ant_info = coarse_structures[n_level-1]['gids']
+            primal_info = coarse_structures[n_level-1]['primal_id']
+            n_fine = len(primal_info)
+            fine_info = np.repeat(-1, n_fine)
+            for c_gid in id_level_ant_info:
+                fine_info[primal_info==c_gid] = info_level[c_gid]
+            
+            info_level = fine_info.copy()
+            
+        return fine_info
+
+
+    
+    
+    
+    
+    
