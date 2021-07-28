@@ -13,14 +13,17 @@ class LocalOperator(GlobalLocalSolver):
         for dual in self.subdomains:
             dual: DualSubdomain
             if dual.test_update():
-                local_op = dual.ams_solver.get_OP_AMS_TPFA_by_AS(dual.As)
+                # dual.update_lu_matrices()
+                # local_op = dual.ams_solver.get_OP_AMS_TPFA_by_AS(dual.As)
+                local_op = dual.ams_solver.get_OP_AMS_TPFA_by_AS_and_local_lu(dual.As, dual.lu_matrices)
                 local_op = sp.find(local_op)
                 local_op[0][:] = dual.gids[local_op[0]]
                 local_op[1][:] = dual.rmap_lcid_cid[local_op[1]]
             else:
                 local_op = np.array([[], [], []])
             
-            local_pcorr = dual.ams_solver.get_pcorr2(dual.As, dual.local_source_term)
+            # local_pcorr = dual.ams_solver.get_pcorr2(dual.As, dual.local_source_term, )
+            local_pcorr = dual.ams_solver.get_pcorr3(dual.As, dual.local_source_term, dual.lu_matrices)
             
             op_resp = np.zeros(len(local_op[0]), dtype=dtype_op)
             cf_resp = np.zeros(len(local_pcorr), dtype=dtype_cf)
@@ -35,6 +38,7 @@ class LocalOperator(GlobalLocalSolver):
                 op_resp,
                 cf_resp
             ])
+            
                 
             self.queue.put(resp)
             

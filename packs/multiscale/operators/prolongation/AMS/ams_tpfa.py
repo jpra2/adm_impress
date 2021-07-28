@@ -6,8 +6,8 @@ import time
 
 class AMSTpfa:
     # name = 'AMSTpfa_'
-    id = 1
-
+    id = 1    
+    
     def __init__(self,
         internals,
         faces,
@@ -127,6 +127,18 @@ class AMSTpfa:
 
         return self.GT*op*self.G2
 
+    def get_OP_AMS_TPFA_by_AS_and_local_lu(self, As, local_lu):
+        
+        nv = self.wirebasket_numbers[3]
+
+        Pv = sp.identity(nv)
+        Pe = get_local_prolongation(local_lu['Aee'], As['Aev']*Pv)
+        Pf = get_local_prolongation(local_lu['Aff'], As['Afe']*Pe)
+        Pi = get_local_prolongation(local_lu['Aii'], As['Aif']*Pf)
+        op = sp.vstack([Pi,Pf,Pe,Pv])
+
+        return self.GT*op*self.G2
+        
     def tpfalize(self, T_wire):
 
         ni = self.wirebasket_numbers[0]
@@ -202,18 +214,18 @@ class AMSTpfa:
 
         return pcorr
     
-    def get_pcorr2(self, As, total_source_term_wire):
-        ni = self.wirebasket_numbers[0]
-        nf = self.wirebasket_numbers[1]
-        ne = self.wirebasket_numbers[2]
-        nv = self.wirebasket_numbers[3]
+    def get_pcorr2(self, As, total_source_term):
+        # ni = self.wirebasket_numbers[0]
+        # nf = self.wirebasket_numbers[1]
+        # ne = self.wirebasket_numbers[2]
+        # nv = self.wirebasket_numbers[3]
 
         nni = self.ns_sum[0]
         nnf = self.ns_sum[1]
         nne = self.ns_sum[2]
         nnv = self.ns_sum[3]
         
-        q2 = total_source_term_wire
+        q2 = self.G*total_source_term
         pcorr = np.zeros(len(q2), dtype=float)
 
         pcorr_ee = linalg.spsolve(As['Aee'], q2[nnf:nne])
@@ -232,13 +244,36 @@ class AMSTpfa:
 
         return pcorr
     
+    def get_pcorr3(self, As, total_source_term, local_lu):
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
+        
+        q2 = self.G*total_source_term
+        pcorr = np.zeros(len(q2), dtype=float)
+
+        pcorr_ee = local_lu['Aee'].solve(q2[nnf:nne])
+        pcorr_fe = -local_lu['Aff'].solve(As['Afe']*pcorr_ee)
+        pcorr_ie = -local_lu['Aii'].solve(As['Aif']*pcorr_fe)
+        
+        pcorr_ff = local_lu['Aff'].solve(q2[nni:nnf])
+        pcorr_if = -local_lu['Aii'].solve(As['Aif']*pcorr_ff)
+        
+        pcorr_ii = local_lu['Aii'].solve(q2[0:nni])
+
+        pcorr[0:nni] = pcorr_ii + pcorr_if + pcorr_ie
+        pcorr[nni:nnf] = pcorr_ff + pcorr_fe
+        pcorr[nnf:nne] = pcorr_ee
+        pcorr = self.GT*pcorr
+
+        return pcorr
+    
     def get_twire(self, T):
         T_wire = self.G*T*self.GT
         return T_wire
     
     def run2(self, As, total_source_term=None):
-        
-        
         OP = self.get_OP_AMS_TPFA_by_AS(As)
         
         if self.get_correction_term:
@@ -248,9 +283,6 @@ class AMSTpfa:
             pcorr = np.zeros(len(total_source_term), dtype=int)
         
         return OP, pcorr
-        
-        
-        
 
 
 
@@ -285,3 +317,13 @@ def get_G2(vertices, primal_ids):
     G2 = sp.csc_matrix((data,(lines,cols)), shape=(nv, nv))
 
     return G2
+
+def get_local_prolongation(local_lu, local_matrix, pare=False):
+    resp = sp.lil_matrix(local_matrix.shape)
+    for i in range(local_matrix.shape[1]):
+        vector = -local_lu.solve(local_matrix[:, i].toarray().flatten())
+        indexes = np.argwhere(vector > 0).flatten()
+        resp[indexes, i] = vector[indexes]
+    
+    
+    return resp

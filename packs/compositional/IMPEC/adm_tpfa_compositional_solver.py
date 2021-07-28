@@ -65,6 +65,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         
         T, T_noCC = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
+        
         # D2 = GlobalIMPECPressureSolver.mount_independent_term(
         #     ctes.Vbulk,
         #     ctes.porosity,
@@ -101,7 +102,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # test_instance(mlo, MultilevelOperators)
         # mlo.run(T_noCC, np.zeros(len(D)), np.zeros(len(D)))
         # mlo.run(T_noCC, D, np.zeros(len(D)), return_correction_matrix=False)
-        mlo.run_paralel_2(
+        
+        OP_AMS, cfs  = mlo.run_paralel_2(
             T_noCC,
             np.zeros(len(D)),
             dual_subdomains,
@@ -110,6 +112,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             OP_AMS,
             1
         )
+        import pdb; pdb.set_trace()
         
         n_levels = 2
         transm_int_fac = np.array(T_noCC[ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()

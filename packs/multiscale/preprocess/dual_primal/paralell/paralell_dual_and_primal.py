@@ -61,7 +61,6 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
         P.append(P_i)
         D.append(D_i)
     # import pdb; pdb.set_trace()
-    import pdb; pdb.set_trace()
     return P, D, min_j, max_j, d_j
 
 def distribute_reservoir_partitions(P_all, D_all, nworker):

@@ -332,7 +332,7 @@ class MultilevelOperators(DataManager):
         ## get OP_AMS and correction function
         n_volumes = len(global_source_term)
         master = MasterLocalOperator(dual_subdomains, len(global_source_term))
-        OP_AMS, correction_function = master.run(OP_AMS)
+        OP_AMS, correction_function = master.run(OP_AMS, dual_subdomains)
         #############
         
         #########
@@ -347,7 +347,7 @@ class MultilevelOperators(DataManager):
         self._data[self.prolongation_lcd + str(level)] = sp.find(OP_AMS)
         OR = self._data[self.restriction + str(level)]
         
-        # return OP_AMS, correction_function
+        return OP_AMS, correction_function
         
     
     def get_OP_paralel(self, level,dual_volumes, local_couple, couple_bound):

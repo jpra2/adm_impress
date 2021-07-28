@@ -42,7 +42,7 @@ class MasterLocalOperator(CommonMasterMethods):
     def all_process_finished(self):
         return np.all([i.value for i in self.finished])
     
-    def run(self, OP_AMS):
+    def run(self, OP_AMS, dual_subdomains):
         
         correction_function = np.zeros(self.n_volumes)
         
@@ -66,6 +66,7 @@ class MasterLocalOperator(CommonMasterMethods):
             resp = self.queue.get()
             set_data_to_op(OP_AMS, resp[0])
             set_data_to_cf(correction_function, resp[1])
+            
 
         return OP_AMS, correction_function
         
@@ -94,3 +95,7 @@ def set_data_to_op(OP_AMS, op_resp):
 
 def set_data_to_cf(correction_function, cf_resp):
     correction_function[cf_resp['gids']] = cf_resp['cf']
+    
+def set_local_lu_matrices(resp_lu_matrices, dual_subdomains):
+    if len(resp_lu_matrices) > 0:
+        dual_subdomains[resp_lu_matrices[0]].lu_matrices.update(resp_lu_matrices[1])
