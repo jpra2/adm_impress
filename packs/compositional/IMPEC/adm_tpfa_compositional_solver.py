@@ -112,7 +112,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             OP_AMS,
             1
         )
-        import pdb; pdb.set_trace()
         
         n_levels = 2
         transm_int_fac = np.array(T_noCC[ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
@@ -149,6 +148,9 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         gid_0 = data_impress['GID_0'][data_impress['LEVEL'] == 0]
         gid_1 = data_impress['GID_0'][data_impress['LEVEL'] == 1]
         adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
+        
+        
+        cfs[data_impress['LEVEL'] == 0] = 0
 
         for level in range(1, n_levels):
             adm_method.organize_ops_adm(mlo, level)
@@ -161,17 +163,20 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #####
         prolongation_list = []
         restriction_list = []
+        correction_function_list = []
         for level in range(1, n_levels):
             # prolongation_list.append(mlo[mlo.prolongation + str(level)])
             # restriction_list.append(mlo[mlo.restriction + str(level)])
             prolongation_list.append(adm_method['adm_prolongation_level_' + str(level)])
             restriction_list.append(adm_method['adm_restriction_level_' + str(level)])
+            correction_function_list.append(np.zeros(adm_method['adm_prolongation_level_' + str(level)].shape[0]))
 
         solution = multilevel_pressure_solver(
             T,
             D,
             prolongation_list,
-            restriction_list
+            restriction_list,
+            correction_function_list
         )
 
         self.P = self.update_pressure(T, D) # OP*padm
@@ -181,6 +186,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         data_impress['ms_pressure'][:] = solution
         data_impress['pressure_error'][:] = error
         data_impress.update_variables_to_mesh()
+        # import pdb; pdb.set_trace() 
         
         # m1 = M.core.mb.create_meshset()
         # M.    core.mb.add_entities(m1, M.core.all_volumes)
@@ -227,7 +233,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         master = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
         local_solution = master.run()
         del master
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         error2 = np.absolute(self.P - local_solution) / self.P
         data_impress['verif_po'][:] = local_solution
@@ -247,7 +253,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         self.update_flux_wells(fprop, wells, delta_t, solution)
 
-        return self.P, Ft_internal_faces, self.q
+        # return self.P, Ft_internal_faces, self.q
+        import pdb; pdb.set_trace()
+        # return self.P, Ft_internal_faces_orig, self.q
+        return solution, Ft_internal_faces, self.q
     
     def update_transmissibility(self, M, wells, fprop, delta_t, **kwargs):
         params = kwargs.get('params')

@@ -198,7 +198,6 @@ def set_tags(M1, primal_1, primal_2, dual_flag_1, dual_flag_2):
     volumes=np.array(M1.all_volumes)
     p1=np.concatenate(primal_1)
     p2=np.concatenate(primal_2)
-    import pdb; pdb.set_trace()
     id1=[np.repeat(i,len(primal_1[i])) for i in range(len(primal_1))]
     id2=[np.repeat(i,len(primal_2[i])) for i in range(len(primal_2))]
     id1=np.concatenate(id1)

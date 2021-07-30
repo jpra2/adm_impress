@@ -425,7 +425,6 @@ class MultilevelData(DataManager):
                     gids = np.unique(mb.tag_get_data(self.tags[tags_fine[1] + str(n-1)], elems_in_meshset, flat=True))
                 elems_fora = mtu.get_bridge_adjacencies(elems_in_meshset, 2, 3)
                 elems_fora = rng.subtract(elems_fora, elems_in_meshset)
-                import pdb; pdb.set_trace()
                 ids_meshsets_vizinhos = np.unique(mb.tag_get_data(self.tags[primal_fine_name], elems_fora, flat=True))
                 for j in ids_meshsets_vizinhos:
                     m2 = mb.get_entities_by_type_and_tag(M.core.root_set, types.MBENTITYSET, np.array([self.tags[name_tag_c]]), np.array([j]))[0]
@@ -492,7 +491,6 @@ class MultilevelData(DataManager):
         self.data_impress[coarse_id_impress + str(2)] = mb.tag_get_data(self.tags['FINE_TO_PRIMAL_CLASSIC_2'], all_volumes, flat=True)
         self.data_impress[coarse_id_impress + str(1)] = mb.tag_get_data(self.tags['FINE_TO_PRIMAL_CLASSIC_1'], all_volumes, flat=True)
         self.data_impress[coarse_id_impress + str(0)] = M.volumes.all
-        import pdb; pdb.set_trace()
 
     def get_boundary_coarse_faces(self, M):
         assert not self._loaded

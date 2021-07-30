@@ -28,41 +28,7 @@ else: stop_criteria = data_loaded['compositional_data']['maximum_time']
 
 loop_max = 1000
 run_criteria = 0# ###############
-# from packs.multiscale.preprocess.dual_primal import generate_primal
-# from packs.multiscale.preprocess.dual_primal import create_coarse_volumes_structure
 
-# volumes_dimension = generate_primal.get_dimension_volumes(M.volumes.bridge_adjacencies(M.volumes.all, 3, 0), M.nodes.center[:])
-# multilevel_info = {
-#     # 'volumes': elements_lv0['volumes'],
-#     'centroids_volumes': M.volumes.center[:],
-#     'volumes_dimension': volumes_dimension,
-#     # 'nodes': M.nodes.all,
-#     'centroids_nodes': M.nodes.center[:],
-#     'cr': np.array(data_loaded['Crs']['Cr1']),
-#     # 'volumes_nodes': M.volumes.bridge_adjacencies(M.volumes.all, 3, 0),
-#     'adjacencies_internal_faces': elements_lv0['neig_internal_faces'],
-#     # 'internal_faces': elements_lv0['internal_faces'],
-#     # 'boundary_faces': elements_lv0['boundary_faces'],
-#     # 'volumes_faces': M.volumes.bridge_adjacencies(M.volumes.all, 3, 2)
-# }
-# primal_ids, dual_ids = generate_primal.create_dual_and_primal(**multilevel_info)
-
-# coarse_info = {
-#     # 'fine_volumes': elements_lv0['volumes'],
-#     'centroids_fine_volumes': M.volumes.center[:],
-#     'primal_id': primal_ids, 
-#     'adjacencies_internal_faces': elements_lv0['neig_internal_faces'],
-#     # 'fine_nodes': M.nodes.all, 
-#     'fine_volumes_nodes': M.volumes.bridge_adjacencies(M.volumes.all, 3, 0), 
-#     'centroids_fine_nodes': M.nodes.center[:],
-#     'fine_internal_faces': elements_lv0['internal_faces'],
-#     'fine_boundary_faces': elements_lv0['boundary_faces'],
-#     # 'fine_volumes_faces': M.volumes.bridge_adjacencies(M.volumes.all, 3, 2),
-#     # 'fine_centroids_faces': M.faces.center[:],
-#     'adjacencies_boundary_faces': M.faces.bridge_adjacencies(M.faces.boundary[:], 2, 3)
-# }
-# create_coarse_volumes_structure.create_coarse_structure(**coarse_info)
-# import pdb; pdb.set_trace()
 # ###############- RUN CODE --------------------------------- """
 
 load = data_loaded['load_data']
@@ -74,44 +40,6 @@ M, data_impress, wells, fprop, load, elements_lv0 = sim.initialize(load, convert
 # import pdb; pdb.set_trace()
 # load_multilevel_data = False
 
-
-# ###############
-# from packs.multiscale.preprocess.dual_primal import generate_primal
-# from packs.multiscale.preprocess.dual_primal import create_coarse_volumes_structure
-
-# volumes_dimension = generate_primal.get_dimension_volumes(M.volumes.bridge_adjacencies(M.volumes.all, 3, 0), M.nodes.center[:])
-# multilevel_info = {
-#     # 'volumes': elements_lv0['volumes'],
-#     'centroids_volumes': M.volumes.center[:],
-#     'volumes_dimension': volumes_dimension,
-#     # 'nodes': M.nodes.all,
-#     'centroids_nodes': M.nodes.center[:],
-#     'cr': np.array(data_loaded['Crs']['Cr1']),
-#     # 'volumes_nodes': M.volumes.bridge_adjacencies(M.volumes.all, 3, 0),
-#     'adjacencies_internal_faces': elements_lv0['neig_internal_faces'],
-#     # 'internal_faces': elements_lv0['internal_faces'],
-#     # 'boundary_faces': elements_lv0['boundary_faces'],
-#     # 'volumes_faces': M.volumes.bridge_adjacencies(M.volumes.all, 3, 2)
-# }
-# primal_ids, dual_ids = generate_primal.create_dual_and_primal(**multilevel_info)
-
-# coarse_info = {
-#     # 'fine_volumes': elements_lv0['volumes'],
-#     'centroids_fine_volumes': M.volumes.center[:],
-#     'primal_id': primal_ids, 
-#     'adjacencies_internal_faces': elements_lv0['neig_internal_faces'],
-#     # 'fine_nodes': M.nodes.all, 
-#     'fine_volumes_nodes': M.volumes.bridge_adjacencies(M.volumes.all, 3, 0), 
-#     'centroids_fine_nodes': M.nodes.center[:],
-#     'fine_internal_faces': elements_lv0['internal_faces'],
-#     'fine_boundary_faces': elements_lv0['boundary_faces'],
-#     # 'fine_volumes_faces': M.volumes.bridge_adjacencies(M.volumes.all, 3, 2),
-#     # 'fine_centroids_faces': M.faces.center[:],
-#     'adjacencies_boundary_faces': M.faces.bridge_adjacencies(M.faces.boundary[:], 2, 3)
-# }
-# create_coarse_volumes_structure.create_coarse_structure(**coarse_info)
-# import pdb; pdb.set_trace()
-# ###############
 
 ml_data = MultilevelData(data_impress, M, load=load_multilevel_data, n_levels=n_levels)
 
@@ -188,7 +116,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['porous_volume'] = fprop.Vp
     params['total_volume'] = fprop.Vt
     
-    global_vector_update[:] = True # update the prolongation operator
+    global_vector_update[:] = True # update the prolongation operator in all dual volumes
 
 
     sim.run(M, wells, fprop, load, 

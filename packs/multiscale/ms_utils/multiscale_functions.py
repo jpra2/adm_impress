@@ -92,7 +92,8 @@ def multilevel_pressure_solver(
         fine_scale_transmissibility,
         fine_scale_source_term,
         prolongation_list: list,
-        restriction_list: list):
+        restriction_list: list,
+        correction_functions_list: list):
     
     from packs.solvers.solvers_scipy.solver_sp import SolverSp
     solver = SolverSp()
@@ -101,16 +102,18 @@ def multilevel_pressure_solver(
     assert isinstance(restriction_list, list)
     n = len(prolongation_list)
     assert n == len(restriction_list)
+    assert n == len(correction_functions_list)
 
     t2 = fine_scale_transmissibility.copy()
     q2 = fine_scale_source_term.copy()
 
-    for OP, OR in zip(prolongation_list, restriction_list):
+    for OP, OR, cf in zip(prolongation_list, restriction_list, correction_functions_list):
         assert OP.shape[0] == OR.shape[1]
         assert OP.shape[1] == OR.shape[0]
         assert t2.shape[0] == OP.shape[0]
+        assert len(cf) == OP.shape[0]
+        q2 = OR * (q2 - t2*cf)
         t2 = OR * (t2 * OP)
-        q2 = OR * q2
 
     solution = solver.direct_solver(t2, q2)
     prolongation_list.reverse()
