@@ -59,9 +59,10 @@ class RunSimulationAdm(run_simulation):
 
         if ctes.load_k and ctes.compressible_k:
                 fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
-            fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
-            fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
-            self.p2.run(wells, fprop.P, fprop.z)
+                fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
+                fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
+                self.p2.run(fprop.P, fprop.z)
+                # self.p2.run(wells, fprop.P, fprop.z)
 
         '----------------------- Update fluid properties ----------------------'
 

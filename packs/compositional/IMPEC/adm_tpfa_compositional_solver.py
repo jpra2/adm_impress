@@ -63,7 +63,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     kwargs.keys()
         # )
         
-        T, T_noCC = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
+        T, T_noCC, T_advec = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
         
         # D2 = GlobalIMPECPressureSolver.mount_independent_term(
@@ -103,16 +103,26 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # mlo.run(T_noCC, np.zeros(len(D)), np.zeros(len(D)))
         # mlo.run(T_noCC, D, np.zeros(len(D)), return_correction_matrix=False)
         
+        # OP_AMS, cfs  = mlo.run_paralel_2(
+        #     T_noCC,
+        #     D,
+        #     dual_subdomains,
+        #     global_vector_update,
+        #     params['diagonal_term'],
+        #     OP_AMS,
+        #     1
+        # )
+        import pdb; pdb.set_trace()
         OP_AMS, cfs  = mlo.run_paralel_2(
-            T_noCC,
-            np.zeros(len(D)),
+            T_advec,
+            D,
             dual_subdomains,
             global_vector_update,
             params['diagonal_term'],
             OP_AMS,
             1
         )
-        
+    
         n_levels = 2
         transm_int_fac = np.array(T_noCC[ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
         # data_impress['transmissibility'][elements_lv0['internal_faces']] = ctes.pretransmissibility_internal_faces
@@ -144,11 +154,11 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         if len(vols_orig) > 0:
             adm_method.set_monotonizing_level(vols_orig)
         # adm_method.set_saturation_level_simple(delta_sat_max)
+        import pdb; pdb.set_trace()
 
         gid_0 = data_impress['GID_0'][data_impress['LEVEL'] == 0]
         gid_1 = data_impress['GID_0'][data_impress['LEVEL'] == 1]
         adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
-        
         
         cfs[data_impress['LEVEL'] == 0] = 0
 
@@ -186,7 +196,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         data_impress['ms_pressure'][:] = solution
         data_impress['pressure_error'][:] = error
         data_impress.update_variables_to_mesh()
-        # import pdb; pdb.set_trace() 
+        import pdb; pdb.set_trace()
         
         # m1 = M.core.mb.create_meshset()
         # M.    core.mb.add_entities(m1, M.core.all_volumes)
@@ -283,6 +293,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         # T = T * delta_t
         T *= delta_t
+        T_advec = T.copy()
         ''' Transmissibility diagonal term '''
         # diag = np.diag((ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP))
         # T += diag
@@ -303,7 +314,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         T[wells['ws_p'],:] = 0
         T[wells['ws_p'], wells['ws_p']] = 1
 
-        return T.tocsc(), self.T_noCC.copy()
+        return T.tocsc(), self.T_noCC.copy(), T_advec
 
     def update_total_flux_internal_faces(self, fprop, pressure):
         # Pot_hid = self.P + fprop.Pcap
