@@ -57,6 +57,12 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         dual_subdomains: Sequence[DualSubdomain] = kwargs.get('dual_subdomains')
         global_vector_update = kwargs.get('global_vector_update')
         OP_AMS = kwargs.get('OP_AMS')
+        # import pdb; pdb.set_trace()
+        centroids = M.volumes.center[:]
+        dx = centroids[:, 0][elements_lv0['neig_internal_faces'][:,1]] - centroids[:, 0][elements_lv0['neig_internal_faces'][:,0]]
+        dx = dx.min()
+        test = (centroids[:,0] >= centroids[:,0].min() - 0.1) & (centroids[:,0] < centroids.min() + 7*dx + 0.1)
+        vols = elements_lv0['volumes'][test]
 
         # test_kwargs_keys(
         #     AdmTpfaCompositionalSolver._kwargs_keys['get_pressure'],
@@ -112,16 +118,38 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     OP_AMS,
         #     1
         # )
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
+        #######################
+        ### test global operator
+        # from packs.multiscale.operators.prolongation.AMS.ams_tpfa import AMSTpfa
+        # ams_solver = AMSTpfa(
+        #     elements_lv0['volumes'][data_impress['DUAL_1']==0],
+        #     elements_lv0['volumes'][data_impress['DUAL_1']==1],
+        #     elements_lv0['volumes'][data_impress['DUAL_1']==2],
+        #     elements_lv0['volumes'][data_impress['DUAL_1']==3],
+        #     elements_lv0['volumes'],
+        #     data_impress['GID_1']
+        # )
+        # As = ams_solver.get_as(ams_solver.get_twire(T_advec))
+        # print_mesh_volumes_data(
+        #     M,
+        #     os.path.join('results', 'prolongation_level_1.vtk')
+        # )
+        # OP = ams_solver.get_OP_AMS_TPFA_by_AS(As)
+        # import pdb; pdb.set_trace()
+        ################################
+        
         OP_AMS, cfs  = mlo.run_paralel_2(
             T_advec,
             D,
             dual_subdomains,
             global_vector_update,
-            params['diagonal_term'],
+            # params['diagonal_term'],
+            np.zeros(D.shape[0]),
             OP_AMS,
             1
         )
+        # import pdb; pdb.set_trace()
     
         n_levels = 2
         transm_int_fac = np.array(T_noCC[ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
@@ -149,18 +177,20 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         vols_orig = monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups, data_impress,
                                                                elements_lv0, volumes, netasp_array, neta_lim_finescale)        # adm_method.set_level_wells_3()
         data_impress['LEVEL'][:] = 1
+        # data_impress['LEVEL'][vols] = 0
         adm_method.set_level_wells_only()
 
         if len(vols_orig) > 0:
             adm_method.set_monotonizing_level(vols_orig)
         # adm_method.set_saturation_level_simple(delta_sat_max)
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         gid_0 = data_impress['GID_0'][data_impress['LEVEL'] == 0]
         gid_1 = data_impress['GID_0'][data_impress['LEVEL'] == 1]
         adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
+        # data_impress['LEVEL'][vols] = 0
         
-        cfs[data_impress['LEVEL'] == 0] = 0
+        # cfs[data_impress['LEVEL'] == 0] = 0
 
         for level in range(1, n_levels):
             adm_method.organize_ops_adm(mlo, level)
@@ -195,8 +225,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         data_impress['pressure'][:] = self.P
         data_impress['ms_pressure'][:] = solution
         data_impress['pressure_error'][:] = error
-        data_impress.update_variables_to_mesh()
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         
         # m1 = M.core.mb.create_meshset()
         # M.    core.mb.add_entities(m1, M.core.all_volumes)

@@ -11,10 +11,10 @@ import os
 from ...multiscale.operators.prolongation.AMS import paralel_ams_new0 as paralel_ams
 from ...multiscale.ms_utils.matrices_for_correction import MatricesForCorrection as mfc
 
-from ..operators.prolongation.AMS.Paralell.coupled_ams import OP_AMS
+from ..operators.prolongation.AMS.Paralell.coupled_ams import DualDomain, OP_AMS
 from packs.multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
 from packs.utils.test_functions import test_instance
-from packs.multiscale.preprocess.dual_domains import DualSubdomainMethods
+from packs.multiscale.preprocess.dual_domains import DualSubdomain, DualSubdomainMethods
 from packs.multiscale.operators.prolongation.AMS.paralell2.paralel_ams_new_2 import MasterLocalOperator
 
 def get_gids_primalids_dualids(gids, primal_ids, dual_ids):
@@ -328,6 +328,37 @@ class MultilevelOperators(DataManager):
         DualSubdomainMethods.update_local_source_terms_dual_subdomains(dual_subdomains, global_source_term)
         ########
         
+        #################
+        ## test local operator
+        # from scipy.sparse.linalg import spsolve
+        # ops = []
+        # cfs = np.zeros(OP_AMS.shape[0])
+        # OP2 = OP_AMS.copy()
+        # for dual in dual_subdomains:
+        #     dual: DualSubdomain
+        #     if dual.test_update():
+        #         # dual.update_lu_matrices()
+        #         local_op = dual.ams_solver.get_OP_AMS_TPFA_by_AS(dual.As)
+        #         # local_op = dual.ams_solver.get_OP_AMS_TPFA_by_AS_and_local_lu(dual.As, dual.lu_matrices)
+        #         aee = dual.As['Aee'].tocsc()
+        #         # aeeinv = spsolve(aee, sp.identity(aee.shape[0]))
+        #         nv = dual.ams_solver.wirebasket_numbers[3]
+        #         Pv = sp.identity(nv)
+        #         op2 = spsolve(dual.As['Aee'], dual.As['Aev']*Pv)
+                
+        #         import pdb; pdb.set_trace()
+        #         local_op = sp.find(local_op)
+        #         local_op[0][:] = dual.gids[local_op[0]]
+        #         local_op[1][:] = dual.rmap_lcid_cid[local_op[1]]
+        #     else:
+        #         local_op = np.array([[], [], []])
+            
+        #     local_pcorr = dual.ams_solver.get_pcorr2(dual.As, dual.local_source_term)
+        #     cfs[dual.gids] = local_pcorr
+        #     OP2[local_op[0], local_op[1]] = local_op[2]
+        # import pdb; pdb.set_trace()
+        # #################
+        
         ############
         ## get OP_AMS and correction function
         n_volumes = len(global_source_term)
@@ -350,7 +381,7 @@ class MultilevelOperators(DataManager):
         return OP_AMS, correction_function
         
     
-    def get_OP_paralel(self, level,dual_volumes, local_couple, couple_bound):
+    def get_OP_paralel(self, level, dual_volumes, local_couple, couple_bound):
         #
         # dual_structure = self.ml_data['dual_structure_level_'+str(level)]
         # dual_volumes = [dd['volumes'] for dd in dual_structure]

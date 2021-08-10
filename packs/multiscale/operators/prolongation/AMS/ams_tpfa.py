@@ -83,6 +83,7 @@ class AMSTpfa:
         nnf = self.ns_sum[1]
         nne = self.ns_sum[2]
         nnv = self.ns_sum[3]
+        # import pdb; pdb.set_trace()
 
         #internos
         Aii = Tmod[0:nni, 0:nni]
@@ -100,9 +101,13 @@ class AMSTpfa:
         Aee = Tmod[nnf:nne, nnf:nne]
         Aev = Tmod[nnf:nne, nne:nnv]
         soma = Tmod[nnf:nne, nni:nnf].sum(axis=1)
+        # rr = Aee.sum(axis=1).flatten()
+        # diag = np.array(Aee.diagonal().flatten() - rr).flatten()
+        # Aee.setdiag(diag)
         d1 = np.matrix(Aee.diagonal()).reshape([ne, 1])
         d1 += soma
         Aee.setdiag(d1)
+        
         Ivv = sp.identity(nv)
 
         As['Aii'] = Aii.tocsc()

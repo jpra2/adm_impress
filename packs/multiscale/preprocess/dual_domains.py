@@ -100,6 +100,7 @@ class DualSubdomainMethods:
         dual_subdomains: Sequence[DualSubdomain]
         if test:    
             for dual in dual_subdomains:
+                dual: DualSubdomain
                 if dual.test_update():    
                     dual.update_t_local(Tglobal, global_diagonal_term[dual.gids])
                     dual.update_as(dual.Tlocal)

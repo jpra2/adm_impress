@@ -22,7 +22,7 @@ class LocalOperator(GlobalLocalSolver):
             else:
                 local_op = np.array([[], [], []])
             
-            # local_pcorr = dual.ams_solver.get_pcorr2(dual.As, dual.local_source_term, )
+            # local_pcorr = dual.ams_solver.get_pcorr2(dual.As, dual.local_source_term)
             local_pcorr = dual.ams_solver.get_pcorr3(dual.As, dual.local_source_term, dual.lu_matrices)
             
             op_resp = np.zeros(len(local_op[0]), dtype=dtype_op)
