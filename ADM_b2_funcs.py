@@ -62,7 +62,7 @@ def print_mesh_volumes_results(M, data_impress, meshset_volumes, result_name):
     data_impress.update_variables_to_mesh()
     # M.core.mb.write_file('results/testt_00'+'.vtk', [meshset_volumes])
     M.core.mb.write_file(os.path.join('results', result_name), [meshset_volumes])
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
 
 def cf_remove_volumes_by_level(cf, volumes):

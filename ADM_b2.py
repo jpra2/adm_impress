@@ -776,6 +776,9 @@ velocity_w_internal_faces, velocity_o_internal_faces = biphasic.get_velocity_w_a
     geom['abs_u_normal_faces'][elements.internal_faces]
 )
 
+velocity_w_test = velocity_w_internal_faces.copy()
+velocity_o_test = velocity_o_internal_faces.copy()
+
 flux_w_internal_faces = biphasic.test_flux(
     velocity_w_internal_faces,
     geom['abs_u_normal_faces'][elements.internal_faces],
@@ -952,6 +955,8 @@ loop = 0
 
 print_mesh_volumes_results(M, data_impress, meshset_volumes, 'trash' + str(loop) + '.vtk')
 
+dvtol = 1e-3
+
 while verif:
     # pdb.set_trace()
 
@@ -962,12 +967,23 @@ while verif:
     total_mobility = mob_w + mob_o
     weighted_mobility = mob_w*biphasic.properties.rho_w + mob_o*biphasic.properties.rho_o
     
-    test1 = test_var(total_mobility_last, total_mobility, 0.1)
-    total_mobility_last[test1] = total_mobility[test1]
-    test2 = test_var(weighted_mobility_last, weighted_mobility, 0.1)
-    weighted_mobility_last[test2] = weighted_mobility[test2]
-    test = test1 | test2
-    global_vector_update[:] = test
+    # test1 = test_var(total_mobility_last, total_mobility, 0.1)
+    # total_mobility_last[test1] = total_mobility[test1]
+    # test2 = test_var(weighted_mobility_last, weighted_mobility, 0.1)
+    # weighted_mobility_last[test2] = weighted_mobility[test2]
+    # test = test1 | test2
+    # global_vector_update[:] = test
+    
+    test3 = np.linalg.norm(velocity_w_internal_faces - velocity_w_test, axis=1) >= dvtol
+    test4 = np.linalg.norm(velocity_o_internal_faces - velocity_o_test, axis=1) >= dvtol
+    global_vector_update[elements_lv0['neig_internal_faces'][:,0][test3]] = True
+    global_vector_update[elements_lv0['neig_internal_faces'][:,1][test3]] = True
+    global_vector_update[elements_lv0['neig_internal_faces'][:,0][test4]] = True
+    global_vector_update[elements_lv0['neig_internal_faces'][:,1][test4]] = True
+    velocity_w_test[test3] = velocity_w_internal_faces[test3]
+    velocity_o_test[test4] = velocity_o_internal_faces[test4]
+    # import pdb; pdb.set_trace()
+    
     # global_vector_update[:] = True
     data_impress['vug'][:] = 0.0
     DualSubdomainMethods.set_local_update(dual_subdomains, global_vector_update)
