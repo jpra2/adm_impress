@@ -34,3 +34,5 @@ venv/
 remove/
 rodar/
 *gmsh
+programas/
+*.sh
