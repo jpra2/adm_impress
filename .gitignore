@@ -37,6 +37,8 @@ impress(copia)/
 venv/
 *__pycache__/
 remove/
+*.sh
+programas/
 
 /rodar
 

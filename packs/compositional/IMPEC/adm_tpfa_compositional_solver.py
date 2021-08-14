@@ -190,7 +190,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
         # data_impress['LEVEL'][vols] = 0
         
-        # cfs[data_impress['LEVEL'] == 0] = 0
+        cfs[data_impress['LEVEL'] == 0] = 0
 
         for level in range(1, n_levels):
             adm_method.organize_ops_adm(mlo, level)
@@ -270,7 +270,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             **kwargs
         )
         master = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
-        local_solution = master.run()
+        # local_solution = master.run()
+        local_solution = master.run_serial()
         del master
         # import pdb; pdb.set_trace()
 
@@ -280,15 +281,51 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # data_impress['flux_volumes'][:] = error2
 
         ft_internal_faces_local_solution = self.update_total_flux_internal_faces(fprop, local_solution)
+        from packs.compositional.IMPEC.global_pressure_solver import GlobalIMPECPressureSolver as Gips
+        global_flux = Gips.update_flux(
+            ft_internal_faces_local_solution,
+            kwargs['rho_j_internal_faces'],
+            kwargs['mobilities_internal_faces'],
+            kwargs['Pcap'],
+            elements_lv0['neig_internal_faces'],
+            kwargs['z_centroids'],
+            kwargs['pretransmissibility_internal_faces'],
+            kwargs['g'],
+            kwargs['xkj_internal_faces'],
+            kwargs['Csi_j_internal_faces'],
+            kwargs['n_components'],
+            kwargs['n_volumes']
+        )
+        global_flux2 = Gips.update_flux(
+            Ft_internal_faces_orig,
+            kwargs['rho_j_internal_faces'],
+            kwargs['mobilities_internal_faces'],
+            kwargs['Pcap'],
+            elements_lv0['neig_internal_faces'],
+            kwargs['z_centroids'],
+            kwargs['pretransmissibility_internal_faces'],
+            kwargs['g'],
+            kwargs['xkj_internal_faces'],
+            kwargs['Csi_j_internal_faces'],
+            kwargs['n_components'],
+            kwargs['n_volumes']
+        )
+        
+        import pdb; pdb.set_trace()
+        
+        data_impress['flux_volumes'][:] = global_flux[0]
+        
+        
+        
         other_faces = np.setdiff1d(elements_lv0['internal_faces'], all_coarse_intersect_faces)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][other_faces]] = ft_internal_faces_local_solution[:, elements_lv0['remaped_internal_faces'][other_faces]]
 
         data_impress.update_variables_to_mesh()
         print_mesh_volumes_data(
             M,
-            os.path.join('results', 'prolongation_level_1.vtk')
+            os.path.join('results', 'test_flux_3.vtk')
         )
-        # import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
 
         self.update_flux_wells(fprop, wells, delta_t, solution)
 

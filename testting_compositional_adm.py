@@ -10,6 +10,8 @@ from packs.multiscale.preprocess.dual_domains import create_dual_subdomains
 from packs.utils import constants as ctes
 import numpy as np
 import scipy.sparse as sp
+from packs.data_class.acumulate_compositional import CumulativeCompositionalData
+from packs.data_class.compositional_data import CompositionalData
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -20,6 +22,9 @@ n_levels = data_loaded['n_levels']
 get_correction_term = data_loaded['get_correction_term']
 load_operators = data_loaded['load_operators']
 load_multilevel_data = data_loaded['load_multilevel_data']
+cumulative_data = CumulativeCompositionalData()
+compositional_data = CompositionalData()
+import pdb; pdb.set_trace()
 params = Params()
 
 if data_loaded['use_vpi']:

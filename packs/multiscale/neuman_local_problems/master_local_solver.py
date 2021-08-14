@@ -1,4 +1,5 @@
 import multiprocessing as mp
+from packs.solvers.solvers_scipy import solver_sp
 import numpy as np
 from multiprocessing import Queue, Value
 from ctypes import c_bool
@@ -59,6 +60,7 @@ class MasterLocalSolver(CommonMasterMethods):
         n_problems = len(problems_list)
         n_problems_per_cpu = self.count_problems(n_problems, self.n_cpu)
         problems_per_cpu = self.get_problems_per_cpu(n_problems_per_cpu, problems_list)
+        self.problems_list = problems_list
         self.m2w, self.w2m, self.procs, self.queue, self.finished = self.init_subproblems(problems_per_cpu)
 
 
@@ -106,7 +108,17 @@ class MasterLocalSolver(CommonMasterMethods):
 
         return solution
 
-
+    def run_serial(self):
+        solution = np.zeros(self.n_volumes)
+        from packs.solvers.solvers_scipy.solver_sp import SolverSp
+        solver = SolverSp()
+        for subd in self.problems_list:
+            resp = solver.direct_solver(subd.Tlocal, subd.local_rhs)
+            solution[subd.volumes] = resp
+        
+        return solution
+            
+        
     def all_process_finished(self):
         return np.all([i.value for i in self.finished])
 

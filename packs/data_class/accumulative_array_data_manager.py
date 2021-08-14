@@ -58,7 +58,7 @@ class AccumulativeArrayDataManager:
     def find_identifier(self, name):
 
         all_datas = os.listdir(flying)
-        indentifiers = []
+        identifiers = []
         for file in all_datas:
             if file.startswith(name):
                 identifier = file.replace(name, '')
