@@ -1,6 +1,6 @@
 import numpy as np
 from .properties_calculation import PropertiesCalc
-from ..IMPEC.flux_calculation import Flux
+from ..IMPEC.flux_calculation import Flux, RiemannSolvers
 from ...directories import data_loaded
 from packs.utils import constants as ctes
 import scipy.sparse as sp
@@ -53,7 +53,6 @@ class saturation:
         self.faces_dir = abs(M.faces.normal(M.faces.internal))
         return allneig_weights_positive, allneig_weights_negative
 
-
     def identify_contour_faces(self):
         lines = np.array([ctes.v0[:, 0], ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
         cols = np.array([ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
@@ -74,7 +73,6 @@ class saturation:
         prop_vols_neig = prop_vols[:,:,np.newaxis,:] * allneig_weights
         prop_vols_neig_by_axis = np.repeat(prop_vols_neig[:,np.newaxis,:,:],3,axis=1)
         prop_vols_neig_by_axis = prop_vols_neig_by_axis * abs(self.versor_ds)[np.newaxis,:,np.newaxis,...] #axis==1 : x,y,z
-
         return prop_vols_neig_by_axis
 
     def third_order_TVD(self, M, wells, prop_vols, mobilities, Pot_hidj):
@@ -112,11 +110,10 @@ class saturation:
         return Vp
 
     def update_relative_perm(self, fprop, Sj):
-
         So = Sj[0]
         Sg = Sj[1]
-        Sw = Sj[2]
-
+        if ctes.n_phases == 3: Sw = Sj[2]
+        else: Sw = fprop.Sw
         krs_new = PropertiesCalc().update_relative_permeabilities(fprop, So, Sg, Sw)
         return krs_new
 
@@ -126,8 +123,8 @@ class saturation:
         Pot_hidj_up = Pot_hid[:,ctes.v0[:,1]]
 
         properties_internal_faces = np.zeros([properties.shape[0], ctes.n_phases, ctes.n_internal_faces])
-        properties_vols = properties[:,:,ctes.v0[:,0]]
-        properties_vols_up = properties[:,:,ctes.v0[:,1]]
+        properties_vols = properties[...,ctes.v0[:,0]]
+        properties_vols_up = properties[...,ctes.v0[:,1]]
         properties_internal_faces[:,Pot_hidj_up <= Pot_hidj] = properties_vols[:,Pot_hidj_up <= Pot_hidj]
         properties_internal_faces[:,Pot_hidj_up > Pot_hidj] = properties_vols_up[:,Pot_hidj_up > Pot_hidj]
         return properties_internal_faces
@@ -140,11 +137,16 @@ class saturation:
             qk[:,wp] = np.sum(fprop.xkj[:,:,wp] * fprop.Csi_j[:,:,wp] * qj, axis = 1)
         return qk
 
-    def update_well_term_der(self, wells, fprop, dqk_dSj, krs, mobilities_new, saturations):
+    def update_well_term_der(self, wells, fprop, dqk_dSj, krs, mobilities_new, Sj):
         wp = wells['ws_p']
 
         if len(wp)>0:
-            dkrsdSj = PropertiesCalc().relative_permeability_derivative_call(krs[:,:,wp], saturations[:,wp])
+            if ctes.n_phases==2:
+                Sj = np.concatenate((Sj,fprop.Sw[np.newaxis,:]),axis=0)
+                krs = np.concatenate((krs,np.zeros((1,1,ctes.n_volumes))), axis=1)
+
+            dkrsdSj = PropertiesCalc().relative_permeability_derivative_call(krs[:,:,wp], Sj[:,wp])
+            if not ctes.load_w: dkrsdSj = dkrsdSj[:,:-1,:-1,:]
 
             dfrj_new = (1/self.mis[:,:,np.newaxis,wp] * dkrsdSj *
                     np.sum(mobilities_new[...,wp], axis=1)[0] -
@@ -157,7 +159,6 @@ class saturation:
                 * dqs_dSj[:,...], axis = 1)
         return dqk_dSj
 
-
     def dfractional_flux(self, dkrsdSj, phase_viscosity_internal_faces, mobilities_internal_faces):
         dfrk_faces_dSj_vols = (1/phase_viscosity_internal_faces[:,:,np.newaxis,:] *
                 dkrsdSj * np.sum(mobilities_internal_faces, axis=1)[0] -
@@ -167,13 +168,24 @@ class saturation:
                 (1/(np.sum(mobilities_internal_faces, axis=1)[0])**2)
         return dfrk_faces_dSj_vols
 
-    def dFk_faces_upw(self, fprop, Pot_hidj, saturations, krs_internal_faces, phase_viscosity_internal_faces,
-        mobilities_internal_faces, Csi_j_internal_faces, xkj_internal_faces, Ft_internal_faces):
+    def dFk_faces_upw(self, fprop, Pot_hidj, Sj, krs_internal_faces, phase_viscosity_internal_faces,
+        mobilities_internal_faces, Csi_j_internal_faces, xkj_internal_faces, ftotal):
+
         Pot_hid = Pot_hidj[:,ctes.v0[:,0]][:,np.newaxis,:] * np.ones((ctes.n_phases,ctes.n_phases,ctes.n_internal_faces))
         Pot_hid_up = Pot_hidj[:,ctes.v0[:,1]][:,np.newaxis,:] * np.ones((ctes.n_phases,ctes.n_phases,ctes.n_internal_faces))
-        saturations_internal_faces = self.properties_faces_upwind(Pot_hidj, saturations[np.newaxis,:])
-        dkrsdSj_upw = PropertiesCalc().relative_permeability_derivative_call(krs_internal_faces,
-            saturations_internal_faces[0])
+
+        Sj_internal_faces = self.properties_faces_upwind(Pot_hidj, Sj[np.newaxis,:])
+        if not ctes.load_w:
+            w_int = np.zeros(ctes.n_internal_faces)
+            Sj_internal_faces = np.concatenate((Sj_internal_faces,w_int[np.newaxis,np.newaxis,:]),axis=1)
+            krs_internal_faces = np.concatenate((krs_internal_faces, w_int[np.newaxis,np.newaxis,:]),axis=1)
+            dkrsdSj_upw = PropertiesCalc().relative_permeability_derivative_call(krs_internal_faces,
+                Sj_internal_faces[0])
+            dkrsdSj_upw = dkrsdSj_upw[:,:-1,:-1,:]
+        else:
+            dkrsdSj_upw = PropertiesCalc().relative_permeability_derivative_call(krs_internal_faces,
+                Sj_internal_faces[0])
+
         #dkrsdSj_opp = np.zeros_like(dkrsdSj_upw)
         dfrs_faces_dSj_vols = np.zeros((1,ctes.n_phases,ctes.n_phases,ctes.n_internal_faces,2))
 
@@ -182,21 +194,26 @@ class saturation:
 
         dfrs_faces_dSj_vols[:,Pot_hid>=Pot_hid_up,0] = dfrs_faces_dSj_vols_upw[:,Pot_hid>=Pot_hid_up]
         dfrs_faces_dSj_vols[:,Pot_hid<Pot_hid_up,1] = dfrs_faces_dSj_vols_upw[:,Pot_hid<Pot_hid_up]
-        dFj_internal_faces = dfrs_faces_dSj_vols * (Ft_internal_faces[:,:,np.newaxis]) #lembrar de quando inserir Pcap, voltar pra eq. original
+        dFj_internal_faces = dfrs_faces_dSj_vols * (ftotal[:,:,np.newaxis]) #lembrar de quando inserir Pcap, voltar pra eq. original
+
         dFk_internal_faces = Flux().update_Fk_internal_faces(
             xkj_internal_faces[:,:,np.newaxis,:,np.newaxis],
             Csi_j_internal_faces[:,:,np.newaxis,:,np.newaxis], dFj_internal_faces)
         return dFk_internal_faces
 
-    def dFk_faces_TVD(self, fprop, wells, Pot_hidj, saturations, krs_new, phase_viscosity_internal_faces,
-        mobilities_internal_faces, xkj_internal_faces, Csi_j_internal_faces, Ft_internal_faces):
+    def dFk_faces_TVD(self, fprop, wells, Pot_hidj, Sj, krs_new, phase_viscosity_internal_faces,
+        mobilities_internal_faces, xkj_internal_faces, Csi_j_internal_faces, ftotal):
         #dkrjdSj = diag(dkrsdSj) # ver como obter
+        if ctes.n_phases==2:
+            Sj = np.concatenate((Sj,fprop.Sw),axis=-1)
+
         Pot_hidj_faces = Pot_hidj[:,ctes.v0[:,0]] - Pot_hidj[:,ctes.v0[:,1]]
         weights_faces_neig = np.ones((ctes.n_internal_faces, 2, 2))
         weights_faces_neig[:,:,0] *= (np.array([5/6,2/6])[np.newaxis,:])
         weights_faces_neig[:,:,1] *= (np.array([2/6,5/6])[np.newaxis,:])
 
-        dkrsdSj = PropertiesCalc().relative_permeability_derivative_call(krs_new, saturations)
+        dkrsdSj = PropertiesCalc().relative_permeability_derivative_call(krs_new, Sj)
+        if not ctes.load_w: dkrsdSj=dkrsdSj[:,:-1,:-1,:]
         dkrsdSj_faces_neig = dkrsdSj[:,:,:,self.v0,np.newaxis] * weights_faces_neig[np.newaxis,np.newaxis,np.newaxis,]
         dkrsdSj_faces_neig_back = dkrsdSj_faces_neig[...,0]
         dkrsdSj_faces_neig_front = dkrsdSj_faces_neig[...,1]
@@ -211,7 +228,7 @@ class saturation:
                 dkrsdSj_faces_neig, axis=1)[:,np.newaxis,:,:])) *\
                 (1/(np.sum(mobilities_internal_faces, axis=1)[0,...,np.newaxis])**2)
 
-        dFj_internal_faces = dfrk_faces_dSj_vols * (Ft_internal_faces[:,:,np.newaxis]) #lembrar de quando inserir Pcap, voltar pra eq. original
+        dFj_internal_faces = dfrk_faces_dSj_vols * (ftotal[:,:,np.newaxis]) #lembrar de quando inserir Pcap, voltar pra eq. original
         dFk_internal_faces = Flux().update_Fk_internal_faces(
             xkj_internal_faces[:,:,np.newaxis, :,np.newaxis],
             Csi_j_internal_faces[:,:,np.newaxis, :,np.newaxis], dFj_internal_faces)
@@ -232,37 +249,37 @@ class saturation:
 
         return dFk_vols_total
 
-    def implicit_solver(self, M, fprop, wells, Pot_hid, Ft_internal_faces, dVjdNk, dVjdP, P_new, P_old, qk, delta_t):
+    def implicit_solver(self, M, fprop, wells, Pot_hid, ftotal, dVjdNk, dVjdP, P_old, qk, delta_t):
+        P_new = fprop.P
         Pot_hid += P_new - P_old
-        Vj = fprop.Nj/fprop.Csi_j
+        Vj = fprop.Nj/fprop.Csi_j #compute phase volume
         Vp_new = self.update_pore_volume(P_new)
-        #dVjdP = dVjdP[0,0:2,:] #only hydrocarbon phases
-        #dVjdNk = dVjdNk[:-1,0:2,:] #only hydrocarbon phases
         q_total = fprop.q_phase.sum(axis=1) #for the producer well
 
         ponteiro_j = np.ones_like(dVjdP[0,:2,:],dtype=bool)
 
-        Sj_new = np.array([fprop.So, fprop.Sg, fprop.Sw]) #old sats as initial estimatives bruno's paper IMPSAT
+        if ctes.n_phases==3:
+            Sj_new = np.array([fprop.So, fprop.Sg, fprop.Sw]) #old sats as initial estimatives bruno's paper IMPSAT
+        elif ctes.n_phases==2:
+            Sj_new = np.array([fprop.So, fprop.Sg])
 
         #mobilities_new = np.empty_like(fprop.mobilities)
-
+        #cte viscosity
         self.mis = PropertiesCalc().update_phase_viscosities(fprop, fprop.Csi_j, fprop.xkj)
 
         'Initialization'
         mobilities_new = np.copy(fprop.mobilities)
-        Fk_vols_total_new = fprop.Fk_vols_total
         mobilities_internal_faces_new = fprop.mobilities_internal_faces
         phase_viscosity_internal_faces = self.properties_faces_upwind(Pot_hid, self.mis)
-        krs_new = self.mis * mobilities_new
         dqk = np.zeros((ctes.n_components,ctes.n_phases, len(fprop.mobilities[0,0,:])))
         #xkj_internal_faces= self.third_order_TVD(M, wells, fprop.xkj, mobilities_new, Pot_hid)
 
-        xkj_internal_faces= self.properties_faces_upwind(Pot_hid, fprop.xkj)
+        xkj_internal_faces = self.properties_faces_upwind(Pot_hid, fprop.xkj)
         Csi_j_internal_faces = self.properties_faces_upwind(Pot_hid,fprop.Csi_j)
 
         qk_new = np.copy(qk)
 
-        Sj_old = np.copy(Sj_new) * 1/2
+        Sj_old = np.copy(Sj_new) * 1e10
         j=0
 
         while np.max(abs(Sj_new-Sj_old))>1e-5:
@@ -274,51 +291,61 @@ class saturation:
             krs_internal_faces_new = self.properties_faces_upwind(Pot_hid, krs_new)
 
             mobilities_internal_faces_new = krs_internal_faces_new/phase_viscosity_internal_faces
-            Fk_vols_total_new = Flux().update_flux(M, fprop, P_new, Ft_internal_faces,
+            Fk_vols_total_new = Flux().update_flux(M, fprop, ftotal,
                                  fprop.rho_j_internal_faces, mobilities_internal_faces_new)
 
             qk_new = self.update_well_term(wells, fprop, np.copy(qk), mobilities_new)
 
             dFk_internal_faces = self.dFk_faces_upw(fprop, Pot_hid, Sj_new, krs_internal_faces_new,
                 phase_viscosity_internal_faces, mobilities_internal_faces_new, Csi_j_internal_faces,
-                xkj_internal_faces, Ft_internal_faces)
+                xkj_internal_faces, ftotal)
             #dFk_internal_faces = self.dFk_faces_TVD(fprop, wells, Pot_hid, Sj_new, krs_new,
             #    phase_viscosity_internal_faces, mobilities_internal_faces_new, xkj_internal_faces,
-            #    Csi_j_internal_faces, Ft_internal_faces)
+            #    Csi_j_internal_faces, ftotal)
 
             dFk_vols_total_new = self.update_dFk_vols_total(fprop, dFk_internal_faces)
             dqk_new = self.update_well_term_der(wells, fprop, np.copy(dqk), krs_new, mobilities_new, Sj_old)
 
-            Rj = (Sj_old[:2] * Vp_new - Vj[0,:2] - dVjdP[0,:2] * (P_new - P_old) - \
-                delta_t * np.sum(dVjdNk[:,:2] * (Fk_vols_total_new + qk_new)[:,np.newaxis], axis=0))#[:,ctes.vols_no_wells]
+            Rj = (Sj_old[:-1] * Vp_new - Vj[0,:-1] - dVjdP[0,:-1] * (P_new - P_old) - \
+                delta_t * np.sum(dVjdNk[:,:-1] * (Fk_vols_total_new + qk_new)[:,np.newaxis], axis=0))#[:,ctes.vols_no_wells]
 
-            dRj = (Vp_new - delta_t * np.sum(dVjdNk[:,:2] *
-                (dFk_vols_total_new[:,:2] + dqk_new[:,:2]), axis=0)) #[:,ctes.vols_no_wells]
+            dRj = (Vp_new - delta_t * np.sum(dVjdNk[:,:-1] *
+                (dFk_vols_total_new[:,:-1] + dqk_new[:,:-1]), axis=0)) #[:,ctes.vols_no_wells]
 
-            Sj_new[:2,:] = Sj_old[:2,:] - Rj/dRj
+            Sj_new[:-1,:] = Sj_old[:-1,:] - Rj/dRj
             #Sj_new[:2][(Sj_new[:2]>Sjmax)] = (Sjmax)[(Sj_new[:2]>Sjmax)]#/2
             #if any(abs(Sj_new.flatten())>1): import pdb; pdb.set_trace()
 
-            Sj_new[2,:] = 1 - Sj_new[:2,:].sum(axis=0)
+            Sj_new[-1,:] = 1 - Sj_new[:-1,:].sum(axis=0)
             if j>600: import pdb; pdb.set_trace()
             #import pdb; pdb.set_trace()
 
         So = Sj_new[0,:]
         Sg = Sj_new[1,:]
-        Sw = Sj_new[2,:]
+        Sj_new[Sj_new<np.finfo(float).eps] = 0
+
+        if ctes.n_phases==3:
+            Sw = Sj_new[2,:]
+        else: Sw = fprop.Sw
         if any(Sj_new.flatten()<0): import pdb; pdb.set_trace()
         #if (Fk_vols_total_new + qk_new)[-1,-1]!=0: import pdb; pdb.set_trace()
         #fprop.Fk_vols_total = Fk_vols_total_new
         #import pdb; pdb.set_trace()
+        if any(np.isnan(Sj_new.flatten())): import pdb; pdb.set_trace()
         '''krs_new = self.update_relative_perm(fprop, Sj_new)
         krs_internal_faces_new = self.properties_faces_upwind(Pot_hid, krs_new)
         phase_viscosity_internal_faces = self.properties_faces_upwind(Pot_hid, self.mis)
         mobilities_new = krs_new/self.mis
         mobilities_internal_faces_new = krs_internal_faces_new/phase_viscosity_internal_faces
-        Fk_vols_total_new, wave_velocity = Flux().update_flux(M, fprop, P_old, Ft_internal_faces,
+        Fk_vols_total_new, wave_velocity = Flux().update_flux(M, fprop, ftotal,
                              fprop.rho_j_internal_faces, mobilities_internal_faces_new)
         Sj = -(- Vj[0] - dVjdP[0] * (P_new - P_old) - delta_t * np.sum(dVjdNk * (Fk_vols_total_new + qk_new)[:,np.newaxis,:], axis=0))/Vp_new
         '''
-        wave_velocity = Flux().wave_velocity_upw(M, fprop, mobilities_new, fprop.rho_j, fprop.xkj,
-            fprop.Csi_j, Ft_internal_faces)
+        ponteiro = np.ones_like(ftotal,dtype=bool)
+        Vpm = fprop.Vp[ctes.v0].sum(axis=-1)/2
+        Nk_face = fprop.Nk[:,ctes.v0]
+        P_face = fprop.P[ctes.v0].sum(axis=-1)/2
+        P_face = np.concatenate((P_face[:,np.newaxis],P_face[:,np.newaxis]), axis=1)
+        wave_velocity, eigvec_m = RiemannSolvers(ctes.v0,ctes.pretransmissibility_internal_faces).\
+            medium_wave_velocity(M, fprop, Nk_face, P_face, Vpm, ftotal, ponteiro)
         return So, Sg, Sw, Fk_vols_total_new, wave_velocity, qk_new, mobilities_new

@@ -42,7 +42,9 @@ class WellsCompositional(Wells):
                 vols = get_box(centroids, limites)
 
                 nv = len(vols)
-                if tipo == 'Injector': z.append(well['z'])
+                if tipo == 'Injector':
+                    z.append(well['z'])
+                    inj_cond.append(well['injection_condition'])
 
                 if prescription == 'Q':
 
@@ -50,7 +52,6 @@ class WellsCompositional(Wells):
                     if tipo == 'Producer':
                         val *= -1
 
-                    inj_cond.append(well['injection_condition'])
                     ws_q.append(vols)
                     value_type = well['value_type']
                     values = val
@@ -104,5 +105,5 @@ class WellsCompositional(Wells):
         self['all_wells'] = np.union1d(ws_inj, ws_prod).astype(int)
         self['values_p_ini'] = values_p.copy()
         self['values_q_vol'] = values_q_vol
-        self['inj_cond'] = np.array(inj_cond)
+        self['inj_cond'] = np.array(inj_cond).flatten()
         self['z'] = np.array(z)

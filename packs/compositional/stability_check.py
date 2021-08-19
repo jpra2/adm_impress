@@ -32,7 +32,7 @@ class StabilityCheck:
         '-------------------- Get new time-step parameters --------------------'
         self.P = P
         self.z = z
-        self.z[z<=0] = 1e-30
+        self.z[z==0] = 1e-30
         #ponteiro_flash[np.sum(self.z==0, dtype=bool)] = True
 
         if not pflash and any(~ponteiro_flash) and ctes.Nc>1:
@@ -67,6 +67,18 @@ class StabilityCheck:
         self.use_previous_K(P, z, ponteiro_flash)
         self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V = self.run_init(P, z, False, ponteiro_flash)
         return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
+
+    def run_constant_K(self, ponteiro):
+        Lmax = np.max(self.K, axis = 0)/(np.max(self.K, axis = 0) - 1)
+        Lmin = np.min(self.K, axis = 0)/(np.min(self.K, axis = 0) - 1)
+        Vmax = 1. - Lmin
+        Vmin = 1. - Lmax
+        #Vmin = ((K1-KNc)*z[self.K==K1]-(1-KNc))/((1-KNc)*(K1-1))
+        #proposed by Li et al for Whitson method
+        Vmin[Vmin>Vmax] = -Vmax[Vmin>Vmax]
+        self.V[ponteiro] = (Vmin[ponteiro] + Vmax[ponteiro]) * 0.5
+        self.solve_objective_function_Whitson_for_V(self.V, Vmax, Vmin, np.copy(ponteiro))
+
 
     def check_phase_nc_1(self):
         Pv = self.vapor_pressure_pure_substancies()
@@ -407,6 +419,7 @@ class StabilityCheck:
             ponteiro_aux[stop_criteria < 1e-9] = False
             ponteiro[ponteiro] = ponteiro_aux
             #print(i)
+            if any(np.isnan(self.V)): self.V[np.isnan(self.V)] = 0
             if i>50:
                 ponteiro[ponteiro] = False
             #    print('i>100')
@@ -432,6 +445,7 @@ class StabilityCheck:
         ponteiro_save = np.copy(ponteiro)
         razao = np.ones(self.z.shape)/2
         i = 0
+
         while any(ponteiro):
             i+=1
             self.solve_objective_function_Whitson_for_V(self.V, Vmax, Vmin, np.copy(ponteiro))

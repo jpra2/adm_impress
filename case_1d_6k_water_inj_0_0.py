@@ -26,6 +26,7 @@ for arq in arquivos:
         Sg_CMG = [float(line.rstrip('\n\r')) for line in fSg]
         n=128
 
+        #datas = np.load('flying/results_water_inj_6k_modified_case_upw_4326.npy', allow_pickle=True)
         datas = np.load('flying/results_water_inj_6k_128_case_4520.npy', allow_pickle=True)
         import pdb; pdb.set_trace()
         for data in datas[2:]:

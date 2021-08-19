@@ -1,6 +1,7 @@
 #Compressive Oil case with 1 component in 1-D reservoir
+# inputs_compoitional.yml
 mesh_name: 100x1x1.msh
-name_save_file: 'results_compressive_oil_case_upw'
+name_save_file: 'results_compressive_oil_case_FR'
 
 compositional: True
 hidrocarbon_components: True
@@ -35,7 +36,7 @@ compositional_data:
     set: false
   FR:
     set: false
-    order: 3
+    order: 2
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [274752] #, 432000., 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0]
   maximum_time: 274752 #1530144.0

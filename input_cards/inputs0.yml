@@ -36,7 +36,7 @@ Wells:
     - 0.0
     - 0
     p1:
-    - 0.1
+    - 0.25
     - 1
     - 1
     prescription: Q
@@ -48,10 +48,9 @@ Wells:
     - 0.9
     - 0.1
     - 0.0
-    - 0.0
   P2:
     p0:
-    - 49.9
+    - 49.75
     - 0.0
     - 0
     p1:
@@ -73,6 +72,11 @@ compositional_data:
   MUSCL:
     set: false
   Pf: 101325
+  UPW:
+    FOU: false
+    LLF: false
+    MDW: false
+    ROE: false
   capillary_pressure: Chang
   component_data:
     Bin:
@@ -140,9 +144,9 @@ compositional_data:
   time_data:
     deltaNlim: 1
     deltaPlim: 68.9476
-    deltaSlim: 0.25
+    deltaSlim: 0.35
     deltaVlim: 0.0001
-    delta_t_ini: 26.4
+    delta_t_ini: 86.4
     delta_tmax: 86400
     delta_tmin: 8.64
   time_to_save:
@@ -164,13 +168,13 @@ hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: 500x1x1_3k.msh
+mesh_name: 200x1x1_3k.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_Hoteit_Firoo_3k_500_FR
+name_save_file: results_Hoteit_Firoo_3k_200_FR3
 read_permeability: false
 set_permeability: true
 set_porosity: true
 use_vpi: false
-water_component: true
+water_component: false

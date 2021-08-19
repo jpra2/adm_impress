@@ -30,7 +30,6 @@ class TPFASolver:
         t0 = (self.t0_internal_faces_prod).sum(axis = 1)
         t0 = t0 * ctes.pretransmissibility_internal_faces
         T = sp.csr_matrix((ctes.n_volumes, ctes.n_volumes))
-
         # Look for a way of doing this not using a loop!!!
         for i in range(ctes.n_components):
             lines = np.array([ctes.v0[:, 0], ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
@@ -38,7 +37,6 @@ class TPFASolver:
             data = np.array([-t0[i,:], -t0[i,:], +t0[i,:], +t0[i,:]]).flatten()
 
             Ta = (sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_volumes, ctes.n_volumes)))#.toarray()
-            #T += Ta*self.dVtk[i, :, np.newaxis]
             T += Ta.multiply(self.dVtk[i, :, np.newaxis])
 
         T *= delta_t
@@ -135,10 +133,10 @@ class TPFASolver:
         wp = wells['ws_p']
 
         if len(wp)>=1:
+            if Pnew[2]>Pnew[1]: import pdb; pdb.set_trace()
             well_term =  (self.T_noCC[wp,:] @ Pnew - self.pressure_term[wp] +
                 self.volume_term[wp]) / delta_t  + self.capillary_term[wp] + \
                 self.gravity_term[wp]
-
             mob_ratio = fprop.mobilities[:,:,wp] / np.sum(fprop.mobilities[:,:,wp], axis = 1)
             self.q[:,wp] = np.sum(fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp] * well_term, axis = 1)
             fprop.q_phase = mob_ratio * well_term

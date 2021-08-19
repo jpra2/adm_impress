@@ -50,6 +50,7 @@ def correction_function(n_points):
     # function, i.e. dgLB[:,-1] is not zero because the vector has the number of
     # elements equal to the derivative order. This makes easier when computing dFk
     return dgRB_Radau, dgLB_Radau, RRadau_coefs.c[::-1], LRadau_coefs.c[::-1]
+    #return dgRB_lump_Lo, dgLB_lump_Lo, g2_coefs_RB.c[::-1], g2_coefs_LB.c[::-1]
 
 def polynomial_der_coeffs(P):
     'get the derivative from a given polynomial P given in coefficient form \
@@ -105,5 +106,8 @@ def run(M):
     weights = GL.weights
     dgRB, dgLB, gRB, gLB = correction_function(n_points)
     L, dL = Lagrange_poly(n_points, points)
+    #points[abs(points)<1e-15] = 0
+    #L[abs(L)<1e-14] = 0
+    #dL[abs(dL)<1e-14] = 0
     V = np.polynomial.legendre.legvander(points,n_points-1)
     x_points, v0, vols_vec = auxiliary_terms(M, points, n_points)
