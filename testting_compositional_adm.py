@@ -10,9 +10,9 @@ from packs.multiscale.preprocess.dual_domains import create_dual_subdomains
 from packs.utils import constants as ctes
 import numpy as np
 import scipy.sparse as sp
-from packs.data_class.acumulate_compositional import CumulativeCompositionalData
+from packs.data_class.acumulate_compositional_array import CumulativeCompositionalDataArray
 from packs.data_class.compositional_data import CompositionalData
-
+from packs.data_class.compositional_cumulative_datamanager import CumulativeCompositionalDataManager
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
 name_current = 'current_compositional_results_'
@@ -22,9 +22,17 @@ n_levels = data_loaded['n_levels']
 get_correction_term = data_loaded['get_correction_term']
 load_operators = data_loaded['load_operators']
 load_multilevel_data = data_loaded['load_multilevel_data']
-cumulative_data = CumulativeCompositionalData()
-compositional_data = CompositionalData()
-import pdb; pdb.set_trace()
+
+# description = 'case1_finescale_'
+description = 'case2_adm_'
+compositional_data = CompositionalData(description=description)
+cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
+cumulative_compositional_datamanager.create()
+# datas_comp = cumulative_compositional_datamanager.load_all_datas()
+# cumulative_compositional_datamanager.delete_all_datas()
+# compositional_data.delete()
+# import pdb; pdb.set_trace()
+loop_array = np.zeros(1, dtype=[('loop', int), ('t', float)])
 params = Params()
 
 if data_loaded['use_vpi']:
@@ -124,7 +132,6 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     
     global_vector_update[:] = True # update the prolongation operator in all dual volumes
 
-
     sim.run(M, wells, fprop, load, 
             multilevel_data=ml_data, 
             multilevel_operators=mlo,
@@ -161,9 +168,26 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['composition_internal_faces'] = fprop.Csi_j_internal_faces
     params['xkj_internal_faces'] = fprop.xkj_internal_faces
     params['rho_phase_internal_faces'] = fprop.rho_j_internal_faces
-
+    
+    
     loop = sim.loop
     print(sim.t)
+    loop_array['loop'][0] = loop
+    loop_array['t'][0] = sim.t
+    compositional_data.update({
+        'pressure': fprop.P,
+        'Sg': fprop.Sg,
+        'Sw': fprop.Sw,
+        'So': fprop.So,
+        'composition': fprop.Csi_j,
+        'loop_array': loop_array
+    })
+    cumulative_compositional_datamanager.insert_data(compositional_data._data)
+    
+    if loop % 10 == 0:
+        compositional_data.export_to_npz()
+        cumulative_compositional_datamanager.export()
+        import pdb; pdb.set_trace()
 
 tf = time.time()
 print('Total computational time: ', tf-t) #total simulation time

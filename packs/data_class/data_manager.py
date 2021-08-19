@@ -1,4 +1,6 @@
 import os
+
+from numpy.lib.function_base import delete
 from packs.directories import flying
 from packs.directories import only_mesh_name
 from packs.data_class.common_data_manager import CommonDataManager
@@ -8,10 +10,12 @@ import weakref
 class DataManager(CommonDataManager):
     all_datas = dict()
 
-    def __init__(self, data_name: str='', load: bool=False) -> None:
+    def __init__(self, data_name: str='', load: bool=False, description: str='') -> None:
 
         if data_name == '':
-            data_name = type(self).__name__ + '_' + only_mesh_name + '.npz'
+            data_name = description + type(self).__name__ + '_' + only_mesh_name + '.npz'
+        else:
+            data_name = description + data_name
 
         self.name = os.path.join(flying, data_name)
 
@@ -48,6 +52,9 @@ class DataManager(CommonDataManager):
 
         print(f'\n{self.name} loaded\n')
 
+    def delete(self):
+        os.remove(self.name)
+        
     @classmethod
     def export_all_datas_to_npz(cls):
         for obj in DataManager.all_datas.values():

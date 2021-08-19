@@ -1,14 +1,16 @@
 import h5py
+from numpy.polynomial.polyutils import PolyBase
 from packs.directories import only_mesh_name
 from packs.directories import flying
 import os
 import pdb
 import numpy as np
+from copy import deepcopy
 
 class AccumulativeArrayDataManager:
 
-    def __init__(self):
-        self.file_name = type(self).__name__ + '_' + only_mesh_name + '_'
+    def __init__(self, description=''):
+        self.file_name = description + type(self).__name__ + '_' + only_mesh_name + '_'
         self.ext = '.h5'
 
     def create(self, global_identifier=0) -> None:
@@ -36,7 +38,7 @@ class AccumulativeArrayDataManager:
         self._data = []
 
     def insert_data(self, data):
-        self._data.append(data)
+        self._data.append(deepcopy(data))
 
     def export(self, local_key_identifier):
         name_export = self.file_name + str(self.global_identifier) + self.ext
@@ -80,3 +82,9 @@ class AccumulativeArrayDataManager:
                         all_datas.append(f[name].value)
 
         return all_datas
+
+    def delete_all_datas(self):
+        arqs_name = os.listdir(flying)
+        for file in arqs_name:
+            if file.startswith(self.file_name):
+                os.remove(os.path.join(flying, file))
