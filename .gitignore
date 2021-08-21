@@ -36,10 +36,7 @@ impress(copia)/
 .idea/
 venv/
 *__pycache__/
+
 remove/
 *.sh
-programas/
-
-/rodar
-
-*gmsh
+*_testcases.py

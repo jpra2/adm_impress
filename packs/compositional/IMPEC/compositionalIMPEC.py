@@ -67,7 +67,7 @@ class CompositionalFVM:
         fprop.total_flux_internal_faces = total_flux_internal_faces
         if any(fprop.xkj.sum(axis=0).flatten()>1+1e-10): import pdb; pdb.set_trace()
         if any(fprop.Nk.flatten()<-1e-50): import pdb; pdb.set_trace()
-        if fprop.P[0]<fprop.P[1] or fprop.P[1]<fprop.P[2]: import pdb; pdb.set_trace()
+        # if fprop.P[0]<fprop.P[1] or fprop.P[1]<fprop.P[2]: import pdb; pdb.set_trace()
         #import pdb; pdb.set_trace()
         return delta_t
 
