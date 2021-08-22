@@ -772,13 +772,12 @@ class FR:
         Nk_SP = np.copy(Nk_SP_old)
 
         q_SP = q[:,:,np.newaxis] * np.ones_like(Nk_SP)
+        self.P_faces = np.sum(P_old[ctes_FR.v0],axis=-1)*0.5
+        self.P_SP = self.get_pressure_SP(wells, P_old)
 
         self.Ft_SP = self.total_flux_SP(fprop, wells, Ft_internal_faces)
-        self.P_faces = np.sum(P_old[ctes_FR.v0],axis=-1)*0.5
-        self.P_SP = self.get_pressure_SP(wells, P_old, self.P_faces)
-        Fk_SP_inputs = self.component_flux_SP_inputs(fprop)
 
-        dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal_faces, np.copy(Nk_SP), P_old, Fk_SP_inputs)
+        dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal_faces, np.copy(Nk_SP), P_old)
         Nk_SP, z_SP = Euler.update_composition(np.copy(Nk_SP_old), q_SP, dFk_SP, delta_t)
         Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
 
@@ -790,15 +789,17 @@ class FR:
         Nk_SP = RK3.update_composition_RK3_3(np.copy(Nk_SP_old), q_SP, np.copy(Nk_SP), dFk_SP, delta_t)
         Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)'''
 
-        fprop.Fk_vols_total = np.min(abs(dFk_SP),axis=2)
+        Fk_vols_total = np.min(abs(dFk_SP),axis=2)
         Nk = 1 / sum(ctes_FR.weights) * np.sum(ctes_FR.weights * Nk_SP,axis=2)
+
         z = Nk[0:ctes.Nc,:] / np.sum(Nk[0:ctes.Nc,:], axis = 0)
         if (any((z<0).flatten())): import pdb; pdb.set_trace()
-        return wave_velocity, Nk, z, Nk_SP
+        return wave_velocity, Nk, z, Nk_SP, Fk_vols_total
 
-    def dFk_SP_from_Pspace(self, M, fprop, wells, Ft_internal_faces, Nk_SP, P_old, Fk_SP_inputs):
+    def dFk_SP_from_Pspace(self, M, fprop, wells, Ft_internal_faces, Nk_SP, P_old):
 
-        Fk_SP = self.component_flux_SP(fprop, M, Nk_SP, Fk_SP_inputs)
+        Fk_SP = self.component_flux_SP(fprop, M, Nk_SP)
+        #Fk_SP = self.get_Fk_Ft_SP(fprop, M, Nk_SP)
 
         Fk_faces, Fk_vols_RS_neig, wave_velocity = self.Riemann_Solver(M, fprop, wells, Nk_SP,
             Fk_SP, Ft_internal_faces)
@@ -818,6 +819,9 @@ class FR:
         dFk_SP = - 2 * dFk_SP #this way only works for uniform mesh
         #up! transforming from local space to original global space (this could be done to the g and L functions
         #only, however, I rather do like this, so it's done just once)
+        #if any(dFk_SP[:,0,:].flatten()>0): import pdb; pdb.set_trace()
+        #dF = (dFk_SP[:,[0,-1],0] - dFk_SP[:,[0,-1],1]) +  (dFk_SP[:,[0,-1],1] - dFk_SP[:,[0,-1],2])
+        #if any(abs(dF).flatten()>1e-15): import pdb; pdb.set_trace()
         return dFk_SP, wave_velocity
 
     def total_flux_SP(self, fprop, wells, Ft_internal_faces):
@@ -837,31 +841,39 @@ class FR:
             data = np.array([Ft_face_phi[:,:,i,0], Ft_face_phi[:,:,i,1]]).flatten()
             Ft_SP_reshaped[:,:,i] = sp.csc_matrix((data, (lines, cols)), shape = (1, ctes.n_volumes)).toarray()
         Ft_SP = 2 * Ft_SP_reshaped #np.concatenate(np.dsplit(Ft_SP_reshaped, ctes_FR.n_points), axis = 2)
+
+        if ctes_FR.n_points==3:
+            P_f = fprop.P[ctes.v0].sum(axis=-1)/2
+            Pot_hid = P_f[ctes_FR.vols_vec]
+            Pot_hidj = Pot_hid[:,0]
+            Pot_hidj_up = Pot_hid[:,-1]
+            z = ctes.z
+            z_up = ctes.z
+            K_vols = ctes.pretransmissibility_internal_faces[ctes_FR.vols_vec[:,0]]
+            #mob_1 = fprop.mobilities_internal_faces[...,ctes_FR.vols_vec].sum(axis=-1)/2
+            xx = - np.sum(fprop.mobilities
+                * K_vols * ((Pot_hidj_up - Pot_hidj) -
+                ctes.g * fprop.rho_j * (z_up - z)), axis = 1)
+            Ft_SP[:,1:-1,1] = xx[:,1:-1]
+
         #Ft_SP[0,wells['all_wells'],:] = ((Ft_internal_faces[0,ctes_FR.vols_vec][wells['all_wells']]).sum(axis=-1)/2)[:,np.newaxis]
         #Ft_SP[:,wells['all_wells']] = (Ft_SP_reshaped[:,wells['all_wells']]).sum(axis=-1)[:,:,np.newaxis]
         return Ft_SP
 
-    def get_pressure_SP(self, wells, Pold, P_faces):
-        'RTo'
-        phi = np.empty((len(ctes_FR.points),2))
-        phi[:,0] = 1 / 4 * (1 + ctes_FR.points)
-        phi[:,1] = 1 / 4 * (1 - ctes_FR.points)
-
-        P_face_phi = (self.P_faces[:,np.newaxis,np.newaxis] * phi[np.newaxis,:])
-
-        'Look for a faster way to do that'
-        P_SP_reshaped = np.empty((ctes.n_volumes,ctes_FR.n_points))
-        contours = np.array([0,ctes_FR.n_points-1])
-        for i in range(ctes_FR.n_points):
-            lines = np.array([np.zeros_like(ctes_FR.v0[:,0]), np.zeros_like(ctes_FR.v0[:,1])]).astype(int).flatten()
-            cols = np.array([ctes_FR.v0[:,0], ctes_FR.v0[:,1]]).flatten()
-            data = np.array([P_face_phi[:,i,0], P_face_phi[:,i,1]]).flatten()
-            P_SP_reshaped[:,i] = sp.csc_matrix((data, (lines, cols)), shape = (1, ctes.n_volumes)).toarray()
-        P_SP = 2 * P_SP_reshaped
-        #P_SP[0,:] = (Pold[0]+(Pold[0]-P_SP[1,0])) * 1 / 2 * (1 - ctes_FR.points) + P_SP[1,0] * 1/2 * (1 + ctes_FR.points)
-        #P_SP[-1,:] = (Pold[-1]+(Pold[-1]-P_SP[-2,-1])) * 1 / 2 * (1 - ctes_FR.points) + Pold[-1] * 1/2 * (1 + ctes_FR.points)
-        Pvols = self.P_faces[ctes_FR.vols_vec]
-        P_SP[wells['all_wells'],:] = (Pvols[wells['all_wells']].sum(axis=1)/2)[:,np.newaxis]
+    def get_pressure_SP(self, wells, Pold):
+        #P_SP = np.empty((ctes.n_volumes,ctes_FR.n_points))
+        #P_SP[:,[0,-1]] = self.P_faces[ctes_FR.vols_vec]
+        x_0 = np.copy(ctes_FR.points)
+        x_1 = np.copy(ctes_FR.points)
+        x_0[x_0>0] = 0
+        x_1[x_1<0] = 0
+        P_SP = Pold[:, np.newaxis]  + (Pold - self.P_faces[ctes_FR.vols_vec[:,0]])[:,np.newaxis] * x_0 - \
+            (Pold - self.P_faces[ctes_FR.vols_vec[:,1]])[:,np.newaxis] * x_1
+        #P_SP[wells['all_wells'],:] = Pold[wells['all_wells']][...,np.newaxis] - \
+        #    (Pold[wells['all_wells']]-P_SP[wells['all_wells'],0])[...,np.newaxis] \
+        #    * ctes_FR.points
+        #import pdb; pdb.set_trace()
+        P_SP[wells['all_wells'],:] = P_SP[wells['all_wells'],0][...,np.newaxis]
         return P_SP
 
     def component_flux_SP_inputs(self, fprop):
@@ -874,12 +886,47 @@ class FR:
         Fk_SP_inputs['P_SP_flatt'] = np.concatenate(np.hsplit(self.P_SP, ctes_FR.n_points),axis=0)[:,0]
         return Fk_SP_inputs
 
-    def component_flux_SP(self, fprop, M, Nk_SP, Fk_SP_inputs):
+    def component_flux_SP(self, fprop, M, Nk_SP):
+        Fk_SP_inputs = self.component_flux_SP_inputs(fprop)
         Nk_SP_flatt = np.concatenate(np.dsplit(Nk_SP, ctes_FR.n_points),axis=1)[:,:,0]
         Fk_SP = RiemannSolvers(Fk_SP_inputs['v0'].astype(int), Fk_SP_inputs['pretr']).Fk_from_Nk(fprop,
             M, Nk_SP_flatt, Fk_SP_inputs['P_SP_flatt'], Fk_SP_inputs['Vp_SP'],
             Fk_SP_inputs['Ft_SP_flatt'], Fk_SP_inputs['ponteiro'])
         Fk_SP = np.concatenate(np.hsplit(Fk_SP[:,:,np.newaxis], ctes_FR.n_points), axis = 2)
+        return Fk_SP
+
+    def get_Fk_Ft_SP(self, fprop, M, Nk_SP):
+        v = ctes_FR.n_points
+        Fk_SP_inputs = self.component_flux_SP_inputs(fprop)
+        RS = RiemannSolvers(Fk_SP_inputs['v0'].astype(int), Fk_SP_inputs['pretr'])
+        z_SP = Nk_SP[0:ctes.Nc] / np.sum(Nk_SP[0:ctes.Nc], axis = 0)
+        z_SP_flatt = np.concatenate(np.dsplit(z_SP, ctes_FR.n_points),axis=1)[:,:,0]
+        Nk_SP_flatt = np.concatenate(np.dsplit(Nk_SP, ctes_FR.n_points),axis=1)[:,:,0]
+
+        mobilities_SP_flatt, rho_j_SP, Csi_j_SP, xkj_SP = RS.get_extrapolated_properties(fprop, M, Nk_SP_flatt, z_SP_flatt,
+            Fk_SP_inputs['P_SP_flatt'], Fk_SP_inputs['Vp_SP'], ctes_FR.n_points, Fk_SP_inputs['ponteiro'])
+        mobilities_SP = np.concatenate(np.split(mobilities_SP_flatt[...,np.newaxis], ctes_FR.n_points, axis=-2),axis=3)
+
+        P_f = fprop.P[ctes.v0].sum(axis=-1)/2
+        dP_SP = np.empty((ctes.n_volumes,ctes_FR.n_points))
+        dP_SP[:,[0,-1]] = (fprop.P[ctes_FR.v0[:,1]] - fprop.P[ctes_FR.v0[:,0]])[ctes_FR.vols_vec]
+        if ctes_FR.n_points==3:
+            dP_SP[:,1] = P_f[ctes_FR.vols_vec[:,1]] - P_f[ctes_FR.vols_vec[:,0]]
+            dP_SP[0,1] = dP_SP[0,-1]
+            dP_SP[-1,1] = dP_SP[-1,-1]
+        K_vols = ctes.pretransmissibility_internal_faces[ctes_FR.vols_vec[:,0]][np.newaxis,np.newaxis,:,np.newaxis]
+
+        Ft_SP = - np.sum(mobilities_SP * K_vols * dP_SP[np.newaxis,np.newaxis,:], axis = 1)
+        Ft_SP_flatt = np.concatenate(np.dsplit(self.Ft_SP, ctes_FR.n_points),axis=1)[:,:,0]
+
+        f = Flux()
+
+        Pcap_reshaped = np.concatenate(np.dsplit(np.tile(fprop.Pcap[:,Fk_SP_inputs['v0'].astype(int)][:,Fk_SP_inputs['ponteiro']],v),v),axis=1)
+        z_reshaped = np.concatenate(np.hsplit(np.tile(ctes.z[Fk_SP_inputs['v0'].astype(int)][Fk_SP_inputs['ponteiro']],v),v),axis=0)
+        Fj = f.update_Fj_internal_faces(Ft_SP_flatt, rho_j_SP, mobilities_SP_flatt, Pcap_reshaped,
+            z_reshaped, np.tile(Fk_SP_inputs['pretr'][Fk_SP_inputs['ponteiro']],v))
+        Fk = f.update_Fk_internal_faces(xkj_SP, Csi_j_SP, Fj)
+        Fk_SP = np.concatenate(np.hsplit(Fk[:,:,np.newaxis], ctes_FR.n_points), axis = 2)
         return Fk_SP
 
     def Riemann_Solver(self, M, fprop, wells, Nk_SP, Fk_SP, Ft_internal_faces):
@@ -905,9 +952,9 @@ class FR:
 
         Fk_face_RS, alpha_wv =  RiemannSolvers(ctes_FR.v0, ctes.pretransmissibility_internal_faces).LLF(M, fprop, Nk_faces, P_face,
             Ft_internal_faces, Fk_faces)
-        #ponteiro = np.zeros_like(Ft_internal_faces[0], dtype=bool)
-        #ponteiro[[0,1]] = True
-        #Fk_face_RS[:,ponteiro] = MUSCL().update_flux_upwind(fprop.P[np.newaxis,:], Fk_faces[:,ponteiro], ponteiro)
+        ponteiro = np.zeros_like(Ft_internal_faces[0], dtype=bool)
+        ponteiro[[0,1]] = True
+        Fk_face_RS[:,ponteiro] = MUSCL().update_flux_upwind(fprop.P[np.newaxis,:], Fk_faces[:,ponteiro], ponteiro)
 
         'Obtaining Flux at each CV side - by finding faces that compounds the CV \
         this only works for 1D problems'
@@ -1205,7 +1252,8 @@ class FR:
         aux_II[aux_Nf_II>=1] = 0
         smooth_extrema_cells[smooth_extrema_cells==1] = aux_II
 
-        phi_Pm = 1*(P1_proj_cond_cells + smooth_extrema_cells).astype(bool)
+        phi_Pm = 1*((P1_proj_cond_cells + smooth_extrema_cells).astype(bool))
         if any((phi_Pm[:,:,np.newaxis]*Nk_Pmvertex).flatten()<0): import pdb; pdb.set_trace()
         #phi_Pm = np.ones_like(phi_Pm)
+        if any(phi_Pm.flatten()>1): import pdb; pdb.set_trace()
         return phi_Pm

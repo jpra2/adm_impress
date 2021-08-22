@@ -19,7 +19,10 @@ class StabilityCheck:
         self.ph_L = np.ones(len(P), dtype = bool)
         self.ph_V = np.zeros(len(P), dtype = bool)
         self.T = T
-        self.K = self.equilibrium_ratio_Wilson(P)
+        self.constant_K = data_loaded['compositional_data']['component_data']['constant_K']
+        if self.constant_K:
+            self.K = np.array(data_loaded['compositional_data']['component_data']['K'])
+        else: self.K = self.equilibrium_ratio_Wilson(P)
         self.x = np.empty([ctes.Nc, len(P)])
         self.y = np.empty_like(self.x)
         self.L = np.empty(len(P))
@@ -68,16 +71,18 @@ class StabilityCheck:
         self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V = self.run_init(P, z, False, ponteiro_flash)
         return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
 
-    def run_constant_K(self, ponteiro):
-        Lmax = np.max(self.K, axis = 0)/(np.max(self.K, axis = 0) - 1)
-        Lmin = np.min(self.K, axis = 0)/(np.min(self.K, axis = 0) - 1)
-        Vmax = 1. - Lmin
-        Vmin = 1. - Lmax
-        #Vmin = ((K1-KNc)*z[self.K==K1]-(1-KNc))/((1-KNc)*(K1-1))
-        #proposed by Li et al for Whitson method
-        Vmin[Vmin>Vmax] = -Vmax[Vmin>Vmax]
-        self.V[ponteiro] = (Vmin[ponteiro] + Vmax[ponteiro]) * 0.5
-        self.solve_objective_function_Whitson_for_V(self.V, Vmax, Vmin, np.copy(ponteiro))
+    def run_constant_K(self):
+        self.x = (1-np.max(self.K, axis = 0))/(self.K - np.max(self.K, axis = 0))
+        self.x[-1] = 1 - np.sum(self.x[:-1],axis=0)
+        self.y = self.K * self.x
+
+        ksi_L = np.sum(self.x *  ctes.vc, axis=0)
+        ksi_V = np.sum(self.y *  ctes.vc, axis=0)
+        Mw_L = np.sum(self.x * ctes.Mw[:,np.newaxis], axis = 0)
+        rho_L = ksi_L * Mw_L
+        Mw_V = np.sum(self.y * ctes.Mw[:,np.newaxis], axis = 0)
+        rho_V = ksi_V * Mw_V
+        return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
 
 
     def check_phase_nc_1(self):
@@ -424,8 +429,6 @@ class StabilityCheck:
                 ponteiro[ponteiro] = False
             #    print('i>100')
 
-
-
         self.V[ponteiro_save] = V[ponteiro_save]
         self.x[:,ponteiro_save] = self.z[:,ponteiro_save] / (1 + self.V[ponteiro_save][np.newaxis,:] *
                                 (self.K[:,ponteiro_save] - 1))
@@ -455,7 +458,7 @@ class StabilityCheck:
             fv = np.exp(lnphiv) * (self.y[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             fl = np.exp(lnphil) * (self.x[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             razao[:,ponteiro] = np.divide(fl, fv, out = razao[:,ponteiro] / razao[:,ponteiro] * (1 + 1e-10),
-                              where = fv != 0)#
+                              where = fv != 0)
             self.K[:,ponteiro] = razao[:,ponteiro] * self.K[:,ponteiro]
             stop_criteria = np.max(abs(fv / fl - 1), axis = 0)
             ponteiro_aux = ponteiro[ponteiro]

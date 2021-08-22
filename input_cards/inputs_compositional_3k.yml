@@ -62,7 +62,7 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 1
+    deltaNlim: 2
     deltaSlim: .25
     deltaVlim: .0001
     delta_t_ini: 56.4
@@ -103,6 +103,7 @@ compositional_data:
     Pv: [8e6, 0., 0.]
     vshift_parameter: [0.0, 0., 0.]
     Pb_guess: 2e6
+    constant_K: False
 
 #water saturation data
 Saturation:

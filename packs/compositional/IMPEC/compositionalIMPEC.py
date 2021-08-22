@@ -32,29 +32,30 @@ class CompositionalFVM:
             fprop.Nk = np.copy(Nk_old)
 
             fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells, fprop, P_old, delta_t)
+            #total_flux_internal_faces = np.ones(ctes.n_internal_faces) * 1/(24*60*60)
 
             if ctes.MUSCL:
                 wave_velocity = MUSCL().run(M, fprop, wells, P_old, total_flux_internal_faces, Pot_hid)
 
             elif ctes.FR:
-                wave_velocity, Nk, z, Nk_SP = FR().run(M, fprop, wells,
+                wave_velocity, Nk, z, Nk_SP, Fk_vols_total = FR().run(M, fprop, wells,
                     total_flux_internal_faces, Nk_SP_old, P_old, q, delta_t, t)
             else:
                 if ctes.UPW['FOU']:
                     self.get_faces_properties_upwind(fprop, G)
-                    fprop.Fk_vols_total, wave_velocity = UPW().FOU(M, fprop, total_flux_internal_faces)
+                    Fk_vols_total, wave_velocity = UPW().FOU(M, fprop, total_flux_internal_faces)
                 elif ctes.UPW['LLF']:
-                    fprop.Fk_vols_total, wave_velocity = UPW().LLF(M, fprop, total_flux_internal_faces, P_old)
+                    Fk_vols_total, wave_velocity = UPW().LLF(M, fprop, total_flux_internal_faces, P_old)
                 elif ctes.UPW['MDW']:
-                    fprop.Fk_vols_total, wave_velocity = UPW().MDW(M, fprop, total_flux_internal_faces, P_old)
+                    Fk_vols_total, wave_velocity = UPW().MDW(M, fprop, total_flux_internal_faces, P_old)
                 elif ctes.UPW['ROE']:
-                    fprop.Fk_vols_total, wave_velocity = UPW().ROE(M, fprop, total_flux_internal_faces, P_old)
+                    Fk_vols_total, wave_velocity = UPW().ROE(M, fprop, total_flux_internal_faces, P_old)
 
             ''' For the composition calculation the time step might be different\
              because it treats composition explicitly and this explicit models \
              are conditionally stable - which can be based on the CFL parameter '''
 
-            delta_t_new = delta_time.update_CFL(delta_t, fprop.Fk_vols_total, fprop.Nk, wave_velocity)
+            delta_t_new = delta_time.update_CFL(delta_t, Fk_vols_total, fprop.Nk, wave_velocity)
             r = delta_t_new/delta_t
             delta_t = delta_t_new
 
