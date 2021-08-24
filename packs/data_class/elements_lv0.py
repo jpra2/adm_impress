@@ -4,9 +4,10 @@ from ..directories import only_mesh_name
 import pdb
 from scipy import sparse as sp
 
+
 class ElementsLv0(DataManager):
 
-    def __init__(self, M, load=False, data_name: str='elementsLv0'):
+    def __init__(self, M, load=False, data_name: str = 'elementsLv0'):
 
         data_name = data_name + '_' + only_mesh_name + '.npz'
         super().__init__(data_name, load=load)
@@ -32,7 +33,7 @@ class ElementsLv0(DataManager):
         # self._data['all_nodes'] = self.mesh.core.all_nodes
 
         remaped_internal_faces = np.repeat(-1, len(self._data['faces'])).astype(np.dtype(int))
-        remaped_boundary_faces = remaped_internal_faces.copy()
+        # remaped_boundary_faces = remaped_internal_faces.copy()
         remaped_internal_faces[self._data['internal_faces']] = np.arange(len(self._data['internal_faces']))
         self._data['remaped_internal_faces'] = remaped_internal_faces
         # remaped_boundary_faces[self._data['boundary_faces']] = np.arange(len(self._data['boundary_faces']))
@@ -52,6 +53,7 @@ class ElementsLv0(DataManager):
 
     def nfaces():
         doc = "The nfaces property."
+
         def fget(self):
             try:
                 return self._nfaces
@@ -59,7 +61,9 @@ class ElementsLv0(DataManager):
                 nfaces = len(self._data['faces'])
                 self._nfaces = nfaces
                 return nfaces
+
         return locals()
+
     nfaces = property(**nfaces())
 
     def create_adj_matrix_volumes_to_faces(self):
@@ -75,7 +79,8 @@ class ElementsLv0(DataManager):
         cols = np.concatenate(cols)
         data = np.full(len(lines), True, dtype=bool)
 
-        self._adj_matrix_volumes_to_faces = sp.csc_matrix((data, (lines, cols)), dtype=bool, shape=(len(self['volumes']), len(self['faces'])))
+        self._adj_matrix_volumes_to_faces = sp.csc_matrix((data, (lines, cols)), dtype=bool,
+                                                          shape=(len(self['volumes']), len(self['faces'])))
 
     def create_adj_matrix_faces_to_edges(self):
 
@@ -91,7 +96,8 @@ class ElementsLv0(DataManager):
         cols = np.concatenate(cols)
         data = np.full(len(lines), True, dtype=bool)
 
-        self._adj_matrix_faces_to_edges = sp.csc_matrix((data, (lines, cols)), dtype=bool, shape=(len(self['faces']), len(self['edges'])))
+        self._adj_matrix_faces_to_edges = sp.csc_matrix((data, (lines, cols)), dtype=bool,
+                                                        shape=(len(self['faces']), len(self['edges'])))
 
     def create_adj_matrix_edges_to_nodes(self):
 
@@ -107,14 +113,14 @@ class ElementsLv0(DataManager):
         cols = np.concatenate(cols)
         data = np.full(len(lines), True, dtype=bool)
 
-        self._adj_matrix_edges_to_nodes = sp.csc_matrix((data, (lines, cols)), dtype=bool, shape=(len(self['edges']), len(self['nodes'])))
+        self._adj_matrix_edges_to_nodes = sp.csc_matrix((data, (lines, cols)), dtype=bool,
+                                                        shape=(len(self['edges']), len(self['nodes'])))
 
     def volumes_to_faces(self, volumes):
         volumes2 = self.test_instance(volumes)
         faces = []
         mat2 = self.adj_matrix_volumes_to_faces[volumes2]
         for i in range(mat2.shape[0]):
-
             faces.append(self['faces'][mat2[i].toarray()[0]])
 
         faces = np.array(faces)
@@ -135,7 +141,6 @@ class ElementsLv0(DataManager):
         edges = []
         mat2 = self.adj_matrix_faces_to_edges[faces2]
         for i in range(mat2.shape[0]):
-
             edges.append(self['edges'][mat2[i].toarray()[0]])
 
         edges = np.array(edges)
@@ -146,7 +151,6 @@ class ElementsLv0(DataManager):
         faces = []
         mat2 = self.adj_matrix_faces_to_edges.transpose()[edges2]
         for i in range(mat2.shape[0]):
-
             faces.append(self['faces'][mat2[i].toarray()[0]])
 
         faces = np.array(faces)
@@ -154,10 +158,9 @@ class ElementsLv0(DataManager):
 
     def volumes_to_edges(self, volumes):
         volumes2 = self.test_instance(volumes)
-        mat2 = self.adj_matrix_volumes_to_faces*self.adj_matrix_faces_to_edges[volumes2]
+        mat2 = self.adj_matrix_volumes_to_faces * self.adj_matrix_faces_to_edges[volumes2]
         nodes = []
         for i in range(mat2.shape[0]):
-
             nodes.append(self['nodes'][mat2[i].toarray()[0]])
 
         nodes = np.array(nodes)
@@ -165,10 +168,9 @@ class ElementsLv0(DataManager):
 
     def edges_to_volumes(self, edges):
         edges2 = self.test_instance(edges)
-        mat2 = self.adj_matrix_faces_to_edges.transpose()*self.adj_matrix_volumes_to_faces.transpose()[edges2]
+        mat2 = self.adj_matrix_faces_to_edges.transpose() * self.adj_matrix_volumes_to_faces.transpose()[edges2]
         volumes = []
         for i in range(mat2.shape[0]):
-
             volumes.append(self['volumes'][mat2[i].toarray()[0]])
 
         volumes = np.array(volumes)
@@ -180,7 +182,6 @@ class ElementsLv0(DataManager):
         nodes = []
         mat2 = self.adj_matrix_edges_to_nodes[edges2]
         for i in range(mat2.shape[0]):
-
             nodes.append(self['nodes'][mat2[i].toarray()[0]])
 
         nodes = np.array(nodes)
@@ -192,7 +193,6 @@ class ElementsLv0(DataManager):
         edges = []
         mat2 = self.adj_matrix_edges_to_nodes.transpose()[nodes2]
         for i in range(mat2.shape[0]):
-
             edges.append(self['edges'][mat2[i].toarray()[0]])
 
         edges = np.array(edges)
@@ -200,10 +200,9 @@ class ElementsLv0(DataManager):
 
     def faces_to_nodes(self, faces):
         faces2 = self.test_instance(faces)
-        mat2 = self.adj_matrix_faces_to_edges*self.adj_matrix_edges_to_nodes[faces2]
+        mat2 = self.adj_matrix_faces_to_edges * self.adj_matrix_edges_to_nodes[faces2]
         nodes = []
         for i in range(mat2.shape[0]):
-
             nodes.append(self['nodes'][mat2[i].toarray()[0]])
 
         nodes = np.array(nodes)
@@ -211,10 +210,9 @@ class ElementsLv0(DataManager):
 
     def nodes_to_faces(self, nodes):
         nodes2 = self.test_instance(nodes)
-        mat2 = self.adj_matrix_edges_to_nodes.transpose()*self.adj_matrix_faces_to_edges.transpose()[nodes2]
+        mat2 = self.adj_matrix_edges_to_nodes.transpose() * self.adj_matrix_faces_to_edges.transpose()[nodes2]
         faces = []
         for i in range(mat2.shape[0]):
-
             faces.append(self['faces'][mat2[i].toarray()[0]])
 
         faces = np.array(faces)
@@ -222,10 +220,10 @@ class ElementsLv0(DataManager):
 
     def volumes_to_nodes(self, volumes):
         volumes2 = self.test_instance(volumes)
-        mat2 = self.adj_matrix_volumes_to_faces*self.adj_matrix_faces_to_edges*self.adj_matrix_edges_to_nodes[volumes2]
+        mat2 = self.adj_matrix_volumes_to_faces * self.adj_matrix_faces_to_edges * self.adj_matrix_edges_to_nodes[
+            volumes2]
         nodes = []
         for i in range(mat2.shape[0]):
-
             nodes.append(self['nodes'][mat2[i].toarray()[0]])
 
         nodes = np.array(nodes)
@@ -233,10 +231,10 @@ class ElementsLv0(DataManager):
 
     def nodes_to_volumes(self, nodes):
         nodes2 = self.test_instance(nodes)
-        mat2 = self.adj_matrix_edges_to_nodes.transpose()*self.adj_matrix_faces_to_edges.transpose()*self.adj_matrix_volumes_to_faces.transpose()[nodes2]
+        mat2 = self.adj_matrix_edges_to_nodes.transpose() * self.adj_matrix_faces_to_edges.transpose() * \
+               self.adj_matrix_volumes_to_faces.transpose()[nodes2]
         volumes = []
         for i in range(mat2.shape[0]):
-
             volumes.append(self['volumes'][mat2[i].toarray()[0]])
 
         volumes = np.array(volumes)
@@ -245,9 +243,9 @@ class ElementsLv0(DataManager):
     def test_instance(self, value):
         if isinstance(value, int):
             return [value]
-        elif isinstance(value,list) or isinstance(value, set) or isinstance(value,tuple):
+        elif isinstance(value, list) or isinstance(value, set) or isinstance(value, tuple):
             return value
-        elif isinstance(value,np.ndarray):
+        elif isinstance(value, np.ndarray):
             return value
         else:
             raise ValueError('\ntype not suported\n')

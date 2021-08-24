@@ -1,4 +1,4 @@
-from fully_implicit.jacobian.symbolic_jacobian import symbolic_J as F_Jacobian
+from jacobian.symbolic_jacobian import symbolic_J as F_Jacobian
 import scipy
 from scipy.sparse import linalg, find
 import sympy as sym

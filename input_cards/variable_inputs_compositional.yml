@@ -134,6 +134,56 @@ pressure:
   sparse: True
   level: 0
 
+ms_pressure:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+pressure_error:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+DUAL_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+DUAL_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+GID_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+GID_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+GID_0:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+
 weight:
   type: volumes
   data size: 3
@@ -301,3 +351,129 @@ verif_rest:
   data type: float
   sparse: True
   level: 0
+
+######################
+##Multilevel
+COARSE_GID_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+COARSE_LOCAL_ID_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+COARSE_GID_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+COARSE_LOCAL_ID_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+initial_diag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_flux_tag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+val_diric:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+val_neum:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_phi:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+nfp:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+ref_param:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+LEVEL:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+LEVEL_ID_0:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+LEVEL_ID_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+LEVEL_ID_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+ADM_COARSE_ID_LEVEL_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+ADM_COARSE_ID_LEVEL_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+transmissibility:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+#####################

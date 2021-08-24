@@ -5,6 +5,7 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
     cr1 = direc.data_loaded['Crs']['Cr1']
     cr2 = direc.data_loaded['Crs']['Cr2']
     # cr1 = np.load('flying/crs.npy').tolist()
+    # cr1 = [5, 5, 1]
     crs = [cr1, cr2]
 
     # import pdb; pdb.set_trace()
@@ -37,6 +38,7 @@ def get_reservoir_partitions(coord_nodes, external_vertex_on_boundary, uniform_d
                     p_homog=initial_homog_primal+np.cumsum(np.repeat(crs[i][j]*d_j[j],n_homog_prim+2))-crs[i][j]*d_j[j]
                     Pij=np.append(Pij,p_homog)
             else:
+                
                 Pij = np.arange(min_j[j],round(max_j[j])+d_j[j],crs[i][j]*d_j[j])
 
             Pij[-1] = max_j[j]
@@ -223,3 +225,7 @@ class DualPrimal:
         # subP, subD = distribute_reservoir_partitions(P, D, nworker=3)
         primal_1, primal_2, dual_flag_1, dual_flag_2 = create_dual_and_primal(P, D, min_j, max_j, d_j, cent_volumes)
         set_tags(M1, primal_1, primal_2, dual_flag_1, dual_flag_2)
+        # m=M1.mb.create_meshset()
+        # M1.mb.add_entities(m,M1.all_volumes)
+        # M1.mb.write_file('results/trashs.vtk',[m])
+        # import pdb; pdb.set_trace()

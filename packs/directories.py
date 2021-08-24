@@ -77,6 +77,7 @@ with open ('input_cards/input_file_name.yml','r') as f:
 
 with open(name_input_file_load, 'r') as f:
     data_loaded = yaml.safe_load(f)
+    # import pdb; pdb.set_trace()
 
 with open(file_adm_mesh_def, 'r') as f:
     file_adm_mesh_def = yaml.safe_load(f)

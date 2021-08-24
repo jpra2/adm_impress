@@ -9,7 +9,8 @@ def get_coupled_dual_volumes(mlo,T, M, data_impress,neta_lim=0.0, ind=0):
     Tc2=Tc.copy()
     Tc2.setdiag(0)
     DTc=1/np.array(Tc[range(Tc.shape[0]),range(Tc.shape[0])])[0]
-    if (DTc>0).sum()>0 and abs(Tc[DTc>0].sum())<0.01:
+    # DTc*=np.log10(M.maxs)
+    if (DTc>0).sum()>0:# and abs(Tc[DTc>0].sum())<0.01:
         print((DTc>0).sum(),"diagonais positivas !!!!!!!!!!!")
         DTc[DTc>0]=-abs(DTc).max()
 
@@ -17,13 +18,22 @@ def get_coupled_dual_volumes(mlo,T, M, data_impress,neta_lim=0.0, ind=0):
     dia=csc_matrix((DTc,(lines,lines)),shape=Tc.shape)
     netas=dia*Tc2
     fn=find(netas)
-
-    # import pdb; pdb.set_trace()
     superates_tol=fn[2]>neta_lim
-    # import pdb; pdb.set_trace()
+
     nsp=fn[2][superates_tol]
     i=fn[1][superates_tol]
     j=fn[0][superates_tol]
+
+    ####################### new_feature
+
+    maxs, ads = M.edges_and_vals
+    beta_lim=np.load('flying/beta_lim_dual.npy')[0]
+    bigs=maxs>beta_lim
+    nsp=np.concatenate([nsp, np.zeros_like(ads[:,0][bigs])])
+    i=np.concatenate([i,ads[:,0][bigs]])
+    j=np.concatenate([j,ads[:,1][bigs]])
+
+    ######################
 
     internal_faces=M.faces.internal
     adjs=M.faces.bridge_adjacencies(internal_faces,2,3)
@@ -124,6 +134,13 @@ def group_dual_volumes_and_get_OP(mlo, T, M, data_impress, T_without_boundary, n
         OP_AMS[lins_par]=OP_AMS_groups[lins_par]
         mlo['prolongation_level_1']=OP_AMS
         multilevel_operators=mlo
+        ###############################new_feature
+        OP_AMS=mlo['prolongation_level_1']
+        phiks=OP_AMS[data_impress['GID_0'],data_impress['GID_1']].toarray()[0]
+        r_phiks=(1-phiks)/phiks
+        maxs=csc_matrix((r_phiks,(data_impress['GID_0'],data_impress['GID_1'])),shape=OP_AMS.shape).max(axis=0).toarray()[0]
+        M.maxs=maxs
+        ########################end
     ######################### # #############################
     old_groups=groups.copy()
     if len(old_groups)==0:
