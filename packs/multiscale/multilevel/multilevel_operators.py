@@ -368,8 +368,8 @@ class MultilevelOperators(DataManager):
         
         #########
         ## reinitialize local and global update
-        global_vector_update[:] = False
-        DualSubdomainMethods.reinitialize_update(dual_subdomains)
+        # global_vector_update[:] = False
+        # DualSubdomainMethods.reinitialize_update(dual_subdomains)
         #########
         
         self._data[self.prolongation + str(level)] = OP_AMS

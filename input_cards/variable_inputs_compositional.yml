@@ -226,6 +226,27 @@ flux_grav_volumes:
   sparse: True
   level: 0
 
+So:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+Sg:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+P:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
 flux_volumes:
   type: volumes
   data size: 1

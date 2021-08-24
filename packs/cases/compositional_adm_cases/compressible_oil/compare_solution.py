@@ -49,7 +49,7 @@ def erro_abs(v1, v2):
 datas_case1 = organize_cases_by_loop(n_cases, datas_case1, loops1)
 datas_case2 = organize_cases_by_loop(n_cases, datas_case2, loops2)
 
-loops1 = np.sort(loops1)
+loops1 = np.sort(loops1)[0:n_cases]
 
 p1 = extrair_dado(datas_case1, 'pressure')
 p2 = extrair_dado(datas_case2, 'pressure')
@@ -61,33 +61,35 @@ erro_l2 = np.linalg.norm(erro_rel, axis=1)
 erro_max = np.max(erro_rel, axis=1)
 
 
-# fig, (ax1, ax2) = plt.subplots(2, 1)
+fig, (ax1, ax2) = plt.subplots(2, 1)
 
-# ax1.plot(loops1, erro_l2, '.-')
-# ax1.set_ylabel('Norma L2')
+ax1.plot(loops1, erro_l2, '.-')
+ax1.set_ylabel('Norma L2')
 
-# ax2.plot(loops1, erro_max, '.-')
-# ax2.set_ylabel('Norma $L_{\infty}$')
-# ax2.set_xlabel('loops')
+ax2.plot(loops1, erro_max, '.-')
+ax2.set_ylabel('Norma $L_{\infty}$')
+ax2.set_xlabel('loops')
 
-fig, axes = plt.subplots(2,2)
+plt.savefig('figura1.png')
 
-x_axis = np.arange(len(p1[0]))
+# fig, axes = plt.subplots(2,2)
+
+# x_axis = np.arange(len(p1[0]))
 
 
-axes[0,0].plot(x_axis, p1[0], '.-')
-axes[0,0].set_ylabel('loop 1')
-axes[0,1].plot(x_axis, p1[50], '.-')
-axes[0,1].set_ylabel('loop 50')
-axes[1,0].plot(x_axis, p1[100], '.-')
-axes[1,0].set_ylabel('loop 100')
-axes[1,1].plot(x_axis, p1[149], '.-')
-axes[1,1].set_ylabel('loop 150')
+# axes[0,0].plot(x_axis, p1[0], '.-')
+# axes[0,0].set_ylabel('loop 1')
+# axes[0,1].plot(x_axis, p1[50], '.-')
+# axes[0,1].set_ylabel('loop 50')
+# axes[1,0].plot(x_axis, p1[100], '.-')
+# axes[1,0].set_ylabel('loop 100')
+# axes[1,1].plot(x_axis, p1[149], '.-')
+# axes[1,1].set_ylabel('loop 150')
 
-fig.suptitle('Campo de pressão')
-fig.tight_layout()
+# fig.suptitle('Campo de pressão')
+# fig.tight_layout()
 
-plt.savefig('figura2.png')
+# plt.savefig('figura2.png')
 
 
 

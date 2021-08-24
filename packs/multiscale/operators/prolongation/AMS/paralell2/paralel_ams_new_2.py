@@ -14,8 +14,8 @@ class MasterLocalOperator(CommonMasterMethods):
     def __init__(self, problems_list, n_volumes, **kwargs):
         problems_list: Sequence[DualSubdomain]
         n_cpu = self.get_n_cpu()
+        # self.n_cpu = n_cpu - 1
         self.n_cpu = n_cpu - 4
-        # self.n_cpu = 1
         self.n_volumes = n_volumes
         n_problems = len(problems_list)
  

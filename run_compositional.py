@@ -174,7 +174,7 @@ class run_simulation:
         M.data['Sg'] = fprop.Sg
         M.data['P'] = fprop.P
         M.data.update_variables_to_mesh()
-        M.core.print(file = self.name_all_results + str(self.loop), extension ='.vtk')
+        # M.core.print(file = self.name_all_results + str(self.loop), extension ='.vtk')
 
     def export_current_compositional_results(self):
          np.save(self.name_current_results, self.current_compositional_results)

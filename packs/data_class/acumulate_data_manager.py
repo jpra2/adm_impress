@@ -39,3 +39,21 @@ class CumulativeDatamanager(AccumulativeArrayDataManager):
                         all_datas.append(data_set)
         
         return all_datas
+    
+    def load_all_datas_from_keys(self, keyword_list):
+        arqs_name = os.listdir(flying)
+        all_datas = []
+
+        # import pdb; pdb.set_trace()
+        for file in arqs_name:
+            if file.startswith(self.file_name):
+                with h5py.File(os.path.join(flying, file), 'r') as f:
+                    for group in f.keys():
+                        grp = f[group]
+                        data_set = dict()
+                        for key in grp.keys():
+                            if key in keyword_list:
+                                data_set[key] = grp[key][:]
+                        all_datas.append(data_set)
+        
+        return all_datas

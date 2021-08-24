@@ -1,3 +1,4 @@
+import copy
 from packs.directories import data_loaded
 from run_compositional_adm import RunSimulationAdm
 import time
@@ -13,6 +14,7 @@ import scipy.sparse as sp
 from packs.data_class.compositional_data import CompositionalData
 from packs.data_class.compositional_cumulative_datamanager import CumulativeCompositionalDataManager
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
+from packs.cases.compositional_adm_cases.compressible_oil import functions_update
 
 
 name_current = 'current_compositional_results_'
@@ -24,7 +26,8 @@ load_operators = data_loaded['load_operators']
 load_multilevel_data = data_loaded['load_multilevel_data']
 
 # description = 'case1_finescale_'
-description = 'case2_adm_'
+# description = 'case2_adm_'
+description = 'case4_adm_3k'
 compositional_data = CompositionalData(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
 cumulative_compositional_datamanager.create()
@@ -32,7 +35,18 @@ cumulative_compositional_datamanager.create()
 # cumulative_compositional_datamanager.delete_all_datas()
 # compositional_data.delete()
 # import pdb; pdb.set_trace()
-loop_array = np.zeros(1, dtype=[('loop', int), ('t', float)])
+loop_array = np.zeros(
+    1,
+    dtype=[
+        ('loop', int),
+        ('t', float),
+        ('vpi', float),
+        ('simulation_time', float),
+        ('oil_production', float),
+        ('gas_production', float),
+        ('n_volumes_update_base_functions', int)
+    ]
+)
 params = Params()
 
 if data_loaded['use_vpi']:
@@ -118,6 +132,11 @@ local_problem_params = {
     'dual_subdomains': dual_subdomains
 }
 
+latest_mobility = np.zeros(fprop.mobilities.shape)
+global_vector_update[:] = False
+
+
+
 while run_criteria < stop_criteria:# and loop < loop_max:
     params['pressure'] = fprop.P
     params['mobilities'] = fprop.mobilities
@@ -130,8 +149,24 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['porous_volume'] = fprop.Vp
     params['total_volume'] = fprop.Vt
     
-    global_vector_update[:] = True # update the prolongation operator in all dual volumes
+    # global_vector_update[:] = True # update the prolongation operator in all dual volumes
+    for phase in range(ctes.n_phases):
+        functions_update.update_global_vector_for_latest_variable(
+            global_vector_update,
+            latest_mobility[:, phase, :],
+            fprop.mobilities[:, phase, :],
+            0.1
+        )
+    for comp in range(fprop.z.shape[0]):
+        functions_update.update_global_vector_for_volumes_adjacencies_variable(
+            global_vector_update, 
+            elements_lv0['neig_internal_faces'], 
+            fprop.z[comp, :], 
+            0.1
+        )
+        
 
+    t0 = time.time()
     sim.run(M, wells, fprop, load, 
             multilevel_data=ml_data, 
             multilevel_operators=mlo,
@@ -141,6 +176,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             data_impress=data_impress,
             elements_lv0=elements_lv0,
             **local_problem_params)
+    simulation_time = time.time() - t0
 
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'
@@ -172,21 +208,36 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     
     loop = sim.loop
     print(sim.t)
+    
+    
     loop_array['loop'][0] = loop
     loop_array['t'][0] = sim.t
+    loop_array['vpi'][0] = sim.vpi
+    loop_array['simulation_time'][0] = simulation_time
+    loop_array['oil_production'][0] = sim.oil_production
+    loop_array['gas_production'][0] = sim.gas_production
+    loop_array['n_volumes_update_base_functions'][0] = global_vector_update.sum()
     compositional_data.update({
         'pressure': fprop.P,
         'Sg': fprop.Sg,
         'Sw': fprop.Sw,
         'So': fprop.So,
-        'composition': fprop.Csi_j,
+        'global_composition': fprop.z,
+        'mols': fprop.Nk,
+        'xkj': fprop.xkj,
+        'Vp': fprop.Vp,
+        'latest_mobility': latest_mobility,
         'loop_array': loop_array
     })
     cumulative_compositional_datamanager.insert_data(compositional_data._data)
     
+    global_vector_update[:] = False
+    
     if loop % 500 == 0:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
+    
+    if loop % 2500 == 0:
         import pdb; pdb.set_trace()
         
 
