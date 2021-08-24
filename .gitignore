@@ -36,10 +36,6 @@ impress(copia)/
 .idea/
 venv/
 *__pycache__/
-LIXO/
-.vscode/
-.devcontainer/
-docker/
 
 
 
