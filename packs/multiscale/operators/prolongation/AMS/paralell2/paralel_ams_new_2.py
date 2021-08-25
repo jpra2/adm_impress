@@ -13,17 +13,17 @@ class MasterLocalOperator(CommonMasterMethods):
     
     def __init__(self, problems_list, n_volumes, **kwargs):
         problems_list: Sequence[DualSubdomain]
-        n_cpu = self.get_n_cpu()
+        self.n_cpu = self.get_n_cpu()
         # self.n_cpu = n_cpu - 1
-        self.n_cpu = n_cpu - 4
         self.n_volumes = n_volumes
         n_problems = len(problems_list)
  
         n_problems_per_cpu = self.count_problems(n_problems, self.n_cpu)
-        problems_per_cpu = self.get_problems_per_cpu(n_problems_per_cpu, problems_list)
-        self.m2w, self.w2m, self.procs, self.queue, self.finished = self.init_subproblems(problems_per_cpu)
+        self.problems_per_cpu = self.get_problems_per_cpu(n_problems_per_cpu, problems_list)
+        # self.m2w, self.w2m, self.procs, self.queue, self.finished = self.init_subproblems(problems_per_cpu)
+        self.m2w, self.w2m, self.queue, self.finished = self.initialize_params(len(self.problems_per_cpu))
 
-    def init_subproblems(self, problems_per_cpu):
+    def init_subproblems(self, problems_per_cpu, w2m, values, _queue):
         
         """
 
@@ -34,22 +34,21 @@ class MasterLocalOperator(CommonMasterMethods):
                 queue: queue shared between processes
         """
         n = len(problems_per_cpu)
-        m2w, w2m, _queue, values = self.initialize_params(n)
+        # m2w, w2m, _queue, values = self.initialize_params(n)
         procs = [mp.Process(target=run_thing, args=[LocalOperator(subdomains, _queue, comm, finished, id_process)]) for subdomains, comm, finished, id_process in zip(problems_per_cpu, w2m, values, range(n))]
 
-        return m2w, w2m, procs, _queue, values
-    
-    def all_process_finished(self):
-        return np.all([i.value for i in self.finished])
+        # return m2w, w2m, procs, _queue, values
+        return procs
     
     def run(self, OP_AMS, dual_subdomains):
         
         correction_function = np.zeros(self.n_volumes)
+        procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
         
-        for proc in self.procs:
+        for proc in procs:
             proc.start()
         
-        while(not self.all_process_finished()):
+        while(not self.all_process_finished(self.finished)):
             try:
                 resp = self.queue.get_nowait()
             except queue.Empty:
@@ -59,16 +58,19 @@ class MasterLocalOperator(CommonMasterMethods):
                 set_data_to_op(OP_AMS, resp[0])
                 set_data_to_cf(correction_function, resp[1])
 
-        for proc in self.procs:
+        for proc in procs:
             proc.join()
 
         while(not self.queue.empty()):
             resp = self.queue.get()
             set_data_to_op(OP_AMS, resp[0])
             set_data_to_cf(correction_function, resp[1])
-            
+        
+        self.set_false_finished(self.finished)
 
         return OP_AMS, correction_function
+    
+    
         
 
 

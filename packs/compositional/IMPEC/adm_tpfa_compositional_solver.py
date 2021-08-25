@@ -78,7 +78,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # )
         # import pdb; pdb.set_trace()
         
-        
+        master_local_operator = kwargs.get('master_local_operator')
         OP_AMS, cfs  = mlo.run_paralel_2(
             T_advec,
             D,
@@ -87,7 +87,9 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             # params['diagonal_term'],
             np.zeros(D.shape[0]),
             OP_AMS,
-            1
+            1,
+            master_local_operator
+            
         )
         # import pdb; pdb.set_trace()
     
@@ -127,9 +129,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # # adm_method.set_saturation_level_simple(delta_sat_max)
         # # import pdb; pdb.set_trace()
 
-        data_impress['LEVEL'][:] = 1
+        # data_impress['LEVEL'][:] = 1
         # self.set_level0_by_composition(data_impress['LEVEL'], fprop.Csi_j, ctes.n_components, 0.1, elements_lv0['neig_internal_faces'], ctes.n_volumes)
-        self.set_level0_wells(data_impress['LEVEL'], adm_method.all_wells_ids, elements_lv0['volumes_face_volumes'], ctes.n_volumes)
+        # self.set_level0_wells(data_impress['LEVEL'], adm_method.all_wells_ids, elements_lv0['volumes_face_volumes'], ctes.n_volumes)
+        self.set_level0_wells_v2(data_impress['LEVEL'], adm_method.all_wells_ids, ctes.n_volumes, data_impress['GID_0'])
         gid_0 = data_impress['GID_0'][data_impress['LEVEL'] == 0]
         gid_1 = data_impress['GID_0'][data_impress['LEVEL'] == 1]
         adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
@@ -164,12 +167,12 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             correction_function_list
         )
 
-        self.P = self.update_pressure(T, D) # OP*padm
-        error = np.absolute(self.P - solution) / self.P
-        data_impress = M.data
-        data_impress['pressure'][:] = self.P
-        data_impress['ms_pressure'][:] = solution
-        data_impress['pressure_error'][:] = error
+        # self.P = self.update_pressure(T, D) # OP*padm
+        # error = np.absolute(self.P - solution) / self.P
+        # data_impress = M.data
+        # data_impress['pressure'][:] = self.P
+        # data_impress['ms_pressure'][:] = solution
+        # data_impress['pressure_error'][:] = error
         # import pdb; pdb.set_trace()
         
         # m1 = M.core.mb.create_meshset()
@@ -196,7 +199,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     os.path.join('results', 'prolongation_level_1.vtk')
         # )
 
-        Ft_internal_faces_orig = self.update_total_flux_internal_faces(fprop, self.P) # pressao local
+        # Ft_internal_faces_orig = self.update_total_flux_internal_faces(fprop, self.P) # pressao local
         Ft_internal_faces_adm = self.update_total_flux_internal_faces(fprop, solution) # pressao local
         Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
@@ -226,15 +229,18 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             all_coarse_intersect_faces,
             **kwargs
         )
-        master = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
-        local_solution = master.run()
+        
+        # master = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
+        # local_solution = master.run()
         # local_solution = master.run_serial()
-        del master
-        # import pdb; pdb.set_trace()
+        # del master
+        
+        master_neumann: MasterLocalSolver = kwargs.get('master_neumann')
+        local_solution = master_neumann.run()
 
-        error2 = np.absolute(self.P - local_solution) / self.P
-        data_impress['verif_po'][:] = local_solution
-        data_impress['verif_rest'][:] = error2
+        # error2 = np.absolute(self.P - local_solution) / self.P
+        # data_impress['verif_po'][:] = local_solution
+        # data_impress['verif_rest'][:] = error2
         # data_impress['flux_volumes'][:] = error2
 
         ft_internal_faces_local_solution = self.update_total_flux_internal_faces(fprop, local_solution)
@@ -393,6 +399,14 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         adjs = np.unique(np.concatenate(volumes_adjacencies_by_face[wells_ids]))
         level0[wells_ids] = True
         level0[adjs] = True
+        
+        level_vector[level0] = 0
+    
+    def set_level0_wells_v2(self, level_vector, wells_ids, n_volumes, coarse_gid):
+        level0 = np.full(n_volumes, False, dtype=bool)
+        coarse_gid_wells = np.unique(coarse_gid[wells_ids])
+        for cid in coarse_gid_wells:    
+            level0[coarse_gid == cid] = True
         
         level_vector[level0] = 0
         

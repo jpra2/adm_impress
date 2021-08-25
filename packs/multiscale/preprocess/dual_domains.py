@@ -46,13 +46,14 @@ class DualSubdomain:
         DualSubdomain.id += 1
         
     def update_t_local(self, Tglobal, diagonal_term):
-        
-        self.Tlocal[:] = update_local_transmissibility(Tglobal, self.gids, diagonal_term)
+        if self.test_update():
+            self.Tlocal[:] = update_local_transmissibility(Tglobal, self.gids, diagonal_term)
+            self.update_as(self.Tlocal)
     
     def update_as(self, Tlocal):
         As = self.ams_solver.get_as(self.ams_solver.get_twire(Tlocal))
         self.As.update(As)
-        self.update_lu_matrices()
+        # self.update_lu_matrices()
 
     def update_lu_matrices(self):
         
@@ -98,16 +99,20 @@ class DualSubdomainMethods:
     def update_matrices_dual_subdomains(dual_subdomains, Tglobal, global_diagonal_term, test=True):
         
         dual_subdomains: Sequence[DualSubdomain]
-        if test:    
-            for dual in dual_subdomains:
-                dual: DualSubdomain
-                if dual.test_update():    
-                    dual.update_t_local(Tglobal, global_diagonal_term[dual.gids])
-                    dual.update_as(dual.Tlocal)
-        else:
-            for dual in dual_subdomains:
-                dual.update_t_local(Tglobal, global_diagonal_term[dual.gids])
-                dual.update_as(dual.Tlocal)
+        # if test:    
+        #     for dual in dual_subdomains:
+        #         dual: DualSubdomain
+        #         # if dual.test_update():    
+        #         #     dual.update_t_local(Tglobal, global_diagonal_term[dual.gids])
+        #         #     dual.update_as(dual.Tlocal)
+        #         dual.update_t_local(Tglobal, global_diagonal_term[dual.gids])
+        # else:
+        #     for dual in dual_subdomains:
+        #         dual.update_t_local(Tglobal, global_diagonal_term[dual.gids])
+        #         # dual.update_as(dual.Tlocal)
+        for dual in dual_subdomains:
+            dual: DualSubdomain
+            dual.update_t_local(Tglobal, global_diagonal_term[dual.gids])
     
     @staticmethod
     def get_subdomains_to_update(dual_subdomains):

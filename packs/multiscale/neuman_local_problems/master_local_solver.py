@@ -36,7 +36,10 @@ class CommonMasterMethods:
     
 
     def get_n_cpu(self):
-        n_cpu = mp.cpu_count()
+        n_cpu = mp.cpu_count() - 4
+        if n_cpu <= 0:
+            n_cpu = 1
+        
         return n_cpu
     
     
@@ -48,23 +51,30 @@ class CommonMasterMethods:
         values = [Value(c_bool, False) for _ in range(n)]
         
         return m2w, w2m, _queue, values
+    
+    def set_false_finished(self, finished_list):
+        for val in finished_list:
+            val.value = False
+            
+        
+    def all_process_finished(self, finished_list):
+        return np.all([i.value for i in finished_list])
 
 
 
 class MasterLocalSolver(CommonMasterMethods):
 
     def __init__(self, problems_list, n_volumes):
-        n_cpu = self.get_n_cpu()
-        self.n_cpu = n_cpu - 4
+        self.n_cpu = self.get_n_cpu()
         self.n_volumes = n_volumes
+        self.problems_list = problems_list
         n_problems = len(problems_list)
         n_problems_per_cpu = self.count_problems(n_problems, self.n_cpu)
-        problems_per_cpu = self.get_problems_per_cpu(n_problems_per_cpu, problems_list)
-        self.problems_list = problems_list
-        self.m2w, self.w2m, self.procs, self.queue, self.finished = self.init_subproblems(problems_per_cpu)
+        self.problems_per_cpu = self.get_problems_per_cpu(n_problems_per_cpu, problems_list)
+        self.m2w, self.w2m, self.queue, self.finished = self.initialize_params(len(self.problems_per_cpu))
 
 
-    def init_subproblems(self, problems_per_cpu):
+    def init_subproblems(self, problems_per_cpu, w2m, values, _queue):
         """
 
         @param problems_per_cpu: list of list local problems in cpu shape = (?, n_cpu)
@@ -78,19 +88,21 @@ class MasterLocalSolver(CommonMasterMethods):
         # _queue = Queue()
         # m2w, w2m = list(zip(*master2worker))
         # values = [Value(c_bool, False) for _ in range(n)]
-        m2w, w2m, _queue, values = self.initialize_params(n)
+        # m2w, w2m, _queue, values = self.initialize_params(n)
         procs = [mp.Process(target=run_thing, args=[LocalSolver1(subdomains, _queue, comm, finished, id_process)]) for subdomains, comm, finished, id_process in zip(problems_per_cpu, w2m, values, range(n))]
 
-        return m2w, w2m, procs, _queue, values
+        # return m2w, w2m, procs, _queue, values
+        return procs
 
 
     def run(self):
         solution = np.zeros(self.n_volumes)
+        procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
 
-        for proc in self.procs:
+        for proc in procs:
             proc.start()
 
-        while(not self.all_process_finished()):
+        while(not self.all_process_finished(self.finished)):
             try:
                 resp = self.queue.get_nowait()
             except queue.Empty:
@@ -99,12 +111,14 @@ class MasterLocalSolver(CommonMasterMethods):
             else:
                 solution[resp[0]] = resp[1]
 
-        for proc in self.procs:
+        for proc in procs:
             proc.join()
 
         while(not self.queue.empty()):
             resp = self.queue.get()
             solution[resp[0]] = resp[1]
+        
+        self.set_false_finished(self.finished)
 
         return solution
 
@@ -117,9 +131,5 @@ class MasterLocalSolver(CommonMasterMethods):
             solution[subd.volumes] = resp
         
         return solution
-            
-        
-    def all_process_finished(self):
-        return np.all([i.value for i in self.finished])
 
 

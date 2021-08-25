@@ -11,14 +11,16 @@ import pdb
 class SparseDataManager(CommonDataManager):
 
     '''
-        Dataset for sparse matrix manager
+        Dataset for sparse matr OP_AMS = kwargs.get('OP_AMS')ix manager
     '''
     all_datas = dict()
 
-    def __init__(self, data_name='', load=False):
+    def __init__(self, data_name='', load=False, description=''):
 
         if data_name == '':
-            data_name = type(self).__name__ + '_' + only_mesh_name + '.h5'
+            data_name = description + type(self).__name__ + '_' + only_mesh_name + '.h5'
+        else:
+            data_name = description + data_name
 
         self.name = os.path.join(flying, data_name)
 

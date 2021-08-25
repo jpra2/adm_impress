@@ -1,4 +1,7 @@
 import copy
+
+from scipy.sparse import data
+from packs.data_class import sparse_operators
 from packs.directories import data_loaded
 from run_compositional_adm import RunSimulationAdm
 import time
@@ -7,14 +10,18 @@ from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.compositional.compositional_params import Params
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 from packs.multiscale.preprocess.prep_neumann import NeumannSubdomains
-from packs.multiscale.preprocess.dual_domains import create_dual_subdomains
+from packs.multiscale.preprocess.dual_domains import DualSubdomain, create_dual_subdomains
 from packs.utils import constants as ctes
 import numpy as np
 import scipy.sparse as sp
 from packs.data_class.compositional_data import CompositionalData
 from packs.data_class.compositional_cumulative_datamanager import CumulativeCompositionalDataManager
-""" ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 from packs.cases.compositional_adm_cases.compressible_oil import functions_update
+from packs.multiscale.neuman_local_problems.master_local_solver import MasterLocalSolver
+from packs.multiscale.operators.prolongation.AMS.paralell2.paralel_ams_new_2 import MasterLocalOperator
+from packs.data_class.sparse_operators import SparseOperators
+
+""" ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
 
 name_current = 'current_compositional_results_'
@@ -27,8 +34,10 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 
 # description = 'case1_finescale_'
 # description = 'case2_adm_'
-description = 'case4_adm_3k'
+# description = 'case4_adm_3k'
+description = 'case5_adm_3k'
 compositional_data = CompositionalData(description=description)
+manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
 cumulative_compositional_datamanager.create()
 # datas_comp = cumulative_compositional_datamanager.load_all_datas()
@@ -44,7 +53,8 @@ loop_array = np.zeros(
         ('simulation_time', float),
         ('oil_production', float),
         ('gas_production', float),
-        ('n_volumes_update_base_functions', int)
+        ('n_volumes_update_base_functions', int),
+        ('total_volumes_updated', int)
     ]
 )
 params = Params()
@@ -95,6 +105,10 @@ global_vector_update = np.full(ctes.n_volumes, True, dtype=bool)
 ncoarse_ids = len(np.unique(data_impress['GID_1']))
 OP_AMS = sp.lil_matrix((ctes.n_volumes, ncoarse_ids)).tocsc()
 
+master_neumann = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
+master_local_operator = MasterLocalOperator(dual_subdomains, ctes.n_volumes)
+
+
 params['area'] = data_impress['area']
 params['pretransmissibility'] = data_impress['pretransmissibility']
 
@@ -129,11 +143,20 @@ local_problem_params = {
     'm_object': M,
     'global_vector_update': global_vector_update,
     'OP_AMS': OP_AMS,
-    'dual_subdomains': dual_subdomains
+    'dual_subdomains': dual_subdomains,
+    'master_neumann': master_neumann,
+    'master_local_operator': master_local_operator
 }
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
 global_vector_update[:] = False
+total_volumes_updated = copy.deepcopy(global_vector_update)
+data_impress['LEVEL'][:] = 1
+
+n_loops_for_acumulate = 10
+n_loops_for_export = 500
+
+assert (n_loops_for_export % n_loops_for_acumulate) == 0
 
 
 
@@ -157,6 +180,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             fprop.mobilities[:, phase, :],
             0.1
         )
+        
     for comp in range(fprop.z.shape[0]):
         functions_update.update_global_vector_for_volumes_adjacencies_variable(
             global_vector_update, 
@@ -164,6 +188,12 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             fprop.z[comp, :], 
             0.1
         )
+        
+    for dual in dual_subdomains:
+        dual: DualSubdomain
+        if dual.test_update():
+            latest_mobility[:, :, dual.gids] = fprop.mobilities[:, :, dual.gids]
+            total_volumes_updated[dual.gids] = True
         
 
     t0 = time.time()
@@ -209,36 +239,51 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     loop = sim.loop
     print(sim.t)
     
+    if (loop - 1) % n_loops_for_acumulate == 0:
+             
+        loop_array['loop'][0] = loop
+        loop_array['t'][0] = sim.t
+        loop_array['vpi'][0] = sim.vpi
+        loop_array['simulation_time'][0] = simulation_time
+        loop_array['oil_production'][0] = sim.oil_production
+        loop_array['gas_production'][0] = sim.gas_production
+        loop_array['n_volumes_update_base_functions'][0] = global_vector_update.sum()
+        loop_array['total_volumes_updated'][0] = total_volumes_updated.sum()
+        compositional_data.update({
+            'pressure': fprop.P,
+            'Sg': fprop.Sg,
+            'Sw': fprop.Sw,
+            'So': fprop.So,
+            'global_composition': fprop.z,
+            'mols': fprop.Nk,
+            'xkj': fprop.xkj,
+            'Vp': fprop.Vp,
+            'latest_mobility': latest_mobility,
+            'loop_array': loop_array
+        })
+        cumulative_compositional_datamanager.insert_data(compositional_data._data)
+        
+        manage_operators.update(
+            {
+                'prolongation_level_1': OP_AMS
+            }
+        )
     
-    loop_array['loop'][0] = loop
-    loop_array['t'][0] = sim.t
-    loop_array['vpi'][0] = sim.vpi
-    loop_array['simulation_time'][0] = simulation_time
-    loop_array['oil_production'][0] = sim.oil_production
-    loop_array['gas_production'][0] = sim.gas_production
-    loop_array['n_volumes_update_base_functions'][0] = global_vector_update.sum()
-    compositional_data.update({
-        'pressure': fprop.P,
-        'Sg': fprop.Sg,
-        'Sw': fprop.Sw,
-        'So': fprop.So,
-        'global_composition': fprop.z,
-        'mols': fprop.Nk,
-        'xkj': fprop.xkj,
-        'Vp': fprop.Vp,
-        'latest_mobility': latest_mobility,
-        'loop_array': loop_array
-    })
-    cumulative_compositional_datamanager.insert_data(compositional_data._data)
-    
-    global_vector_update[:] = False
-    
-    if loop % 500 == 0:
+    if (loop - 1) % n_loops_for_export == 0:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
+        manage_operators.export()
+         
     
-    if loop % 2500 == 0:
-        import pdb; pdb.set_trace()
+    global_vector_update[:] = False
+    total_volumes_updated[:] = False
+    data_impress['LEVEL'][:] = 1
+    
+    import pdb; pdb.set_trace()
+        
+    
+    # if loop % 2500 == 0:
+    #     import pdb; pdb.set_trace()
         
 
 tf = time.time()

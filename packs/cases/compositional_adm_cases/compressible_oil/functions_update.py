@@ -11,5 +11,5 @@ def update_global_vector_for_volumes_adjacencies_variable(global_vector_update, 
 def update_global_vector_for_latest_variable(global_vector_update, latest_variable, new_variable, delta_lim):
     delta = np.abs(latest_variable - new_variable)
     test = (delta >= delta_lim)
-    latest_variable[test] = new_variable[test]
+    # latest_variable[test] = new_variable[test]
     global_vector_update[test.flatten()] = True
