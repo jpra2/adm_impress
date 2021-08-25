@@ -325,7 +325,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             T += Ta.multiply(self.dVtk[i,:, np.newaxis])
 
         # T = T * delta_t
-        T *= delta_t
+        try:
+            T *= delta_t
+        except BaseException as e:
+            import pdb; pdb.set_trace()
         T_advec = T.copy()
         ''' Transmissibility diagonal term '''
         # diag = np.diag((ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP))
