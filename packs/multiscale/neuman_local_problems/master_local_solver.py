@@ -36,7 +36,7 @@ class CommonMasterMethods:
     
 
     def get_n_cpu(self):
-        n_cpu = mp.cpu_count() - 4
+        n_cpu = mp.cpu_count() - 1
         if n_cpu <= 0:
             n_cpu = 1
         

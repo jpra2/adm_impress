@@ -7,13 +7,14 @@ description = 'case3_finescale_3k'
 # description = 'case2_adm_'
 # compositional_data = CompositionalData(description=description)
 case1 = CumulativeCompositionalDataManager(description=description)
-datas_case1 = case1.load_all_datas_from_keys(['oil_production', 'loop_array', 'gas_production'])
+datas_case1 = case1.load_all_datas_from_keys(['loop_array'])
 
 # description = 'case2_adm_'
-description = 'case4_adm_3k'
+# description = 'case4_adm_3k'
+description = 'case5_adm_3k'
 case2 = CumulativeCompositionalDataManager(description=description)
 # datas_case2 = case2.load_all_datas()
-datas_case2 = case2.load_all_datas_from_keys(['oil_production', 'loop_array', 'gas_production'])
+datas_case2 = case2.load_all_datas_from_keys(['loop_array'])
 
 n_cases = min(len(datas_case1), len(datas_case2))
 
@@ -62,7 +63,7 @@ def get_data_from_loop_array(keyword, data_case):
 datas_case1 = organize_cases_by_loop(n_cases1, datas_case1, loops1)
 datas_case2 = organize_cases_by_loop(n_cases2, datas_case2, loops2)
 
-loops1 = np.sort(loops1)[0:n_cases]
+loops1 = np.sort(loops1)
 
 case1_oil_production = get_data_from_loop_array('oil_production', datas_case1)
 case2_oil_production = get_data_from_loop_array('oil_production', datas_case2)
@@ -76,6 +77,7 @@ case1_time = case1_time/86400
 case2_time = case2_time/86400
 
 n_volumes_update = get_data_from_loop_array('n_volumes_update_base_functions', datas_case2)
+total_volumes_updated = get_data_from_loop_array('total_volumes_updated', datas_case2)
 max_time_case2 = case2_time.max()
 max_time_case1 = case1_time.max()
 max_time = min([case1_time.max(), case2_time.max()])
@@ -92,6 +94,7 @@ case2_gas_production = case2_gas_production[test2]
 case2_oil_production = case2_oil_production[test2]
 
 n_volumes_update = n_volumes_update[test2]
+total_volumes_updated = total_volumes_updated[test2]
 
 # import pdb; pdb.set_trace()
 
@@ -111,11 +114,7 @@ n_volumes_update = n_volumes_update[test2]
 
 fig, (ax1, ax2) = plt.subplots(2, 1)
 
-ax1.plot(case1_time, case1_fig, ax = plt.subplots(1, 1)
-ax.plot(case2_time, n_volumes_update, '-')
-ax.set_xlabel('time [days]')
-ax.set_ylabel('N volumes')
-fig.suptitle('Volumes para atualizar as funcoes de base')oil_production, '-', label='Finescale')
+ax1.plot(case1_time, case1_oil_production, '-', label='Finescale')
 ax1.plot(case2_time, case2_oil_production, '-', label='Adm')
 ax1.set_ylabel('Oil production')
 ax1.set_xlabel('time [days]')
@@ -128,6 +127,14 @@ ax2.set_xlabel('time [days]')
 # ax2.set_ylabel('Norma $L_{\infty}$')
 # ax2.set_xlabel('loops')
 ax2.legend()
+
+# plt.subplots_adjust(left=0.1,
+#                     bottom=0.1, 
+#                     right=0.9, 
+#                     top=0.9, 
+#                     wspace=0.4, 
+#                     hspace=0.4)
+
 fig.tight_layout()
 
 # plt.savefig('figura1.png')
@@ -149,15 +156,28 @@ fig.tight_layout()
 # # fig.suptitle('Campo de pressão')
 # # fig.tight_layout()
 
-plt.savefig('figura3.png')
+plt.savefig('figura5.png')
 
-fig, ax = plt.subplots(1, 1)
-ax.plot(case2_time, n_volumes_update, '-')
-ax.set_xlabel('time [days]')
-ax.set_ylabel('N volumes')
+fig, (ax1, ax2) = plt.subplots(2, 1)
+ax1.plot(case2_time, n_volumes_update, '-')
+ax1.set_xlabel('time [days]')
+ax1.set_ylabel('N volumes')
+
+ax2.plot(case2_time, total_volumes_updated, '-')
+ax2.set_xlabel('time [days]')
+ax2.set_ylabel('Total volumes')
+
+
+plt.subplots_adjust(left=0.1,
+                    bottom=0.1, 
+                    right=0.9, 
+                    top=0.9, 
+                    wspace=0.4, 
+                    hspace=0.4)
+# fig.tight_layout()
 fig.suptitle('Volumes para atualizar as funcoes de base')
 
-plt.savefig('figura4.png')
+plt.savefig('figura6.png')
 
 
 

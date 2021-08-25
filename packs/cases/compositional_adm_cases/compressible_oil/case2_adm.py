@@ -35,7 +35,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case1_finescale_'
 # description = 'case2_adm_'
 # description = 'case4_adm_3k'
-description = 'case5_adm_3k'
+# description = 'case5_adm_3k'
+description = 'case6_adm_3k'
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -54,7 +55,8 @@ loop_array = np.zeros(
         ('oil_production', float),
         ('gas_production', float),
         ('n_volumes_update_base_functions', int),
-        ('total_volumes_updated', int)
+        ('total_volumes_updated', int),
+        ('active_volumes', int)
     ]
 )
 params = Params()
@@ -101,7 +103,7 @@ adm = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 # ml_data.load_tags()
 # import pdb; pdb.set_trace()
 dual_subdomains = create_dual_subdomains(ml_data['dual_structure_level_1'], ml_data['fine_dual_id_level_1'], ml_data['fine_primal_id_level_1'])
-global_vector_update = np.full(ctes.n_volumes, True, dtype=bool)
+global_vector_update = np.full(ctes.n_volumes, False, dtype=bool)
 ncoarse_ids = len(np.unique(data_impress['GID_1']))
 OP_AMS = sp.lil_matrix((ctes.n_volumes, ncoarse_ids)).tocsc()
 
@@ -145,13 +147,15 @@ local_problem_params = {
     'OP_AMS': OP_AMS,
     'dual_subdomains': dual_subdomains,
     'master_neumann': master_neumann,
-    'master_local_operator': master_local_operator
+    'master_local_operator': master_local_operator,
+    'active_volumes': 0
 }
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
 global_vector_update[:] = False
 total_volumes_updated = copy.deepcopy(global_vector_update)
 data_impress['LEVEL'][:] = 1
+params['active_volumes'] = 0
 
 n_loops_for_acumulate = 1
 n_loops_for_export = 500
@@ -181,13 +185,13 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             0.1
         )
         
-    for comp in range(fprop.z.shape[0]):
-        functions_update.update_global_vector_for_volumes_adjacencies_variable(
-            global_vector_update, 
-            elements_lv0['neig_internal_faces'], 
-            fprop.z[comp, :], 
-            0.1
-        )
+    # for comp in range(fprop.z.shape[0]):
+    #     functions_update.update_global_vector_for_volumes_adjacencies_variable(
+    #         global_vector_update, 
+    #         elements_lv0['neig_internal_faces'], 
+    #         fprop.z[comp, :], 
+    #         0.1
+    #     )
         
     for dual in dual_subdomains:
         dual: DualSubdomain
@@ -259,7 +263,6 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     
     loop = sim.loop
     print(sim.t)
-    
     if (loop) % n_loops_for_acumulate == 0:
              
         loop_array['loop'][0] = loop
@@ -270,6 +273,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         loop_array['gas_production'][0] = sim.gas_production
         loop_array['n_volumes_update_base_functions'][0] = global_vector_update.sum()
         loop_array['total_volumes_updated'][0] = total_volumes_updated.sum()
+        loop_array['active_volumes'][0] = params['active_volumes']
         compositional_data.update({
             'pressure': fprop.P,
             'Sg': fprop.Sg,
@@ -294,6 +298,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         manage_operators.export()
+
          
     global_vector_update[:] = False
     total_volumes_updated[:] = False

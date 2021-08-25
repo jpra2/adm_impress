@@ -116,6 +116,7 @@ def multilevel_pressure_solver(
         t2 = OR * (t2 * OP)
 
     solution = solver.direct_solver(t2, q2)
+    n_active_volumes = t2.shape[0]
     prolongation_list.reverse()
 
     for OP in prolongation_list:
@@ -123,7 +124,7 @@ def multilevel_pressure_solver(
 
     prolongation_list.reverse()
 
-    return solution
+    return solution, n_active_volumes
 
 
 def print_mesh_volumes_data(m_object: FineScaleMesh, file_name):

@@ -159,13 +159,16 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             restriction_list.append(adm_method['adm_restriction_level_' + str(level)])
             correction_function_list.append(np.zeros(adm_method['adm_prolongation_level_' + str(level)].shape[0]))
 
-        solution = multilevel_pressure_solver(
+        solution, n_active_volumes = multilevel_pressure_solver(
             T,
             D,
             prolongation_list,
             restriction_list,
             correction_function_list
         )
+        params.update({
+            'active_volumes': n_active_volumes
+        })
 
         # self.P = self.update_pressure(T, D) # OP*padm
         # error = np.absolute(self.P - solution) / self.P
@@ -217,6 +220,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     all_coarse_intersect_faces,
         #     **kwargs
         # )
+        
         update_local_problem(
             neumann_subds.neumann_subds,
             T_noCC,
