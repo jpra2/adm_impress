@@ -13,3 +13,10 @@ def update_global_vector_for_latest_variable(global_vector_update, latest_variab
     test = (delta >= delta_lim)
     # latest_variable[test] = new_variable[test]
     global_vector_update[test.flatten()] = True
+
+def set_level0_delta_sat(level, saturation, adjacencies, delta_lim):
+    delta_sat = np.abs(saturation[adjacencies[:, 1]] - saturation[adjacencies[:, 0]])
+    test = delta_sat >= delta_lim
+    if test.sum() > 0:    
+        vols = np.unique(np.concatenate(adjacencies[test]))
+        level[vols] = 0

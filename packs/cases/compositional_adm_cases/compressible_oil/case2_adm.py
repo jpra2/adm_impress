@@ -153,7 +153,7 @@ global_vector_update[:] = False
 total_volumes_updated = copy.deepcopy(global_vector_update)
 data_impress['LEVEL'][:] = 1
 
-n_loops_for_acumulate = 10
+n_loops_for_acumulate = 1
 n_loops_for_export = 500
 
 assert (n_loops_for_export % n_loops_for_acumulate) == 0
@@ -194,6 +194,27 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         if dual.test_update():
             latest_mobility[:, :, dual.gids] = fprop.mobilities[:, :, dual.gids]
             total_volumes_updated[dual.gids] = True
+    
+    functions_update.set_level0_delta_sat(
+        data_impress['LEVEL'],
+        fprop.Sg,
+        elements_lv0['neig_internal_faces'],
+        0.1
+    )
+    
+    functions_update.set_level0_delta_sat(
+        data_impress['LEVEL'],
+        fprop.So,
+        elements_lv0['neig_internal_faces'],
+        0.1
+    )
+    
+    functions_update.set_level0_delta_sat(
+        data_impress['LEVEL'],
+        fprop.Sw,
+        elements_lv0['neig_internal_faces'],
+        0.1
+    )
         
 
     t0 = time.time()
@@ -239,7 +260,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     loop = sim.loop
     print(sim.t)
     
-    if (loop - 1) % n_loops_for_acumulate == 0:
+    if (loop) % n_loops_for_acumulate == 0:
              
         loop_array['loop'][0] = loop
         loop_array['t'][0] = sim.t
@@ -269,21 +290,19 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             }
         )
     
-    if (loop - 1) % n_loops_for_export == 0:
+    if (loop) % n_loops_for_export == 0:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         manage_operators.export()
          
-    
     global_vector_update[:] = False
     total_volumes_updated[:] = False
     data_impress['LEVEL'][:] = 1
-    
-    import pdb; pdb.set_trace()
         
     
-    # if loop % 2500 == 0:
-    #     import pdb; pdb.set_trace()
+    if loop % 2500 == 0:
+        print('sleeping...')
+        time.sleep(5)
         
 
 tf = time.time()

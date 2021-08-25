@@ -132,7 +132,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # data_impress['LEVEL'][:] = 1
         # self.set_level0_by_composition(data_impress['LEVEL'], fprop.Csi_j, ctes.n_components, 0.1, elements_lv0['neig_internal_faces'], ctes.n_volumes)
         # self.set_level0_wells(data_impress['LEVEL'], adm_method.all_wells_ids, elements_lv0['volumes_face_volumes'], ctes.n_volumes)
-        self.set_level0_wells_v2(data_impress['LEVEL'], adm_method.all_wells_ids, ctes.n_volumes, data_impress['GID_0'])
+        self.set_level0_wells_v2(data_impress['LEVEL'], adm_method.all_wells_ids, ctes.n_volumes, data_impress['GID_1'])
         gid_0 = data_impress['GID_0'][data_impress['LEVEL'] == 0]
         gid_1 = data_impress['GID_0'][data_impress['LEVEL'] == 1]
         adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
