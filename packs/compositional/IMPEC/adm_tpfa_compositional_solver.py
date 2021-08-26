@@ -44,7 +44,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         ]
     }
     
-    def get_pressure(self, M, wells, fprop, delta_t, Pold, **kwargs):
+    def get_pressure_adm(self, M, wells, fprop, delta_t, Pold, **kwargs):
 
         adm_method: AdmNonNested = kwargs.get('adm_method')
         params = kwargs.get('params')
@@ -172,7 +172,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         })
         self.P = solution
 
-        # self.P = self.update_pressure(T, D) # OP*padm
+        P = self.update_pressure(T, D) # OP*padm
         # self.P = self.update_pressure(T, D) # OP*padm
         # error = np.absolute(self.P - solution) / self.P
         # data_impress = M.data
@@ -204,7 +204,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     os.path.join('results', 'prolongation_level_1.vtk')
         # )
 
-        # Ft_internal_faces_orig = self.update_total_flux_internal_faces(fprop, self.P) # pressao local
+        Ft_internal_faces_orig = self.update_total_flux_internal_faces(fprop, P) # pressao local
         Ft_internal_faces_adm = self.update_total_flux_internal_faces(fprop, solution) # pressao local
         Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
@@ -296,12 +296,13 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # )
         # import pdb; pdb.set_trace()
 
-        self.update_flux_wells(fprop, wells, delta_t, solution)
+        self.update_flux_wells(fprop, wells, delta_t, self.P)
 
         # return self.P, Ft_internal_faces, self.q
         # import pdb; pdb.set_trace()
         # return self.P, Ft_internal_faces_orig, self.q
         # return solution, Ft_internal_faces, self.q
+        
         return self.P, Ft_internal_faces, self.q
     
     def update_transmissibility(self, M, wells, fprop, delta_t, **kwargs):
@@ -422,4 +423,20 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             level0[coarse_gid == cid] = True
         
         level_vector[level0] = 0
+    
+    def get_pressure_finescale(self, M, wells, fprop, delta_t, Pold, **kwargs):
+        
+        T, T_noCC, T_advec = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
+        D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
+        self.P = self.update_pressure(T, D)
+        Ft_internal_faces = self.update_total_flux_internal_faces(fprop, self.P)
+        self.update_flux_wells(fprop, wells, delta_t, self.P)
+        return self.P, Ft_internal_faces, self.q
+    
+    def get_pressure(self, M, wells, fprop, Pold, delta_t, **kwargs):
+        # return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)
+        return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, **kwargs)
+        
+        
+        
         
