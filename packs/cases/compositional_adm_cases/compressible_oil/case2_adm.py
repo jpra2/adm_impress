@@ -175,6 +175,8 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['porous_volume'] = fprop.Vp
     params['total_volume'] = fprop.Vt
     
+    data_impress['LEVEL'][:] = 0
+    
     # global_vector_update[:] = True # update the prolongation operator in all dual volumes
     for phase in range(ctes.n_phases):
         functions_update.update_global_vector_for_latest_variable(

@@ -132,6 +132,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # data_impress['LEVEL'][:] = 1
         # self.set_level0_by_composition(data_impress['LEVEL'], fprop.Csi_j, ctes.n_components, 0.1, elements_lv0['neig_internal_faces'], ctes.n_volumes)
         # self.set_level0_wells(data_impress['LEVEL'], adm_method.all_wells_ids, elements_lv0['volumes_face_volumes'], ctes.n_volumes)
+        
         self.set_level0_wells_v2(data_impress['LEVEL'], adm_method.all_wells_ids, ctes.n_volumes, data_impress['GID_1'])
         gid_0 = data_impress['GID_0'][data_impress['LEVEL'] == 0]
         gid_1 = data_impress['GID_0'][data_impress['LEVEL'] == 1]
@@ -169,7 +170,9 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         params.update({
             'active_volumes': n_active_volumes
         })
+        self.P = solution
 
+        # self.P = self.update_pressure(T, D) # OP*padm
         # self.P = self.update_pressure(T, D) # OP*padm
         # error = np.absolute(self.P - solution) / self.P
         # data_impress = M.data
@@ -177,7 +180,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # data_impress['ms_pressure'][:] = solution
         # data_impress['pressure_error'][:] = error
         # import pdb; pdb.set_trace()
-        
         # m1 = M.core.mb.create_meshset()
         # M.    core.mb.add_entities(m1, M.core.all_volumes)
         # M.core.mb.write_file('results/test_comp_1.vtk', [m1])
@@ -241,6 +243,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         
         master_neumann: MasterLocalSolver = kwargs.get('master_neumann')
         local_solution = master_neumann.run()
+        import pdb; pdb.set_trace()
 
         # error2 = np.absolute(self.P - local_solution) / self.P
         # data_impress['verif_po'][:] = local_solution
@@ -299,7 +302,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # return self.P, Ft_internal_faces, self.q
         # import pdb; pdb.set_trace()
         # return self.P, Ft_internal_faces_orig, self.q
-        return solution, Ft_internal_faces, self.q
+        # return solution, Ft_internal_faces, self.q
+        return self.P, Ft_internal_faces, self.q
     
     def update_transmissibility(self, M, wells, fprop, delta_t, **kwargs):
         params = kwargs.get('params')

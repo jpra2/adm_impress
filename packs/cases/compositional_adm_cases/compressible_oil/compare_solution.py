@@ -11,7 +11,8 @@ datas_case1 = case1.load_all_datas_from_keys(['loop_array'])
 
 # description = 'case2_adm_'
 # description = 'case4_adm_3k'
-description = 'case5_adm_3k'
+# description = 'case5_adm_3k'
+description = 'case7_adm_3k'
 case2 = CumulativeCompositionalDataManager(description=description)
 # datas_case2 = case2.load_all_datas()
 datas_case2 = case2.load_all_datas_from_keys(['loop_array'])
@@ -156,7 +157,7 @@ fig.tight_layout()
 # # fig.suptitle('Campo de pressão')
 # # fig.tight_layout()
 
-plt.savefig('figura5.png')
+plt.savefig('figura7.png')
 
 fig, (ax1, ax2) = plt.subplots(2, 1)
 ax1.plot(case2_time, n_volumes_update, '-')
@@ -177,7 +178,7 @@ plt.subplots_adjust(left=0.1,
 # fig.tight_layout()
 fig.suptitle('Volumes para atualizar as funcoes de base')
 
-plt.savefig('figura6.png')
+plt.savefig('figura8.png')
 
 
 
