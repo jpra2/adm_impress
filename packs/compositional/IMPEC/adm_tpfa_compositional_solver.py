@@ -327,7 +327,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # T = T * delta_t
         try:
             T *= delta_t
+        except ValueError:
+            T *= delta_t[0]
         except BaseException as e:
+            print(e)
             import pdb; pdb.set_trace()
         T_advec = T.copy()
         ''' Transmissibility diagonal term '''

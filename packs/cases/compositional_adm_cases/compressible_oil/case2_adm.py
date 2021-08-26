@@ -147,8 +147,7 @@ local_problem_params = {
     'OP_AMS': OP_AMS,
     'dual_subdomains': dual_subdomains,
     'master_neumann': master_neumann,
-    'master_local_operator': master_local_operator,
-    'active_volumes': 0
+    'master_local_operator': master_local_operator
 }
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
@@ -195,7 +194,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         
     for dual in dual_subdomains:
         dual: DualSubdomain
-        if dual.test_update():
+        if np.any(global_vector_update[dual.gids]):
             latest_mobility[:, :, dual.gids] = fprop.mobilities[:, :, dual.gids]
             total_volumes_updated[dual.gids] = True
     
