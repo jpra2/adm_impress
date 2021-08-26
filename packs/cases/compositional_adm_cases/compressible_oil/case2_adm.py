@@ -23,7 +23,6 @@ from packs.data_class.sparse_operators import SparseOperators
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
-
 name_current = 'current_compositional_results_'
 name_all = data_loaded['name_save_file'] + '_'
 mesh = 'mesh/' + data_loaded['mesh_name']
@@ -33,12 +32,13 @@ load_operators = data_loaded['load_operators']
 load_multilevel_data = data_loaded['load_multilevel_data']
 
 # description = 'case1_finescale_'
-description = 'case3_finescale_3k'
+# description = 'case3_finescale_3k'
 # description = 'case2_adm_'
 # description = 'case4_adm_3k'
 # description = 'case5_adm_3k'
 # description = 'case6_adm_3k'
 # description = 'case7_adm_3k'
+description = 'case8_adm_3k'
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -164,8 +164,11 @@ n_loops_for_export = 500
 assert (n_loops_for_export % n_loops_for_acumulate) == 0
 
 
+tmax_simulation = 15 # dias
+t_simulation = sim.t/86400
 
-while run_criteria < stop_criteria:# and loop < loop_max:
+# while run_criteria < stop_criteria:# and loop < loop_max:
+while t_simulation < tmax_simulation:
     params['pressure'] = fprop.P
     params['mobilities'] = fprop.mobilities
     params['composition'] = fprop.Csi_j
@@ -176,8 +179,6 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['z'] = fprop.z
     params['porous_volume'] = fprop.Vp
     params['total_volume'] = fprop.Vt
-    
-    data_impress['LEVEL'][:] = 0
     
     # global_vector_update[:] = True # update the prolongation operator in all dual volumes
     for phase in range(ctes.n_phases):
@@ -306,6 +307,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     global_vector_update[:] = False
     total_volumes_updated[:] = False
     data_impress['LEVEL'][:] = 1
+    t_simulation = sim.t/86400
         
     
     if loop % 2500 == 0:
