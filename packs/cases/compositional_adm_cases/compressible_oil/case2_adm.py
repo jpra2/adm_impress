@@ -36,7 +36,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case2_adm_'
 # description = 'case4_adm_3k'
 # description = 'case5_adm_3k'
-description = 'case6_adm_3k'
+# description = 'case6_adm_3k'
+description = 'case7_adm_3k'
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)

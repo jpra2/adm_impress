@@ -243,7 +243,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         
         master_neumann: MasterLocalSolver = kwargs.get('master_neumann')
         local_solution = master_neumann.run()
-        import pdb; pdb.set_trace()
 
         # error2 = np.absolute(self.P - local_solution) / self.P
         # data_impress['verif_po'][:] = local_solution
