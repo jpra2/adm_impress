@@ -9,11 +9,14 @@ description = 'case3_finescale_3k'
 case1 = CumulativeCompositionalDataManager(description=description)
 datas_case1 = case1.load_all_datas_from_keys(['loop_array'])
 
+n_fig = 12
+
 # description = 'case2_adm_'
 # description = 'case4_adm_3k'
 # description = 'case5_adm_3k'
 # description = 'case7_adm_3k'
-description = 'case8_adm_3k'
+# description = 'case8_adm_3k'
+description = 'case9_adm_3k'
 case2 = CumulativeCompositionalDataManager(description=description)
 # datas_case2 = case2.load_all_datas()
 datas_case2 = case2.load_all_datas_from_keys(['loop_array'])
@@ -123,7 +126,6 @@ case2_active_volumes = case2_active_volumes[test2]
 # erro_l2 = np.linalg.norm(erro_rel, axis=1)
 # erro_max = np.max(erro_rel, axis=1)
 
-
 fig, (ax1, ax2) = plt.subplots(2, 1)
 
 ax1.plot(case1_time, case1_oil_production, '-', label='Finescale')
@@ -168,7 +170,7 @@ fig.tight_layout()
 # # fig.suptitle('Campo de pressão')
 # # fig.tight_layout()
 
-plt.savefig('figura9.png')
+plt.savefig('figura' + str(n_fig) + '.png')
 
 fig, (ax1, ax2) = plt.subplots(2, 1)
 ax1.plot(case2_time, n_volumes_update, '-')
@@ -189,7 +191,7 @@ plt.subplots_adjust(left=0.1,
 # fig.tight_layout()
 fig.suptitle('Volumes para atualizar as funcoes de base')
 
-plt.savefig('figura10.png')
+plt.savefig('figura' + str(n_fig + 1) + '.png')
 
 
 fig, (ax1, ax2) = plt.subplots(2, 1)
@@ -216,7 +218,7 @@ plt.subplots_adjust(left=0.1,
                     wspace=0.4, 
                     hspace=0.4)
 
-plt.savefig('figura11.png')
+plt.savefig('figura' + str(n_fig + 2) + '.png')
 
 
 

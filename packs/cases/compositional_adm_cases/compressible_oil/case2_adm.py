@@ -21,6 +21,7 @@ from packs.multiscale.neuman_local_problems.master_local_solver import MasterLoc
 from packs.multiscale.operators.prolongation.AMS.paralell2.paralel_ams_new_2 import MasterLocalOperator
 from packs.data_class.sparse_operators import SparseOperators
 
+
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
 name_current = 'current_compositional_results_'
@@ -39,7 +40,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case6_adm_3k'
 # description = 'case7_adm_3k'
 # description = 'case8_adm_3k' # coarse volumes wells in fine scale
-description = 'case9_adm_3k' # neig wells in fine scale
+# description = 'case9_adm_3k' # neig wells in fine scale
+description = 'case10_adm_3k' # case9_adm_3k with 10 coarse ratio
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -59,7 +61,9 @@ loop_array = np.zeros(
         ('gas_production', float),
         ('n_volumes_update_base_functions', int),
         ('total_volumes_updated', int),
-        ('active_volumes', int)
+        ('active_volumes', int),
+        ('oil_rate', float),
+        ('gas_rate', float)
     ]
 )
 params = Params()
@@ -168,8 +172,8 @@ assert (n_loops_for_export % n_loops_for_acumulate) == 0
 tmax_simulation = 15 # dias
 t_simulation = sim.t/86400
 
-# while run_criteria < stop_criteria:# and loop < loop_max:
-while t_simulation < tmax_simulation:
+while run_criteria < stop_criteria:# and loop < loop_max:
+# while t_simulation < tmax_simulation:
     params['pressure'] = fprop.P
     params['mobilities'] = fprop.mobilities
     params['composition'] = fprop.Csi_j
@@ -279,6 +283,8 @@ while t_simulation < tmax_simulation:
         loop_array['n_volumes_update_base_functions'][0] = global_vector_update.sum()
         loop_array['total_volumes_updated'][0] = total_volumes_updated.sum()
         loop_array['active_volumes'][0] = params['active_volumes']
+        loop_array['oil_rate'][0] = np.sum(fprop.q_phase[:,0])
+        loop_array['gas_rate'][0] = np.sum(fprop.q_phase[:,1])
         compositional_data.update({
             'pressure': fprop.P,
             'Sg': fprop.Sg,
@@ -314,7 +320,41 @@ while t_simulation < tmax_simulation:
     if loop % 2500 == 0:
         print('sleeping...')
         time.sleep(5)
-        
+
+
+loop_array['loop'][0] = loop
+loop_array['t'][0] = sim.t
+loop_array['vpi'][0] = sim.vpi
+loop_array['simulation_time'][0] = simulation_time
+loop_array['oil_production'][0] = sim.oil_production
+loop_array['gas_production'][0] = sim.gas_production
+loop_array['n_volumes_update_base_functions'][0] = global_vector_update.sum()
+loop_array['total_volumes_updated'][0] = total_volumes_updated.sum()
+loop_array['active_volumes'][0] = params['active_volumes']
+loop_array['oil_rate'][0] = np.sum(fprop.q_phase[:,0])
+loop_array['gas_rate'][0] = np.sum(fprop.q_phase[:,1])
+compositional_data.update({
+    'pressure': fprop.P,
+    'Sg': fprop.Sg,
+    'Sw': fprop.Sw,
+    'So': fprop.So,
+    'global_composition': fprop.z,
+    'mols': fprop.Nk,
+    'xkj': fprop.xkj,
+    'Vp': fprop.Vp,
+    'latest_mobility': latest_mobility,
+    'loop_array': loop_array
+})
+cumulative_compositional_datamanager.insert_data(compositional_data._data)
+
+manage_operators.update(
+    {
+        'prolongation_level_1': OP_AMS
+    }
+)
+compositional_data.export_to_npz()
+cumulative_compositional_datamanager.export()
+manage_operators.export()
 
 tf = time.time()
 print('Total computational time: ', tf-t) #total simulation time
