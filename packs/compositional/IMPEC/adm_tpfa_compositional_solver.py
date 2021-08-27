@@ -171,7 +171,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         })
         self.P = solution
 
-        P = self.update_pressure(T, D) # OP*padm
+        # P = self.update_pressure(T, D) # OP*padm
         # self.P = self.update_pressure(T, D) # OP*padm
         # error = np.absolute(self.P - solution) / self.P
         # data_impress = M.data
@@ -203,7 +203,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     os.path.join('results', 'prolongation_level_1.vtk')
         # )
 
-        Ft_internal_faces_orig = self.update_total_flux_internal_faces(fprop, P) # pressao local
+        # Ft_internal_faces_orig = self.update_total_flux_internal_faces(fprop, P) # pressao local
         Ft_internal_faces_adm = self.update_total_flux_internal_faces(fprop, solution) # pressao local
         Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
@@ -288,7 +288,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         other_faces = np.setdiff1d(elements_lv0['internal_faces'], all_coarse_intersect_faces)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][other_faces]] = ft_internal_faces_local_solution[:, elements_lv0['remaped_internal_faces'][other_faces]]
 
-        data_impress.update_variables_to_mesh()
+        # data_impress.update_variables_to_mesh()
         # print_mesh_volumes_data(
         #     M,
         #     os.path.join('results', 'test_flux_3.vtk')

@@ -22,6 +22,7 @@ class MasterLocalOperator(CommonMasterMethods):
         self.problems_per_cpu = self.get_problems_per_cpu(n_problems_per_cpu, problems_list)
         # self.m2w, self.w2m, self.procs, self.queue, self.finished = self.init_subproblems(problems_per_cpu)
         self.m2w, self.w2m, self.queue, self.finished = self.initialize_params(len(self.problems_per_cpu))
+        self.procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
 
     def init_subproblems(self, problems_per_cpu, w2m, values, _queue):
         
@@ -43,8 +44,9 @@ class MasterLocalOperator(CommonMasterMethods):
     def run(self, OP_AMS, dual_subdomains):
         
         correction_function = np.zeros(self.n_volumes)
-        procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
-        
+        # procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
+        procs = self.procs
+
         for proc in procs:
             proc.start()
         

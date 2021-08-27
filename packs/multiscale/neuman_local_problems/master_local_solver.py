@@ -72,6 +72,7 @@ class MasterLocalSolver(CommonMasterMethods):
         n_problems_per_cpu = self.count_problems(n_problems, self.n_cpu)
         self.problems_per_cpu = self.get_problems_per_cpu(n_problems_per_cpu, problems_list)
         self.m2w, self.w2m, self.queue, self.finished = self.initialize_params(len(self.problems_per_cpu))
+        self.procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
 
 
     def init_subproblems(self, problems_per_cpu, w2m, values, _queue):
@@ -97,7 +98,8 @@ class MasterLocalSolver(CommonMasterMethods):
 
     def run(self):
         solution = np.zeros(self.n_volumes)
-        procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
+        # procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
+        procs = self.procs
 
         for proc in procs:
             proc.start()
