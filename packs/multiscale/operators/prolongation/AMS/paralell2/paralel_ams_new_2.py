@@ -22,7 +22,7 @@ class MasterLocalOperator(CommonMasterMethods):
         self.problems_per_cpu = self.get_problems_per_cpu(n_problems_per_cpu, problems_list)
         # self.m2w, self.w2m, self.procs, self.queue, self.finished = self.init_subproblems(problems_per_cpu)
         self.m2w, self.w2m, self.queue, self.finished = self.initialize_params(len(self.problems_per_cpu))
-        self.procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
+        self.procs, self.procs_args, self.procs_targets, self.procs_kwargs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
 
     def init_subproblems(self, problems_per_cpu, w2m, values, _queue):
         
@@ -37,17 +37,19 @@ class MasterLocalOperator(CommonMasterMethods):
         n = len(problems_per_cpu)
         # m2w, w2m, _queue, values = self.initialize_params(n)
         procs = [mp.Process(target=run_thing, args=[LocalOperator(subdomains, _queue, comm, finished, id_process)]) for subdomains, comm, finished, id_process in zip(problems_per_cpu, w2m, values, range(n))]
+        process_args = [proc._args for proc in procs]
+        process_targets = [proc._target for proc in procs]
+        process_kwargs = [proc._kwargs for proc in procs]
 
         # return m2w, w2m, procs, _queue, values
-        return procs
+        return procs, process_args, process_targets, process_kwargs
     
     def run(self, OP_AMS, dual_subdomains):
         
         correction_function = np.zeros(self.n_volumes)
         # procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
-        procs = self.procs
-
-        for proc in procs:
+        
+        for proc in self.procs:
             proc.start()
         
         while(not self.all_process_finished(self.finished)):
@@ -60,9 +62,13 @@ class MasterLocalOperator(CommonMasterMethods):
                 set_data_to_op(OP_AMS, resp[0])
                 set_data_to_cf(correction_function, resp[1])
 
-        for proc in procs:
+        for i, proc in enumerate(self.procs):
             proc.join()
-
+            proc._popen = None
+            proc._args = self.procs_args[i]
+            proc._target = self.procs_targets[i]
+            proc._kwargs = self.procs_kwargs[i]
+        
         while(not self.queue.empty()):
             resp = self.queue.get()
             set_data_to_op(OP_AMS, resp[0])

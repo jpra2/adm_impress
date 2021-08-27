@@ -1,5 +1,6 @@
 from packs.solvers.solvers_scipy.solver_sp import SolverSp
 from multiprocessing import Queue
+import os
 
 def run_thing(local_solver_obj):
     local_solver_obj.run()
