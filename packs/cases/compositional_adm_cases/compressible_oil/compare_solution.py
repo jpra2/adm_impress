@@ -12,7 +12,8 @@ datas_case1 = case1.load_all_datas_from_keys(['loop_array'])
 # description = 'case2_adm_'
 # description = 'case4_adm_3k'
 # description = 'case5_adm_3k'
-description = 'case7_adm_3k'
+# description = 'case7_adm_3k'
+description = 'case8_adm_3k'
 case2 = CumulativeCompositionalDataManager(description=description)
 # datas_case2 = case2.load_all_datas()
 datas_case2 = case2.load_all_datas_from_keys(['loop_array'])
@@ -72,13 +73,20 @@ case2_oil_production = get_data_from_loop_array('oil_production', datas_case2)
 case1_gas_production = get_data_from_loop_array('gas_production', datas_case1)
 case2_gas_production = get_data_from_loop_array('gas_production', datas_case2)
 
+case1_simulation_time = get_data_from_loop_array('simulation_time', datas_case1)
+case2_simulation_time = get_data_from_loop_array('simulation_time', datas_case2)
+
+
 case1_time = get_data_from_loop_array('t', datas_case1)
+
 case2_time = get_data_from_loop_array('t', datas_case2)
 case1_time = case1_time/86400
 case2_time = case2_time/86400
 
 n_volumes_update = get_data_from_loop_array('n_volumes_update_base_functions', datas_case2)
 total_volumes_updated = get_data_from_loop_array('total_volumes_updated', datas_case2)
+case2_active_volumes = get_data_from_loop_array('active_volumes', datas_case2)
+
 max_time_case2 = case2_time.max()
 max_time_case1 = case1_time.max()
 max_time = min([case1_time.max(), case2_time.max()])
@@ -89,13 +97,16 @@ test2 = case2_time <= max_time
 case1_time = case1_time[test1]
 case1_gas_production = case1_gas_production[test1]
 case1_oil_production = case1_oil_production[test1]
+case1_simulation_time = case1_simulation_time[test1]
 
 case2_time = case2_time[test2]
 case2_gas_production = case2_gas_production[test2]
 case2_oil_production = case2_oil_production[test2]
+case2_simulation_time = case2_simulation_time[test2]
 
 n_volumes_update = n_volumes_update[test2]
 total_volumes_updated = total_volumes_updated[test2]
+case2_active_volumes = case2_active_volumes[test2]
 
 # import pdb; pdb.set_trace()
 
@@ -157,7 +168,7 @@ fig.tight_layout()
 # # fig.suptitle('Campo de pressão')
 # # fig.tight_layout()
 
-plt.savefig('figura7.png')
+plt.savefig('figura9.png')
 
 fig, (ax1, ax2) = plt.subplots(2, 1)
 ax1.plot(case2_time, n_volumes_update, '-')
@@ -178,7 +189,34 @@ plt.subplots_adjust(left=0.1,
 # fig.tight_layout()
 fig.suptitle('Volumes para atualizar as funcoes de base')
 
-plt.savefig('figura8.png')
+plt.savefig('figura10.png')
+
+
+fig, (ax1, ax2) = plt.subplots(2, 1)
+# ax1.plot(case2_time, case2_active_volumes, '-')
+# ax1.fill(case2_time, case2_active_volumes)
+ax1.bar(case2_time, case2_active_volumes)
+ax1.set_xlabel('time [days]')
+ax1.set_ylabel('Active volumes')
+
+ax2.plot(case1_time, case1_simulation_time, '-', label='Finescale')
+ax2.plot(case1_time, np.repeat(np.mean(case1_simulation_time), len(case1_simulation_time)), 0.05, color='black')
+ax2.plot(case2_time, case2_simulation_time, '-', label='Adm')
+ax2.plot(case2_time, np.repeat(np.mean(case2_simulation_time), len(case2_simulation_time)), 0.05, color='black')
+# ax1.fill(case2_time, case2_active_volumes)
+ax2.set_xlabel('time [days]')
+ax2.set_ylabel('Simulation_time [s]')
+ax2.set_xlim(min(case2_time), max(case2_time) + 1)
+ax2.legend()
+
+plt.subplots_adjust(left=0.1,
+                    bottom=0.1, 
+                    right=0.9, 
+                    top=0.9, 
+                    wspace=0.4, 
+                    hspace=0.4)
+
+plt.savefig('figura11.png')
 
 
 
