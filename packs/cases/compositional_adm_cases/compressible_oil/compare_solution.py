@@ -17,6 +17,7 @@ n_fig = 12
 # description = 'case7_adm_3k'
 # description = 'case8_adm_3k'
 description = 'case9_adm_3k'
+# description = 'case10_adm_3k'
 case2 = CumulativeCompositionalDataManager(description=description)
 # datas_case2 = case2.load_all_datas()
 datas_case2 = case2.load_all_datas_from_keys(['loop_array'])
@@ -42,7 +43,13 @@ def organize_cases_by_loop(n_cases, datas, loops):
     for i in range(1, n_cases+1):
         try:
             resp.append(datas[np.argwhere(loops == i)[0][0]])
-        except:
+        except IndexError:
+            if i == loops.max() + 1:
+                pass
+            else:
+                raise IndexError
+        except Exception as e:
+            print(e)
             import pdb; pdb.set_trace()
     
     return resp
@@ -89,6 +96,7 @@ case2_time = case2_time/86400
 n_volumes_update = get_data_from_loop_array('n_volumes_update_base_functions', datas_case2)
 total_volumes_updated = get_data_from_loop_array('total_volumes_updated', datas_case2)
 case2_active_volumes = get_data_from_loop_array('active_volumes', datas_case2)
+
 
 max_time_case2 = case2_time.max()
 max_time_case1 = case1_time.max()
@@ -188,6 +196,13 @@ plt.subplots_adjust(left=0.1,
                     top=0.9, 
                     wspace=0.4, 
                     hspace=0.4)
+# plt.subplots_adjust(
+#     top=0.9,
+#     bottom=0.3,
+#     wspace=0.4,
+#     hspace=0.4
+# )
+    
 # fig.tight_layout()
 fig.suptitle('Volumes para atualizar as funcoes de base')
 
@@ -195,11 +210,12 @@ plt.savefig('figura' + str(n_fig + 1) + '.png')
 
 
 fig, (ax1, ax2) = plt.subplots(2, 1)
-# ax1.plot(case2_time, case2_active_volumes, '-')
+ax1.plot(case2_time, case2_active_volumes, '-')
 # ax1.fill(case2_time, case2_active_volumes)
-ax1.bar(case2_time, case2_active_volumes)
+# ax1.bar(case2_time, case2_active_volumes)
 ax1.set_xlabel('time [days]')
 ax1.set_ylabel('Active volumes')
+ax1.set_xlim(min(case2_time), max(case2_time) + 1)
 
 ax2.plot(case1_time, case1_simulation_time, '-', label='Finescale')
 ax2.plot(case1_time, np.repeat(np.mean(case1_simulation_time), len(case1_simulation_time)), 0.05, color='black')
@@ -210,8 +226,9 @@ ax2.set_xlabel('time [days]')
 ax2.set_ylabel('Simulation_time [s]')
 ax2.set_xlim(min(case2_time), max(case2_time) + 1)
 ax2.legend()
+# fig.tight_layout()
 
-plt.subplots_adjust(left=0.1,
+plt.subplots_adjust(left=0.15,
                     bottom=0.1, 
                     right=0.9, 
                     top=0.9, 
