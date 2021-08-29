@@ -39,6 +39,8 @@ monophasic_data:
 
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
+  solver:
+    IMPSAT: False
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
   MUSCL:
