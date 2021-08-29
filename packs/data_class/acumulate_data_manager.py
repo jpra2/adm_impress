@@ -5,6 +5,7 @@ import os
 import pdb
 import numpy as np
 from packs.data_class.accumulative_array_data_manager import AccumulativeArrayDataManager
+import pandas as pd
 
 class CumulativeDatamanager(AccumulativeArrayDataManager):
     
@@ -24,7 +25,7 @@ class CumulativeDatamanager(AccumulativeArrayDataManager):
         print(f'\n{name_export} exported\n')
 
     def load_all_datas(self):
-        arqs_name = os.listdir(flying)
+        arqs_name = self.get_files_with_name()
         all_datas = []
 
         # import pdb; pdb.set_trace()
@@ -41,7 +42,7 @@ class CumulativeDatamanager(AccumulativeArrayDataManager):
         return all_datas
     
     def load_all_datas_from_keys(self, keyword_list):
-        arqs_name = os.listdir(flying)
+        arqs_name = self.get_files_with_name()
         all_datas = []
 
         # import pdb; pdb.set_trace()
@@ -57,3 +58,10 @@ class CumulativeDatamanager(AccumulativeArrayDataManager):
                         all_datas.append(data_set)
         
         return all_datas
+
+    def get_files_with_name(self):
+        arqs = pd.Series(os.listdir(flying))
+        test = arqs.str.startswith(self.file_name)
+        result = arqs.values[test.values]
+        return result
+        
