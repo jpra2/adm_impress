@@ -2,6 +2,7 @@ from packs.data_class.compositional_cumulative_datamanager import CumulativeComp
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from packs.cases.compositional_adm_cases.compressible_oil.all_functions import organize_cases_by_loop, extrair_dado, erro_abs, get_data_from_loop_array, create_loop_array_structured
 
 # description = 'case1_finescale_'
 description1 = 'case3_finescale_3k'
@@ -17,8 +18,9 @@ fig_str = 'figura_'
 # description = 'case5_adm_3k'
 # description = 'case7_adm_3k'
 # description = 'case8_adm_3k'
-description2 = 'case9_adm_3k'
+# description2 = 'case9_adm_3k'
 # description2 = 'case10_adm_3k'
+description2 = 'case11_adm_3k'
 case2 = CumulativeCompositionalDataManager(description=description2)
 # datas_case2 = case2.load_all_datas()
 datas_case2 = case2.load_all_datas_from_keys(['loop_array'])
@@ -38,38 +40,6 @@ loops2 = np.array(loops2)
 
 n_cases1 = len(datas_case1)
 n_cases2 = len(datas_case2)
-
-def organize_cases_by_loop(datas, loops):
-    loops2 = pd.Series(loops)
-    loops2_sorted = loops2.sort_values()
-    index_sorted = loops2_sorted.index.values
-    resp = np.array(datas)[index_sorted]   
-    return resp
-
-def extrair_dado(data_case, key):
-    resp = []
-    for data in data_case:
-        resp.append(data[key])
-    
-    resp = np.array(resp)
-    return resp
-
-def erro_abs(v1, v2):
-    return np.absolute(v1 - v2)
-
-def get_data_from_loop_array(keyword, data_case):
-    data = []
-    for sim in data_case:
-        data.append(sim['loop_array'][keyword][0])
-    
-    return np.array(data)
-
-def create_loop_array_structured(data_case):
-    resp = []
-    for data in data_case:
-        resp.append(data['loop_array'])
-    
-    return np.array(resp)
 
 datas_case1 = organize_cases_by_loop(datas_case1, loops1)
 datas_case2 = organize_cases_by_loop(datas_case2, loops2)
@@ -210,8 +180,8 @@ ax1.set_ylabel('Active volumes')
 ax1.set_xlim(min(case2_time), max(case2_time) + 1)
 
 ax2.plot(case1_time, case1_simulation_time, '-', label='Finescale')
-ax2.plot(case1_time, np.repeat(np.mean(case1_simulation_time), len(case1_simulation_time)), 0.05, color='black')
 ax2.plot(case2_time, case2_simulation_time, '-', label='Adm')
+ax2.plot(case1_time, np.repeat(np.mean(case1_simulation_time), len(case1_simulation_time)), 0.05, color='black')
 ax2.plot(case2_time, np.repeat(np.mean(case2_simulation_time), len(case2_simulation_time)), 0.05, color='black')
 # ax1.fill(case2_time, case2_active_volumes)
 ax2.set_xlabel('time [days]')
