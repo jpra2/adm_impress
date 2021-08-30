@@ -2,12 +2,14 @@ from networkx.convert_matrix import _generate_weighted_edges
 import numpy as np
 from packs.utils import utils_old
 import networkx as nx
+import collections
 
 def create_dual_and_primal(centroids_volumes: np.ndarray, volumes_dimension: np.ndarray, centroids_nodes: np.ndarray, cr: np.ndarray, adjacencies_internal_faces: np.ndarray):
     dimension = get_dimension_of_problem(centroids_volumes)
     L = get_l_total(centroids_nodes)
     primal_coarse_ids = create_primal(centroids_volumes, volumes_dimension, cr, dimension)
     dual_ids = create_dual(centroids_volumes, cr, dimension, L, volumes_dimension, adjacencies_internal_faces)
+    test_coarse_vertices(primal_coarse_ids, dual_ids)
     
     return primal_coarse_ids, dual_ids
 
@@ -61,17 +63,17 @@ def get_all_separated(dimension: int, centroids_volumes: np.ndarray, cr: np.ndar
         n_coarse_volumes = n_unique//cr[dim]
         resto = n_unique % cr[dim]
         n_fine_total = n_coarse_volumes*cr[dim]
-        separated = unique_centroids_volumes[0:n_fine_total].reshape((n_coarse_volumes, cr[dim]))
+        separated = list(unique_centroids_volumes[0:n_fine_total].reshape((n_coarse_volumes, cr[dim])))
         if resto > 0:
-            import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             separated[-1] = np.concatenate([separated[-1], unique_centroids_volumes[n_fine_total:n_unique]])
-        all_separated.append(separated)
+        all_separated.append(np.array(separated))
     
     n = len(all_separated)
     if n < 3:
         for i in range(3 - n):
             all_separated.append(np.array([]))
-    
+            
     return np.array(all_separated)
 
 def get_all_separated_limits(all_separated: np.ndarray, centroids_volumes: np.ndarray):
@@ -79,8 +81,13 @@ def get_all_separated_limits(all_separated: np.ndarray, centroids_volumes: np.nd
     
     for i, sep in enumerate(all_separated):
         if len(sep) > 0:
-            lim_min = sep.min(axis=1)
-            lim_max = sep.max(axis=1)
+            lim_min = []
+            lim_max = []
+            for separated_dimension in sep:
+                lim_min.append(separated_dimension.min())
+                lim_max.append(separated_dimension.max())
+            lim_min = np.array(lim_min)
+            lim_max = np.array(lim_max)
             gg = np.vstack([lim_min, lim_max]).T
             all_separated_limits.append(gg)
         else:
@@ -112,7 +119,7 @@ def get_coarse_volumes(all_separated_limits: np.ndarray, centroids_volumes: np.n
     return coarse_ids
 
 def create_dual(centroids_volumes: np.ndarray, cr: np.ndarray, dimension: int, l_total: np.ndarray, volumes_dimension: np.ndarray, adjacencies_internal_faces: np.ndarray):
-    vertices_ids = define_vertices(centroids_volumes, cr, l_total)
+    vertices_ids = define_vertices(centroids_volumes, cr, l_total, volumes_dimension)
     # identify_vertices_id = np.repeat(0, len(vertices_ids))
     # identify_vertices(vertices_ids, centroids_volumes, identify_vertices_id)
     
@@ -130,13 +137,13 @@ def create_dual(centroids_volumes: np.ndarray, cr: np.ndarray, dimension: int, l
     
     return dual_ids
 
-def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.ndarray):
+def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.ndarray, volumes_dimension):
     gids = np.arange(len(centroids_volumes))
     centroids_min = centroids_volumes.min(axis=0)
     centroids_max = centroids_volumes.max(axis=0)
     vertices_by_direction = []
     for dim in range(3):
-        vi = define_vertices_by_direction(centroids_min[dim], centroids_max[dim], cr[dim], l_total[dim], centroids_volumes[:, dim])
+        vi = define_vertices_by_direction(centroids_min[dim], centroids_max[dim], cr[dim], l_total[dim], centroids_volumes[:, dim], volumes_dimension)
         vertices_by_direction.append(vi)
     
     vertices_by_direction = np.array(vertices_by_direction)
@@ -153,8 +160,9 @@ def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.n
     
     return np.array(indexes)
     
-def define_vertices_by_direction(vmin: float, vmax: float, cr_direction: int, l_dimension: float, centroids_volumes_dimension: np.ndarray):
-    
+def define_vertices_by_direction(vmin: float, vmax: float, cr_direction: int, l_dimension: float, centroids_volumes_dimension: np.ndarray, volumes_dimension):
+    # import pdb; pdb.set_trace()
+    min_dimensions_by_axis = volumes_dimension.min(axis=0)
     if vmin == vmax:
         return np.array([vmin])
     else:
@@ -171,7 +179,11 @@ def define_vertices_by_direction(vmin: float, vmax: float, cr_direction: int, l_
             dist = unique_centroids_volumes - j
             abs_dist = np.absolute(dist)
             min_dis = abs_dist.min()
-            index = np.argwhere(abs_dist == min_dis)[0][0]
+            index = np.argwhere(abs_dist == min_dis)[0]
+            if len(index) > 1:
+                import pdb; pdb.set_trace()
+            else:
+                index = index[0]
             vertices.append(unique_centroids_volumes[index])
         vertices.append(unique_centroids_volumes[-1])
         vertices = np.array(vertices)
@@ -396,3 +408,18 @@ def get_faces(vertices_ids, centroids_volumes, volumes_dimension):
 
 def qualquer():
     pass
+
+def test_coarse_vertices(primal_ids, dual_ids):
+    # for cid in np.unique(primal_ids):
+    #     local_dual_ids = dual_ids[primal_ids == cid]
+    #     counts = collections.Counter(local_dual_ids)
+
+    #     if counts[3] > 1:
+    #         print('mais que um vertice numa dual')
+    #         raise ValueError
+    n_coarse_volumes = len(np.unique(primal_ids))
+    n_vertices = len(dual_ids[dual_ids == 3])
+    if n_coarse_volumes != n_vertices:
+        raise ValueError('Numero de vertices diferente do numero de coarse volumes')
+            
+        

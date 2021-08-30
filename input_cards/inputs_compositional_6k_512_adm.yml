@@ -15,7 +15,7 @@ n_levels: 3
 Crs:
   # Cr1: [3, 3, 1]
   # Cr2: [9, 9, 1]
-  Cr1: [5, 1, 1]
+  Cr1: [10, 1, 1]
   Cr2: [5, 1, 1]
 get_correction_term: false
 load_operators: false
@@ -47,6 +47,8 @@ compositional_data:
     set: False
     DW: False
     LLF: False
+  FR:
+    set: False
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [8640000, 17280000]
   maximum_time: 17280000
@@ -77,6 +79,7 @@ compositional_data:
     Mw_w: 18.015e-3
     Cw: 0 #4.35e-10
     Pw: 10.34e6
+    mobility: False
 
   residual_saturations:
     Sorw: 0.1
@@ -147,6 +150,7 @@ Wells:
     z: [0., 0., 0., 0., 0., 0., 1.]
     ksi_total: 55549.8
     value_type: volumetric
+    injection_condition: surface
 
   P2:
     p0: [2725.865625, 0.0, -10]

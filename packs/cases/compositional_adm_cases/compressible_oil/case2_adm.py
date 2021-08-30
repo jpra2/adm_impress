@@ -1,7 +1,5 @@
 import copy
 
-from scipy.sparse import data
-from packs.data_class import sparse_operators
 from packs.directories import data_loaded
 from run_compositional_adm import RunSimulationAdm
 import time
@@ -21,7 +19,7 @@ from packs.multiscale.neuman_local_problems.master_local_solver import MasterLoc
 from packs.multiscale.operators.prolongation.AMS.paralell2.paralel_ams_new_2 import MasterLocalOperator
 from packs.data_class.sparse_operators import SparseOperators
 from packs.cases.compositional_adm_cases.compressible_oil import update_variables_before_init
-
+from packs.multiscale.ms_utils.multiscale_functions import print_mesh_volumes_data
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -122,7 +120,6 @@ OP_AMS = sp.lil_matrix((ctes.n_volumes, ncoarse_ids)).tocsc()
 
 master_neumann = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
 master_local_operator = MasterLocalOperator(dual_subdomains, ctes.n_volumes)
-
 
 params['area'] = data_impress['area']
 params['pretransmissibility'] = data_impress['pretransmissibility']

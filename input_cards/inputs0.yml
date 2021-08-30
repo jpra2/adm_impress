@@ -38,6 +38,7 @@ Temperature:
     value: 344.25
 Wells:
   P1:
+    injection_condition: surface
     ksi_total: 55549.8
     p0:
     - 0.0
@@ -78,6 +79,8 @@ compositional_data:
   CFL: 0.5
   Cpc: 62052.84
   Epc: 2
+  FR:
+    set: false
   MUSCL:
     DW: false
     LLF: false
@@ -220,6 +223,7 @@ compositional_data:
     Mw_w: 0.018015
     Pw: 10.34e6
     mi_W: 1e-3
+    mobility: false
     rho_W: 1000.73
 compressible_fluid: true
 convert_english_to_SI: false
