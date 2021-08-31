@@ -77,4 +77,18 @@ def get_empty_loop_array():
         ]
     )
     return loop_array
+
+def get_sorted_loop_array_from_maxt(loop_arrays):
+    max_times = []
+    for loop_array in loop_arrays:
+        max_times.append(loop_array['t'].max())
+    
+    max_time = min(max_times)
+    
+    loop_arrays2 = []
+    for loop_array in loop_arrays:
+        loop_arrays2.append(loop_array[loop_array['t'] <= max_time])
+    
+    return loop_arrays2
+    
     

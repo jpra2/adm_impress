@@ -3,13 +3,19 @@ from packs.data_class.compositional_cumulative_datamanager import CumulativeComp
 from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 import matplotlib.pyplot as plt
 
-cases_str = ['case3_finescale_3k', 'case9_adm_3k', 'case10_adm_3k', 'case11_adm_3k']
-x_legend = ['Finescale', 'Cr=5', 'Cr=10', 'Cr=25']
+# cases_str = ['case3_finescale_3k', 'case9_adm_3k', 'case10_adm_3k', 'case11_adm_3k']
+# x_legend = ['Finescale', 'Cr=5', 'Cr=10', 'Cr=25']
+
+cases_str = ['case12_finescale_6k', 'case14_adm_6k', 'case15_adm_6k']
+x_legend = ['Finescale', 'Cr=10', 'Cr=15']
+
+case = '6k'
 
 datas_case = all_functions.load_cases_from_keyword(cases_str, ['loop_array'])
 
 structured_loop_arrays = all_functions.get_loop_array_structured_from_data_cases(datas_case)
 sorted_loop_arrays = all_functions.reordenate_loop_arrays_by_loop(structured_loop_arrays)
+sorted_loop_arrays = all_functions.get_sorted_loop_array_from_maxt(sorted_loop_arrays)
 
 n_loops = []
 total_time_simulation = []
@@ -27,5 +33,5 @@ ax1.bar(x_legend, total_time_simulation, width=0.3, label='Total_time')
 # ax1.set_xlabel('time [days]')
 ax1.legend()
 
-plt.savefig('fig_all_comparations' + '.png')
+plt.savefig('fig_all_comparations_' + case + '.png')
 import pdb; pdb.set_trace()
