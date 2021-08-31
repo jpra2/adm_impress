@@ -6,7 +6,9 @@ from packs.directories import data_loaded
 
 from packs.compositional.IMPEC.adm_tpfa_compositional_solver import AdmTpfaCompositionalSolver
 from packs.compositional.IMPEC.compositionalIMPEC import CompositionalFVM
-from .composition_solver import Euler
+from .composition_solver import Euler, RK3
+from .flux_calculation import FirstOrder, MUSCL, FR
+import math
 
 class CompositionalFvmADM(CompositionalFVM):
     
@@ -47,7 +49,7 @@ class CompositionalFvmADM(CompositionalFVM):
             
             fprop.Nk = np.copy(Nk_old)
 
-            fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells, fprop, P_old, delta_t)
+            fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells, fprop, P_old, delta_t, **kwargs)
 
             '''total_flux_internal_faces = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
             q = np.zeros_like(fprop.Nk)
