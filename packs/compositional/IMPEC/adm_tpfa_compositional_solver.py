@@ -407,8 +407,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         return Pnew, Ft_internal_faces, self.q
     
     def get_pressure(self, M, wells, fprop, Pold, delta_t, **kwargs):
-        return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)
-        # return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, **kwargs)
+        # return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)
+        return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, **kwargs)
         
         
         
