@@ -1,5 +1,6 @@
 from packs.data_class.compositional_cumulative_datamanager import CumulativeCompositionalDataManager
 import numpy as np
+import pandas as pd
 
 def organize_cases_by_loop(datas, loops):
     loops2 = pd.Series(loops)

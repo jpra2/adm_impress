@@ -101,7 +101,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     if loop % 500 == 0:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         
     
 # loop_array['loop'][0] = loop
