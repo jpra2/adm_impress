@@ -1,11 +1,11 @@
 #2-phase problem with 3 components - moshiri
-mesh_name: 500x1x1_3k.msh
-name_save_file: 'results_Hoteit_Firoo_3k_500_FR' #150683
+mesh_name: 200x1x1_3k.msh
+name_save_file: 'results_case2_Moshiri_Manzari_3k_200_MUSCL' #150683
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
-water_component: true
+water_component: false
 use_vpi: false
 
 
@@ -27,20 +27,27 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.9
+  CFL: .9
 
   solver:
-    IMPSAT: False
+    IMPSAT: false
 
   MUSCL:
-    set: false
+    set: true
 
   FR:
-    set: true
+    set: false
     order: 3
+
+  UPW:
+    ROE: false
+    LLF: false
+    MDW: false
+    FOU: false
+
   vpis_para_gravar_vtk: [0.51]
-  time_to_save: [2592000]
-  maximum_time: 2592000
+  time_to_save: [16070400] #[2592000]
+  maximum_time: 16070400 #2592000
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -55,10 +62,10 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 1
+    deltaNlim: 2
     deltaSlim: .25
     deltaVlim: .0001
-    delta_t_ini: 26.4
+    delta_t_ini: 56.4
     delta_tmax: 86400
     delta_tmin: 8.64
 
@@ -96,6 +103,7 @@ compositional_data:
     Pv: [8e6, 0., 0.]
     vshift_parameter: [0.0, 0., 0.]
     Pb_guess: 2e6
+    constant_K: False
 
 #water saturation data
 Saturation:
@@ -128,18 +136,20 @@ Temperature:
 Wells:
   P1:
     p0: [0.0, 0.0, 0]
-    p1: [0.1, 1, 1]
+    p1: [0.25, 1, 1]
     type_region: box
-    prescription: Q
     type: Injector
-    z: [0.9, 0.1, 0.0, 0.0]
-    value: 1.967592592592593e-06
+    prescription: P
+    value: 7e6
+    z: [0.9, 0.1, 0.0]
     injection_condition: reservoir
-    ksi_total: 3099.342953950803
-    value_type: volumetric
+    #prescription: Q
+    #value: 1.967592592592593e-06
+    #ksi_total: 3099.342953950803
+    #value_type: volumetric
 
   P2:
-    p0: [49.9, 0.0, 0]
+    p0: [49.75, 0.0, 0]
     p1: [50, 1, 1]
     prescription: P
     type: Producer

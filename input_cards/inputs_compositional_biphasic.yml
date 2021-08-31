@@ -47,7 +47,7 @@ compositional_data:
     set: false
 
   FR:
-    set: False
+    set: true
     order: 3
   vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
   time_to_save: [0.0]

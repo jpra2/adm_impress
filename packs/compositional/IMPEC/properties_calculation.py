@@ -59,7 +59,6 @@ class PropertiesCalc:
 
         self.update_capillary_pressure(fprop)
 
-
     def update_water_properties(self, M, fprop):
         if data_loaded['compositional_data']['water_data']['mobility']:
             M.data['saturation'], fprop.Csi_W, fprop.rho_W = \
@@ -156,7 +155,6 @@ class PropertiesCalc:
             #phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
             #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test
             phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
-
         if ctes.load_w:
             phase_viscosities[0,ctes.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
 

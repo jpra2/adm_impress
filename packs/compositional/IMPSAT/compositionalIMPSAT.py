@@ -7,13 +7,16 @@ from packs.directories import data_loaded
 from ..IMPEC.composition_solver import Euler, RK3
 from .saturation_solver import saturation as Sat
 import math
+from ..IMPEC.compositionalIMPEC import CompositionalFVM as CompositionalIMPEC
 
-class CompositionalFVM:
+class CompositionalFVM(CompositionalIMPEC):
 
     def __call__(self, M, wells, fprop, delta_t, t):
         G = self.update_gravity_term(fprop)
+        Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
         # self.get_faces_properties_average(fprop)
-        Pot_hid = self.get_faces_properties_upwind(fprop, G)
+        # self.get_faces_properties_upwind(fprop, G)
+        self.get_faces_properties_weighted_average(fprop, G)
         self.get_phase_densities_internal_faces(fprop)
 
         r = 0.8 # enter the while loop
@@ -24,26 +27,19 @@ class CompositionalFVM:
         Nk_old = np.copy(fprop.Nk)
 
         while (r!=1.):
-            #fprop.Nk = np.copy(Nk_old)
             fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells, fprop, P_old, delta_t)
 
-            UPW = Flux()
-            fprop.Fk_vols_total = UPW.update_flux(M, fprop, P_old, total_flux_internal_faces,
-                                         fprop.rho_j_internal_faces,
-                                         fprop.mobilities_internal_faces)
-            wave_velocity = UPW.wave_velocity_upw(M, fprop, fprop.mobilities, fprop.rho_j, fprop.xkj,
-                fprop.Csi_j, total_flux_internal_faces)
+            So, Sg, Sw, fprop.Fk_vols_total, wave_velocity, qk, fprop.mobilities = Sat(M).implicit_solver(M, fprop,
+            wells, Pot_hid, total_flux_internal_faces, dVjdNk, dVjdP, P_old, q, delta_t)
 
             delta_t_new = delta_time.update_CFL(delta_t, fprop.Fk_vols_total, fprop.Nk, wave_velocity)
             r = delta_t_new/delta_t
             delta_t = delta_t_new
-            #r=1
 
-        fprop.So, fprop.Sg, fprop.Sw, fprop.Fk_vols_total, wave_velocity, q, fprop.mobilities = Sat(M).implicit_solver(M, fprop,
-            wells, Pot_hid, total_flux_internal_faces, dVjdNk, dVjdP, fprop.P, P_old, q, delta_t)
-
-        #import pdb; pdb.set_trace()
-        fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, q, fprop.Fk_vols_total, delta_t)
+        fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, qk, fprop.Fk_vols_total, delta_t)
+        fprop.So = So
+        fprop.Sg = Sg
+        fprop.Sw = Sw
 
         fprop.wave_velocity = wave_velocity
         fprop.total_flux_internal_faces = total_flux_internal_faces
@@ -53,7 +49,7 @@ class CompositionalFVM:
         #import pdb; pdb.set_trace()
         return delta_t
 
-    def update_gravity_term(self, fprop):
+    '''def update_gravity_term(self, fprop):
         if any((ctes.z - ctes.z[0]) != 0):
             G = ctes.g * fprop.rho_j * ctes.z
         else:
@@ -86,7 +82,7 @@ class CompositionalFVM:
         return dVjdNk, dVjdP
 
     def get_faces_properties_upwind(self, fprop, G):
-        ''' Using one-point upwind approximation '''
+        # Using one-point upwind approximation
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
         Pot_hidj = Pot_hid[:,ctes.v0[:,0]]
         Pot_hidj_up = Pot_hid[:,ctes.v0[:,1]]
@@ -109,11 +105,6 @@ class CompositionalFVM:
         fprop.xkj_internal_faces[:,Pot_hidj_up <= Pot_hidj] = xkj_vols[:,Pot_hidj_up <= Pot_hidj]
         fprop.xkj_internal_faces[:,Pot_hidj_up > Pot_hidj] = xkj_vols_up[:,Pot_hidj_up > Pot_hidj]
 
-        'TESTAR'
-        '''a = (fprop.Nk - abs(fprop.Nk))/2
-        a = a[:,ctes.v0]
-        fprop.Csi_j_internal_faces[a>=0] = Csi_j_vols[a>=0]
-        fprop.Csi_j_internal_faces[a<0] = Csi_j_vols_up[a<0]'''
         return Pot_hid
 
     def get_faces_properties_average(self, fprop):
@@ -130,7 +121,7 @@ class CompositionalFVM:
     def get_phase_densities_internal_faces(self, fprop):
         fprop.rho_j_internal_faces = (fprop.Vp[ctes.v0[:,0]] * fprop.rho_j[:,:,ctes.v0[:,0]] +
                                     fprop.Vp[ctes.v0[:,1]] * fprop.rho_j[:,:,ctes.v0[:,1]]) /  \
-                                    (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])
+                                    (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])'''
 
 
         #material balance error calculation:

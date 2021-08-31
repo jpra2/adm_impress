@@ -1,6 +1,6 @@
 #Compressive Oil case with 6 components in 1-D reservoir
 mesh_name: 512x1x1_6k.msh
-name_save_file: 'results_water_inj_6k_512_MUSCL_modified_case_upw'
+name_save_file: 'results_water_inj_6k_512_FOU_modified_case_upw'
 
 compositional: True
 hidrocarbon_components: True
@@ -28,10 +28,21 @@ monophasic_data:
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
+  solver:
+    IMPSAT: false
+
   MUSCL:
-    set: True
-    DW: False
-    LLF: False
+    set: false
+
+  FR:
+    set: false
+    order: 2
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
+
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [8640000, 17280000]
   maximum_time: 17280000
@@ -57,6 +68,7 @@ compositional_data:
     delta_tmin: 10
 
   water_data:
+    mobility: true
     mi_W: 1e-3
     rho_W: 1000.73
     Mw_w: 18.015e-3
@@ -91,6 +103,7 @@ compositional_data:
     Bin: [[0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.]]
     Pv: [8e6, 0., 0., 0., 0., 0.]
     vshift_parameter: [0.0, 0.0, 0.0, 0., 0., 0.]
+    constant_K: False
     Pb_guess: 12e6
 
 #water saturation data
@@ -132,6 +145,7 @@ Wells:
     z: [0., 0., 0., 0., 0., 0., 1.]
     ksi_total: 55549.8
     value_type: volumetric
+    injection_condition: surface
 
   P2:
     p0: [2725.865625, 0.0, -10]

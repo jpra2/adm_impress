@@ -53,9 +53,6 @@ class PropertiesCalc:
         self.update_mole_numbers(fprop)
         self.update_total_volume(fprop)
 
-        #self.So, self.Sg = self.update_saturations(M.data['saturation'],
-        #                    fprop.Csi_j, fprop.L, fprop.V)
-        #fprop.So = self.So; fprop.Sg = self.Sg; fprop.Sw = self.Sw
         fprop.mobilities = self.update_mobilities(fprop, fprop.So, fprop.Sg, fprop.Sw,
                           fprop.Csi_j, fprop.xkj)
 

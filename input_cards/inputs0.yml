@@ -80,12 +80,17 @@ compositional_data:
   Cpc: 62052.84
   Epc: 2
   FR:
+    order: 2
     set: false
   MUSCL:
     DW: false
     LLF: false
     set: false
   Pf: 101325
+  RiemannSolver:
+    LLF: false
+    MDW: false
+    ROE: false
   capillary_pressure: Chang
   component_data:
     Bin:
@@ -154,6 +159,7 @@ compositional_data:
     - 617.6
     - 708
     - 768
+    constant_K: false
     vc:
     - 9.9e-05
     - 0.000203
@@ -223,7 +229,7 @@ compositional_data:
     Mw_w: 0.018015
     Pw: 10.34e6
     mi_W: 1e-3
-    mobility: false
+    mobility: true
     rho_W: 1000.73
 compressible_fluid: true
 convert_english_to_SI: false
@@ -239,8 +245,7 @@ mesh_name: 512x1x1_6k.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-n_levels: 3
-name_save_file: results_water_inj_6k_512_MUSCL_modified_case_upw
+name_save_file: results_water_inj_6k_512_FOU_modified_case_upw
 read_permeability: false
 set_permeability: true
 set_porosity: true

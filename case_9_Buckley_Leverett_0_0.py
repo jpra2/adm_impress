@@ -66,25 +66,19 @@ SwD = np.append(SwD,Sw3)
 
 for  arq in arquivos:
     if  arq.startswith(name):
-        #datas = np.load('flying/results_Buckley_Leverett_caset_602.npy', allow_pickle=True)
-        #datas = np.load('flying/results_Buckley_Leverett_case_IMPEC_523.npy', allow_pickle=True)
-        datas = np.load('flying/results_Buckley_Leverett_case_IMPEC_336.npy', allow_pickle=True)
-        for data in datas[7:]:
-            Sw_IMPEC = data[5]
-            x = np.linspace(0,1,500)
 
         #datas = np.load('flying/results_Buckley_Leverett_case_IMPSAT_510.npy', allow_pickle=True)
-        datas = np.load('flying/results_Buckley_Leverett_case_IMPSAT_510.npy', allow_pickle=True)
+        datas = np.load('flying/results_Buckley_Leverett_case_FR3_6639.npy', allow_pickle=True)
         for data in datas[-1:]:
             Sw_IMPSAT = data[5]
             x = np.linspace(0,1,500)
             plt.figure(1)
-            plt.plot(x, Sw_IMPEC, 'r', xD, SwD, 'y', x, Sw_IMPSAT, 'b', mfc = 'none')
+            plt.plot(xD, SwD, 'y', x, Sw_IMPSAT, 'b', mfc = 'none')
             plt.grid()
             loop = data[0]
-            plt.legend(('IMPEC', 'Analytical Solution', 'IMPSAT'))
+            plt.legend(('Analytical Solution', 'FR3'))
             plt.title('Buckley-Leverett Solution Example')
             plt.ylabel('Water Saturation')
             plt.xlabel('Dimensionless distance')
-            plt.savefig('results/compositional/saturation_w_BL_comparison_IMPEC_IMPSAT.png')
-        import pdb; pdb.set_trace()
+            plt.savefig('results/compositional/saturation_w_BL_comparison_FR3.png')
+            import pdb; pdb.set_trace()

@@ -12,6 +12,7 @@ class StabilityCheck:
 
     """ Check for stability of a thermodynamic equilibrium and returns the
     equilibrium phase compositions (perform the flash calculation) """
+    # IMPROVE AND ORGANIZE BETTER THE CONSTANT K PART
 
     def __init__(self, P, T):
         # this is called once
@@ -19,7 +20,10 @@ class StabilityCheck:
         self.ph_L = np.ones(len(P), dtype = bool)
         self.ph_V = np.zeros(len(P), dtype = bool)
         self.T = T
-        self.K = self.equilibrium_ratio_Wilson(P)
+        self.constant_K = data_loaded['compositional_data']['component_data']['constant_K']
+        if self.constant_K:
+            self.K = np.array(data_loaded['compositional_data']['component_data']['K'])[:,np.newaxis]
+        else: self.K = self.equilibrium_ratio_Wilson(P)
         self.x = np.empty([ctes.Nc, len(P)])
         self.y = np.empty_like(self.x)
         self.L = np.empty(len(P))
@@ -27,14 +31,15 @@ class StabilityCheck:
         self.P = P
 
     def run_init(self, P, z, pflash = True, ponteiro_flash = []):
+        #self.K = self.equilibrium_ratio_Wilson(P)
         if np.sum(pflash,dtype=bool)==True:
             ponteiro_flash = np.zeros(len(P), dtype = bool)
-        '-------------------- Get new time-step parameters --------------------'
+            '-------------------- Get new time-step parameters --------------------'
         self.P = P
         self.z = z
         self.z[z==0] = 1e-30
         #ponteiro_flash[np.sum(self.z==0, dtype=bool)] = True
-
+        #import pdb; pdb.set_trace()
         if not pflash and any(~ponteiro_flash) and ctes.Nc>1:
             sp1, sp2 = self.StabilityTest(np.copy(~ponteiro_flash))
             ponteiro_aux = ponteiro_flash[~ponteiro_flash]
@@ -61,10 +66,10 @@ class StabilityCheck:
 
     def run(self, P, z):
         ponteiro_flash = self.skip_phase_stability_test(P, z)
+        self.use_previous_K(P, z, ponteiro_flash)
         #ponteiro_flash = np.ones(len(P), dtype = bool)
         #ponteiro_flash[wells['all_wells']] = True
         #ponteiro_flash[((self.V==0) + (self.L==0))*(P > self.P)] = False
-        self.use_previous_K(P, z, ponteiro_flash)
         self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V = self.run_init(P, z, False, ponteiro_flash)
         return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
 
@@ -407,11 +412,11 @@ class StabilityCheck:
             ponteiro_aux[stop_criteria < 1e-9] = False
             ponteiro[ponteiro] = ponteiro_aux
             #print(i)
-            if i>50:
+            if any(np.isnan(self.V)): self.V[np.isnan(self.V)] = 0
+            if i>200:
+                #import pdb; pdb.set_trace()
                 ponteiro[ponteiro] = False
             #    print('i>100')
-
-
 
         self.V[ponteiro_save] = V[ponteiro_save]
         self.x[:,ponteiro_save] = self.z[:,ponteiro_save] / (1 + self.V[ponteiro_save][np.newaxis,:] *
@@ -426,12 +431,14 @@ class StabilityCheck:
         Vmin = 1. - Lmax
         #Vmin = ((K1-KNc)*z[self.K==K1]-(1-KNc))/((1-KNc)*(K1-1))
         #proposed by Li et al for Whitson method
+
         Vmin[Vmin>Vmax] = -Vmax[Vmin>Vmax]
         self.V[ponteiro] = (Vmin[ponteiro] + Vmax[ponteiro]) * 0.5
 
         ponteiro_save = np.copy(ponteiro)
         razao = np.ones(self.z.shape)/2
         i = 0
+
         while any(ponteiro):
             i+=1
             self.solve_objective_function_Whitson_for_V(self.V, Vmax, Vmin, np.copy(ponteiro))
@@ -441,7 +448,7 @@ class StabilityCheck:
             fv = np.exp(lnphiv) * (self.y[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             fl = np.exp(lnphil) * (self.x[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             razao[:,ponteiro] = np.divide(fl, fv, out = razao[:,ponteiro] / razao[:,ponteiro] * (1 + 1e-10),
-                              where = fv != 0)#
+                              where = fv != 0)
             self.K[:,ponteiro] = razao[:,ponteiro] * self.K[:,ponteiro]
             stop_criteria = np.max(abs(fv / fl - 1), axis = 0)
             ponteiro_aux = ponteiro[ponteiro]
