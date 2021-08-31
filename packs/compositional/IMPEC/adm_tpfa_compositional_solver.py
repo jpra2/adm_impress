@@ -44,7 +44,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         ]
     }
     
-    def get_pressure_adm(self, M, wells, fprop, delta_t, Pold, **kwargs):
+    def get_pressure_adm(self, M, wells, fprop, Pold, delta_t, **kwargs):
 
         adm_method: AdmNonNested = kwargs.get('adm_method')
         params = kwargs.get('params')
@@ -397,7 +397,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         
         level_vector[level0] = 0
     
-    def get_pressure_finescale(self, M, wells, fprop, delta_t, Pold, **kwargs):
+    def get_pressure_finescale(self, M, wells, fprop, Pold, delta_t, **kwargs):
         
         T = self.update_transmissibility(M, wells, fprop, delta_t)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
