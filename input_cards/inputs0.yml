@@ -1,6 +1,6 @@
 Crs:
   Cr1:
-  - 10
+  - 5
   - 1
   - 1
   Cr2:
@@ -83,8 +83,6 @@ compositional_data:
     order: 2
     set: false
   MUSCL:
-    DW: false
-    LLF: false
     set: false
   Pf: 101325
   RiemannSolver:
@@ -245,6 +243,7 @@ mesh_name: 512x1x1_6k.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
+n_levels: 3
 name_save_file: results_water_inj_6k_512_FOU_modified_case_upw
 read_permeability: false
 set_permeability: true

@@ -1,6 +1,6 @@
 #Compressive Oil case with 6 components in 1-D reservoir
 mesh_name: 512x1x1_6k.msh
-name_save_file: 'results_water_inj_6k_512_MUSCL_modified_case_upw'
+name_save_file: 'results_water_inj_6k_512_FOU_modified_case_upw'
 
 compositional: True
 hidrocarbon_components: True
@@ -15,7 +15,7 @@ n_levels: 3
 Crs:
   # Cr1: [3, 3, 1]
   # Cr2: [9, 9, 1]
-  Cr1: [10, 1, 1]
+  Cr1: [5, 1, 1]
   Cr2: [5, 1, 1]
 get_correction_term: false
 load_operators: false
@@ -39,16 +39,23 @@ monophasic_data:
 
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
-  solver:
-    IMPSAT: False
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
+  solver:
+    IMPSAT: false
+
   MUSCL:
-    set: False
-    DW: False
-    LLF: False
+    set: false
+
   FR:
-    set: False
+    set: false
+    order: 2
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
+
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [8640000, 17280000]
   maximum_time: 17280000
@@ -74,12 +81,12 @@ compositional_data:
     delta_tmin: 10
 
   water_data:
+    mobility: true
     mi_W: 1e-3
     rho_W: 1000.73
     Mw_w: 18.015e-3
     Cw: 0 #4.35e-10
     Pw: 10.34e6
-    mobility: False
 
   residual_saturations:
     Sorw: 0.1
@@ -109,6 +116,7 @@ compositional_data:
     Bin: [[0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.]]
     Pv: [8e6, 0., 0., 0., 0., 0.]
     vshift_parameter: [0.0, 0.0, 0.0, 0., 0., 0.]
+    constant_K: False
     Pb_guess: 12e6
 
 #water saturation data

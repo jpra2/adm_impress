@@ -27,7 +27,7 @@ M, data_impress, wells, fprop, load = sim.initialize(load, convert, mesh)
 # import pdb; pdb.set_trace()
 
 while run_criteria < stop_criteria:# and loop < loop_max:
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     sim.run(M, wells, fprop, load)
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'

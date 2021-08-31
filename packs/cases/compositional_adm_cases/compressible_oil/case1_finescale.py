@@ -6,9 +6,11 @@ from packs.data_class.compositional_data import CompositionalData
 from packs.data_class.compositional_cumulative_datamanager import CumulativeCompositionalDataManager
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 import numpy as np
+from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 
 
-description = 'case3_finescale_3k'
+# description = 'case3_finescale_3k'
+description = 'case13_finescale_6k'
 compositional_data = CompositionalData(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
 cumulative_compositional_datamanager.create()
@@ -17,17 +19,7 @@ cumulative_compositional_datamanager.create()
 # compositional_data.delete()
 # import pdb; pdb.set_trace()
 
-loop_array = np.zeros(
-    1,
-    dtype=[
-        ('loop', int),
-        ('t', float),
-        ('vpi', float),
-        ('simulation_time', float),
-        ('oil_production', float),
-        ('gas_production', float),
-    ]
-)
+loop_array = all_functions.get_empty_loop_array()
 
 
 name_current = 'current_compositional_results_'
@@ -53,7 +45,7 @@ M, data_impress, wells, fprop, load = sim.initialize(load, convert, mesh)
 # import pdb; pdb.set_trace()
 
 while run_criteria < stop_criteria:# and loop < loop_max:
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     
     t0 = time.time()
     sim.run(M, wells, fprop, load)
@@ -83,7 +75,10 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             sim.delta_t = t_next - sim.t
     loop = sim.loop
     print(sim.t)
-    import pdb; pdb.set_trace()
+    
+    loop_array['total_simulation_time'][0] += simulation_time
+    loop_array['n_total_loops'][0] += 1
+    
     loop_array['loop'][0] = loop
     loop_array['t'][0] = sim.t
     loop_array['vpi'][0] = sim.vpi
@@ -109,7 +104,26 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         import pdb; pdb.set_trace()
         
     
-
+# loop_array['loop'][0] = loop
+# loop_array['t'][0] = sim.t
+# loop_array['vpi'][0] = sim.vpi
+# loop_array['simulation_time'][0] = simulation_time
+# loop_array['oil_production'][0] = sim.oil_production
+# loop_array['gas_production'][0] = sim.gas_production
+# compositional_data.update({
+#     'pressure': fprop.P,
+#     'Sg': fprop.Sg,
+#     'Sw': fprop.Sw,
+#     'So': fprop.So,
+#     'global_composition': fprop.z,
+#     'mols': fprop.Nk,
+#     'xkj': fprop.xkj,
+#     'Vp': fprop.Vp,
+#     'loop_array': loop_array
+# })
+# cumulative_compositional_datamanager.insert_data(compositional_data._data)
+compositional_data.export_to_npz()
+cumulative_compositional_datamanager.export()
 
 tf = time.time()
 print('Total computational time: ', tf-t) #total simulation time

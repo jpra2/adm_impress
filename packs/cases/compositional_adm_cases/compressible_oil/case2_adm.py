@@ -20,6 +20,7 @@ from packs.multiscale.operators.prolongation.AMS.paralell2.paralel_ams_new_2 imp
 from packs.data_class.sparse_operators import SparseOperators
 from packs.cases.compositional_adm_cases.compressible_oil import update_variables_before_init
 from packs.multiscale.ms_utils.multiscale_functions import print_mesh_volumes_data
+from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -42,8 +43,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case9_adm_3k' # neig wells in fine scale
 # description = 'case10_adm_3k' # case9_adm_3k with 10 coarse ratio
 # description = 'case11_adm_3k' # case 9 adm 3k with 25 coarse ratio 
-# description = 'case12_finescale_6k'
-description = 'case13_adm_6k' # case 12 with cr=5 
+description = 'case12_finescale_6k'
+# description = 'case13_adm_6k' # case 12 with cr=5 
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -52,24 +53,7 @@ cumulative_compositional_datamanager.create()
 # cumulative_compositional_datamanager.delete_all_datas()
 # compositional_data.delete()
 # import pdb; pdb.set_trace()
-loop_array = np.zeros(
-    1,
-    dtype=[
-        ('loop', int),
-        ('t', float),
-        ('vpi', float),
-        ('simulation_time', float),
-        ('oil_production', float),
-        ('gas_production', float),
-        ('n_volumes_update_base_functions', int),
-        ('total_volumes_updated', int),
-        ('active_volumes', int),
-        ('oil_rate', float),
-        ('gas_rate', float),
-        ('total_simulation_time', float),
-        ('n_total_loops', int)   
-    ]
-)
+loop_array = all_functions.get_empty_loop_array()
 params = Params()
 
 if data_loaded['use_vpi']:

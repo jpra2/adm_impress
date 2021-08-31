@@ -64,7 +64,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # test = (centroids[:,0] >= centroids[:,0].min() - 0.1) & (centroids[:,0] < centroids.min() + 7*dx + 0.1)
         # vols = elements_lv0['volumes'][test]
         
-        T, T_noCC, T_advec = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
+        T, T_noCC, T_advec = self.update_transmissibility_adm(M, wells, fprop, delta_t, **kwargs)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
         
         # OP_AMS, cfs  = mlo.run_paralel_2(
@@ -169,7 +169,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         params.update({
             'active_volumes': n_active_volumes
         })
-        self.P = solution
+        Pnew = solution
 
         # P = self.update_pressure(T, D) # OP*padm
         # self.P = self.update_pressure(T, D) # OP*padm
@@ -204,7 +204,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # )
 
         # Ft_internal_faces_orig = self.update_total_flux_internal_faces(fprop, P) # pressao local
-        Ft_internal_faces_adm = self.update_total_flux_internal_faces(fprop, solution) # pressao local
+        Ft_internal_faces_adm = self.update_total_flux_internal_faces(M, fprop, solution) # pressao local
         Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
 
@@ -248,7 +248,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # data_impress['verif_rest'][:] = error2
         # data_impress['flux_volumes'][:] = error2
 
-        ft_internal_faces_local_solution = self.update_total_flux_internal_faces(fprop, local_solution)
+        ft_internal_faces_local_solution = self.update_total_flux_internal_faces(M, fprop, local_solution)
         # from packs.compositional.IMPEC.global_pressure_solver import GlobalIMPECPressureSolver as Gips
         # global_flux = Gips.update_flux(
         #     ft_internal_faces_local_solution,
@@ -295,16 +295,16 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # )
         # import pdb; pdb.set_trace()
 
-        self.update_flux_wells(fprop, wells, delta_t, self.P)
+        self.update_flux_wells(fprop, Pnew, wells, delta_t)
 
         # return self.P, Ft_internal_faces, self.q
         # import pdb; pdb.set_trace()
         # return self.P, Ft_internal_faces_orig, self.q
         # return solution, Ft_internal_faces, self.q
         
-        return self.P, Ft_internal_faces, self.q
+        return Pnew, Ft_internal_faces, self.q
     
-    def update_transmissibility(self, M, wells, fprop, delta_t, **kwargs):
+    def update_transmissibility_adm(self, M, wells, fprop, delta_t, **kwargs):
         params = kwargs.get('params')
         self.t0_internal_faces_prod = fprop.xkj_internal_faces * \
                                       fprop.Csi_j_internal_faces * \
@@ -314,7 +314,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         t0 = (self.t0_internal_faces_prod).sum(axis = 1)
         t0 = t0 * ctes.pretransmissibility_internal_faces
         # T = np.zeros([ctes.n_volumes, ctes.n_volumes])
-        T = sp.lil_matrix((ctes.n_volumes, ctes.n_volumes))
+        T = sp.csr_matrix((ctes.n_volumes, ctes.n_volumes))
 
         # Look for a way of doing this not using a loop!!!
         for i in range(ctes.n_components):
@@ -357,33 +357,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         T[wells['ws_p'], wells['ws_p']] = 1
 
         return T.tocsc(), self.T_noCC.copy(), T_advec
-
-    def update_total_flux_internal_faces(self, fprop, pressure):
-        # Pot_hid = self.P + fprop.Pcap
-        Pot_hid = pressure + fprop.Pcap
-        Pot_hidj = Pot_hid[:,ctes.v0[:,0]]
-        Pot_hidj_up = Pot_hid[:,ctes.v0[:,1]]
-        z = ctes.z[ctes.v0[:,0]]
-        z_up = ctes.z[ctes.v0[:,1]]
-        Ft_internal_faces = - np.sum(fprop.mobilities_internal_faces
-            * ctes.pretransmissibility_internal_faces * ((Pot_hidj_up - Pot_hidj) -
-            ctes.g * fprop.rho_j_internal_faces * (z_up - z)), axis = 1)
-        return Ft_internal_faces
-
-    def update_flux_wells(self, fprop, wells, delta_t, pressure):
-        
-        wp = wells['ws_p']
-
-        if len(wp) >= 1:
-            well_term = (self.T_noCC[wp, :] @ pressure - self.pressure_term[wp] +
-                         self.volume_term[wp]) / delta_t + self.capillary_term[wp] + \
-                         self.gravity_term[wp]
-            mob_ratio = fprop.mobilities[:, :, wp] / \
-                        np.sum(fprop.mobilities[:, :, wp], axis=1)
-            self.q[:, wp] = np.sum(fprop.xkj[:, :, wp] * mob_ratio *
-                                   fprop.Csi_j[:, :, wp] * well_term, axis=1)
-            fprop.q_phase = mob_ratio * well_term
-            
+          
     def set_level0_by_composition(self, level_vector, compositions, n_components, delta_c, adj_internal_faces, n_volumes):
         
         
@@ -425,12 +399,12 @@ class AdmTpfaCompositionalSolver(TPFASolver):
     
     def get_pressure_finescale(self, M, wells, fprop, delta_t, Pold, **kwargs):
         
-        T, T_noCC, T_advec = self.update_transmissibility(M, wells, fprop, delta_t, **kwargs)
+        T = self.update_transmissibility(M, wells, fprop, delta_t)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
-        self.P = self.update_pressure(T, D)
-        Ft_internal_faces = self.update_total_flux_internal_faces(fprop, self.P)
-        self.update_flux_wells(fprop, wells, delta_t, self.P)
-        return self.P, Ft_internal_faces, self.q
+        Pnew = self.update_pressure(T, D)
+        Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop, Pnew)
+        self.update_flux_wells(fprop, Pnew, wells, delta_t)
+        return Pnew, Ft_internal_faces, self.q
     
     def get_pressure(self, M, wells, fprop, Pold, delta_t, **kwargs):
         # return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)

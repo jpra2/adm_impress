@@ -55,4 +55,25 @@ def reordenate_loop_arrays_by_loop(loop_arrays):
         resp.append(np.sort(loop_array, order='loop'))
     
     return resp
+
+def get_empty_loop_array():
+    loop_array = np.zeros(
+        1,
+        dtype=[
+            ('loop', int),
+            ('t', float),
+            ('vpi', float),
+            ('simulation_time', float),
+            ('oil_production', float),
+            ('gas_production', float),
+            ('n_volumes_update_base_functions', int),
+            ('total_volumes_updated', int),
+            ('active_volumes', int),
+            ('oil_rate', float),
+            ('gas_rate', float),
+            ('total_simulation_time', float),
+            ('n_total_loops', int)   
+        ]
+    )
+    return loop_array
     
