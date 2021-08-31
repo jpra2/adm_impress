@@ -45,7 +45,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case11_adm_3k' # case 9 adm 3k with 25 coarse ratio 
 # description = 'case12_finescale_6k'
 # description = 'case13_adm_6k' # case 12 with cr=5
-description = 'case14_adm_6k' # with 5 coarse volumes
+# description = 'case14_adm_6k' # with 10 coarse volumes
+description = 'case15_adm_6k' # with 25 coarse volumes
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
