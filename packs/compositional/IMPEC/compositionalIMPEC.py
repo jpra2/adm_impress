@@ -1,5 +1,5 @@
 from .pressure_solver import TPFASolver
-from .flux_calculation import UPW, MUSCL, FR
+from .flux_calculation import FirstOrder, MUSCL, FR
 from ..update_time import delta_time
 import numpy as np
 from packs.utils import constants as ctes
@@ -15,7 +15,7 @@ class CompositionalFVM:
         '''if ctes.MUSCL or ctes.FR:
             self.get_faces_properties_weighted_average(fprop, G)
         else: self.get_faces_properties_upwind(fprop, G)'''
-        self.get_faces_properties_weighted_average(fprop, G)
+        self.get_faces_properties_upwind(fprop, G)
         self.get_phase_densities_internal_faces(fprop)
 
         r = 0.8 # enter the while loop
@@ -32,24 +32,37 @@ class CompositionalFVM:
             fprop.Nk = np.copy(Nk_old)
 
             fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells, fprop, P_old, delta_t)
-            #total_flux_internal_faces = np.ones(ctes.n_internal_faces) * 1/(24*60*60)
 
+            '''total_flux_internal_faces = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
+            q = np.zeros_like(fprop.Nk)
+            frj = fprop.mobilities[:,...] / \
+                np.sum(fprop.mobilities[:,...], axis = 1)
+            frj[:,1,0] = 1
+            frj[:,0,0] = 0
+            q[:,wells['all_wells']] = np.sum(frj[:,:,wells['all_wells']] * fprop.Csi_j[:,:,wells['all_wells']]*\
+                np.array([[1, 0, 0, 0, 0],[0,0.25, 0.25, 0.25, 0.25]]).T[:,np.newaxis,:] * \
+                total_flux_internal_faces[:,0], axis=1)
+            q[:,-1] = -1*q[:,-1]
+            fprop.q_phase = total_flux_internal_faces[:,0][:,np.newaxis] * np.ones((1,2))
+            '''
+            #import pdb; pdb.set_trace()
             if ctes.MUSCL:
-                wave_velocity = MUSCL().run(M, fprop, wells, P_old, total_flux_internal_faces, Pot_hid)
+                wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
+                    total_flux_internal_faces, Pot_hid)
 
             elif ctes.FR:
                 wave_velocity, Nk, z, Nk_SP, Fk_vols_total = FR().run(M, fprop, wells,
                     total_flux_internal_faces, Nk_SP_old, P_old, q, delta_t, t)
             else:
-                if ctes.UPW['FOU']:
+                if ctes.RS['LLF']:
+                    Fk_vols_total, wave_velocity = FirstOrder().LLF(M, fprop, total_flux_internal_faces, P_old)
+                elif ctes.RS['MDW']:
+                    Fk_vols_total, wave_velocity = FirstOrder().MDW(M, fprop, total_flux_internal_faces, P_old)
+                elif ctes.RS['ROE']:
+                    Fk_vols_total, wave_velocity = FirstOrder().ROE(M, fprop, total_flux_internal_faces, P_old)
+                else:
                     self.get_faces_properties_upwind(fprop, G)
-                    Fk_vols_total, wave_velocity = UPW().FOU(M, fprop, total_flux_internal_faces)
-                elif ctes.UPW['LLF']:
-                    Fk_vols_total, wave_velocity = UPW().LLF(M, fprop, total_flux_internal_faces, P_old)
-                elif ctes.UPW['MDW']:
-                    Fk_vols_total, wave_velocity = UPW().MDW(M, fprop, total_flux_internal_faces, P_old)
-                elif ctes.UPW['ROE']:
-                    Fk_vols_total, wave_velocity = UPW().ROE(M, fprop, total_flux_internal_faces, P_old)
+                    Fk_vols_total, wave_velocity = FirstOrder().FOU(M, fprop, total_flux_internal_faces)
 
             ''' For the composition calculation the time step might be different\
              because it treats composition explicitly and this explicit models \
@@ -60,9 +73,10 @@ class CompositionalFVM:
             delta_t = delta_t_new
 
         dd = q
+
         if not ctes.FR:
             fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, q,
-                fprop.Fk_vols_total, delta_t)
+                Fk_vols_total, delta_t)
         else:
             fprop.Nk = Nk; fprop.z = z; fprop.Nk_SP = Nk_SP
 
@@ -154,6 +168,10 @@ class CompositionalFVM:
         fprop.mobilities_internal_faces = self.weighted_by_volume_average(fprop, fprop.mobilities)
         fprop.Csi_j_internal_faces = self.weighted_by_volume_average(fprop, fprop.Csi_j)
         fprop.xkj_internal_faces = self.weighted_by_volume_average(fprop, fprop.xkj)
+
+        #fprop.mobilities_internal_faces[...,[0,1]] = fprop.mobilities[...,[0,-2]]
+        #fprop.Csi_j_internal_faces[...,[0,1]] = fprop.Csi_j[...,[0,-2]]
+        #fprop.xkj_internal_faces[...,[0,1]] = fprop.xkj[...,[0,-2]]
 
     def get_phase_densities_internal_faces(self, fprop):
         fprop.rho_j_internal_faces = self.weighted_by_volume_average(fprop, fprop.rho_j)

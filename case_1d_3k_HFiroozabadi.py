@@ -28,31 +28,38 @@ for  arq in arquivos:
         xC3 = np.concatenate((xC30,xC3))
         xC3 = np.concatenate((xC3,xC31))
 
-        datas = np.load('flying/results_Hoteit_Firoo_3k_200_FR2_5167.npy', allow_pickle=True)
+        datas = np.load('flying/results_Hoteit_Firoo_3k_200_FR3_5175.npy', allow_pickle=True)
         #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_FR2_200 = data[6]
             Sg_FR2_200 = data[7]
+            oil_P_FR2 = data[8]
             z_FR2_200 = data[10]
             xkj_FR2_200 = data[13]
             P_FR2_200 = data[4]
-
+            Nk_FR2_SPs = data[12]
+            Nk_FR2 = data[12].sum(axis=-1)/2
             xkj_FR2_200[:,1,Sg_FR2_200==0] = 0
             xkj_FR2_200[:,0,So_FR2_200==0] = 0
             x_200 = np.linspace(0,50,len(So_FR2_200))
 
-        datas = np.load('flying/results_Hoteit_Firoo_3k_200_FR3_10251.npy', allow_pickle=True)
+        datas = np.load('flying/results_Hoteit_Firoo_3k_200_FR3_7023.npy', allow_pickle=True)
         #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_FR3_200 = data[6]
             Sg_FR3_200 = data[7]
+            oil_P_FR3 = data[8]
             z_FR3_200 = data[10]
             xkj_FR3_200 = data[13]
             P_FR3_200 = data[4]
+            Nk_FR3_SPs = data[12]
+            w = np.array([1/3, 4/3, 1/3])
+            Nk_FR3 = (data[12]*w[np.newaxis,np.newaxis,:]).sum(axis=-1)/2
 
             xkj_FR3_200[:,1,Sg_FR3_200==0] = 0
             xkj_FR3_200[:,0,So_FR3_200==0] = 0
             x_200 = np.linspace(0,50,len(So_FR3_200))
+            import pdb; pdb.set_trace()
 
         datas = np.load('flying/results_Hoteit_Firoo_3k_200_FOU_4800.npy', allow_pickle=True)
         #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
@@ -107,17 +114,31 @@ for  arq in arquivos:
             x_5000 = np.linspace(0,50,len(So_5000))
 
 
-        plt.figure(4)
+        plt.figure(1)
         #plt.plot(x_500, xkj_500[2,1,:], 'b')
-        #plt.plot(x_500, xkj_500_MUSCL[2,1,:], 'm')
+        plt.plot(x_500, xkj_500_MUSCL[2,1,:], 'm')
         plt.plot(x_axis_xC3, xC3, 'k')
         plt.plot(x_5000, xkj_5000[2,1,:], 'r')
         plt.plot(x_200, xkj_FR2_200[2,1,:], 'y')
         plt.plot(x_200, xkj_FR3_200[2,1,:], 'b')
         plt.plot(x_200, xkj_200[2,1,:], 'g')
-        plt.legend(('Reference', 'FOU 5000', 'FR P1 200', 'FR P2 200', 'FOU-200'))
+        plt.legend(('MUSCL 500', 'Reference', 'FOU 5000', 'FR P1 200', 'FR P2 200', 'FOU-200'))
         plt.grid()
         plt.ylabel('Propane molar fraction in gas phase')
         plt.xlabel('Dimensionless distance')
         plt.savefig('results/compositional/3k_propane_y_HF.png')
+
+        plt.figure(2)
+        #plt.plot(x_500, xkj_500[2,1,:], 'b')
+        plt.plot(x_500[200:400], xkj_500_MUSCL[2,1,200:400], 'm')
+        plt.plot(x_axis_xC3, xC3, 'k')
+        plt.plot(x_5000[2000:4000], xkj_5000[2,1,2000:4000], 'r')
+        #plt.plot(x_200, xkj_FR2_200[2,1,:], 'y')
+        #plt.plot(x_200, xkj_FR3_200[2,1,:], 'b')
+        #plt.plot(x_200, xkj_200[2,1,:], 'g')
+        plt.legend(('MUSCL 500', 'Reference', 'FOU 5000'))
+        plt.grid()
+        plt.ylabel('Propane molar fraction in gas phase')
+        plt.xlabel('Dimensionless distance')
+        plt.savefig('results/compositional/3k_propane_y_HF_MUSCL.png')
         import pdb; pdb.set_trace()

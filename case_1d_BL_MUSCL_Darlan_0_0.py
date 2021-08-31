@@ -445,7 +445,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example - FR 2nd order')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_FR2_meshes.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_FR2_meshes.png' )
 
         plt.figure(10)
         plt.plot(x8, Sw8_FR3, 'm', x16, Sw16_FR3, 'c', x32, Sw32_FR3, 'r',
@@ -459,7 +459,7 @@ for  arq in arquivos:
         plt.xlim(0.60,0.8)
         plt.ylim(0.60,0.71)
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_FR3_meshes.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_FR3_meshes.png' )
 
         plt.figure(2)
         plt.plot(x32, Sw32, '-r<', x32, Sw32_upw, '-gP', x32, Sw32_FR, '-mo', xD, SwD, 'k')#
@@ -468,7 +468,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example - 32 elements')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_32_comparison.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_32_comparison.png' )
 
         plt.figure(3)
         plt.plot(x32, Sw32, 'r', x64, Sw64, 'b', x128, Sw128, 'y', x256, Sw256, 'g', x512, Sw512,
@@ -478,7 +478,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example - MUSCL')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_MUSCL_meshes.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_MUSCL_meshes.png' )
 
         plt.figure(4)
         x1024 = np.linspace(0,1,1024)
@@ -543,7 +543,7 @@ for  arq in arquivos:
         plt.ylim(0.60,0.71)
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_128_comparison.eps', format='eps')
+        plt.savefig('results/compositional/FR/saturation_BL_Darlan_128_comparison.png' )
 
         plt.figure(15)
         plt.plot(x512, P512_MUSCL, '-r', x512, P512_upw, 'b', x512, P512_FR, 'm')
@@ -551,7 +551,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Pressure')
         plt.ylabel('Pressure Solver')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/pressurrre_BL_Darlan_FR.eps', format='eps')
+        plt.savefig('results/compositional/FR/pressurrre_BL_Darlan_FR.png' )
 
         import pdb; pdb.set_trace()
 
@@ -573,6 +573,6 @@ for  arq in arquivos:
         plt.xlabel('$log_{10}(N)$')
         plt.legend(('MUSCL-2nd order', 'Reference Line', 'FOU', 'FR P1'))
         plt.grid()
-        plt.savefig('results/compositional/FR_paper/BL_Darlan_L1_convergence_order2.eps', format='eps')
+        plt.savefig('results/compositional/FR/BL_Darlan_L1_convergence_order2.png')
 
         import pdb; pdb.set_trace()

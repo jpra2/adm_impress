@@ -131,7 +131,7 @@ class TPFASolver:
 
     def update_flux_wells(self, fprop, Pnew, wells, delta_t):
         wp = wells['ws_p']
-
+        
         if len(wp)>=1:
             if Pnew[2]>Pnew[1]: import pdb; pdb.set_trace()
             well_term =  (self.T_noCC[wp,:] @ Pnew - self.pressure_term[wp] +
