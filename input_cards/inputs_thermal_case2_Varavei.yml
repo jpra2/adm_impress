@@ -1,0 +1,153 @@
+# 1-D with 4 components - case 2 Varavei thesis
+mesh_name: 20x20x1_case1BRB.msh # Falta gerar a malha!
+name_save_file: 'results_case2_1d_Varavei_Thermal'
+
+compositional: True
+hidrocarbon_components: True
+compressible_fluid: True # Não tenho certeza se é True ou False 
+water_component: True
+use_vpi: False
+
+
+load_compositional_data: False
+load_data: False
+convert_english_to_SI: False
+set_porosity: true
+gravity: false
+deletar_results: false
+load_operators: false
+read_permeability: false
+monophasic_data: false
+set_permeability: True
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+
+
+compositional_data:
+
+  CFL: 0.7
+
+  solver:
+    IMPSAT: false
+    FIM: True #Adicionar essa chave no solver
+
+  MUSCL:
+    set: False
+  FR:
+    set: false
+    order: 3
+
+  vpis_para_gravar_vtk: [0.2]
+  time_to_save: [51840000]
+  maximum_time: 51840000
+  phase_viscosity: LorenzBrayClark
+  relative_permeability: BrooksAndCorey
+  capillary_pressure: Chang
+  equation_of_state: PengRobinson
+
+  rock_compressibility: 0
+  Pf: 101325
+
+  #capillary pressure data
+  Cpc: 62052.84
+  Epc: 2
+
+  # Dados empiricos para calculo do passo de tempo - AJUSTAR
+  time_data:
+    deltaPlim: 0.1
+    deltaNlim: .25
+    deltaSlim: .1
+    deltaVlim: .0001
+    delta_t_ini: 1.64
+    delta_tmax: 77760
+    delta_tmin: 1.64
+
+  water_data: # Preciso manter ou alterar algo?
+    mi_W: 1e-3
+    rho_W: 1000.73
+    Mw_w: 18.e-3
+    Cw: 0
+    Pw: 10.34e6
+    mobility: True
+
+  # Dados confusos - pedir ajuda a Eduarda
+  residual_saturations:
+    Sorw: 0.000001
+    Sorg: 0.000001
+    Swr: 0.25
+    Sgr: 0.
+
+  relative_permeability_data:
+    krw0: 1
+    krow0: 1
+    krog0: 1
+    krg0: 1
+
+    n_og: 1.
+    n_ow: 1.
+    n_w: 1.
+    n_g: 1.
+
+#  C6, C10, C15, H2O
+  component_data:
+    z: [0.05, 0.15, 0.3, 0.5]
+    Tc: [507.22, 622.283, 705.556, 647.483]
+    Pc: [3012319.5, 2534836.834, 1.379e6, 22054398.05]
+    vc: [3.68e-4, 6.24e-4, 9.66e-4, 5.595e-5]
+    Mw: [86e-3, 134e-3, 206e-3, 18e-3]
+    w: [0.296, 0.5764, 0.7678, 0.344]
+    Bin: [[0., 0., 0., 0.], [0., 0., 0., 0.], [0., 0., 0., 0.], [0., 0., 0., 0.]]
+    vshift_parameter: [0.0, 0., 0.]
+
+#water saturation data - NO MEU CASO NÃO PRECISA DISSO, ÁGUA ENTRA NOS COMPONENTES
+Saturation:
+  r1:
+    type: all
+    value: 0.25
+
+Porosity:
+  r1:
+    type: all
+    value: 0.3
+
+#Permeability in m^2
+Permeability:
+  r1:
+    type: all
+    value: [1.97e-13, 0, 0, 0, 1.97e-13, 0, 0, 0, 1.97e-14]
+
+# ADICIONAR FLAGS DAS PROŔIEDADES TÉRMICAS
+
+Pressure:
+  r1:
+    type: all
+    value: 3.447e6
+
+# Temperatura inicial
+Temperature:
+  r1:
+    type: all
+    value: 305.56
+
+Wells:
+# Não ajustei os poços
+  P1:
+    p0: [0.0, 231.6385, -60.96]
+    p1: [12.1915, 243.83, 0]
+    prescription: Q
+    type: Injector
+    type_region: box
+    value: 6.550925925925926 #1.6377314814814814 #6.550925925925926
+    z: [0.95, 0.05, 0.0, 0.0]
+    injection_condition: 'surface'
+    ksi_total: 41.0917757 #20100.49164117 #41.0917757
+    value_type: volumetric
+
+  P2:
+    p0: [231.6385, 0.0, -60.96]
+    p1: [243.83, 12.1915, 0]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 20.65e6
