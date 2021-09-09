@@ -18,8 +18,10 @@ class TPFASolver:
         return Pnew, Ft_internal_faces, self.q
 
     def dVt_derivatives(self, dVjdNk, dVjdP):
+
         self.dVtP = dVjdP.sum(axis=1)[0]
         self.dVtk = dVjdNk.sum(axis=1)
+        
 
     def update_transmissibility(self, M, wells, fprop, delta_t):
         self.t0_internal_faces_prod = fprop.xkj_internal_faces * \
@@ -30,6 +32,7 @@ class TPFASolver:
         t0 = (self.t0_internal_faces_prod).sum(axis = 1)
         t0 = t0 * ctes.pretransmissibility_internal_faces
         T = sp.csr_matrix((ctes.n_volumes, ctes.n_volumes))
+
         # Look for a way of doing this not using a loop!!!
         for i in range(ctes.n_components):
             lines = np.array([ctes.v0[:, 0], ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
@@ -37,6 +40,7 @@ class TPFASolver:
             data = np.array([-t0[i,:], -t0[i,:], +t0[i,:], +t0[i,:]]).flatten()
 
             Ta = (sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_volumes, ctes.n_volumes)))#.toarray()
+            #T += Ta*self.dVtk[i, :, np.newaxis]
             T += Ta.multiply(self.dVtk[i, :, np.newaxis])
 
         T *= delta_t
@@ -59,7 +63,7 @@ class TPFASolver:
     def capillary_and_gravity_independent_term(self, fprop):
 
         t0_j = self.t0_internal_faces_prod * \
-            ctes.pretransmissibility_internal_faces
+        ctes.pretransmissibility_internal_faces
         t0_k = ctes.g * np.sum(fprop.rho_j_internal_faces * t0_j, axis=1)
 
         # Look for a better way to do this !!!
@@ -127,13 +131,13 @@ class TPFASolver:
         Ft_internal_faces = - np.sum(fprop.mobilities_internal_faces
             * ctes.pretransmissibility_internal_faces * ((Pot_hidj_up - Pot_hidj) -
             ctes.g * fprop.rho_j_internal_faces * (z_up - z)), axis = 1)
+
         return Ft_internal_faces
 
     def update_flux_wells(self, fprop, Pnew, wells, delta_t):
         wp = wells['ws_p']
 
         if len(wp)>=1:
-            if Pnew[2]>Pnew[1]: import pdb; pdb.set_trace()
             well_term =  (self.T_noCC[wp,:] @ Pnew - self.pressure_term[wp] +
                 self.volume_term[wp]) / delta_t  + self.capillary_term[wp] + \
                 self.gravity_term[wp]

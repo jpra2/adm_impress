@@ -1,6 +1,6 @@
-#2-phase problem with 3 components - moshiri
-mesh_name: 200x1x1_3k.msh
-name_save_file: 'results_Hoteit_Firoo_3k_200_FR' #150683
+#2-phase problem with 4 components - malisson high order paper
+mesh_name: 1024x1x1_5k_MM.msh
+name_save_file: 'results_Moshiri_Manzari_5k_1024_upw' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -27,13 +27,13 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.9
+  CFL: 0.7
   MUSCL:
     set: False
   FR:
     set: false
-    order: 2
-  vpis_para_gravar_vtk: [0.51]
+    order: 3
+  vpis_para_gravar_vtk: [0.67]
   time_to_save: [2592000]
   maximum_time: 2592000
   phase_viscosity: LorenzBrayClark
@@ -51,11 +51,11 @@ compositional_data:
   time_data:
     deltaPlim: 68.9476
     deltaNlim: 10
-    deltaSlim: .35
-    deltaVlim: .005
-    delta_t_ini: 86.4
+    deltaSlim: .01
+    deltaVlim: .001
+    delta_t_ini: 8.64
     delta_tmax: 86400
-    delta_tmin: 8.64
+    delta_tmin: 50
 
   water_data:
     mi_W: 1e-3
@@ -66,8 +66,8 @@ compositional_data:
     mobility: False
 
   residual_saturations:
-    Sorw: 0.
-    Sorg: 0.
+    Sorw: 0.2
+    Sorg: 0.2
     Swr: 0.
     Sgr: 0.
 
@@ -75,21 +75,21 @@ compositional_data:
     krw0: .0
     krg0: 1
     kro0: 1.
-    n_o: 1.
-    n_g: 1.
+    n_o: 2.
+    n_g: 2.
     n_w: 0.
 
-#  C1 C2 C3
+#  C02 C1 C4 C10 - properties form Orr book
   component_data:
-    z: [0., 0.25, 0.75]
-    Tc: [190.56, 305.32, 369.83]
-    Pc: [4599000, 4873000, 4248000]
-    vc: [9.85988846e-05, 1.45500276e-04, 2.00001177e-04]
-    Mw: [16.043e-3, 30.070e-3, 44.096e-3]
-    w: [0.0115, 0.0995, 0.1523]
-    Bin: [[0.,0.,.0], [0.,0.,0.], [0.,0.,.0]]
-    Pv: [8e6, 0., 0.]
-    vshift_parameter: [0.0, 0., 0.]
+    z: [0., 0.3, 0.3, 0.4]
+    Tc: [304.21, 190.58, 425.18, 617.65]
+    Pc: [7382235.525, 4603093.425, 3795938.475, 2107154.7]
+    vc: [10.55286406e-5, 10.60259781e-05, 28.68391436e-5, 75.06384023e-5]
+    Mw: [44.429e-3, 16.043e-3, 58.123e-3, 142.9e-3]
+    w: [0.225, 0.008, 0.2010, 0.49]
+    Bin: [[0., 0.1, 0.13, 0.102, 0.105], [0.1, 0., 0.02, 0.035, 0.035], [0.13, 0.02, .0, 0., 0.], [0.102, 0.035, 0.0, 0.0, 0.0], [0.105, 0.035, 0., 0., 0.]]
+    Pv: [8e6, 0., 0., 0., 0.]
+    vshift_parameter: [0.0, 0., 0., 0., 0.]
     Pb_guess: 2e6
 
 #water saturation data
@@ -101,7 +101,7 @@ Saturation:
 Porosity:
   r1:
     type: all
-    value: 0.2
+    value: 1
 
 #Permeability in m^2
 Permeability:
@@ -113,26 +113,26 @@ Permeability:
 Pressure:
   r1:
     type: all
-    value: 6.9e6
+    value: 11221743.75
 
 Temperature:
   r1:
     type: all
-    value: 311
+    value: 344
 
 Wells:
   P1:
     p0: [0.0, 0.0, 0]
-    p1: [0.25, 1, 1]
+    p1: [0.00146484375, 1, 1]
     prescription: P
     type: Injector
     type_region: box
-    value: 7e6
+    value: 22798125
 
   P2:
-    p0: [49.75, 0.0, 0]
-    p1: [50, 1, 1.0]
+    p0: [1.498535156, 0.0, 0]
+    p1: [1.5, 1, 1.0]
     prescription: P
     type: Producer
     type_region: box
-    value: 6.9e6
+    value: 11221743.75

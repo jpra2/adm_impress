@@ -50,7 +50,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             sim.delta_t = t_next - sim.t
     loop = sim.loop
     print(sim.t)
-    
+
 
 
 tf = time.time()

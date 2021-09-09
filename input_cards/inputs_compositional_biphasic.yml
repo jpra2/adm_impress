@@ -1,12 +1,14 @@
 #Buckley Leverett's horizontal case
 mesh_name: 500x1x1_b.msh
-name_save_file: 'results_Buckley_Leverett_case_FR3'
+name_save_file: 'results_Buckley_Leverett_case_IMPSAT'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: False
 water_component: True
 use_vpi: True
+
+
 
 load_compositional_data: False
 load_data: False
@@ -25,16 +27,16 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.5
+  CFL: 0.7
 
   solver:
-    IMPSAT: false
+    IMPSAT: true
 
   MUSCL:
     set: false
 
   FR:
-    set: true
+    set: false
     order: 3
   vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
   time_to_save: [0.0]
@@ -53,8 +55,8 @@ compositional_data:
 
   time_data:
     deltaPlim: 7
-    deltaNlim: 100
-    deltaSlim: 0.7
+    deltaNlim: 0.15
+    deltaSlim: 0.4
     deltaVlim: 1
     delta_t_ini: 0.5
     delta_tmax: 1000

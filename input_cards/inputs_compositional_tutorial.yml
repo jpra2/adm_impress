@@ -31,10 +31,14 @@ compositional_data:
   MUSCL:
     set: False
   FR:
-    set: True
+    set: False
     order: 3
+  # Ver essas flags, se coloco um para o FIM
+
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [8640000, 17280000]
+  # tempos (em segundos) em que os resultados serão gravados
+  # Obs: Se colocar time_to_save: [0.0], será salvo em todos os passos de tempo
   maximum_time: 17280000 # tempo máximo de simulação
   phase_viscosity: LorenzBrayClark # Só este modelo por enquanto
   relative_permeability: StoneII # Pode ser o modelo de StoneII ou de Corey
@@ -91,7 +95,7 @@ compositional_data:
     z: [0.5, 0.03, 0.07, 0.2, 0.15, 0.05] # composição global
     Tc: [190.6, 369.8, 507.4, 617.6, 708, 768] # Temperatura critica K
     Pc: [4600155, 4245517.5, 2968822.5, 2107560.0, 1.47e6, 1.17e6] # Pressão critica
-    vc: [0.000099, 0.000203, 0.00037, 0.000603, 0.000895, 0.00169] # volume molar crítico
+    vc: [0.000099, 0.000203, 0.00037, 0.000603, 0.000895, 0.00169] # volume molar crítico m³/mol
     Mw: [16.042e-3, 44.1e-3, 86.178e-3, 142.276e-3, 212.41e-3, 282.5e-3] # Peso molecular kg/mol
     w: [0.008, 0.152, 0.299, 0.4890, 0.685, 0.912] # fator acentrico
     # coef de interação binária

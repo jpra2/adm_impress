@@ -8,6 +8,7 @@ compressible_fluid: True
 water_component: True
 use_vpi: False
 
+
 load_compositional_data: False
 load_data: False
 convert_english_to_SI: False
@@ -29,17 +30,18 @@ compositional_data:
   CFL: 0.5
 
   solver:
-    IMPSAT: false
+    IMPSAT: False
+    FIM: False
 
   MUSCL:
-    set: false
+    set: False
 
   FR:
-    set: true
+    set: True
     order: 3
 
   vpis_para_gravar_vtk: [0, 0.1, 0.3, 0.5]
-  time_to_save: [8640000]
+  time_to_save: [0.0, 8640000]
   maximum_time: 8640000
   phase_viscosity: LorenzBrayClark
   relative_permeability: StoneII
@@ -56,11 +58,11 @@ compositional_data:
   time_data:
     deltaPlim: 68.9476
     deltaNlim: .1
-    deltaSlim: .03
-    deltaVlim: .0001
-    delta_t_ini: 20
+    deltaSlim: .003
+    deltaVlim: .1
+    delta_t_ini: 100
     delta_tmax: 86400
-    delta_tmin: 1
+    delta_tmin: 10
 
   water_data:
     mi_W: 1e-3
@@ -98,6 +100,7 @@ compositional_data:
     Bin: [[0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.]]
     Pv: [8e6, 0., 0., 0., 0., 0.]
     vshift_parameter: [0.0, 0.0, 0.0, 0., 0., 0.]
+    Pb_guess: 12e6
 
 #water saturation data
 Saturation:
@@ -115,6 +118,7 @@ Permeability:
   r1:
     type: all
     value: [1e-14, 0, 0, 0, 1e-14, 0, 0, 0, 1e-14]
+
 
 Pressure:
   r1:
@@ -142,7 +146,7 @@ Wells:
   P2:
     p0: [2725.7376, 0.0, -10]
     p1: [2731.2, 10.66875, 0.0]
-    type_region: box
     prescription: P
     type: Producer
+    type_region: box
     value: 8.960e6

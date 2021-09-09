@@ -18,21 +18,12 @@ def init(M, wells):
     global EOS_class
     global MUSCL
     global FR
-    global UPW
     global bhp_ind
     global vols_no_wells
-    global ds_faces
 
     EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
     MUSCL = data_loaded['compositional_data']['MUSCL']['set']
     FR = data_loaded['compositional_data']['FR']['set']
-    if not MUSCL and not FR:
-        UPW = dict()
-        UPW['LLF'] = data_loaded['compositional_data']['UPW']['LLF']
-        UPW['MDW'] = data_loaded['compositional_data']['UPW']['MDW']
-        UPW['FOU'] = data_loaded['compositional_data']['UPW']['FOU']
-        UPW['ROE'] = data_loaded['compositional_data']['UPW']['ROE']
-
     Pf = np.array(data_loaded['compositional_data']['Pf']).astype(float)
     Cf = np.array(data_loaded['compositional_data']['rock_compressibility']).astype(float)
     R = 8.3144598
@@ -48,14 +39,10 @@ def init(M, wells):
     vols_no_wells = np.setdiff1d(vols_index,wells['all_wells'])
     pretransmissibility_faces = M.data[M.data.variables_impress['pretransmissibility']]
     pretransmissibility_internal_faces = pretransmissibility_faces[M.faces.internal]#[100]*np.ones(len(self.internal_faces))
-    ds_faces_axis = M.data['centroid_volumes'][v0[:,1],:] -  M.data['centroid_volumes'][v0[:,0],:]
-    ds_faces = ds_faces_axis.sum(axis=-1)
-    
     if len(wells['ws_p'])>1:
         bhp_ind = np.argwhere(M.volumes.center[wells['ws_p']][:,2] ==
-            min(M.volumes.center[wells['ws_p']][:,2])).ravel()
+        min(M.volumes.center[wells['ws_p']][:,2])).ravel()
     else: bhp_ind = wells['ws_p']
-
 
 def component_properties():
     global load_k
