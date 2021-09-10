@@ -81,7 +81,7 @@ for  arq in arquivos:
             xkj512[:,0,So512==0] = 0
             x512 = np.linspace(0,100,len(So512))
 
-        '''datas = np.load('flying/results_Moortgat_3k_1024_upw_78928.npy', allow_pickle=True)
+        datas = np.load('flying/results_Moortgat_3k_1024_upw_1890.npy', allow_pickle=True)
 
         for data in datas[datas.shape[0]-1:]:
             So1024 = data[6]
@@ -95,14 +95,14 @@ for  arq in arquivos:
 
             xkj1024[:,1,Sg1024==0] = 0
             xkj1024[:,0,So1024==0] = 0
-            x1024 = np.linspace(0,100,len(So1024))'''
+            x1024 = np.linspace(0,100,len(So1024))
 
         plt.figure(1)
-        plt.plot(x256, So256, 'r', x512, So512, 'b')#, x1024, So1024, 'g')
+        plt.plot(x256, So256, 'r', x512, So512, 'b', x1024, So1024, 'g')
         plt.plot(x_So, So_ans, 'k')
         plt.plot(x_CMG, So_CMG, 'y')
         plt.grid()
-        plt.legend(('FOU - 256 elements', 'FOU - 512 elements',
+        plt.legend(('FOU - 256 elements', 'FOU - 512 elements', 'FOU - 1025 elements',
             'Moortgart - 256 elements', 'CMG - 5000 elements'))
         plt.ylabel('Oil Saturation')
         plt.xlabel('Dimensionless distance')

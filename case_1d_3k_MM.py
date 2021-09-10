@@ -129,7 +129,7 @@ for  arq in arquivos:
             xkj_FR2_200[:,0,So_FR2_200==0] = 0
             x_FR2_200 = np.linspace(0,50,len(So_FR2_200))
 
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_FR3_9633.npy', allow_pickle=True) #20194
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_FR3_9241.npy', allow_pickle=True) #20194
         #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_FR3_9615.npy', allow_pickle=True) #20194
         for data in datas[datas.shape[0]-1:]:
             So_FR3_200 = data[6]
@@ -237,14 +237,14 @@ for  arq in arquivos:
         plt.savefig('results/compositional/3k_methane_x_MM_IMPSAT.png')
 
         plt.figure(3)
-        #plt.plot(x_5000[2000:3500], xkj_5000[0,0,2000:3500], 'g')
+        plt.plot(x_5000[2000:3500], xkj_5000[0,0,2000:3500], 'c')
         #plt.plot(x_500[200:350], xkj_500[0,0,200:350], 'b')
         plt.plot(x_FR2_200[80:140], xkj_FR2_200[0,0,80:140], 'y')
         plt.plot(x_FR3_200[80:140], xkj_FR3_200[0,0,80:140], 'g')
         #plt.plot(x_MUSCL_200[80:140], xkj_MUSCL_200[0,0,80:140], 'b')
         plt.plot(x_axis_xCH4, xCH4, 'k')
         plt.grid()
-        plt.legend(( 'FR P1-200', 'FR P2-200', 'Reference'))
+        plt.legend(('FOU 5000', 'FR P1-200', 'FR P2-200', 'Reference'))
         plt.ylabel('Methane molar fraction in liquid phase')
         plt.title('Case2 - Moshiri and Manzari\'s paper')
         plt.xlabel('Dimensionless distance')

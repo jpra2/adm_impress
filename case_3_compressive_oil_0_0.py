@@ -7,7 +7,7 @@ flying = 'flying'
 name = 'results'
 arquivos = os.listdir(flying)
 i=1
-t = np.array([274752, 432000., 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0])
+t = np.array([274752, 432000., 500000, 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0])
 
 por = 0.2
 k = 500
@@ -57,7 +57,8 @@ for arq in arquivos:
                           1928.27, 1920.54, 1911.46, 1900, 1905.88])'''
 
 
-        datas = np.load('flying/results_compressive_oil_case_FR2_148.npy', allow_pickle=True)
+        #datas = np.load('flying/results_compressive_oil_case_FR2_148.npy', allow_pickle=True)
+        datas = np.load('flying/results_compressive_oil_case_FR_127.npy', allow_pickle=True)
         for data in datas[1:]:
             pressure_FR = data[4]/1e6
 
@@ -67,7 +68,7 @@ for arq in arquivos:
             Ft = data[13]
             x32 = np.linspace(0, 1, 32)
 
-        datas = np.load('flying/results_compressive_oil_case_upw_148.npy', allow_pickle=True)
+        datas = np.load('flying/results_compressive_oil_case_upw_2749.npy', allow_pickle=True)
         for data in datas[1:]:
             pressure = data[4]/1e6
             Ft_upw = data[13]

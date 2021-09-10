@@ -53,9 +53,6 @@ class PropertiesCalc:
         self.update_mole_numbers(fprop)
         self.update_total_volume(fprop)
 
-        #self.So, self.Sg = self.update_saturations(M.data['saturation'],
-        #                    fprop.Csi_j, fprop.L, fprop.V)
-        #fprop.So = self.So; fprop.Sg = self.Sg; fprop.Sw = self.Sw
         fprop.mobilities = self.update_mobilities(fprop, fprop.So, fprop.Sg, fprop.Sw,
                           fprop.Csi_j, fprop.xkj)
 
@@ -87,7 +84,6 @@ class PropertiesCalc:
 
         Nkj = fprop.xkj * fprop.Nj
         fprop.Nk = np.sum(Nkj, axis = 1)
-
 
     def set_Nk_Pspace(self, fprop):
         from packs.compositional import prep_FR as ctes_FR
@@ -154,10 +150,10 @@ class PropertiesCalc:
     def update_phase_viscosities(self, fprop, Csi_j, xkj):
         phase_viscosities = np.empty_like(Csi_j)
         if ctes.load_k:
-            #phase_viscosity = self.phase_viscosity_class(fprop, Csi_j)
-            phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
+            phase_viscosity = self.phase_viscosity_class(fprop, Csi_j)
+            #phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
             #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test
-            #phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
+            phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
 
         if ctes.load_w:
             phase_viscosities[0,ctes.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']

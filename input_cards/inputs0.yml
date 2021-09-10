@@ -36,7 +36,7 @@ Wells:
     - 0.0
     - -10
     p1:
-    - 5.4624
+    - 5.334375
     - 10.66875
     - 0.0
     prescription: Q
@@ -54,7 +54,7 @@ Wells:
     - 1.0
   P2:
     p0:
-    - 2725.7376
+    - 2725.865625
     - 0.0
     - -10
     p1:
@@ -71,11 +71,15 @@ compositional_data:
   Cpc: 62052.84
   Epc: 2
   FR:
-    order: 3
-    set: true
+    order: 2
+    set: false
   MUSCL:
     set: false
   Pf: 101325
+  RiemannSolver:
+    LLF: false
+    MDW: false
+    ROE: false
   capillary_pressure: Chang
   component_data:
     Bin:
@@ -144,6 +148,7 @@ compositional_data:
     - 617.6
     - 708
     - 768
+    constant_K: false
     vc:
     - 9.9e-05
     - 0.000203
@@ -173,7 +178,7 @@ compositional_data:
     - 0.15
     - 0.05
   equation_of_state: PengRobinson
-  maximum_time: 8640000
+  maximum_time: 17280000
   phase_viscosity: LorenzBrayClark
   relative_permeability: StoneII
   relative_permeability_data:
@@ -192,21 +197,19 @@ compositional_data:
     Swr: 0.3
   rock_compressibility: 0
   solver:
-    FIM: false
     IMPSAT: false
   time_data:
     deltaNlim: 0.1
     deltaPlim: 68.9476
-    deltaSlim: 0.003
+    deltaSlim: 0.0015
     deltaVlim: 0.1
     delta_t_ini: 100
     delta_tmax: 86400
     delta_tmin: 10
   time_to_save:
-  - 0.0
   - 8640000
+  - 17280000
   vpis_para_gravar_vtk:
-  - 0
   - 0.1
   - 0.3
   - 0.5
@@ -225,11 +228,11 @@ hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: 500x1x1_6k.msh
+mesh_name: 512x1x1_6k.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_water_inj_6k_modified_case_FR
+name_save_file: results_water_inj_6k_512_FOU_modified_case_upw
 read_permeability: false
 set_permeability: true
 set_porosity: true

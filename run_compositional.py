@@ -1,10 +1,9 @@
 from packs.directories import data_loaded
 from packs import directories as direc
 from packs.running.compositional_initial_mesh_properties import initial_mesh
-from packs.compositional.stability_check import StabilityCheck # ADD o trifásico
 from packs.compositional.update_time import delta_time
-from get_inputs_compositional import FluidProperties # Entender e alterar
-from packs.utils import constants as ctes # Entender e alterar
+from get_inputs_compositional import FluidProperties
+from packs.utils import constants as ctes
 import os
 import numpy as np
 import time
@@ -12,12 +11,14 @@ import time
 if data_loaded['compositional_data']['solver']['IMPSAT']:
     from packs.compositional.IMPSAT.compositionalIMPSAT import CompositionalFVM
     from packs.compositional.IMPSAT.properties_calculation import PropertiesCalc
-elif data_loaded['compositional_data']['solver']['FIM']: # Falta criar arquivos abaixo
-    from packs.compositional.IMPSAT.compositionalIMPSAT import CompositionalFVM
-    from packs.compositional.IMPSAT.properties_calculation import PropertiesCalc
 else:
     from packs.compositional.IMPEC.compositionalIMPEC import CompositionalFVM
     from packs.compositional.IMPEC.properties_calculation import PropertiesCalc
+
+if data_loaded['compositional_data']['component_data']['constant_K']:
+    from packs.compositional.Kflash import StabilityCheck
+else:
+    from packs.compositional.stability_check import StabilityCheck
 
 class run_simulation:
     '''Class created to compute simulation properties at each simulation time'''
@@ -36,6 +37,7 @@ class run_simulation:
         self.mesh_name =  'compositional_'
         self.all_results = self.get_empty_current_compositional_results()
         self.p1 = PropertiesCalc()
+        self.sim_time = 0
 
     def initialize(self, load, convert, mesh):
         ''' Function to initialize mesh (preprocess) get and compute initial mesh \
@@ -54,26 +56,29 @@ class run_simulation:
         properties'''
 
         fprop = FluidProperties(M, wells) # load reservoir properties data and initialize other data
-        #fprop.z[:,0] = np.array([0.9,0.1,0.])
+        #fprop.z[:,0] = np.array([0.9, 0.1, 0.0])
 
+        #fprop.z[:,0] = np.array([1, 0.0, 0.0, 0.0, 0.0])
         '------------------------- Perform initial flash ----------------------'
 
         if ctes.load_k:
+
             self.p2 = StabilityCheck(fprop.P, fprop.T)
             fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
             self.p2.run_init(fprop.P, np.copy(fprop.z))
 
-            if any(([wells['inj_cond']=='reservoir'])):
+            if len(wells['ws_q'])>0 and any(([wells['inj_cond']=='reservoir'])) and not self.p2.constant_K:
                 z = (wells['z'][wells['inj_cond']=='reservoir']).T
-                p_well = StabilityCheck(fprop.P[wells['ws_q'][wells['inj_cond']=='reservoir']], fprop.T)
+                p_well = StabilityCheck(fprop.P[wells['ws_inj'][wells['inj_cond']=='reservoir']], fprop.T)
                 L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-                p_well.run_init(fprop.P[wells['ws_q'][wells['inj_cond']=='reservoir']],z[:ctes.Nc])
-                fprop.q_vol = wells['values_q'][:,wells['inj_cond']=='reservoir']
-                wells['values_q'][:,wells['inj_cond']=='reservoir'] *= (z * Csi_V).sum(axis=0)
+                p_well.run_init(fprop.P[wells['ws_inj'][wells['inj_cond']=='reservoir']],z[:ctes.Nc])
+                self.q_vol = np.copy(wells['values_q'][:,wells['inj_cond']=='reservoir'])
+                wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
 
         else: fprop.x = []; fprop.y = []; fprop.L = []; fprop.V = []
+
         if ctes.load_w: fprop.inputs_water_properties(M) #load water properties
 
         '----------------------- Calculate fluid properties -------------------'
@@ -94,28 +99,26 @@ class run_simulation:
         self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t)
 
         self.t += self.delta_t
-        #if self.t>8466000: import pdb; pdb.set_trace()
         '----------------- Perform Phase stability test and flash -------------'
 
         if ctes.load_k and ctes.compressible_k:
+
             #self.p2 = StabilityCheck(fprop.P, fprop.T)
             fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
-            self.p2.run(wells, fprop.P, np.copy(fprop.z))
+            self.p2.run(fprop.P, np.copy(fprop.z))
 
-            '''if any(([wells['inj_cond']=='reservoir'])):
+            if len(wells['ws_q'])>0 and any((wells['inj_cond']=='reservoir')) and not self.p2.constant_K:
                 z = (wells['z'][wells['inj_cond']=='reservoir']).T
                 p_well = StabilityCheck(fprop.P[wells['ws_q'][wells['inj_cond']=='reservoir']], fprop.T)
-
                 L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-                p_well.run_init(fprop.P[wells['ws_q'][wells['inj_cond']=='reservoir']],z[:ctes.Nc])
-                wells['values_q'][:,wells['inj_cond']=='reservoir'] = fprop.q_vol*(z * Csi_V).sum(axis=0)'''
+                p_well.run_init(fprop.P[wells['ws_q'][wells['inj_cond']=='reservoir']],z[0:ctes.Nc])
+                wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
 
         '----------------------- Update fluid properties ----------------------'
 
         self.p1.run_inside_loop(M, fprop)
-
 
         '-------------------- Advance in time and save results ----------------'
 
@@ -127,14 +130,14 @@ class run_simulation:
         self.update_loop()
         t1 = time.time()
         dt = t1 - t0
+        self.sim_time +=dt
         if self.use_vpi:
             if np.round(self.vpi,3) in self.vpi_save:
-                self.update_current_compositional_results(M, wells, fprop, dt) #ver quem vou salvar
+                self.update_current_compositional_results(M, wells, fprop) #ver quem vou salvar
         else:
             if self.time_save[0] == 0.0 or self.t in self.time_save:
-                self.update_current_compositional_results(M, wells, fprop, dt)
+                self.update_current_compositional_results(M, wells, fprop)
                 #import pdb; pdb.set_trace()
-
 
 
     def update_loop(self):
@@ -158,18 +161,19 @@ class run_simulation:
                         'Oil_p', 'Gas_p', 'z', 'centroids', 'Nk', 'xkj'])]
 
     def update_production(self, fprop, wells):
-        ''' Function to compute oil and gas production rate [m³/s] through time'''
+        ''' Function to compute oil and gas production [m³] through time'''
+
         if ctes.load_k:
             self.oil_production +=  abs(fprop.q_phase[:,0].sum()) *self.delta_t
             self.gas_production +=  abs(fprop.q_phase[:,1].sum())*self.delta_t
 
-    def update_current_compositional_results(self, M, wells, fprop, simulation_time: float = 0.0):
+    def update_current_compositional_results(self, M, wells, fprop):
 
         #total_flux_internal_faces = fprop.total_flux_internal_faces.ravel() #* M.faces.normal[M.faces.internal]
         #total_flux_internal_faces_vector = fprop.total_flux_internal_faces.T * np.abs(M.faces.normal[M.faces.internal])
         if ctes.FR: Nk = fprop.Nk_SP
         else: Nk = fprop.Nk
-        self.current_compositional_results = np.array([self.loop, self.vpi, simulation_time,
+        self.current_compositional_results = np.array([self.loop, self.vpi, self.sim_time,
             self.t, fprop.P, fprop.Sw, fprop.So, fprop.Sg, self.oil_production,
             self.gas_production, fprop.z, M.data['centroid_volumes'], Nk, fprop.xkj],dtype=object)
         self.all_results.append(self.current_compositional_results)

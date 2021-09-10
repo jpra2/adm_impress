@@ -28,10 +28,16 @@ monophasic_data:
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
+  solver:
+    IMPSAT: False
+
   MUSCL:
     set: False
-    DW: False
-    LLF: False
+
+  FR:
+    set: False
+    order: 2
+
   vpis_para_gravar_vtk: [0.1, 0.2, 0.3, 0.4]
   time_to_save: [4320000., 8640000, 12960000, 17280000]
   tempo_maximo: null
@@ -131,6 +137,7 @@ Wells:
     z: [0., 1.]
     ksi_total: 55484.31862337
     value_type: volumetric
+    injection_condition: surface
 
   P2:
     p0: [0.0, 0.0, -3.048]
