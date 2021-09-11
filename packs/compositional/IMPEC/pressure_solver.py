@@ -131,12 +131,20 @@ class TPFASolver:
 
     def update_flux_wells(self, fprop, Pnew, wells, delta_t):
         wp = wells['ws_p']
-        
+
         if len(wp)>=1:
-            if Pnew[2]>Pnew[1]: import pdb; pdb.set_trace()
+            if Pnew[0]<Pnew[1]: import pdb; pdb.set_trace()
             well_term =  (self.T_noCC[wp,:] @ Pnew - self.pressure_term[wp] +
                 self.volume_term[wp]) / delta_t  + self.capillary_term[wp] + \
                 self.gravity_term[wp]
             mob_ratio = fprop.mobilities[:,:,wp] / np.sum(fprop.mobilities[:,:,wp], axis = 1)
-            self.q[:,wp] = np.sum(fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp] * well_term, axis = 1)
+
+            q_term = fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp]
+
+            ws_p_inj = np.argwhere(wells['ws_p']==wells['ws_inj']).flatten()
+            q_term[...,ws_p_inj] = wells['inj_term']
+            #import pdb; pdb.set_trace()
+
+            self.q[:,wp] = np.sum(q_term * well_term, axis = 1)
+
             fprop.q_phase = mob_ratio * well_term

@@ -47,8 +47,6 @@ for  arq in arquivos:
 
         #datas = np.load('flying/results_BL_Darlan_64t_1255.npy', allow_pickle=True)
         datas = np.load('flying/results_BL_Darlan_64_MUSCL_349.npy', allow_pickle=True)
-
-
         for data in datas[datas.shape[0]-1:]:
             Sw64 = data[5]
             x64 = np.linspace(xD[-1],1,64)
@@ -203,7 +201,7 @@ for  arq in arquivos:
 
         #datas = np.load('flying/results_BL_Darlan_128_FR_1984.npy', allow_pickle=True)
         datas = np.load('flying/results_BL_Darlan_128_FR2_1679.npy', allow_pickle=True)
-
+        #datas = np.load('flying/results_BL_Darlan_128_FR2_2425.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             Sw128_FR = data[5]
             Nk128_FR = data[12][0]
@@ -211,8 +209,8 @@ for  arq in arquivos:
             e128_L1_FR2 = (sum(abs(f(x128)-Sw128_FR))*(1/n))
             R128_L1_FR2 = math.log(e64_L1_FR2/e128_L1_FR2,2)
 
-        #datas = np.load('flying/results_BL_Darlan_256_FR_4003.npy', allow_pickle=True)
-        datas = np.load('flying/results_BL_Darlan_256_FR_5038.npy', allow_pickle=True)
+        datas = np.load('flying/results_BL_Darlan_256_FR_4003.npy', allow_pickle=True)
+        #datas = np.load('flying/results_BL_Darlan_256_FR_5038.npy', allow_pickle=True)
 
         for data in datas[datas.shape[0]-1:]:
             Sw256_FR = data[5]
@@ -534,7 +532,7 @@ for  arq in arquivos:
         plt.xlabel('Dimensionless distance')
         plt.savefig('results/compositional/FR/saturation_BL_Darlan_512_vk_P4_comparison.png', format='png')
 
-        plt.figure(14)
+        plt.figure(30)
         plt.plot(x128, Sw128, '-r<', x128, Sw128_upw, '-gP', x128, Sw128_FR, '-mo', xD, SwD, 'k')#, '-mo',  x32, Sw32_FR3, '-bs',
                 # x32, Sw32_FR4, '-c<', xD, SwD, 'k')
         plt.legend(('MUSCL','FOUM', 'FR P1', 'Analytical Solution'))
@@ -545,29 +543,35 @@ for  arq in arquivos:
         plt.xlabel('Dimensionless distance')
         plt.savefig('results/compositional/FR/saturation_BL_Darlan_128_comparison.png' )
 
+        plt.figure(14)
+        plt.plot(x128, Sw128, '-r<', x128, Sw128_upw, '-gP', x128, Sw128_FR, '-mo', xD, SwD, 'k')#, '-mo',  x32, Sw32_FR3, '-bs',
+                # x32, Sw32_FR4, '-c<', xD, SwD, 'k')
+        plt.legend(('MUSCL','FOU', 'FR P1', 'Analytical Solution'))
+        plt.title('Buckley-Leverett Solution Example - 128 elements')
+        plt.ylabel('Water Saturation')
+        plt.xlabel('Dimensionless distance')
+        plt.savefig('results/compositional/FR/saturation_BL_Darlan_128_comparison_all.png' )
+
         plt.figure(15)
         plt.plot(x512, P512_MUSCL, '-r', x512, P512_upw, 'b', x512, P512_FR, 'm')
         plt.legend(('MUSCL','FOUM', 'FR P1'))
         plt.title('Buckley-Leverett Pressure')
         plt.ylabel('Pressure Solver')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR/pressurrre_BL_Darlan_FR.png' )
-
-        import pdb; pdb.set_trace()
+        plt.savefig('results/compositional/FR/pressure_BL_Darlan_FR.png' )
 
 
-
-        plt.figure(15)
+        plt.figure(26)
         x = np.log10(np.array([8,16,32,64,128,256, 512]))
-        y_FR = np.log10(np.array([e8_L1_FR2, e16_L1_FR2, e32_L1_FR, e64_L1_FR2, e128_L1_FR2,
+        y_FR = np.log10(np.array([e8_L1_FR2, e16_L1_FR2, e32_L1_FR2, e64_L1_FR2, e128_L1_FR2,
             e256_L1_FR2, e512_L1_FR2]))
         y_MUSCL = np.log10(np.array([e8_L1_MUSCL, e16_L1_MUSCL, e32_L1_MUSCL, e64_L1_MUSCL,
             e128_L1_MUSCL, e256_L1_MUSCL, e512_L1_MUSCL]))
         y_upw = np.log10(np.array([e8_L1_upw, e16_L1_upw, e32_L1_upw, e64_L1_upw, e128_L1_upw,
             e256_L1_upw, e512_L1_upw]))
 
-        y_ref = -x-0.1
-        plt.plot(x, y_MUSCL, '-g^', x, y_ref, 'b', x, y_upw, 'y', x, y_FR, '-ro')
+        y_ref = -x-0.8
+        plt.plot(x, y_MUSCL, '-g^', x, y_ref, 'b', x, y_upw, '-ys', x, y_FR, '-ro', mfc='none')
         plt.title('Convergence rate - L1 norm')
         plt.ylabel('$log_{10}({E}_{L_1})$')
         plt.xlabel('$log_{10}(N)$')

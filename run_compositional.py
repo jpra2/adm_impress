@@ -56,9 +56,7 @@ class run_simulation:
         properties'''
 
         fprop = FluidProperties(M, wells) # load reservoir properties data and initialize other data
-        #fprop.z[:,0] = np.array([0.9, 0.1, 0.0])
-
-        #fprop.z[:,0] = np.array([1, 0.0, 0.0, 0.0, 0.0])
+        
         '------------------------- Perform initial flash ----------------------'
 
         if ctes.load_k:
@@ -69,13 +67,34 @@ class run_simulation:
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
             self.p2.run_init(fprop.P, np.copy(fprop.z))
 
-            if len(wells['ws_q'])>0 and any(([wells['inj_cond']=='reservoir'])) and not self.p2.constant_K:
+            if any(([wells['inj_cond']=='reservoir'])) and not self.p2.constant_K:
                 z = (wells['z'][wells['inj_cond']=='reservoir']).T
+
                 p_well = StabilityCheck(fprop.P[wells['ws_inj'][wells['inj_cond']=='reservoir']], fprop.T)
+
                 L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
                 p_well.run_init(fprop.P[wells['ws_inj'][wells['inj_cond']=='reservoir']],z[:ctes.Nc])
-                self.q_vol = np.copy(wells['values_q'][:,wells['inj_cond']=='reservoir'])
-                wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
+
+                'if the injector well has a prescribed pressure condition'
+                ws_p_inj = np.argwhere(wells['ws_p']==wells['ws_inj'])
+                ws_p_inj = wells['ws_p'][ws_p_inj].flatten()
+                ws_inj_p = np.argwhere(wells['ws_inj']==wells['ws_p'])
+                fprop.z[..., ws_p_inj] = z
+
+                xkj_ws = np.empty((ctes.n_components,ctes.n_phases,len(ws_p_inj)))
+                xkj_ws[:,0] = x[...,ws_p_inj]; xkj_ws[:,1] = y[...,ws_p_inj]
+                mobility_ratio_ws = np.empty((1,ctes.n_phases,len(ws_p_inj)))
+                mobility_ratio_ws[:,0] = (L/(L+V))[ws_p_inj]
+                mobility_ratio_ws[:,1] = (V/(L+V))[ws_p_inj]
+                Csi_j_ws = np.empty((1,ctes.n_phases,len(ws_p_inj)))
+                Csi_j_ws[:,0,:] = Csi_L[ws_p_inj]
+                Csi_j_ws[:,1,:] = Csi_V[ws_p_inj]
+                wells['inj_term'] = xkj_ws * mobility_ratio_ws * Csi_j_ws
+
+                'if the injector well has a prescribed flux condition'
+                if len(wells['ws_q'])>0:
+                    self.q_vol = np.copy(wells['values_q'][:,wells['inj_cond']=='reservoir'])
+                    wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
 
         else: fprop.x = []; fprop.y = []; fprop.L = []; fprop.V = []
 

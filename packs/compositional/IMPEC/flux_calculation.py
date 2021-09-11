@@ -557,8 +557,8 @@ class FirstOrder:
         P_face = fprop.P[ctes.v0].sum(axis=-1)/2
         Vp = fprop.Vp[ctes.v0]
         ponteiro = np.ones_like(P_face,dtype=bool)
-        #wave_velocity,m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, Vp, total_flux_internal_faces, ponteiro)
-        wave_velocity = Fk_vols_total/fprop.Nk #np.max(abs(wave_velocity),axis=0)
+        wave_velocity,m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, Vp, total_flux_internal_faces, ponteiro)
+        #wave_velocity = Fk_vols_total/fprop.Nk #np.max(abs(wave_velocity),axis=0)
         return Fk_vols_total, wave_velocity
 
     def LLF(self, M, fprop, total_flux_internal_faces, P_old):
@@ -768,6 +768,7 @@ class MUSCL:
             alpha_wv = np.empty((ctes.n_internal_faces, 5))
             Fk_internal_faces[:,~ponteiro], alpha_wv[~ponteiro,:] = RS.LLF(M, fprop, Nk_face, self.P_face,
                 ftotal, Fk_face)
+            
         elif ctes.RS['MDW']:
             alpha_wv = np.empty((ctes.n_internal_faces, 4))
             Fk_internal_faces[:,~ponteiro], alpha_wv[~ponteiro,:] = RS.MDW(M, fprop, Nk_face, self.P_face,
@@ -1165,7 +1166,7 @@ class FR:
 
         x_vols = M.data['centroid_volumes'][0,0]
         dx_vols = x_vols * 2
-        K1 = 1e-2
+        K1 = 8 #1e-10
         #K2 = 1e-14
         e2 = (K1 * dx_vols)**3
 

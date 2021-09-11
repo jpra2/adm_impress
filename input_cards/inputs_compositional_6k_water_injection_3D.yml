@@ -38,11 +38,10 @@ compositional_data:
     set: false
     order: 2
 
-  UPW:
+  RiemannSolver:
     ROE: false
     LLF: false
     MDW: false
-    FOU: true
 
   vpis_para_gravar_vtk: [0, 0.1, 0.3, 0.5]
   time_to_save: [8640000]
@@ -111,7 +110,7 @@ Saturation:
 Porosity:
   r1:
     type: all
-    value: 0.2
+    value: 0.35
 
 #Permeability in m^2
 Permeability:
@@ -136,8 +135,8 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: 0.3277
-    z: [0.77, 0.2, 0.01, 0.01, 0.005, 0.005, 0]
+    value: 0.0008275463
+    z: [0, 0, 0., 0., 0., 0, 1]
     injection_condition: reservoir
 
   P2:

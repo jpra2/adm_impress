@@ -1,6 +1,6 @@
 #2-phase problem with 3 components - moshiri
-mesh_name: 5000x1x1_3k.msh
-name_save_file: 'results_case2_Moshiri_Manzari_3k_5000_FOU_upw' #150683
+mesh_name: 50x1x1_3k.msh
+name_save_file: 'results_case2_Moshiri_Manzari_3k_50_LLF' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -27,13 +27,13 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.9
+  CFL: .7
 
   solver:
     IMPSAT: false
 
   MUSCL:
-    set: false
+    set: False
 
   FR:
     set: false
@@ -41,11 +41,11 @@ compositional_data:
 
   RiemannSolver:
     ROE: false
-    LLF: false
+    LLF: true
     MDW: false
 
   vpis_para_gravar_vtk: [0.51]
-  time_to_save: [16070400] #2592000
+  time_to_save: [16070400] #[2592000]
   maximum_time: 16070400 #2592000
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
@@ -61,12 +61,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: .5
+    deltaNlim: 2
     deltaSlim: .25
-    deltaVlim: .0001
-    delta_t_ini: 86.4
+    deltaVlim: .0003
+    delta_t_ini: 56.4
     delta_tmax: 86400
-    delta_tmin: 8.64
+    delta_tmin: 0.864
 
   water_data:
     mi_W: 1e-3
@@ -119,7 +119,7 @@ Porosity:
 Permeability:
   r1:
     type: all
-    value: [10e-15, 0, 0, 0, 10e-15, 0, 0, 0, 10e-15]
+    value: [9.869233e-15, 0, 0, 0, 9.869233e-15, 0, 0, 0, 9.869233e-15]
 
 
 Pressure:
@@ -135,19 +135,20 @@ Temperature:
 Wells:
   P1:
     p0: [0.0, 0.0, 0]
-    p1: [0.01, 1, 1]
+    p1: [1, 1, 1]
     type_region: box
     type: Injector
     prescription: P
     value: 7e6
     z: [0.9, 0.1, 0.0]
     injection_condition: reservoir
-    #value: 1.9675925925925925e-06
+    #prescription: Q
+    #value: 1.967592592592593e-06
     #ksi_total: 3099.342953950803
     #value_type: volumetric
 
   P2:
-    p0: [49.99, 0.0, 0]
+    p0: [49, 0.0, 0]
     p1: [50, 1, 1]
     prescription: P
     type: Producer

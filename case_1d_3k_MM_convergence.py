@@ -100,7 +100,10 @@ for  arq in arquivos:
             e64_L1_FOU = (sum(abs(f(x_64)-Sg_FOU_64))*(1/n))
             R64_L1_FOU = math.log(e32_L1_FOU/e64_L1_FOU,2)
 
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_FOU_4284.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_FOU_4284.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_FOU_8590.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_FOU_6360.npy', allow_pickle=True)
+
         for data in datas[datas.shape[0]-1:]:
             So_FOU_128 = data[6]
             Sg_FOU_128 = data[7]
@@ -115,7 +118,12 @@ for  arq in arquivos:
             e128_L1_FOU = (sum(abs(f(x_128)-Sg_FOU_128))*(1/n))
             R128_L1_FOU = math.log(e64_L1_FOU/e128_L1_FOU,2)
 
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_FOU_3036.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_FOU_3036.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_FOU_cc_7171.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_FOU_upw_2924.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_FOU_ha_4096.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_LLF_2792.npy', allow_pickle=True)
+
         for data in datas[datas.shape[0]-1:]:
             So_FOU_256 = data[6]
             Sg_FOU_256 = data[7]
@@ -128,11 +136,13 @@ for  arq in arquivos:
             n = 256
             e256_L1_FOU = (sum(abs(f(x_256)-Sg_FOU_256))*(1/n))
             R256_L1_FOU = math.log(e128_L1_FOU/e256_L1_FOU,2)
+            #import pdb; pdb.set_trace()
 
         datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_2642.npy', allow_pickle=True)
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_5482.npy', allow_pickle=True)
-        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_4706.npy', allow_pickle=True)
-
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_5482.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_cc_5578.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_ha_3199.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_7615.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_FOU_512 = data[6]
             Sg_FOU_512 = data[7]
@@ -213,6 +223,8 @@ for  arq in arquivos:
             R64_L1_MUSCL = math.log(e32_L1_MUSCL/e64_L1_MUSCL,2)
 
         datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_MUSCL_4449.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_MUSCL_8493.npy', allow_pickle=True)
+
         for data in datas[datas.shape[0]-1:]:
             So_MUSCL_128 = data[6]
             Sg_MUSCL_128 = data[7]
@@ -226,6 +238,8 @@ for  arq in arquivos:
             R128_L1_MUSCL = math.log(e64_L1_MUSCL/e128_L1_MUSCL,2)
 
         datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_MUSCL_3880.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_MUSCL_cc_3674.npy', allow_pickle=True)
+
         for data in datas[datas.shape[0]-1:]:
             So_MUSCL_256 = data[6]
             Sg_MUSCL_256 = data[7]
@@ -353,6 +367,8 @@ for  arq in arquivos:
         plt.plot(x_256, xkj_FOU_256[0,0], 'm')
         plt.plot(x_512, xkj_FOU_512[0,0], 'b')
         plt.plot(x_axis_xCH4, xCH4, 'k')
+        plt.xlim(20,30)
+        plt.ylim(0.25, 0.35)
         plt.grid()
         plt.legend(( 'FOU-8','FOU-16','FOU-32','FOU-64','FOU-128','FOU-256','FOU-512', 'Reference'))
         plt.ylabel('Methane molar fraction in liquid phase')
@@ -393,11 +409,13 @@ for  arq in arquivos:
         plt.savefig('results/compositional/3k_methane_x_MM_FR2_conv.png')
 
         plt.figure(4)
-        plt.plot(x_512[200:300], xkj_FOU_512[0,0, 200:300], 'm')
-        plt.plot(x_512[200:300], xkj_FR2_512[0,0, 200:300], 'b')
-        plt.plot(x_512[200:300], xkj_MUSCL_512[0,0,200:300], 'g')
-        plt.plot(x_axis_xCH4[1:-1], xCH4[1:-1], 'k')
-        plt.plot(x_5000[2000:3000], xkj_5000[0,0,2000:3000])
+        plt.plot(x_512, xkj_FOU_512[0,0,], 'm')
+        plt.plot(x_512, xkj_FR2_512[0,0, ], 'b')
+        plt.plot(x_512, xkj_MUSCL_512[0,0,], 'g')
+        plt.plot(x_axis_xCH4, xCH4, 'k')
+        plt.plot(x_5000, xkj_5000[0,0,])
+        plt.xlim(20,30)
+        plt.ylim(-0.05,0.35)
         plt.grid()
         plt.legend(( 'First Order LLF-512','FR P1-512','MUSCL-512','Reference', 'FOU 5000'))
         plt.ylabel('Methane molar fraction in liquid phase')
@@ -406,16 +424,33 @@ for  arq in arquivos:
         plt.savefig('results/compositional/3k_methane_x_MM_512_comp.png')
 
         plt.figure(5)
-        plt.plot(x_256[100:200], xkj_FOU_256[0,0, 100:200], 'm')
-        plt.plot(x_256[100:200], xkj_FR2_256[0,0, 100:200], 'b')
-        plt.plot(x_256[100:200], xkj_MUSCL_256[0,0,100:200], 'g')
+        plt.plot(x_256, xkj_FOU_256[0,0, :], 'm')
+        plt.plot(x_256, xkj_FR2_256[0,0, :], 'b')
+        plt.plot(x_256, xkj_MUSCL_256[0,0,:], 'g')
         plt.plot(x_axis_xCH4[1:-1], xCH4[1:-1], 'k')
+        plt.xlim(20,30)
+        plt.ylim(-0.05,0.35)
         plt.grid()
         plt.legend(( 'FOU-256','FR P1-256','MUSCL-256','Reference'))
         plt.ylabel('Methane molar fraction in liquid phase')
         plt.title('Case2 - Moshiri and Manzari\'s paper')
         plt.xlabel('Dimensionless distance')
         plt.savefig('results/compositional/3k_methane_x_MM_256_comp.png')
+
+        plt.figure(6)
+        plt.plot(x_128, xkj_FOU_128[0,0, :], 'm')
+        plt.plot(x_128, xkj_FR2_128[0,0, :], 'b')
+        plt.plot(x_128, xkj_MUSCL_128[0,0,:], 'g')
+        plt.plot(x_axis_xCH4, xCH4, 'k')
+        plt.grid()
+        plt.xlim(20,30)
+        plt.ylim(-0.05,0.35)
+        plt.legend(( 'FOU-128','FR P1-128','MUSCL-128','Reference'))
+        plt.ylabel('Methane molar fraction in liquid phase')
+        plt.title('Case2 - Moshiri and Manzari\'s paper')
+        plt.xlabel('Dimensionless distance')
+        plt.savefig('results/compositional/3k_methane_x_MM_128_comp.png')
+
         import pdb; pdb.set_trace()
 
 

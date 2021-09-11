@@ -1,6 +1,6 @@
 #Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 128x1x1_BL_D.msh
-name_save_file: 'results_BL_Darlan_128_FR4'
+name_save_file: 'results_BL_Darlan_128_FR2'
 
 compositional: True
 hidrocarbon_components: True
@@ -28,11 +28,22 @@ monophasic_data:
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.3
+
+  solver:
+    IMPSAT: false
+
   MUSCL:
     set: False
+
   FR:
-    set: True
-    order: 4
+    set: true
+    order: 2
+
+  RiemannSolver:
+    ROE: false
+    LLF: true
+    MDW: false
+
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [8640]
   maximum_time: 8640
@@ -91,6 +102,7 @@ compositional_data:
     Pv: [0]
     Pb_guess: [0.0]
     vshift_parameter: [0.085]
+    constant_K: False
 
 
 #water saturation data
@@ -132,6 +144,7 @@ Wells:
     z: [0., 1.]
     ksi_total: 55484.31862337
     value_type: volumetric
+    injection_condition: surface
 
   P2:
     p0: [0.6048375, 0.0, -0.03048]

@@ -16,7 +16,6 @@ class saturation:
         self.v0[:,0] = ctes.v0[pos>0]
         self.v0[:,1] = ctes.v0[pos<0]
 
-
     def TVD_auxiliary_matrix(self, coef0, coef1, coef2):
         lines = np.array([ctes.v0[:, 0], ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
         cols = np.array([ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
@@ -252,7 +251,6 @@ class saturation:
     def implicit_solver(self, M, fprop, wells, Pot_hid, ftotal, dVjdNk, dVjdP, P_old, qk, delta_t):
         P_new = fprop.P
         Pot_hid += P_new - P_old
-        Vj = fprop.Nj/fprop.Csi_j #compute phase volume
         Vp_new = self.update_pore_volume(P_new)
         q_total = fprop.q_phase.sum(axis=1) #for the producer well
 
@@ -269,9 +267,9 @@ class saturation:
 
         'Initialization'
         mobilities_new = np.copy(fprop.mobilities)
-        mobilities_internal_faces_new = fprop.mobilities_internal_faces
+        mobilities_internal_faces_new = np.copy(fprop.mobilities_internal_faces)
         phase_viscosity_internal_faces = self.properties_faces_upwind(Pot_hid, self.mis)
-        dqk = np.zeros((ctes.n_components,ctes.n_phases, len(fprop.mobilities[0,0,:])))
+        dqk = np.zeros((ctes.n_components,ctes.n_phases, ctes.n_volumes))
         #xkj_internal_faces= self.third_order_TVD(M, wells, fprop.xkj, mobilities_new, Pot_hid)
 
         xkj_internal_faces = self.properties_faces_upwind(Pot_hid, fprop.xkj)
@@ -279,10 +277,10 @@ class saturation:
 
         qk_new = np.copy(qk)
 
-        Sj_old = np.copy(Sj_new) * 1e10
+        Sj_old = np.copy(Sj_new) * 1e100
         j=0
 
-        while np.max(abs(Sj_new-Sj_old))>1e-5:
+        while np.max(abs(Sj_new-Sj_old))>1e-15:
             j+=1
             Sj_old = np.copy(Sj_new)
             krs_new = self.update_relative_perm(fprop, np.copy(Sj_old))
@@ -290,9 +288,11 @@ class saturation:
             #krs_internal_faces_new = self.third_order_TVD(M, wells, krs_new, mobilities_new, Pot_hid)
             krs_internal_faces_new = self.properties_faces_upwind(Pot_hid, krs_new)
 
-            mobilities_internal_faces_new = krs_internal_faces_new/phase_viscosity_internal_faces
+            mobilities_internal_faces_new = krs_internal_faces_new / \
+                phase_viscosity_internal_faces
             Fk_vols_total_new = Flux().update_flux(M, fprop, ftotal,
-                                 fprop.rho_j_internal_faces, mobilities_internal_faces_new)
+                                 fprop.rho_j_internal_faces,
+                                 mobilities_internal_faces_new)
 
             qk_new = self.update_well_term(wells, fprop, np.copy(qk), mobilities_new)
 
@@ -306,7 +306,7 @@ class saturation:
             dFk_vols_total_new = self.update_dFk_vols_total(fprop, dFk_internal_faces)
             dqk_new = self.update_well_term_der(wells, fprop, np.copy(dqk), krs_new, mobilities_new, Sj_old)
 
-            Rj = (Sj_old[:-1] * Vp_new - Vj[0,:-1] - dVjdP[0,:-1] * (P_new - P_old) - \
+            Rj = (Sj_old[:-1] * Vp_new - fprop.Vj[0,:-1] - dVjdP[0,:-1] * (P_new - P_old) - \
                 delta_t * np.sum(dVjdNk[:,:-1] * (Fk_vols_total_new + qk_new)[:,np.newaxis], axis=0))#[:,ctes.vols_no_wells]
 
             dRj = (Vp_new - delta_t * np.sum(dVjdNk[:,:-1] *
@@ -315,7 +315,6 @@ class saturation:
             Sj_new[:-1,:] = Sj_old[:-1,:] - Rj/dRj
             #Sj_new[:2][(Sj_new[:2]>Sjmax)] = (Sjmax)[(Sj_new[:2]>Sjmax)]#/2
             #if any(abs(Sj_new.flatten())>1): import pdb; pdb.set_trace()
-
             Sj_new[-1,:] = 1 - Sj_new[:-1,:].sum(axis=0)
             if j>600: import pdb; pdb.set_trace()
             #import pdb; pdb.set_trace()
@@ -341,11 +340,12 @@ class saturation:
                              fprop.rho_j_internal_faces, mobilities_internal_faces_new)
         Sj = -(- Vj[0] - dVjdP[0] * (P_new - P_old) - delta_t * np.sum(dVjdNk * (Fk_vols_total_new + qk_new)[:,np.newaxis,:], axis=0))/Vp_new
         '''
-        ponteiro = np.ones_like(ftotal,dtype=bool)
-        Vpm = fprop.Vp[ctes.v0].sum(axis=-1)/2
+        ponteiro = np.ones_like(ftotal[0],dtype=bool)
+        Vpm = fprop.Vp[ctes.v0]
         Nk_face = fprop.Nk[:,ctes.v0]
         P_face = fprop.P[ctes.v0].sum(axis=-1)/2
-        P_face = np.concatenate((P_face[:,np.newaxis],P_face[:,np.newaxis]), axis=1)
+        #P_face = np.concatenate((P_face[:,np.newaxis],P_face[:,np.newaxis]), axis=1)
+        #import pdb; pdb.set_trace()
         wave_velocity, eigvec_m = RiemannSolvers(ctes.v0,ctes.pretransmissibility_internal_faces).\
             medium_wave_velocity(M, fprop, Nk_face, P_face, Vpm, ftotal, ponteiro)
         return So, Sg, Sw, Fk_vols_total_new, wave_velocity, qk_new, mobilities_new

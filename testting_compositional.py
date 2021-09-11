@@ -50,10 +50,10 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             sim.delta_t = t_next - sim.t
     loop = sim.loop
     print(sim.t)
-    
+
 
 
 tf = time.time()
 print('Total computational time: ', tf-t) #total simulation time
-import pdb; pdb.set_trace()
+print('Loops: ', sim.loop)
 sim.save_infos(data_impress, M) #Save data to file

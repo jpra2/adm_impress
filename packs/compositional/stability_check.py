@@ -20,6 +20,7 @@ class StabilityCheck:
         self.ph_L = np.ones(len(P), dtype = bool)
         self.ph_V = np.zeros(len(P), dtype = bool)
         self.T = T
+        #P[:] = 6.95e6
         self.constant_K = data_loaded['compositional_data']['component_data']['constant_K']
         if self.constant_K:
             self.K = np.array(data_loaded['compositional_data']['component_data']['K'])[:,np.newaxis]
@@ -32,6 +33,7 @@ class StabilityCheck:
 
     def run_init(self, P, z, pflash = True, ponteiro_flash = []):
         #self.K = self.equilibrium_ratio_Wilson(P)
+        #P[:] = 6.95e6
         if np.sum(pflash,dtype=bool)==True:
             ponteiro_flash = np.zeros(len(P), dtype = bool)
             '-------------------- Get new time-step parameters --------------------'
@@ -62,6 +64,8 @@ class StabilityCheck:
         #else: self.bubble_point_pressure(np.copy(~ponteiro_flash))
 
         ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties()
+        #ksi_L = ksi_L * np.sign(self.L)
+        #ksi_V = ksi_V * np.sign(self.V)
         return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
 
     def run(self, P, z):

@@ -30,7 +30,7 @@ for arq in arquivos:
         for data in datas[1:]:
             Nk8_FR = data[12][0].flatten()
             n = 8
-            
+
             x8_2 = np.empty((n,2))
             GL = quadpy.c1.gauss_lobatto(2)
             points = GL.points
@@ -408,7 +408,7 @@ for arq in arquivos:
         #y_FR5 = np.log10(np.array([e8_L1_5, e16_L1_5, e32_L1_5, e64_L1_5, e128_L1_5, e256_L1_5]))
         #y_MUSCL = np.log10(np.array([e32_L1_MUSCL, e64_L1_MUSCL, e128_L1_MUSCL, e256_L1_MUSCL, e512_L1_MUSCL]))
         y_ref = -2*x +2
-        plt.plot(x, y, 'r', x, y_FR3, 'g', x, y_FR4, 'y')
+        plt.plot(x, y, '-ro', x, y_FR3, '-g^', x, y_FR4, '-ys', mfc='none')
         plt.grid()
         plt.ylabel('$log_{10}({E}_{L_1})$')
         plt.xlabel('$log_{10}(N)$')
@@ -421,8 +421,8 @@ for arq in arquivos:
         plt.plot(x512_4, Nk512_ans_4, 'k')
         plt.grid()
         plt.ylabel('$N_k$')
-        plt.xlabel('Distância')
-        plt.title('Resultados para t=0.3 com malha 32x1x1')
-        plt.legend(('CPR-$2^a$ ordem', 'CPR-$3^a$ order', 'CPR-$4^a$ ordem', 'Semi-Analítica'))
-        plt.savefig('results/compositional/FR/Nk_Burgers_32.png')
+        plt.xlabel('Distance')
+        plt.title('Results for t=0.3 with mesh 32x1x1')
+        plt.legend(('FR-P1', 'FR-P2', 'FR-P3', 'Semi-Analytical'))
+        plt.savefig('results/compositional/FR/Nk_Burgers_32_ing.png')
         import pdb; pdb.set_trace()
