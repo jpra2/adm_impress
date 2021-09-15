@@ -72,7 +72,7 @@ class CompositionalFVM:
             r = delta_t_new/delta_t
             delta_t = delta_t_new
 
-        dd = q
+        fprop.q = q
 
         if not ctes.FR:
             fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, q,

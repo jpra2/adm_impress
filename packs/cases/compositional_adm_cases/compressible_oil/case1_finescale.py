@@ -41,6 +41,9 @@ convert = data_loaded['convert_english_to_SI']
 t = time.time()
 sim = run_simulation(name_current, name_all)
 M, data_impress, wells, fprop, load = sim.initialize(load, convert, mesh)
+from packs.cases.compositional_adm_cases.compressible_oil import update_variables_before_init as update_var
+
+update_var.update_variables_for_initial_run_finescale(fprop, sim, compositional_data)
 
 # import pdb; pdb.set_trace()
 
@@ -50,7 +53,6 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     t0 = time.time()
     sim.run(M, wells, fprop, load)
     simulation_time = time.time() - t0
-    
     
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'
@@ -90,6 +92,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         'Sg': fprop.Sg,
         'Sw': fprop.Sw,
         'So': fprop.So,
+        'q': frop.q,
         'global_composition': fprop.z,
         'mols': fprop.Nk,
         'xkj': fprop.xkj,
@@ -98,7 +101,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     })
     cumulative_compositional_datamanager.insert_data(compositional_data._data)
     
-    if loop % 500 == 0:
+    if loop % 10 == 0:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         # import pdb; pdb.set_trace()
