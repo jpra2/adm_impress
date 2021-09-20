@@ -465,12 +465,11 @@ class StabilityCheck:
             self.K[:,ponteiro] = razao[:,ponteiro] * self.K[:,ponteiro]
             if any(np.isnan(self.K).flatten()): import pdb; pdb.set_trace()
             #stop_criteria = np.max((fv / fl - 1), axis = 0)
-            stop_criteria = np.sum((fv / fl - 1)**2, axis = 0)
+            stop_criteria = np.sum((fv / fl - 1)**2, axis = 0) #Dandekar's
             ponteiro_aux = ponteiro[ponteiro]
             ponteiro_aux[(stop_criteria < 1e-10)] = False
             ponteiro[ponteiro] = ponteiro_aux
             ponteiro[(abs(self.V)>1e200)] = False
-            #ponteiro[((self.V)>1)+((self.V)<0)] = False
             if i>100:
                 ponteiro[ponteiro] = False
 
