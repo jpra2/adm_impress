@@ -6,6 +6,7 @@ from packs.utils import constants as ctes
 from packs.directories import data_loaded
 from .composition_solver import Euler, RK3
 import math
+import time
 
 class CompositionalFVM:
 
@@ -15,12 +16,13 @@ class CompositionalFVM:
         '''if ctes.MUSCL or ctes.FR:
             self.get_faces_properties_weighted_average(fprop, G)
         else: self.get_faces_properties_upwind(fprop, G)'''
-        self.get_faces_properties_weighted_average(fprop, G)
+        #self.get_faces_properties_weighted_average(fprop, G)
         #self.get_faces_properties_harmonic_average(fprop, G)
-        #self.get_faces_properties_upwind(fprop, G)
+        self.get_faces_properties_upwind(fprop, G)
         self.get_phase_densities_internal_faces(fprop)
-
+        t1_prop = time.time()
         r = 0.8 # enter the while loop
+
 
         dVjdNk, dVjdP = self.dVt_derivatives(fprop)
         psolve = TPFASolver(dVjdNk, dVjdP)
@@ -32,7 +34,10 @@ class CompositionalFVM:
         while (r!=1.):
 
             fprop.Nk = np.copy(Nk_old)
-            fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells, fprop, P_old, delta_t)
+            fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells,
+                fprop, P_old, delta_t)
+            
+            if any(np.isnan(fprop.P)): import pdb; pdb.set_trace()
 
             '''total_flux_internal_faces = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
             q = np.zeros_like(fprop.Nk)
@@ -46,7 +51,7 @@ class CompositionalFVM:
             q[:,-1] = -1*q[:,-1]
             fprop.q_phase = total_flux_internal_faces[:,0][:,np.newaxis] * np.ones((1,2))
             '''
-            #import pdb; pdb.set_trace()
+
             if ctes.MUSCL:
                 wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
                     total_flux_internal_faces, Pot_hid)
@@ -56,14 +61,16 @@ class CompositionalFVM:
                     total_flux_internal_faces, Nk_SP_old, P_old, q, delta_t, t)
             else:
                 if ctes.RS['LLF']:
-                    Fk_vols_total, wave_velocity = FirstOrder().LLF(M, fprop, total_flux_internal_faces, P_old)
+                    Fk_vols_total, wave_velocity = FirstOrder().LLF(M, fprop, \
+                    total_flux_internal_faces, P_old, Nk_old)
                 elif ctes.RS['MDW']:
                     Fk_vols_total, wave_velocity = FirstOrder().MDW(M, fprop, total_flux_internal_faces, P_old)
                 elif ctes.RS['ROE']:
                     Fk_vols_total, wave_velocity = FirstOrder().ROE(M, fprop, total_flux_internal_faces, P_old)
                 else:
                     self.get_faces_properties_upwind(fprop, G)
-                    Fk_vols_total, wave_velocity = FirstOrder().FOU(M, fprop, total_flux_internal_faces)
+                    Fk_vols_total, wave_velocity = FirstOrder().FOU(M, fprop, \
+                        total_flux_internal_faces, fprop.mobilities_internal_faces)
 
             ''' For the composition calculation the time step might be different\
              because it treats composition explicitly and this explicit models \
@@ -72,6 +79,7 @@ class CompositionalFVM:
             delta_t_new = delta_time.update_CFL(delta_t, Fk_vols_total, fprop.Nk, wave_velocity)
             r = delta_t_new/delta_t
             delta_t = delta_t_new
+            r=1
 
         dd = q
 
@@ -81,13 +89,15 @@ class CompositionalFVM:
         else:
             fprop.Nk = Nk; fprop.z = z; fprop.Nk_SP = Nk_SP
 
+        #if fprop.z[-1,0] > 0: import pdb; pdb.set_trace()
+
         fprop.wave_velocity = wave_velocity
         fprop.total_flux_internal_faces = total_flux_internal_faces
         #import pdb; pdb.set_trace()
-        if fprop.P[0]<fprop.P[1]: import pdb; pdb.set_trace()
+        #if fprop.P[0]<fprop.P[1]: import pdb; pdb.set_trace()
         if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
         if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
-        if any(total_flux_internal_faces.flatten()<-1e-6): import pdb; pdb.set_trace()
+        #if any(total_flux_internal_faces.flatten()<-1e-6): import pdb; pdb.set_trace()
         return delta_t
 
     def update_gravity_term(self, fprop):
@@ -141,7 +151,7 @@ class CompositionalFVM:
                     fprop.Vp[ctes.v0[:,1]] * prop[:,:,ctes.v0[:,1]]) /  \
                     (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])
         prop_upw = prop[...,ctes.v0[:,0]]#.flatten()
-        prop_face[:,fprop.Vj[0,:,ctes.v0[:,1]].T<1e-13] = prop_upw[:,fprop.Vj[0,:,ctes.v0[:,1]].T<1e-13]
+        prop_face[:,fprop.Vj[0,:,ctes.v0[:,1]].T==0] = prop_upw[:,fprop.Vj[0,:,ctes.v0[:,1]].T==0]
         return prop_face
 
     def get_faces_properties_upwind(self, fprop, G):
@@ -161,10 +171,10 @@ class CompositionalFVM:
         fprop.Csi_j_internal_faces[a<0] = Csi_j_vols_up[a<0]'''
 
     def get_faces_properties_harmonic_average(self, fprop, G):
-        #fprop.mobilities_internal_faces = self.harmonic_average(fprop.mobilities)
+        #fprop.mobilities_internal_faces = self.harmonic_average(fprop.Vj, fprop.mobilities)
         fprop.mobilities_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.mobilities)
-        fprop.Csi_j_internal_faces = self.harmonic_average(fprop.Vl, fprop.Csi_j)
-        fprop.xkj_internal_faces = self.harmonic_average(fprop.Vl, fprop.xkj)
+        fprop.Csi_j_internal_faces = self.harmonic_average(fprop.Vj, fprop.Csi_j)
+        fprop.xkj_internal_faces = self.harmonic_average(fprop.Vj, fprop.xkj)
 
     def get_faces_properties_weighted_average(self, fprop, G):
         #fprop.mobilities_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.mobilities)
@@ -175,7 +185,6 @@ class CompositionalFVM:
         '''fprop.mobilities_internal_faces[...,0] = fprop.mobilities[...,0]
         fprop.Csi_j_internal_faces[...,0] = fprop.Csi_j[...,0]
         fprop.xkj_internal_faces[...,0] = fprop.xkj[...,0]'''
-        #import pdb; pdb.set_trace()
 
     def get_phase_densities_internal_faces(self, fprop):
         fprop.rho_j_internal_faces = self.weighted_by_volume_average(fprop, fprop.rho_j)
