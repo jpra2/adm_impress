@@ -88,7 +88,6 @@ class PropertiesCalc:
         Nkj = fprop.xkj * fprop.Nj
         fprop.Nk = np.sum(Nkj, axis = 1)
 
-
     def set_Nk_Pspace(self, fprop):
         from packs.compositional import prep_FR as ctes_FR
         'Function to get Nk at the solution points at t=0 for the FR approach. \
@@ -110,6 +109,7 @@ class PropertiesCalc:
             Sg = (1. - Sw) * (V / Csi_j[0,1,:]) / (V / Csi_j[0,1,:] + L /
                 Csi_j[0,0,:])
             So = 1 - Sw - Sg
+            So[So<0] = 0
         else: So = np.zeros_like(Sw); Sg = np.zeros_like(Sw)
         return So, Sg
 
@@ -160,9 +160,9 @@ class PropertiesCalc:
             #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
             #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test
             phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
+            #phase_viscosities[0,1,:] = phase_viscosities[0,0,:] #for 5k NVCM case
         if ctes.load_w:
             phase_viscosities[0,ctes.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
-
         return phase_viscosities
 
     def update_mobilities(self, fprop, So, Sg, Sw, Csi_j, xkj):
