@@ -48,22 +48,12 @@ class StabilityCheck:
             ponteiro_aux[(np.round(sp1,14) > 1) + (np.round(sp2,14) > 1)] = True #os que devem passar para o calculo de flash
             ponteiro_flash[~ponteiro_flash] = ponteiro_aux
 
-        if (any(ponteiro_flash) or np.sum(pflash,dtype=bool)) and ctes.Nc>1:
-            self.molar_properties(np.copy(ponteiro_flash) + np.ones_like(ponteiro_flash,dtype=bool)*pflash) #perform the actual flash
-            #self.molar_properties(np.ones_like(ponteiro_flash,dtype=bool))
+        ksi_L, ksi_V, rho_L, rho_V = self.molar_properties(np.copy(ponteiro_flash) + np.ones_like(ponteiro_flash,dtype=bool)*pflash) #perform the actual flash
+        #self.molar_properties(np.ones_like(ponteiro_flash,dtype=bool))
 
-        self.z[self.z==1e-300] = 0
-        self.x[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
-        self.y[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
-        self.V[self.V<0] = 0
-        self.V[self.V>1] = 1
-        self.L = 1 - self.V
-        if ctes.Nc==1: self.check_phase_nc_1()
-        #else: self.bubble_point_pressure(np.copy(~ponteiro_flash))
 
-        ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties()
-        #ksi_L = ksi_L * np.sign(self.L)
-        #ksi_V = ksi_V * np.sign(self.V)
+        if ctes.Nc==1: ksi_L, ksi_V, rho_L, rho_V = self.check_phase_nc_1()
+        #ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties()
         return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
 
     def run(self, P, z):
@@ -88,6 +78,11 @@ class StabilityCheck:
         self.K = self.y/self.x
         self.K[self.x==0] = 1
 
+        lnphil, Zl = self.lnphi_Z_based_on_deltaG(self.x, self.P, self.ph_L)
+        lnphiv, Zv = self.lnphi_Z_based_on_deltaG(self.y, self.P, self.ph_V)
+        ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
+        return ksi_L, ksi_V, rho_L, rho_V
+
     def use_previous_K(self, P_new, z_new, ponteiro_flash):
         'Reference: Rezaveisi dissertation'
         'Two conditions are used here:\
@@ -100,7 +95,6 @@ class StabilityCheck:
         ponteiro_K_aux[(cond1 >= 1) * (cond2 >= 1)] = True
         ponteiro_K[ponteiro_flash] = ponteiro_K_aux
         self.K[:,~ponteiro_K] = self.equilibrium_ratio_Wilson(P_new[~ponteiro_K])
-        self.K[:,[0]] =  self.equilibrium_ratio_Wilson(P_new[[0]])
 
     def skip_phase_stability_test(self, P_new, z_new):
         'Two conditions are used here:\
@@ -208,29 +202,26 @@ class StabilityCheck:
     """-------------------- Biphasic flash calculations ---------------------"""
 
     def molar_properties(self, ponteiro):
-        self.molar_properties_Whitson(ponteiro)
+        ksi_L, ksi_V, rho_L, rho_V = self.molar_properties_Whitson(ponteiro)
         #self.molar_properties_Yinghui(ponteiro)
+        return ksi_L, ksi_V, rho_L, rho_V
 
-    def deltaG_molar_vectorized(self, l, P, ph):
-        lnphi = np.empty([2, ctes.Nc, len(ph)])
-        lnphi[0,:] = self.EOS.lnphi(l, P, 1 - ph)
-        lnphi[1,:] = self.EOS.lnphi(l, P, ph)
+    def lnphi_Z_based_on_deltaG(self, xkj, P, ph):
+        lnphi, Z = self.EOS.lnphi_Z_deltaG(xkj, P, ph)
         if any(np.isnan(lnphi).ravel()): import pdb; pdb.set_trace()
-        '''nan_vols = np.sum(np.isnan(lnphi),axis=1,dtype=bool) #soma a condicao do lnphi nan de cada componente em cada volume em cada ph
-        any_nan_vols_cond = nan_vols.sum(axis=0, dtype=bool) #soma o lnphi_nan condition em cada volume (soma as fases)
-        any_nan_vols = np.zeros_like(P, dtype=bool)
-        any_nan_vols[any_nan_vols_cond>0] = True #se em algum volume, uma das fases retorna nan, esse valor vai ser mudado
-        lnphi_aux = lnphi[:,:,any_nan_vols]
-        lnphi_aux[np.isnan(lnphi_aux)] = 2 * lnphi_aux[~np.isnan(lnphi_aux)]
-        lnphi[:,:,any_nan_vols] = lnphi_aux'''
 
-        deltaG_molar = np.sum(l * (lnphi[1 - ph, : ,np.arange(len(ph))] - lnphi[1*ph, :, np.arange(len(ph))]).T, axis = 0)
-        ph[deltaG_molar<0] = 1 - ph[deltaG_molar<0]
-        return ph
+        # test phase ph is lnphi[...,0], the other phase is lnphi[...,1]
+        deltaG_molar = np.sum(xkj * (lnphi[...,1] - lnphi[...,0]), axis = 0)
+        dG_neg = deltaG_molar<0
+        dG_pos = deltaG_molar>=0
+        ph[dG_neg] = 1 - ph[dG_neg]
 
-    def lnphi_based_on_deltaG(self, l, P, ph):
-        ph = self.deltaG_molar_vectorized(l, P, ph)
-        return self.EOS.lnphi(l, P, ph)
+        lnphi_out = np.copy(lnphi[...,0])
+        lnphi_out[:,dG_neg] = lnphi[:,dG_neg,1]
+        Z_out = np.copy(Z[...,0])
+        Z_out[dG_neg] = Z[dG_neg,1]
+        return lnphi_out, Z_out
+
 
     def solve_objective_function_Yinghui(self, z1, zi, K1, KNc, Ki, K, x):
         x1_min = z1 * (1 - KNc) / (K1 - KNc)
@@ -406,7 +397,6 @@ class StabilityCheck:
 
         ponteiro_save = np.copy(ponteiro)
         i = 0
-
         while any(ponteiro):
             i+=1
             Vold = np.copy(V[ponteiro])
@@ -425,12 +415,11 @@ class StabilityCheck:
             ponteiro_aux[(stop_criteria < 1e-9)] = False
             ponteiro[ponteiro] = ponteiro_aux
             if any(np.isnan(V)): V[np.isnan(V)] = 0
-            if i>100:
+            if i>200:
                 ponteiro[ponteiro] = False
 
         V[np.isinf(V)] = 1
         #V[np.isinf(V)] = 0
-        self.V[ponteiro_save] = V[ponteiro_save]
         self.x[:,ponteiro_save] = self.z[:,ponteiro_save] / (1 + self.V[ponteiro_save][np.newaxis,:] *
                                 (self.K[:,ponteiro_save] - 1))
 
@@ -451,15 +440,18 @@ class StabilityCheck:
         ponteiro_save = np.copy(ponteiro)
         razao = np.ones(self.z.shape)/2
         i = 0
+        Zl = np.empty_like(self.V)
+        Zv = np.empty_like(Zl)
 
         while any(ponteiro):
             i+=1
             Vold = np.copy(self.V)
             self.solve_objective_function_Whitson_for_V(self.V, Vmax, Vmin, np.copy(ponteiro))
-            lnphil = self.lnphi_based_on_deltaG(self.x[:,ponteiro], self.P[ponteiro], self.ph_L[ponteiro])
-            lnphiv = self.lnphi_based_on_deltaG(self.y[:,ponteiro], self.P[ponteiro], self.ph_V[ponteiro])
+            lnphil, Zl[ponteiro] = self.lnphi_Z_based_on_deltaG(self.x[:,ponteiro], self.P[ponteiro], self.ph_L[ponteiro])
+            lnphiv, Zv[ponteiro] = self.lnphi_Z_based_on_deltaG(self.y[:,ponteiro], self.P[ponteiro], self.ph_V[ponteiro])
             fv = np.exp(lnphiv) * (self.y[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             fl = np.exp(lnphil) * (self.x[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
+
             razao[:,ponteiro] = np.divide(fl, fv, out = razao[:,ponteiro] / razao[:,ponteiro] * (1 + 1e-10),
                               where = fv != 0)
             self.K[:,ponteiro] = razao[:,ponteiro] * self.K[:,ponteiro]
@@ -470,8 +462,27 @@ class StabilityCheck:
             ponteiro_aux[(stop_criteria < 1e-10)] = False
             ponteiro[ponteiro] = ponteiro_aux
             ponteiro[(abs(self.V)>1e200)] = False
-            if i>100:
+
+            if i>200:
                 ponteiro[ponteiro] = False
+
+        # THINK OF A BETTER WAY TO ORGANIZE THIS
+
+        self.z[self.z==1e-300] = 0
+        self.x[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
+        self.y[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
+        self.V[self.V<0] = 0
+        self.V[self.V>1] = 1
+        self.L = 1 - self.V
+        ponteiro_1phase = np.zeros_like(self.V,dtype=bool)
+        ponteiro_1phase[((self.V)<=0) + ((self.V)>=1)] = True
+        ponteiro_1phase[~ponteiro_save] = True
+        lnphil, Zl[ponteiro_1phase] = self.lnphi_Z_based_on_deltaG(self.z[:,ponteiro_1phase], self.P[ponteiro_1phase], self.ph_L[ponteiro_1phase])
+        lnphiv, Zv[ponteiro_1phase] = self.lnphi_Z_based_on_deltaG(self.z[:,ponteiro_1phase], self.P[ponteiro_1phase], self.ph_V[ponteiro_1phase])
+
+        ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
+        return ksi_L, ksi_V, rho_L, rho_V
+
 
     def get_dlnphidP(self, T, xij, P, ph):
         #self.EOS = ctes.EOS_class(T)
@@ -547,21 +558,17 @@ class StabilityCheck:
         self.L[ponteiro_save] = L
         self.V[ponteiro_save] = V
 
-    def update_EOS_dependent_properties(self):
+    def update_EOS_dependent_properties(self, Zl, Zv):
         #self.EOS = ctes.EOS_class(self.P, self.T)
-        ksi_L, rho_L = self.get_EOS_dependent_properties(self.T, self.x, self.P, self.ph_L)
-        ksi_V, rho_V = self.get_EOS_dependent_properties(self.T, self.y, self.P, self.ph_V)
+        ksi_L, rho_L = self.get_EOS_dependent_properties(self.T, self.x, self.P, Zl)
+        ksi_V, rho_V = self.get_EOS_dependent_properties(self.T, self.y, self.P, Zv)
         return ksi_L, ksi_V, rho_L, rho_V
 
-    def get_EOS_dependent_properties(self, T, l, P, ph):
+    def get_EOS_dependent_properties(self, T, xkj, P, Z):
         #l - any phase molar composition
-
-        A, B = ctes.EOS_class(T).coefficients_cubic_EOS_vectorized(l, P)
-        ph = self.deltaG_molar_vectorized(l, P, ph)
-        Z = self.EOS.Z_vectorized(A, B, ph)
         v = Z * ctes.R * T / P #vshift go here
         ksi_phase = 1 / v
-        Mw_phase = np.sum(l * ctes.Mw[:,np.newaxis], axis = 0)
+        Mw_phase = np.sum(xkj * ctes.Mw[:,np.newaxis], axis = 0)
         rho_phase = ksi_phase * Mw_phase
         return ksi_phase, rho_phase
 
