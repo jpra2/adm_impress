@@ -26,7 +26,7 @@ class delta_time:
         #CFL_wells = delta_t * 1 / np.nanmin((fprop.Nk[wells['ws_inj']] /
         #           abs(fprop.component_flux_vols_total[wells['ws_inj']])))
         if (CFL > CFL_p): delta_t = delta_t / 2
-        delta_tmin = data_loaded['compositional_data']['time_data']['delta_tmin']
+        #delta_tmin = data_loaded['compositional_data']['time_data']['delta_tmin']
         #if delta_t<delta_tmin: delta_t=delta_tmin
         #delta_tcfl = np.nanmin(CFL * (fprop.Nk) / fprop.component_flux_vols_total, axis = 1) #make nan
         np.seterr(**old_settings)
@@ -76,8 +76,8 @@ class delta_time:
 
     def update_delta_tv(self, delta_t, fprop, deltaVlim):
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
-        deltaVmax = np.max(np.abs(fprop.Vt - fprop.Vp))# / fprop.Vp)
-        #deltaVlim = 5e-4
+        deltaVmax = np.max(np.abs(fprop.Vt - fprop.Vp) / fprop.Vp)
+        #deltaVlim = np.max(5e-4/fprop.Vp)
         delta_tv = delta_t * deltaVlim / deltaVmax
         np.seterr(**old_settings)
         return delta_tv
@@ -103,11 +103,12 @@ class delta_time:
         else: delta_t = min(delta_tp, delta_ts, delta_tn, delta_tv)
 
         if delta_t > min(delta_tmax, delta_tcfl): delta_t = min(delta_tmax, delta_tcfl)
-        if delta_t < delta_tmin: delta_t = delta_tmin
         #import pdb; pdb.set_trace()
         '''if delta_t==delta_ts: print("S")
         if delta_t==delta_tn: print("N")
         if delta_t==delta_tcfl: print("CFL")
         if delta_t==delta_tv: print("V")'''
+        if delta_t < delta_tmin: delta_t = delta_tmin
+
         #delta_t = delta_tcfl
         return delta_t
