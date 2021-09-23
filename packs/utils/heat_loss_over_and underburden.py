@@ -4,7 +4,7 @@ from . import constants as ctes
 ## Attention to units: Temperature[K] and Pressure[atm]
 # P  = 9.87E-6*P #[Pa] to [atm]
 # Still going to add StoneII method so the user can choose
-class LorenzBrayClark:
+class VinsomeWesterveld:
 
     def __init__(self, fprop, phase_molar_densities):
         self.n_volumes = ctes.n_volumes
