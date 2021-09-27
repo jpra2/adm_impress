@@ -95,16 +95,6 @@ class PengRobinson:
         if any(np.isnan(lnphi).ravel()): import pdb; pdb.set_trace()
         return lnphi
 
-    def lnphi_deltaG(self, xkj, P, ph):
-        A, B = self.coefficients_cubic_EOS_vectorized(xkj, P)
-        Z_all = self.Z_vectorized(A, B)
-        Z_ph1 = self.getZ_by_phase(Z_all, ph)
-        Z_ph2 = self.getZ_by_phase(Z_all, 1 - ph)
-        Z = np.concatenate((Z_ph1[:,np.newaxis],Z_ph2[:,np.newaxis]),axis=-1)
-        lnphi = self.lnphi_calculation_deltaG(A, B, Z)
-        if any(np.isnan(lnphi).ravel()): import pdb; pdb.set_trace()
-        return lnphi[...,0], lnphi[...,1]
-
     def lnphi_calculation(self, A, B, Z):
         b_bm = self.b[:,np.newaxis] / self.bm[np.newaxis,:]
         lnphi = b_bm * (Z[np.newaxis,:] - 1) - np.log((Z - B))[np.newaxis,:] - \
