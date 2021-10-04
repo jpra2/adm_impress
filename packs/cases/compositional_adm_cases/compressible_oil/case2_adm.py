@@ -49,7 +49,7 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case15_adm_6k' # with 25 coarse volumes
 # description = 'case16_finescale_5000_3k_' # with 25 coarse volumes
 # description = 'case16_finescale_5000_3k_' # with 25 coarse volumes
-description = 'case18_adm_6k_5000_' # cr = 5
+description = 'case18_adm_6k_5000_' # cr = 25
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -92,8 +92,6 @@ ml_data = MultilevelData(data_impress, M, load=load_multilevel_data, n_levels=n_
 # import pdb; pdb.set_trace()
 
 
-
-
 ml_data.run()
 data_impress.update_variables_to_mesh()
 
@@ -121,7 +119,7 @@ local_problem_params = {
     'P': None,
     'n_volumes': ctes.n_volumes,
     'n_components': ctes.n_components,
-    'n_phases': fprop.xkj.shape[1],
+    'n_phases': ctes.n_phases,
     'internal_faces_adjacencies': ctes.v0,
     'dVtdk': None,
     'z_centroids': ctes.z,
