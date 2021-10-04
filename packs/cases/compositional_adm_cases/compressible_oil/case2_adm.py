@@ -46,7 +46,10 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case12_finescale_6k'
 # description = 'case13_adm_6k' # case 12 with cr=5
 # description = 'case14_adm_6k' # with 10 coarse volumes
-description = 'case15_adm_6k' # with 25 coarse volumes
+# description = 'case15_adm_6k' # with 25 coarse volumes
+# description = 'case16_finescale_5000_3k_' # with 25 coarse volumes
+# description = 'case16_finescale_5000_3k_' # with 25 coarse volumes
+description = 'case18_adm_6k_5000_' # cr = 5
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -118,7 +121,7 @@ local_problem_params = {
     'P': None,
     'n_volumes': ctes.n_volumes,
     'n_components': ctes.n_components,
-    'n_phases': 3,
+    'n_phases': fprop.xkj.shape[1],
     'internal_faces_adjacencies': ctes.v0,
     'dVtdk': None,
     'z_centroids': ctes.z,
@@ -152,7 +155,8 @@ total_volumes_updated = copy.deepcopy(global_vector_update)
 data_impress['LEVEL'][:] = 1
 params['active_volumes'] = 0
 
-
+# #######################
+# ## update before init 
 # update_variables_before_init.update_variables_for_initial_run_adm(
 #     fprop,
 #     sim,
@@ -161,6 +165,7 @@ params['active_volumes'] = 0
 #     OP_AMS,
 #     manage_operators
 # )
+# ############################
 
 
 n_loops_for_acumulate = 1

@@ -2,6 +2,7 @@
 # name_file: 'input_cards/inputs_compositional_biphasic_mod.yml'
 # name_file: 'input_cards/inputs_compositional_adm.yml'
 # name_file: 'input_cards/inputs_compositional_3k_adm.yml'
-name_file: 'input_cards/inputs_compositional_6k_512_adm.yml'
+# name_file: 'input_cards/inputs_compositional_6k_512_adm.yml'
+name_file: 'input_cards/inputs_compositional_3k_5000_adm.yml'
 variable_file: 'input_cards/variable_inputs_compositional.yml'
 simulation_type: 'compositional'

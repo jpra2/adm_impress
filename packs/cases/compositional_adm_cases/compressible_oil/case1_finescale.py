@@ -10,7 +10,7 @@ from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 
 
 # description = 'case3_finescale_3k'
-description = 'case13_finescale_6k'
+description = 'case17_finescale_6k_5000_'
 compositional_data = CompositionalData(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
 cumulative_compositional_datamanager.create()
@@ -41,9 +41,13 @@ convert = data_loaded['convert_english_to_SI']
 t = time.time()
 sim = run_simulation(name_current, name_all)
 M, data_impress, wells, fprop, load = sim.initialize(load, convert, mesh)
-from packs.cases.compositional_adm_cases.compressible_oil import update_variables_before_init as update_var
 
-update_var.update_variables_for_initial_run_finescale(fprop, sim, compositional_data)
+# #################
+# ## update data before init
+# from packs.cases.compositional_adm_cases.compressible_oil import update_variables_before_init as update_var
+
+# update_var.update_variables_for_initial_run_finescale(fprop, sim, compositional_data)
+# ########################
 
 # import pdb; pdb.set_trace()
 
@@ -92,7 +96,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         'Sg': fprop.Sg,
         'Sw': fprop.Sw,
         'So': fprop.So,
-        'q': frop.q,
+        'q': fprop.q,
         'global_composition': fprop.z,
         'mols': fprop.Nk,
         'xkj': fprop.xkj,
@@ -105,6 +109,8 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         # import pdb; pdb.set_trace()
+    
+    # import pdb; pdb.set_trace()
         
     
 # loop_array['loop'][0] = loop

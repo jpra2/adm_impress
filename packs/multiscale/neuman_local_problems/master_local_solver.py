@@ -1,4 +1,6 @@
 import multiprocessing as mp
+
+from mpmath.libmp.libintmath import python_bitcount
 from packs.solvers.solvers_scipy import solver_sp
 import numpy as np
 from multiprocessing import Queue, Value
@@ -72,7 +74,7 @@ class MasterLocalSolver(CommonMasterMethods):
         n_problems_per_cpu = self.count_problems(n_problems, self.n_cpu)
         self.problems_per_cpu = self.get_problems_per_cpu(n_problems_per_cpu, problems_list)
         self.m2w, self.w2m, self.queue, self.finished = self.initialize_params(len(self.problems_per_cpu))
-        self.procs, self.procs_args, self.procs_targets, self.procs_kwargs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
+        # self.procs, self.procs_args, self.procs_targets, self.procs_kwargs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
 
 
     def init_subproblems(self, problems_per_cpu, w2m, values, _queue):
@@ -100,11 +102,16 @@ class MasterLocalSolver(CommonMasterMethods):
 
 
     def run(self):
+        
         solution = np.zeros(self.n_volumes)
         # procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
         # procs = self.procs
+        
+        procs, process_args, process_targets, process_kwargs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
+        
+        # self.procs = procs
 
-        for proc in self.procs:
+        for proc in procs:
             proc.start()
 
         while(not self.all_process_finished(self.finished)):
@@ -116,12 +123,16 @@ class MasterLocalSolver(CommonMasterMethods):
             else:
                 solution[resp[0]] = resp[1]
 
-        for i, proc in enumerate(self.procs):
-            proc.join()
-            proc._popen = None
-            proc._args = self.procs_args[i]
-            proc._target = self.procs_targets[i]
-            proc._kwargs = self.procs_kwargs[i]
+        # for i, proc in enumerate(self.procs):
+        #     proc.join()
+        
+        # for i, proc in enumerate(self.procs):
+        #     proc._popen = None
+        #     proc._args = self.procs_args[i]
+        #     proc._target = self.procs_targets[i]
+        #     proc._kwargs = self.procs_kwargs[i]
+        
+        # import pdb; pdb.set_trace()
 
         while(not self.queue.empty()):
             resp = self.queue.get()
