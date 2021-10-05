@@ -203,3 +203,98 @@ class StoneII:
         dkrsdSj[1,:] = np.array([dkrgdSo,dkrgdSg,dkrgdSw])
         dkrsdSj[2,:] = np.array([dkrwdSo,dkrwdSg,dkrwdSw])
         return dkrsdSj
+
+class Corey:
+    """
+    Same model described in Schmall's thesis
+    """
+    def __init__(self):
+        self.Sor = float(direc.data_loaded['compositional_data']['residual_saturations']['Sor'])
+        self.Sgr = float(direc.data_loaded['compositional_data']['residual_saturations']['Sgr'])
+        self.Swr = float(direc.data_loaded['compositional_data']['residual_saturations']['Swr'])
+
+        self.n_w = float(direc.data_loaded['compositional_data']['relative_permeability_data']['n_w'])
+        self.n_o = float(direc.data_loaded['compositional_data']['relative_permeability_data']['n_o'])
+        self.n_g = float(direc.data_loaded['compositional_data']['relative_permeability_data']['n_g'])
+
+        # End-point relative permeability data
+        self.krw0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['krw0'])
+        self.kro0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['kro0'])
+        self.krg0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['krg0'])
+
+    def relative_permeabilities(self, fprop, saturations):
+        #saturations = [So,Sg,Sw]
+        '''
+        Sorg = np.ones_like(saturations[2]) * self.Sorg
+        Sorw = np.ones_like(saturations[2]) * self.Sorw
+        Swr = np.ones(saturations[2].shape) * self.Swr
+
+        Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
+        Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
+        Sorg[saturations[0] < self.Sorg] = saturations[0][saturations[0] < self.Sorg]
+        Swr[saturations[2] < Swr] = saturations[2][saturations[2] < Swr]
+
+        Sor = Sorw * (1 - saturations[1] / (1 - Swr - Sorg)) + \
+                    Sorg * saturations[1] / (1 - Swr - Sorg)
+
+        Sor[saturations[0] < Sor] = saturations[0][saturations[0] < Sor]
+        '''
+
+        krw = self.krw0 * ((saturations[2] - self.Swr) / (1 - self.Swr - self.Sor - self.Sgr)) ** self.n_w
+        kro = self.kro0 * ((saturations[0] - self.Sor) / (1 - self.Swr - self.Sor - self.Sgr)) ** self.n_o
+        krg = self.krg0 * ((saturations[1] - self.Sgr) / (1 - self.Swr - self.Sor - self.Sgr)) ** self.n_g
+
+        return kro, krg, krw
+        # Precisa retornar o Sor ?
+
+    def __call__(self, fprop, saturations):
+        return self.relative_permeabilities(fprop, saturations)
+
+class CoreyModified:
+    """
+    Model described in Varavei's thesis
+    """
+    def __init__(self):
+        self.Sor = float(direc.data_loaded['compositional_data']['residual_saturations']['Sor'])
+        self.Sgr = float(direc.data_loaded['compositional_data']['residual_saturations']['Sgr'])
+        self.Swr = float(direc.data_loaded['compositional_data']['residual_saturations']['Swr'])
+
+        self.n_w = float(direc.data_loaded['compositional_data']['relative_permeability_data']['n_w'])
+        self.n_o = float(direc.data_loaded['compositional_data']['relative_permeability_data']['n_o'])
+        self.n_g = float(direc.data_loaded['compositional_data']['relative_permeability_data']['n_g'])
+
+        # End-point relative permeability data
+        self.krw0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['krw0'])
+        self.kro0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['kro0'])
+        self.krg0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['krg0'])
+
+    def relative_permeabilities(self, fprop, saturations):
+        #saturations = [So,Sg,Sw]
+        '''
+        Sorg = np.ones_like(saturations[2]) * self.Sorg
+        Sorw = np.ones_like(saturations[2]) * self.Sorw
+        Swr = np.ones(saturations[2].shape) * self.Swr
+
+        Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
+        Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
+        Sorg[saturations[0] < self.Sorg] = saturations[0][saturations[0] < self.Sorg]
+        Swr[saturations[2] < Swr] = saturations[2][saturations[2] < Swr]
+
+        Sor = Sorw * (1 - saturations[1] / (1 - Swr - Sorg)) + \
+                    Sorg * saturations[1] / (1 - Swr - Sorg)
+
+        Sor[saturations[0] < Sor] = saturations[0][saturations[0] < Sor]
+        '''
+        Swe = (saturations[2] - self.Swr) / (1 - self.Swr - self.Sor)
+        Soe = (saturations[0] - self.Sor) / (1 - self.Swr - self.Sor)
+        Sge = (saturations[1] - self.Sgr) / (1 - self.Swr - self.Sor - self.Sgr)
+
+        krw = self.krw0 * (Swe ** self.n_w)
+        kro = self.kro0 * (Soe ** 2) * (1 - ((1 - Soe) ** self.n_o))
+        krg = self.krg0 * (Sge ** 2) * (1 - ((1 - Sge) ** self.n_g))
+
+        return kro, krg, krw
+        # Precisa retornar o Sor ?
+
+    def __call__(self, fprop, saturations):
+        return self.relative_permeabilities(fprop, saturations)
