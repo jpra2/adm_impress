@@ -167,7 +167,7 @@ params['active_volumes'] = 0
 
 
 n_loops_for_acumulate = 1
-n_loops_for_export = 500
+n_loops_for_export = 100
 
 assert (n_loops_for_export % n_loops_for_acumulate) == 0
 

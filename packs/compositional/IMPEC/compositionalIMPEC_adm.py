@@ -104,6 +104,6 @@ class CompositionalFvmADM(CompositionalFVM):
         if fprop.P[2]<fprop.P[3]: import pdb; pdb.set_trace()
         if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
         if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
-        if any(total_flux_internal_faces.flatten()<-1e-6): import pdb; pdb.set_trace()
+        # if any(total_flux_internal_faces.flatten()<-1e-6): import pdb; pdb.set_trace()
         #if (Nk_old[0,0]>fprop.Nk[0,0]): import pdb; pdb.set_trace()
         return delta_t

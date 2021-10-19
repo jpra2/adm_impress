@@ -105,7 +105,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     })
     cumulative_compositional_datamanager.insert_data(compositional_data._data)
     
-    if loop % 500 == 0:
+    if loop % 100 == 0:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         # import pdb; pdb.set_trace()

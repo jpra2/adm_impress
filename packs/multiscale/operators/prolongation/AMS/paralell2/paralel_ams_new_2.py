@@ -48,8 +48,9 @@ class MasterLocalOperator(CommonMasterMethods):
         
         correction_function = np.zeros(self.n_volumes)
         # procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
+        procs, procs_args, procs_targets, procs_kwargs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
         
-        for proc in self.procs:
+        for proc in procs:
             proc.start()
         
         while(not self.all_process_finished(self.finished)):
@@ -62,12 +63,12 @@ class MasterLocalOperator(CommonMasterMethods):
                 set_data_to_op(OP_AMS, resp[0])
                 set_data_to_cf(correction_function, resp[1])
 
-        for i, proc in enumerate(self.procs):
-            proc.join()
-            proc._popen = None
-            proc._args = self.procs_args[i]
-            proc._target = self.procs_targets[i]
-            proc._kwargs = self.procs_kwargs[i]
+        # for i, proc in enumerate(self.procs):
+        #     proc.join()
+        #     proc._popen = None
+        #     proc._args = self.procs_args[i]
+        #     proc._target = self.procs_targets[i]
+        #     proc._kwargs = self.procs_kwargs[i]
         
         while(not self.queue.empty()):
             resp = self.queue.get()
