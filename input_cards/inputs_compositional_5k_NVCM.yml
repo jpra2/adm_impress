@@ -1,13 +1,12 @@
 #2-phase problem with 3 components - moshiri
 mesh_name: 200x1x1_5k.msh
-name_save_file: 'results_case1_Moshiri_Manzari_5k_200_MUSCL' #150683
+name_save_file: 'results_case1_Moshiri_Manzari_5k_200_MDW' #150683
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
 water_component: false
 use_vpi: false
-
 
 load_compositional_data: False
 load_data: False
@@ -27,7 +26,7 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: .9
+  CFL: 0.7
 
   solver:
     IMPSAT: false
@@ -39,11 +38,11 @@ compositional_data:
     set: false
     order: 3
 
-  UPW:
+  RiemannSolver:
     ROE: false
-    LLF: true
-    MDW: false
-    FOU: false
+    LLF: false
+    MDW: true
+    DW: false
 
   vpis_para_gravar_vtk: [0.51]
   time_to_save: [86400] #[2592000]
@@ -62,12 +61,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 5
-    deltaSlim: .15
-    deltaVlim: .0001
+    deltaNlim: 10
+    deltaSlim: 0.8
+    deltaVlim: 10
     delta_t_ini: 86.4
     delta_tmax: 86400
-    delta_tmin: 8.64
+    delta_tmin: 0.00864
 
   water_data:
     mi_W: 1e-3

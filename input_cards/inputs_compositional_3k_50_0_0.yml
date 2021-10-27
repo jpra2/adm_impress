@@ -1,6 +1,6 @@
 #2-phase problem with 3 components - moshiri
 mesh_name: 50x1x1_3k.msh
-name_save_file: 'results_case2_Moshiri_Manzari_3k_50_LLF' #150683
+name_save_file: 'results_case2_Moshiri_Manzari_3k_50_LLF2' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -62,8 +62,8 @@ compositional_data:
   time_data:
     deltaPlim: 68.9476
     deltaNlim: 2
-    deltaSlim: .25
-    deltaVlim: .0003
+    deltaSlim: .15
+    deltaVlim: .00001
     delta_t_ini: 56.4
     delta_tmax: 86400
     delta_tmin: 0.864
@@ -94,11 +94,12 @@ compositional_data:
   component_data:
     z: [0.0, 0.25, 0.75]
     Tc: [190.56, 305.32, 369.83]
-    Pc: [4599000, 4873000, 4248000]
-    vc: [9.85988846e-05, 1.45500276e-04, 2.00001177e-04]
+    Pc: [4599000, 4872000, 4248000]
+    vc: [9.86e-05, 1.455e-04, 2e-04]
     Mw: [16.043e-3, 30.070e-3, 44.096e-3]
     w: [0.0115, 0.0995, 0.1523]
-    Bin: [[0.,0.,.0], [0.,0.,0.], [0.,0.,.0]]
+    Bin: [[0.,0.0,0.0], [0.0,0.,0.0], [0.0,0.0,.0]]
+    #Bin: [[0.,0.0026,0.014], [0.0026,0.,0.0011], [0.014,0.0011,.0]]
     Pv: [8e6, 0., 0.]
     vshift_parameter: [0.0, 0., 0.]
     Pb_guess: 2e6

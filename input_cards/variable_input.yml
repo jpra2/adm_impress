@@ -4,6 +4,18 @@ NODES:
   level: 0
   sparse: true
   type: nodes
+Sg:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+So:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 area:
   data size: 1
   data type: float

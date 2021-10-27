@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 500x1x1_b.msh
-name_save_file: 'results_Buckley_Leverett_case_FR3'
+name_save_file: 'results_Buckley_Leverett_case_MUSCL'
 
 compositional: True
 hidrocarbon_components: True
@@ -25,17 +25,23 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.5
+  CFL: 0.9
 
   solver:
     IMPSAT: false
 
   MUSCL:
-    set: false
+    set: true
 
   FR:
-    set: true
+    set: false
     order: 3
+
+  RiemannSolver:
+    ROE: false
+    LLF: true
+    MDW: false
+
   vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
   time_to_save: [0.0]
   maximum_time: 0.0
@@ -58,7 +64,7 @@ compositional_data:
     deltaVlim: 1
     delta_t_ini: 0.5
     delta_tmax: 1000
-    delta_tmin: 0.1
+    delta_tmin: 1
     #2.765
 
   water_data:
@@ -96,6 +102,7 @@ compositional_data:
     Pv: [0.]
     Pb_guess: [0.]
     vshift_parameter: [0.085]
+    constant_K: False
 
 #water saturation data
 Saturation:

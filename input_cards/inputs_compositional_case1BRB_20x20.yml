@@ -1,6 +1,6 @@
 #3-phase problem with 3 components - case 1 BRB master thesis
 mesh_name: 20x20x1_case1BRB.msh
-name_save_file: 'results_case1_2d_BRB_IMPEC' #150683
+name_save_file: 'results_case1_2d_BRB_IMPSAT' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -30,24 +30,29 @@ compositional_data:
   CFL: 0.7
 
   solver:
-    IMPSAT: false
+    IMPSAT: true
 
   MUSCL:
-    set: False
-  
+    set: false
+
   FR:
     set: false
-    order: 3
+    order: 2
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
 
   vpis_para_gravar_vtk: [0.2]
-  time_to_save: [43200000]
-  maximum_time: 43200000
+  time_to_save: [43200000] #[43200000]
+  maximum_time: 43200000 #43200000
   phase_viscosity: LorenzBrayClark
   relative_permeability: StoneII
   capillary_pressure: Chang
   equation_of_state: PengRobinson
 
-  rock_compressibility: 5.8e-10
+  rock_compressibility: 0
   Pf: 101325
 
   #capillary pressure data - not ok with this
@@ -58,10 +63,10 @@ compositional_data:
     deltaPlim: 0.1
     deltaNlim: .25
     deltaSlim: .1
-    deltaVlim: .0001
-    delta_t_ini: 1.64
-    delta_tmax: 77760
-    delta_tmin: 1.64
+    deltaVlim: .1
+    delta_t_ini: 8.64
+    delta_tmax: 207360.0 #IMPEC 0.9day
+    delta_tmin: 8.64
 
   water_data:
     mi_W: 1e-3
@@ -98,6 +103,7 @@ compositional_data:
     w: [0.225, 0.022, 0.684]
     Bin: [[0., 0.12, 0.12], [0.12, 0., 0.0], [0.12, 0.0, .0]]
     vshift_parameter: [0.0, 0., 0.]
+    constant_K: False
 
 #water saturation data
 Saturation:
@@ -135,10 +141,10 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: 6.550925925925926 #1.6377314814814814 #6.550925925925926
+    value: 6.550925925926 #1.6377314814814814 #6.550925925925926
     z: [0.95, 0.05, 0.0, 0.0]
     injection_condition: 'surface'
-    ksi_total: 41.0917757 #20100.49164117 #41.0917757
+    ksi_total: 40.85920706 #20100.49164117 #41.0917757
     value_type: volumetric
 
   P2:
