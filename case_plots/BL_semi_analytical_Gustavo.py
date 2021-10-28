@@ -5,7 +5,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 
 ''' ------------------------------- Geometria ------------------------------ '''
 ''' Comprimento (m):'''
-L = 300;
+L = 300; #300
 
 ''' Area da secao transversal (m?):'''
 A = 1;

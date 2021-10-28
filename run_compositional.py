@@ -51,6 +51,9 @@ class run_simulation:
         if ctes.FR:
             from packs.compositional import prep_FR as ctes_FR
             ctes_FR.run(M)
+        if ctes.MUSCL:
+            from packs.compositional import prep_MUSCL as ctes_MUSCL
+            ctes_MUSCL.run(M)
         fprop = self.get_initial_properties(M, wells)
         return M, data_impress, wells, fprop, load
 
@@ -131,7 +134,6 @@ class run_simulation:
         '---- Get pressure field and new time step (if the past time step does \
         not obey the CFL condition) -------------------------------------------'
 
-
         self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t)
 
         self.t += self.delta_t
@@ -140,10 +142,13 @@ class run_simulation:
         if ctes.load_k and ctes.compressible_k:
 
             #self.p2 = StabilityCheck(fprop.P, fprop.T)
+            Nk = np.copy(fprop.Nk)
+            #Nk[Nk<0] = 0
+            z = Nk/np.sum(Nk,axis=0)
             fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
-            self.p2.run(fprop.P, np.copy(fprop.z))
+            self.p2.run(fprop.P, np.copy(z))
 
             if len(wells['ws_q'])>0 and any((wells['inj_cond']=='reservoir')) and not self.p2.constant_K:
                 z = (wells['z'][wells['inj_cond']=='reservoir']).T
@@ -155,13 +160,12 @@ class run_simulation:
         '----------------------- Update fluid properties ----------------------'
 
         self.p1.run_inside_loop(M, fprop)
-        self.prod_rate_SC(fprop, wells)
 
         '-------------------- Advance in time and save results ----------------'
-
+        self.prod_rate_SC(fprop, wells)
         self.update_vpi(fprop, wells)
         #if self.vpi>0.2: import pdb; pdb.set_trace()
-        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
+        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         if len(wells['ws_prod'])>0: self.update_production(fprop, wells)
 
         self.update_loop()
@@ -175,7 +179,6 @@ class run_simulation:
         else:
             if self.time_save[0] == 0.0 or self.t in self.time_save:
                 self.update_current_compositional_results(M, wells, fprop)
-                #import pdb; pdb.set_trace()
 
     def prod_rate_SC(self, fprop, wells):
 
@@ -198,13 +201,14 @@ class run_simulation:
             flux_vols_total = wells['values_q_vol']
             flux_total_inj = np.absolute(flux_vols_total)
         else: flux_total_inj = np.zeros(2)
-        
+
         self.vpi = self.vpi + (flux_total_inj.sum())/sum(fprop.Vp)*self.delta_t
 
     def get_empty_current_compositional_results(self):
-        return [np.array(['loop', 'vpi [s]', 'simulation_time [s]', 't [s]', 'pressure [Pa]', 'Sw', 'So', 'Sg',
-                        'Oil_p', 'Gas_p', 'z', 'centroids', 'Nk', 'xkj', 'Oil production rate', \
-                        'Gas production rate'])]
+        return [np.array(['loop', 'vpi [s]', 'simulation_time [s]', 't [s]', \
+                        'pressure [Pa]', 'Sw', 'So', 'Sg', 'Oil_p', 'Gas_p', \
+                        'z', 'centroids', 'Nk', 'xkj', 'Oil production rate', \
+                        'Gas production rate', 'time-step vector'])]
 
     def update_production(self, fprop, wells):
         ''' Function to compute oil and gas production [m³] through time'''

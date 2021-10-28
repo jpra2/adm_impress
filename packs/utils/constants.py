@@ -22,14 +22,23 @@ def init(M, wells):
     global bhp_ind
     global vols_no_wells
     global ds_faces
+    global P_SC
+    global n_points
+
+    P_SC = 101325
 
     EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
     MUSCL = data_loaded['compositional_data']['MUSCL']['set']
     FR = data_loaded['compositional_data']['FR']['set']
 
+    if MUSCL: n_points = 2
+    elif FR: n_points = data_loaded['compositional_data']['FR']['order']
+    else: n_points=1
+
     RS = dict()
     RS['LLF'] = data_loaded['compositional_data']['RiemannSolver']['LLF']
     RS['MDW'] = data_loaded['compositional_data']['RiemannSolver']['MDW']
+    RS['DW'] = data_loaded['compositional_data']['RiemannSolver']['DW']
     RS['ROE'] = data_loaded['compositional_data']['RiemannSolver']['ROE']
 
     Pf = np.array(data_loaded['compositional_data']['Pf']).astype(float)

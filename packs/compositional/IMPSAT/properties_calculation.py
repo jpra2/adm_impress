@@ -15,7 +15,7 @@ class PropertiesCalc(PropertiesCalcIMPEC):
         ''' This function was created to calculate the fluid properties at t=0'''
 
         if ctes.load_w:
-            fprop.Sw = self.update_water_properties(M, fprop)
+            self.update_water_properties(M, fprop)
             #fprop.Sw = self.Sw
 
         if ctes.load_k:

@@ -6,7 +6,6 @@ import numpy as np
 import sympy.utilities.lambdify as lambdify
 import math
 
-
 class PropertiesCalc:
     def __init__(self):
         self.relative_permeability_class = getattr(relative_permeability2,
@@ -66,7 +65,6 @@ class PropertiesCalc:
         fprop.Sw = M.data['saturation']
         fprop.Csi_j[0, ctes.n_phases-1,:] = fprop.Csi_W
         fprop.rho_j[0,ctes.n_phases-1,:] = fprop.rho_W
-
 
     def set_initial_volume(self, fprop):
         self.Vo = fprop.Vp * fprop.So

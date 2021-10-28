@@ -40,7 +40,7 @@ class StabilityCheck:
         self.z = np.copy(z)
         #ponteiro_flash[np.sum(self.z==0, dtype=bool)] = True
         #import pdb; pdb.set_trace()
-        #self.z[self.z<=0] = 1e-30
+        self.z[self.z<=0] = 1e-30
 
         if not pflash and any(~ponteiro_flash) and ctes.Nc>1:
             #self.z[self.z==0] = 1e-30
@@ -199,16 +199,17 @@ class StabilityCheck:
         sp2 = abs(stationary_point2 - 1)
         K[:,sp1>sp2] = K_sp1[:,sp1>sp2]
         K[:,sp2>sp1] = K_sp2[:,sp2>sp1]
-        KWilson_criteria = np.sum(abs(K-1)<1e-14,axis=0,dtype=bool)
-        K[:,KWilson_criteria] = self.self.equilibrium_ratio_Wilson(P_new[KWilson_criteria])
-        self.K[:,ponteiro_stab_check] = K
+        KWilson_criteria = np.zeros_like(self.P,dtype=bool)
+        KWilson_criteria_aux = np.sum(abs(K-1)<1e-14,axis=0,dtype=bool)
+        KWilson_criteria[ponteiro_stab_check] = KWilson_criteria_aux
+        self.K[:,KWilson_criteria] = self.equilibrium_ratio_Wilson(self.P[KWilson_criteria])
         return stationary_point1, stationary_point2
 
     """-------------------- Biphasic flash calculations ---------------------"""
 
     def molar_properties(self, ponteiro):
-        #ksi_L, ksi_V, rho_L, rho_V = self.molar_properties_Whitson(ponteiro)
-        ksi_L, ksi_V, rho_L, rho_V = self.molar_properties_Yinghui(ponteiro)
+        ksi_L, ksi_V, rho_L, rho_V = self.molar_properties_Whitson(ponteiro)
+        #ksi_L, ksi_V, rho_L, rho_V = self.molar_properties_Yinghui(ponteiro)
         return ksi_L, ksi_V, rho_L, rho_V
 
     def lnphi_Z_based_on_deltaG(self, xkj, P, ph):
@@ -384,7 +385,7 @@ class StabilityCheck:
         x[:,z1 == 0] = x_z1_zero
         self.x[:,ponteiro] = x
         self.y[:,ponteiro] = self.K[:,ponteiro] * self.x[:,ponteiro]
-        
+
 
     def molar_properties_Yinghui(self, ponteiro):
         #razao = fl/fv -> an arbitrary vector to enter in the iterative mode
@@ -467,7 +468,7 @@ class StabilityCheck:
             ponteiro_aux[(stop_criteria < 1e-9)] = False
             ponteiro[ponteiro] = ponteiro_aux
             if any(np.isnan(V)): V[np.isnan(V)] = 0
-            if i>400:
+            if i>100:
                 print('Vloop')
                 ponteiro[ponteiro] = False
 
@@ -516,7 +517,7 @@ class StabilityCheck:
             ponteiro_aux[(stop_criteria < 1e-10)] = False
             ponteiro[ponteiro] = ponteiro_aux
             ponteiro[(abs(self.V)>1e200)] = False
-            if i>400:
+            if i>100:
                 print('Floop')
                 ponteiro[ponteiro] = False
 
@@ -536,8 +537,6 @@ class StabilityCheck:
         lnphiv, Zv[ponteiro_1phase] = self.lnphi_Z_based_on_deltaG(self.y[:,ponteiro_1phase], self.P[ponteiro_1phase], self.ph_V[ponteiro_1phase])
 
         ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
-
-        import pdb; pdb.set_trace()
         return ksi_L, ksi_V, rho_L, rho_V
 
     def get_dlnphidP(self, T, xij, P, ph):

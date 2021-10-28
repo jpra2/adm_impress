@@ -8,9 +8,9 @@ from scipy.interpolate import InterpolatedUnivariateSpline, UnivariateSpline
 flying = 'flying'
 name = 'results'
 arquivos = os.listdir(flying)
-x_CMG = np.loadtxt('x_3k_Firoo_CMG.txt')
-xCH4_CMG = np.loadtxt('xCH4_3k_Firoo.txt')
-yC3H8_CMG = np.loadtxt('yC3H8_3k_Firoo.txt')
+x_CMG = np.loadtxt('xCH4_case2MM_CMG.txt')
+xCH4_CMG = np.loadtxt('xxCH4_case2MM_CMG.txt')
+
 for  arq in arquivos:
     if  arq.startswith(name):
         '''-------------------------MUSCL LLF RESULTS------------------------'''
@@ -29,9 +29,12 @@ for  arq in arquivos:
                         0.0162182, 0.00767314, 0.00348779, 0.00156951, 0.0,0])
 
 
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_50_FOU_1684.npy', allow_pickle=True)
-        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw_945.npy', allow_pickle=True)
-        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
+        x_axis_xCH4_LLF_50 = np.array([0, 22.4628, 23.4607, 24.517, 25.5255, 26.5658, \
+            27.569, 28.5722, 29.6178, 30.6316, 31.6295, 32.6805, 33.689, 34.6868, 50])
+        xCH4_LLF_50 = np.array([0, 0, 0.326972, 0.3261, 0.324009, 0.322789, 0.321046, \
+            0.320871, 0.292462, 0.228497, 0.17342, 0.127582, 0.0916776, 0.0650109, 0])
+
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_50_FOU_wa_2644.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_50_FOU = data[6]
             Sg_50_FOU = data[7]
@@ -44,8 +47,47 @@ for  arq in arquivos:
             n=50
             x_50 = np.linspace(0+50/(2*n),50-50/(2*n),n)
 
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_wa_3206.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_512_FOU = data[6]
+            Sg_512_FOU = data[7]
+            z_512_FOU = data[10]
+            xkj_512_FOU = data[13]
+            P_512_FOU = data[4]
 
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_50_LLF_3453.npy', allow_pickle=True)
+            xkj_512_FOU[:,1,Sg_512_FOU==0] = 0
+            xkj_512_FOU[:,0,So_512_FOU==0] = 0
+            n=512
+            x_512 = np.linspace(0+50/(2*n),50-50/(2*n),n)
+
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_5000_FOU_19254.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_5000_FOU = data[6]
+            Sg_5000_FOU = data[7]
+            z_5000_FOU = data[10]
+            xkj_5000_FOU = data[13]
+            P_5000_FOU = data[4]
+
+            xkj_5000_FOU[:,1,Sg_5000_FOU==0] = 0
+            xkj_5000_FOU[:,0,So_5000_FOU==0] = 0
+            n=5000
+            x_5000 = np.linspace(0+50/(2*n),50-50/(2*n),n)
+
+
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_32_FOU_2184.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_32_FOU = data[6]
+            Sg_32_FOU = data[7]
+            z_32_FOU = data[10]
+            xkj_32_FOU = data[13]
+            P_32_FOU = data[4]
+
+            xkj_32_FOU[:,1,Sg_32_FOU==0] = 0
+            xkj_32_FOU[:,0,So_32_FOU==0] = 0
+            n=32
+            x_32 = np.linspace(0+50/(2*n),50-50/(2*n),n)
+
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_50_LLF_wa_20097.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_50_LLF = data[6]
             Sg_50_LLF = data[7]
@@ -57,16 +99,45 @@ for  arq in arquivos:
             n=50
             x_50 = np.linspace(0+50/(2*n),50-50/(2*n),n)
 
-        plt.figure(1)
+        '''datas = np.load('flying/results_case2_Moshiri_Manzari_3k_50_LLF2__3466.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_50_LLF = data[6]
+            Sg_50_LLF = data[7]
+            z_50_LLF = data[10]
+            xkj_50_LLF = data[13]
+            P_50_LLF = data[4]
+            xkj_50_LLF[:,1,Sg_50_LLF==0] = 0
+            xkj_50_LLF[:,0,So_50_LLF==0] = 0
+            n=50
+            x_50 = np.linspace(0+50/(2*n),50-50/(2*n),n)'''
+
+        '''plt.figure(1)
         plt.plot(x_50, xkj_50_LLF[0,0,:], 'b')
+        plt.plot(x_50, xkj_512_FOU[0,0,:], 'r')
+        plt.plot(x_32, xkj_32_FOU[0,0,:], 'g')
         plt.plot(x_axis_xCH4, xCH4, 'k')
+        plt.plot(x_axis_xCH4_LLF_50, xCH4_LLF_50, '-sk')
         plt.xlim(20,35)
         plt.grid()
-        plt.legend(('LLF-50', 'Reference'))
+        plt.legend(('LLF 50', 'FOU 512', 'Reference', 'Reference LLF 50'))
         plt.ylabel('Methane molar fraction in liquid phase')
         plt.title('Case2 - Moshiri and Manzari\'s paper')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/3k_methane_x_MM_LLF.png')
+        plt.savefig('results/compositional/3k_methane_x_MM_LLF.png')'''
+
+        plt.figure(1)
+        plt.plot(x_512, xkj_512_FOU[0,0,:], 'b')
+        plt.plot(x_5000, xkj_5000_FOU[0,0,:], 'r')
+        plt.plot(x_axis_xCH4, xCH4, 'k')
+        #plt.plot(x_axis_xCH4_LLF_50, xCH4_LLF_50, '-sk', mfc='none')
+        plt.plot(x_CMG, xCH4_CMG, 'y')
+        plt.xlim(20,35)
+        plt.grid()
+        plt.legend(('FOU 512', 'FOU 5000', 'Reference', 'CMG 5000'))
+        plt.ylabel('Methane molar fraction in liquid phase')
+        plt.title('Case2 - Moshiri and Manzari\'s paper')
+        plt.xlabel('Dimensionless distance')
+        plt.savefig('results/compositional/3k_methane_x_MM_FOU.png')
         import pdb; pdb.set_trace()
 
         '''plt.figure(4)

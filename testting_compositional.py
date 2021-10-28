@@ -51,8 +51,6 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     loop = sim.loop
     print(sim.t)
 
-
-
 tf = time.time()
 print('Total computational time: ', tf-t) #total simulation time
 print('Loops: ', sim.loop)

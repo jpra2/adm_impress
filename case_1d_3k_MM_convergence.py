@@ -8,9 +8,9 @@ from scipy.interpolate import InterpolatedUnivariateSpline, UnivariateSpline
 flying = 'flying'
 name = 'results'
 arquivos = os.listdir(flying)
-x_CMG = np.loadtxt('x_3k_Firoo_CMG.txt')
-xCH4_CMG = np.loadtxt('xCH4_3k_Firoo.txt')
-yC3H8_CMG = np.loadtxt('yC3H8_3k_Firoo.txt')
+x_CMG = np.loadtxt('xCH4_case2MM_CMG.txt')
+xCH4_CMG = np.loadtxt('xxCH4_case2MM_CMG.txt')
+
 for  arq in arquivos:
     if  arq.startswith(name):
         '''-------------------------MUSCL LLF RESULTS------------------------'''
@@ -103,7 +103,6 @@ for  arq in arquivos:
         #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_FOU_4284.npy', allow_pickle=True)
         datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_FOU_8590.npy', allow_pickle=True)
         #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_FOU_6360.npy', allow_pickle=True)
-
         for data in datas[datas.shape[0]-1:]:
             So_FOU_128 = data[6]
             Sg_FOU_128 = data[7]
@@ -156,18 +155,6 @@ for  arq in arquivos:
 
             e512_L1_FOU = (sum(abs(f(x_512)-Sg_FOU_512))*(1/n))
             R512_L1_FOU = math.log(e256_L1_FOU/e512_L1_FOU,2)
-
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_5000_IMPEC_19082.npy', allow_pickle=True)
-        for data in datas[datas.shape[0]-1:]:
-            So_5000 = data[6]
-            Sg_5000 = data[7]
-            z_5000 = data[10]
-            xkj_5000 = data[13]
-            P_5000 = data[4]
-            xkj_5000[:,1,Sg_5000==0] = 0
-            xkj_5000[:,0,So_5000==0] = 0
-            n=5000
-            x_5000 = np.linspace(0+50/(2*n),50-50/(2*n),len(So_5000))
 
         '''MUSCL'''
 
@@ -368,7 +355,7 @@ for  arq in arquivos:
         plt.plot(x_512, xkj_FOU_512[0,0], 'b')
         plt.plot(x_axis_xCH4, xCH4, 'k')
         plt.xlim(20,30)
-        plt.ylim(0.25, 0.35)
+        plt.ylim(-0.05, 0.35)
         plt.grid()
         plt.legend(( 'FOU-8','FOU-16','FOU-32','FOU-64','FOU-128','FOU-256','FOU-512', 'Reference'))
         plt.ylabel('Methane molar fraction in liquid phase')
@@ -413,11 +400,12 @@ for  arq in arquivos:
         plt.plot(x_512, xkj_FR2_512[0,0, ], 'b')
         plt.plot(x_512, xkj_MUSCL_512[0,0,], 'g')
         plt.plot(x_axis_xCH4, xCH4, 'k')
-        plt.plot(x_5000, xkj_5000[0,0,])
+        plt.plot(x_CMG, xCH4_CMG, 'y')
         plt.xlim(20,30)
         plt.ylim(-0.05,0.35)
         plt.grid()
-        plt.legend(( 'First Order LLF-512','FR P1-512','MUSCL-512','Reference', 'FOU 5000'))
+        plt.legend(( 'FOU-512','FR P1-512','MUSCL-512','Reference',
+            'CMG 5000'))
         plt.ylabel('Methane molar fraction in liquid phase')
         plt.title('Case2 - Moshiri and Manzari\'s paper')
         plt.xlabel('Dimensionless distance')

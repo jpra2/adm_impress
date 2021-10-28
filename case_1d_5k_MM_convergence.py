@@ -22,6 +22,8 @@ for  arq in arquivos:
 
         """---------------------- Convergence Study -------------------------"""
 
+        """----------------------------- FOU --------------------------------"""
+
         datas = np.load('flying/results_case1_Moshiri_Manzari_5k_8_FOU_85.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_FOU_8 = data[6]
@@ -49,7 +51,7 @@ for  arq in arquivos:
             e16_L1_FOU = (sum(abs(f(x_16)-Sg_FOU_16))*(1/n))
             R16_L1_FOU = math.log(e8_L1_FOU/e16_L1_FOU,2)
 
-        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_32_FOU_289.npy', allow_pickle=True)
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_32_FOU_114.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_FOU_32 = data[6]
             Sg_FOU_32 = data[7]
@@ -91,6 +93,17 @@ for  arq in arquivos:
             e128_L1_FOU = (sum(abs(f(x_128)-Sg_FOU_128))*(1/n))
             R128_L1_FOU = math.log(e64_L1_FOU/e128_L1_FOU,2)
 
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_FOU_1125.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_FOU_200 = data[6]
+            Sg_FOU_200 = data[7]
+            z_FOU_200 = data[10]
+            xkj_FOU_200 = data[13]
+
+            xkj_FOU_200[:,1,Sg_FOU_200==0] = 0
+            xkj_FOU_200[:,0,So_FOU_200==0] = 0
+            x_200 = np.linspace(0,1.5,len(So_FOU_200))
+
         datas = np.load('flying/results_case1_Moshiri_Manzari_5k_256_FOU_498.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_FOU_256 = data[6]
@@ -120,9 +133,145 @@ for  arq in arquivos:
             R512_L1_FOU = math.log(e256_L1_FOU/e512_L1_FOU,2)
 
 
-        import pdb; pdb.set_trace()
+
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_16_MUSCL_662.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_MUSCL_16 = data[7]
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_32_MUSCL_149.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_MUSCL_32 = data[7]
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_64_MUSCL_352.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_MUSCL_64 = data[7]
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_128_MUSCL_724.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_MUSCL_128 = data[7]
+
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_32_FR2_220.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_32 = data[7]
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_64_FR2_382.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_64 = data[7]
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_128_FR2_760.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_128 = data[7]
+
+
+        '''datas = np.load('flying/results_case1_Moshiri_Manzari_5k_64_FR2_382.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_64 = data[7]
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_128_FR2_1032.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_128 = data[7]
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_16_FR3_732.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR3_16 = data[7]'''
+
 
         plt.figure(1)
+        plt.plot(x_MOC, Sg_MOC, 'k')
+        plt.plot(x_16, Sg_FOU_16, '-ro', mfc='none')
+        plt.plot(x_16, Sg_MUSCL_16, '-yv', mfc='none')
+        #plt.plot(x_16, Sg_FR2_16, '-sb', mfc='none')
+        plt.legend(('MOC', 'FOU-16', 'MUSCL-16', 'FR P1-16', 'FR P2-16'))
+        plt.grid()
+        plt.ylabel('Sg')
+        plt.xlabel('Distance')
+        plt.savefig('results/compositional/5k_Sg_16.png')
+
+        plt.figure(2)
+        plt.plot(x_MOC, Sg_MOC, 'k')
+        plt.plot(x_32, Sg_FOU_32, 'r')
+        plt.plot(x_32, Sg_MUSCL_32, 'y')
+        plt.plot(x_32, Sg_FR2_32, 'b')
+        plt.legend(('MOC', 'FOU-32', 'MUSCL-32', 'FR P1-32', 'FR P2-32', \
+            'FR P3-32'))
+        plt.grid()
+        plt.ylabel('Sg')
+        plt.xlabel('Distance')
+        plt.savefig('results/compositional/5k_Sg_32.png')
+
+        plt.figure(3)
+        plt.plot(x_MOC, Sg_MOC, 'k')
+        plt.plot(x_64, Sg_FOU_64, 'r')
+        plt.plot(x_64, Sg_MUSCL_64, 'y')
+        plt.plot(x_64, Sg_FR2_64, 'b')
+        #plt.plot(x_64, Sg_FR3_64, 'g')
+        #plt.plot(x_32, Sg_FR4_32, 'm')
+        plt.legend(('MOC', 'FOU', 'MUSCL', 'FR P1'))
+        plt.grid()
+        plt.title('NVCM case - 64 elements')
+        plt.ylabel('Sg')
+        plt.xlabel('Distance')
+        plt.savefig('results/compositional/5k_Sg_64.png')
+        import pdb; pdb.set_trace()
+        plt.figure(4)
+        plt.plot(x_MOC, Sg_MOC, 'k')
+        plt.plot(x_128, Sg_FOU_128, 'r')
+        plt.plot(x_128, Sg_MUSCL_128, 'y')
+        plt.plot(x_128, Sg_FR2_128, 'b')
+        #plt.plot(x_128, Sg_FR3_128, 'g')
+        #plt.plot(x_32, Sg_FR4_32, 'm')
+        plt.legend(('MOC', 'FOU', 'MUSCL', 'FR P1'))
+        plt.grid()
+        plt.title('NVCM case - 128 elements')
+        plt.ylabel('Sg')
+        plt.xlabel('Distance')
+        plt.savefig('results/compositional/5k_Sg_128.png')
+
+        import pdb; pdb.set_trace()
+        plt.figure(1)
+        plt.plot(x_MOC, Sg_MOC, '-k')
+        plt.plot(x_8, Sg_FOU_8, 'r')
+        plt.plot(x_8, Sg_LLF_8, 'b')
+        plt.legend(('MOC', 'FOU-8', 'LLF-8'))
+        plt.grid()
+        plt.ylabel('Sg')
+        plt.xlabel('Distance')
+        plt.savefig('results/compositional/5k_Sg_LLF_8.png')
+
+        plt.figure(2)
+        plt.plot(x_MOC, Sg_MOC, '-k')
+        plt.plot(x_16, Sg_FOU_16, 'r')
+        plt.plot(x_16, Sg_LLF_16, 'b')
+        plt.legend(('MOC', 'FOU-16', 'LLF-16'))
+        plt.grid()
+        plt.ylabel('Sg')
+        plt.xlabel('Distance')
+        plt.savefig('results/compositional/5k_Sg_LLF_16.png')
+
+        plt.figure(3)
+        plt.plot(x_MOC, Sg_MOC, '-k')
+        plt.plot(x_32, Sg_FOU_32, 'r')
+        plt.plot(x_32, Sg_LLF_32, 'b')
+        plt.legend(('MOC', 'FOU-32', 'LLF-32'))
+        plt.grid()
+        plt.ylabel('Sg')
+        plt.xlabel('Distance')
+        plt.savefig('results/compositional/5k_Sg_LLF_32.png')
+
+        plt.figure(4)
+        plt.plot(x_MOC, Sg_MOC, '-k')
+        plt.plot(x_64, Sg_FOU_64, 'r')
+        plt.plot(x_64, Sg_LLF_64, 'b')
+        plt.legend(('MOC', 'FOU-64', 'LLF-64'))
+        plt.grid()
+        plt.ylabel('Sg')
+        plt.xlabel('Distance')
+        plt.savefig('results/compositional/5k_Sg_LLF_64.png')
+
+
+        plt.figure(5)
         plt.plot(x_MOC, Sg_MOC, 'g')
         plt.plot(x_100, Sg_FOU_100, 'r')
         plt.plot(x_200, Sg_FOU_200, 'y')
@@ -133,7 +282,7 @@ for  arq in arquivos:
         plt.xlabel('Distance')
         plt.savefig('results/compositional/5k_Sg.png')
 
-        plt.figure(2)
+        plt.figure(6)
         #plt.plot(x_MOC, _MOC, 'g')
         plt.plot(x_100, z_FOU_100[1,:], 'r')
         plt.plot(x_200, z_FOU_200[1,:], 'y')

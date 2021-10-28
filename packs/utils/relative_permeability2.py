@@ -33,7 +33,7 @@ class BrooksAndCorey:
 
         Sor = Sorw * (1 - saturations[1] / (1 - Swr - Sorg)) + \
                     Sorg * saturations[1] / (1 - Swr - Sorg)
-
+        
         Sor[saturations[0] < Sor] = saturations[0][saturations[0] < Sor]
 
         krw = self.krw0 * ((saturations[2] - Swr) / (1 - Swr - Sorw - self.Sgr)) ** self.n_w
@@ -67,7 +67,6 @@ class BrooksAndCorey:
         Sorg = np.ones_like(saturations[2]) * self.Sorg
         Sorw = np.ones_like(saturations[2]) * self.Sorw
         Swr = np.ones(saturations[2].shape) * self.Swr
-
 
         Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
         Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
@@ -116,8 +115,6 @@ class StoneII:
         self.krog0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['krog0'])
         self.krg0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['krg0'])
 
-
-
     def relative_permeabilities(self, saturations):
         #saturations = [So,Sg,Sw]
 
@@ -136,6 +133,7 @@ class StoneII:
         krog[saturations[0]<= self.Sorg] = 0
 
         kro = self.krow0 * ((krow/self.krow0 + krw) * (krog/self.krow0 + krg) - (krw + krg))
+        kro[kro<0] = 0
         #self.krow = krow; self.krog = krog
         #kro[saturations[2]<Swr] = self.kro0 * ((saturations[0][saturations[2]<Swr] - self.Sor) / (1 - self.Sor - self.Sgr)) ** self.n_o
 
@@ -182,6 +180,7 @@ class StoneII:
         dkrwdSw = krw * self.n_w / (saturations[2] - self.Swr)
         dkrwdSw[saturations[2] <= self.Swr] = 0
         dkrgdSg = krg * self.n_g / (saturations[1] - self.Sgr)
+        dkrgdSg[(saturations[1] <= self.Sgr)] = 0
         dkrowdSw = - krow * self.n_ow / (1 - saturations[2] - self.Sorw)
         dkrwdSo = -dkrwdSw
         dkrwdSg = -dkrwdSw
@@ -202,4 +201,5 @@ class StoneII:
         dkrsdSj[0,:] = np.array([dkrodSo,dkrodSg,dkrodSw])
         dkrsdSj[1,:] = np.array([dkrgdSo,dkrgdSg,dkrgdSw])
         dkrsdSj[2,:] = np.array([dkrwdSo,dkrwdSg,dkrwdSw])
+
         return dkrsdSj

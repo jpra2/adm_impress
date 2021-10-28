@@ -16,15 +16,15 @@ class delta_time:
         CFL_p = data_loaded['compositional_data']['CFL']
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
         CFLs = np.empty([3])
-        CFL = delta_t * np.max(abs(wave_velocity))
+        CFLs[0] = delta_t * np.max(abs(wave_velocity))
         Nk = np.copy(Nks)
         #if CFL>100:
             #print(np.max(abs(wave_velocity)))
-        Nk[Nk==0] = 1e-323
+        Nk[Nk==0] = 1e300
         CFLs[1:] = delta_t*np.max(fprop.qk_molar[:,wells['all_wells']]/Nk[:,wells['all_wells']],axis=0)
         CFL = max(CFLs)
         CFL = CFL*(2*(ctes.n_points-1)+1)
-
+        
         #CFL_wells = delta_t * 1 / np.nanmin((Nk[wells['ws_inj']] /
         #           abs(Fk_vols_total[wells['ws_inj']])))
         #import pdb; pdb.set_trace()
@@ -111,7 +111,7 @@ class delta_time:
 
         if delta_t > min(delta_tmax, delta_tcfl): delta_t = min(delta_tmax, delta_tcfl)
         #if delta_t!=delta_ts and delta_t!=delta_tcfl:
-        
+
         '''if delta_t==delta_tn: print("N")
         if delta_t==delta_tcfl: print("CFL")
         if delta_t==delta_tv: print("V")'''

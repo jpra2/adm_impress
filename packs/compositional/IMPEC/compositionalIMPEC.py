@@ -13,16 +13,14 @@ class CompositionalFVM:
     def __call__(self, M, wells, fprop, delta_t, t):
         G = self.update_gravity_term(fprop)
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
-        '''if ctes.MUSCL or ctes.FR:
-            self.get_faces_properties_weighted_average(fprop, G)
-        else: self.get_faces_properties_upwind(fprop, G)'''
-        #self.get_faces_properties_weighted_average(fprop, G)
+        #if ctes.MUSCL or ctes.FR:
+        #    self.get_faces_properties_weighted_average(fprop, G)
+        #else: self.get_faces_properties_upwind(fprop, G)
+        self.get_faces_properties_weighted_average(fprop, G)
         #self.get_faces_properties_harmonic_average(fprop, G)
-        self.get_faces_properties_upwind(fprop, G)
         self.get_phase_densities_internal_faces(fprop)
         t1_prop = time.time()
         r = 0.8 # enter the while loop
-
 
         dVjdNk, dVjdP = self.dVt_derivatives(fprop)
         psolve = TPFASolver(dVjdNk, dVjdP)
@@ -36,7 +34,7 @@ class CompositionalFVM:
             fprop.Nk = np.copy(Nk_old)
             fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells,
                 fprop, P_old, delta_t)
-            
+
             if any(np.isnan(fprop.P)): import pdb; pdb.set_trace()
 
             '''total_flux_internal_faces = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
@@ -45,16 +43,22 @@ class CompositionalFVM:
                 np.sum(fprop.mobilities[:,...], axis = 1)
             frj[:,1,0] = 1
             frj[:,0,0] = 0
+
             q[:,wells['all_wells']] = np.sum(frj[:,:,wells['all_wells']] * fprop.Csi_j[:,:,wells['all_wells']]*\
                 np.array([[1, 0, 0, 0, 0],[0,0.25, 0.25, 0.25, 0.25]]).T[:,np.newaxis,:] * \
                 total_flux_internal_faces[:,0], axis=1)
+            #wells['values_q'] = q[:,wells['ws_inj']]
             q[:,-1] = -1*q[:,-1]
             fprop.q_phase = total_flux_internal_faces[:,0][:,np.newaxis] * np.ones((1,2))
-            '''
+            fprop.qk_prod = 1/(24*60*60) * np.array([[0,0.25, 0.25, 0.25, 0.25]]).T'''
+
+            fprop.qk_prod = q[:,wells['ws_prod']]
+            fprop.qk_molar = q
+            total_flux_internal_faces *= ctes.ds_faces[np.newaxis,:]
 
             if ctes.MUSCL:
                 wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
-                    total_flux_internal_faces, Pot_hid)
+                    total_flux_internal_faces, Pot_hid) #trocar ordem da saida
 
             elif ctes.FR:
                 wave_velocity, Nk, z, Nk_SP, Fk_vols_total = FR().run(M, fprop, wells,
@@ -63,6 +67,8 @@ class CompositionalFVM:
                 if ctes.RS['LLF']:
                     Fk_vols_total, wave_velocity = FirstOrder().LLF(M, fprop, \
                     total_flux_internal_faces, P_old, Nk_old)
+                elif ctes.RS['DW']:
+                    Fk_vols_total, wave_velocity = FirstOrder().DW(M, fprop, total_flux_internal_faces, P_old)
                 elif ctes.RS['MDW']:
                     Fk_vols_total, wave_velocity = FirstOrder().MDW(M, fprop, total_flux_internal_faces, P_old)
                 elif ctes.RS['ROE']:
@@ -76,25 +82,28 @@ class CompositionalFVM:
              because it treats composition explicitly and this explicit models \
              are conditionally stable - which can be based on the CFL parameter '''
 
-            delta_t_new = delta_time.update_CFL(delta_t, Fk_vols_total, fprop.Nk, wave_velocity)
+            delta_t_new = delta_time.update_CFL(delta_t, fprop, wells, Fk_vols_total, fprop.Nk, wave_velocity)
             r = delta_t_new/delta_t
             delta_t = delta_t_new
-            r=1
+            #r=1
 
         dd = q
 
+
         if not ctes.FR:
+            #Fk_vols_total *= 1/ctes.ds_faces
             fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, q,
                 Fk_vols_total, delta_t)
         else:
             fprop.Nk = Nk; fprop.z = z; fprop.Nk_SP = Nk_SP
 
         #if fprop.z[-1,0] > 0: import pdb; pdb.set_trace()
-
+        #import pdb; pdb.set_trace()
         fprop.wave_velocity = wave_velocity
         fprop.total_flux_internal_faces = total_flux_internal_faces
         #import pdb; pdb.set_trace()
         #if fprop.P[0]<fprop.P[1]: import pdb; pdb.set_trace()
+        #fprop.Nk[(fprop.Nk<0)*(abs(fprop.Nk)<1e-16)]= 0
         if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
         if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
         #if any(total_flux_internal_faces.flatten()<-1e-6): import pdb; pdb.set_trace()

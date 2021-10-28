@@ -280,7 +280,7 @@ class saturation:
         Sj_old = np.copy(Sj_new) * 1e100
         j=0
 
-        while np.max(abs(Sj_new-Sj_old))>1e-15:
+        while np.max(abs(Sj_new-Sj_old))>1e-5:
             j+=1
             Sj_old = np.copy(Sj_new)
             krs_new = self.update_relative_perm(fprop, np.copy(Sj_old))
@@ -344,8 +344,9 @@ class saturation:
         Vpm = fprop.Vp[ctes.v0]
         Nk_face = fprop.Nk[:,ctes.v0]
         P_face = fprop.P[ctes.v0].sum(axis=-1)/2
-        #P_face = np.concatenate((P_face[:,np.newaxis],P_face[:,np.newaxis]), axis=1)
+        P_face = np.concatenate((P_face[:,np.newaxis],P_face[:,np.newaxis]), axis=1)
         #import pdb; pdb.set_trace()
         wave_velocity, eigvec_m = RiemannSolvers(ctes.v0,ctes.pretransmissibility_internal_faces).\
-            medium_wave_velocity(M, fprop, Nk_face, P_face, Vpm, ftotal, ponteiro)
+            medium_wave_velocity(M, fprop, Nk_face, P_face, ftotal, ponteiro)
+        #wave_velocity = Fk_vols_total_new/fprop.Nk
         return So, Sg, Sw, Fk_vols_total_new, wave_velocity, qk_new, mobilities_new
