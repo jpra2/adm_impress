@@ -21,6 +21,8 @@ from packs.data_class.sparse_operators import SparseOperators
 from packs.cases.compositional_adm_cases.compressible_oil import update_variables_before_init
 from packs.multiscale.ms_utils.multiscale_functions import print_mesh_volumes_data
 from packs.cases.compositional_adm_cases.compressible_oil import all_functions
+from packs.solvers.solvers_trilinos.solvers_tril import solverTril
+from packs.solvers.solvers_scipy.solver_sp import SolverSp
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -42,14 +44,15 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case8_adm_3k' # coarse volumes wells in fine scale
 # description = 'case9_adm_3k' # neig wells in fine scale
 # description = 'case10_adm_3k' # case9_adm_3k with 10 coarse ratio
-# description = 'case11_adm_3k' # case 9 adm 3k with 25 coarse ratio 
+# description = 'case11_adm_3k' # case 9 adm 3k with 25 coarse ratio
 # description = 'case12_finescale_6k'
 # description = 'case13_adm_6k' # case 12 with cr=5
 # description = 'case14_adm_6k' # with 10 coarse volumes
 # description = 'case15_adm_6k' # with 25 coarse volumes
 # description = 'case16_finescale_5000_3k_' # with 25 coarse volumes
 # description = 'case16_finescale_5000_3k_' # with 25 coarse volumes
-description = 'case18_adm_6k_5000_' # cr = 25
+# description = 'case18_adm_6k_5000_' # cr = 25
+description = 'case19_adm_6k_5000_' # cr = 25, iterate finescale solution trilinos
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -111,6 +114,8 @@ master_local_operator = MasterLocalOperator(dual_subdomains, ctes.n_volumes)
 params['area'] = data_impress['area']
 params['pretransmissibility'] = data_impress['pretransmissibility']
 
+# trilinos_solver = solverTril()
+
 local_problem_params = {
     'Vbulk': ctes.Vbulk,
     'porosity': ctes.porosity,
@@ -144,7 +149,9 @@ local_problem_params = {
     'OP_AMS': OP_AMS,
     'dual_subdomains': dual_subdomains,
     'master_neumann': master_neumann,
-    'master_local_operator': master_local_operator
+    'master_local_operator': master_local_operator,
+    # 'trilinos_solver': trilinos_solver
+    'scipy_solver': SolverSp()
 }
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
@@ -154,7 +161,7 @@ data_impress['LEVEL'][:] = 1
 params['active_volumes'] = 0
 
 # #######################
-# ## update before init 
+# ## update before init
 # update_variables_before_init.update_variables_for_initial_run_adm(
 #     fprop,
 #     sim,
@@ -187,7 +194,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['z'] = fprop.z
     params['porous_volume'] = fprop.Vp
     params['total_volume'] = fprop.Vt
-    
+
     # global_vector_update[:] = True # update the prolongation operator in all dual volumes
     for phase in range(ctes.n_phases):
         functions_update.update_global_vector_for_latest_variable(
@@ -196,46 +203,46 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             fprop.mobilities[:, phase, :],
             0.1
         )
-        
+
     # for comp in range(fprop.z.shape[0]):
     #     functions_update.update_global_vector_for_volumes_adjacencies_variable(
-    #         global_vector_update, 
-    #         elements_lv0['neig_internal_faces'], 
-    #         fprop.z[comp, :], 
+    #         global_vector_update,
+    #         elements_lv0['neig_internal_faces'],
+    #         fprop.z[comp, :],
     #         0.1
     #     )
-        
+
     for dual in dual_subdomains:
         dual: DualSubdomain
         if np.any(global_vector_update[dual.gids]):
             latest_mobility[:, :, dual.gids] = fprop.mobilities[:, :, dual.gids]
             total_volumes_updated[dual.gids] = True
-    
+
     functions_update.set_level0_delta_sat(
         data_impress['LEVEL'],
         fprop.Sg,
         elements_lv0['neig_internal_faces'],
         0.1
     )
-    
+
     functions_update.set_level0_delta_sat(
         data_impress['LEVEL'],
         fprop.So,
         elements_lv0['neig_internal_faces'],
         0.1
     )
-    
+
     functions_update.set_level0_delta_sat(
         data_impress['LEVEL'],
         fprop.Sw,
         elements_lv0['neig_internal_faces'],
         0.1
     )
-        
+
 
     t0 = time.time()
-    sim.run(M, wells, fprop, load, 
-            multilevel_data=ml_data, 
+    sim.run(M, wells, fprop, load,
+            multilevel_data=ml_data,
             multilevel_operators=mlo,
             params=params,
             adm_method=adm,
@@ -271,15 +278,15 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['composition_internal_faces'] = fprop.Csi_j_internal_faces
     params['xkj_internal_faces'] = fprop.xkj_internal_faces
     params['rho_phase_internal_faces'] = fprop.rho_j_internal_faces
-    
-    
+
+
     loop = sim.loop
     print(sim.t)
     loop_array['total_simulation_time'][0] += simulation_time
     loop_array['n_total_loops'][0] += 1
-    
+
     if (loop) % n_loops_for_acumulate == 0:
-             
+
         loop_array['loop'][0] = loop
         loop_array['t'][0] = sim.t
         loop_array['vpi'][0] = sim.vpi
@@ -291,7 +298,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         loop_array['active_volumes'][0] = params['active_volumes']
         loop_array['oil_rate'][0] = np.sum(fprop.q_phase[:,0])
         loop_array['gas_rate'][0] = np.sum(fprop.q_phase[:,1])
-        
+
         compositional_data.update({
             'pressure': fprop.P,
             'Sg': fprop.Sg,
@@ -305,25 +312,25 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             'loop_array': loop_array
         })
         cumulative_compositional_datamanager.insert_data(compositional_data._data)
-        
+
         manage_operators.update(
             {
                 'prolongation_level_1': OP_AMS
             }
         )
-    
+
     if (loop) % n_loops_for_export == 0:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         manage_operators.export()
 
-         
+
     global_vector_update[:] = False
     total_volumes_updated[:] = False
     data_impress['LEVEL'][:] = 1
     t_simulation = sim.t/86400
-        
-    
+
+
     if loop % 2500 == 0:
         print('sleeping...')
         time.sleep(5)

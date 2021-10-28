@@ -2,6 +2,7 @@
 import numpy as np
 import scipy.sparse as sp
 # IFPACK.PrintSparsity(Matrix, "matrix.ps")
+# from PyTrilinos import Epetra, AztecOO
 
 
 class solverTril:

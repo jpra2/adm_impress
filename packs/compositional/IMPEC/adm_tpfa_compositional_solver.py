@@ -13,6 +13,9 @@ from packs.multiscale.ms_utils.multiscale_functions import update_local_transmis
 from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
 from packs.multiscale.preprocess.dual_domains import DualSubdomain
 from collections.abc import Sequence
+from packs.solvers.solvers_trilinos.solvers_tril import solverTril
+from packs.solvers.solvers_scipy.solver_sp import SolverSp
+import time
 
 def update_local_parameters(dt, fprop, **kwargs):
     params = kwargs.get('params')
@@ -36,14 +39,14 @@ def update_local_parameters(dt, fprop, **kwargs):
 
 
 class AdmTpfaCompositionalSolver(TPFASolver):
-    
+
     _kwargs_keys = {
         'get_pressure': [
             'multilevel_data',
             'multilevel_operators'
         ]
     }
-    
+
     def get_pressure_adm(self, M, wells, fprop, Pold, delta_t, **kwargs):
 
         adm_method: AdmNonNested = kwargs.get('adm_method')
@@ -57,16 +60,21 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         dual_subdomains: Sequence[DualSubdomain] = kwargs.get('dual_subdomains')
         global_vector_update = kwargs.get('global_vector_update')
         OP_AMS = kwargs.get('OP_AMS')
-        # import pdb; pdb.set_trace()
+        # import pdb; pdb.set_tracedescription = 'case18_adm_6k_5000_' # cr = 25()
         # centroids = M.volumes.center[:]
         # dx = centroids[:, 0][elements_lv0['neig_internal_faces'][:,1]] - centroids[:, 0][elements_lv0['neig_internal_faces'][:,0]]
         # dx = dx.min()
         # test = (centroids[:,0] >= centroids[:,0].min() - 0.1) & (centroids[:,0] < centroids.min() + 7*dx + 0.1)
         # vols = elements_lv0['volumes'][test]
-        
+
+        k = 1e13
         T, T_noCC, T_advec = self.update_transmissibility_adm(M, wells, fprop, delta_t, **kwargs)
+        T *= k
+        T_noCC *= k
+        T_advec *= k
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
-        
+        D *= k
+
         # OP_AMS, cfs  = mlo.run_paralel_2(
         #     T_noCC,
         #     D,
@@ -77,7 +85,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     1
         # )
         # import pdb; pdb.set_trace()
-        
+
         master_local_operator = kwargs.get('master_local_operator')
         OP_AMS, cfs  = mlo.run_paralel_2(
             T_advec,
@@ -89,10 +97,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             OP_AMS,
             1,
             master_local_operator
-            
+
         )
         # import pdb; pdb.set_trace()
-    
+
         n_levels = 2
         transm_int_fac = np.array(T_noCC[ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
         # data_impress['transmissibility'][elements_lv0['internal_faces']] = ctes.pretransmissibility_internal_faces
@@ -119,7 +127,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # vols_orig = monotonic_adm_subds.get_monotonizing_level(l_groups, groups_c, critical_groups, data_impress,
         #                                                        elements_lv0, volumes, netasp_array, neta_lim_finescale)        # adm_method.set_level_wells_3()
         # ########################
-        
+
         # data_impress['LEVEL'][:] = 1
         # # data_impress['LEVEL'][vols] = 0
         # adm_method.set_level_wells_only()
@@ -137,7 +145,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         gid_1 = data_impress['GID_0'][data_impress['LEVEL'] == 1]
         adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
         # data_impress['LEVEL'][vols] = 0
-        
+
         cfs[data_impress['LEVEL'] == 0] = 0
 
         for level in range(1, n_levels):
@@ -159,6 +167,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             restriction_list.append(adm_method['adm_restriction_level_' + str(level)])
             correction_function_list.append(np.zeros(adm_method['adm_prolongation_level_' + str(level)].shape[0]))
 
+        tm0 = time.time()
         solution, n_active_volumes = multilevel_pressure_solver(
             T,
             D,
@@ -166,6 +175,21 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             restriction_list,
             correction_function_list
         )
+        tm1 = time.time()
+
+        ###########
+        ### iterate in fine scale
+        # trilinos_solver: solverTril = kwargs.get('trilinos_solver')
+        # solution = trilinos_solver.solve_linear_problem(T, D, x=solution, tolerance=1e-12)
+        scipy_solver: SolverSp = kwargs.get('scipy_solver')
+        solution = scipy_solver.gmres_solver(T, D, x0=solution, tol=1e-10)
+        ###########
+
+        T_noCC /= k
+        T /= k
+        T_advec /= k
+        D /= k
+
         params.update({
             'active_volumes': n_active_volumes
         })
@@ -204,7 +228,11 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # )
 
         # Ft_internal_faces_orig = self.update_total_flux_internal_faces(fprop, P) # pressao local
+
+        ############################################
+        ## calculo do fluxo
         Ft_internal_faces_adm = self.update_total_flux_internal_faces(M, fprop, solution) # pressao local
+        '''
         Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
 
@@ -221,7 +249,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     all_coarse_intersect_faces,
         #     **kwargs
         # )
-        
+
         update_local_problem(
             neumann_subds.neumann_subds,
             T_noCC,
@@ -234,7 +262,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             all_coarse_intersect_faces,
             **kwargs
         )
-        
+
         # master = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
         # local_solution = master.run()
         # local_solution = master.run_serial()
@@ -278,15 +306,15 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     kwargs['n_components'],
         #     kwargs['n_volumes']
         # )
-        
+
         # # import pdb; pdb.set_trace()
-        
+
         # data_impress['flux_volumes'][:] = global_flux[0]
-        
-        
-        
         other_faces = np.setdiff1d(elements_lv0['internal_faces'], all_coarse_intersect_faces)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][other_faces]] = ft_internal_faces_local_solution[:, elements_lv0['remaped_internal_faces'][other_faces]]
+        '''
+        Ft_internal_faces = Ft_internal_faces_adm
+        #########################################################
 
         # data_impress.update_variables_to_mesh()
         # print_mesh_volumes_data(
@@ -301,9 +329,9 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # import pdb; pdb.set_trace()
         # return self.P, Ft_internal_faces_orig, self.q
         # return solution, Ft_internal_faces, self.q
-        
+
         return Pnew, Ft_internal_faces, self.q
-    
+
     def update_transmissibility_adm(self, M, wells, fprop, delta_t, **kwargs):
         params = kwargs.get('params')
         self.t0_internal_faces_prod = fprop.xkj_internal_faces * \
@@ -357,10 +385,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         T[wells['ws_p'], wells['ws_p']] = 1
 
         return T.tocsc(), self.T_noCC.copy(), T_advec
-          
+
     def set_level0_by_composition(self, level_vector, compositions, n_components, delta_c, adj_internal_faces, n_volumes):
-        
-        
+
+
         """define level by maximum value of composition variation
         Args:
             composition ([type]): array with composition of volumes
@@ -370,7 +398,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             n_volumes: number of volumes
         """
         level0 = np.full(n_volumes, False, dtype=bool)
-        
+
         for component in compositions:
             import pdb; pdb.set_trace()
             d_composition = component[adj_internal_faces]
@@ -378,38 +406,34 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             test = d_composition >= delta_c
             vols = np.unique(np.concatenate(adj_internal_faces[test]))
             level0[vols] = True
-        
+
         level_vector[level0] = 0
-    
+
     def set_level0_wells(self, level_vector, wells_ids, volumes_adjacencies_by_face, n_volumes):
         level0 = np.full(n_volumes, False, dtype=bool)
         adjs = np.unique(np.concatenate(volumes_adjacencies_by_face[wells_ids]))
         level0[wells_ids] = True
         level0[adjs] = True
-        
+
         level_vector[level0] = 0
-    
+
     def set_level0_wells_v2(self, level_vector, wells_ids, n_volumes, coarse_gid):
         level0 = np.full(n_volumes, False, dtype=bool)
         coarse_gid_wells = np.unique(coarse_gid[wells_ids])
-        for cid in coarse_gid_wells:    
+        for cid in coarse_gid_wells:
             level0[coarse_gid == cid] = True
-        
+
         level_vector[level0] = 0
-    
+
     def get_pressure_finescale(self, M, wells, fprop, Pold, delta_t, **kwargs):
-        
+
         T = self.update_transmissibility(M, wells, fprop, delta_t)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
         Pnew = self.update_pressure(T, D)
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop, Pnew)
         self.update_flux_wells(fprop, Pnew, wells, delta_t)
         return Pnew, Ft_internal_faces, self.q
-    
+
     def get_pressure(self, M, wells, fprop, Pold, delta_t, **kwargs):
         return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)
         # return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, **kwargs)
-        
-        
-        
-        
