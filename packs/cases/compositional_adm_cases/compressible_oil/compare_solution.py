@@ -24,7 +24,9 @@ fig_str = 'figura_'
 # description2 = 'case11_adm_3k'
 # description2 = 'case18_adm_6k_5000_'
 # description2 = 'case19_adm_6k_5000_'
-description2 = 'case20_adm_6k_5000_'
+# description2 = 'case20_adm_6k_5000_'
+# description2 = 'case21_adm_6k_5000_'
+description2 = 'case22_adm_6k_5000_'
 case2 = CumulativeCompositionalDataManager(description=description2)
 # datas_case2 = case2.load_all_datas()
 datas_case2 = case2.load_all_datas_from_keys(['loop_array'])
