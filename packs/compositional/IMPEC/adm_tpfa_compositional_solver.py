@@ -182,13 +182,13 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # trilinos_solver: solverTril = kwargs.get('trilinos_solver')
         # solution = trilinos_solver.solve_linear_problem(T, D, x=solution, tolerance=1e-12)
         scipy_solver: SolverSp = kwargs.get('scipy_solver')
-        solution = scipy_solver.gmres_solver(T, D, x0=solution, tol=1e-10)
+        solution = scipy_solver.gmres_solver(T, D, x0=solution, tol=1e-15)
         ###########
 
-        T_noCC /= k
-        T /= k
-        T_advec /= k
-        D /= k
+        # T_noCC /= k
+        # T /= k
+        # T_advec /= k
+        # D /= k
 
         params.update({
             'active_volumes': n_active_volumes

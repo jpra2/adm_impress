@@ -22,7 +22,9 @@ fig_str = 'figura_'
 # description2 = 'case9_adm_3k'
 # description2 = 'case10_adm_3k'
 # description2 = 'case11_adm_3k'
-description2 = 'case18_adm_6k_5000_'
+# description2 = 'case18_adm_6k_5000_'
+# description2 = 'case19_adm_6k_5000_'
+description2 = 'case20_adm_6k_5000_'
 case2 = CumulativeCompositionalDataManager(description=description2)
 # datas_case2 = case2.load_all_datas()
 datas_case2 = case2.load_all_datas_from_keys(['loop_array'])
@@ -131,10 +133,10 @@ ax2.set_xlabel('time [days]')
 ax2.legend()
 
 # plt.subplots_adjust(left=0.1,
-#                     bottom=0.1, 
-#                     right=0.9, 
-#                     top=0.9, 
-#                     wspace=0.4, 
+#                     bottom=0.1,
+#                     right=0.9,
+#                     top=0.9,
+#                     wspace=0.4,
 #                     hspace=0.4)
 
 fig.tight_layout()
@@ -154,10 +156,10 @@ ax2.set_ylabel('Total volumes')
 
 
 plt.subplots_adjust(left=0.1,
-                    bottom=0.1, 
-                    right=0.9, 
-                    top=0.9, 
-                    wspace=0.4, 
+                    bottom=0.1,
+                    right=0.9,
+                    top=0.9,
+                    wspace=0.4,
                     hspace=0.4)
 # plt.subplots_adjust(
 #     top=0.9,
@@ -165,7 +167,7 @@ plt.subplots_adjust(left=0.1,
 #     wspace=0.4,
 #     hspace=0.4
 # )
-    
+
 # fig.tight_layout()
 fig.suptitle('Volumes para atualizar as funcoes de base')
 
@@ -193,10 +195,10 @@ ax2.legend()
 # fig.tight_layout()
 
 plt.subplots_adjust(left=0.15,
-                    bottom=0.1, 
-                    right=0.9, 
-                    top=0.9, 
-                    wspace=0.4, 
+                    bottom=0.1,
+                    right=0.9,
+                    top=0.9,
+                    wspace=0.4,
                     hspace=0.4)
 
 plt.savefig(fig_str + description2 + 'Active_volumes' + '.png')
@@ -222,10 +224,10 @@ ax2.legend()
 # fig.tight_layout()
 
 plt.subplots_adjust(left=0.15,
-                    bottom=0.1, 
-                    right=0.9, 
-                    top=0.9, 
-                    wspace=0.4, 
+                    bottom=0.1,
+                    right=0.9,
+                    top=0.9,
+                    wspace=0.4,
                     hspace=0.4)
 
 plt.savefig(fig_str + description2 + 'Flow_rate' + '.png')
@@ -234,7 +236,3 @@ plt.savefig(fig_str + description2 + 'Flow_rate' + '.png')
 
 
 import pdb; pdb.set_trace()
-
-
-        
-    
