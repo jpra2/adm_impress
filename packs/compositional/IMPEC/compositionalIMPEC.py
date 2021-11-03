@@ -50,11 +50,10 @@ class CompositionalFVM:
             #wells['values_q'] = q[:,wells['ws_inj']]
             q[:,-1] = -1*q[:,-1]
             fprop.q_phase = total_flux_internal_faces[:,0][:,np.newaxis] * np.ones((1,2))
-            fprop.qk_prod = 1/(24*60*60) * np.array([[0,0.25, 0.25, 0.25, 0.25]]).T'''
-
-            fprop.qk_prod = q[:,wells['ws_prod']]
+            fprop.qk_prod = 1/(24*60*60) * np.array([[0,0.25, 0.25, 0.25, 0.25]]).T
+            '''
             fprop.qk_molar = q
-            total_flux_internal_faces *= ctes.ds_faces[np.newaxis,:]
+            #fprop.qk_prod = q[:,wells['ws_prod']]
 
             if ctes.MUSCL:
                 wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
