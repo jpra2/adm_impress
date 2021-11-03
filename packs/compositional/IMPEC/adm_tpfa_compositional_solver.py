@@ -426,14 +426,20 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         level_vector[level0] = 0
 
     def get_pressure_finescale(self, M, wells, fprop, Pold, delta_t, **kwargs):
-
+        params = kwargs.get('params')
+        k = 1e13
         T = self.update_transmissibility(M, wells, fprop, delta_t)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
-        Pnew = self.update_pressure(T, D)
+        T *= k
+        D *= k
+        # Pnew = self.update_pressure(T, D)
+        scipy_solver: SolverSp = kwargs.get('scipy_solver')
+        solution = scipy_solver.gmres_solver(T, D, x0=params['pressure'], tol=1e-15)
+        Pnew = solution
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop, Pnew)
         self.update_flux_wells(fprop, Pnew, wells, delta_t)
         return Pnew, Ft_internal_faces, self.q
 
     def get_pressure(self, M, wells, fprop, Pold, delta_t, **kwargs):
-        return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)
-        # return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, **kwargs)
+        # return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)
+        return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, **kwargs)
