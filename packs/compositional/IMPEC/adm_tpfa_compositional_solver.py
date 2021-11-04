@@ -96,8 +96,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             np.zeros(D.shape[0]),
             OP_AMS,
             1,
-            master_local_operator,
-            **kwargs
+            master_local_operator
         )
         # import pdb; pdb.set_trace()
 
@@ -182,7 +181,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # trilinos_solver: solverTril = kwargs.get('trilinos_solver')
         # solution = trilinos_solver.solve_linear_problem(T, D, x=solution, tolerance=1e-12)
         scipy_solver: SolverSp = kwargs.get('scipy_solver')
-        solution = scipy_solver.gmres_solver(T, D, x0=solution, tol=1e-15)
+        tolerance = kwargs.get('tolerance')
+        solution = scipy_solver.gmres_solver(T, D, x0=solution, tol=tolerance)
         ###########
 
         # T_noCC /= k

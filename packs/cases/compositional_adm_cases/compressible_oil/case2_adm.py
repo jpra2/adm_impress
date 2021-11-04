@@ -55,7 +55,7 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case19_adm_6k_5000_' # cr = 25, iterate finescale, tol=1e-10
 # description = 'case20_adm_6k_5000_' # cr = 25, iterate finescale, tol=1e-14
 # description = 'case21_adm_6k_5000_' # cr = 25, iterate finescale, tol=1e-14, without correction functions
-description = 'case22_adm_6k_5000_' # cr = 50, iterate finescale, tol=1e-14, without correction functions
+# description = 'case22_adm_6k_5000_' # cr = 50, iterate finescale, tol=1e-14, without correction functions
 # description = 'case23_finescale_6k_5000_' # finescale iterative
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
@@ -112,6 +112,13 @@ global_vector_update = np.full(ctes.n_volumes, False, dtype=bool)
 ncoarse_ids = len(np.unique(data_impress['GID_1']))
 OP_AMS = sp.lil_matrix((ctes.n_volumes, ncoarse_ids)).tocsc()
 
+keywords1 = {
+    'update_FC': True
+}
+
+master_neumann = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
+master_local_operator = MasterLocalOperator(dual_subdomains, ctes.n_volumes, **keywords1)
+
 params['area'] = data_impress['area']
 params['pretransmissibility'] = data_impress['pretransmissibility']
 
@@ -153,15 +160,11 @@ local_problem_params = {
     'master_local_operator': master_local_operator,
     # 'trilinos_solver': trilinos_solver
     'scipy_solver': SolverSp(),
-    'update_FC': False
+    'tolerance': 1e-10
 }
-
-master_neumann = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
-master_local_operator = MasterLocalOperator(dual_subdomains, ctes.n_volumes)
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
 latest_density = np.zeros(fprop.rho_j.shape)
-import pdb; pdb.set_trace()
 global_vector_update[:] = False
 total_volumes_updated = copy.deepcopy(global_vector_update)
 data_impress['LEVEL'][:] = 1
