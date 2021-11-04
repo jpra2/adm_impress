@@ -55,8 +55,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case19_adm_6k_5000_' # cr = 25, iterate finescale, tol=1e-10
 # description = 'case20_adm_6k_5000_' # cr = 25, iterate finescale, tol=1e-14
 # description = 'case21_adm_6k_5000_' # cr = 25, iterate finescale, tol=1e-14, without correction functions
-# description = 'case22_adm_6k_5000_' # cr = 50, iterate finescale, tol=1e-14, without correction functions
-description = 'case23_finescale_6k_5000_' # finescale iterative
+description = 'case22_adm_6k_5000_' # cr = 50, iterate finescale, tol=1e-14, without correction functions
+# description = 'case23_finescale_6k_5000_' # finescale iterative
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -112,9 +112,6 @@ global_vector_update = np.full(ctes.n_volumes, False, dtype=bool)
 ncoarse_ids = len(np.unique(data_impress['GID_1']))
 OP_AMS = sp.lil_matrix((ctes.n_volumes, ncoarse_ids)).tocsc()
 
-master_neumann = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
-master_local_operator = MasterLocalOperator(dual_subdomains, ctes.n_volumes)
-
 params['area'] = data_impress['area']
 params['pretransmissibility'] = data_impress['pretransmissibility']
 
@@ -155,10 +152,16 @@ local_problem_params = {
     'master_neumann': master_neumann,
     'master_local_operator': master_local_operator,
     # 'trilinos_solver': trilinos_solver
-    'scipy_solver': SolverSp()
+    'scipy_solver': SolverSp(),
+    'update_FC': False
 }
 
+master_neumann = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
+master_local_operator = MasterLocalOperator(dual_subdomains, ctes.n_volumes)
+
 latest_mobility = np.zeros(fprop.mobilities.shape)
+latest_density = np.zeros(fprop.rho_j.shape)
+import pdb; pdb.set_trace()
 global_vector_update[:] = False
 total_volumes_updated = copy.deepcopy(global_vector_update)
 data_impress['LEVEL'][:] = 1
@@ -204,8 +207,8 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     for phase in range(ctes.n_phases):
         functions_update.update_global_vector_for_latest_variable(
             global_vector_update,
-            latest_mobility[:, phase, :],
-            fprop.mobilities[:, phase, :],
+            latest_mobility[:, phase, :]*latest_density[:, phase, :],
+            fprop.mobilities[:, phase, :]*fprop.rho_j[:, phase, :],
             0.1
         )
 
@@ -221,6 +224,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         dual: DualSubdomain
         if np.any(global_vector_update[dual.gids]):
             latest_mobility[:, :, dual.gids] = fprop.mobilities[:, :, dual.gids]
+            latest_density[:, :, dual.gids] = fprop.rho_j[:, :, dual.gids]
             total_volumes_updated[dual.gids] = True
 
     functions_update.set_level0_delta_sat(
@@ -314,6 +318,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             'xkj': fprop.xkj,
             'Vp': fprop.Vp,
             'latest_mobility': latest_mobility,
+            'latest_density': latest_density,
             'loop_array': loop_array
         })
         cumulative_compositional_datamanager.insert_data(compositional_data._data)

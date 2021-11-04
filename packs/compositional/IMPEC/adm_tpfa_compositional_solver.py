@@ -96,8 +96,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             np.zeros(D.shape[0]),
             OP_AMS,
             1,
-            master_local_operator
-
+            master_local_operator,
+            **kwargs
         )
         # import pdb; pdb.set_trace()
 
@@ -434,6 +434,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         D *= k
         # Pnew = self.update_pressure(T, D)
         scipy_solver: SolverSp = kwargs.get('scipy_solver')
+        # import pdb; pdb.set_trace()
         solution = scipy_solver.gmres_solver(T, D, x0=params['pressure'], tol=1e-15)
         Pnew = solution
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop, Pnew)
@@ -441,5 +442,5 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         return Pnew, Ft_internal_faces, self.q
 
     def get_pressure(self, M, wells, fprop, Pold, delta_t, **kwargs):
-        # return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)
-        return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, **kwargs)
+        return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)
+        # return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, **kwargs)

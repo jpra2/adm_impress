@@ -7,7 +7,7 @@ def run_thing(local_solver_obj):
 
 
 class GlobalLocalSolver:
-    def __init__(self, subdomains, queue: Queue, comm, finished, id_process):
+    def __init__(self, subdomains, queue: Queue, comm, finished, id_process, **kwargs):
         """
         @param subdomains: list of subdomains
         @param queue: queue object
@@ -20,6 +20,7 @@ class GlobalLocalSolver:
         self.comm = comm
         self.finished = finished
         self.id_process = id_process
+        self.update_FC = kwargs.get('update_FC')
 
     def finish(self):
         print(f'\nProcess {self.id_process} finished \n')

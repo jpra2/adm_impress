@@ -117,7 +117,7 @@ class MultilevelOperators(DataManager):
                 OP = sp.load_npz(os.path.join('flying', prol_name + '.npz'))
                 OR = sp.load_npz(os.path.join('flying', rest_name + '.npz'))
                 Cmatrix = sp.load_npz(os.path.join('flying', cmat_name + '.npz'))
-                self._data[prol_name] = OP                
+                self._data[prol_name] = OP
                 self._data[rest_name] = OR
                 self._data[cmat_name] = Cmatrix
         else:
@@ -194,7 +194,7 @@ class MultilevelOperators(DataManager):
         total_source_term: 'total fine source term'=None,
         _grav: 'fine gravity source term'=None,
         return_correction_matrix=False):
-    
+
         T_ant = T.copy()
         total_source_term_2 = total_source_term.copy()
         for n in range(1, self.n_levels):
@@ -312,22 +312,22 @@ class MultilevelOperators(DataManager):
             cids_level = self.ml_data['coarse_primal_id_level_'+str(level)]
             T_ant = manter_vizinhos_de_face(T_ant, cids_level, cids_neigh)
 
-    def run_paralel_2(self, T_fine_without_bc, global_source_term, dual_subdomains, global_vector_update, global_diagonal_term, OP_AMS, level, master_local_operator):
+    def run_paralel_2(self, T_fine_without_bc, global_source_term, dual_subdomains, global_vector_update, global_diagonal_term, OP_AMS, level, master_local_operator, **kwargs):
         #########
         ## set update for op and local matrices
         DualSubdomainMethods.set_local_update(dual_subdomains, global_vector_update)
         #########
-        
+
         ########
         ## update local matrices
         DualSubdomainMethods.update_matrices_dual_subdomains(dual_subdomains, T_fine_without_bc, global_diagonal_term)
         ########
-        
+
         ########
         ## update local source term
         DualSubdomainMethods.update_local_source_terms_dual_subdomains(dual_subdomains, global_source_term)
         ########
-        
+
         #################
         ## test local operator
         # from scipy.sparse.linalg import spsolve
@@ -345,20 +345,20 @@ class MultilevelOperators(DataManager):
         #         nv = dual.ams_solver.wirebasket_numbers[3]
         #         Pv = sp.identity(nv)
         #         op2 = spsolve(dual.As['Aee'], dual.As['Aev']*Pv)
-                
+
         #         import pdb; pdb.set_trace()
         #         local_op = sp.find(local_op)
         #         local_op[0][:] = dual.gids[local_op[0]]
         #         local_op[1][:] = dual.rmap_lcid_cid[local_op[1]]
         #     else:
         #         local_op = np.array([[], [], []])
-            
+
         #     local_pcorr = dual.ams_solver.get_pcorr2(dual.As, dual.local_source_term)
         #     cfs[dual.gids] = local_pcorr
         #     OP2[local_op[0], local_op[1]] = local_op[2]
         # import pdb; pdb.set_trace()
         # #################
-        
+
         ############
         ## get OP_AMS and correction function
         # n_volumes = len(global_source_term)
@@ -366,22 +366,22 @@ class MultilevelOperators(DataManager):
         master = master_local_operator
         OP_AMS, correction_function = master.run(OP_AMS, dual_subdomains)
         #############
-        
+
         #########
         ## reinitialize local and global update
         # global_vector_update[:] = False
         # DualSubdomainMethods.reinitialize_update(dual_subdomains)
         #########
-        
+
         self._data[self.prolongation + str(level)] = OP_AMS
         self._data[self.pcorr_n + str(level)] = correction_function
         # self._data[self.cmatrix + str(level)] = Cmatrix
         self._data[self.prolongation_lcd + str(level)] = sp.find(OP_AMS)
         # OR = self._data[self.restriction + str(level)]
-        
+
         return OP_AMS, correction_function
-        
-    
+
+
     def get_OP_paralel(self, level, dual_volumes, local_couple, couple_bound):
         #
         # dual_structure = self.ml_data['dual_structure_level_'+str(level)]

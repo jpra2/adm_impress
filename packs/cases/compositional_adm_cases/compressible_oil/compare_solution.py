@@ -6,7 +6,8 @@ from packs.cases.compositional_adm_cases.compressible_oil.all_functions import o
 
 # description = 'case1_finescale_'
 # description1 = 'case3_finescale_3k'
-description1 = 'case17_finescale_6k_5000_'
+# description1 = 'case17_finescale_6k_5000_'
+description1 = 'case23_finescale_6k_5000_' # iterative
 # description = 'case2_adm_'
 # compositional_data = CompositionalData(description=description)
 case1 = CumulativeCompositionalDataManager(description=description1)
@@ -25,9 +26,9 @@ fig_str = 'figura_'
 # description2 = 'case18_adm_6k_5000_'
 # description2 = 'case19_adm_6k_5000_'
 # description2 = 'case20_adm_6k_5000_'
-# description2 = 'case21_adm_6k_5000_'
+description2 = 'case21_adm_6k_5000_'
 # description2 = 'case22_adm_6k_5000_'
-description2 = 'case23_finescale_6k_5000_'
+# description2 = 'case23_finescale_6k_5000_'
 case2 = CumulativeCompositionalDataManager(description=description2)
 # datas_case2 = case2.load_all_datas()
 datas_case2 = case2.load_all_datas_from_keys(['loop_array'])
@@ -144,7 +145,8 @@ ax2.legend()
 
 fig.tight_layout()
 
-plt.savefig(fig_str + description2 + 'Production' + '.png')
+# plt.savefig(fig_str + description2 + 'Production' + '.png')
+plt.savefig(fig_str + description2 + 'Production_iterative' + '.png')
 ########################################################
 
 ######################################################
@@ -174,7 +176,8 @@ plt.subplots_adjust(left=0.1,
 # fig.tight_layout()
 fig.suptitle('Volumes para atualizar as funcoes de base')
 
-plt.savefig(fig_str + description2 + 'Total_volumes' + '.png')
+# plt.savefig(fig_str + description2 + 'Total_volumes' + '.png')
+plt.savefig(fig_str + description2 + 'Total_volumes_iterative' + '.png')
 ####################################################
 
 ###################################################
@@ -190,6 +193,12 @@ ax2.plot(case1_time, case1_simulation_time, '-', label='Finescale')
 ax2.plot(case2_time, case2_simulation_time, '-', label='Adm')
 ax2.plot(case1_time, np.repeat(np.mean(case1_simulation_time), len(case1_simulation_time)), 0.05, color='black')
 ax2.plot(case2_time, np.repeat(np.mean(case2_simulation_time), len(case2_simulation_time)), 0.05, color='black')
+
+t1 = np.mean(np.mean(case1_simulation_time))
+t2 = np.mean(case2_simulation_time)
+t1sum = case1_simulation_time.sum()
+t2sum = case2_simulation_time.sum()
+# import pdb; pdb.set_trace()
 # ax1.fill(case2_time, case2_active_volumes)
 ax2.set_xlabel('time [days]')
 ax2.set_ylabel('Simulation_time [s]')
@@ -204,7 +213,8 @@ plt.subplots_adjust(left=0.15,
                     wspace=0.4,
                     hspace=0.4)
 
-plt.savefig(fig_str + description2 + 'Active_volumes' + '.png')
+# plt.savefig(fig_str + description2 + 'Active_volumes' + '.png')
+plt.savefig(fig_str + description2 + 'Active_volumes_iterative' + '.png')
 #################################################
 
 #################################################
@@ -233,7 +243,8 @@ plt.subplots_adjust(left=0.15,
                     wspace=0.4,
                     hspace=0.4)
 
-plt.savefig(fig_str + description2 + 'Flow_rate' + '.png')
+# plt.savefig(fig_str + description2 + 'Flow_rate' + '.png')
+plt.savefig(fig_str + description2 + 'Flow_rate_iterative' + '.png')
 ###############################################
 
 
