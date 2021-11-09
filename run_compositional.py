@@ -111,13 +111,14 @@ class run_simulation:
 
             ctes.P_SC *= np.ones_like(wells['ws_prod'])
             ctes.T_SC = fprop.T#* np.ones_like(wells['ws_prod'])
-            self.p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
+            p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
             L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-                self.p_well.run_init(ctes.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']])
+                p_well.run_init(ctes.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']])
 
-        else: fprop.x = []; fprop.y = []; fprop.L = []; fprop.V = []
+        else: fprop.x = []; fprop.y = []; fprop.L = []; fprop.V = []; wells['inj_term'] = []
 
-        if ctes.load_w: fprop.inputs_water_properties(M) #load water properties
+        if ctes.load_w:
+            fprop.inputs_water_properties(M) #load water properties
 
         '----------------------- Calculate fluid properties -------------------'
 
@@ -144,11 +145,12 @@ class run_simulation:
             #self.p2 = StabilityCheck(fprop.P, fprop.T)
             Nk = np.copy(fprop.Nk)
             #Nk[Nk<0] = 0
-            z = Nk/np.sum(Nk,axis=0)
+            z = Nk[0:ctes.Nc]/np.sum(Nk[0:ctes.Nc],axis=0)
+
             fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
-            self.p2.run(fprop.P, np.copy(z))
+            self.p2.run(fprop.P, np.copy(z), wells)
 
             if len(wells['ws_q'])>0 and any((wells['inj_cond']=='reservoir')) and not self.p2.constant_K:
                 z = (wells['z'][wells['inj_cond']=='reservoir']).T
@@ -181,14 +183,17 @@ class run_simulation:
                 self.update_current_compositional_results(M, wells, fprop)
 
     def prod_rate_SC(self, fprop, wells):
-
-        z_prod = fprop.qk_prod/np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
-        L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-            self.p_well.run(ctes.P_SC, z_prod[0:ctes.Nc])
-        q_molar_prod = np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
-        self.oil_production_rate_t = abs(np.sum(L * q_molar_prod / Csi_L))
-        self.gas_production_rate_t = abs(np.sum(V * q_molar_prod / Csi_V))
-
+        if ctes.load_k:
+            p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
+            z_prod = fprop.qk_prod/np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
+            
+            if (z_prod).sum()<1 or np.isnan(z_prod.sum()): z_prod = fprop.z[:,wells['ws_p']]
+            L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
+                p_well.run_init(ctes.P_SC, z_prod[0:ctes.Nc])
+            q_molar_prod = np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
+            self.oil_production_rate_t = abs(np.sum(L * q_molar_prod / Csi_L))
+            self.gas_production_rate_t = abs(np.sum(V * q_molar_prod / Csi_V))
+        else: self.oil_production_rate_t =[]; self.gas_production_rate_t =[]
     def update_loop(self):
         ''' Function to count how many loops it has been since the simulation \
         started'''
@@ -236,6 +241,7 @@ class run_simulation:
         M.data['saturation'][:] = fprop.Sw
         M.data['So'][:] = fprop.So
         M.data['Sg'][:] = fprop.Sg
+        #M.data['zc1'][:] = fprop.z[0,:]
         M.data.update_variables_to_mesh()
         M.core.print(file = self.name_all_results + str(self.loop), extension ='.vtk')
 

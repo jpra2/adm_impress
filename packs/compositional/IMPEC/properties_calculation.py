@@ -71,9 +71,12 @@ class PropertiesCalc:
         self.Vg = fprop.Vp * fprop.Sg
         self.Vw = fprop.Vp * fprop.Sw
         fprop.Vt = self.Vo + self.Vg + self.Vw
-        fprop.Vj = np.concatenate((self.Vo[np.newaxis,:],self.Vg[np.newaxis,:]),axis=0)
-        if ctes.load_w:
-            fprop.Vj = np.concatenate((fprop.Vj,self.Vw[np.newaxis,:]),axis=0)
+        if ctes.load_k:
+            fprop.Vj = np.concatenate((self.Vo[np.newaxis,:],self.Vg[np.newaxis,:]),axis=0)
+            if ctes.load_w:
+                fprop.Vj = np.concatenate((fprop.Vj,self.Vw[np.newaxis,:]),axis=0)
+
+        else: fprop.Vj = self.Vw[np.newaxis,:]
         fprop.Vj = fprop.Vj[np.newaxis,:]
 
     def set_initial_mole_numbers(self, fprop):
@@ -155,7 +158,7 @@ class PropertiesCalc:
         phase_viscosities = np.empty_like(Csi_j)
         if ctes.load_k:
             phase_viscosity = self.phase_viscosity_class(fprop, Csi_j)
-            #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
+            #phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
             #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test
             phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
             #phase_viscosities[0,1,:] = phase_viscosities[0,0,:] #for 5k NVCM case

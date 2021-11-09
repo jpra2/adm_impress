@@ -40,6 +40,8 @@ class StabilityCheck:
         self.z = np.copy(z)
         #ponteiro_flash[np.sum(self.z==0, dtype=bool)] = True
         #import pdb; pdb.set_trace()
+        #ponteiro_nc1 = np.zeros_like(ponteiro_flash_aux)
+        #ponteiro_nc1[]
         self.z[self.z<=0] = 1e-30
 
         if not pflash and any(~ponteiro_flash) and ctes.Nc>1:
@@ -51,13 +53,15 @@ class StabilityCheck:
             ponteiro_flash[~ponteiro_flash] = ponteiro_aux
 
         #self.molar_properties(np.ones_like(ponteiro_flash,dtype=bool))
+        #self.check_phase_nc_1()
+
         if ctes.Nc==1:
             ksi_L, ksi_V, rho_L, rho_V = self.check_phase_nc_1()
         else: ksi_L, ksi_V, rho_L, rho_V = self.molar_properties(np.copy(ponteiro_flash)) #perform the actual flash
         #ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties()
         return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
 
-    def run(self, P, z):
+    def run(self, P, z, wells):
         ponteiro_flash = self.skip_phase_stability_test(P, z)
         #ponteiro_flash = np.ones(len(P), dtype = bool)
         self.use_previous_K(P, z, ponteiro_flash)
@@ -68,7 +72,7 @@ class StabilityCheck:
 
     def check_phase_nc_1(self):
         Pv = self.vapor_pressure_pure_substancies()
-        Pv = Pv * np.ones_like(self.z)
+        Pv = Pv[:,np.newaxis] * np.ones_like(self.z)
         self.x = self.z
         self.y = self.z
 
@@ -82,6 +86,7 @@ class StabilityCheck:
         lnphil, Zl = self.lnphi_Z_based_on_deltaG(self.x, self.P, self.ph_L)
         lnphiv, Zv = self.lnphi_Z_based_on_deltaG(self.y, self.P, self.ph_V)
         ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
+        import pdb; pdb.set_trace()
         return ksi_L, ksi_V, rho_L, rho_V
 
     def use_previous_K(self, P_new, z_new, ponteiro_flash):
@@ -129,6 +134,11 @@ class StabilityCheck:
             ponteiro_flash[ponteiro_flash] = ponteiro_flash_aux
         return ponteiro_flash
 
+    def skip_phase_equilibrium(self):
+        pass
+
+        "SECOND HEURISTIC METHOD FROM RESAVEISI"
+
     def vapor_pressure_pure_substancies(self):
         '''Lee-Kesler Correlation - only valid for T < Tc'''
         Tr = self.T/ctes.Tc
@@ -153,6 +163,7 @@ class StabilityCheck:
 
     #*****************************Test one**********************************#
         #Used alone when the phase investigated (z) is clearly vapor like (ph = 0)
+
         ponteiro = np.copy(ponteiro_stab_check)
         Y = np.empty(self.z.shape)
         lnphiz = np.empty(self.z.shape)
@@ -386,7 +397,6 @@ class StabilityCheck:
         self.x[:,ponteiro] = x
         self.y[:,ponteiro] = self.K[:,ponteiro] * self.x[:,ponteiro]
 
-
     def molar_properties_Yinghui(self, ponteiro):
         #razao = fl/fv -> an arbitrary vector to enter in the iterative mode
 
@@ -490,7 +500,9 @@ class StabilityCheck:
         #Vmin = ((K1-KNc)*z[self.K==K1]-(1-KNc))/((1-KNc)*(K1-1))
         #proposed by Li et al for Whitson method
 
-        Vmin[Vmin>Vmax] = -Vmax[Vmin>Vmax]
+        Vmax[Vmax<Vmin] = abs(Vmax[Vmax<Vmin]) #add this tow lines to correct some problems with 1 component injection
+        Vmax[abs(Vmax)<1] = 1 #add this tow lines to correct some problems with 1 component injection
+        #Vmin[Vmin>Vmax] = -Vmax[Vmin>Vmax]
         self.V[ponteiro] = (Vmin[ponteiro] + Vmax[ponteiro]) * 0.5
 
         ponteiro_save = np.copy(ponteiro)
@@ -512,13 +524,14 @@ class StabilityCheck:
             self.K[:,ponteiro] = razao[:,ponteiro] * self.K[:,ponteiro]
             if any(np.isnan(self.K).flatten()): import pdb; pdb.set_trace()
             #stop_criteria = np.max((fv / fl - 1), axis = 0)
-            stop_criteria = np.sum((fl / fv - 1)**2, axis = 0) #Dandekar's
+            stop_criteria = np.sum((razao[:,ponteiro] - 1)**2, axis = 0) #Dandekar's
             ponteiro_aux = ponteiro[ponteiro]
             ponteiro_aux[(stop_criteria < 1e-10)] = False
             ponteiro[ponteiro] = ponteiro_aux
             ponteiro[(abs(self.V)>1e200)] = False
             if i>100:
                 print('Floop')
+                import pdb; pdb.set_trace()
                 ponteiro[ponteiro] = False
 
         t1 = time.time()

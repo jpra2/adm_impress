@@ -24,7 +24,7 @@ class delta_time:
         CFLs[1:] = delta_t*np.max(fprop.qk_molar[:,wells['all_wells']]/Nk[:,wells['all_wells']],axis=0)
         CFL = max(CFLs)
         CFL = CFL*(2*(ctes.n_points-1)+1)
-        
+
         #CFL_wells = delta_t * 1 / np.nanmin((Nk[wells['ws_inj']] /
         #           abs(Fk_vols_total[wells['ws_inj']])))
         #import pdb; pdb.set_trace()
@@ -110,10 +110,5 @@ class delta_time:
         #delta_t = delta_tcfl
 
         if delta_t > min(delta_tmax, delta_tcfl): delta_t = min(delta_tmax, delta_tcfl)
-        #if delta_t!=delta_ts and delta_t!=delta_tcfl:
-
-        '''if delta_t==delta_tn: print("N")
-        if delta_t==delta_tcfl: print("CFL")
-        if delta_t==delta_tv: print("V")'''
         if delta_t < delta_tmin: delta_t = delta_tmin
         return delta_t

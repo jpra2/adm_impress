@@ -258,22 +258,24 @@ class RiemannSolvers:
 
         ''' Flash calculations and properties calculations at each side of the \
         interface '''
-        if ctes.compressible_k:
-            L_face, V_face, xkj_face[0:ctes.Nc,0,...], xkj_face[0:ctes.Nc,1,...], \
-            Csi_j_face[0,0,...], Csi_j_face[0,1,...], rho_j_face[0,0,...], \
-            rho_j_face[0,1,...] = StabilityCheck(P_face, fprop.T).run_init(P_face, z_face)
+        if ctes.load_k:
+            if ctes.compressible_k:
+                L_face, V_face, xkj_face[0:ctes.Nc,0,...], xkj_face[0:ctes.Nc,1,...], \
+                Csi_j_face[0,0,...], Csi_j_face[0,1,...], rho_j_face[0,0,...], \
+                rho_j_face[0,1,...] = StabilityCheck(P_face, fprop.T).run_init(P_face, z_face)
 
-        else:
-            L_face = np.ones(len(P_face)); V_face = np.zeros(len(P_face))
-            xkj_face[0:ctes.Nc,0:2,:] = 1
+            else:
+                L_face = np.ones(len(P_face)); V_face = np.zeros(len(P_face))
+                xkj_face[0:ctes.Nc,0:2,:] = 1
 
-            rho_j_face[0,0,:] = np.tile(fprop.rho_j[0,0,self.v0[ponteiro,0]], v)
-            rho_j_face[0,1,:] = np.tile(fprop.rho_j[0,1,self.v0[ponteiro,0]], v) #constante, independe da pressao
-            #self.reshape_constant_property(fprop.rho_j[0,0:2,:], ponteiro, v)
-            Csi_j_face[0,0,:] = np.tile(fprop.Csi_j[0,0,self.v0[ponteiro,0]], v)
-            Csi_j_face[0,1,:] = np.tile(fprop.Csi_j[0,1,self.v0[ponteiro,0]], v)
-            #self.reshape_constant_property(fprop.Csi_j[0,0:2,:], ponteiro, v)
-
+                rho_j_face[0,0,:] = np.tile(fprop.rho_j[0,0,self.v0[ponteiro,0]], v)
+                rho_j_face[0,1,:] = np.tile(fprop.rho_j[0,1,self.v0[ponteiro,0]], v) #constante, independe da pressao
+                #self.reshape_constant_property(fprop.rho_j[0,0:2,:], ponteiro, v)
+                Csi_j_face[0,0,:] = np.tile(fprop.Csi_j[0,0,self.v0[ponteiro,0]], v)
+                Csi_j_face[0,1,:] = np.tile(fprop.Csi_j[0,1,self.v0[ponteiro,0]], v)
+                #self.reshape_constant_property(fprop.Csi_j[0,0:2,:], ponteiro, v)
+        else: L_face = []; V_face = []
+        
         if ctes.load_w:
             xkj_face[-1,-1,...] = 1
             xkj_face[-1,0:-1,...] = 0
@@ -283,6 +285,7 @@ class RiemannSolvers:
                 # Csi_W0 é constante independente de qualquer coisa(por teoria)
                 Csi_W0_face = np.tile(fprop.Csi_W0[self.v0[ponteiro,0]], v)
                 #self.reshape_constant_property(fprop.Csi_W0, ponteiro, v)
+
                 Sw_face, Csi_j_face[0,-1,...], rho_j_face[0,-1,...] = \
                 PropertiesCalc().update_water_saturation(fprop, Nk_face[-1,...],
                 P_face, Vp_face, Csi_W0_face)
@@ -358,7 +361,7 @@ class RiemannSolvers:
 
         ft_Nks = np.tile(ftotal[:,ponteiro],ctes.n_components*2)
         Vp = fprop.Vp[ctes.v0]
-        Vpm = np.sum(Vp[ponteiro],axis=0)*0.5
+        Vpm = np.sum(Vp[ponteiro],axis=-1)*0.5
         Vps = np.tile(Vpm, ctes.n_components*2)
         P_faces = np.tile(P_face[ponteiro, 0], ctes.n_components*2)
 
@@ -971,7 +974,7 @@ class FR:
         self.Ft_SP = self.total_flux_SP(fprop, wells, Ft_internal_faces)
 
         dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal_faces, np.copy(Nk_SP), P_old)
-        Nk_SP, z_sp = Euler().update_composition(np.copy(Nk_SP_old), q_SP, dFk_SP, delta_t)
+        Nk_SP = RK3.update_composition_RK3_1(np.copy(Nk_SP_old), q_SP, dFk_SP, delta_t)
         Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
 
         '''dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal_faces, np.copy(Nk_SP), P_old)
@@ -1149,7 +1152,7 @@ class FR:
             Ft_internal_faces[:,0][:,np.newaxis], Fk_faces_contour, np.zeros(1,dtype=bool))'''
 
         Fk_face_RS, alpha_wv =  RiemannSolvers(ctes_FR.v0, ctes.pretransmissibility_internal_faces).LLF(M, fprop, Nk_faces, P_face,
-            Ft_internal_faces, Fk_faces)
+            Ft_internal_faces, Fk_faces, np.ones_like(Ft_internal_faces[0],dtype=bool))
         #ponteiro = np.zeros_like(Ft_internal_faces[0], dtype=bool)
         #ponteiro[[0,1]] = True
         #Fk_face_RS[:,ponteiro] = MUSCL().update_flux_upwind(fprop.P[np.newaxis,:], Fk_faces[:,ponteiro], ponteiro)
@@ -1183,7 +1186,7 @@ class FR:
 
         #self.machine_error = np.max(abs(Nk_SP - Nk_SP_in))
         #if machine_error<np.finfo(np.float64).eps: machine_error = np.finfo(np.float64).eps
-        self.machine_error = 1e-323 #1e-150 #1e-323 #1e-700 #1e-150
+        self.machine_error = 1e-10 #323 #1e-150 #1e-323 #1e-700 #1e-150
 
         inds = np.array([0,-1])
 
@@ -1291,8 +1294,8 @@ class FR:
 
         'Neigboring vertex points values'
 
-        Phi_r = self.MLP_u1_mod(Nk_neig, Nk_P0_vertex, Linear_term)
-        #Phi_r = self.MLP_u1(Nk_neig, Nk_P0_vertex, Linear_term)
+        #Phi_r = self.MLP_u1_mod(Nk_neig, Nk_P0_vertex, Linear_term)
+        Phi_r = self.MLP_u1(Nk_neig, Nk_P0_vertex, Linear_term)
         #Phi_r = self.MLP_vk(M, Nk_neig, Nk_P0_vertex, Linear_term)
 
         Phi_P1 = np.ones_like(Phi_r)
@@ -1349,7 +1352,7 @@ class FR:
 
         x_vols = M.data['centroid_volumes'][0,0]
         dx_vols = x_vols * 2
-        K1 = 2 #1e-10 #BL use K1=2 or K1=6 for P3
+        K1 = 6 #1e-10 #BL use K1=2 or K1=6 for P3
         #K2 = 1e-14
         e2 = (K1 * dx_vols)**3
 
@@ -1441,7 +1444,7 @@ class FR:
         #    np.ones_like(Nk_P0_vertex)),axis=-1)
         #C3 = (abs(Nk_Pmvertex - Nk_P0_vertex) <= np.max(cC3,axis=-1)[:,:,np.newaxis])
 
-        Nf = self.Gibbs_Wilbraham_oscilations(M, Nk_faces)
+        #Nf = self.Gibbs_Wilbraham_oscilations(M, Nk_faces)
 
         '''A4-1 step'''
         P1_proj_cond_cells = np.min(1*(P1_proj_cond),axis=-1)
@@ -1465,6 +1468,8 @@ class FR:
         smooth_extrema_cells[smooth_extrema_cells==1] = aux_II'''
 
         phi_Pm = 1*((P1_proj_cond_cells + smooth_extrema_cells).astype(bool))
+        #phi_Pm = 1*((P1_proj_cond_cells).astype(bool))
+
         if any((phi_Pm[:,:,np.newaxis]*Nk_Pmvertex).flatten()<0): import pdb; pdb.set_trace()
         #phi_Pm = np.ones_like(phi_Pm)
 

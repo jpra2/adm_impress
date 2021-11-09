@@ -27,7 +27,7 @@ class CompositionalFVM:
 
         P_old = np.copy(fprop.P)
         Nk_old = np.copy(fprop.Nk)
-        z_old = np.copy(fprop.z)
+
         if ctes.FR: Nk_SP_old = np.copy(fprop.Nk_SP)
         while (r!=1.):
 
@@ -88,7 +88,6 @@ class CompositionalFVM:
 
         dd = q
 
-
         if not ctes.FR:
             #Fk_vols_total *= 1/ctes.ds_faces
             fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, q,
@@ -130,8 +129,8 @@ class CompositionalFVM:
                 self.EOS.get_all_derivatives(fprop)
 
         if ctes.load_w:
-            dVjdNk[ctes.n_components-1,2,:] = 1 / fprop.Csi_j[0,ctes.n_phases-1,:]
-            dVjdP[0,2,:] = - fprop.Nk[ctes.n_components-1,:] * fprop.Csi_W0 * ctes.Cw / (fprop.Csi_W)**2
+            dVjdNk[ctes.n_components-1,-1,:] = 1 / fprop.Csi_j[0,-1,:]
+            dVjdP[0,-1,:] = - fprop.Nk[ctes.n_components-1,:] * fprop.Csi_W0 * ctes.Cw / (fprop.Csi_W)**2
 
         return dVjdNk, dVjdP
 
