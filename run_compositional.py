@@ -146,7 +146,6 @@ class run_simulation:
             Nk = np.copy(fprop.Nk)
             #Nk[Nk<0] = 0
             z = Nk[0:ctes.Nc]/np.sum(Nk[0:ctes.Nc],axis=0)
-
             fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
@@ -186,7 +185,6 @@ class run_simulation:
         if ctes.load_k:
             p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
             z_prod = fprop.qk_prod/np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
-            
             if (z_prod).sum()<1 or np.isnan(z_prod.sum()): z_prod = fprop.z[:,wells['ws_p']]
             L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
                 p_well.run_init(ctes.P_SC, z_prod[0:ctes.Nc])
