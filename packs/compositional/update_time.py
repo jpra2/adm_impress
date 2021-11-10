@@ -74,7 +74,6 @@ class delta_time:
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
         deltaNmax = max(np.nanmax(np.abs(fprop.Nk - self.Nk)
                         / fprop.Nk, axis =1))
-
         delta_tn = delta_t * deltaNlim / deltaNmax
         np.seterr(**old_settings)
         return delta_tn

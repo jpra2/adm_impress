@@ -142,7 +142,7 @@ class TPFASolver:
             q_term = fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp]
 
             ws_p_inj = np.argwhere(wells['ws_p']==wells['ws_inj']).flatten()
-            q_term[...,ws_p_inj] = wells['inj_term']
+            q_term[...,ws_p_inj] = wells['inj_p_term']
             #import pdb; pdb.set_trace()
 
             self.q[:,wp] = np.sum(q_term * well_term, axis = 1)
