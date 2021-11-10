@@ -6,7 +6,7 @@ compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
 water_component: false
-use_vpi: True
+use_vpi: true
 
 
 load_compositional_data: False
@@ -45,9 +45,9 @@ compositional_data:
     MDW: false
     DW: false
 
-  vpis_para_gravar_vtk: [1.0]
-  time_to_save: [2592000]
-  maximum_time: 2592000
+  vpis_para_gravar_vtk: [0.58]
+  time_to_save: [21759840.]
+  maximum_time: 21759840.
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -62,11 +62,11 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 1
-    deltaSlim: .35
-    deltaVlim: 1
+    deltaNlim: 2
+    deltaSlim: .55
+    deltaVlim: 0.5
     delta_t_ini: 86.4
-    delta_tmax: 86400
+    delta_tmax: 4320
     delta_tmin: 8.64
 
   water_data:
@@ -96,9 +96,9 @@ compositional_data:
     z: [0.0, 1.0]
     Tc: [190.56, 369.83]
     Pc: [4599000, 4248000]
-    vc: [9.85988846e-05, 2.00001177e-04]
-    Mw: [16.043e-3, 44.096e-3]
-    w: [0.0115, 0.1523]
+    vc: [9.84e-05, 2.00001177e-04]
+    Mw: [16.0e-3, 44.096e-3]
+    w: [0.011, 0.1523]
     Bin: [[0.,0.], [0.,0.]]
     Pv: [8e6, 0.]
     vshift_parameter: [0.0, 0.]
@@ -142,7 +142,7 @@ Wells:
     injection_condition: surface
     prescription: Q
     value: 0.000491898 #m3/s
-    ksi_total: 41.14517688 #densidade molar
+    ksi_total: 41.69170794 #densidade molar
     value_type: volumetric
 
   P2:
