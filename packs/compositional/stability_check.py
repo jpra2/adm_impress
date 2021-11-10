@@ -100,6 +100,7 @@ class StabilityCheck:
         ponteiro_K_aux = ponteiro_K[ponteiro_flash]
         ponteiro_K_aux[(cond1 >= 1) * (cond2 >= 1)] = True
         ponteiro_K[ponteiro_flash] = ponteiro_K_aux
+        #ponteiro_K[(self.K==1).sum(axis=0,dtype=bool)] = False
         self.K[:,~ponteiro_K] = self.equilibrium_ratio_Wilson(P_new[~ponteiro_K])
         #self.K[:,:] = self.equilibrium_ratio_Wilson(P_new[:])
 
@@ -107,9 +108,10 @@ class StabilityCheck:
         'Two conditions are used here:\
         2) Check if the Gibbs free energy of the K^n TWO PHASE mixture is less than the \
         mixture with the global composition z^(n+1))'
-
+        z_new[z_new==0] = 1e-30
         ponteiro_flash = np.ones(len(P_new), dtype = bool)
-        ponteiro_flash[((self.V==0) + (self.L==0))*(P_new > self.P)] = False
+        #dP_bigg_or_equal = (P_new>self.P) + (abs(P_new - self.P)<1)
+        ponteiro_flash[((self.V==0) + (self.L==0))] = False
         #ponteiro_flash[wells['all_wells']] = False
         lj = np.empty([1, 2, len(ponteiro_flash[ponteiro_flash])])
         xij = np.empty([ctes.Nc, 2, len(ponteiro_flash[ponteiro_flash])])
