@@ -114,7 +114,8 @@ class RiemannSolvers:
         dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-50
         ponteiro[dNkmax_small] = False
         alpha_5 = np.empty((ctes.n_components, ctes.n_internal_faces, 5))
-        alpha_5[:,ponteiro,:], eigvec_m = self.wave_velocity_LLF(M, fprop, Nk_face,
+        if any(ponteiro):
+            alpha_5[:,ponteiro,:], eigvec_m = self.wave_velocity_LLF(M, fprop, Nk_face,
                                 P_face, ftotal, ponteiro)
         alpha_5[:,~ponteiro] = 0
         alpha_LLF = np.max(abs(alpha_5),axis=0) #* ctes.ds_faces[:,np.newaxis]
@@ -721,10 +722,11 @@ class FirstOrder:
         P_face = np.concatenate((P_face[:,np.newaxis], P_face[:,np.newaxis]),axis=1)
 
         ponteiro = np.ones(ctes.n_internal_faces,dtype=bool)
-        dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-50
+        dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)==0#<1e-50
         ponteiro[dNkmax_small] = False
         wave_velocity = np.empty((ctes.n_components, ctes.n_internal_faces))
-        wave_velocity[:,ponteiro],m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, \
+        if any(ponteiro):
+            wave_velocity[:,ponteiro],m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, \
             ftotal, ponteiro)
         wave_velocity[:,~ponteiro] = 0
         #Fk_face = RS.get_Fk_face(fprop, M, Nk_face, fprop.P[ctes.v0], ftotal)
