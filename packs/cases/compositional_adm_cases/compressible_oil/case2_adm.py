@@ -57,7 +57,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case21_adm_6k_5000_' # cr = 25, iterate finescale, tol=1e-14, without correction functions
 # description = 'case22_adm_6k_5000_' # cr = 50, iterate finescale, tol=1e-14, without correction functions
 # description = 'case23_finescale_6k_5000_' # finescale iterative
-description = 'case24_testcaseOfCase19_'
+# description = 'case24_testcaseOfCase19_'
+description = 'case25_80x80_adm'
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -98,7 +99,6 @@ ml_data = MultilevelData(data_impress, M, load=load_multilevel_data, n_levels=n_
 # M.core.mb.add_entities(m, M.core.all_volumes)
 # M.core.mb.write_file('results/test_primals.vtk', [m])
 # import pdb; pdb.set_trace()
-
 
 ml_data.run()
 data_impress.update_variables_to_mesh()

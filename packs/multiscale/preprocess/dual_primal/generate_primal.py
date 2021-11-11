@@ -5,10 +5,22 @@ import networkx as nx
 import collections
 
 def create_dual_and_primal(centroids_volumes: np.ndarray, volumes_dimension: np.ndarray, centroids_nodes: np.ndarray, cr: np.ndarray, adjacencies_internal_faces: np.ndarray):
-    dimension = get_dimension_of_problem(centroids_volumes)
+    
+    ##########################
+    ## around the vector in order to fix the gmsh centroid location problem
+    centroids_volumes2 = np.around(centroids_volumes, decimals=8)
+    ## comment this for real cases
+    ######################
+    '''
+    ###########
+    #### uncomment for real cases
+    # centroids_volumes2 = centroids_volumes
+    ###########'''
+    
+    dimension = get_dimension_of_problem(centroids_volumes2)
     L = get_l_total(centroids_nodes)
-    primal_coarse_ids = create_primal(centroids_volumes, volumes_dimension, cr, dimension)
-    dual_ids = create_dual(centroids_volumes, cr, dimension, L, volumes_dimension, adjacencies_internal_faces)
+    primal_coarse_ids, all_separated = create_primal(centroids_volumes2, volumes_dimension, cr, dimension)
+    dual_ids = create_dual(centroids_volumes2, cr, dimension, L, volumes_dimension, adjacencies_internal_faces, all_separated)
     test_coarse_vertices(primal_coarse_ids, dual_ids)
     
     return primal_coarse_ids, dual_ids
@@ -23,7 +35,7 @@ def create_primal(centroids_volumes: np.ndarray, volumes_dimension: np.ndarray ,
     all_separated = get_all_separated(dimension, centroids_volumes, cr)
     all_separated_limits = get_all_separated_limits(all_separated, centroids_volumes)
     primals = get_coarse_volumes(all_separated_limits, centroids_volumes, volumes_dimension)
-    return primals
+    return primals, all_separated
 
 def get_dimension_volumes(volumes_nodes, centroids_nodes):
     centroids = centroids_nodes[volumes_nodes]
@@ -65,7 +77,6 @@ def get_all_separated(dimension: int, centroids_volumes: np.ndarray, cr: np.ndar
         n_fine_total = n_coarse_volumes*cr[dim]
         separated = list(unique_centroids_volumes[0:n_fine_total].reshape((n_coarse_volumes, cr[dim])))
         if resto > 0:
-            # import pdb; pdb.set_trace()
             separated[-1] = np.concatenate([separated[-1], unique_centroids_volumes[n_fine_total:n_unique]])
         all_separated.append(np.array(separated))
     
@@ -118,8 +129,9 @@ def get_coarse_volumes(all_separated_limits: np.ndarray, centroids_volumes: np.n
     
     return coarse_ids
 
-def create_dual(centroids_volumes: np.ndarray, cr: np.ndarray, dimension: int, l_total: np.ndarray, volumes_dimension: np.ndarray, adjacencies_internal_faces: np.ndarray):
-    vertices_ids = define_vertices(centroids_volumes, cr, l_total, volumes_dimension)
+def create_dual(centroids_volumes: np.ndarray, cr: np.ndarray, dimension: int, l_total: np.ndarray, volumes_dimension: np.ndarray, adjacencies_internal_faces: np.ndarray, all_separated: np.ndarray):
+    
+    vertices_ids = define_vertices(centroids_volumes, cr, l_total, volumes_dimension, all_separated)
     # identify_vertices_id = np.repeat(0, len(vertices_ids))
     # identify_vertices(vertices_ids, centroids_volumes, identify_vertices_id)
     
@@ -130,20 +142,20 @@ def create_dual(centroids_volumes: np.ndarray, cr: np.ndarray, dimension: int, l
     # g.add_edges_from(adjacencies_internal_faces)
     
     # create_dual_entities(vertices_ids, dual_ids0, centroids_volumes, dimension, volumes_dimension, g, identify_vertices_id)
-    create_dual_entities2(vertices_ids, dual_ids, centroids_volumes, volumes_dimension)
+    create_dual_entities2(vertices_ids, dual_ids, centroids_volumes, volumes_dimension, l_total)
     
     # print(np.allclose(dual_ids, dual_ids0))
     # import pdb; pdb.set_trace()
     
     return dual_ids
 
-def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.ndarray, volumes_dimension):
-    gids = np.arange(len(centroids_volumes))
+def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.ndarray, volumes_dimension, all_separated):
+    # gids = np.arange(len(centroids_volumes))
     centroids_min = centroids_volumes.min(axis=0)
     centroids_max = centroids_volumes.max(axis=0)
     vertices_by_direction = []
     for dim in range(3):
-        vi = define_vertices_by_direction(centroids_min[dim], centroids_max[dim], cr[dim], l_total[dim], centroids_volumes[:, dim], volumes_dimension)
+        vi = define_vertices_by_direction(centroids_min[dim], centroids_max[dim], cr[dim], l_total[dim], centroids_volumes[:, dim], volumes_dimension, all_separated[dim])
         vertices_by_direction.append(vi)
     
     vertices_by_direction = np.array(vertices_by_direction)
@@ -160,30 +172,37 @@ def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.n
     
     return np.array(indexes)
     
-def define_vertices_by_direction(vmin: float, vmax: float, cr_direction: int, l_dimension: float, centroids_volumes_dimension: np.ndarray, volumes_dimension):
+def define_vertices_by_direction(vmin: float, vmax: float, cr_direction: int, l_dimension: float, centroids_volumes_dimension: np.ndarray, volumes_dimension, all_separated_dimension: np.ndarray):
     # import pdb; pdb.set_trace()
-    min_dimensions_by_axis = volumes_dimension.min(axis=0)
+    # min_dimensions_by_axis = volumes_dimension.min(axis=0)
     if vmin == vmax:
         return np.array([vmin])
     else:
         unique_centroids_volumes = np.unique(centroids_volumes_dimension)
-        n_blocks = len(unique_centroids_volumes)
-        n_coarse_blocks = n_blocks//cr_direction
-        l_coarse = l_dimension/n_coarse_blocks
-        coarse_ls = [[l_coarse*i, l_coarse*(i+1)] for i in range(n_coarse_blocks-1)]
-        coarse_ls.append([coarse_ls[-1][1], l_dimension])
-        coarse_ls = np.array(coarse_ls)
-        mean = np.mean(coarse_ls, axis=1)
+        # n_blocks = len(unique_centroids_volumes)
+        # # n_coarse_blocks = n_blocks//cr_direction
+        # n_coarse_blocks = len(all_separated_dimension)
+        # # l_coarse = l_dimension/n_coarse_blocks
+        # # coarse_ls = [[l_coarse*i, l_coarse*(i+1)] for i in range(n_coarse_blocks-1)]
+        # # coarse_ls.append([coarse_ls[-1][1], l_dimension])
+        # # coarse_ls = np.array(coarse_ls)
+        # # mean = np.mean(coarse_ls, axis=1)
+        mean = []
+        for cents in all_separated_dimension:
+            mean.append(np.mean(cents))
+        mean = np.array(mean)
         vertices = [vmin]
         for j in mean[1:-1]:
             dist = unique_centroids_volumes - j
             abs_dist = np.absolute(dist)
             min_dis = abs_dist.min()
             index = np.argwhere(abs_dist == min_dis)[0]
-            if len(index) > 1:
-                import pdb; pdb.set_trace()
-            else:
-                index = index[0]
+            index = index[0]
+            # if len(index) > 1:
+            #     ## mais de um volume proximo do centro
+            #     index=index[0]
+            # else:
+            #     index = index[0]
             vertices.append(unique_centroids_volumes[index])
         vertices.append(unique_centroids_volumes[-1])
         vertices = np.array(vertices)
@@ -269,8 +288,9 @@ def create_dual_entities(vertices_ids: np.ndarray, dual_ids: np.ndarray, centroi
     dual_ids[edges_ids] = 2
     dual_ids[vertices_ids] = 3
   
-def create_dual_entities2(vertices_ids: np.ndarray, dual_ids: np.ndarray, centroids_volumes: np.ndarray, volumes_dimension: np.ndarray):
+def create_dual_entities2(vertices_ids: np.ndarray, dual_ids: np.ndarray, centroids_volumes: np.ndarray, volumes_dimension: np.ndarray, l_total):
     centroids_vertices = centroids_volumes[vertices_ids]
+    import pdb; pdb.set_trace()
     edges = []
     faces = [[], [], []]
     delta = volumes_dimension.min()/4
@@ -284,7 +304,7 @@ def create_dual_entities2(vertices_ids: np.ndarray, dual_ids: np.ndarray, centro
     
     
     for i, centroids_vertices_direction in enumerate(unique_centroids_vertices):
-        get_faces_entities(centroids_vertices_direction, i, mins, maxs, delta, faces, centroids_volumes)
+        get_faces_entities(centroids_vertices_direction, i, mins, maxs, delta, faces, centroids_volumes, l_total)
     
     faces = np.array(faces)
     get_edges_entities(faces, edges)
@@ -299,7 +319,7 @@ def create_dual_entities2(vertices_ids: np.ndarray, dual_ids: np.ndarray, centro
     dual_ids[edges] = 2
     dual_ids[vertices_ids] = 3
     
-def get_faces_entities(centroids_vertices_direction, direction, mins, maxs, delta, faces, centroids_volumes):
+def get_faces_entities(centroids_vertices_direction, direction, mins, maxs, delta, faces, centroids_volumes, l_total):
     directions = np.array([0, 1, 2])
     directions2 = np.setdiff1d(directions, direction)
     limites = np.zeros((2, 3))
@@ -316,6 +336,9 @@ def get_faces_entities(centroids_vertices_direction, direction, mins, maxs, delt
         faces[direction].append(indexes)
     
     faces[direction] = np.array(faces[direction])
+
+def get_faces_entities_v2(centroids_vertices_direction, direction, mins, maxs, delta, faces, centroids_volumes, l_total):
+    pass
 
 def get_edges_entities(faces, edges):
     directions = np.array([0, 1, 2])
