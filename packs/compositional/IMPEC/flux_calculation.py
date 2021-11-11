@@ -346,7 +346,7 @@ class RiemannSolvers:
         delta = 1e-3 * abs(Nkm)
         delta[Nkm==0] = 1e-13
 
-        ponteiro = np.ones_like(ftotal[0], dtype=bool)
+        #ponteiro = np.ones_like(ftotal[0, ponteiro], dtype=bool)
         Nk_aux_matrix = np.ones([ctes.n_components, ctes.n_components, len(ponteiro[ponteiro]), 2])
         matrix_deltas = np.identity(ctes.n_components)[:,:,np.newaxis, np.newaxis] * Nk_aux_matrix
         delta_05 = delta[...,np.newaxis] * 0.5 * matrix_deltas
