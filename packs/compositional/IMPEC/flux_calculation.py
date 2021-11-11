@@ -111,8 +111,12 @@ class RiemannSolvers:
 
     def LLF(self, M, fprop, Nk_face, P_face, ftotal, Fk_face, ponteiro_LLF):
         ponteiro = np.ones_like(ftotal[0],dtype=bool)
-        alpha_5, eigvec_m = self.wave_velocity_LLF(M, fprop, Nk_face,
+        dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-50
+        ponteiro[dNkmax_small] = False
+        alpha_5 = np.empty((ctes.n_components, ctes.n_internal_faces, 5))
+        alpha_5[:,ponteiro,:], eigvec_m = self.wave_velocity_LLF(M, fprop, Nk_face,
                                 P_face, ftotal, ponteiro)
+        alpha_5[:,~ponteiro] = 0
         alpha_LLF = np.max(abs(alpha_5),axis=0) #* ctes.ds_faces[:,np.newaxis]
 
         Fk_internal_faces = np.empty_like(Fk_face[...,0])
@@ -275,7 +279,7 @@ class RiemannSolvers:
                 Csi_j_face[0,1,:] = np.tile(fprop.Csi_j[0,1,self.v0[ponteiro,0]], v)
                 #self.reshape_constant_property(fprop.Csi_j[0,0:2,:], ponteiro, v)
         else: L_face = []; V_face = []
-        
+
         if ctes.load_w:
             xkj_face[-1,-1,...] = 1
             xkj_face[-1,0:-1,...] = 0
@@ -496,8 +500,8 @@ class RiemannSolvers:
 
     def wave_velocity_LLF(self, M, fprop, Nk_face, P_face, ftotal, ponteiro):
         #delta = 1e-12 #1e-3 * np.min(abs(Nk_face[Nk_face>1e-12]))
-        delta = 1e-3 * abs(Nk_face)
-        delta[Nk_face==0] = 1e-13
+        delta = 1e-3 * abs(Nk_face[:,ponteiro])
+        delta[Nk_face[:,ponteiro]==0] = 1e-13
 
         Nkm = (Nk_face[:,ponteiro,1] + Nk_face[:,ponteiro,0])/2
         deltam = 1e-3 * abs(Nkm)
@@ -577,7 +581,7 @@ class RiemannSolvers:
         dFkdNk = ((Fk_faces_plus - Fk_faces_minus)/(Nk_face_plus - Nk_face_minus).sum(axis=0))
         dFkdNk = np.concatenate(np.hsplit(dFkdNk[:,:,np.newaxis],2),axis=2)
         dFkdNk = np.concatenate(np.hsplit(dFkdNk[:,:,:,np.newaxis],ctes.n_components),axis=3)
-        dFkdNk[(Nk_face)==0] = 0
+        dFkdNk[(Nk_face[:,ponteiro])==0] = 0
         dFkdNk = dFkdNk.transpose(2,1,0,3)
 
         dFkdNk_gauss = (Fk_Nkg_plus - Fk_Nkg_minus)/(Nkg_plus - Nkg_minus).sum(axis=0)
@@ -715,10 +719,14 @@ class FirstOrder:
         Nk_face = fprop.Nk[:,ctes.v0]#.sum(axis=-1)/2
         P_face = fprop.P[ctes.v0].sum(axis=-1)/2
         P_face = np.concatenate((P_face[:,np.newaxis], P_face[:,np.newaxis]),axis=1)
-        ponteiro = np.ones(ctes.n_internal_faces,dtype=bool)
 
-        wave_velocity,m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, \
+        ponteiro = np.ones(ctes.n_internal_faces,dtype=bool)
+        dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-50
+        ponteiro[dNkmax_small] = False
+        wave_velocity = np.empty((ctes.n_components, ctes.n_internal_faces))
+        wave_velocity[:,ponteiro],m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, \
             ftotal, ponteiro)
+        wave_velocity[:,~ponteiro] = 0
         #Fk_face = RS.get_Fk_face(fprop, M, Nk_face, fprop.P[ctes.v0], ftotal)
         #wave_velocity_RH = (Fk_face[...,1] - Fk_face[...,0])/(Nk_face[...,1] - Nk_face[...,0])
         #e = 1e-5
@@ -853,6 +861,8 @@ class MUSCL:
         dNk_face_vols = 2. * (dNkds_vols[:,:,ctes.v0] * ds_face.T[np.newaxis,:,:,np.newaxis]).sum(axis=1)
         dNk_face_neig = dNk_face_vols - dNk_face[:,:,np.newaxis]
         dNk_face_neig[abs(dNk_face_neig)<1e-25] = 0
+        #dNk_face2 = dNk_face[...,np.newaxis]  * np.ones_like(dNk_face_neig)
+        #dNk_face_vols[abs(dNk_face_neig)<1e-25] = dNk_face2[abs(dNk_face_neig)<1e-25]
         return dNk_face, dNk_face_neig
 
     def Van_Leer_slope_limiter(self, dNk_face, dNk_face_neig):
