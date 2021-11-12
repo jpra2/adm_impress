@@ -9,13 +9,13 @@ def create_dual_and_primal(centroids_volumes: np.ndarray, volumes_dimension: np.
     ##########################
     ## around the vector in order to fix the gmsh centroid location problem
     centroids_volumes2 = np.around(centroids_volumes, decimals=8)
-    ## comment this for real cases
+    ## comment this block for real cases
     ######################
-    '''
-    ###########
-    #### uncomment for real cases
+    
+    # ###########
+    # #### uncomment this block for real cases
     # centroids_volumes2 = centroids_volumes
-    ###########'''
+    # ###########
     
     dimension = get_dimension_of_problem(centroids_volumes2)
     L = get_l_total(centroids_nodes)
@@ -146,7 +146,6 @@ def create_dual(centroids_volumes: np.ndarray, cr: np.ndarray, dimension: int, l
     
     # print(np.allclose(dual_ids, dual_ids0))
     # import pdb; pdb.set_trace()
-    
     return dual_ids
 
 def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.ndarray, volumes_dimension, all_separated):
@@ -290,7 +289,6 @@ def create_dual_entities(vertices_ids: np.ndarray, dual_ids: np.ndarray, centroi
   
 def create_dual_entities2(vertices_ids: np.ndarray, dual_ids: np.ndarray, centroids_volumes: np.ndarray, volumes_dimension: np.ndarray, l_total):
     centroids_vertices = centroids_volumes[vertices_ids]
-    import pdb; pdb.set_trace()
     edges = []
     faces = [[], [], []]
     delta = volumes_dimension.min()/4
@@ -301,10 +299,12 @@ def create_dual_entities2(vertices_ids: np.ndarray, dual_ids: np.ndarray, centro
         np.unique(centroids_vertices[:, 1]),
         np.unique(centroids_vertices[:, 2])
     ])
+    volumes_ids = np.arange(len(centroids_volumes))
     
     
     for i, centroids_vertices_direction in enumerate(unique_centroids_vertices):
-        get_faces_entities(centroids_vertices_direction, i, mins, maxs, delta, faces, centroids_volumes, l_total)
+        # get_faces_entities(centroids_vertices_direction, i, mins, maxs, delta, faces, centroids_volumes, l_total)
+        get_faces_entities_v2(centroids_vertices_direction, i, mins, maxs, delta, faces, centroids_volumes, l_total, volumes_ids)
     
     faces = np.array(faces)
     get_edges_entities(faces, edges)
@@ -337,9 +337,14 @@ def get_faces_entities(centroids_vertices_direction, direction, mins, maxs, delt
     
     faces[direction] = np.array(faces[direction])
 
-def get_faces_entities_v2(centroids_vertices_direction, direction, mins, maxs, delta, faces, centroids_volumes, l_total):
-    pass
-
+def get_faces_entities_v2(centroids_vertices_direction, direction, mins, maxs, delta, faces, centroids_volumes, l_total, volumes_ids):
+    
+    for k in centroids_vertices_direction:
+        indexes = (centroids_volumes[:, direction] < k + delta) & (centroids_volumes[:, direction] > k - delta)
+        faces[direction].append(volumes_ids[indexes])
+    
+    faces[direction] = np.array(faces[direction])
+        
 def get_edges_entities(faces, edges):
     directions = np.array([0, 1, 2])
     
