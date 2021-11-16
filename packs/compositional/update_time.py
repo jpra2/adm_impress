@@ -72,8 +72,9 @@ class delta_time:
 
     def update_delta_tn(self, delta_t, fprop, deltaNlim):
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
-        deltaNmax = max(np.nanmax(np.abs(fprop.Nk - self.Nk)
-                        / fprop.Nk, axis =1))
+        dN = np.abs(fprop.Nk - self.Nk) / fprop.Nk
+        dN[fprop.Nk<1e-30] = 0
+        deltaNmax = max(np.nanmax(dN, axis =1))
         delta_tn = delta_t * deltaNlim / deltaNmax
         np.seterr(**old_settings)
         return delta_tn
@@ -108,6 +109,11 @@ class delta_time:
 
         #delta_t = delta_tcfl
 
-        if delta_t > min(delta_tmax, delta_tcfl): delta_t = min(delta_tmax, delta_tcfl)
+        if delta_t > min(delta_tmax,delta_tcfl): delta_t = min(delta_tmax, delta_tcfl)
+        #if delta_t > delta_tmax: delta_t = delta_tmax
+        if delta_t == delta_ts: print('S')
+        if delta_t == delta_tcfl: print('CFL')
+        if delta_t == delta_tv: print('V')
+        if delta_t == delta_tn: print('N')
         if delta_t < delta_tmin: delta_t = delta_tmin
         return delta_t

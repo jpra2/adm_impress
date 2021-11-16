@@ -86,7 +86,6 @@ class StabilityCheck:
         lnphil, Zl = self.lnphi_Z_based_on_deltaG(self.x, self.P, self.ph_L)
         lnphiv, Zv = self.lnphi_Z_based_on_deltaG(self.y, self.P, self.ph_V)
         ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
-        import pdb; pdb.set_trace()
         return ksi_L, ksi_V, rho_L, rho_V
 
     def use_previous_K(self, P_new, z_new, ponteiro_flash):
@@ -103,6 +102,7 @@ class StabilityCheck:
         #ponteiro_K[(self.K==1).sum(axis=0,dtype=bool)] = False
         self.K[:,~ponteiro_K] = self.equilibrium_ratio_Wilson(P_new[~ponteiro_K])
         #self.K[:,:] = self.equilibrium_ratio_Wilson(P_new[:])
+        #if any((self.K==1).sum(axis=0,dtype=bool)): import pdb; pdb.set_trace()
 
     def skip_phase_stability_test(self, P_new, z_new):
         'Two conditions are used here:\
@@ -227,7 +227,6 @@ class StabilityCheck:
 
     def lnphi_Z_based_on_deltaG(self, xkj, P, ph):
         lnphi, Z = self.EOS.lnphi_Z_deltaG(xkj, P, ph)
-        if any(np.isnan(lnphi).ravel()): import pdb; pdb.set_trace()
 
         # test phase ph is lnphi[...,0], the other phase is lnphi[...,1]
         deltaG_molar = np.sum(xkj * (lnphi[...,1] - lnphi[...,0]), axis = 0)
@@ -486,10 +485,15 @@ class StabilityCheck:
 
         V[np.isinf(V)] = 1
         #V[np.isinf(V)] = 0
+
         self.x[:,ponteiro_save] = self.z[:,ponteiro_save] / (1 + self.V[ponteiro_save][np.newaxis,:] *
                                 (self.K[:,ponteiro_save] - 1))
-
+        ponteiro_inf = np.isinf(self.x).sum(axis=0,dtype=bool)
+        ponteiro_nan = np.isnan(self.x).sum(axis=0,dtype=bool)
+        self.x[:,ponteiro_inf+ponteiro_nan] = self.z[:,ponteiro_nan+ponteiro_inf]
+        #self.x[np.isinf(self.x)] = self.z[np.isinf(self.x)]/
         self.y[:,ponteiro_save] = self.K[:,ponteiro_save] * self.x[:,ponteiro_save]
+        self.y[self.y==0] = self.z[self.y==0]
 
     def molar_properties_Whitson(self, ponteiro):
 
@@ -521,8 +525,9 @@ class StabilityCheck:
             lnphiv, Zv[ponteiro] = self.lnphi_Z_based_on_deltaG(self.y[:,ponteiro], self.P[ponteiro], self.ph_V[ponteiro])
             fv = np.exp(lnphiv) * (self.y[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             fl = np.exp(lnphil) * (self.x[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
-            razao[:,ponteiro] = np.divide(fl, fv, out = razao[:,ponteiro] / razao[:,ponteiro] * (1 + 1e-10),
-                              where = fv != 0)
+            fv[(abs(fl)<1e-300) + (abs(fv)<1e-300)] = fl[(abs(fl)<1e-300) + (abs(fv)<1e-300)]
+            fv[fv == 0] = 1e-300
+            razao[:,ponteiro] = fl/fv
             self.K[:,ponteiro] = razao[:,ponteiro] * self.K[:,ponteiro]
             if any(np.isnan(self.K).flatten()): import pdb; pdb.set_trace()
             #stop_criteria = np.max((fv / fl - 1), axis = 0)
@@ -533,7 +538,7 @@ class StabilityCheck:
             ponteiro[(abs(self.V)>1e200)] = False
             if i>100:
                 print('Floop')
-                import pdb; pdb.set_trace()
+                #import pdb; pdb.set_trace()
                 ponteiro[ponteiro] = False
 
         t1 = time.time()

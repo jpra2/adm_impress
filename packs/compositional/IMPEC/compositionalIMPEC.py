@@ -16,6 +16,7 @@ class CompositionalFVM:
         #if ctes.MUSCL or ctes.FR:
         #    self.get_faces_properties_weighted_average(fprop, G)
         #else: self.get_faces_properties_upwind(fprop, G)
+        #self.get_faces_properties_upwind(fprop, G)
         self.get_faces_properties_weighted_average(fprop, G)
         #self.get_faces_properties_harmonic_average(fprop, G)
         self.get_phase_densities_internal_faces(fprop)
@@ -53,7 +54,7 @@ class CompositionalFVM:
             fprop.qk_prod = 1/(24*60*60) * np.array([[0,0.25, 0.25, 0.25, 0.25]]).T
             '''
             fprop.qk_molar = q
-            #fprop.qk_prod = q[:,wells['ws_prod']]
+            fprop.qk_prod = q[:,wells['ws_prod']]
 
             if ctes.MUSCL:
                 wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
@@ -101,7 +102,7 @@ class CompositionalFVM:
         fprop.total_flux_internal_faces = total_flux_internal_faces
         #import pdb; pdb.set_trace()
         #if fprop.P[0]<fprop.P[1]: import pdb; pdb.set_trace()
-        #fprop.Nk[(fprop.Nk<0)*(abs(fprop.Nk)<1e-16)]= 0
+        #fprop.Nk[(fprop.Nk<0)*(abs(fprop.Nk)<1e-14)]= 0
         if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
         if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
         #if any(total_flux_internal_faces.flatten()<-1e-6): import pdb; pdb.set_trace()

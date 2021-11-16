@@ -6,7 +6,7 @@ class Euler:
     @staticmethod
     def update_composition(Nk, q, Fk_vols_total, delta_t):
         Nk = Nk + delta_t * (q + Fk_vols_total)
-        #Nk[Nk<0]= 1e-300
+        #Nk[(Nk<0)*(abs(Nk)<1e-30)]= 1e-300
         z = Nk[0:ctes.Nc,:] / np.sum(Nk[0:ctes.Nc,:], axis = 0)
         return Nk, z
 

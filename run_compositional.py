@@ -107,7 +107,7 @@ class run_simulation:
             #L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
             #    p_well.run_init(ctes.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']])
         else:
-            fprop.x = []; fprop.y = []; fprop.L = []; fprop.V = []; wells['inj_term'] = []
+            fprop.x = []; fprop.y = []; fprop.L = []; fprop.V = []; wells['inj_p_term'] = []
 
     def get_initial_properties(self, M, wells):
         ''' get initial fluid - oil, gas and water data and calculate initial \
@@ -116,9 +116,9 @@ class run_simulation:
         fprop = FluidProperties(M, wells) # load reservoir properties data and initialize other data
 
         '------------------------- Perform initial flash ----------------------'
+        self.get_well_inj_properties(M, fprop, wells)
 
         if ctes.load_k:
-            self.get_well_inj_properties(M, fprop, wells)
 
             self.p2 = StabilityCheck(fprop.P, fprop.T)
             fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
@@ -176,13 +176,13 @@ class run_simulation:
                 if any(wells['inj_cond']=='reservoir'):
                     wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
                     wells['values_q_vol'][:,wells['inj_cond']=='reservoir'] = self.q_vol
-                else:
-                    wells['inj_p_term'] = []
-                    qk_molar = wells['values_q'][:,wells['inj_cond']=='surface']
-                    wells['values_q_vol'][:,wells['inj_cond']=='surface'] = qk_molar / \
-                        ((Csi_V * V + Csi_L * L))[wells['inj_cond']=='surface']
+                #else:
+                #    wells['inj_p_term'] = []
+                #    qk_molar = wells['values_q'][:,wells['inj_cond']=='surface']
+                #    wells['values_q_vol'][:,wells['inj_cond']=='surface'] = qk_molar / \
+                #        ((Csi_V * V + Csi_L * L))[wells['inj_cond']=='surface']
 
-        if any(fprop.L!=0): import pdb; pdb.set_trace()
+        #if any(fprop.L!=0): import pdb; pdb.set_trace()
         '----------------------- Update fluid properties ----------------------'
 
         self.p1.run_inside_loop(M, fprop)
@@ -232,7 +232,7 @@ class run_simulation:
         else: flux_total_inj = np.zeros(2)
 
         self.vpi = self.vpi + (flux_total_inj.sum())/sum(fprop.Vp)*self.delta_t
-    
+
     def get_empty_current_compositional_results(self):
         return [np.array(['loop', 'vpi [s]', 'simulation_time [s]', 't [s]', \
                         'pressure [Pa]', 'Sw', 'So', 'Sg', 'Oil_p', 'Gas_p', \
