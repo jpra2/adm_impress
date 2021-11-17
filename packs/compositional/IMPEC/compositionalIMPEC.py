@@ -71,6 +71,10 @@ class CompositionalFVM:
             delta_t_new = delta_time.update_CFL(delta_t, Fk_vols_total, fprop.Nk, wave_velocity)
             r = delta_t_new/delta_t
             delta_t = delta_t_new
+            
+            ###############
+            r = 1
+            ###############
 
         fprop.q = q
 

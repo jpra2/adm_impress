@@ -161,7 +161,7 @@ local_problem_params = {
     'master_local_operator': master_local_operator,
     # 'trilinos_solver': trilinos_solver
     'scipy_solver': SolverSp(),
-    'tolerance': 1e-10
+    'tolerance': 1e-15
 }
 
 latest_mobility = np.zeros(fprop.mobilities.shape)

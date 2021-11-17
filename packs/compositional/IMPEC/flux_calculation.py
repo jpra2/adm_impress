@@ -557,8 +557,14 @@ class FirstOrder:
         P_face = fprop.P[ctes.v0].sum(axis=-1)/2
         Vp = fprop.Vp[ctes.v0]
         ponteiro = np.ones_like(P_face,dtype=bool)
-        wave_velocity,m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, Vp, total_flux_internal_faces, ponteiro)
+        # # wave_velocity,m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, Vp, total_flux_internal_faces, ponteiro)
         # wave_velocity = Fk_vols_total/fprop.Nk #np.max(abs(wave_velocity),axis=0)
+        
+        ###################
+        wave_velocity = np.zeros((ctes.n_components, ctes.n_internal_faces))
+        wave_velocity[:] = -1
+        ###################
+        
         return Fk_vols_total, wave_velocity
 
     def LLF(self, M, fprop, total_flux_internal_faces, P_old):
