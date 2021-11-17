@@ -10,7 +10,8 @@ from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 
 
 # description = 'case3_finescale_3k'
-description = 'case17_finescale_6k_5000_'
+# description = 'case17_finescale_6k_5000_'
+description = 'case25_finescale_80x80'
 compositional_data = CompositionalData(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
 cumulative_compositional_datamanager.create()
@@ -106,6 +107,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     cumulative_compositional_datamanager.insert_data(compositional_data._data)
     
     if loop % 100 == 0:
+        # import pdb; pdb.set_trace()
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         # import pdb; pdb.set_trace()
