@@ -12,10 +12,9 @@ class CompositionalFVM:
 
     def __call__(self, M, wells, fprop, delta_t, t):
         G = self.update_gravity_term(fprop)
+
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
-        #if ctes.MUSCL or ctes.FR:
-        #    self.get_faces_properties_weighted_average(fprop, G)
-        #else: self.get_faces_properties_upwind(fprop, G)
+
         #self.get_faces_properties_upwind(fprop, G)
         self.get_faces_properties_weighted_average(fprop, G)
         #self.get_faces_properties_harmonic_average(fprop, G)

@@ -81,7 +81,7 @@ class TPFASolver:
                     cap += t0 @ fprop.Pcap[j,:]
 
         gravity_term = grav @ ctes.z
-
+        #import pdb; pdb.set_trace()
         # capillary_term = np.sum(self.dVtk * np.sum (fprop.xkj *
         #         fprop.Csi_j * fprop.mobilities * fprop.Pcap, axis = 1), axis = 0)
         return cap, gravity_term
