@@ -63,7 +63,14 @@ def run(M):
     global versor_ds
     global ds_vols
     global faces_contour
+    global ds_face
+    global versor_ds_face
+    global ds_face_abs
 
+    ds_face = (M.data['centroid_volumes'][ctes.v0[:,1],:] -  M.data['centroid_volumes'][ctes.v0[:,0],:])
+    #if any(ds_face.flatten()<0): import pdb; pdb.set_trace()
+    versor_ds_face = np.sign(ds_face.sum(axis=-1))
+    ds_face_abs = abs(ds_face)
     all_neig, allneig_and_vol, all_neig_by_axes, versor_ds, ds_vols = \
         get_neiboring_properties_to_reconstruction(M)
     faces_contour = identify_contour_faces(all_neig)

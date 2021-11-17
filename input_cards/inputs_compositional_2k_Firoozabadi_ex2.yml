@@ -46,8 +46,8 @@ compositional_data:
     DW: false
 
   vpis_para_gravar_vtk: [0.58]
-  time_to_save: [21772800]
-  maximum_time: 21772800.
+  time_to_save: [7568640]
+  maximum_time: 7568640.
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -62,7 +62,7 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 1
+    deltaNlim: 2
     deltaSlim: .55
     deltaVlim: 0.001
     delta_t_ini: 86.4
