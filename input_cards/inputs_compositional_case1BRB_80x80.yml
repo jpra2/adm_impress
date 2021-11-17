@@ -76,7 +76,7 @@ compositional_data:
     deltaPlim: 0.1
     deltaNlim: .25
     deltaSlim: .1
-    deltaVlim: .0001
+    deltaVlim: .0005
     delta_t_ini: 8.64
     delta_tmax: 17280.0 #IMPSAT: 60480 IMPEC: 17280
     delta_tmin: 8.64
