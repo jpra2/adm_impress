@@ -526,8 +526,9 @@ class StabilityCheck:
             fv = np.exp(lnphiv) * (self.y[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             fl = np.exp(lnphil) * (self.x[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             fv[(abs(fl)<1e-300) + (abs(fv)<1e-300)] = fl[(abs(fl)<1e-300) + (abs(fv)<1e-300)]
-            fv[fv == 0] = 1e-300
+            fv[fv == 0] = 1e-30
             razao[:,ponteiro] = fl/fv
+            if any(np.isnan(razao).flatten()): import pdb; pdb.set_trace()
             self.K[:,ponteiro] = razao[:,ponteiro] * self.K[:,ponteiro]
             if any(np.isnan(self.K).flatten()): import pdb; pdb.set_trace()
             #stop_criteria = np.max((fv / fl - 1), axis = 0)
