@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 500x1x1_b.msh
-name_save_file: 'results_Buckley_Leverett_case_IMPSAT'
+name_save_file: 'results_Buckley_Leverett_case_MUSCL'
 
 compositional: True
 hidrocarbon_components: True
@@ -25,13 +25,13 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.9
+  CFL: 0.3
 
   solver:
-    IMPSAT: true
+    IMPSAT: false
 
   MUSCL:
-    set: false
+    set: true
 
   FR:
     set: false
@@ -65,7 +65,7 @@ compositional_data:
     deltaVlim: 100
     delta_t_ini: 0.5
     delta_tmax: 1000
-    delta_tmin: 1
+    delta_tmin: 0.001
     #2.765
 
   water_data:

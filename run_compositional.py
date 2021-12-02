@@ -46,8 +46,10 @@ class run_simulation:
         ''' Function to initialize mesh (preprocess) get and compute initial mesh \
         properties '''
         M, elements_lv0, data_impress, wells = initial_mesh(mesh, load=load, convert=convert)
+
         ctes.init(M, wells)
         ctes.component_properties()
+
         if ctes.FR:
             from packs.compositional import prep_FR as ctes_FR
             ctes_FR.run(M)
@@ -60,15 +62,16 @@ class run_simulation:
     def get_well_inj_properties(self, M, fprop, wells):
 
         z = (wells['z']).T
+
         #q_wells = wells['ws_inj']#[wells['inj_cond']=='reservoir']
-        if ctes.load_k and any(z[0:ctes.Nc]>0):
+        if ctes.load_k and any(z[0:ctes.Nc].flatten()>0):
             p_well = StabilityCheck(fprop.P[wells['ws_inj']], fprop.T)
             L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
                 p_well.run_init(fprop.P[wells['ws_inj']], z[0:ctes.Nc])
 
             'if the injector well has a prescribed pressure condition'
-            if any(wells['inj_cond']=='reservoir'):
 
+            if any(wells['inj_cond']=='reservoir'):
                 ws_p_inj_ind = np.argwhere(wells['ws_p']==wells['ws_inj'])
                 ws_p_inj = wells['ws_p'][ws_p_inj_ind].flatten()
                 ws_inj_p = np.argwhere(wells['ws_inj']==wells['ws_p']).flatten()
@@ -114,7 +117,7 @@ class run_simulation:
         properties'''
 
         fprop = FluidProperties(M, wells) # load reservoir properties data and initialize other data
-
+        
         '------------------------- Perform initial flash ----------------------'
         self.get_well_inj_properties(M, fprop, wells)
 
@@ -158,34 +161,44 @@ class run_simulation:
         '----------------- Perform Phase stability test and flash -------------'
 
         if ctes.load_k and ctes.compressible_k:
-
-            #self.p2 = StabilityCheck(fprop.P, fprop.T)
-            #Nk = np.copy(fprop.Nk)
-            #Nk[Nk<0] = 0
-            #z = Nk[0:ctes.Nc]/np.sum(Nk[0:ctes.Nc],axis=0)
+            #if self.z
+            self.p2 = StabilityCheck(fprop.P, fprop.T)
             fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
-            self.p2.run(fprop.P, np.copy(fprop.z), wells)
+            self.p2.run_init(fprop.P, np.copy(fprop.z))#, wells)
 
-            if len(wells['ws_q'])>0 and not self.p2.constant_K:
-                z = (wells['z']).T
-                p_well = StabilityCheck(fprop.P[wells['ws_q']], fprop.T)
-                L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-                p_well.run_init(fprop.P[wells['ws_q']],z[0:ctes.Nc])
+            if len(wells['ws_inj'])>0 and not self.p2.constant_K:
+
                 if any(wells['inj_cond']=='reservoir'):
-                    wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
-                    wells['values_q_vol'][:,wells['inj_cond']=='reservoir'] = self.q_vol
+                    injP_bool = wells['ws_p'] == wells['ws_inj']
+                    injP = wells['ws_p'][injP_bool]
+
+                    z = (wells['z']).T
+                    p_well = StabilityCheck(fprop.P[wells['ws_inj']], fprop.T)
+                    L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
+                    p_well.run_init(fprop.P[wells['ws_inj']],z[0:ctes.Nc])
+
+                    if any(injP_bool):
+                        qk_molar = fprop.qk_molar[:,injP]
+                        #wells['values_q_vol'] = np.zeros_like((ctes.n_components,len(injP)))
+                        wells['values_q_vol'] = qk_molar / \
+                            ((Csi_V * V + Csi_L * L))#[wells['inj_cond']=='reservoir']
+                    else:
+                        wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
+                    #wells['values_q_vol'][:,wells['inj_cond']=='reservoir'] = self.q_vol
                 #else:
-                #    wells['inj_p_term'] = []
-                #    qk_molar = wells['values_q'][:,wells['inj_cond']=='surface']
-                #    wells['values_q_vol'][:,wells['inj_cond']=='surface'] = qk_molar / \
-                #        ((Csi_V * V + Csi_L * L))[wells['inj_cond']=='surface']
+                    #wells['inj_p_term'] = []
+                    #qk_molar = wells['values_q'][:,wells['inj_cond']=='surface']
+                    #wells['values_q_vol'][:,wells['inj_cond']=='surface'] = qk_molar / \
+                    #    ((Csi_V * V + Csi_L * L))[wells['inj_cond']=='surface']
 
         #if any(fprop.L!=0): import pdb; pdb.set_trace()
         '----------------------- Update fluid properties ----------------------'
-
         self.p1.run_inside_loop(M, fprop)
+        if any(fprop.So<0.08): import pdb; pdb.set_trace()
+        if any(fprop.So>0.73): import pdb; pdb.set_trace()
+
 
         '-------------------- Advance in time and save results ----------------'
         self.prod_rate_SC(fprop, wells)
@@ -210,7 +223,7 @@ class run_simulation:
         if ctes.load_k:
             p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
             z_prod = fprop.qk_prod/np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
-            if (z_prod).sum()<1 or np.isnan(z_prod.sum()): z_prod = fprop.z[:,wells['ws_p']]
+            if (abs(z_prod.sum()-1)>1e-15) or np.isnan(z_prod.sum()): z_prod = fprop.z[:,wells['ws_prod']]
             L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
                 p_well.run_init(ctes.P_SC, z_prod[0:ctes.Nc])
             q_molar_prod = np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
@@ -225,7 +238,6 @@ class run_simulation:
 
     def update_vpi(self, fprop, wells):
         ''' Function to update time in vpi units (volume poroso injetado)'''
-
         if len(wells['ws_inj'])>0:
             flux_vols_total = wells['values_q_vol']
             flux_total_inj = np.absolute(flux_vols_total)
@@ -266,6 +278,7 @@ class run_simulation:
         M.data['So'][:] = fprop.So
         M.data['Sg'][:] = fprop.Sg
         M.data['zC1'][:] = fprop.z[0,:]
+        #M.data['perm'][:] = M.data[M.data.variables_impress['permeability']].reshape([ctes.n_volumes,3,3]).sum(axis=-1)[:,0]
         #M.data['zc1'][:] = fprop.z[0,:]
         M.data.update_variables_to_mesh()
         M.core.print(file = self.name_all_results + str(self.loop), extension ='.vtk')

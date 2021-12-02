@@ -30,8 +30,8 @@ class CompositionalFVM:
 
         if ctes.FR: Nk_SP_old = np.copy(fprop.Nk_SP)
         while (r!=1.):
-
             fprop.Nk = np.copy(Nk_old)
+
             fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells,
                 fprop, P_old, delta_t)
 
@@ -84,7 +84,7 @@ class CompositionalFVM:
             delta_t_new = delta_time.update_CFL(delta_t, fprop, wells, Fk_vols_total, fprop.Nk, wave_velocity)
             r = delta_t_new/delta_t
             delta_t = delta_t_new
-            #r=1
+            r=1
 
         dd = q
 

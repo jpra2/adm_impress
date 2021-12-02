@@ -1,6 +1,6 @@
 #2-phase problem with 2 components - hotei and firoozabadi
-mesh_name: 40x40x1_Firoozabadi_ex1.msh
-name_save_file: 'results_Hoteit_Firoo_2k_ex3_IMPEC_FOU'
+mesh_name: 80x80x1_Firoozabadi_ex1.msh
+name_save_file: 'results_Hoteit_Firoo_2k_ex3_80x80_IMPEC_MUSCL'
 
 compositional: True
 hidrocarbon_components: True
@@ -33,7 +33,7 @@ compositional_data:
     IMPSAT: false
 
   MUSCL:
-    set: true
+    set: false
 
   FR:
     set: false
@@ -46,8 +46,8 @@ compositional_data:
     DW: false
 
   vpis_para_gravar_vtk: [0.58]
-  time_to_save: [36266400.]
-  maximum_time: 36266400.
+  time_to_save: [36288000.]
+  maximum_time: 36288000.
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -64,9 +64,9 @@ compositional_data:
     deltaPlim: 68.9476
     deltaNlim: 2
     deltaSlim: .25
-    deltaVlim: 0.3
+    deltaVlim: 0.002
     delta_t_ini: 86.4
-    delta_tmax: 4320
+    delta_tmax: 8640
     delta_tmin: 8.64
 
   water_data:
@@ -135,7 +135,7 @@ Temperature:
 Wells:
   P1:
     p0: [0.0, 0.0, -1.0]
-    p1: [1.25, 1.25, 0.0]
+    p1: [0.625, 0.625, 0.0]
     type_region: box
     type: Injector
     z: [1.0, 0.0]
@@ -146,7 +146,7 @@ Wells:
     value_type: volumetric
 
   P2:
-    p0: [48.75, 48.75, -1.0]
+    p0: [49.375, 49.375, -1.0]
     p1: [50.0, 50.0, 0.0]
     prescription: P
     type: Producer

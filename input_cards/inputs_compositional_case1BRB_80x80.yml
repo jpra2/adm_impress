@@ -1,6 +1,6 @@
 #3-phase problem with 3 components - case 1 BRB master thesis
-mesh_name: 40x40_Igor.msh #40x40x1_case1BRB.msh
-name_save_file: 'results_case1_2d_BRB_40x40_IMPEC' #150683
+mesh_name: 80x80x1_case1BRB_TESTE.msh
+name_save_file: 'results_case1_2d_BRB_80x80' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -43,6 +43,7 @@ compositional_data:
     ROE: false
     LLF: false
     MDW: false
+    DW: false
 
   vpis_para_gravar_vtk: [0.2]
   time_to_save: [43200000] #[43200000]
@@ -136,8 +137,8 @@ Temperature:
 Wells:
 
   P1:
-    p0: [0.0, 237.73425, -60.96]
-    p1: [6.09575, 243.83, 0]
+    p0: [0.0, 240.782125, -60.96]
+    p1: [3.047875, 243.83, 0]
     prescription: Q
     type: Injector
     type_region: box
@@ -148,8 +149,8 @@ Wells:
     value_type: volumetric
 
   P2:
-    p0: [237.73425, 0.0, -60.96]
-    p1: [243.83, 6.09575, 0]
+    p0: [240.782125, 0.0, -60.96]
+    p1: [243.83, 3.047875, 0]
     prescription: P
     type: Producer
     type_region: box

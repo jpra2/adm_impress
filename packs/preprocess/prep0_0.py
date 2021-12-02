@@ -212,6 +212,7 @@ class Preprocess0:
 
         ks0 = ks0.reshape([ni, 3, 3]) * u_normal_internal_faces.reshape([ni, 1, 3])
         ks1 = ks1.reshape([ni, 3, 3]) * u_normal_internal_faces.reshape([ni, 1, 3])
+
         ks0 = ks0.sum(axis=2).sum(axis=1)
         ks1 = ks1.sum(axis=2).sum(axis=1)
 
@@ -237,7 +238,7 @@ class Preprocess0:
         transmissibility = pretransmissibility_faces/mi_monofasic
 
         M.data[M.data.variables_impress['transmissibility']] = transmissibility
-
+        
     def update_centroids_and_unormal(self, M):
 
         M.data['centroid_volumes'] = M.volumes.center(M.volumes.all)
@@ -253,6 +254,7 @@ class Preprocess0:
         dist_cent = M.data['dist_cent']
         pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
         M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
+
         # M.data.update_variables_to_mesh([M.data.variables_impress['pretransmissibility']])
 
     def initial_gama(self, M):

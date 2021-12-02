@@ -223,7 +223,7 @@ class Preprocess0:
 
         M.data.variables[M.data.variables_impress['k_harm']] = k_harm_faces
         # M.data.variables[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
-
+        
     def set_transmissibility_monophasic(self, M):
         # mi_monofasic = 1.0
         mi_monofasic = direc.data_loaded['monophasic_data']['mi']

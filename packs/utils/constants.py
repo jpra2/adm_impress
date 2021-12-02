@@ -45,7 +45,15 @@ def init(M, wells):
     Cf = np.array(data_loaded['compositional_data']['rock_compressibility']).astype(float)
     R = 8.3144598
     n_volumes = len(M.volumes.all)
-    v0 = M.faces.bridge_adjacencies(M.faces.internal,2,3)
+
+    v00 = M.faces.bridge_adjacencies(M.faces.internal,2,3)
+    c_int = M.faces.center(M.faces.internal)
+    c_vols = M.volumes.center(M.volumes.all)
+    pos = (c_int[:,np.newaxis,:] - c_vols[v00]).sum(axis=2)
+    v0 = np.copy(v00)
+    v0[:,0] = v00[pos>0]
+    v0[:,1] = v00[pos<0]
+
     porosity = M.data['poro']
     Vbulk = M.data['volume']
     internal_faces = M.faces.internal

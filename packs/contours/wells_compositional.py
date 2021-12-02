@@ -44,10 +44,11 @@ class WellsCompositional(Wells):
                 nv = len(vols)
                 if tipo == 'Injector':
                     z.append(well['z'])
+                    z *= nv
                     inj_cond.append(well['injection_condition'])
+                    inj_cond*=nv
 
                 if prescription == 'Q':
-
                     val = value/nv * np.array(well['z'])
                     if tipo == 'Producer':
                         val *= -1
@@ -56,12 +57,13 @@ class WellsCompositional(Wells):
                     value_type = well['value_type']
                     values = val
 
-
                     if value_type == 'volumetric':
                         if inj_cond[-1] == 'surface':
                             values = (1 - well['z'][-1]) * well['ksi_total'] * val
                             values[-1] = val[-1] * well['ksi_total']
-                        values_q_vol.append(val.tolist())
+                    values_q_vol.append(val.tolist())
+                    values_q_vol *= nv
+
 
                     vals = np.repeat(values, nv)
                     if len(values_q)>0:

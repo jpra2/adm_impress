@@ -27,13 +27,13 @@ class BrooksAndCorey:
         Swr = np.ones(saturations[2].shape) * self.Swr
 
         Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
-        Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
         Sorg[saturations[0] < self.Sorg] = saturations[0][saturations[0] < self.Sorg]
         Swr[saturations[2] < Swr] = saturations[2][saturations[2] < Swr]
 
         Sor = Sorw * (1 - saturations[1] / (1 - Swr - Sorg)) + \
                     Sorg * saturations[1] / (1 - Swr - Sorg)
-        
+        #if any(saturations[0] < Sor): import pdb; pdb.set_trace()
+
         Sor[saturations[0] < Sor] = saturations[0][saturations[0] < Sor]
 
         krw = self.krw0 * ((saturations[2] - Swr) / (1 - Swr - Sorw - self.Sgr)) ** self.n_w
@@ -121,19 +121,21 @@ class StoneII:
         Sor = self.Sorw * (1 - saturations[1] / (1 - self.Swr - self.Sorg)) + \
                     self.Sorg * saturations[1] / (1 - self.Swr - self.Sorg)
 
+        #Sor[saturations[0] < Sor] = saturations[0][saturations[0] < Sor]
+
         krw = self.krw0 * ((saturations[2] - self.Swr) / (1 - self.Swr - self.Sorw)) ** self.n_w
         krg = self.krg0 * ((saturations[1] - self.Sgr) / (1 - self.Swr - self.Sorg - self.Sgr)) ** self.n_g
         krow = self.krow0 * ((1 - saturations[2] - self.Sorw) / (1 - self.Swr - self.Sorw)) ** self.n_ow
         krog = self.krog0 * ((1. - saturations[1] - self.Sorg - self.Swr) / (1 - self.Swr - self.Sgr - self.Sorg)) ** self.n_og
 
         krw[saturations[2] <= self.Swr] = 0
-        #krw[saturations[0]<= self.Swr] = self.krw0
         krow[saturations[2]<= self.Swr] = self.krow0
         krow[saturations[0]<= self.Sorw] = 0
         krog[saturations[0]<= self.Sorg] = 0
 
         kro = self.krow0 * ((krow/self.krow0 + krw) * (krog/self.krow0 + krg) - (krw + krg))
         kro[kro<0] = 0
+        #if any(saturations[0]<Sor): import pdb; pdb.set_trace()
         #self.krow = krow; self.krog = krog
         #kro[saturations[2]<Swr] = self.kro0 * ((saturations[0][saturations[2]<Swr] - self.Sor) / (1 - self.Sor - self.Sgr)) ** self.n_o
 

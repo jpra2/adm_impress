@@ -64,7 +64,7 @@ compositional_data:
     deltaPlim: 68.9476
     deltaNlim: 2
     deltaSlim: .55
-    deltaVlim: 0.001
+    deltaVlim: 0.005
     delta_t_ini: 86.4
     delta_tmax: 4320
     delta_tmin: 0.864
@@ -147,7 +147,7 @@ Wells:
 
   P2:
     p0: [48.75, 0, -1.25]
-    p1: [50.0, 1.0, 0.0]
+    p1: [50.0, 1.0, 0]
     prescription: P
     type: Producer
     type_region: box

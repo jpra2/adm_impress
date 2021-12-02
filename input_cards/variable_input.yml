@@ -184,6 +184,12 @@ mass_water_production:
   level: 0
   sparse: true
   type: volumes
+perm:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
 permeability:
   data size: 9
   data type: float
@@ -264,6 +270,12 @@ volume:
   type: volumes
 weight:
   data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+zC1:
+  data size: 1
   data type: float
   level: 0
   sparse: true

@@ -20,10 +20,12 @@ def initial_mesh (mesh, load=False, convert=False):
         M = msh(mesh, dim = 3)
         elements_lv0 = ElementsLv0(M, load=load)
         data_impress = Data(M, elements_lv0, load=load)
+
         if not load:
             Preprocess0(M, elements_lv0)
 
         wells = WellsCompositional(M, elements_lv0, load = load)
+        
         set_saturation_regions(M, wells)
         #fluid_properties = FluidProperties()
 

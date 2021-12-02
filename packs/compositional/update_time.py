@@ -15,14 +15,15 @@ class delta_time:
     def update_CFL(delta_t, fprop, wells, Fk_vols_total, Nks, wave_velocity):
         CFL_p = data_loaded['compositional_data']['CFL']
         old_settings = np.seterr(all = 'ignore', divide = 'ignore')
-        CFLs = np.empty([3])
+        CFLs = np.zeros([3])
         CFLs[0] = delta_t * np.max(abs(wave_velocity))
         Nk = np.copy(Nks)
         #if CFL>100:
             #print(np.max(abs(wave_velocity)))
         Nk[Nk==0] = 1e300
-        CFLs[1:] = delta_t*np.max(fprop.qk_molar[:,wells['all_wells']]/Nk[:,wells['all_wells']],axis=0)
+        CFLs[1:] = delta_t*np.max(abs(fprop.qk_molar[:,wells['all_wells']]/Nk[:,wells['all_wells']]))
         CFL = max(CFLs)
+
         CFL = CFL*(2*(ctes.n_points-1)+1)
 
         #CFL_wells = delta_t * 1 / np.nanmin((Nk[wells['ws_inj']] /
@@ -39,14 +40,15 @@ class delta_time:
     def update_delta_tcfl(self, delta_t, fprop, wells):
          CFL = data_loaded['compositional_data']['CFL']
          old_settings = np.seterr(all = 'ignore', divide = 'ignore')
-         delta_tcfl = np.zeros([3])
+         delta_tcfl = np.zeros([3])-10000
          Nk = np.copy(self.Nk)
 
          delta_tcfl[0] = CFL / np.max(abs(fprop.wave_velocity)) #make nan
          Nk[Nk==0] = 1e-100
-         delta_tcfl[1:] = CFL/np.max(fprop.qk_molar[:,wells['all_wells']]/Nk[:,wells['all_wells']],axis=0)
-
+         #import pdb; pdb.set_trace()
+         delta_tcfl[1:] = CFL/np.max(abs(fprop.qk_molar[:,wells['all_wells']]/Nk[:,wells['all_wells']]))#,axis=0)
          delta_tcfl = min(abs(delta_tcfl))
+
          np.seterr(**old_settings)
 
          delta_tcfl = delta_tcfl/(2*(ctes.n_points-1)+1)
@@ -111,6 +113,7 @@ class delta_time:
 
         if delta_t > min(delta_tmax,delta_tcfl): delta_t = min(delta_tmax, delta_tcfl)
         #if delta_t > delta_tmax: delta_t = delta_tmax
+
         if delta_t == delta_ts: print('S')
         if delta_t == delta_tcfl: print('CFL')
         if delta_t == delta_tv: print('V')

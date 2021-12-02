@@ -8,9 +8,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline, UnivariateSpline
 flying = 'flying'
 name = 'results'
 arquivos = os.listdir(flying)
-x_CMG = np.loadtxt('x_3k_Firoo_CMG.txt')
-xCH4_CMG = np.loadtxt('xCH4_3k_Firoo.txt')
-yC3H8_CMG = np.loadtxt('yC3H8_3k_Firoo.txt')
+
 for  arq in arquivos:
     if  arq.startswith(name):
         x_MOC = np.array([0, 0.0615711, 0.121019, 0.181529, 0.214437, 0.214968, \
@@ -158,7 +156,9 @@ for  arq in arquivos:
             xkj_MDW_200[:,1,Sg_MDW_200==0] = 0
             xkj_MDW_200[:,0,So_MDW_200==0] = 0
 
-        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_MUSCL_LLF_1127.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_MUSCL_LLF_1127.npy', allow_pickle=True)
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_MUSCL_LLF_1563.npy', allow_pickle=True)
+
         for data in datas[datas.shape[0]-1:]:
             So_MUSCL_200 = data[6]
             Sg_MUSCL_200 = data[7]

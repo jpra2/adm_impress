@@ -78,13 +78,13 @@ for arq in arquivos:
         plt.savefig('results/compositional/MUSCL_tests/saturation_water_6k_MUSCL_inj' + '{}'.format(n) + '.png')
 
         plt.figure(4)
-        plt.title('t = 200 days')
+        plt.title('Perfil de Saturação de Gás')
         plt.plot(x1, Sg, 'k', x_CMG, Sg_CMG, 'r', x, Sg_MUSCL, 'y')
-        plt.legend(('PADMEC-FOUM', 'CMG', 'PADMEC-MUSCL'))
-        plt.ylabel('Water saturation')
-        plt.xlabel('Distance')
+        plt.legend(('FOU-128', 'CMG', 'MUSCL-128'))
+        plt.ylabel('Saturação de gás ')
+        plt.xlabel('Distância')
         plt.grid()
-        plt.savefig('results/compositional/MUSCL_tests/saturation_gas_6k_MUSCL_inj' +'{}'.format(n) + '.png')
+        plt.savefig('results/compositional/TCC2/saturation_gas_6k_MUSCL_inj' +'{}'.format(n) + '.png')
 
         '''x = np.linspace(0.54624,2725.7376,500)
         plt.figure(1)

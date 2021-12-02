@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import math
 from scipy.interpolate import InterpolatedUnivariateSpline
 
 flying = 'flying'
@@ -64,21 +65,34 @@ xD = np.append(xD,xD3)
 SwD = np.append(Sw1,Sw2)
 SwD = np.append(SwD,Sw3)
 
+
 for  arq in arquivos:
     if  arq.startswith(name):
-
-        #datas = np.load('flying/results_Buckley_Leverett_case_IMPSAT_510.npy', allow_pickle=True)
-        datas = np.load('flying/results_Buckley_Leverett_case_FR3_10900.npy', allow_pickle=True)
+        datas = np.load('flying/results_Buckley_Leverett_vertical_case_MUSCL_1138.npy', allow_pickle=True)
         for data in datas[-1:]:
-            Sw_IMPSAT = data[5]
-        x = np.linspace(0,1,500)
-        plt.figure(1)
-        plt.plot(xD, SwD, 'y', x, Sw_IMPSAT, 'b', mfc = 'none')
-        plt.grid()
-        loop = data[0]
-        plt.legend(('Analytical Solution', 'FR3'))
-        plt.title('Buckley-Leverett Solution Example')
-        plt.ylabel('Water Saturation')
-        plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/saturation_w_BL_comparison_FR3.png')
+            Sw = data[5]
+            x = np.linspace(0,1,500)
+            plt.figure(1)
+            plt.plot(x, Sw, 'r', xD, SwD, 'y')
+            plt.grid()
+            loop = data[0]
+            plt.legend(('PADMEC', 'Analytical Solution'))
+            plt.title('Buckley-Leverett Solution Example')
+            plt.ylabel('Water Saturation')
+            plt.xlabel('Dimensionless distance')
+            plt.savefig('results/compositional/TCC2/saturation_w_vert_BL_comparison.png' )
+            import pdb; pdb.set_trace()
+
+        '''datas = np.load('flying/results_vertical_case_7855.npy', allow_pickle=True)
         import pdb; pdb.set_trace()
+        for data in datas[1:]:
+            Sw = data[5]
+            x = np.linspace(0,1,500)
+            plt.figure(1)
+            plt.plot(x, Sw, 'r')
+            plt.grid()
+            loop = data[0]
+            plt.title('Teste')
+            plt.ylabel('Water Saturation')
+            plt.xlabel('Dimensionless distance')
+            plt.savefig('results/compositional/saturation_w_vertical_tcase.png' )'''

@@ -1,6 +1,6 @@
 #2-phase problem with 3 components - hotei and firoozabadi
 mesh_name: 200x1x1_3k.msh
-name_save_file: 'results_Hoteit_Firoo_3k_200_IMPSAT' #150683
+name_save_file: 'results_Hoteit_Firoo_3k_200_IMPEC_MUSCL' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -30,10 +30,10 @@ compositional_data:
   CFL: 0.9
 
   solver:
-    IMPSAT: true
+    IMPSAT: false
 
   MUSCL:
-    set: false
+    set: true
 
   FR:
     set: false
@@ -41,11 +41,11 @@ compositional_data:
 
   RiemannSolver:
     ROE: false
-    LLF: false
+    LLF: true
     MDW: false
     DW: false
 
-  vpis_para_gravar_vtk: [0.51]
+  vpis_para_gravar_vtk: [0.48, 0.49, 0.50, 0.51]
   time_to_save: [2592000]
   maximum_time: 2592000
   phase_viscosity: LorenzBrayClark
@@ -62,9 +62,9 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 1
+    deltaNlim: 3
     deltaSlim: .35
-    deltaVlim: .0001
+    deltaVlim: .005
     delta_t_ini: 86.4
     delta_tmax: 86400
     delta_tmin: 8.64

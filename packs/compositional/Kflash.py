@@ -7,7 +7,7 @@ class StabilityCheck(SC):
         self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V = self.run_constant_K(z)
         return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
 
-    def run(self, P, z):
+    def run(self, P, z, wells):
         self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V = self.run_constant_K(z)
         return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
 
