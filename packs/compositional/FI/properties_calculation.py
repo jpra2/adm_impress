@@ -21,8 +21,7 @@ class PropertiesCalc:
         ''' This function was created to calculate the fluid properties at t=0'''
 
         if ctes.load_w:
-            fprop.Sw = self.update_water_properties(M, fprop)
-            #fprop.Sw = self.Sw
+            self.update_water_properties(M, fprop)
 
         if ctes.load_k:
             fprop.So, fprop.Sg = self.update_saturations(M.data['saturation'],
@@ -30,7 +29,6 @@ class PropertiesCalc:
         else:
             fprop.So = np.zeros(ctes.n_volumes)
             fprop.Sg = np.zeros(ctes.n_volumes)
-        #self.So = fprop.So; self.Sg = fprop.Sg
 
         self.set_initial_volume(fprop)
         self.set_initial_mole_numbers(fprop)
@@ -45,7 +43,7 @@ class PropertiesCalc:
         ''' Function to update fluid and reservoir properties along the \
         simulation '''
 
-        #fprop.Vp = self.update_porous_volume(fprop.P)
+        fprop.Vp = self.update_porous_volume(fprop.P)
 
         if ctes.load_w:
             self.update_water_properties(M, fprop)
@@ -53,20 +51,22 @@ class PropertiesCalc:
         self.update_mole_numbers(fprop)
         self.update_total_volume(fprop)
 
+        fprop.So, fprop.Sg = self.update_saturations(M.data['saturation'],
+                            fprop.Csi_j, fprop.L, fprop.V)
+
         fprop.mobilities = self.update_mobilities(fprop, fprop.So, fprop.Sg, fprop.Sw,
                           fprop.Csi_j, fprop.xkj)
 
         self.update_capillary_pressure(fprop)
 
-
     def update_water_properties(self, M, fprop):
         if data_loaded['compositional_data']['water_data']['mobility']:
             M.data['saturation'], fprop.Csi_W, fprop.rho_W = \
             self.update_water_saturation(fprop, fprop.Nk[-1,:], fprop.P, fprop.Vp, fprop.Csi_W0)
-        Sw = M.data['saturation']
+        fprop.Sw = M.data['saturation']
         fprop.Csi_j[0, ctes.n_phases-1,:] = fprop.Csi_W
         fprop.rho_j[0,ctes.n_phases-1,:] = fprop.rho_W
-        return Sw
+
 
     def set_initial_volume(self, fprop):
         self.Vo = fprop.Vp * fprop.So
@@ -84,6 +84,7 @@ class PropertiesCalc:
 
         Nkj = fprop.xkj * fprop.Nj
         fprop.Nk = np.sum(Nkj, axis = 1)
+
 
     def set_Nk_Pspace(self, fprop):
         from packs.compositional import prep_FR as ctes_FR
@@ -134,7 +135,7 @@ class PropertiesCalc:
 
     def update_relative_permeabilities(self, fprop, So, Sg, Sw):
         saturations = np.array([So, Sg, Sw])
-        kro,krg,krw, fprop.Sor = self.relative_permeability(fprop, saturations)
+        kro,krg,krw, Sor = self.relative_permeability(fprop, saturations)
         krj = np.zeros([1, ctes.n_phases, len(So)])
         if ctes.load_k:
             krj[0,0,:] = kro
@@ -154,7 +155,6 @@ class PropertiesCalc:
             #phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
             #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test
             phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
-
         if ctes.load_w:
             phase_viscosities[0,ctes.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
 
@@ -162,8 +162,8 @@ class PropertiesCalc:
 
     def update_mobilities(self, fprop, So, Sg, Sw, Csi_j, xkj):
         krs = self.update_relative_permeabilities(fprop, So, Sg, Sw)
-        mis = self.update_phase_viscosities(fprop, Csi_j, xkj)
-        mobilities = krs / mis
+        fprop.mis = self.update_phase_viscosities(fprop, Csi_j, xkj)
+        mobilities = krs / fprop.mis
         return mobilities
 
     def update_capillary_pressure(self, fprop):

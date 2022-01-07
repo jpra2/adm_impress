@@ -1,6 +1,6 @@
 #Water case in 1D reservoir
 mesh_name: 100x1x1_m.msh
-name_save_file: results_monophasic_incompressible_w_IMPSAT
+name_save_file: results_monophasic_incompressible_w_IMPEC
 n_test: 0
 compositional: True
 hidrocarbon_components: False
@@ -29,15 +29,22 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   CFL: 0.5
-  
+
   solver:
-    IMPSAT: True
+    IMPSAT: False
+    FI: False
 
   MUSCL:
     set: false
   FR:
     set: false
     order: 3
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
+
   #  Pensar em um jeito de reorganizar isso
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [10]
@@ -95,6 +102,7 @@ compositional_data:
     w: [0.4890]
     Bin: [0]
     vshift_parameter: [0.085]
+    constant_K: False
 
 #water saturation data
 Saturation:

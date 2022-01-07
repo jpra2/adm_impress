@@ -36,7 +36,7 @@ Wells:
     - 0.0
     - -10
     p1:
-    - 5.334375
+    - 341.4
     - 10.66875
     - 0.0
     prescription: Q
@@ -54,7 +54,7 @@ Wells:
     - 1.0
   P2:
     p0:
-    - 2725.865625
+    - 2389.8
     - 0.0
     - -10
     p1:
@@ -197,11 +197,12 @@ compositional_data:
     Swr: 0.3
   rock_compressibility: 0
   solver:
+    FI: true
     IMPSAT: false
   time_data:
     deltaNlim: 0.1
     deltaPlim: 68.9476
-    deltaSlim: 0.0015
+    deltaSlim: 0.001
     deltaVlim: 0.1
     delta_t_ini: 100
     delta_tmax: 86400
@@ -228,11 +229,11 @@ hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: 512x1x1_6k.msh
+mesh_name: 8x1x1_6k.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_water_inj_6k_512_FOU_modified_case_upw
+name_save_file: results_water_inj_6k_8_FOU_modified_caset2
 read_permeability: false
 set_permeability: true
 set_porosity: true

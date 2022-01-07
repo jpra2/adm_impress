@@ -30,6 +30,7 @@ compositional_data:
   CFL: 0.5
   solver:
     IMPSAT: false
+    FI: false
 
   MUSCL:
     set: false

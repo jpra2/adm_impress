@@ -1,11 +1,11 @@
 import numpy as np
 from . import constants as ctes
 
-## Attention to units: Temperature[K] and Pressure[atm]
-# P  = 9.87E-6*P #[Pa] to [atm]
-# Still going to add StoneII method so the user can choose
-class VinsomeWesterveld:
 
+class VinsomeWesterveld:
+    # Falta trazer a implementação
+
+    """
     def __init__(self, fprop, phase_molar_densities):
         self.n_volumes = ctes.n_volumes
         self.phase_molar_densities = phase_molar_densities * 10**(-6) # mole/m³ to mole/cm³
@@ -82,3 +82,4 @@ class VinsomeWesterveld:
         self.phase_viscosity_atm(component_molar_fractions)
         mi_phase = self.phase_viscosity()
         return mi_phase
+    """

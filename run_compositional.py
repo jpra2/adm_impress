@@ -1,9 +1,9 @@
-from packs.directories import data_loaded
-from packs import directories as direc
-from packs.running.compositional_initial_mesh_properties import initial_mesh
-from packs.compositional.update_time import delta_time
-from get_inputs_compositional import FluidProperties
-from packs.utils import constants as ctes
+from packs.directories import data_loaded #Não mexi nada
+from packs import directories as direc #Não mexi nada
+from packs.running.compositional_initial_mesh_properties import initial_mesh #Não mexi nada
+from packs.compositional.update_time import delta_time # Falta mexer
+from get_inputs_compositional import FluidProperties # Falta mexer
+from packs.utils import constants as ctes # Falta mexer
 import os
 import numpy as np
 import time
@@ -11,6 +11,10 @@ import time
 if data_loaded['compositional_data']['solver']['IMPSAT']:
     from packs.compositional.IMPSAT.compositionalIMPSAT import CompositionalFVM
     from packs.compositional.IMPSAT.properties_calculation import PropertiesCalc
+elif data_loaded['compositional_data']['solver']['FI']:
+    import pdb; pdb.set_trace()
+    from packs.compositional.FI.compositionalFI import CompositionalFVM
+    from packs.compositional.FI.properties_calculation import PropertiesCalc
 else:
     from packs.compositional.IMPEC.compositionalIMPEC import CompositionalFVM
     from packs.compositional.IMPEC.properties_calculation import PropertiesCalc
@@ -95,7 +99,7 @@ class run_simulation:
 
         '---- Get pressure field and new time step (if the past time step does \
         not obey the CFL condition) -------------------------------------------'
-
+        import pdb; pdb.set_trace()
         self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t)
 
         self.t += self.delta_t

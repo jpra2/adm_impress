@@ -1,10 +1,10 @@
 # 1-D with 4 components - case 2 Varavei thesis
-mesh_name: 20x20x1_case1BRB.msh # Falta gerar a malha!
+mesh_name: 50x1x1_Varavei_case2.msh # Refazer a malha do jeito certo
 name_save_file: 'results_case2_1d_Varavei_Thermal'
 
 compositional: True
 hidrocarbon_components: True
-compressible_fluid: True # Não tenho certeza se é True ou False 
+compressible_fluid: True # Não tenho certeza se é True ou False
 water_component: True
 use_vpi: False
 
@@ -26,11 +26,11 @@ monophasic_data:
 
 compositional_data:
 
-  CFL: 0.7
+  CFL: 0.7 # Ajustar
 
   solver:
     IMPSAT: false
-    FIM: True #Adicionar essa chave no solver
+    FI: True #Adicionar essa chave no solver - programar os arquivos dela
 
   MUSCL:
     set: False
@@ -40,9 +40,9 @@ compositional_data:
 
   vpis_para_gravar_vtk: [0.2]
   time_to_save: [51840000]
-  maximum_time: 51840000
+  maximum_time: 51840000 # 600 dias
   phase_viscosity: LorenzBrayClark
-  relative_permeability: BrooksAndCorey
+  relative_permeability: CoreyModified
   capillary_pressure: Chang
   equation_of_state: PengRobinson
 
@@ -63,7 +63,7 @@ compositional_data:
     delta_tmax: 77760
     delta_tmin: 1.64
 
-  water_data: # Preciso manter ou alterar algo?
+  water_data: # Preciso alterar, água já entra nos componentes
     mi_W: 1e-3
     rho_W: 1000.73
     Mw_w: 18.e-3
@@ -71,36 +71,38 @@ compositional_data:
     Pw: 10.34e6
     mobility: True
 
-  # Dados confusos - pedir ajuda a Eduarda
+  # Depende do modelo de permeabilidade relativa
   residual_saturations:
-    Sorw: 0.000001
-    Sorg: 0.000001
-    Swr: 0.25
-    Sgr: 0.
+    Sor: 0.25
+    Sgr: 0.06
+    Swr: 0.2
 
   relative_permeability_data:
-    krw0: 1
-    krow0: 1
-    krog0: 1
-    krg0: 1
+    krw0: 0.4
+    kro0: 0.7
+    krg0: 0.5
 
-    n_og: 1.
-    n_ow: 1.
-    n_w: 1.
-    n_g: 1.
+    n_w: 2.5
+    n_o: 2.0
+    n_g: 1.5
 
-#  C6, C10, C15, H2O
+#  H20, C6, C10, C15 - posso pedir para o Marcondes os dados usados nos componentes (Manual da CMG tem algumas informações)
   component_data:
-    z: [0.05, 0.15, 0.3, 0.5]
-    Tc: [507.22, 622.283, 705.556, 647.483]
-    Pc: [3012319.5, 2534836.834, 1.379e6, 22054398.05]
-    vc: [3.68e-4, 6.24e-4, 9.66e-4, 5.595e-5]
-    Mw: [86e-3, 134e-3, 206e-3, 18e-3]
-    w: [0.296, 0.5764, 0.7678, 0.344]
+    z: [0.5, 0.15, 0.3, 0.05]
+    Tc: [647.483, 622.283, 705.556, 507.22]
+    Pc: [22054398.05, 2534836.834, 1.379e6, 3012319.5]
+    vc: [5.595e-5, 6.24e-4, 9.66e-4, 3.68e-4]
+    Mw: [18e-3, 134e-3, 206e-3, 86e-3]
+    w: [0.344, 0.5764, 0.7678, 0.296]
     Bin: [[0., 0., 0., 0.], [0., 0., 0., 0.], [0., 0., 0., 0.], [0., 0., 0., 0.]]
-    vshift_parameter: [0.0, 0., 0.]
+    vshift_parameter: [0.0, 0.0, 0.0, 0.0]
+    #Dados obtidos no manual da CMG - ADD AQUI OU CRIAR UMA FLAG ESPECÍFICA?
+    CP1: [32.243, -4.413, -7.913, -11.916] # J/(mol * Kelvin)
+    CP2:: [1.924e-3, 0.5820, 0.9609, 1.433] # J/(mol * Kelvin**2)
+    CP3: [1.055e-5, -3.119e-4, -5.288e-4, -7.972e-4] # J/(mol * Kelvin**3)
+    CP4: [-3.596e-9, 6.494e-8, 1.131e-7, 1.720e-7] # J/(mol * Kelvin**4)
 
-#water saturation data - NO MEU CASO NÃO PRECISA DISSO, ÁGUA ENTRA NOS COMPONENTES
+#water saturation data - NO MEU CASO NÃO PRECISA DISSO, ÁGUA ENTRA NOS COMPONENTES, VER COMO TIRAR
 Saturation:
   r1:
     type: all
@@ -117,7 +119,6 @@ Permeability:
     type: all
     value: [1.97e-13, 0, 0, 0, 1.97e-13, 0, 0, 0, 1.97e-14]
 
-# ADICIONAR FLAGS DAS PROŔIEDADES TÉRMICAS
 
 Pressure:
   r1:
