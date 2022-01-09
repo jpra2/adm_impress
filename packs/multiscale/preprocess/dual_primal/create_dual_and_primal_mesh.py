@@ -234,7 +234,7 @@ class MultilevelData(DataManager):
             # 'boundary_faces': elements_lv0['boundary_faces'],
             # 'volumes_faces': M.volumes.bridge_adjacencies(M.volumes.all, 3, 2)
         }
-        primal_ids, dual_ids = generate_primal.create_dual_and_primal(**multilevel_info)
+        primal_ids, dual_ids = generate_primal.create_dual_and_primal(**multilevel_info, m_object=M)
 
         coarse_info = {
             'centroids_fine_volumes': M.volumes.center[:],

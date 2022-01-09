@@ -192,6 +192,8 @@ assert (n_loops_for_export % n_loops_for_acumulate) == 0
 
 tmax_simulation = 15 # dias
 t_simulation = sim.t/86400
+M.data.update_variables_to_mesh()
+print_mesh_volumes_data(M, 'results/dual_test.vtk')
 
 while run_criteria < stop_criteria:# and loop < loop_max:
 # while t_simulation < tmax_simulation:
@@ -343,7 +345,6 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     total_volumes_updated[:] = False
     data_impress['LEVEL'][:] = 1
     t_simulation = sim.t/86400
-
 
     if loop % 2500 == 0:
         print('sleeping...')

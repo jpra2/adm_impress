@@ -104,10 +104,10 @@ class delta_time:
 
         if delta_t > min(delta_tmax, delta_tcfl): delta_t = min(delta_tmax, delta_tcfl)
         #import pdb; pdb.set_trace()
-        if delta_t==delta_ts: print("S")
-        if delta_t==delta_tn: print("N")
-        if delta_t==delta_tcfl: print("CFL")
-        if delta_t==delta_tv: print("V")
-        if delta_t < delta_tmin: delta_t = delta_tmin
+        # if delta_t==delta_ts: print("S")
+        # if delta_t==delta_tn: print("N")
+        # if delta_t==delta_tcfl: print("CFL")
+        # if delta_t==delta_tv: print("V")
+        # if delta_t < delta_tmin: delta_t = delta_tmin
         #delta_t = delta_tcfl
         return delta_t

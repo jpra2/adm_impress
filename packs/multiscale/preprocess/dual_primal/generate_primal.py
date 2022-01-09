@@ -3,8 +3,11 @@ import numpy as np
 from packs.utils import utils_old
 import networkx as nx
 import collections
+from packs.multiscale.ms_utils.multiscale_functions import print_mesh_volumes_data
 
-def create_dual_and_primal(centroids_volumes: np.ndarray, volumes_dimension: np.ndarray, centroids_nodes: np.ndarray, cr: np.ndarray, adjacencies_internal_faces: np.ndarray):
+def create_dual_and_primal(centroids_volumes: np.ndarray, volumes_dimension: np.ndarray, centroids_nodes: np.ndarray, cr: np.ndarray, adjacencies_internal_faces: np.ndarray, **kwargs):
+    # import pdb; pdb.set_trace()
+    M = kwargs.get('m_object')
     
     ##########################
     ## around the vector in order to fix the gmsh centroid location problem
@@ -21,6 +24,12 @@ def create_dual_and_primal(centroids_volumes: np.ndarray, volumes_dimension: np.
     L = get_l_total(centroids_nodes)
     primal_coarse_ids, all_separated = create_primal(centroids_volumes2, volumes_dimension, cr, dimension)
     dual_ids = create_dual(centroids_volumes2, cr, dimension, L, volumes_dimension, adjacencies_internal_faces, all_separated)
+    # M.data['DUAL_1'][:] = dual_ids
+    # M.data['GID_1'][:] = primal_coarse_ids
+    # M.data.update_variables_to_mesh()
+    # print_mesh_volumes_data(M, 'results/dual_test.vtk')
+    
+    # import pdb; pdb.set_trace()
     test_coarse_vertices(primal_coarse_ids, dual_ids)
     
     return primal_coarse_ids, dual_ids
