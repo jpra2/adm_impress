@@ -144,14 +144,22 @@ class TPFASolver:
             fprop.q_phase = mob_ratio * well_term
 
 
+# -------------------------------------------------------------------------------------
+
+class NewtonSolver:
+    def __init__(self, M, wells, fprop, delta_t, Pot_hid, Nk_old):
+        self.M = M
+        self.wells = wells
+        self.fprop = fprop
+        self.delta_t = delta_t
+        self.Pot_hid = Pot_hid
+        self.Nk_old = Nk_old
 
 
-
-    ''' ---------------------- Funcoes que eu uso -----------------------------------'''
-    def update_transmissibility_FI(self, M, wells, fprop, delta_t):
-        self.t0_internal_faces_prod = fprop.xkj_internal_faces * \
-                                      fprop.Csi_j_internal_faces * \
-                                      fprop.mobilities_internal_faces
+    def update_transmissibility_FI(self):
+        self.t0_internal_faces_prod = self.fprop.xkj_internal_faces * \
+                                      self.fprop.Csi_j_internal_faces * \
+                                      self.fprop.mobilities_internal_faces
 
         ''' Transmissibility '''
         #t0 = (self.t0_internal_faces_prod).sum(axis = 1)
@@ -159,8 +167,8 @@ class TPFASolver:
         t0 = t0 * ctes.pretransmissibility_internal_faces
         return t0
 
-    def well_term(self, fprop, wells): # Preciso para calcular os termos de poço 
-        import pdb; pdb.set_trace()
+
+    def well_term(self, fprop, wells): # Preciso para calcular os termos de poço
         self.q = np.zeros([ctes.n_components, ctes.n_volumes])
         well_term = np.zeros(ctes.n_volumes)
         if len(wells['ws_q']) > 0:
@@ -168,3 +176,67 @@ class TPFASolver:
             well_term[wells['ws_q']] = np.sum(self.dVtk[:,wells['ws_q']] *
                 self.q[:,wells['ws_q']], axis = 0)
         return well_term
+
+    def residual_calculation(self):
+        # Equacao de conservacao da massa
+        transmissibility = self.update_transmissibility_FI()
+        d_Pot_hid = np.zeros_like(self.fprop.mobilities_internal_faces)
+        for i in range(3):
+            for j in range(len(d_Pot_hid[0][0])):
+                d_Pot_hid[0][i][j] = self.Pot_hid[i][j+1] - self.Pot_hid[i][j]
+        flux = transmissibility * d_Pot_hid
+        fluxos_internos = flux.sum(axis = 1)
+
+        fluxos_totais = np.zeros([ctes.n_components, ctes.n_volumes + 1])
+        d_fluxos_totais = np.zeros([ctes.n_components, ctes.n_volumes])
+        for i in range(len(fluxos_totais)):
+            for j in range(len(fluxos_totais[0])):
+                if j == 0:
+                    fluxos_totais[i][j] = 0.0
+                elif j == len(fluxos_totais[0]) - 1:
+                    fluxos_totais[i][j] = 0.0
+                    d_fluxos_totais[i][j-1] = fluxos_totais[i][j] - fluxos_totais[i][j-1]
+                else:
+                    fluxos_totais[i][j] = fluxos_internos[i][j-1]
+                    d_fluxos_totais[i][j-1] = fluxos_totais[i][j] - fluxos_totais[i][j-1]
+        residuo_massa = self.fprop.Vp * (self.fprop.Nk - self.Nk_old) - self.delta_t * d_fluxos_totais
+
+        # Restricao de volume poroso
+        aux = self.fprop.Nj / (self.fprop.Csi_j + 1e-15)
+        residuo_poroso_varavei = aux.sum(axis = 1)/self.fprop.Vp - 1.0
+        residuo_poroso_bruno = aux.sum(axis = 1) - self.fprop.Vp
+
+        # Residuo total
+        residuo = np.append(residuo_poroso_varavei, residuo_massa, axis = 0)
+        return residuo
+
+
+    def solver(self):
+        #Nk_newton = np.copy(self.fprop.Nk)
+        #P_Newton = np.copy(self.fprop.P)
+        #P_Newton = P_Newton.reshape(1, len(P_Newton))
+        #variaveis_primarias = np.append(P_Newton, Nk_newton, axis = 0)
+
+        stop_criteria = 1e-4
+        contador = 0
+        residuo = self.residual_calculation()
+        #import pdb; pdb.set_trace()
+
+        while np.max(residuo) > stop_criteria:
+            Nk_newton = np.copy(self.fprop.Nk)
+            P_Newton = np.copy(self.fprop.P)
+            P_Newton = P_Newton.reshape(1, len(P_Newton))
+            variaveis_primarias = np.append(P_Newton, Nk_newton, axis = 0)
+
+            residuo = self.residual_calculation()
+            import pdb; pdb.set_trace()
+
+            # Aqui fazer calculo dos residuos, jacobiana, e solucao do sistema
+            # atualizar variaveis
+
+            contador += 1
+            if contador > 100:
+                import pdb; pdb.set_trace()
+
+
+        return residuo

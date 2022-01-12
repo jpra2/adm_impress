@@ -1,4 +1,5 @@
 from .pressure_solver import TPFASolver
+from .newton_solver import NewtonSolver
 from .flux_calculation import FirstOrder, MUSCL, FR
 from ..update_time import delta_time
 import numpy as np
@@ -29,35 +30,20 @@ class CompositionalFVM:
         if ctes.FR: Nk_SP_old = np.copy(fprop.Nk_SP)
         while (r!=1.):
 
-            Nk_newton = np.copy(fprop.Nk)
             fprop.Nk = np.copy(Nk_old)
 
             # TESTAR O CALCULO DOS RESIDUOS ---------------------------------------------------
-            Transmissibility = psolve.update_transmissibility_FI(M, wells, fprop, delta_t)
-            #import pdb; pdb.set_trace()
-            d_Pot_hid = np.zeros_like(fprop.mobilities_internal_faces)
-            for i in range(3):
-                for j in range(len(d_Pot_hid[0][0])):
-                    d_Pot_hid[0][i][j] = Pot_hid[i][j+1] - Pot_hid[i][j]
-            aux = Transmissibility * d_Pot_hid
-            fluxos_internos = aux.sum(axis = 1)
 
-            # ERRADO
-            teste = np.zeros([ctes.n_components, ctes.n_volumes + 1])
-            d_teste = np.zeros([ctes.n_components, ctes.n_volumes])
-            for i in range(len(teste)):
-                for j in range(len(teste[0])):
-                    if j == 0:
-                        teste[i][j] = 0.0
-                    elif j == len(teste[0]) - 1:
-                        teste[i][j] = 0.0
-                        d_teste[i][j-1] = teste[i][j] - teste[i][j-1]
-                    else:
-                        teste[i][j] = fluxos_internos[i][j-1]
-                        d_teste[i][j-1] = teste[i][j] - teste[i][j-1]
-            Residuo = fprop.Vp * (Nk_newton - Nk_old) - delta_t * d_teste
+            solve = NewtonSolver(M, wells, fprop, delta_t, Pot_hid, Nk_old)
+            residuo = solve.residual_calculation()
+            solve.solver()
+
             # FIM DO TESTE --------------------------------------------------------------------
             import pdb; pdb.set_trace()
+            
+
+
+
 
 
             fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells, fprop, P_old, delta_t)
@@ -74,7 +60,7 @@ class CompositionalFVM:
             q[:,-1] = -1*q[:,-1]
             fprop.q_phase = total_flux_internal_faces[:,0][:,np.newaxis] * np.ones((1,2))
             '''
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
             if ctes.MUSCL:
                 wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
                     total_flux_internal_faces, Pot_hid)
@@ -100,7 +86,7 @@ class CompositionalFVM:
             delta_t_new = delta_time.update_CFL(delta_t, Fk_vols_total, fprop.Nk, wave_velocity)
             r = delta_t_new/delta_t
             delta_t = delta_t_new
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         dd = q
 
         if not ctes.FR:
@@ -117,6 +103,10 @@ class CompositionalFVM:
         if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
         if any(total_flux_internal_faces.flatten()<-1e-6): import pdb; pdb.set_trace()
         #if (Nk_old[0,0]>fprop.Nk[0,0]): import pdb; pdb.set_trace()
+
+
+        import pdb; pdb.set_trace()
+
         return delta_t
 
     def update_gravity_term(self, fprop):

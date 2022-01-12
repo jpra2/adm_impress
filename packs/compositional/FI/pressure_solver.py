@@ -96,7 +96,7 @@ class TPFASolver:
         return volume_discrepancy_term
 
     def well_term(self, fprop, wells):
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         self.q = np.zeros([ctes.n_components, ctes.n_volumes])
         well_term = np.zeros(ctes.n_volumes)
         if len(wells['ws_q']) > 0:
