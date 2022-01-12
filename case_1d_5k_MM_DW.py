@@ -76,6 +76,18 @@ for  arq in arquivos:
             xkj_FOU_4000[:,0,So_FOU_4000==0] = 0
             x_4000 = np.linspace(0,1.5,len(So_FOU_4000))
 
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_FOU_450.npy', allow_pickle=True)
+        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_FOU_200 = data[6]
+            Sg_FOU_200 = data[7]
+            z_FOU_200 = data[10]
+            xkj_FOU_200 = data[13]
+
+            xkj_FOU_200[:,1,Sg_FOU_200==0] = 0
+            xkj_FOU_200[:,0,So_FOU_200==0] = 0
+            x_200 = np.linspace(0,1.5,len(So_FOU_200))
+
         datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_MUSCL_LLF_t_1609.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_MUSCL_LLF_200 = data[6]
@@ -109,42 +121,109 @@ for  arq in arquivos:
             xkj_MUSCL_DW_200[:,0,So_MUSCL_DW_200==0] = 0
             t_MUSCL_DW_200 = data[2]
 
+        '------------------------------- FR -----------------------------------'
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_FR2_1492.npy', allow_pickle=True)
+        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_200 = data[7]
+            z_FR2_200 = data[10]
+            t_FR2 = data[2]
+            x_200 = np.linspace(0,1.5,len(So_FOU_200))
 
-        '--------------------------------LLF-----------------------------------'
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_FR2_RK3_1502.npy', allow_pickle=True)
+        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_RK3_200 = data[7]
+            z_FR2_RK3_200 = data[10]
+            t_FR2_RK3 = data[2]
+            x_200 = np.linspace(0,1.5,len(So_FOU_200))
 
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_FR3_2448.npy', allow_pickle=True)
+        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR3_200 = data[7]
+            z_FR3_200 = data[10]
+            t_FR3 = data[2]
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_FR4_3413.npy', allow_pickle=True)
+        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR4_200 = data[7]
+            z_FR4_200 = data[10]
+            t_FR4 = data[2]
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_FR4_RK3_3580.npy', allow_pickle=True)
+        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR4_RK3_200 = data[7]
+            z_FR4_RK3_200 = data[10]
+            t_FR4_RK3 = data[2]
 
 
         x_200 = np.linspace(0+1.5/400,1.5-1.5/400,200)
 
         plt.figure(1)
         plt.plot(x_MOC, Sg_MOC, 'k')
-        plt.plot(x_200, Sg_MUSCL_LLF_200, 'r')
-        plt.plot(x_200, Sg_MUSCL_DW_200, 'g')
-        plt.plot(x_200, Sg_MUSCL_MDW_200, 'm')
-        #plt.plot(x_200, Sg_MUSCL_200, 'g')
-        plt.legend(('MOC', 'MUSCL LLF-200', 'MUSCL DW-200', 'MUSCL MDW-200'))
+        plt.plot(x_200, Sg_FR2_200, '-gv')
+        #plt.plot(x_200, Sg_FR2_RK3_200, '-mo')
+        plt.plot(x_200, Sg_FR3_200, '-ys')
+        plt.plot(x_200, Sg_FR4_200, '-mo')
+        #plt.plot(x_200, Sg_MUSCL_MDW_200, 'm')
+        plt.plot(x_200, Sg_FOU_200, 'b')
+        plt.legend(('MOC', 'FR2-200', 'FR3-200','FR4-200', 'FOU-200'))
         plt.grid()
         plt.xlim((0.5, 1.2))
         plt.ylim((0.4, 1))
         plt.title('NVCM example with 200x1x1 mesh')
         plt.ylabel('Sg')
         plt.xlabel('Distance')
-        plt.savefig('results/compositional/TCC2/5k_Sg_MUSCL_200.png')
+        plt.savefig('results/compositional/FR/5k_Sg_FR_200.png')
 
         plt.figure(2)
         plt.plot(x_zC1_MOC, zC1_MOC, 'k')
-        plt.plot(x_200, z_MUSCL_LLF_200[1,:], 'r')
-        plt.plot(x_200, z_MUSCL_DW_200[1,:], 'g')
-        plt.plot(x_200, z_MUSCL_MDW_200[1,:], 'm')
-        #plt.plot(x_200, Sg_MUSCL_200, 'g')
-        plt.legend(('MOC', 'MUSCL LLF-200', 'MUSCL DW-200', 'MUSCL MDW-200'))
+        plt.plot(x_200, z_FR2_200[1,:], '-gv')
+        #plt.plot(x_200, z_FR2_RK3_200[1,:], '-mo')
+        plt.plot(x_200, z_FR3_200[1,:], '-ys')
+        plt.plot(x_200, z_FR4_200[1,:], '-mo')
+        #plt.plot(x_200, Sg_MUSCL_MDW_200, 'm')
+        plt.plot(x_200, z_FOU_200[1,:], 'b')
+        plt.legend(('MOC', 'FR2-200', 'FR3-200','FR4-200',
+            'FOU-200'))
         plt.grid()
         plt.xlim((1, 1.14))
         plt.ylim((0, 0.65))
         plt.title('NVCM example with 200x1x1 mesh')
         plt.ylabel('zC1')
         plt.xlabel('Distance')
-        plt.savefig('results/compositional/TCC2/5k_zC1_MUSCL_200.png')
+        plt.savefig('results/compositional/FR/5k_zC1_FR_200.png')
 
+        # TESTES
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_FR2_CFL1_824.npy', allow_pickle=True)
+        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_200 = data[7]
+            z_FR2_200 = data[10]
+            t_FR2 = data[2]
+            x_200 = np.linspace(0,1.5,len(So_FOU_200))
 
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_FR2_MDW_CFL1_RK3_548.npy', allow_pickle=True)
+        #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_RK3_200 = data[7]
+            z_FR2_RK3_200 = data[10]
+            t_FR2_RK3_ = data[2]
+            x_200 = np.linspace(0,1.5,len(So_FOU_200))
+
+        plt.figure(3)
+        plt.plot(x_zC1_MOC, zC1_MOC, 'k')
+        plt.plot(x_200, z_FR2_200[1,:], '-gv')
+        plt.plot(x_200, z_FR2_RK3_200[1,:], '-ys')
+        plt.legend(('MOC', 'FR2-200', 'FR2 RK3-200'))
+        plt.grid()
+        plt.xlim((1, 1.14))
+        plt.ylim((0, 0.65))
+        plt.title('NVCM example with 200x1x1 mesh CFL=1')
+        plt.ylabel('zC1')
+        plt.xlabel('Distance')
+        plt.savefig('results/compositional/FR/5k_zC1_FR_CFL1_RK3.png')
         import pdb; pdb.set_trace()

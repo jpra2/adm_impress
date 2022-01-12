@@ -91,7 +91,6 @@ class run_simulation:
                 Csi_j_ws[:,0,:] = Csi_L[ws_p_inj]
                 Csi_j_ws[:,1,:] = Csi_V[ws_p_inj]
                 wells['inj_p_term'] = xkj_ws * mobility_ratio_ws * Csi_j_ws
-
                 'if the injector well has a prescribed flux condition'
                 if len(wells['ws_q'])>0:
                     self.q_vol = np.copy(wells['values_q'][:,wells['inj_cond']=='reservoir'])
@@ -117,7 +116,7 @@ class run_simulation:
         properties'''
 
         fprop = FluidProperties(M, wells) # load reservoir properties data and initialize other data
-        
+
         '------------------------- Perform initial flash ----------------------'
         self.get_well_inj_properties(M, fprop, wells)
 
@@ -162,6 +161,7 @@ class run_simulation:
 
         if ctes.load_k and ctes.compressible_k:
             #if self.z
+
             self.p2 = StabilityCheck(fprop.P, fprop.T)
             fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
@@ -175,6 +175,7 @@ class run_simulation:
                     injP = wells['ws_p'][injP_bool]
 
                     z = (wells['z']).T
+
                     p_well = StabilityCheck(fprop.P[wells['ws_inj']], fprop.T)
                     L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
                     p_well.run_init(fprop.P[wells['ws_inj']],z[0:ctes.Nc])
@@ -196,16 +197,11 @@ class run_simulation:
         #if any(fprop.L!=0): import pdb; pdb.set_trace()
         '----------------------- Update fluid properties ----------------------'
         self.p1.run_inside_loop(M, fprop)
-        if any(fprop.So<0.08): import pdb; pdb.set_trace()
-        if any(fprop.So>0.73): import pdb; pdb.set_trace()
 
 
         '-------------------- Advance in time and save results ----------------'
         self.prod_rate_SC(fprop, wells)
         self.update_vpi(fprop, wells)
-
-        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
-        if len(wells['ws_prod'])>0: self.update_production(fprop, wells)
 
         self.update_loop()
         t1 = time.time()
@@ -219,10 +215,15 @@ class run_simulation:
             if self.time_save[0] == 0.0 or self.t in self.time_save:
                 self.update_current_compositional_results(M, wells, fprop)
 
+        self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
+        if len(wells['ws_prod'])>0: self.update_production(fprop, wells)
+
+
     def prod_rate_SC(self, fprop, wells):
         if ctes.load_k:
             p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
             z_prod = fprop.qk_prod/np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
+            
             if (abs(z_prod.sum()-1)>1e-15) or np.isnan(z_prod.sum()): z_prod = fprop.z[:,wells['ws_prod']]
             L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
                 p_well.run_init(ctes.P_SC, z_prod[0:ctes.Nc])
@@ -276,6 +277,7 @@ class run_simulation:
         self.all_results.append(self.current_compositional_results)
         M.data['saturation'][:] = fprop.Sw
         M.data['So'][:] = fprop.So
+        M.data['pressure'][:] = fprop.P
         M.data['Sg'][:] = fprop.Sg
         M.data['zC1'][:] = fprop.z[0,:]
         #M.data['perm'][:] = M.data[M.data.variables_impress['permeability']].reshape([ctes.n_volumes,3,3]).sum(axis=-1)[:,0]

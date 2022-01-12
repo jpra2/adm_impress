@@ -176,7 +176,6 @@ for  arq in arquivos:
             xkj_FOU_200[:,0,So_FOU_200==0] = 0
             x_200 = np.linspace(0,1.5,len(So_FOU_200))
 
-
         datas = np.load('flying/results_case1_Moshiri_Manzari_5k_256_FOU_579.npy', allow_pickle=True)
         #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_256_FOU_t_404.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
@@ -351,17 +350,81 @@ for  arq in arquivos:
             R1024_L1_MUSCL = math.log(e512_L1_MUSCL/e1024_L1_MUSCL,2)
             t1024_MUSCL = data[2]
 
-        '''datas = np.load('flying/results_case1_Moshiri_Manzari_5k_2048_LLF_7654.npy', allow_pickle=True)
+        'MUSCL UPW'
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_32_MUSCL_UPW_93.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
-            Sg_MUSCL_2048 = data[7]
-            zC1_MUSCL_2048 = data[10][1]
-            zCO2_MUSCL_2048 = data[10][0]
-            n = 2048
-            e2048_L1_MUSCL = (sum(abs(f(x_2048)-data[10][0]))*(1/n))
-            #R2048_L1_MUSCL = math.log(e512_L1_MUSCL/e2048_L1_MUSCL,2)
-            t2048_MUSCL = data[2]'''
+            Sg_MUSCL_UPW_32 = data[7]
+            zC1_MUSCL_UPW_32 = data[10][1]
+            zCO2_MUSCL_UPW_32 = data[10][0]
+            n = 32
+            e32_L1_MUSCL_UPW = (sum(abs(f(x_32)-data[10][0]))*(1/n))
+            #R32_L1_MUSCL_UPW = math.log(e16_L1_MUSCL_UPW/e32_L1_MUSCL_UPW,2)
+            e32_L2_MUSCL_UPW = np.sqrt(np.sum((f(x_32)-data[10][0])**2) * 1 / n)
+
+            t32_MUSCL_UPW = data[2]
+
+        #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_64_MUSCL_352.npy', allow_pickle=True)
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_64_MUSCL_UPW_184.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_MUSCL_UPW_64 = data[7]
+            zC1_MUSCL_UPW_64 = data[10][1]
+            zCO2_MUSCL_UPW_64 = data[10][0]
+            n = 64
+            e64_L1_MUSCL_UPW = (sum(abs(f(x_64)-data[10][0]))*(1/n))
+            R64_L1_MUSCL_UPW = math.log(e32_L1_MUSCL_UPW/e64_L1_MUSCL_UPW,2)
+            e64_L2_MUSCL_UPW = np.sqrt(np.sum((f(x_64)-data[10][0])**2) * 1 / n)
+
+            t64_MUSCL_UPW = data[2]
+
+        #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_128_MUSCL_LLF_994.npy', allow_pickle=True)
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_128_MUSCL_UPW_364.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_MUSCL_UPW_128 = data[7]
+            zC1_MUSCL_UPW_128 = data[10][1]
+            zCO2_MUSCL_UPW_128 = data[10][0]
+            n = 128
+            e128_L1_MUSCL_UPW = (sum(abs(f(x_128)-data[10][0]))*(1/n))
+            R128_L1_MUSCL_UPW = math.log(e64_L1_MUSCL_UPW/e128_L1_MUSCL_UPW,2)
+            e128_L2_MUSCL_UPW = np.sqrt(np.sum((f(x_128)-data[10][0])**2) * 1 / n)
+
+            t128_MUSCL_UPW = data[2]
+
+        #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_256_MUSCL_LLF_t_2044.npy', allow_pickle=True)
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_256_MUSCL_UPW_732.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_256_MUSCL_LLF_t_1434.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_MUSCL_UPW_256 = data[7]
+            zC1_MUSCL_UPW_256 = data[10][1]
+            zCO2_MUSCL_UPW_256 = data[10][0]
+            n = 256
+            e256_L1_MUSCL_UPW = (sum(abs(f(x_256)-data[10][0]))*(1/n))
+            e256_L2_MUSCL_UPW = np.sqrt(np.sum((f(x_256)-data[10][0])**2) * 1 / n)
+            R256_L1_MUSCL_UPW = math.log(e128_L1_MUSCL_UPW/e256_L1_MUSCL_UPW,2)
+            t256_MUSCL_UPW = data[2]
+
+        #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_512_MUSCL_LLF_9198.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_512_MUSCL_LLF_4260.npy', allow_pickle=True)
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_512_MUSCL_UPW_1464.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_MUSCL_UPW_512 = data[7]
+            zC1_MUSCL_UPW_512 = data[10][1]
+            zCO2_MUSCL_UPW_512 = data[10][0]
+            n = 512
+            e512_L2_MUSCL_UPW = np.sqrt(np.sum((f(x_512)-data[10][0])**2) * 1 / n)
+            e512_L1_MUSCL_UPW = (sum(abs(f(x_512)-data[10][0]))*(1/n))
+            R512_L1_MUSCL_UPW = math.log(e256_L1_MUSCL_UPW/e512_L1_MUSCL_UPW,2)
+            t512_MUSCL_UPW = data[2]
+
+
 
         size = 5
+        sizeletter = 12
+        plt.rcParams['figure.dpi'] = 300
+        plt.rcParams['savefig.dpi'] = 300
+
+        plt.rcParams.update({'font.size': sizeletter})
+
         plt.figure(1)
         plt.plot(x_MOC, Sg_MOC, 'k')
         #plt.plot(x_8, Sg_MUSCL_8, '-r', mfc='none')
@@ -374,11 +437,12 @@ for  arq in arquivos:
         #plt.plot(x_512, Sg_MUSCL_512, '-rv', mfc='none', markersize=size)
         #plt.plot(x_1024, Sg_MUSCL_1024, '-y')
         plt.legend(('MOC', 'MUSCL-32', 'MUSCL-64', \
-            'MUSCL-128', 'MUSCL-256'))
+            'MUSCL-128', 'MUSCL-256'),prop={'size': sizeletter}, loc=3)
         plt.grid()
         plt.ylabel('Sg')
         plt.xlabel('Distância')
         plt.savefig('results/compositional/TCC2/5k_Sg_MUSCL.png')
+        plt.savefig('results/compositional/TCC2/5k_Sg_MUSCL.eps', format = 'eps' )
 
         plt.figure(2)
         plt.plot(x_MOC, Sg_MOC, 'k')
@@ -390,11 +454,12 @@ for  arq in arquivos:
         plt.plot(x_256, Sg_FOU_256, '-cs', mfc='none', markersize=size)
         #plt.plot(x_512, Sg_FOU_512, '-rv', mfc='none', markersize=size)
         plt.legend(('MOC', 'FOU-32', 'FOU-64', \
-            'FOU-128', 'FOU-256'))
+            'FOU-128', 'FOU-256'),prop={'size': sizeletter}, loc=3)
         plt.grid()
         plt.ylabel('Sg')
         plt.xlabel('Distância')
         plt.savefig('results/compositional/TCC2/5k_Sg_FOU.png')
+        plt.savefig('results/compositional/TCC2/5k_Sg_FOU.eps', format = 'eps' )
 
         plt.figure(3)
         plt.plot(x_MOC, Sg_MOC, 'k')
@@ -407,13 +472,14 @@ for  arq in arquivos:
         plt.plot(x_256, Sg_MUSCL_256, '-c<', mfc='none', markersize=size)
         #plt.plot(x_512, Sg_MUSCL_512, '-r*', mfc='none', markersize=6)
         plt.legend(('MOC', 'MUSCL-32', 'MUSCL-64', \
-            'MUSCL-128', 'MUSCL-256'))
+            'MUSCL-128', 'MUSCL-256'),prop={'size': sizeletter}, loc=3)
         plt.grid()
         plt.xlim((0.5, 1.2))
         plt.ylim((0.4, 1))
         plt.ylabel('Sg')
         plt.xlabel('Distância')
         plt.savefig('results/compositional/TCC2/5k_Sg_MUSCL_zoom.png')
+        plt.savefig('results/compositional/TCC2/5k_Sg_MUSCL_zoom.eps', format = 'eps' )
 
         plt.figure(4)
         plt.plot(x_MOC, Sg_MOC, 'k')
@@ -425,13 +491,14 @@ for  arq in arquivos:
         plt.plot(x_256, Sg_FOU_256, '-cs', mfc='none', markersize=size)
         #plt.plot(x_512, Sg_FOU_512, '-rv', mfc='none', markersize=size)
         plt.legend(('MOC', 'FOU-32', 'FOU-64', \
-            'FOU-128', 'FOU-256'))
+            'FOU-128', 'FOU-256'),prop={'size': sizeletter}, loc=3)
         plt.grid()
         plt.xlim((0.5, 1.2))
         plt.ylim((0.4, 1))
         plt.ylabel('Sg')
         plt.xlabel('Distância')
         plt.savefig('results/compositional/TCC2/5k_Sg_FOU_zoom.png')
+        plt.savefig('results/compositional/TCC2/5k_Sg_FOU_zoom.eps', format = 'eps' )
 
         plt.figure(5)
         plt.plot(x_zC1_MOC, zC1_MOC, 'k')
@@ -443,12 +510,13 @@ for  arq in arquivos:
         plt.plot(x_256, zC1_MUSCL_256, '-cs', mfc='none', markersize=size)
         plt.plot(x_512, zC1_MUSCL_512, '-rv', mfc='none', markersize=size)
         plt.legend(('MOC', 'MUSCL-32', 'MUSCL-64', \
-            'MUSCL-128', 'MUSCL-256', 'MUSCL-512'))
+            'MUSCL-128', 'MUSCL-256', 'MUSCL-512'),prop={'size': sizeletter})
         plt.grid()
         plt.xlim((1, 1.14))
         plt.ylim((0, 0.65))
         plt.ylabel('$z_{C_1}$')
         plt.xlabel('Distância')
+        plt.savefig('results/compositional/TCC2/5k_zC1_MUSCL.eps', format = 'eps' )
         plt.savefig('results/compositional/TCC2/5k_zC1_MUSCL.png')
 
         plt.figure(6)
@@ -461,13 +529,14 @@ for  arq in arquivos:
         plt.plot(x_256, zC1_FOU_256, '-cs', mfc='none', markersize=size)
         plt.plot(x_512, zC1_FOU_512, '-rv', mfc='none', markersize=size)
         plt.legend(('MOC', 'FOU-32', 'FOU-64', \
-            'FOU-128', 'FOU-256', 'FOU-512'))
+            'FOU-128', 'FOU-256', 'FOU-512'),prop={'size': sizeletter})
         plt.grid()
         plt.xlim((1, 1.14))
         plt.ylim((0, 0.65))
         plt.ylabel('$x_{C_1}')
         plt.xlabel('Distância')
         plt.savefig('results/compositional/TCC2/5k_zC1_FOU.png')
+        plt.savefig('results/compositional/TCC2/5k_zC1_FOU.eps', format = 'eps' )
 
         plt.figure(7)
         x = np.log10(np.array([32,64,128,256,512]))
@@ -479,11 +548,13 @@ for  arq in arquivos:
         plt.plot(x, eL1_FOU, '-ro', mfc='none', markersize=size)
         plt.plot(x, eL1_MUSCL, '-gs', mfc='none', markersize=size)
         plt.plot(x,y,'k')
-        plt.legend(('FOU', 'MUSCL', 'Primeira Ordem'))
+        plt.legend(('FOU', 'MUSCL', 'Primeira Ordem'),prop={'size': sizeletter})
         plt.grid()
         plt.ylabel('$log(E_{L1})$')
         plt.xlabel('log($n_b$)')
         plt.savefig('results/compositional/TCC2/5k_eL1_zCO2.png')
+
+        plt.savefig('results/compositional/TCC2/5k_eL1_zCO2.eps', format = 'eps' )
 
         plt.figure(8)
         x = (np.array([32,64,128,256,512]))
@@ -493,10 +564,11 @@ for  arq in arquivos:
             t128_MUSCL, t256_MUSCL, t512_MUSCL]))
         plt.plot(x, t_FOU, '-ro', mfc='none', markersize=size)
         plt.plot(x, t_MUSCL, '-gs', mfc='none', markersize=size)
-        plt.legend(('FOU', 'MUSCL', 'Primeira Ordem'))
+        plt.legend(('FOU', 'MUSCL', 'Primeira Ordem'),prop={'size': sizeletter})
         plt.grid()
         plt.ylabel('Tempo computacional [s]')
         plt.xlabel('Número de volumes de controle')
+        plt.savefig('results/compositional/TCC2/5k_time.eps', format = 'eps' )
         plt.savefig('results/compositional/TCC2/5k_time.png')
 
         plt.figure(9)
@@ -511,9 +583,10 @@ for  arq in arquivos:
             e128_L1_MUSCL, e256_L1_MUSCL, e512_L1_MUSCL]))
         size_FOU = 7
         size_MUSCL = 7
-        #plt.plot(t_FOU,eL1_FOU, '-ro', mfc='none', markersize=size)
-        #plt.plot(t_MUSCL,eL1_MUSCL, '-gs', mfc='none', markersize=size)
-        plt.plot(t32_FOU, e32_L1_FOU, '-ro', mfc='none', markersize=size_FOU)
+        #cluster = ['o', 's', 'v', 'p', 'D', '*', '<']
+        #plt.scatter(t_FOU,eL1_FOU, '-r', marker=cluster, mfc='none', markersize=size)
+        #plt.scatter(t_MUSCL,eL1_MUSCL, '-g', marker=cluster[0:-2], mfc='none', markersize=size)
+        '''plt.plot(t32_FOU, e32_L1_FOU, '-ro', mfc='none', markersize=size_FOU)
         plt.plot(t32_MUSCL, e32_L1_MUSCL, '-go', mfc='g', markersize=size_MUSCL)
         plt.plot(t64_FOU, e64_L1_FOU, '-rs', mfc='none', markersize=size_FOU)
         plt.plot(t64_MUSCL, e64_L1_MUSCL, '-gs', mfc='g', markersize=size_MUSCL)
@@ -524,32 +597,34 @@ for  arq in arquivos:
         plt.plot(t512_FOU, e512_L1_FOU, '-rD', mfc='none', markersize=size_FOU)
         plt.plot(t512_MUSCL, e512_L1_MUSCL, '-gD', mfc='g', markersize=size_MUSCL)
         plt.plot(t1024_FOU, e1024_L1_FOU, '-r*', mfc='none', markersize=size_FOU)
-        plt.plot(t2048_FOU, e2048_L1_FOU, '-r<', mfc='none', markersize=size_FOU)
+        plt.plot(t2048_FOU, e2048_L1_FOU, '-r<', mfc='none', markersize=size_FOU)'''
         legend_elements = [Line2D([0], [0], color='g', label='MUSCL'),
-                   Line2D([0], [0], color='w', markerfacecolor='g', marker='o', markeredgecolor='g', label='32 CV', markersize=size_MUSCL),#, mfc='none'),
-                   Line2D([0], [0], marker='s', color='w', markerfacecolor='g', label='64 CV', markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
-                   Line2D([0], [0], marker='v', color='w', markerfacecolor='g',label='128 CV',markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
-                   Line2D([0], [0], marker='p', color='w', markerfacecolor='g', label='256 CV',markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
-                   Line2D([0], [0], marker='D', color='w', markerfacecolor='g', label='512 CV',markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], color='w', markerfacecolor='g', marker='o', markeredgecolor='g', label='32 VC', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], marker='s', color='w', markerfacecolor='g', label='64 VC', markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], marker='v', color='w', markerfacecolor='g',label='128 VC',markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], marker='p', color='w', markerfacecolor='g', label='256 VC',markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], marker='D', color='w', markerfacecolor='g', label='512 VC',markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
                    Line2D([0], [0], marker='D', color='w', markerfacecolor='none', label=' ',markeredgecolor='w', markersize=size_MUSCL),#, mfc='none'),
                    Line2D([0], [0], marker='D', color='w', markerfacecolor='none', label=' ',markeredgecolor='w', markersize=size_MUSCL),#, mfc='none'),
                    Line2D([0], [0], color='r', label='FOU'),
-                   Line2D([0], [0], color='w', marker='o', markeredgecolor='r', label='32 CV', markersize=size_FOU, mfc='none'),
-                   Line2D([0], [0], marker='s', color='w', label='64 CV', markeredgecolor='r', markersize=size_FOU, mfc='none'),
-                   Line2D([0], [0], marker='v', color='w', label='128 CV',markeredgecolor='r', markersize=size_FOU, mfc='none'),
-                   Line2D([0], [0], marker='p', color='w', label='256 CV',markeredgecolor='r', markersize=size_FOU, mfc='none'),
-                   Line2D([0], [0], marker='D', color='w', label='512 CV',markeredgecolor='r', markersize=size_FOU, mfc='none'),
-                   Line2D([0], [0], marker='*', color='w', label='1024 CV',markeredgecolor='r', markersize=size_FOU, mfc='none'),
-                   Line2D([0], [0], marker='<', color='w', label='2048 CV',markeredgecolor='r', markersize=size_FOU, mfc='none'),]
+                   Line2D([0], [0], color='w', marker='o', markeredgecolor='r', label='32 VC', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='s', color='w', label='64 VC', markeredgecolor='r', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='v', color='w', label='128 VC',markeredgecolor='r', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='p', color='w', label='256 VC',markeredgecolor='r', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='D', color='w', label='512 VC',markeredgecolor='r', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='*', color='w', label='1024 VC',markeredgecolor='r', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='<', color='w', label='2048 VC',markeredgecolor='r', markersize=size_FOU, mfc='none'),]
         # Create the figure
-        plt.legend(handles=legend_elements, ncol=2,)
+        plt.legend(handles=legend_elements, ncol=2, prop={'size': sizeletter-1})
         #plt.legend(('FOU', 'MUSCL', 'First Order'))
         plt.grid()
+        plt.xlim(0.5,1000)
         plt.xlabel('Tempo computacional [s]')
         plt.ylabel('$E_{L1}$')
         plt.xscale('log')
         plt.yscale('log')
         plt.savefig('results/compositional/TCC2/5k_time_eL1.png')
+        plt.savefig('results/compositional/TCC2/5k_time_eL1.eps', format = 'eps' )
 
 
         plt.figure(10)
@@ -562,13 +637,14 @@ for  arq in arquivos:
         plt.plot(x_256, zCO2_MUSCL_256, '-cs', mfc='none', markersize=size)
         #plt.plot(x_512, zCO2_MUSCL_512, '-rv', mfc='none', markersize=size)
         plt.legend(('FOU-4000', 'MUSCL-32', 'MUSCL-64', \
-            'MUSCL-128', 'MUSCL-256'), loc=3)
+            'MUSCL-128', 'MUSCL-256'), loc=3, prop={'size': sizeletter})
         plt.grid()
         plt.xlim((0, 1.1))
         plt.ylim((0.75, 1))
         plt.ylabel('$z_{CO_2}$')
         plt.xlabel('Distância')
         plt.savefig('results/compositional/TCC2/5k_zCO2_MUSCL.png')
+        plt.savefig('results/compositional/TCC2/5k_zCO2_MUSCL.eps', format = 'eps' )
 
         plt.figure(11)
         plt.plot(x_4000, zCO2_FOU_4000, 'k')
@@ -580,12 +656,104 @@ for  arq in arquivos:
         plt.plot(x_256, zCO2_FOU_256, '-cs', mfc='none', markersize=size)
         #plt.plot(x_512, zCO2_FOU_512, '-rv', mfc='none', markersize=size)
         plt.legend(('FOU-4000', 'FOU-32', 'FOU-64', \
-            'FOU-128', 'FOU-256'), loc=3)
+            'FOU-128', 'FOU-256'), loc=3, prop={'size': sizeletter})
         plt.grid()
         plt.xlim((0, 1.1))
         plt.ylim((0.75, 1))
         plt.ylabel('$z_{CO_2}$')
         plt.xlabel('Distância')
         plt.savefig('results/compositional/TCC2/5k_zCO2_FOU.png')
+        plt.savefig('results/compositional/TCC2/5k_zCO2_FOU.eps', format = 'eps' )
+
+        plt.figure(12)
+        plt.plot(x_zC1_MOC, zC1_MOC, 'k')
+        plt.plot(x_512, zC1_FOU_512, '-go', mfc='none', markersize=size)
+        plt.plot(x_512, zC1_MUSCL_512, '-cs', mfc='none', markersize=size)
+        plt.legend(('MOC', 'FOU-512', 'MUSCL-512'), prop={'size': sizeletter})
+        plt.grid()
+        plt.xlim((1, 1.14))
+        plt.ylim((0, 0.65))
+        plt.ylabel('$z_{C_1}$')
+        plt.xlabel('Distância')
+        plt.savefig('results/compositional/TCC2/5k_zC1_FOU_MUSCL_512.png')
+        plt.savefig('results/compositional/TCC2/5k_zC1_FOU_MUSCL_512.eps', format = 'eps' )
+
+        plt.figure(13)
+        plt.plot(x_zC1_MOC, zC1_MOC, 'k')
+        plt.plot(x_256, zC1_FOU_256, '-go', mfc='none', markersize=size)
+        plt.plot(x_256, zC1_MUSCL_256, '-cs', mfc='none', markersize=size)
+        plt.legend(('MOC', 'FOU-256', 'MUSCL-256'), prop={'size': sizeletter})
+        plt.grid()
+        plt.xlim((1, 1.14))
+        plt.ylim((0, 0.65))
+        plt.ylabel('$z_{C_1}$')
+        plt.xlabel('Distância')
+        plt.savefig('results/compositional/TCC2/5k_zC1_FOU_MUSCL_256.png')
+        plt.savefig('results/compositional/TCC2/5k_zC1_FOU_MUSCL_256.eps', format = 'eps' )
+
+        plt.figure(14)
+        plt.plot(x_MOC, Sg_MOC, 'k')
+        #plt.plot(x_8, Sg_MUSCL_8, '-r', mfc='none')
+        #plt.plot(x_16, Sg_MUSCL_16, '-y', mfc='none')
+        plt.plot(x_32, Sg_MUSCL_UPW_32, '-go', mfc='none', markersize=size)
+        plt.plot(x_64, Sg_MUSCL_UPW_64, '-bp', mfc='none', markersize=size)
+        plt.plot(x_128, Sg_MUSCL_UPW_128, '-mD', mfc='none', markersize=size)
+        #plt.plot(x_200, Sg_MUSCL_200, 'y', mfc='none', markersize=size)
+        plt.plot(x_256, Sg_MUSCL_UPW_256, '-cs', mfc='none', markersize=size)
+        #plt.plot(x_512, Sg_MUSCL_512, '-rv', mfc='none', markersize=size)
+        #plt.plot(x_1024, Sg_MUSCL_1024, '-y')
+        plt.legend(('MOC', 'MUSCL+UPW-32', 'MUSCL+UPW-64', \
+            'MUSCL+UPW-128', 'MUSCL+UPW-256'),prop={'size': sizeletter}, loc=3)
+        plt.grid()
+        plt.ylabel('Sg')
+        plt.xlabel('Distância')
+        plt.savefig('results/compositional/TCC2/5k_Sg_MUSCL_UPW.png')
+
+        plt.figure(15)
+        x = (np.array([32,64,128,256,512]))
+
+        size_FOU = 7
+        size_MUSCL = 7
+        #plt.plot(t_FOU,eL1_FOU, '-ro', mfc='none', markersize=size)
+        #plt.plot(t_MUSCL,eL1_MUSCL, '-gs', mfc='none', markersize=size)
+        plt.plot(t32_FOU, e32_L1_FOU, '-ro', mfc='none', markersize=size_FOU)
+        plt.plot(t32_MUSCL, e32_L1_MUSCL_UPW, '-go', mfc='g', markersize=size_MUSCL)
+        plt.plot(t64_FOU, e64_L1_FOU, '-rs', mfc='none', markersize=size_FOU)
+        plt.plot(t64_MUSCL, e64_L1_MUSCL_UPW, '-gs', mfc='g', markersize=size_MUSCL)
+        plt.plot(t128_FOU, e128_L1_FOU, '-rv', mfc='none', markersize=size_FOU)
+        plt.plot(t128_MUSCL, e128_L1_MUSCL_UPW, '-gv', mfc='g', markersize=size_MUSCL)
+        plt.plot(t256_FOU, e256_L1_FOU, '-rp', mfc='none', markersize=size_FOU)
+        plt.plot(t256_MUSCL, e256_L1_MUSCL_UPW, '-gp', mfc='g', markersize=size_MUSCL)
+        plt.plot(t512_FOU, e512_L1_FOU, '-rD', mfc='none', markersize=size_FOU)
+        plt.plot(t512_MUSCL, e512_L1_MUSCL_UPW, '-gD', mfc='g', markersize=size_MUSCL)
+        plt.plot(t1024_FOU, e1024_L1_FOU, '-r*', mfc='none', markersize=size_FOU)
+        plt.plot(t2048_FOU, e2048_L1_FOU, '-r<', mfc='none', markersize=size_FOU)
+        legend_elements = [Line2D([0], [0], color='g', label='MUSCL'),
+                   Line2D([0], [0], color='w', markerfacecolor='g', marker='o', markeredgecolor='g', label='32 VC', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], marker='s', color='w', markerfacecolor='g', label='64 VC', markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], marker='v', color='w', markerfacecolor='g',label='128 VC',markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], marker='p', color='w', markerfacecolor='g', label='256 VC',markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], marker='D', color='w', markerfacecolor='g', label='512 VC',markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], marker='D', color='w', markerfacecolor='none', label=' ',markeredgecolor='w', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], marker='D', color='w', markerfacecolor='none', label=' ',markeredgecolor='w', markersize=size_MUSCL),#, mfc='none'),
+                   Line2D([0], [0], color='r', label='FOU'),
+                   Line2D([0], [0], color='w', marker='o', markeredgecolor='r', label='32 VC', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='s', color='w', label='64 VC', markeredgecolor='r', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='v', color='w', label='128 VC',markeredgecolor='r', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='p', color='w', label='256 VC',markeredgecolor='r', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='D', color='w', label='512 VC',markeredgecolor='r', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='*', color='w', label='1024 VC',markeredgecolor='r', markersize=size_FOU, mfc='none'),
+                   Line2D([0], [0], marker='<', color='w', label='2048 VC',markeredgecolor='r', markersize=size_FOU, mfc='none'),]
+        # Create the figure
+        plt.legend(handles=legend_elements, ncol=2, prop={'size': sizeletter-1})
+        #plt.legend(('FOU', 'MUSCL', 'First Order'))
+        plt.grid()
+        plt.xlim(0.5,1000)
+        plt.xlabel('Tempo computacional [s]')
+        plt.ylabel('$E_{L1}$')
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.savefig('results/compositional/TCC2/5k_time_eL1_UPW.png')
+
 
         import pdb; pdb.set_trace()

@@ -27,7 +27,8 @@ class StabilityCheck(SC):
         self.V = (Vmin + Vmax) * 0.5
         ponteiro = np.ones_like(self.V,dtype=bool)
 
-        self.solve_objective_function_Whitson_for_V(self.V, Vmax, Vmin, np.copy(ponteiro))
+        self.V, self.x, self.y = self.solve_objective_function_Whitson_for_V(self.V, Vmax, \
+            Vmin, np.copy(self.K), self.z)
         #self.Yinghui_method(ponteiro) #ajeitar!
         #import pdb; pdb.set_trace()
         self.z[self.z==1e-30] = 0
@@ -38,7 +39,8 @@ class StabilityCheck(SC):
         self.L = 1 - self.V
 
         #ksi = np.array([37342.0019279 , 37138.91334958, 13792.42036739,  5248.87665093, 3013.74120719])
-        ksi = np.array([37342.0019279 , 37342.0019279 , 37342.0019279 , 37342.0019279 , 37342.0019279 ])
+        #ksi = np.array([37342.0019279 , 37342.0019279 , 37342.0019279 , 37342.0019279 , 37342.0019279 ])
+        ksi = np.array([33796.82333127, 33796.82333127, 33796.82333127])
         ksi_L = np.sum(self.x / ksi[:,np.newaxis], axis=0)
         ksi_V = np.sum(self.y / ksi[:,np.newaxis], axis=0)
         Mw_L = np.sum(self.x * ctes.Mw[:,np.newaxis], axis = 0)

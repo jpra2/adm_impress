@@ -158,22 +158,24 @@ for  arq in arquivos:
             e3 = (sum((P-p3)**2)/(45*45))**(1/2)
             R3 = np.log(e3/e2)/np.log(15/45)
 
-        datas = np.load('flying/results_2d_injection_25_caset2_452.npy', allow_pickle=True)
+        datas = np.load('flying/results_2d_injection_25_case_IMPEC_456.npy', allow_pickle=True)
 
-        for data in datas[1:]:
-            pressure4 = data[4]  / 1e6#6894.757
+        for data in datas[-1:]:
+            pressure4 = data[4]/1e6#6894.757
             """ Just for the 2D case """
             from packs.utils.utils_old import get_box
-            centroids = data[10]
+            centroids = data[11]
 
             p0 = [0,243.84,-0.3048]
             p1 = [609.6,268.224,0.0]
+            import pdb; pdb.set_trace()
             ind_ans = get_box(centroids,np.array([p0,p1]))
             cent_ind = centroids[ind_ans]
             cent_mix = cent_ind[:,0]
             ind_ans_sort = np.argsort(cent_mix)
             pressure4_1 = pressure4[ind_ans]
             pressure4 = pressure4_1[ind_ans_sort]
+
             #pressure4 = 0.2*(pressure4_2-pressure4_1) + pressure4_1
             x4 = np.linspace(0,2000,25)
             tck = interpolate.splrep(x4,pressure4,s=0)
@@ -213,11 +215,17 @@ for  arq in arquivos:
 
 
         #    p_resp = np.linspace(0.623843,0,100)
+        sizeletter = 12
+        plt.rcParams['figure.dpi'] = 300
+        plt.rcParams['savefig.dpi'] = 300
+
+        plt.rcParams.update({'font.size': sizeletter})
         plt.figure(1)
         #plt.title('t = 365 dias')
         plt.plot(x1*0.3048, pressure1, '-ro', x2*0.3048, pressure2, '-bs', \
-            x3*0.3048, pressure3, '-gP', x*0.3048, P, 'k', mfc='none', markersize=5)
-        plt.legend(('IMPEC FOU-25', 'IMPEC FOU-225', 'IMPEC FOU-2025', 'Solução Analítica'))
+            x3*0.3048, pressure3, '-gP', x4*0.3048, pressure4, 'y', x*0.3048, P, 'k', mfc='none', markersize=5)
+        plt.legend(('IMPEC FOU-25', 'IMPEC FOU-225', 'IMPEC FOU-2025',
+            'Solução Analítica'), prop={'size': sizeletter-1})
         #plt.figure(2)
         #plt.plot( x4, pressure4, 'g', x, P, 'y')
         plt.grid()

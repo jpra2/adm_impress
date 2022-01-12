@@ -544,7 +544,8 @@ class StabilityCheck:
             razao[:,ponteiro] = fl/fv
             if any(np.isnan(razao).flatten()):
                 if razao.shape[1]<300:
-                    import pdb; pdb.set_trace()
+                    print('nan')
+                    #import pdb; pdb.set_trace()
             razao[np.isnan(razao)] = 1
             razao[np.isinf(razao)] = 1
             self.K[:,ponteiro] *= razao[:,ponteiro] #* self.K[:,ponteiro]
@@ -561,10 +562,7 @@ class StabilityCheck:
 
         t1 = time.time()
         # THINK OF A BETTER WAY TO ORGANIZE THIS
-        if any(self.V>=1) and (self.L.shape[0]>1) and (self.L.shape[0]<230):
-            print('opa')
-            self.V[self.V>=1] = -1
-
+        
         self.z[self.z==1e-30] = 0
         self.x[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
         self.y[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]

@@ -52,10 +52,15 @@ for arq in arquivos:
             x = np.linspace(2731.2*(1/(2*n)),2731.2*(1-1/(2*n)),n)
 
         x1=x
+        sizeletter = 12
+        plt.rcParams['figure.dpi'] = 300
+        plt.rcParams['savefig.dpi'] = 300
+
+        plt.rcParams.update({'font.size': sizeletter})
         plt.figure(1)
         #plt.title('t = 200 days')
         plt.plot(x_CMG, So_CMG, 'k', x1, So, '-ro', x, So_MDW, '-bs', mfc='none', markersize=5)
-        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'))
+        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'), prop={'size': sizeletter})
         plt.ylabel('Saturação de óleo')
         plt.xlabel('Distância [m]')
         plt.grid()
@@ -64,7 +69,7 @@ for arq in arquivos:
         plt.figure(2)
         #plt.title('t = 200 days')
         plt.plot(x_CMG, Sw_CMG, 'k', x1, Sw, '-ro', x, Sw_MDW, '-bs', mfc='none', markersize=5)
-        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'))
+        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'), prop={'size': sizeletter})
         plt.ylabel('Saturaço de água')
         plt.xlabel('Distância [m]')
         plt.grid()
@@ -73,7 +78,7 @@ for arq in arquivos:
         plt.figure(3)
         #plt.title('Perfil de Saturação de Gás')
         plt.plot(x_CMG, Sg_CMG, 'k', x1, Sg, '-ro', x, Sg_MDW, '-bs', mfc='none', markersize=5)
-        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'))
+        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'), prop={'size': sizeletter})
         plt.ylabel('Saturação de gás')
         plt.xlabel('Distância [m]')
         plt.grid()
@@ -82,7 +87,7 @@ for arq in arquivos:
         plt.figure(4)
         #plt.title('t = 200 days')
         plt.plot(x_CMG, So_CMG, 'k', x1, So, '-ro', x, So_MDW, '-bs', mfc='none', markersize=5)
-        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'))
+        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'), prop={'size': sizeletter})
         plt.ylabel('Saturação de óleo')
         plt.xlabel('Distância [m]')
         plt.xlim(0,400)
@@ -93,7 +98,7 @@ for arq in arquivos:
         plt.figure(5)
         #plt.title('t = 200 days')
         plt.plot(x_CMG, Sw_CMG, 'k', x1, Sw, '-ro', x, Sw_MDW, '-bs', mfc='none', markersize=5)
-        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'))
+        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'), prop={'size': sizeletter})
         plt.ylabel('Saturaço de água')
         plt.xlabel('Distância [m]')
         plt.xlim(0,600)
@@ -104,7 +109,7 @@ for arq in arquivos:
         plt.figure(6)
         #plt.title('Perfil de Saturação de Gás')
         plt.plot(x_CMG, Sg_CMG, 'k', x1, Sg, '-ro', x, Sg_MDW, '-bs', mfc='none', markersize=5)
-        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'))
+        plt.legend(('CMG', 'FOU-200', 'MUSCL-200'),prop={'size': sizeletter})
         plt.ylabel('Saturação de gás')
         plt.xlabel('Distância [m]')
         plt.xlim(0,1500)

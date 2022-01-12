@@ -1,5 +1,5 @@
 from .pressure_solver import TPFASolver
-from .flux_calculation import FirstOrder, MUSCL, FR
+from ..flux_calculation.main_flux import compute_flux
 from ..update_time import delta_time
 import numpy as np
 from packs.utils import constants as ctes
@@ -28,16 +28,17 @@ class CompositionalFVM:
         P_old = np.copy(fprop.P)
         Nk_old = np.copy(fprop.Nk)
 
-        if ctes.FR: Nk_SP_old = np.copy(fprop.Nk_SP)
+        Nk_SP_old = np.copy(fprop.Nk_SP)
         while (r!=1.):
             fprop.Nk = np.copy(Nk_old)
 
-            fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells,
+            fprop.P, Ft_internal, fprop.qk_molar = psolve.get_pressure(M, wells,
                 fprop, P_old, delta_t)
 
             if any(np.isnan(fprop.P)): import pdb; pdb.set_trace()
 
-            '''total_flux_internal_faces = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
+            #5k example moshiri and manzari
+            '''Ft_internal = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
             q = np.zeros_like(fprop.Nk)
             frj = fprop.mobilities[:,...] / \
                 np.sum(fprop.mobilities[:,...], axis = 1)
@@ -46,36 +47,55 @@ class CompositionalFVM:
 
             q[:,wells['all_wells']] = np.sum(frj[:,:,wells['all_wells']] * fprop.Csi_j[:,:,wells['all_wells']]*\
                 np.array([[1, 0, 0, 0, 0],[0,0.25, 0.25, 0.25, 0.25]]).T[:,np.newaxis,:] * \
-                total_flux_internal_faces[:,0], axis=1)
+                Ft_internal[:,0], axis=1)
             #wells['values_q'] = q[:,wells['ws_inj']]
             q[:,-1] = -1*q[:,-1]
-            fprop.q_phase = total_flux_internal_faces[:,0][:,np.newaxis] * np.ones((1,2))
+            fprop.q_phase = Ft_internal[:,0][:,np.newaxis] * np.ones((1,2))
             fprop.qk_prod = 1/(24*60*60) * np.array([[0,0.25, 0.25, 0.25, 0.25]]).T
-            '''
-            fprop.qk_molar = q
-            fprop.qk_prod = q[:,wells['ws_prod']]
+            fprop.qk_molar = np.zeros_like(q)
+            fprop.qk_molar[:,wells['all_wells']] = q[:,wells['all_wells']]'''
 
-            if ctes.MUSCL:
-                wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
-                    total_flux_internal_faces, Pot_hid) #trocar ordem da saida
+            #3k example O55 fig 5.17
+            '''Ft_internal = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
+            q = np.zeros_like(fprop.Nk)
+            frj = fprop.mobilities[:,...] / \
+                np.sum(fprop.mobilities[:,...], axis = 1)
+            frj[:,1,0] = 1
+            frj[:,0,0] = 0
 
-            elif ctes.FR:
-                wave_velocity, Nk, z, Nk_SP, Fk_vols_total = FR().run(M, fprop, wells,
-                    total_flux_internal_faces, Nk_SP_old, P_old, q, delta_t, t)
-            else:
-                if ctes.RS['LLF']:
-                    Fk_vols_total, wave_velocity = FirstOrder().LLF(M, fprop, \
-                    total_flux_internal_faces, P_old, Nk_old)
-                elif ctes.RS['DW']:
-                    Fk_vols_total, wave_velocity = FirstOrder().DW(M, fprop, total_flux_internal_faces, P_old)
-                elif ctes.RS['MDW']:
-                    Fk_vols_total, wave_velocity = FirstOrder().MDW(M, fprop, total_flux_internal_faces, P_old)
-                elif ctes.RS['ROE']:
-                    Fk_vols_total, wave_velocity = FirstOrder().ROE(M, fprop, total_flux_internal_faces, P_old)
-                else:
-                    self.get_faces_properties_upwind(fprop, G)
-                    Fk_vols_total, wave_velocity = FirstOrder().FOU(M, fprop, \
-                        total_flux_internal_faces, fprop.mobilities_internal_faces)
+            q[:,wells['all_wells']] = np.sum(frj[:,:,wells['all_wells']] * fprop.Csi_j[:,:,wells['all_wells']]*\
+                np.array([[0.2, 0.8, 0],[0., 0.3, 0.7]]).T[:,np.newaxis,:] * \
+                Ft_internal[:,0], axis=1)
+            #wells['values_q'] = q[:,wells['ws_inj']]
+            q[:,-1] = -1*q[:,-1]
+            fprop.q_phase = Ft_internal[:,0][:,np.newaxis] * np.ones((1,2))
+            fprop.qk_prod = 1/(24*60*60) * np.array([[0., 0.3, 0.7]]).T
+            fprop.qk_molar = np.zeros_like(q)
+            fprop.qk_molar[:,wells['all_wells']] = q[:,wells['all_wells']]'''
+
+            #2k example O55 fig 4.16
+            '''Ft_internal = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
+            q = np.zeros_like(fprop.Nk)
+            frj = fprop.mobilities[:,...] / \
+                np.sum(fprop.mobilities[:,...], axis = 1)
+            frj[:,1,0] = 1
+            frj[:,0,0] = 0
+
+            q[:,wells['all_wells']] = np.sum(frj[:,:,wells['all_wells']] * fprop.Csi_j[:,:,wells['all_wells']]*\
+                np.array([[1,0],[0., 1]]).T[:,np.newaxis,:] * \
+                Ft_internal[:,0], axis=1)
+            #wells['values_q'] = q[:,wells['ws_inj']]
+            q[:,-1] = -1*q[:,-1]
+            fprop.q_phase = Ft_internal[:,0][:,np.newaxis] * np.ones((1,2))
+            fprop.qk_prod = 1/(24*60*60) * np.array([[0., 1]]).T
+            fprop.qk_molar = np.zeros_like(q)
+            fprop.qk_molar[:,wells['all_wells']] = q[:,wells['all_wells']]'''
+
+
+            #fprop.qk_prod = fprop.qk_molar[:,wells['ws_prod']]
+
+            Fk_vols_total, wave_velocity = compute_flux(M, fprop, wells, Ft_internal, \
+                P_old, Nk_old, Nk_SP_old, Pot_hid, delta_t, t, G)
 
             ''' For the composition calculation the time step might be different\
              because it treats composition explicitly and this explicit models \
@@ -83,28 +103,24 @@ class CompositionalFVM:
 
             delta_t_new = delta_time.update_CFL(delta_t, fprop, wells, Fk_vols_total, fprop.Nk, wave_velocity)
             r = delta_t_new/delta_t
-            delta_t = delta_t_new
+            #delta_t = delta_t_new
             r=1
-
-        dd = q
 
         if not ctes.FR:
             #Fk_vols_total *= 1/ctes.ds_faces
-            fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, q,
+            fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, fprop.qk_molar,
                 Fk_vols_total, delta_t)
-        else:
-            fprop.Nk = Nk; fprop.z = z; fprop.Nk_SP = Nk_SP
 
         #if fprop.z[-1,0] > 0: import pdb; pdb.set_trace()
         #import pdb; pdb.set_trace()
         fprop.wave_velocity = wave_velocity
-        fprop.total_flux_internal_faces = total_flux_internal_faces
+        fprop.Ft_internal = Ft_internal
         #import pdb; pdb.set_trace()
         #if fprop.P[0]<fprop.P[1]: import pdb; pdb.set_trace()
         #fprop.Nk[(fprop.Nk<0)*(abs(fprop.Nk)<1e-14)]= 0
         if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
         if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
-        #if any(total_flux_internal_faces.flatten()<-1e-6): import pdb; pdb.set_trace()
+        #if any(Ft_internal.flatten()<-1e-6): import pdb; pdb.set_trace()
         return delta_t
 
     def update_gravity_term(self, fprop):

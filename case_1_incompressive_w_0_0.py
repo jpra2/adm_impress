@@ -57,11 +57,16 @@ for arq in arquivos:
             x = np.linspace(0,1,100)
 
 
+        sizeletter = 12
+        plt.rcParams['figure.dpi'] = 300
+        plt.rcParams['savefig.dpi'] = 300
+
+        plt.rcParams.update({'font.size': sizeletter})
         #    p_resp = np.linspace(0.623843,0,100)
         plt.figure(1)
         plt.plot(x, pressure,'bo', x, P, 'k', mfc='none')
         plt.grid()
-        plt.legend(('IMPEC-FOU', 'Solução Analítica'))
+        plt.legend(('IMPEC', 'Solução Analítica'), prop={'size': sizeletter})
         plt.ylabel('Queda de pressão [psi]')
         plt.xlabel('Distância Adimensional')
         #plt.title('Water horizontal displacement')

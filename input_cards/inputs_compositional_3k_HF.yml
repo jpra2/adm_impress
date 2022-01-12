@@ -1,6 +1,6 @@
 #2-phase problem with 3 components - hotei and firoozabadi
 mesh_name: 200x1x1_3k.msh
-name_save_file: 'results_Hoteit_Firoo_3k_200_IMPEC_MUSCL' #150683
+name_save_file: 'results_Hoteit_Firoo_3k_200_IMPEC_FOU' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -33,7 +33,7 @@ compositional_data:
     IMPSAT: false
 
   MUSCL:
-    set: true
+    set: false
 
   FR:
     set: false
@@ -41,7 +41,7 @@ compositional_data:
 
   RiemannSolver:
     ROE: false
-    LLF: true
+    LLF: false
     MDW: false
     DW: false
 
@@ -120,7 +120,6 @@ Permeability:
   r1:
     type: all
     value: [9.869233e-15, 0, 0, 0, 9.869233e-15, 0, 0, 0, 9.869233e-15]
-
 
 Pressure:
   r1:

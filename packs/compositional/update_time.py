@@ -29,7 +29,9 @@ class delta_time:
         #CFL_wells = delta_t * 1 / np.nanmin((Nk[wells['ws_inj']] /
         #           abs(Fk_vols_total[wells['ws_inj']])))
         #import pdb; pdb.set_trace()
+        #if CFL>1: import pdb; pdb.set_trace()
         if (CFL - CFL_p)>1e-10:
+            #import pdb; pdb.set_trace()
             delta_t = delta_t / 2
         #delta_tmin = data_loaded['compositional_data']['time_data']['delta_tmin']
         #if delta_t<delta_tmin: delta_t=delta_tmin
@@ -113,7 +115,7 @@ class delta_time:
 
         if delta_t > min(delta_tmax,delta_tcfl): delta_t = min(delta_tmax, delta_tcfl)
         #if delta_t > delta_tmax: delta_t = delta_tmax
-
+        #import pdb; pdb.set_trace()
         if delta_t == delta_ts: print('S')
         if delta_t == delta_tcfl: print('CFL')
         if delta_t == delta_tv: print('V')

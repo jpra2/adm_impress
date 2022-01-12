@@ -26,6 +26,7 @@ impress(copia)/
 *.pyc
 .idea/
 *_0_0.yml
+*_0_0.py
 
 
 

@@ -1,6 +1,6 @@
 #Oil injection in oil reservoir 2-D with 1 oil component
 mesh_name: 25x25x1.msh
-name_save_file: 'results_2d_injection_25_case_MUSCL'
+name_save_file: 'results_2d_injection_25_case_IMPEC'
 
 n_test: 0
 compositional: True
@@ -34,7 +34,7 @@ compositional_data:
     IMPSAT: false
 
   MUSCL:
-    set: true
+    set: false
 
   FR:
     set: false
@@ -42,12 +42,12 @@ compositional_data:
 
   RiemannSolver:
     ROE: false
-    LLF: true
+    LLF: false
     MDW: false
     DW: false
 
   vpis_para_gravar_vtk: [0.0038]
-  time_to_save: [31536000.]
+  time_to_save: [100000, 500000, 1000000, 5000000, 10000000, 15000000, 20000000, 30000000, 31536000.]
   maximum_time: 31536000.
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
