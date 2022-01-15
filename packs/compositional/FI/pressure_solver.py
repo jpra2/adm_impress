@@ -32,7 +32,7 @@ class TPFASolver:
         T = sp.csr_matrix((ctes.n_volumes, ctes.n_volumes))
         # Look for a way of doing this not using a loop!!!
         #import pdb; pdb.set_trace()
-
+        import pdb; pdb.set_trace()
         for i in range(ctes.n_components):
             lines = np.array([ctes.v0[:, 0], ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
             cols = np.array([ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
@@ -40,7 +40,7 @@ class TPFASolver:
 
             Ta = (sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_volumes, ctes.n_volumes)))#.toarray()
             T += Ta.multiply(self.dVtk[i, :, np.newaxis])
-
+        import pdb; pdb.set_trace()
         T *= delta_t
         ''' Transmissibility diagonal term '''
         #diag = np.diag((ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP))

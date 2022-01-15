@@ -36,11 +36,11 @@ class CompositionalFVM:
 
             solve = NewtonSolver(M, wells, fprop, delta_t, Pot_hid, Nk_old)
             residuo = solve.residual_calculation()
-            solve.solver()
+            #solve.solver()
 
             # FIM DO TESTE --------------------------------------------------------------------
             import pdb; pdb.set_trace()
-            
+
 
 
 
@@ -60,7 +60,7 @@ class CompositionalFVM:
             q[:,-1] = -1*q[:,-1]
             fprop.q_phase = total_flux_internal_faces[:,0][:,np.newaxis] * np.ones((1,2))
             '''
-            #import pdb; pdb.set_trace()
+            import pdb; pdb.set_trace()
             if ctes.MUSCL:
                 wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
                     total_flux_internal_faces, Pot_hid)

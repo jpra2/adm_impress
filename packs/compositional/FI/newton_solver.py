@@ -187,6 +187,7 @@ class NewtonSolver:
         flux = transmissibility * d_Pot_hid
         fluxos_internos = flux.sum(axis = 1)
 
+        """
         fluxos_totais = np.zeros([ctes.n_components, ctes.n_volumes + 1])
         d_fluxos_totais = np.zeros([ctes.n_components, ctes.n_volumes])
         for i in range(len(fluxos_totais)):
@@ -199,7 +200,19 @@ class NewtonSolver:
                 else:
                     fluxos_totais[i][j] = fluxos_internos[i][j-1]
                     d_fluxos_totais[i][j-1] = fluxos_totais[i][j] - fluxos_totais[i][j-1]
-        residuo_massa = self.fprop.Vp * (self.fprop.Nk - self.Nk_old) - self.delta_t * d_fluxos_totais
+        """
+
+        fluxos_contornos_dir = np.zeros([ctes.Nc+1,1]) # Errado, so funciona para 1D
+        fluxos_contornos_esq = np.zeros([ctes.Nc+1,1])
+        fluxos_totais = np.insert(fluxos_internos, [ctes.Nc+1], fluxos_contornos_dir, axis = 1)
+        fluxos_totais = np.insert(fluxos_totais, [0], fluxos_contornos_esq, axis = 1)
+
+        d_fluxos_totais = np.zeros([ctes.n_components, ctes.n_volumes])
+        for i in range(len(fluxos_totais)):
+            d_fluxos_totais[i][:] = fluxos_totais[i][1:] - fluxos_totais[i][:-1]
+
+        #residuo_massa = self.fprop.Vp * (self.fprop.Nk - self.Nk_old) - self.delta_t * d_fluxos_totais
+        residuo_massa = (self.fprop.Nk - self.Nk_old) - self.delta_t * d_fluxos_totais
 
         # Restricao de volume poroso
         aux = self.fprop.Nj / (self.fprop.Csi_j + 1e-15)
@@ -210,6 +223,20 @@ class NewtonSolver:
         residuo = np.append(residuo_poroso_varavei, residuo_massa, axis = 0)
         return residuo
 
+    def jacobian_calculation(self):
+        # Calculo da matriz jacobiana
+
+        '''
+        Funcoes que vou precisar:
+        - derivada da eq de restricao de volume poroso:
+             - P
+             - N
+        - derivada da eq de conservacao da massa:
+             - P
+             - N
+        '''
+
+        pass
 
     def solver(self):
         #Nk_newton = np.copy(self.fprop.Nk)
@@ -223,15 +250,17 @@ class NewtonSolver:
         #import pdb; pdb.set_trace()
 
         while np.max(residuo) > stop_criteria:
+            # calculo dos residuos, jacobiana, e solucao do sistema
             Nk_newton = np.copy(self.fprop.Nk)
             P_Newton = np.copy(self.fprop.P)
-            P_Newton = P_Newton.reshape(1, len(P_Newton))
+            P_Newton = P_Newton.reshape(1, ctes.n_volumes)
             variaveis_primarias = np.append(P_Newton, Nk_newton, axis = 0)
 
             residuo = self.residual_calculation()
+            jacobiana = self.jacobian_calculation()
             import pdb; pdb.set_trace()
 
-            # Aqui fazer calculo dos residuos, jacobiana, e solucao do sistema
+
             # atualizar variaveis
 
             contador += 1
