@@ -1,6 +1,7 @@
 import numpy as np
 from .properties_calculation import PropertiesCalc
-from ..IMPEC.flux_calculation import Flux, RiemannSolvers
+from ..flux_calculation.flux_volumes import Flux
+from ..flux_calculation.riemann_solvers import RiemannSolvers
 from ...directories import data_loaded
 from packs.utils import constants as ctes
 import scipy.sparse as sp

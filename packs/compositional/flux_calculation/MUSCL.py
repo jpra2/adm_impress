@@ -113,6 +113,7 @@ class MUSCL:
             Fk_face_upwind_all[:,Pot_hidj_up <= Pot_hidj, 0]
         Fk_face_upwind[:,Pot_hidj_up > Pot_hidj] = \
             Fk_face_upwind_all[:,Pot_hidj_up > Pot_hidj, 1]
+
         return Fk_face_upwind
 
     def update_flux(self, M, wells, fprop, Nk_face, ftotal, Pot_hid):
@@ -143,11 +144,11 @@ class MUSCL:
         else:
             alpha_wv = np.zeros((ctes.n_components, ctes.n_internal_faces))
             ponteiro_alpha = np.zeros_like(ponteiro)
-            #dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-15
-            #ponteiro_alpha[dNkmax_small] = False
-            #alpha_wv[:,~ponteiro_alpha], m = RS.medium_wave_velocity(M, fprop, Nk_face, self.P_face, \
-            #    ftotal, ~ponteiro_alpha)
-            alpha_wv[:,~ponteiro_alpha] = 1e-100
+            dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-15
+            ponteiro_alpha[dNkmax_small] = False
+            alpha_wv[:,~ponteiro_alpha], m = RS.medium_wave_velocity(M, fprop, Nk_face, self.P_face, \
+                ftotal, ~ponteiro_alpha)
+            #alpha_wv[:,~ponteiro_alpha] = 1e-100
             Fk_internal_faces[:,~ponteiro] = self.update_flux_upwind(Pot_hid, \
                 Fk_face, ~ponteiro)
         #import pdb; pdb.set_trace()

@@ -1,6 +1,6 @@
 #2-phase problem in 1D with 2 components - Orr chapter 4 fig 4.16
 mesh_name: 200x1x1_3k_Orr.msh
-name_save_file: 'results_Orr_3k_C5_IMPEC_FR3'
+name_save_file: 'results_Orr_3k_C5_IMPEC_FR2'
 
 compositional: True
 hidrocarbon_components: True
@@ -37,7 +37,7 @@ compositional_data:
 
   FR:
     set: true
-    order: 3
+    order: 2
 
   RiemannSolver:
     ROE: false
@@ -62,12 +62,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 40
-    deltaSlim: 80
+    deltaNlim: 0.2
+    deltaSlim: 0.001
     deltaVlim: 100
     delta_t_ini: 8.64 #864
     delta_tmax: 86400
-    delta_tmin: 8.64
+    delta_tmin: 0.00864
 
   water_data:
     mi_W: 1e-3
@@ -135,7 +135,7 @@ Temperature:
 Wells:
   P1:
     p0: [0.00, 0.0, 0.0]
-    p1: [0.0075, 1, 1.0]
+    p1: [0.01, 1, 1.0]
     type_region: box
     type: Injector
     z: [0.4, 0.6, 0.]
@@ -144,8 +144,8 @@ Wells:
     value: 700e6
 
   P2:
-    p0: [1.4925, 0, 0.0]
-    p1: [1.5, 1.0, 1.0]
+    p0: [1.99, 0, 0.0]
+    p1: [2, 1.0, 1.0]
     prescription: P
     type: Producer
     type_region: box
