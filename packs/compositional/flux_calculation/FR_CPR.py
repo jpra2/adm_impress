@@ -43,13 +43,13 @@ class FR:
         Nk_SP = RK3.update_composition_RK3_1(np.copy(Nk_SP_old), q_SP, dFk_SP, delta_t)
         Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
 
-        '''dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
+        dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_2(np.copy(Nk_SP_old), q_SP, np.copy(Nk_SP), dFk_SP, delta_t)
         Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
 
         dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_3(np.copy(Nk_SP_old), q_SP, np.copy(Nk_SP), dFk_SP, delta_t)
-        Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)'''
+        Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
 
         Fk_vols_total = np.min(abs(dFk_SP),axis=2)
         Nk = 1 / sum(ctes_FR.weights) * np.sum(ctes_FR.weights * Nk_SP,axis=2)
@@ -539,7 +539,7 @@ class FR:
         smooth_extrema_cells = np.min(1*smooth_extrema,axis=-1)
 
         'Type II trouble'
-
+        #shock_condition = abs(p_neig_l-p_neig_r)>=0.1*p_neig_l#
         aux_II = smooth_extrema_cells[smooth_extrema_cells==1]
         aux_Nf_II = Nf[smooth_extrema_cells==1]
         aux_II[aux_Nf_II>=1] = 0
