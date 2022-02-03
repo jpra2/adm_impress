@@ -6,7 +6,7 @@ import numpy as np
 norm_rk = []
 niter = 0
 
-class ScipyGmresCounter(object):
+class ScipyCounter(object):
     def __init__(self, disp=True):
         self._disp = disp
         global norm_rk
@@ -51,7 +51,7 @@ class SolverSp:
     def gmres_solver(self, A, b, x0=None, tol=1e-5, precond=None):
 
         print('\nSolving gmres solver\n')
-        counter_callback = ScipyGmresCounter(disp=False)
+        counter_callback = ScipyCounter(disp=False)
 
         n = A.shape[0]
         if precond:

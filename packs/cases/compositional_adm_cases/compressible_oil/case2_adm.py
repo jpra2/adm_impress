@@ -58,7 +58,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case22_adm_6k_5000_' # cr = 50, iterate finescale, tol=1e-14, without correction functions
 # description = 'case23_finescale_6k_5000_' # finescale iterative
 # description = 'case24_testcaseOfCase19_'
-description = 'case25_finescale_80x80_adm'
+# description = 'case25_finescale_80x80_adm'
+description = 'case33_adm_80x80_brb_tams_solver'
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
