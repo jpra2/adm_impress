@@ -43,12 +43,12 @@ def correction_function(n_points):
     g2_coefs_LB = (n_points-1)/(2*n_points-1) * RRadau_coefs + n_points/(2*n_points-1) * RRadau_coefs_K_1
     g2_coefs_RB = (n_points-1)/(2*n_points-1) * LRadau_coefs + n_points/(2*n_points-1) * LRadau_coefs_K_1
 
-    dgLB_lump_Lo =  polynomial_der_coeffs(g2_coefs_LB.c[::-1])[:,:-1]
-    dgRB_lump_Lo =  polynomial_der_coeffs(g2_coefs_RB.c[::-1])[:,:-1]
+    #dgLB_lump_Lo =  polynomial_der_coeffs(g2_coefs_LB.c[::-1])[:,:-1]
+    #dgRB_lump_Lo =  polynomial_der_coeffs(g2_coefs_RB.c[::-1])[:,:-1]
     # starts with lower power term, and ends with a minor order than its original
     # function, i.e. dgLB[:,-1] is not zero because the vector has the number of
     # elements equal to the derivative order. This makes easier when computing dFk
-    return dgRB_Radau, dgLB_Radau, RRadau_coefs.c[::-1], LRadau_coefs.c[::-1]
+    return dgRB_Radau, dgLB_Radau, LRadau_coefs.c[::-1], RRadau_coefs.c[::-1]
     #return dgRB_lump_Lo, dgLB_lump_Lo, g2_coefs_RB.c[::-1], g2_coefs_LB.c[::-1]
 
 def polynomial_der_coeffs(P):
@@ -92,8 +92,8 @@ def run(M):
     global weights
     global L
     global dL
-    global dgRB, gRB
-    global dgLB, gLB
+    global dgRB
+    global dgLB
     global V
     global x_points
     global v0
@@ -105,6 +105,7 @@ def run(M):
     weights = GL.weights
     dgRB, dgLB, gRB, gLB = correction_function(n_points)
     L, dL = Lagrange_poly(n_points, points)
+    
     #points = np.round(points,2)
     #L = np.round(L,2)
     #dL = np.round(dL,2)
