@@ -51,11 +51,11 @@ for  arq in arquivos:
             n=100
             x_100 = np.linspace(0+2/(2*n),2*(1-1/(2*n)),n)
 
-        datas = np.load('flying/results_Orr_3k_C5_100x1x1_IMPEC_FR3_653.npy', allow_pickle=True)
+        datas = np.load('flying/results_Orr_3k_C5_100x1x1_IMPEC_FR3_650.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             zCH4_100_FR3 = data[10][1]
 
-        datas = np.load('flying/results_Orr_3k_C5_IMPEC_FR3_1337.npy', allow_pickle=True)
+        datas = np.load('flying/results_Orr_3k_C5_IMPEC_FR3_1332.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             zCH4_200_FR3 = data[10][1]
 
@@ -132,13 +132,14 @@ for  arq in arquivos:
         plt.plot(x_200, zCH4_200_FOU, '-b')
         plt.plot(x_200, zCH4_200_MUSCL_LLF, '-r')
         plt.plot(x_200, zCH4_200_FR2, '-g')
+        plt.plot(x_200, zCH4_200_FR3, '-y')
         plt.plot(zCH4_x, zCH4, '-k')
         #plt.plot(x_axis_xCH4_LLF_50, xCH4_LLF_50, '-sk', mfc='none')
         plt.grid()
 
-        plt.legend(('FOU 200 CV','MUSCL 200 CV','FR P1 200 CV', 'MOC (Orr, 2005)'))
+        plt.legend(('FOU 200 CV','MUSCL 200 CV','FR P1 200 CV', 'FR P2 200 CV','MOC (Orr, 2005)'))
         plt.ylabel('Methane global molar fraction ')
         plt.title('FR P1 64 CV')
         plt.xlabel('Distance')
-        plt.savefig('results/compositional/3k_methane_Orr_NVCM_FOU.png')
+        plt.savefig('results/compositional/3k_methane_Orr_NVCM_200.png')
         import pdb; pdb.set_trace()

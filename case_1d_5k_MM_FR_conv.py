@@ -104,7 +104,7 @@ for  arq in arquivos:
             n=128
             x_128 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
 
-        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_FR3_1897.npy', allow_pickle=True)
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_200_FR3_1896.npy', allow_pickle=True)
         #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             Sg_FR3_200 = data[7]
