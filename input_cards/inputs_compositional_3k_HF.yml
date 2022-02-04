@@ -1,6 +1,6 @@
 #2-phase problem with 3 components - hotei and firoozabadi
 mesh_name: 200x1x1_3k.msh
-name_save_file: 'results_Hoteit_Firoo_3k_200_FR3' #150683
+name_save_file: 'results_Hoteit_Firoo_3k_200_IMPEC_FOU' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -30,22 +30,22 @@ compositional_data:
   CFL: 0.9
 
   solver:
-    IMPSAT: false
+    IMPSAT: true
 
   MUSCL:
     set: false
 
   FR:
-    set: true
+    set: false
     order: 3
 
-  UPW:
+  RiemannSolver:
     ROE: false
     LLF: false
     MDW: false
-    FOU: false
+    DW: false
 
-  vpis_para_gravar_vtk: [0.51]
+  vpis_para_gravar_vtk: [0.48, 0.49, 0.50, 0.51]
   time_to_save: [2592000]
   maximum_time: 2592000
   phase_viscosity: LorenzBrayClark
@@ -62,9 +62,9 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 1
+    deltaNlim: 3
     deltaSlim: .35
-    deltaVlim: .0001
+    deltaVlim: .005
     delta_t_ini: 86.4
     delta_tmax: 86400
     delta_tmin: 8.64
@@ -102,7 +102,7 @@ compositional_data:
     Bin: [[0.,0.,.0], [0.,0.,0.], [0.,0.,.0]]
     Pv: [8e6, 0., 0.]
     vshift_parameter: [0.0, 0., 0.]
-    Pb_guess: 2e6
+    constant_K: False
 
 #water saturation data
 Saturation:
@@ -120,7 +120,6 @@ Permeability:
   r1:
     type: all
     value: [9.869233e-15, 0, 0, 0, 9.869233e-15, 0, 0, 0, 9.869233e-15]
-
 
 Pressure:
   r1:
@@ -142,7 +141,7 @@ Wells:
     injection_condition: reservoir
     prescription: Q
     value: 1.967592592592593e-06
-    ksi_total: 3099.342953950803
+    ksi_total: 3099.342953950803 #densidade molar
     value_type: volumetric
 
   P2:

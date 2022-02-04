@@ -68,17 +68,33 @@ for  arq in arquivos:
     if  arq.startswith(name):
 
         #datas = np.load('flying/results_Buckley_Leverett_case_IMPSAT_510.npy', allow_pickle=True)
-        datas = np.load('flying/results_Buckley_Leverett_case_FR3_6639.npy', allow_pickle=True)
+        datas = np.load('flying/results_Buckley_Leverett_case_FR2_2575.npy', allow_pickle=True)
         for data in datas[-1:]:
-            Sw_IMPSAT = data[5]
-            x = np.linspace(0,1,500)
-            plt.figure(1)
-            plt.plot(xD, SwD, 'y', x, Sw_IMPSAT, 'b', mfc = 'none')
-            plt.grid()
-            loop = data[0]
-            plt.legend(('Analytical Solution', 'FR3'))
-            plt.title('Buckley-Leverett Solution Example')
-            plt.ylabel('Water Saturation')
-            plt.xlabel('Dimensionless distance')
-            plt.savefig('results/compositional/saturation_w_BL_comparison_FR3.png')
-            import pdb; pdb.set_trace()
+            Sw_FR2 = data[5]
+
+        datas = np.load('flying/results_Buckley_Leverett_case_FR3_3590.npy', allow_pickle=True)
+        for data in datas[-1:]:
+            Sw_FR3 = data[5]
+
+        x = np.linspace(0,1,500)
+        plt.figure(1)
+        plt.plot(xD, SwD, 'y', x, Sw_FR2, 'b', mfc = 'none')
+        plt.grid()
+        loop = data[0]
+        plt.legend(('Analytical Solution', 'FR3'))
+        plt.title('Buckley-Leverett Solution Example')
+        plt.ylabel('Water Saturation')
+        plt.xlabel('Dimensionless distance')
+        plt.savefig('results/compositional/saturation_w_BL_comparison_FR2.png')
+
+        x = np.linspace(0,1,500)
+        plt.figure(2)
+        plt.plot(xD, SwD, 'y', x, Sw_FR3, 'b', mfc = 'none')
+        plt.grid()
+        loop = data[0]
+        plt.legend(('Analytical Solution', 'FR3'))
+        plt.title('Buckley-Leverett Solution Example')
+        plt.ylabel('Water Saturation')
+        plt.xlabel('Dimensionless distance')
+        plt.savefig('results/compositional/saturation_w_BL_comparison_FR3.png')
+        import pdb; pdb.set_trace()

@@ -1,13 +1,12 @@
 # Buckley Leverett's vertical case
 mesh_name: 1x1x500_b.msh
-name_save_file: 'results_Buckley_Leverett_vertical_caset'
+name_save_file: 'results_Buckley_Leverett_vertical_case_MUSCL'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: False
 water_component: True
 use_vpi: True
-
 
 
 load_compositional_data: False
@@ -29,10 +28,22 @@ monophasic_data:
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
+  solver:
+    IMPSAT: false
+
   MUSCL:
-    set: False
-    DW: False
-    LLF: False
+    set: true
+
+  FR:
+    set: false
+    order: 3
+
+  RiemannSolver:
+    ROE: false
+    LLF: true
+    MDW: false
+    DW: false
+
   vpis_para_gravar_vtk: [0.1, 0.15, 0.20]
   time_to_save: [0.0]
   maximum_time: 0.
@@ -64,6 +75,7 @@ compositional_data:
     Mw_w: 18.015e-3
     Cw: 0
     Pw: 13.789514E6
+    mobility: true
 
   residual_saturations:
     Sorw: 0.35
@@ -90,6 +102,7 @@ compositional_data:
     Bin: [0]
     vshift_parameter: [0.085]
     Pv: [0]
+    constant_K: false
 
 #water saturation data
 Saturation:
@@ -130,6 +143,7 @@ Wells:
     z: [0., 1.]
     ksi_total: 55484.31862337
     value_type: volumetric
+    injection_condition: surface
 
   P2:
     p0: [0.0, 0.0, -0.6096]

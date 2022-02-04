@@ -8,9 +8,9 @@ from scipy.interpolate import InterpolatedUnivariateSpline, UnivariateSpline
 flying = 'flying'
 name = 'results'
 arquivos = os.listdir(flying)
-x_CMG = np.loadtxt('x_3k_Firoo_CMG.txt')
-xCH4_CMG = np.loadtxt('xCH4_3k_Firoo.txt')
-yC3H8_CMG = np.loadtxt('yC3H8_3k_Firoo.txt')
+x_CMG = np.loadtxt('xCH4_case2MM_CMG.txt')
+xCH4_CMG = np.loadtxt('xxCH4_case2MM_CMG.txt')
+
 for  arq in arquivos:
     if  arq.startswith(name):
         '''-------------------------MUSCL LLF RESULTS------------------------'''
@@ -100,7 +100,9 @@ for  arq in arquivos:
             e64_L1_FOU = (sum(abs(f(x_64)-Sg_FOU_64))*(1/n))
             R64_L1_FOU = math.log(e32_L1_FOU/e64_L1_FOU,2)
 
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_FOU_4284.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_FOU_4284.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_FOU_8590.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_FOU_6360.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_FOU_128 = data[6]
             Sg_FOU_128 = data[7]
@@ -115,7 +117,12 @@ for  arq in arquivos:
             e128_L1_FOU = (sum(abs(f(x_128)-Sg_FOU_128))*(1/n))
             R128_L1_FOU = math.log(e64_L1_FOU/e128_L1_FOU,2)
 
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_FOU_3036.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_FOU_3036.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_FOU_cc_7171.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_FOU_upw_2924.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_FOU_ha_4096.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_LLF_2792.npy', allow_pickle=True)
+
         for data in datas[datas.shape[0]-1:]:
             So_FOU_256 = data[6]
             Sg_FOU_256 = data[7]
@@ -128,11 +135,13 @@ for  arq in arquivos:
             n = 256
             e256_L1_FOU = (sum(abs(f(x_256)-Sg_FOU_256))*(1/n))
             R256_L1_FOU = math.log(e128_L1_FOU/e256_L1_FOU,2)
+            #import pdb; pdb.set_trace()
 
         datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_2642.npy', allow_pickle=True)
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_5482.npy', allow_pickle=True)
-        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_4706.npy', allow_pickle=True)
-
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_5482.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_cc_5578.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_ha_3199.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_512_FOU_7615.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_FOU_512 = data[6]
             Sg_FOU_512 = data[7]
@@ -146,18 +155,6 @@ for  arq in arquivos:
 
             e512_L1_FOU = (sum(abs(f(x_512)-Sg_FOU_512))*(1/n))
             R512_L1_FOU = math.log(e256_L1_FOU/e512_L1_FOU,2)
-
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_5000_IMPEC_19082.npy', allow_pickle=True)
-        for data in datas[datas.shape[0]-1:]:
-            So_5000 = data[6]
-            Sg_5000 = data[7]
-            z_5000 = data[10]
-            xkj_5000 = data[13]
-            P_5000 = data[4]
-            xkj_5000[:,1,Sg_5000==0] = 0
-            xkj_5000[:,0,So_5000==0] = 0
-            n=5000
-            x_5000 = np.linspace(0+50/(2*n),50-50/(2*n),len(So_5000))
 
         '''MUSCL'''
 
@@ -213,6 +210,8 @@ for  arq in arquivos:
             R64_L1_MUSCL = math.log(e32_L1_MUSCL/e64_L1_MUSCL,2)
 
         datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_MUSCL_4449.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_128_MUSCL_8493.npy', allow_pickle=True)
+
         for data in datas[datas.shape[0]-1:]:
             So_MUSCL_128 = data[6]
             Sg_MUSCL_128 = data[7]
@@ -226,6 +225,8 @@ for  arq in arquivos:
             R128_L1_MUSCL = math.log(e64_L1_MUSCL/e128_L1_MUSCL,2)
 
         datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_MUSCL_3880.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_256_MUSCL_cc_3674.npy', allow_pickle=True)
+
         for data in datas[datas.shape[0]-1:]:
             So_MUSCL_256 = data[6]
             Sg_MUSCL_256 = data[7]
@@ -353,6 +354,8 @@ for  arq in arquivos:
         plt.plot(x_256, xkj_FOU_256[0,0], 'm')
         plt.plot(x_512, xkj_FOU_512[0,0], 'b')
         plt.plot(x_axis_xCH4, xCH4, 'k')
+        plt.xlim(20,30)
+        plt.ylim(-0.05, 0.35)
         plt.grid()
         plt.legend(( 'FOU-8','FOU-16','FOU-32','FOU-64','FOU-128','FOU-256','FOU-512', 'Reference'))
         plt.ylabel('Methane molar fraction in liquid phase')
@@ -393,29 +396,49 @@ for  arq in arquivos:
         plt.savefig('results/compositional/3k_methane_x_MM_FR2_conv.png')
 
         plt.figure(4)
-        plt.plot(x_512[200:300], xkj_FOU_512[0,0, 200:300], 'm')
-        plt.plot(x_512[200:300], xkj_FR2_512[0,0, 200:300], 'b')
-        plt.plot(x_512[200:300], xkj_MUSCL_512[0,0,200:300], 'g')
-        plt.plot(x_axis_xCH4[1:-1], xCH4[1:-1], 'k')
-        plt.plot(x_5000[2000:3000], xkj_5000[0,0,2000:3000])
+        plt.plot(x_512, xkj_FOU_512[0,0,], 'm')
+        plt.plot(x_512, xkj_FR2_512[0,0, ], 'b')
+        plt.plot(x_512, xkj_MUSCL_512[0,0,], 'g')
+        plt.plot(x_axis_xCH4, xCH4, 'k')
+        plt.plot(x_CMG, xCH4_CMG, 'y')
+        plt.xlim(20,30)
+        plt.ylim(-0.05,0.35)
         plt.grid()
-        plt.legend(( 'First Order LLF-512','FR P1-512','MUSCL-512','Reference', 'FOU 5000'))
+        plt.legend(( 'FOU-512','FR P1-512','MUSCL-512','Reference',
+            'CMG 5000'))
         plt.ylabel('Methane molar fraction in liquid phase')
         plt.title('Case2 - Moshiri and Manzari\'s paper')
         plt.xlabel('Dimensionless distance')
         plt.savefig('results/compositional/3k_methane_x_MM_512_comp.png')
 
         plt.figure(5)
-        plt.plot(x_256[100:200], xkj_FOU_256[0,0, 100:200], 'm')
-        plt.plot(x_256[100:200], xkj_FR2_256[0,0, 100:200], 'b')
-        plt.plot(x_256[100:200], xkj_MUSCL_256[0,0,100:200], 'g')
+        plt.plot(x_256, xkj_FOU_256[0,0, :], 'm')
+        plt.plot(x_256, xkj_FR2_256[0,0, :], 'b')
+        plt.plot(x_256, xkj_MUSCL_256[0,0,:], 'g')
         plt.plot(x_axis_xCH4[1:-1], xCH4[1:-1], 'k')
+        plt.xlim(20,30)
+        plt.ylim(-0.05,0.35)
         plt.grid()
         plt.legend(( 'FOU-256','FR P1-256','MUSCL-256','Reference'))
         plt.ylabel('Methane molar fraction in liquid phase')
         plt.title('Case2 - Moshiri and Manzari\'s paper')
         plt.xlabel('Dimensionless distance')
         plt.savefig('results/compositional/3k_methane_x_MM_256_comp.png')
+
+        plt.figure(6)
+        plt.plot(x_128, xkj_FOU_128[0,0, :], 'm')
+        plt.plot(x_128, xkj_FR2_128[0,0, :], 'b')
+        plt.plot(x_128, xkj_MUSCL_128[0,0,:], 'g')
+        plt.plot(x_axis_xCH4, xCH4, 'k')
+        plt.grid()
+        plt.xlim(20,30)
+        plt.ylim(-0.05,0.35)
+        plt.legend(( 'FOU-128','FR P1-128','MUSCL-128','Reference'))
+        plt.ylabel('Methane molar fraction in liquid phase')
+        plt.title('Case2 - Moshiri and Manzari\'s paper')
+        plt.xlabel('Dimensionless distance')
+        plt.savefig('results/compositional/3k_methane_x_MM_128_comp.png')
+
         import pdb; pdb.set_trace()
 
 

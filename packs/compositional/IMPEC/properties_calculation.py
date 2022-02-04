@@ -6,7 +6,6 @@ import numpy as np
 import sympy.utilities.lambdify as lambdify
 import math
 
-
 class PropertiesCalc:
     def __init__(self):
         self.relative_permeability_class = getattr(relative_permeability2,
@@ -25,7 +24,7 @@ class PropertiesCalc:
 
         if ctes.load_k:
             fprop.So, fprop.Sg = self.update_saturations(M.data['saturation'],
-                            fprop.Csi_j, fprop.L, fprop.V)
+                            fprop.Csi_j.copy(), fprop.L, fprop.V)
         else:
             fprop.So = np.zeros(ctes.n_volumes)
             fprop.Sg = np.zeros(ctes.n_volumes)
@@ -38,6 +37,7 @@ class PropertiesCalc:
 
         self.update_capillary_pressure(fprop)
         if ctes.FR: fprop.Nk_SP = self.set_Nk_Pspace(fprop)
+        else: fprop.Nk_SP=[]
 
     def run_inside_loop(self, M, fprop):
         ''' Function to update fluid and reservoir properties along the \
@@ -52,7 +52,7 @@ class PropertiesCalc:
         self.update_total_volume(fprop)
 
         fprop.So, fprop.Sg = self.update_saturations(M.data['saturation'],
-                            fprop.Csi_j, fprop.L, fprop.V)
+                            fprop.Csi_j.copy(), fprop.L, fprop.V)
 
         fprop.mobilities = self.update_mobilities(fprop, fprop.So, fprop.Sg, fprop.Sw,
                           fprop.Csi_j, fprop.xkj)
@@ -67,13 +67,18 @@ class PropertiesCalc:
         fprop.Csi_j[0, ctes.n_phases-1,:] = fprop.Csi_W
         fprop.rho_j[0,ctes.n_phases-1,:] = fprop.rho_W
 
-
     def set_initial_volume(self, fprop):
         self.Vo = fprop.Vp * fprop.So
         self.Vg = fprop.Vp * fprop.Sg
         self.Vw = fprop.Vp * fprop.Sw
         fprop.Vt = self.Vo + self.Vg + self.Vw
+        if ctes.load_k:
+            fprop.Vj = np.concatenate((self.Vo[np.newaxis,:],self.Vg[np.newaxis,:]),axis=0)
+            if ctes.load_w:
+                fprop.Vj = np.concatenate((fprop.Vj,self.Vw[np.newaxis,:]),axis=0)
 
+        else: fprop.Vj = self.Vw[np.newaxis,:]
+        fprop.Vj = fprop.Vj[np.newaxis,:]
 
     def set_initial_mole_numbers(self, fprop):
         if ctes.load_k:
@@ -84,7 +89,6 @@ class PropertiesCalc:
 
         Nkj = fprop.xkj * fprop.Nj
         fprop.Nk = np.sum(Nkj, axis = 1)
-
 
     def set_Nk_Pspace(self, fprop):
         from packs.compositional import prep_FR as ctes_FR
@@ -103,9 +107,11 @@ class PropertiesCalc:
 
     def update_saturations(self, Sw, Csi_j, L, V):
         if ctes.load_k:
+            Csi_j[Csi_j==0] = 1
             Sg = (1. - Sw) * (V / Csi_j[0,1,:]) / (V / Csi_j[0,1,:] + L /
                 Csi_j[0,0,:])
             So = 1 - Sw - Sg
+            So[So<0] = 0
         else: So = np.zeros_like(Sw); Sg = np.zeros_like(Sw)
         return So, Sg
 
@@ -131,6 +137,7 @@ class PropertiesCalc:
             fprop.Nj[0,ctes.n_phases-1,:] = fprop.Nk[ctes.n_components-1,:]
 
     def update_total_volume(self, fprop):
+        fprop.Vj = fprop.Nj / fprop.Csi_j
         fprop.Vt = np.sum(fprop.Nj / fprop.Csi_j, axis = 1).ravel()
 
     def update_relative_permeabilities(self, fprop, So, Sg, Sw):
@@ -152,12 +159,12 @@ class PropertiesCalc:
         phase_viscosities = np.empty_like(Csi_j)
         if ctes.load_k:
             phase_viscosity = self.phase_viscosity_class(fprop, Csi_j)
-            #phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
-            #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test
+            #phase_viscosities[0,0:2,:] = 0.000249*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
+            #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test; 0.000249 for 2D injec Li
             phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
+            #phase_viscosities[0,1,:] = 1/5*phase_viscosities[0,0,:] #for 5k NVCM case mug=muo; for 3k Orr NVCM mug=1/5muo
         if ctes.load_w:
             phase_viscosities[0,ctes.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
-
         return phase_viscosities
 
     def update_mobilities(self, fprop, So, Sg, Sw, Csi_j, xkj):

@@ -1,6 +1,6 @@
 #Oil injection in oil reservoir 2-D with 1 oil component
 mesh_name: 25x25x1.msh
-name_save_file: 'results_2d_injection_25_caset2'
+name_save_file: 'results_2d_injection_25_case_IMPEC'
 
 n_test: 0
 compositional: True
@@ -29,12 +29,25 @@ monophasic_data:
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
+
+  solver:
+    IMPSAT: false
+
   MUSCL:
-    set: False
-    DW: False
-    LLF: False
+    set: false
+
+  FR:
+    set: false
+    order: 3
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
+    DW: false
+
   vpis_para_gravar_vtk: [0.0038]
-  time_to_save: [31536000.]
+  time_to_save: [100000, 500000, 1000000, 5000000, 10000000, 15000000, 20000000, 30000000, 31536000.]
   maximum_time: 31536000.
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
@@ -42,7 +55,7 @@ compositional_data:
   equation_of_state: PengRobinson
 
   rock_compressibility: 7.252e-8
-  Pf: 13.78951458E6e6
+  Pf: 13.78951458E6
 
   #capillary pressure data - not ok with this
   Cpc: 62052.84
@@ -50,9 +63,9 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: .1
-    deltaSlim: .1
-    deltaVlim: .1
+    deltaNlim: 10
+    deltaSlim: 1
+    deltaVlim: 10
     delta_t_ini: 1000
     delta_tmax: 70000
     delta_tmin: 0.0001
@@ -64,6 +77,7 @@ compositional_data:
     Mw_w: 18.015e-3
     Cw: 0
     Pw: 101325
+    mobility: false
 
   residual_saturations:
     Sorw: 0.2
@@ -91,6 +105,7 @@ compositional_data:
     Pv: [0]
     vshift_parameter: [0.0]
     Pb_guess: [9.5e6]
+    constant_K: False
 
 #water saturation data
 Saturation:
@@ -130,3 +145,4 @@ Wells:
     z: [1., 0.]
     ksi_total: 4587.37164401
     value_type: volumetric
+    injection_condition: surface
