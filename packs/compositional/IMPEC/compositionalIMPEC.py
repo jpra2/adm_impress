@@ -32,10 +32,10 @@ class CompositionalFVM:
         while (r!=1.):
             fprop.Nk = np.copy(Nk_old)
 
-            '''fprop.P, Ft_internal, fprop.qk_molar = psolve.get_pressure(M, wells,
+            fprop.P, Ft_internal, fprop.qk_molar = psolve.get_pressure(M, wells,
                 fprop, P_old, delta_t)
 
-            if any(np.isnan(fprop.P)): import pdb; pdb.set_trace()'''
+            if any(np.isnan(fprop.P)): import pdb; pdb.set_trace()
 
             #5k example moshiri and manzari
             '''Ft_internal = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
@@ -74,7 +74,7 @@ class CompositionalFVM:
             fprop.qk_molar[:,wells['all_wells']] = q[:,wells['all_wells']]'''
 
             #3k example Orr fig 5.18
-            Ft_internal = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
+            '''Ft_internal = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
             q = np.zeros_like(fprop.Nk)
             frj = fprop.mobilities[:,...] / \
                 np.sum(fprop.mobilities[:,...], axis = 1)
@@ -89,7 +89,7 @@ class CompositionalFVM:
             fprop.q_phase = Ft_internal[:,0][:,np.newaxis] * np.ones((1,2))
             fprop.qk_prod = 1/(24*60*60) * np.array([[0., 0.3, 0.7]]).T
             fprop.qk_molar = np.zeros_like(q)
-            fprop.qk_molar[:,wells['all_wells']] = q[:,wells['all_wells']]
+            fprop.qk_molar[:,wells['all_wells']] = q[:,wells['all_wells']]'''
 
             #2k example Orr fig 4.16
             '''Ft_internal = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)

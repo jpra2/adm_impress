@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 40x40_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_2D_40x40_MUSCL'
+name_save_file: 'results_Buckley_Leverett_case_2D_40x40'
 
 compositional: True
 hidrocarbon_components: True
@@ -31,7 +31,7 @@ compositional_data:
     IMPSAT: false
 
   MUSCL:
-    set: true
+    set: false
 
   FR:
     set: false
@@ -39,7 +39,7 @@ compositional_data:
 
   RiemannSolver:
     ROE: false
-    LLF: true
+    LLF: false
     MDW: false
     DW: false
 
@@ -150,12 +150,15 @@ Wells:
     value_type: volumetric
 
   P2:
-    p0: [0.59436, 0.0, -0.03048]
-    p1: [0.6096, 0.01524, 0.0]
-    p0: [0.60198, 0.0, -0.03048]
-    p1: [0.6096, 0.00762, 0.0]
+    #20x20
     #p0: [0.57912, 0.0, -0.03048]
     #p1: [0.6096, 0.03048, 0.0]
+    #40x40
+    p0: [0.59436, 0.0, -0.03048]
+    p1: [0.6096, 0.01524, 0.0]
+    #80x80
+    #p0: [0.60198, 0.0, -0.03048]
+    #p1: [0.6096, 0.00762, 0.0]
     prescription: P
     type: Producer
     type_region: box
