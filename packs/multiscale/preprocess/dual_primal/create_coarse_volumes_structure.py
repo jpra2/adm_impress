@@ -185,7 +185,7 @@ def get_coarse_volumes_faces_resp(unique_pid, coarse_volumes_faces):
     for pid in unique_pid:
         coarse_volumes_faces_resp.append(coarse_volumes_faces[:, 1][coarse_volumes_faces[:,0] == pid])
     
-    coarse_volumes_faces_resp = np.array(coarse_volumes_faces_resp)
+    coarse_volumes_faces_resp = np.array(coarse_volumes_faces_resp, dtype='O')
     return coarse_volumes_faces_resp
 
 def get_fine_boundary_adjacencies(adjacencies_boundary_faces: np.ndarray):

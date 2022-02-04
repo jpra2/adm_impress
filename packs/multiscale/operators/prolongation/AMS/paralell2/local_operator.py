@@ -40,7 +40,7 @@ class LocalOperator(GlobalLocalSolver):
             resp = np.array([
                 op_resp,
                 cf_resp
-            ])
+            ], dtype='O')
 
 
             self.queue.put(resp)

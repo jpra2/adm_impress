@@ -13,8 +13,8 @@ class AMSTpfa:
         faces,
         edges,
         vertices,
-        gids: 'global_ids',
-        primal_ids: 'primal_ids',
+        gids: np.ndarray,
+        primal_ids: np.ndarray,
         load=False,
         tpfalizar=False,
         coupled_edges=[],
@@ -28,7 +28,7 @@ class AMSTpfa:
         self.get_G()
         self.G2 = get_G2(vertices, primal_ids)
 
-    def run(self, T: 'transmissibility matrix', total_source_term=None, B_matrix=None, Eps_matrix=None):
+    def run(self, T: sp.csc_matrix, total_source_term=None, B_matrix=None, Eps_matrix=None):
 
         if self.get_correction_term:
             B_wire = self.G*B_matrix*self.GT
@@ -294,7 +294,7 @@ class AMSTpfa:
 
 def get_wirebasket_elements(internals, faces, edges, vertices):
 
-    wirebasket_elements = np.array([internals, faces, edges, vertices])
+    wirebasket_elements = np.array([internals, faces, edges, vertices], dtype='O')
     wirebasket_numbers = np.array([len(internals), len(faces), len(edges), len(vertices)])
     nv = wirebasket_numbers[-1]
     ns_sum = [wirebasket_numbers[0]]
@@ -309,7 +309,7 @@ def get_wirebasket_elements(internals, faces, edges, vertices):
         wirebasket_ids.append(np.arange(n_reord, n_reord + n2))
         n_reord += n2
 
-    wirebasket_ids = np.array(wirebasket_ids)
+    wirebasket_ids = np.array(wirebasket_ids, dtype='O')
 
     return wirebasket_elements, wirebasket_numbers, nv, ns_sum, wirebasket_ids
 

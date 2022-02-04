@@ -439,8 +439,8 @@ class MultilevelData(DataManager):
                     d2 = mb.tag_get_data(self.tags[tags_fine[0] + str(level+1)], vert, flat=True)[0]
                     mb.tag_set_data(self.tags[tags_fine[0] + str(level+1)], elems_in_meshset, np.repeat(d2, len(elems_in_meshset)))
 
-            coarse_neig_face = np.array(coarse_neig_face)
-            coarse_id_neig_face = np.array(coarse_id_neig_face)
+            coarse_neig_face = np.array(coarse_neig_face, dtype='O')
+            coarse_id_neig_face = np.array(coarse_id_neig_face, dtype='O')
             # centroids_coarse = np.array(centroids_coarse)
 
             self._data[self.coarse_neig_face + str(level)] = coarse_neig_face
@@ -562,8 +562,8 @@ class MultilevelData(DataManager):
 
             coarse_faces = np.array(coarse_faces)
             coarse_internal_faces = np.array(coarse_internal_faces)
-            coarse_intersect_faces = np.array(coarse_intersect_faces)
-            coarse_internal_boundary_volumes = np.array(coarse_internal_boundary_volumes)
+            coarse_intersect_faces = np.array(coarse_intersect_faces, dtype='O')
+            coarse_internal_boundary_volumes = np.array(coarse_internal_boundary_volumes, dtype='O')
             self._data[self.internal_boundary_fine_volumes+str(level)] = coarse_internal_boundary_volumes
             self._data[self.coarse_faces+str(level)] = coarse_faces
             self._data[self.coarse_intersect_faces+str(level)] = coarse_intersect_faces
@@ -812,7 +812,7 @@ class MultilevelData(DataManager):
                 a_vols.append(vols)
             separated_infos=[a_lines, a_cols, a_faces, a_vols]
             separated_dual_structure.append(separated_infos)
-        return np.array(separated_dual_structure)
+        return np.array(separated_dual_structure, dtype='O')
 
     def set_volumes_without_gravity_source_term(self):
 

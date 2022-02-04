@@ -87,14 +87,14 @@ def get_all_separated(dimension: int, centroids_volumes: np.ndarray, cr: np.ndar
         separated = list(unique_centroids_volumes[0:n_fine_total].reshape((n_coarse_volumes, cr[dim])))
         if resto > 0:
             separated[-1] = np.concatenate([separated[-1], unique_centroids_volumes[n_fine_total:n_unique]])
-        all_separated.append(np.array(separated))
+        all_separated.append(np.array(separated, dtype='O'))
     
     n = len(all_separated)
     if n < 3:
         for i in range(3 - n):
             all_separated.append(np.array([]))
             
-    return np.array(all_separated)
+    return np.array(all_separated, dtype='O')
 
 def get_all_separated_limits(all_separated: np.ndarray, centroids_volumes: np.ndarray):
     all_separated_limits = []
@@ -113,7 +113,7 @@ def get_all_separated_limits(all_separated: np.ndarray, centroids_volumes: np.nd
         else:
             all_separated_limits.append(np.array([np.array([centroids_volumes[:,i].min(), centroids_volumes[:,i].max()])]))
     
-    return np.array(all_separated_limits)
+    return np.array(all_separated_limits, dtype='O')
 
 def get_coarse_volumes(all_separated_limits: np.ndarray, centroids_volumes: np.ndarray, volumes_dimension: np.ndarray):
     dh = volumes_dimension.min()/4
@@ -166,7 +166,7 @@ def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.n
         vi = define_vertices_by_direction(centroids_min[dim], centroids_max[dim], cr[dim], l_total[dim], centroids_volumes[:, dim], volumes_dimension, all_separated[dim])
         vertices_by_direction.append(vi)
     
-    vertices_by_direction = np.array(vertices_by_direction)
+    vertices_by_direction = np.array(vertices_by_direction, dtype='O')
     vv = vertices_by_direction
     all_vertices = np.array(np.meshgrid(vv[0], vv[1], vv[2]))
     all_vertices = all_vertices.reshape((all_vertices.shape[0], all_vertices.shape[1], all_vertices.shape[2])).T
@@ -307,7 +307,7 @@ def create_dual_entities2(vertices_ids: np.ndarray, dual_ids: np.ndarray, centro
         np.unique(centroids_vertices[:, 0]),
         np.unique(centroids_vertices[:, 1]),
         np.unique(centroids_vertices[:, 2])
-    ])
+    ], dtype='O')
     volumes_ids = np.arange(len(centroids_volumes))
     
     
@@ -315,7 +315,7 @@ def create_dual_entities2(vertices_ids: np.ndarray, dual_ids: np.ndarray, centro
         # get_faces_entities(centroids_vertices_direction, i, mins, maxs, delta, faces, centroids_volumes, l_total)
         get_faces_entities_v2(centroids_vertices_direction, i, mins, maxs, delta, faces, centroids_volumes, l_total, volumes_ids)
     
-    faces = np.array(faces)
+    faces = np.array(faces, dtype='O')
     get_edges_entities(faces, edges)
     edges = np.unique(np.concatenate(edges))
     faces = np.unique(np.concatenate([

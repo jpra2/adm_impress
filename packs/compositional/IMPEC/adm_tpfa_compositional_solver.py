@@ -183,7 +183,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # scipy_solver: SolverSp = kwargs.get('scipy_solver')
         # tolerance = kwargs.get('tolerance')        
         # solution = scipy_solver.gmres_solver(T, D, x0=solution, tol=tolerance)
+        ################
         
+        #####################
+        ## Tams solver
         solution = TamsSolverFV.richardson_solver(
             T,
             D,
@@ -195,7 +198,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             max_it=100
         )
         n_active_volumes = prolongation_list[0].shape[1]        
-        
+        ##################################
         
         ###########
 
@@ -335,7 +338,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     M,
         #     os.path.join('results', 'test_flux_3.vtk')
         # )
-        # import pdb; pdb.set_trace()
 
         self.update_flux_wells(fprop, Pnew, wells, delta_t)
 
