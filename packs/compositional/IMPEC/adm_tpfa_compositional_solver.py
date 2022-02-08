@@ -443,11 +443,11 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
     def get_pressure_finescale(self, M, wells, fprop, Pold, delta_t, **kwargs):
         params = kwargs.get('params')
-        k = 1
+        # k = 1
         T = self.update_transmissibility(M, wells, fprop, delta_t)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
-        T *= k
-        D *= k
+        # T *= k
+        # D *= k
         tolerance = kwargs.get('tolerance')
         # Pnew = self.update_pressure(T, D)
         scipy_solver: SolverSp = kwargs.get('scipy_solver')
