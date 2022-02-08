@@ -37,6 +37,7 @@ impress(copia)/
 venv/
 *__pycache__/
 *_0_0.yml
+*_0_0.py
 
 remove/
 *.sh

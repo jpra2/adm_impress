@@ -358,6 +358,7 @@ class Wells(DataManager):
         wells_q = self['ws_q']
 
         facs_nn = self['facs_nn']
+        #import pdb; pdb.set_trace()
         k_harm_faces = M.data['k_harm'].copy()
         k_max = k_harm_faces.max()
 
@@ -367,8 +368,8 @@ class Wells(DataManager):
         dist_cent = M.data['dist_cent']
         pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
 
-        M.data['k_harm'] = k_harm_faces
-        M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
+        #M.data['k_harm'] = k_harm_faces
+        #M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
 
     def get_facs_nn(self):
 

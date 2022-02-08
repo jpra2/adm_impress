@@ -1,0 +1,154 @@
+#2-phase problem with 2 components - hotei and firoozabadi
+mesh_name: 20x20x1_Mikyska.msh
+name_save_file: 'results_Mikyska_2k_ex1_IMPEC_MUSCL_20X20'
+
+compositional: True
+hidrocarbon_components: True
+compressible_fluid: True
+water_component: false
+use_vpi: false
+
+
+load_compositional_data: False
+load_data: False
+convert_english_to_SI: False
+set_porosity: true
+gravity: false
+deletar_results: false
+load_operators: false
+read_permeability: false
+monophasic_data: false
+set_permeability: True
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+
+
+# Case 1 of Mikyska paper
+compositional_data:
+  #  Pensar em um jeito de reorganizar isso
+  CFL: 0.9
+
+  solver:
+    IMPSAT: false
+
+  MUSCL:
+    set: false
+
+  FR:
+    set: false
+    order: 3
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
+    DW: false
+
+  vpis_para_gravar_vtk: [0.2]
+  time_to_save: [5045760]
+  maximum_time: 5045760.
+  phase_viscosity: LorenzBrayClark
+  relative_permeability: BrooksAndCorey
+  capillary_pressure: Chang
+  equation_of_state: PengRobinson
+
+  rock_compressibility: 0 #1.45e-10
+  Pf: 101325
+
+  #capillary pressure data - not ok with this
+  Cpc: 62052.84
+  Epc: 2
+
+  time_data:
+    deltaPlim: 68.9476
+    deltaNlim: 5
+    deltaSlim: .55
+    deltaVlim: 0.001
+    delta_t_ini: 86.4
+    delta_tmax: 4320
+    delta_tmin: 8.64
+
+  water_data:
+    mi_W: 1e-3
+    rho_W: 1000.73
+    Mw_w: 18.015e-3
+    Cw: 0 #4.35e-10
+    Pw: 10.34e6
+    mobility: False
+
+  residual_saturations:
+    Sorw: 0.
+    Sorg: 0.
+    Swr: 0.
+    Sgr: 0.
+
+  relative_permeability_data:
+    krw0: .0
+    krg0: 1
+    kro0: 1.
+    n_o: 1.
+    n_g: 1.
+    n_w: 0.
+
+#  CO2 C3
+  component_data:
+    z: [0.0, 1.0]
+    Tc: [304.14, 369.83]
+    Pc: [7.375e6, 4248000]
+    vc: [9.416e-05, 2.0e-04]
+    Mw: [44e-3, 44.096e-3]
+    w: [0.239, 0.153]
+    Bin: [[0.,0.15], [0.15,0.]]
+    Pv: [8e6, 0.]
+    vshift_parameter: [0.0, 0.]
+    constant_K: False
+
+#water saturation data
+Saturation:
+  r1:
+    type: all
+    value: 0.
+
+Porosity:
+  r1:
+    type: all
+    value: 0.2
+
+#Permeability in m^2
+Permeability:
+  r1:
+    type: all
+    value: [9.869233e-15, 0, 0, 0, 9.869233e-15, 0, 0, 0, 9.869233e-15]
+
+
+Pressure:
+  r1:
+    type: all
+    value: 2.5e6
+
+Temperature:
+  r1:
+    type: all
+    value: 311
+
+Wells:
+  P1:
+    p0: [0.0, 0.0, -1.0]
+    p1: [2.5, 2.5, 0.0]
+    type_region: box
+    type: Injector
+    z: [1.0, 0.0]
+    injection_condition: reservoir
+    prescription: Q
+    value: 0.02058 #mol/s
+    #ksi_total: 41.69170794 #densidade molar
+    value_type: molar
+
+  P2:
+    p0: [47.5, 47.5, -1.0]
+    p1: [50.0, 50.0, 0.0]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 2.5e6

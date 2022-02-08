@@ -22,21 +22,38 @@ def init(M, wells):
     global bhp_ind
     global vols_no_wells
     global ds_faces
+    global P_SC
+    global n_points
+
+    P_SC = 101325
 
     EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
     MUSCL = data_loaded['compositional_data']['MUSCL']['set']
     FR = data_loaded['compositional_data']['FR']['set']
 
+    if MUSCL: n_points = 2
+    elif FR: n_points = data_loaded['compositional_data']['FR']['order']
+    else: n_points=1
+
     RS = dict()
     RS['LLF'] = data_loaded['compositional_data']['RiemannSolver']['LLF']
     RS['MDW'] = data_loaded['compositional_data']['RiemannSolver']['MDW']
+    RS['DW'] = data_loaded['compositional_data']['RiemannSolver']['DW']
     RS['ROE'] = data_loaded['compositional_data']['RiemannSolver']['ROE']
 
     Pf = np.array(data_loaded['compositional_data']['Pf']).astype(float)
     Cf = np.array(data_loaded['compositional_data']['rock_compressibility']).astype(float)
     R = 8.3144598
     n_volumes = len(M.volumes.all)
-    v0 = M.faces.bridge_adjacencies(M.faces.internal,2,3)
+
+    v00 = M.faces.bridge_adjacencies(M.faces.internal,2,3)
+    c_int = M.faces.center(M.faces.internal)
+    c_vols = M.volumes.center(M.volumes.all)
+    pos = (c_int[:,np.newaxis,:] - c_vols[v00]).sum(axis=2)
+    v0 = np.copy(v00)
+    v0[:,0] = v00[pos>0]
+    v0[:,1] = v00[pos<0]
+
     porosity = M.data['poro']
     Vbulk = M.data['volume']
     internal_faces = M.faces.internal
