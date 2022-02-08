@@ -1,3 +1,12 @@
+Crs:
+  Cr1:
+  - 7
+  - 7
+  - 1
+  Cr2:
+  - 5
+  - 5
+  - 1
 Permeability:
   r1:
     type: all
@@ -140,15 +149,18 @@ compositional_data:
 compressible_fluid: true
 convert_english_to_SI: false
 deletar_results: false
+get_correction_term: false
 gravity: false
 hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
+load_multilevel_data: false
 load_operators: false
 mesh_name: 80x80_BL.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
+n_levels: 3
 name_save_file: results_Buckley_Leverett_case_2D_80x80
 read_permeability: false
 set_permeability: true
