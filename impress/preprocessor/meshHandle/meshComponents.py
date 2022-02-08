@@ -2,15 +2,9 @@
 Generator of mesh entities and tags
 """
 
-import pdb
 import numpy as np
 from pymoab import types, rng, topo_util
 from ..geoUtil import geoTools as gtool
-#from preprocessor.meshHandle.configTools.configClasses import variableInit
-
-
-
-
 
 class GetItem(object):
     def __init__(self, adj):
@@ -21,9 +15,6 @@ class GetItem(object):
 
     def __getitem__(self, item):
         return self.fun(item)
-
-
-
 
 class MeshEntities(object):
     def __init__(self, core, entity_type):
@@ -69,8 +60,8 @@ class MeshEntities(object):
             self.connectivities = GetItem(self._connectivities)
         self.classify_element = GetItem(self._classify_element)
         self.center = GetItem(self._center)
-        # self.global_id = GetItem(self._global_id)
-        # self.father_id = GetItem(self._father_id)
+        self.area = GetItem(self._area)
+        self.volume = GetItem(self._volume)
         if (self.vID == 1) & (core.dimension == 2):
             self.normal = GetItem(self._normal)
         elif (self.vID == 2) & (core.dimension == 3):
@@ -78,28 +69,35 @@ class MeshEntities(object):
         # initialize specific flag dic in accordance with type of the object create
         self.flag = {key: self.read(value[self.vID]) for key, value in core.flag_dic.items()
                      if value[self.vID].empty() is not True}
-        # print("Mesh Entity type {0} successfully initialized".format(entity_type))
 
-    def bridge_adjacencies(self, index, interface, target):
+    def bridge_adjacencies(self, index, interface, target, ordering_inst=None):
         el_handle = self.get_range_array(index)
-        if self.level==0:
-            return self.mtu.get_ord_bridge_adjacencies(el_handle, self.num[interface], self.num[target], self.mb, self.tag_handle)
-        return self.mtu.get_ord_bridge_adjacencies(el_handle, self.num[interface], self.num[target], self.mb, self.tag_handle, self.list_all[self.num[target]], self.level)
+        intersect_ent = None
+
+        if self.level > 0:
+            intersect_ent = self.list_all[self.num[target]]
+        result_tuple = self.mtu.get_ord_bridge_adjacencies(el_handle, self.num[interface], self.num[target], intersect_ent, self.level)
+
+        entities_array = self.format_entities(result_tuple, el_handle.size, self.tag_handle)
+
+        if ordering_inst != None:
+            entities_array = ordering_inst.sort_elements(entities_array, self.center[index])
+
+        return entities_array
 
     def _coords(self, index):
-        el_handle = self.get_range_array(index, search_range = self.nodes)
+        el_handle = self.get_range_array(index, self.nodes)
         if len(el_handle) == 1:
             return self.mb.get_coords(el_handle)
         return np.reshape(self.mb.get_coords(el_handle),(-1,3))
 
-    # def _global_id(self, index):
-    #     range_vec = self.create_range_vec(index)
-    #     elements_handle = self.range_index(range_vec)
-    #     return self.mb.tag_get_data(self.global_handle, elements_handle).ravel()
-    # def _father_id(self, index):
-    #     range_vec = self.create_range_vec(index)
-    #     elements_handle = self.range_index(range_vec)
-    #     return self.mb.tag_get_data(self.father_handle, elements_handle).ravel()
+
+
+        #pegar os IDS do IMPRESS
+        #converter em um array de handles
+        #enviar para a funcao do pymoab
+              #para handle ele chama a funcao do moab
+              #cada funcao retorna um range, que eh convertido em um array de handles, e depois em um array de IDs do IMPRESS
 
     def _adjacencies_for_nodes(self, index):
         return index
@@ -111,36 +109,14 @@ class MeshEntities(object):
             else:
                 dim_tag = 0
         el_handle = self.get_range_array(index)
-        return self.mb.get_ord_adjacencies(el_handle, dim_tag, tag_handle = self.tag_handle)
+        result_tuple = self.mb.get_ord_adjacencies(el_handle, dim_tag)
+        return self.format_entities(result_tuple, el_handle.size, self.tag_handle)
 
     def _center(self,index):
-        if self.vID == 0:
-            centers = self._coords(index)
-            return centers
-        elif self.vID == 1:
-            edges_adj = self.connectivities[index]
-            if edges_adj.ndim == 1:
-                return 0.5*(self._coords(edges_adj[0]) + self._coords(edges_adj[1]))
-            v0 = np.array([edges_adj[i][0] for i in range (edges_adj.shape[0])])
-            v1 = np.array([edges_adj[i][1] for i in range (edges_adj.shape[0])])
-            centers = 0.5 * (self._coords(v0) + self._coords(v1))
-            return centers
-        elif self.vID == 2 or self.vID == 3:
-            el_handle = self.get_range_array(index)
-            adj = self.mb.get_ord_connectivity(el_handle, tag_opt = False)
-            if adj.ndim==1:
-                return gtool.get_average(np.reshape(self.mb.get_coords(adj),(-1,3)))
-            centers = np.empty((adj.shape[0],3))
-            #if adj.dtype != object:
-
-            for i in range(adj.shape[0]):
-                centers[i] = gtool.get_average(np.reshape(self.mb.get_coords(adj[i]),(-1,3)))
-                #pdb.set_trace()
-            return centers
-        return None
+        el_handle = self.get_range_array(index)
+        return self.mtu.get_ord_average_position(el_handle)
 
     def _normal(self,index):
-        #normal_vec = np.zeros(( np.shape(range_vec)[0],3 ))
         adj = self.connectivities[index]
         if adj.ndim==1:
             if self.vID == 1:
@@ -153,19 +129,34 @@ class MeshEntities(object):
         v1 = np.array([adj[i][1] for i in range (adj.shape[0])])
         if self.vID == 1:
             return gtool.normal_vec_2d(self._coords(v0),self._coords(v1))
-
-            #edges_adj = self.connectivities[range_vec]
-            #centers  = 0.5* (self._coords(edges_adj[:,0]) + self._coords(edges_adj[:,1]))
         elif self.vID == 2:
             v2 = np.array([adj[i][2] for i in range (adj.shape[0])])
-            #import pdb; pdb.set_trace()
             return gtool.normal_vec(self._coords(v0), self._coords(v1),
                                     self._coords(v2))
-            #return  gtool.normal_vec(self._coords(v0),self._coords(v1),self._coords(v2))
+
+    def _area(self, index):
+        if self.entity_type != "faces":
+            raise ValueError("Cannot compute area. Entity is not a face.")
+
+        el_handle = self.get_range_array(index)[0]
+        area = gtool.polygon_area(self.mb, el_handle)
+
+        return area
+    
+    def _volume(self, index):
+        if self.entity_type != "volumes":
+            raise ValueError("Cannot compute volume. Entity is not a volume.")
+
+        el_handle = self.get_range_array(index)[0]
+        center = self._center(index)
+        volume = gtool.polyhedron_volume(self.mb, el_handle, center)
+
+        return volume
 
     def _connectivities(self,index):
         el_handle = self.get_range_array(index)
-        return self.mb.get_ord_connectivity(el_handle, tag_handle = self.tag_handle)
+        result_tuple = self.mb.get_ord_connectivity(el_handle)
+        return self.format_entities(result_tuple, el_handle.size, self.tag_handle)
 
     def create_range_vec(self, index):
         range_vec = None
@@ -252,28 +243,29 @@ class MeshEntities(object):
         elif array == 'boundary':
             self.boundary_elements = GetItem(self.get_boundary)
 
-
     def get_range_array(self, index, search_range = None):
         el_handle = None
         if search_range == None:
             search_range = self.elements_handle
         if isinstance(index, np.int64) or isinstance(index, int):
             return np.array([search_range[index]])
-        # if self.level == 0:
-        #     if isinstance(index, np.ndarray):
-        #         base_handle = search_range[index[0]]
-        #         return base_handle+index.astype(np.uint64)
-            # elif isinstance(index, slice):
-            #     if index.step == None and index.start == None and index.stop == None:
-            #         base_handle = search_range[0]
-            #         return base_handle+np.arange(search_range.size(), dtype = np.uint64)
-            #     base_handle = search_range[index.start]
-            #     return base_handle+np.arange(index.start, index.stop, index.step, dtype = np.uint64)
         if not isinstance(index, np.ndarray) and index is not None:
             el_handle = search_range[index].get_array()
         else:
             el_handle = search_range.get_array(index)
         return el_handle
+
+    def format_entities(self, input_tuple, input_size, tag = None):
+        entities, sizes, jagged = input_tuple
+        if tag is not None:
+            entities = self.mb.tag_get_data(tag, entities, flat = True).astype(np.int64)
+        if jagged:
+            entities = np.delete(np.array(np.split(entities, sizes), dtype=object), -1)
+        else:
+            entities = entities.reshape(-1, sizes)
+        if input_size == 1:
+            entities = entities[0]
+        return entities
 
     def range_index(self, vec_index, flag_nodes=False):
         if not flag_nodes:
@@ -310,10 +302,9 @@ class MeshEntities(object):
     def all_flags(self):
         return np.array(list(self.flag.keys())).astype(int)
 
-
     @property
     def all(self):
-        return self.read(self.elements_handle)
+        return self.read(self.elements_handle.get_array())
 
     @property
     def boundary(self):
@@ -322,8 +313,6 @@ class MeshEntities(object):
     @property
     def internal(self):
         return self.read(self.internal_range.get_array())
-
-
 
     def get_all(self, index):
         if self.level==0 and isinstance(index, np.ndarray):
@@ -357,12 +346,9 @@ class MeshEntities(object):
             return ret[0]
         return ret
 
-
 class MoabVariable(object):
     def __init__(self, core, name_tag, var_type="volumes", data_size=1, data_format="float", data_density="sparse",
                  entity_index=None, create = True):
-        # pdb.set_trace()
-
         dic_dtf = {'float': types.MB_TYPE_DOUBLE, 'int': types.MB_TYPE_INTEGER, 'bool': types.MB_TYPE_BIT}
         dic_dst = {'dense': types.MB_TAG_DENSE, 'sparse': types.MB_TAG_SPARSE, 'bit': types.MB_TAG_BIT}
         dic_elem = {'node': core.all_nodes, 'nodes': core.all_nodes,'edge': core.all_edges, 'edges': core.all_edges, 'face': core.all_faces, 'faces': core.all_faces, 'volume': core.all_volumes, 'volumes': core.all_volumes}
@@ -405,7 +391,6 @@ class MoabVariable(object):
         self.data = None
         self.moab_updated = True
 
-
     def __call__(self):
         if self.storage == 'moab':
             return self.mb.tag_get_data(self.tag_handle, self.elements_handle)
@@ -419,6 +404,7 @@ class MoabVariable(object):
             el_handle = self.elements_handle[index].get_array()
         else:
             el_handle = self.elements_handle.get_array(index)
+        
         if isinstance(data, int) or isinstance(data, float) or isinstance(data, bool):
             data = data * np.ones((el_handle.size, self.data_size)).astype(self.data_format)
         elif (isinstance(data, np.ndarray)) and (len(data) == self.data_size):
@@ -429,13 +415,12 @@ class MoabVariable(object):
 
         if self.storage == 'moab':
             self.mb.tag_set_data(self.tag_handle, el_handle, data)
+
         if self.storage == 'numpy':
             if self.data_size == 1:
                 data = data.flatten()
             self.data[index] = data
             self.moab_updated = False
-
-
 
     def __getitem__(self, index = None):
         if self.storage == 'moab':

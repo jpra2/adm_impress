@@ -1,6 +1,7 @@
-preprocessor.meshHandle.meshComponents Module
-=============================================
+Mesh Components Module
+======================
 
 .. automodule:: preprocessor.meshHandle.meshComponents
     :members:
-    :show-inheritance:
+
+.. autofunction:: preprocessor.meshHandle.meshComponents.MeshEntities.bridge_adjacencies

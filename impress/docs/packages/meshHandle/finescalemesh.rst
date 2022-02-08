@@ -1,6 +1,5 @@
-preprocessor.meshHandle.finescaleMesh Module
-============================================
+Fine Scale Module
+=================
 
 .. automodule:: preprocessor.meshHandle.finescaleMesh
     :members:
-    :show-inheritance:
