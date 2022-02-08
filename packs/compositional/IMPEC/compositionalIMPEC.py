@@ -74,7 +74,7 @@ class CompositionalFVM:
             fprop.qk_molar[:,wells['all_wells']] = q[:,wells['all_wells']]'''
 
             #3k example Orr fig 5.18
-            '''Ft_internal = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
+            Ft_internal = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
             q = np.zeros_like(fprop.Nk)
             frj = fprop.mobilities[:,...] / \
                 np.sum(fprop.mobilities[:,...], axis = 1)
@@ -82,14 +82,14 @@ class CompositionalFVM:
             frj[:,0,0] = 0
 
             q[:,wells['all_wells']] = np.sum(frj[:,:,wells['all_wells']] * fprop.Csi_j[:,:,wells['all_wells']]*\
-                np.array([[0.2, 0.8, 0],[0., 0.3, 0.7]]).T[:,np.newaxis,:] * \
+                np.array([[0.8, 0.2, 0],[0.3, 0., 0.7]]).T[:,np.newaxis,:] * \
                 Ft_internal[:,0], axis=1)
             #wells['values_q'] = q[:,wells['ws_inj']]
             q[:,-1] = -1*q[:,-1]
             fprop.q_phase = Ft_internal[:,0][:,np.newaxis] * np.ones((1,2))
-            fprop.qk_prod = 1/(24*60*60) * np.array([[0., 0.3, 0.7]]).T
+            fprop.qk_prod = 1/(24*60*60) * np.array([[0.3, 0., 0.7]]).T
             fprop.qk_molar = np.zeros_like(q)
-            fprop.qk_molar[:,wells['all_wells']] = q[:,wells['all_wells']]'''
+            fprop.qk_molar[:,wells['all_wells']] = q[:,wells['all_wells']]
 
             #2k example Orr fig 4.16
             '''Ft_internal = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
