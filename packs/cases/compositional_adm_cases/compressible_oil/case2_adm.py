@@ -59,7 +59,7 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case23_finescale_6k_5000_' # finescale iterative
 # description = 'case24_testcaseOfCase19_'
 # description = 'case25_finescale_80x80_adm'
-description = 'case33_adm_80x80_brb_tams_solver'
+description = 'case33_adm_80x80_BL_tams_solver'
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -127,6 +127,7 @@ params['pretransmissibility'] = data_impress['pretransmissibility']
 # trilinos_solver = solverTril()
 
 local_problem_params = {
+    'multilevel_data': ml_data,
     'Vbulk': ctes.Vbulk,
     'porosity': ctes.porosity,
     'Cf': ctes.Cf,
@@ -258,7 +259,6 @@ while run_criteria < stop_criteria:# and loop < loop_max:
 
     t0 = time.time()
     sim.run(M, wells, fprop, load,
-            multilevel_data=ml_data,
             multilevel_operators=mlo,
             params=params,
             adm_method=adm,

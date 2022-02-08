@@ -455,7 +455,7 @@ class MultilevelData(DataManager):
 
             for volume, vizinhos in zip(coarse_volumes, coarse_neig_face):
                 m = mb.create_meshset()
-                mb.add_entities(m, vizinhos)
+                mb.add_entities(m, vizinhos.astype(np.uint64))
                 mb.tag_set_data(self.tags['NEIG_FACE'], volume, m)
 
             nnn = tag_mv[0] + str(level)
