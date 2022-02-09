@@ -48,7 +48,7 @@ class SolverSp:
 
         return solution
 
-    def gmres_solver(self, A, b, x0=None, tol=1e-5, precond=None):
+    def gmres_solver(self, A, b, x0=None, tol=1e-5, precond=None, maxiter=None):
 
         print('\nSolving gmres solver\n')
         counter_callback = ScipyCounter(disp=False)
@@ -64,12 +64,12 @@ class SolverSp:
             M = None
 
         # x, exitcode = linalg.gmres(A, b, x0=x0, tol=tol, M=M)
-        x, exitcode = linalg.gmres(A, b, x0=x0, tol=tol, M=M, callback=counter_callback)
+        x, exitcode = linalg.gmres(A, b, x0=x0, tol=tol, M=M, callback=counter_callback, maxiter=maxiter)
         ## exitcode = 0: indicates successful convergence
 
         return x
 
-    def conjugate_gradient_solver(self, A, b, x0=None, tol=1e-5, precond=None):
+    def conjugate_gradient_solver(self, A, b, x0=None, tol=1e-5, precond=None, maxiter=None):
 
         print('\nSolving conjugate gradient solver\n')
 
@@ -83,6 +83,6 @@ class SolverSp:
         else:
             M = None
 
-        x, exitcode = linalg.cg(A, b, x0=x0, tol=tol, M=M)
+        x, exitcode = linalg.cg(A, b, x0=x0, tol=tol, M=M, maxiter=maxiter)
 
         return x

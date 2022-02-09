@@ -59,7 +59,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case23_finescale_6k_5000_' # finescale iterative
 # description = 'case24_testcaseOfCase19_'
 # description = 'case25_finescale_80x80_adm'
-description = 'case33_adm_80x80_BL_tams_solver'
+# description = 'case33_adm_80x80_BL_tams_solver'
+description = 'case34_adm_80x80_BL_iterative_CG_tol-1e18'
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -163,7 +164,9 @@ local_problem_params = {
     'master_local_operator': master_local_operator,
     # 'trilinos_solver': trilinos_solver
     'scipy_solver': SolverSp(),
-    'tolerance': 1e-15
+    'tolerance': 1e-18,
+    'iterative_solver_finescale': 'cg', # ['cg', 'gmres']
+    'global_solver': 'nu-adm_finescale-it', # ['nu-adm', 'tams_nu-adm', 'finescale', 'nu-adm_finescale-it']
 }
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
