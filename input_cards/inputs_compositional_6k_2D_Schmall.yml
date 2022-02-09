@@ -1,11 +1,11 @@
 #Compressive Oil case with 6 components and water in 3D reservoir (Santos, 2013)
-mesh_name: 16x16x10.h5m
-name_save_file: 'results_water_inj_6k_Santos_case_IMPEC'
+mesh_name: 25x25x1_Schmall.msh
+name_save_file: 'results_water_inj_6k_2D_og_Schmall_IMPEC_FOU'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
-water_component: True
+water_component: False
 use_vpi: False
 
 load_compositional_data: False
@@ -38,15 +38,15 @@ compositional_data:
     set: false
     order: 2
 
-  UPW:
+  RiemannSolver:
     ROE: false
     LLF: false
     MDW: false
-    FOU: true
+    DW: false
 
   vpis_para_gravar_vtk: [0, 0.1, 0.3, 0.5]
-  time_to_save: [8640000]
-  maximum_time: 8640000
+  time_to_save: [43200000]
+  maximum_time: 43200000
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -61,12 +61,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: .1
-    deltaSlim: .03
-    deltaVlim: .0001
-    delta_t_ini: 20
+    deltaNlim: 1
+    deltaSlim: 0.15
+    deltaVlim: 0.0005
+    delta_t_ini: 864
     delta_tmax: 86400
-    delta_tmin: 1
+    delta_tmin: 8.64
 
   water_data:
     mi_W: 1e-3
@@ -101,6 +101,7 @@ compositional_data:
     Bin: [[0.,0.,.0,0.,0.05,0.05], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.005,0.005], [0.,0.,.0,0.,0.,0.], [0.05,0.,0.005,0.,0.,0.], [0.05,0.,0.005,0.,0.,0.]]
     Pv: [8e6, 0., 0., 0., 0., 0.]
     vshift_parameter: [0.0, 0.0, 0.0, 0., 0., 0.]
+    constant_K: false
 
 #water saturation data
 Saturation:
@@ -111,7 +112,7 @@ Saturation:
 Porosity:
   r1:
     type: all
-    value: 0.2
+    value: 0.35
 
 #Permeability in m^2
 Permeability:
@@ -137,8 +138,9 @@ Wells:
     type: Injector
     type_region: box
     value: 0.3277
-    z: [0.77, 0.2, 0.01, 0.01, 0.005, 0.005, 0]
+    z: [0.77, 0.2, 0.01, 0.01, 0.005, 0.005]
     injection_condition: reservoir
+    value_type: volumetric
 
   P2:
     p0: [160.03125, 0.0, -30.5]

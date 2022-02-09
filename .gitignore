@@ -27,8 +27,10 @@
 *.png
 *_tt.py
 impress/
+impress_new/
 impress(copia)/
 *.pyc
+*.cpython-36.pyc
 *.imp
 *.zip
 *.pdf
@@ -37,6 +39,7 @@ impress(copia)/
 venv/
 *__pycache__/
 *_0_0.yml
+*_0_0.py
 
 remove/
 *.sh

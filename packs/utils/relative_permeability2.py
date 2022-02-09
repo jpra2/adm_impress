@@ -27,12 +27,12 @@ class BrooksAndCorey:
         Swr = np.ones(saturations[2].shape) * self.Swr
 
         Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
-        Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
         Sorg[saturations[0] < self.Sorg] = saturations[0][saturations[0] < self.Sorg]
         Swr[saturations[2] < Swr] = saturations[2][saturations[2] < Swr]
 
         Sor = Sorw * (1 - saturations[1] / (1 - Swr - Sorg)) + \
                     Sorg * saturations[1] / (1 - Swr - Sorg)
+        #if any(saturations[0] < Sor): import pdb; pdb.set_trace()
 
         Sor[saturations[0] < Sor] = saturations[0][saturations[0] < Sor]
 
@@ -67,7 +67,6 @@ class BrooksAndCorey:
         Sorg = np.ones_like(saturations[2]) * self.Sorg
         Sorw = np.ones_like(saturations[2]) * self.Sorw
         Swr = np.ones(saturations[2].shape) * self.Swr
-
 
         Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
         Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
@@ -116,13 +115,13 @@ class StoneII:
         self.krog0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['krog0'])
         self.krg0 = float(direc.data_loaded['compositional_data']['relative_permeability_data']['krg0'])
 
-
-
     def relative_permeabilities(self, saturations):
         #saturations = [So,Sg,Sw]
 
         Sor = self.Sorw * (1 - saturations[1] / (1 - self.Swr - self.Sorg)) + \
                     self.Sorg * saturations[1] / (1 - self.Swr - self.Sorg)
+
+        #Sor[saturations[0] < Sor] = saturations[0][saturations[0] < Sor]
 
         krw = self.krw0 * ((saturations[2] - self.Swr) / (1 - self.Swr - self.Sorw)) ** self.n_w
         krg = self.krg0 * ((saturations[1] - self.Sgr) / (1 - self.Swr - self.Sorg - self.Sgr)) ** self.n_g
@@ -130,12 +129,13 @@ class StoneII:
         krog = self.krog0 * ((1. - saturations[1] - self.Sorg - self.Swr) / (1 - self.Swr - self.Sgr - self.Sorg)) ** self.n_og
 
         krw[saturations[2] <= self.Swr] = 0
-        #krw[saturations[0]<= self.Swr] = self.krw0
         krow[saturations[2]<= self.Swr] = self.krow0
         krow[saturations[0]<= self.Sorw] = 0
         krog[saturations[0]<= self.Sorg] = 0
 
         kro = self.krow0 * ((krow/self.krow0 + krw) * (krog/self.krow0 + krg) - (krw + krg))
+        kro[kro<0] = 0
+        #if any(saturations[0]<Sor): import pdb; pdb.set_trace()
         #self.krow = krow; self.krog = krog
         #kro[saturations[2]<Swr] = self.kro0 * ((saturations[0][saturations[2]<Swr] - self.Sor) / (1 - self.Sor - self.Sgr)) ** self.n_o
 
@@ -182,6 +182,7 @@ class StoneII:
         dkrwdSw = krw * self.n_w / (saturations[2] - self.Swr)
         dkrwdSw[saturations[2] <= self.Swr] = 0
         dkrgdSg = krg * self.n_g / (saturations[1] - self.Sgr)
+        dkrgdSg[(saturations[1] <= self.Sgr)] = 0
         dkrowdSw = - krow * self.n_ow / (1 - saturations[2] - self.Sorw)
         dkrwdSo = -dkrwdSw
         dkrwdSg = -dkrwdSw
@@ -202,4 +203,5 @@ class StoneII:
         dkrsdSj[0,:] = np.array([dkrodSo,dkrodSg,dkrodSw])
         dkrsdSj[1,:] = np.array([dkrgdSo,dkrgdSg,dkrgdSw])
         dkrsdSj[2,:] = np.array([dkrwdSo,dkrwdSg,dkrwdSw])
+
         return dkrsdSj

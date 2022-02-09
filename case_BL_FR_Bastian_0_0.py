@@ -532,7 +532,7 @@ for  arq in arquivos:
         fig = plt.figure(9)
         plt.plot(x32_avg, Sw32_avg, '-ro', x32_avg, Sw32_avg_FR3, '-gs', x32_avg, Sw32_avg_FR4, '-bv',
             xD, SwD, '-k')
-        plt.legend(('FR 2nd order','FR 3rd order', 'FR 4th order', 'Analytical Solution'))
+        plt.legend(('FR/CPR 2$^{nd}$ order','FR/CPR 3$^{rd}$ order', 'FR 4$^{th}$ order', 'Analytical Solution'))
         plt.xlim(0.55,0.8)
         plt.ylim(0.6,0.8)
         plt.title('Buckley-Leverett Solution Example Bastian - 32 elements')

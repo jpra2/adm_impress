@@ -1,6 +1,6 @@
 #2-phase problem with 3 components - moshiri
 mesh_name: 200x1x1_3k.msh
-name_save_file: 'results_case2_Moshiri_Manzari_3k_200_MUSCL' #150683
+name_save_file: 'results_case2_Moshiri_Manzari_3k_200_IMPEC_MUSCL_MDW' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -27,7 +27,7 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: .9
+  CFL: .7
 
   solver:
     IMPSAT: false
@@ -39,15 +39,15 @@ compositional_data:
     set: false
     order: 3
 
-  UPW:
+  RiemannSolver:
     ROE: false
     LLF: false
-    MDW: false
-    FOU: false
+    MDW: true
+    DW: false
 
   vpis_para_gravar_vtk: [0.51]
-  time_to_save: [16070400] #[2592000]
-  maximum_time: 16070400 #2592000
+  time_to_save: [16070400, 16156800] #[2592000]
+  maximum_time: 16156800  #2592000
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -62,9 +62,9 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 2
+    deltaNlim: 3
     deltaSlim: .25
-    deltaVlim: .0001
+    deltaVlim: 0.1
     delta_t_ini: 56.4
     delta_tmax: 86400
     delta_tmin: 8.64

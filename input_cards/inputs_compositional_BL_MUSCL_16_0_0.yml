@@ -59,7 +59,7 @@ compositional_data:
 
   water_data:
     mi_W: 1e-3
-    rho_W: 1000
+    rho_W: 999.55
     Mw_w: 18.015e-3
     Cw: 0
     Pw: 13.79e6

@@ -1,5 +1,5 @@
 #3-phase problem with 3 components - case 1 BRB master thesis
-mesh_name: 80x80x1_case1BRB.msh
+mesh_name: 80x80x1_case1BRB_TESTE.msh
 name_save_file: 'results_case1_2d_BRB_80x80' #150683
 
 compositional: True
@@ -8,18 +8,6 @@ compressible_fluid: True
 water_component: True
 use_vpi: False
 
-###############################
-## Multilevel infos
-n_levels: 3
-Crs:
-  # Cr1: [3, 3, 1]
-  # Cr2: [9, 9, 1]
-  Cr1: [7, 7, 1]
-  Cr2: [3, 3, 1]
-get_correction_term: false
-load_operators: false
-load_multilevel_data: false
-#############################
 
 load_compositional_data: False
 load_data: False
@@ -76,7 +64,7 @@ compositional_data:
     deltaPlim: 0.1
     deltaNlim: .25
     deltaSlim: .1
-    deltaVlim: .0005
+    deltaVlim: .1
     delta_t_ini: 8.64
     delta_tmax: 17280.0 #IMPSAT: 60480 IMPEC: 17280
     delta_tmin: 8.64

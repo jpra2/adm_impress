@@ -56,10 +56,9 @@ for  arq in arquivos:
             w = np.array([1/3, 4/3, 1/3])
             Nk_FR3 = (data[12]*w[np.newaxis,np.newaxis,:]).sum(axis=-1)/2
 
-            xkj_FR3_200[:,1,Sg_FR3_200==0] = 0
-            xkj_FR3_200[:,0,So_FR3_200==0] = 0
+            xkj_FR3_200[:,1,Sg_FR3_200<1e-14] = 0
+            xkj_FR3_200[:,0,So_FR3_200<1e-14] = 0
             x_200 = np.linspace(0,50,len(So_FR3_200))
-            import pdb; pdb.set_trace()
 
         datas = np.load('flying/results_Hoteit_Firoo_3k_200_FOU_4800.npy', allow_pickle=True)
         #datas = np.load('flying/results_Hoteit_Firoo_3k_500_upw2_3016.npy', allow_pickle=True)
@@ -113,6 +112,65 @@ for  arq in arquivos:
             xkj_5000[:,0,So_5000==0] = 0
             x_5000 = np.linspace(0,50,len(So_5000))
 
+        datas = np.load('flying/results_Hoteit_Firoo_3k_128_IMPSAT_2383.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_128_IMPSAT = data[6]
+            Sg_128_IMPSAT = data[7]
+            z_128_IMPSAT = data[10]
+            xkj_128_IMPSAT = data[13]
+            P_128_IMPSAT = data[4]
+
+            xkj_128_IMPSAT[:,1,Sg_128_IMPSAT<1e-13] = 0
+            xkj_128_IMPSAT[:,0,So_128_IMPSAT<1e-13] = 0
+            x_128 = np.linspace(0,50,len(So_128_IMPSAT))
+
+        datas = np.load('flying/results_Hoteit_Firoo_3k_256_IMPSAT_3084.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_256_IMPSAT = data[6]
+            Sg_256_IMPSAT = data[7]
+            z_256_IMPSAT = data[10]
+            xkj_256_IMPSAT = data[13]
+            P_256_IMPSAT = data[4]
+
+            xkj_256_IMPSAT[:,1,Sg_256_IMPSAT<1e-12] = 0
+            xkj_256_IMPSAT[:,0,So_256_IMPSAT<1e-12] = 0
+            x_256 = np.linspace(0,50,len(So_256_IMPSAT))
+
+        datas = np.load('flying/results_Hoteit_Firoo_3k_512_IMPSAT_2507.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_512_IMPSAT = data[6]
+            Sg_512_IMPSAT = data[7]
+            z_512_IMPSAT = data[10]
+            xkj_512_IMPSAT = data[13]
+            P_512_IMPSAT = data[4]
+
+            xkj_512_IMPSAT[:,1,Sg_512_IMPSAT<1e-12] = 0
+            xkj_512_IMPSAT[:,0,So_512_IMPSAT<1e-12] = 0
+            x_512 = np.linspace(0,50,len(So_512_IMPSAT))
+
+        datas = np.load('flying/results_Hoteit_Firoo_3k_128_IMPEC_6868.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_128_IMPEC = data[6]
+            Sg_128_IMPEC = data[7]
+            z_128_IMPEC = data[10]
+            xkj_128_IMPEC = data[13]
+            P_128_IMPEC = data[4]
+
+            xkj_128_IMPEC[:,1,Sg_128_IMPEC<1e-13] = 0
+            xkj_128_IMPEC[:,0,So_128_IMPEC<1e-13] = 0
+            x_128 = np.linspace(0,50,len(So_128_IMPEC))
+
+        '''datas = np.load('flying/results_Hoteit_Firoo_3k_256_IMPEC_6112.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_256_IMPEC = data[6]
+            Sg_256_IMPEC = data[7]
+            z_256_IMPEC = data[10]
+            xkj_256_IMPEC = data[13]
+            P_256_IMPEC = data[4]
+
+            xkj_256_IMPEC[:,1,Sg_256_IMPEC==0] = 0
+            xkj_256_IMPEC[:,0,So_256_IMPEC==0] = 0
+            x_256 = np.linspace(0,50,len(So_256_IMPEC))'''
 
         plt.figure(1)
         #plt.plot(x_500, xkj_500[2,1,:], 'b')
@@ -141,4 +199,19 @@ for  arq in arquivos:
         plt.ylabel('Propane molar fraction in gas phase')
         plt.xlabel('Dimensionless distance')
         plt.savefig('results/compositional/3k_propane_y_HF_MUSCL.png')
+
+        plt.figure(3)
+        #plt.plot(x_500, xkj_500[2,1,:], 'b')
+        plt.plot(x_128, xkj_128_IMPSAT[2,1,:], 'm')
+        #plt.plot(x_128, xkj_128_IMPEC[2,1,:], 'r')
+        plt.plot(x_256, xkj_256_IMPSAT[2,1,:], 'b')
+        plt.plot(x_512, xkj_512_IMPSAT[2,1,:], 'g')
+        #plt.plot(x_axis_xC3, xC3, 'k')
+        plt.plot(x_5000, xkj_5000[2,1,:], 'k')
+        plt.xlim(20,30)
+        plt.legend(('IMPSAT 128', 'IMPSAT 256', 'IMPSAT 512','FOU 5000'))
+        plt.grid()
+        plt.ylabel('Propane molar fraction in gas phase')
+        plt.xlabel('Dimensionless distance')
+        plt.savefig('results/compositional/3k_propane_y_HF_IMPSAT.png')
         import pdb; pdb.set_trace()
