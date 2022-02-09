@@ -11,7 +11,8 @@ from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 
 # description = 'case3_finescale_3k'
 # description = 'case17_finescale_6k_5000_'
-description = 'case25_finescale_80x80'
+# description = 'case25_finescale_80x80'
+description = 'case32_finescale_80x80_BL_direct_solver'
 compositional_data = CompositionalData(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
 cumulative_compositional_datamanager.create()
@@ -97,7 +98,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         'Sg': fprop.Sg,
         'Sw': fprop.Sw,
         'So': fprop.So,
-        'q': fprop.q,
+        'q': fprop.qk_molar,
         'global_composition': fprop.z,
         'mols': fprop.Nk,
         'xkj': fprop.xkj,
