@@ -61,7 +61,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case25_finescale_80x80_adm'
 # description = 'case33_adm_80x80_BL_tams_solver'
 # description = 'case34_adm_80x80_BL_iterative_CG_tol-1e18'
-description = 'case35_adm_80x80_BL_tams_solver_new_prolong'
+# description = 'case35_adm_80x80_BL_tams_solver_new_prolong'
+description = 'case36_adm_80x80_Firoo_tams_solver_new_prolong'
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
