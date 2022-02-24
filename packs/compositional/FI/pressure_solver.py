@@ -143,19 +143,3 @@ class TPFASolver:
             mob_ratio = fprop.mobilities[:,:,wp] / np.sum(fprop.mobilities[:,:,wp], axis = 1)
             self.q[:,wp] = np.sum(fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp] * well_term, axis = 1)
             fprop.q_phase = mob_ratio * well_term
-
-
-
-
-
-    ''' ---------------------- Funcoes que eu uso -----------------------------------'''
-    def update_transmissibility_FI(self, M, wells, fprop, delta_t):
-        self.t0_internal_faces_prod = fprop.xkj_internal_faces * \
-                                      fprop.Csi_j_internal_faces * \
-                                      fprop.mobilities_internal_faces
-
-        ''' Transmissibility '''
-        #t0 = (self.t0_internal_faces_prod).sum(axis = 1)
-        t0 = self.t0_internal_faces_prod
-        t0 = t0 * ctes.pretransmissibility_internal_faces
-        return t0

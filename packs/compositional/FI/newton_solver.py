@@ -181,28 +181,24 @@ class NewtonSolver:
         # Equacao de conservacao da massa
         transmissibility = self.update_transmissibility_FI()
         d_Pot_hid = np.zeros_like(self.fprop.mobilities_internal_faces)
+
+        '''Ajustar para ficar automatico com as faces'''
         for i in range(3):
             for j in range(len(d_Pot_hid[0][0])):
                 d_Pot_hid[0][i][j] = self.Pot_hid[i][j+1] - self.Pot_hid[i][j]
+
+        '''
+        # Tentativa de organizar calculo acima
+        Pot_hidj = self.Pot_hid[0,ctes.v0[:,0]]
+        Pot_hidj_up = self.Pot_hid[0,ctes.v0[:,1]]
+        teste = Pot_hidj_up - Pot_hidj
+        '''
+
         flux = transmissibility * d_Pot_hid
         fluxos_internos = flux.sum(axis = 1)
 
-        """
-        fluxos_totais = np.zeros([ctes.n_components, ctes.n_volumes + 1])
-        d_fluxos_totais = np.zeros([ctes.n_components, ctes.n_volumes])
-        for i in range(len(fluxos_totais)):
-            for j in range(len(fluxos_totais[0])):
-                if j == 0:
-                    fluxos_totais[i][j] = 0.0
-                elif j == len(fluxos_totais[0]) - 1:
-                    fluxos_totais[i][j] = 0.0
-                    d_fluxos_totais[i][j-1] = fluxos_totais[i][j] - fluxos_totais[i][j-1]
-                else:
-                    fluxos_totais[i][j] = fluxos_internos[i][j-1]
-                    d_fluxos_totais[i][j-1] = fluxos_totais[i][j] - fluxos_totais[i][j-1]
-        """
-
-        fluxos_contornos_dir = np.zeros([ctes.Nc+1,1]) # Errado, so funciona para 1D
+        ''' Errado, so funciona para 1D - AJUSTAR '''
+        fluxos_contornos_dir = np.zeros([ctes.Nc+1,1])
         fluxos_contornos_esq = np.zeros([ctes.Nc+1,1])
         fluxos_totais = np.insert(fluxos_internos, [ctes.Nc+1], fluxos_contornos_dir, axis = 1)
         fluxos_totais = np.insert(fluxos_totais, [0], fluxos_contornos_esq, axis = 1)
@@ -211,16 +207,18 @@ class NewtonSolver:
         for i in range(len(fluxos_totais)):
             d_fluxos_totais[i][:] = fluxos_totais[i][1:] - fluxos_totais[i][:-1]
 
-        #residuo_massa = self.fprop.Vp * (self.fprop.Nk - self.Nk_old) - self.delta_t * d_fluxos_totais
+        ''' Adicionar termo de poço '''
         residuo_massa = (self.fprop.Nk - self.Nk_old) - self.delta_t * d_fluxos_totais
 
         # Restricao de volume poroso
         aux = self.fprop.Nj / (self.fprop.Csi_j + 1e-15)
         residuo_poroso_varavei = aux.sum(axis = 1)/self.fprop.Vp - 1.0
         residuo_poroso_bruno = aux.sum(axis = 1) - self.fprop.Vp
+        ''' Preferencia: Varavei '''
 
         # Residuo total
         residuo = np.append(residuo_poroso_varavei, residuo_massa, axis = 0)
+        import pdb; pdb.set_trace()
         return residuo
 
     def jacobian_calculation(self):
