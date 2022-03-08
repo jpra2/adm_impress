@@ -12,7 +12,8 @@ from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 # description = 'case3_finescale_3k'
 # description = 'case17_finescale_6k_5000_'
 # description = 'case25_finescale_80x80'
-description = 'case32_finescale_80x80_BL_direct_solver'
+# description = 'case32_finescale_80x80_BL_direct_solver'
+description = 'case37_finescale_80x80_Firoozabadi_direct_solver'
 compositional_data = CompositionalData(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
 cumulative_compositional_datamanager.create()
@@ -93,6 +94,8 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     loop_array['simulation_time'][0] = simulation_time
     loop_array['oil_production'][0] = sim.oil_production
     loop_array['gas_production'][0] = sim.gas_production
+    loop_array['oil_rate'][0] = np.sum(fprop.q_phase[:, 0])
+    loop_array['gas_rate'][0] = np.sum(fprop.q_phase[:, 1])
     compositional_data.update({
         'pressure': fprop.P,
         'Sg': fprop.Sg,

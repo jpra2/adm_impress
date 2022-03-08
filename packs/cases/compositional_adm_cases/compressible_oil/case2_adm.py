@@ -62,7 +62,10 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case33_adm_80x80_BL_tams_solver'
 # description = 'case34_adm_80x80_BL_iterative_CG_tol-1e18'
 # description = 'case35_adm_80x80_BL_tams_solver_new_prolong'
-description = 'case36_adm_80x80_Firoo_tams_solver_new_prolong'
+# description = 'case36_adm_80x80_Firoo_tams_solver_new_prolong'
+# description = 'case37_adm_80x80_Firoo_tams_solver_new_prolong_coarsewells_level0'
+# description = 'case38_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0'
+description = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -118,7 +121,7 @@ ncoarse_ids = len(np.unique(data_impress['GID_1']))
 OP_AMS = sp.lil_matrix((ctes.n_volumes, ncoarse_ids)).tocsc()
 
 keywords1 = {
-    'update_FC': True
+    'update_FC': False
 }
 
 master_neumann = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)

@@ -9,7 +9,8 @@ key_list = ['loop_array', 'pressure']
 # description = 'case1_finescale_'
 # description1 = 'case3_finescale_3k'
 # description1 = 'case17_finescale_6k_5000_'
-description1 = 'case23_finescale_6k_5000_' # iterative
+# description1 = 'case23_finescale_6k_5000_' # iterative
+description1 = 'case37_finescale_80x80_Firoozabadi_direct_solver' # iterative
 # description = 'case2_adm_'
 # compositional_data = CompositionalData(description=description)
 case1 = CumulativeCompositionalDataManager(description=description1)
@@ -28,7 +29,11 @@ fig_str = 'figura_'
 # description2 = 'case18_adm_6k_5000_'
 # description2 = 'case19_adm_6k_5000_'
 # description2 = 'case20_adm_6k_5000_'
-description2 = 'case21_adm_6k_5000_'
+# description2 = 'case21_adm_6k_5000_'
+# description2 = 'case36_adm_80x80_Firoo_tams_solver_new_prolong'
+# description2 = 'case37_adm_80x80_Firoo_tams_solver_new_prolong_coarsewells_level0'
+# description2 = 'case38_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0'
+description2 = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
 # description2 = 'case22_adm_6k_5000_'
 # description2 = 'case23_finescale_6k_5000_'
 case2 = CumulativeCompositionalDataManager(description=description2)
