@@ -55,6 +55,7 @@ compositional_data:
     ROE: false
     LLF: false
     MDW: false
+    DW: false
 
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [8640000, 17280000]
