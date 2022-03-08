@@ -61,6 +61,7 @@ class Flux:
     def update_flux_volumes(self, Fk_internal_faces):
         ''' Function to compute component molar flux balance through the control \
         volume interfaces '''
+        import pdb; pdb.set_trace()
         cx = np.arange(ctes.n_components)
         lines = np.array([np.repeat(cx,len(ctes.v0[:,0])), np.repeat(cx,len(ctes.v0[:,1]))]).astype(int).flatten()
         cols = np.array([np.tile(ctes.v0[:,0],ctes.n_components), np.tile(ctes.v0[:,1], ctes.n_components)]).flatten()
@@ -550,6 +551,7 @@ class FirstOrder:
 
     def FOU(self, M, fprop, total_flux_internal_faces):
         UPW = Flux()
+        import pdb; pdb.set_trace()
         Fk_vols_total = UPW.update_flux(M, fprop, total_flux_internal_faces,
                              fprop.rho_j_internal_faces, fprop.mobilities_internal_faces)
         RS = RiemannSolvers(ctes.v0, ctes.pretransmissibility_internal_faces)

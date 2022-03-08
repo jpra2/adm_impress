@@ -32,7 +32,6 @@ class TPFASolver:
         T = sp.csr_matrix((ctes.n_volumes, ctes.n_volumes))
         # Look for a way of doing this not using a loop!!!
         #import pdb; pdb.set_trace()
-        import pdb; pdb.set_trace()
         for i in range(ctes.n_components):
             lines = np.array([ctes.v0[:, 0], ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
             cols = np.array([ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
@@ -40,7 +39,7 @@ class TPFASolver:
 
             Ta = (sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_volumes, ctes.n_volumes)))#.toarray()
             T += Ta.multiply(self.dVtk[i, :, np.newaxis])
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         T *= delta_t
         ''' Transmissibility diagonal term '''
         #diag = np.diag((ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP))
@@ -96,7 +95,6 @@ class TPFASolver:
         return volume_discrepancy_term
 
     def well_term(self, fprop, wells):
-        #import pdb; pdb.set_trace()
         self.q = np.zeros([ctes.n_components, ctes.n_volumes])
         well_term = np.zeros(ctes.n_volumes)
         if len(wells['ws_q']) > 0:
@@ -134,7 +132,6 @@ class TPFASolver:
 
     def update_flux_wells(self, fprop, Pnew, wells, delta_t):
         wp = wells['ws_p']
-
         if len(wp)>=1:
             if Pnew[2]>Pnew[1]: import pdb; pdb.set_trace()
             well_term =  (self.T_noCC[wp,:] @ Pnew - self.pressure_term[wp] +

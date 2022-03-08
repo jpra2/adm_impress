@@ -34,7 +34,7 @@ class CompositionalFVM:
 
             # TESTAR O CALCULO DOS RESIDUOS ---------------------------------------------------
 
-            solve = NewtonSolver(M, wells, fprop, delta_t, Pot_hid, Nk_old)
+            solve = NewtonSolver(M, wells, fprop, delta_t, Pot_hid, Nk_old, dVjdNk, dVjdP)
             residuo = solve.residual_calculation()
             #solve.solver()
 
@@ -77,6 +77,7 @@ class CompositionalFVM:
                     Fk_vols_total, wave_velocity = FirstOrder().ROE(M, fprop, total_flux_internal_faces, P_old)
                 else:
                     self.get_faces_properties_upwind(fprop, G)
+                    import pdb; pdb.set_trace()
                     Fk_vols_total, wave_velocity = FirstOrder().FOU(M, fprop, total_flux_internal_faces)
 
             ''' For the composition calculation the time step might be different\
