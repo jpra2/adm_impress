@@ -99,7 +99,6 @@ class PengRobinson:
     """ Derivatives - Still need to organize this"""
 
     def get_all_derivatives(self, fprop):
-
         x = fprop.xkj[0:ctes.Nc,0,:]
         y = fprop.xkj[0:ctes.Nc,1,:]
         Nl = fprop.Nj[0,0,:]

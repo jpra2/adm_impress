@@ -34,9 +34,9 @@ class CompositionalFVM:
 
             # TESTAR O CALCULO DOS RESIDUOS ---------------------------------------------------
 
-            solve = NewtonSolver(M, wells, fprop, delta_t, Pot_hid, Nk_old, dVjdNk, dVjdP)
-            residuo = solve.residual_calculation()
-            #solve.solver()
+            solve = NewtonSolver(M, wells, fprop, delta_t, Pot_hid, Nk_old)
+            #residuo = solve.residual_calculation()
+            solve.solver()
 
             # FIM DO TESTE --------------------------------------------------------------------
             import pdb; pdb.set_trace()
