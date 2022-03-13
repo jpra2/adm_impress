@@ -1,4 +1,5 @@
 from operator import inv
+import pdb
 from scipy.sparse import csc_matrix
 import numpy as np
 from scipy.sparse.linalg import gmres, lgmres, spsolve, cg, inv
@@ -12,7 +13,7 @@ class TamsSolverFV:
     """
     
     @staticmethod
-    def richardson_solver(A: csc_matrix, b: np.ndarray, x0: np.ndarray, OR: csc_matrix, OP: csc_matrix, res_tol: float = 1e-20, x_tol: float = 1e-14, max_it: int = np.inf, **kwargs) -> np.ndarray:
+    def richardson_solver(A: csc_matrix, b: np.ndarray, x0: np.ndarray, OR: csc_matrix, OP: csc_matrix, res_tol: float = 1e-10, x_tol: float = 1e-10, max_it: int = np.inf, **kwargs) -> np.ndarray:
         """Richardson iterative solver
 
         Args:
@@ -38,8 +39,8 @@ class TamsSolverFV:
         # Tc_inv = inv(Ac_it)
         x = x0.copy()
         x0_in = x0.copy()
-        res_c = np.zeros(OP.shape[1])
-        res_f = np.zeros(OP.shape[0])
+        res_f = b-A*x0
+        res_c = OR*res_f
         
         while it_counter < max_it and eps > x_tol:
             # x += OP*spsolve(Ac_it, R*(b-A*x))
@@ -48,17 +49,21 @@ class TamsSolverFV:
             # x += resp
             # x += spsolve(A, b-A*x)
             # res = OP*Tc_inv*OR*(b - A*x) 
-            res_c[:], exitcode = gmres(Ac_it, R*(b-A*x), x0=res_c, maxiter=2, tol=res_tol)
+            # res_c[:], exitcode = gmres(Ac_it, R*(b-A*x), x0=res_c, maxiter=2, tol=res_tol)
+            res_c[:] = spsolve(Ac_it, R*(b-A*x))
             res_f[:] = OP*res_c
             x += res_f
             res_f[:], exitcode = cg(A, b-A*x, maxiter=5, x0=res_f ,tol=res_tol)
             x += res_f
-            eps = np.absolute((x - x0_in)/x).max()
+            # eps = np.absolute((x - x0_in)/x).max()
+            eps = np.absolute(res_f).max()/np.absolute(x).max()
+            print(f'eps: {eps}')
             x0_in[:] = x.copy()
             it_counter += 1
         
         # x += OP*spsolve(OR*A*OP, OR*(b-A*x))
-        res_c[:], exitcode = gmres(OR*A*OP, OR*(b-A*x), x0=res_c, maxiter=2, tol=res_tol)
+        # res_c[:], exitcode = gmres(OR*A*OP, OR*(b-A*x), x0=res_c, maxiter=2, tol=res_tol)
+        res_c[:] = spsolve(OR*A*OP, OR*(b-A*x))
         res_f[:] = OP*res_c
         x += res_f
         

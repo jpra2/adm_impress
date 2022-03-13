@@ -1,4 +1,7 @@
 import os.path
+import pdb
+
+import scipy
 
 from packs.compositional.IMPEC.pressure_solver import TPFASolver
 from packs.utils.test_functions import test_instance
@@ -168,38 +171,38 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             restriction_list.append(adm_method['adm_restriction_level_' + str(level)])
             correction_function_list.append(np.zeros(adm_method['adm_prolongation_level_' + str(level)].shape[0]))
 
-        solution, n_active_volumes = multilevel_pressure_solver(
-            T,
-            D,
-            prolongation_list,
-            restriction_list,
-            correction_function_list
-        )
-
-        ##########
-        ## iterate in fine scale
-        # trilinos_solver: solverTril = kwargs.get('trilinos_solver')
-        # solution = trilinos_solver.solve_linear_problem(T, D, x=solution, tolerance=1e-12)
-        scipy_solver: SolverSp = kwargs.get('scipy_solver')
-        tolerance = kwargs.get('tolerance')
-        # solution = scipy_solver.gmres_solver(T, D, x0=solution, tol=tolerance)
-        solution = scipy_solver.conjugate_gradient_solver(T, D, x0=solution, tol=tolerance)
-        ###############
-
-        # #####################
-        # ## Tams solver
-        # solution = TamsSolverFV.richardson_solver(
+        # solution, n_active_volumes = multilevel_pressure_solver(
         #     T,
         #     D,
-        #     fprop.P,
-        #     restriction_list[0],
-        #     prolongation_list[0],
-        #     res_tol=1e-20,
-        #     x_tol=1e-14,
-        #     max_it=100
+        #     prolongation_list,
+        #     restriction_list,
+        #     correction_function_list
         # )
-        # n_active_volumes = prolongation_list[0].shape[1]
-        # ##################################
+
+        # ##########
+        # ## iterate in fine scale
+        # # trilinos_solver: solverTril = kwargs.get('trilinos_solver')
+        # # solution = trilinos_solver.solve_linear_problem(T, D, x=solution, tolerance=1e-12)
+        # scipy_solver: SolverSp = kwargs.get('scipy_solver')
+        # tolerance = kwargs.get('tolerance')
+        # # solution = scipy_solver.gmres_solver(T, D, x0=solution, tol=tolerance)
+        # solution = scipy_solver.conjugate_gradient_solver(T, D, x0=solution, tol=tolerance)
+        # ###############
+
+        #####################
+        ## Tams solver
+        solution = TamsSolverFV.richardson_solver(
+            T,
+            D,
+            fprop.P,
+            restriction_list[0],
+            prolongation_list[0],
+            res_tol=1e-20,
+            x_tol=1e-14,
+            max_it=100
+        )
+        n_active_volumes = prolongation_list[0].shape[1]
+        ##################################
 
         ###########
 
