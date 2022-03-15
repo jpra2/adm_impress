@@ -280,3 +280,29 @@ class PengRobinson:
         dVldNk = coef * (Nl * dZldNk + Zl * dnldNk)
         dVvdNk = coef * (Nv * dZvdNk + Zv * dnvdNk)
         return dVldP, dVvdP, dVldNk, dVvdNk
+
+    ''' Igor's additions '''
+
+    def dA_dxij(self, fprop):
+        x = fprop.xkj[0:ctes.Nc,0,:]
+        y = fprop.xkj[0:ctes.Nc,1,:]
+        P = fprop.P
+        T = fprop.T
+
+        soma_xkjaki = (x[np.newaxis,:,:] * self.aalpha_ik[:,:,np.newaxis]).sum(axis=0)
+        dA_dxij = (2 * P / ((ctes.R * T)**2)) * soma_xkjaki
+        soma_ykjaki = (y[np.newaxis,:,:] * self.aalpha_ik[:,:,np.newaxis]).sum(axis=0)
+        dA_dyij = (2 * P / ((ctes.R * T)**2)) * soma_ykjaki
+        return dA_dxij, dA_dyij
+
+    def dB_dxij(self):
+
+        dB_dxij = (P / (ctes.R * T)) * self.b
+        dB_dyij = (P / (ctes.R * T)) * self.b
+        return dB_dxij, dB_dyij
+
+    def dZ_dxij(self, fprop):
+        dA_dxij, dA_dyij = self.dA_dxij(fprop)
+        dB_dxij, dB_dyij = self.dB_dxij(fprop)
+        # Eq B.31
+        pass
