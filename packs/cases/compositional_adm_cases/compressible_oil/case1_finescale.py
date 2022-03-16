@@ -13,7 +13,8 @@ from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 # description = 'case17_finescale_6k_5000_'
 # description = 'case25_finescale_80x80'
 # description = 'case32_finescale_80x80_BL_direct_solver'
-description = 'case37_finescale_80x80_Firoozabadi_direct_solver'
+# description = 'case37_finescale_80x80_Firoozabadi_direct_solver'
+description = 'case40_adm_80x80_Firoozabadi_tams_solver'
 compositional_data = CompositionalData(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
 cumulative_compositional_datamanager.create()
@@ -56,11 +57,11 @@ M, data_impress, wells, fprop, load = sim.initialize(load, convert, mesh)
 
 while run_criteria < stop_criteria:# and loop < loop_max:
     # import pdb; pdb.set_trace()
-    
+
     t0 = time.time()
     sim.run(M, wells, fprop, load)
     simulation_time = time.time() - t0
-    
+
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'
         run_criteria = sim.vpi
@@ -84,10 +85,10 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             sim.delta_t = t_next - sim.t
     loop = sim.loop
     print(sim.t)
-    
+
     loop_array['total_simulation_time'][0] += simulation_time
     loop_array['n_total_loops'][0] += 1
-    
+
     loop_array['loop'][0] = loop
     loop_array['t'][0] = sim.t
     loop_array['vpi'][0] = sim.vpi
@@ -109,16 +110,16 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         'loop_array': loop_array
     })
     cumulative_compositional_datamanager.insert_data(compositional_data._data)
-    
+
     if loop % 100 == 0:
         # import pdb; pdb.set_trace()
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         # import pdb; pdb.set_trace()
-    
+
     # import pdb; pdb.set_trace()
-        
-    
+
+
 # loop_array['loop'][0] = loop
 # loop_array['t'][0] = sim.t
 # loop_array['vpi'][0] = sim.vpi
