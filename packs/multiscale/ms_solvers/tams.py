@@ -29,6 +29,8 @@ class TamsSolverFV:
         Returns:
             x (np.ndarray): answer
         """
+        wells_producer = kwargs.get('wells_producer')
+        # ids = np.setdiff1d(np.arange(len(x0)), wells_producer)
         
         it_counter = 0
         eps = 1e100
@@ -54,9 +56,10 @@ class TamsSolverFV:
             res_f[:] = OP*res_c
             x += res_f
             res_f[:], exitcode = cg(A, b-A*x, maxiter=5, x0=res_f ,tol=res_tol)
+            # res_f[:], exitcode = cg(A, b-A*x, x0=res_f ,tol=res_tol)
             x += res_f
             # eps = np.absolute((x - x0_in)/x).max()
-            eps = np.absolute(res_f).max()/np.absolute(x).max()
+            eps = np.absolute(res_f[~wells_producer]).max()/np.absolute(x).max()
             print(f'eps: {eps}')
             x0_in[:] = x.copy()
             it_counter += 1
@@ -67,4 +70,4 @@ class TamsSolverFV:
         res_f[:] = OP*res_c
         x += res_f
         
-        return x
+        return x, eps, it_counter

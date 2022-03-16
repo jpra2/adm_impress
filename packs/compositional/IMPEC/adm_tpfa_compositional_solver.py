@@ -21,6 +21,7 @@ from packs.solvers.solvers_scipy.solver_sp import SolverSp
 import time
 from packs.multiscale.ms_solvers import TamsSolverFV
 
+
 def update_local_parameters(dt, fprop, **kwargs):
     params = kwargs.get('params')
     kwargs.update({
@@ -191,21 +192,29 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         #####################
         ## Tams solver
-        solution = TamsSolverFV.richardson_solver(
+        wells_producer = kwargs.get('wells_producer')
+        solution, eps, iterations = TamsSolverFV.richardson_solver(
             T,
             D,
             fprop.P,
             restriction_list[0],
             prolongation_list[0],
-            res_tol=1e-20,
-            x_tol=1e-14,
-            max_it=100
+            res_tol=1e-5,
+            x_tol=1e-5,
+            max_it = 100,
+            wells_producer = wells_producer
         )
         n_active_volumes = prolongation_list[0].shape[1]
         ##################################
+        from scipy.sparse.linalg import spsolve
+        solution2 = spsolve(T, D)
+        print('WELLS PRESSURE')
+        print(solution[wells_producer])
+        print(solution2[wells_producer])
+        print()
+        # import pdb; pdb.set_trace()
 
         ###########
-
         # T_noCC /= k
         # T /= k
         # T_advec /= k
@@ -215,6 +224,19 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             'active_volumes': n_active_volumes
         })
         Pnew = solution
+        # import pdb; pdb.set_trace()
+        
+        # if iterations == 100:
+        loop = kwargs.get('loop')
+        data_impress['pressure'][:] = solution
+        data_impress['So'][:] = fprop.So
+        data_impress['Sg'][:] = fprop.Sg
+        data_impress.update_variables_to_mesh()
+        m = M.core.mb.create_meshset()
+        M.core.mb.add_entities(m, M.core.all_volumes)
+        M.core.mb.write_file('results/test_primals_' + str(loop) + '.vtk', [m])
+        # import pdb; pdb.set_trace()
+            
 
         # P = self.update_pressure(T, D) # OP*padm
         # self.P = self.update_pressure(T, D) # OP*padm
@@ -253,7 +275,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         ############################################
         ## calculo do fluxo
         Ft_internal_faces_adm = self.update_total_flux_internal_faces(M, fprop, solution) # pressao local
-        '''
+        
         Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
 
@@ -333,9 +355,9 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # data_impress['flux_volumes'][:] = global_flux[0]
         other_faces = np.setdiff1d(elements_lv0['internal_faces'], all_coarse_intersect_faces)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][other_faces]] = ft_internal_faces_local_solution[:, elements_lv0['remaped_internal_faces'][other_faces]]
-        '''
+        
 
-        Ft_internal_faces = Ft_internal_faces_adm
+        # Ft_internal_faces = Ft_internal_faces_adm
         #########################################################
 
         # data_impress.update_variables_to_mesh()
@@ -465,12 +487,26 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # Pnew = self.update_pressure(T, D)
         scipy_solver: SolverSp = kwargs.get('scipy_solver')
         # import pdb; pdb.set_trace()
-        solution = scipy_solver.gmres_solver(T, D, x0=params['pressure'], tol=tolerance)
+        # solution = scipy_solver.gmres_solver(T, D, x0=params['pressure'], tol=tolerance)
+        solution = scipy_solver.direct_solver(T, D)
         Pnew = solution
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop, Pnew)
         self.update_flux_wells(fprop, Pnew, wells, delta_t)
+        
+        # if iterations == 100:
+        loop = kwargs.get('loop')
+        data_impress= kwargs.get('data_impress')
+        data_impress['pressure'][:] = solution
+        data_impress['So'][:] = fprop.So
+        data_impress['Sg'][:] = fprop.Sg
+        data_impress.update_variables_to_mesh()
+        m = M.core.mb.create_meshset()
+        M.core.mb.add_entities(m, M.core.all_volumes)
+        M.core.mb.write_file('results/test_primals_' + str(loop) + '.vtk', [m])
+        # import pdb; pdb.set_trace()
+        
         return Pnew, Ft_internal_faces, self.q
 
     def get_pressure(self, M, wells, fprop, Pold, delta_t, **kwargs):
-        return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)
-        # return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, **kwargs)
+        # return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)
+        return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, **kwargs)

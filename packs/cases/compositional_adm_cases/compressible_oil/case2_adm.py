@@ -172,6 +172,9 @@ local_problem_params = {
     'tolerance': 1e-18,
     'iterative_solver_finescale': 'cg', # ['cg', 'gmres']
     'global_solver': 'nu-adm_finescale-it', # ['nu-adm', 'tams_nu-adm', 'finescale', 'nu-adm_finescale-it']
+    'well_volumes': np.concatenate([wells['ws_p'], wells['values_p']]),
+    'wells_producer': wells['ws_p'],
+    'loop': 0
 }
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
@@ -348,12 +351,16 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         manage_operators.export()
+        import pdb; pdb.set_trace()
 
 
     global_vector_update[:] = False
     total_volumes_updated[:] = False
     data_impress['LEVEL'][:] = 1
     t_simulation = sim.t/86400
+    local_problem_params.update({
+        'loop': loop
+    })
 
     if loop % 2500 == 0:
         print('sleeping...')
