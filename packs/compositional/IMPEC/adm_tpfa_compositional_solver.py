@@ -172,40 +172,40 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             restriction_list.append(adm_method['adm_restriction_level_' + str(level)])
             correction_function_list.append(np.zeros(adm_method['adm_prolongation_level_' + str(level)].shape[0]))
 
-        # solution, n_active_volumes = multilevel_pressure_solver(
-        #     T,
-        #     D,
-        #     prolongation_list,
-        #     restriction_list,
-        #     correction_function_list
-        # )
-
-        # ##########
-        # ## iterate in fine scale
-        # # trilinos_solver: solverTril = kwargs.get('trilinos_solver')
-        # # solution = trilinos_solver.solve_linear_problem(T, D, x=solution, tolerance=1e-12)
-        # scipy_solver: SolverSp = kwargs.get('scipy_solver')
-        # tolerance = kwargs.get('tolerance')
-        # # solution = scipy_solver.gmres_solver(T, D, x0=solution, tol=tolerance)
-        # solution = scipy_solver.conjugate_gradient_solver(T, D, x0=solution, tol=tolerance)
-        # ###############
-
-        #####################
-        ## Tams solver
-        wells_producer = kwargs.get('wells_producer')
-        solution, eps, iterations = TamsSolverFV.richardson_solver(
+        solution, n_active_volumes = multilevel_pressure_solver(
             T,
             D,
-            fprop.P,
-            restriction_list[0],
-            prolongation_list[0],
-            res_tol=1e-10,
-            x_tol=1e-10,
-            max_it = 100
-            # wells_producer = wells_producer
+            prolongation_list,
+            restriction_list,
+            correction_function_list
         )
-        n_active_volumes = prolongation_list[0].shape[1]
-        ##################################
+
+        ##########
+        ## iterate in fine scale
+        # trilinos_solver: solverTril = kwargs.get('trilinos_solver')
+        # solution = trilinos_solver.solve_linear_problem(T, D, x=solution, tolerance=1e-12)
+        scipy_solver: SolverSp = kwargs.get('scipy_solver')
+        tolerance = kwargs.get('tolerance')
+        # solution = scipy_solver.gmres_solver(T, D, x0=solution, tol=tolerance)
+        solution = scipy_solver.conjugate_gradient_solver(T, D, x0=solution, tol=tolerance)
+        ###############
+
+        # #####################
+        # ## Tams solver
+        # wells_producer = kwargs.get('wells_producer')
+        # solution, eps, iterations = TamsSolverFV.richardson_solver(
+        #     T,
+        #     D,
+        #     fprop.P,
+        #     restriction_list[0],
+        #     prolongation_list[0],
+        #     res_tol=1e-10,
+        #     x_tol=1e-10,
+        #     max_it = 1000
+        #     # wells_producer = wells_producer
+        # )
+        # n_active_volumes = prolongation_list[0].shape[1]
+        # ##################################
         # from scipy.sparse.linalg import spsolve
         # solution2 = spsolve(T, D)
         # print('WELLS PRESSURE')
@@ -275,7 +275,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         ############################################
         ## calculo do fluxo
         Ft_internal_faces_adm = self.update_total_flux_internal_faces(M, fprop, solution) # pressao local
-
+        '''
         Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
 
@@ -355,9 +355,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         # data_impress['flux_volumes'][:] = global_flux[0]
         other_faces = np.setdiff1d(elements_lv0['internal_faces'], all_coarse_intersect_faces)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][other_faces]] = ft_internal_faces_local_solution[:, elements_lv0['remaped_internal_faces'][other_faces]]
+        '''
 
 
-        # Ft_internal_faces = Ft_internal_faces_adm
+        Ft_internal_faces = Ft_internal_faces_adm
         #########################################################
 
         # data_impress.update_variables_to_mesh()

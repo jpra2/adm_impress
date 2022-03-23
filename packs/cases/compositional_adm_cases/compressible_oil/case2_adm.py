@@ -351,7 +351,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         manage_operators.export()
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
 
     global_vector_update[:] = False

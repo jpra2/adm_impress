@@ -59,8 +59,8 @@ class TamsSolverFV:
             res_c[:] = spsolve(Ac_it, R*(b-A*x))
             res_f[:] = OP*res_c
             x += res_f
-            res_f[:], exitcode = cg(A, b-A*x, maxiter=5, x0=res_f ,tol=res_tol)
-            # res_f[:], exitcode = cg(A, b-A*x, x0=res_f ,tol=res_tol)
+            # res_f[:], exitcode = cg(A, b-A*x, maxiter=5, x0=res_f ,tol=res_tol)
+            res_f[:], exitcode = cg(A, b-A*x, x0=res_f ,tol=res_tol)
             x += res_f
             # eps = np.absolute((x - x0_in)/x).max()
             # eps = np.absolute(res_f[~wells_producer]).max()/np.absolute(x).max()
