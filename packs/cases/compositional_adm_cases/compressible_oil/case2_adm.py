@@ -311,6 +311,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     print(sim.t)
     loop_array['total_simulation_time'][0] += simulation_time
     loop_array['n_total_loops'][0] += 1
+    import pdb; pdb.set_trace()
 
     if (loop) % n_loops_for_acumulate == 0:
 
