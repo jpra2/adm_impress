@@ -65,7 +65,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case36_adm_80x80_Firoo_tams_solver_new_prolong'
 # description = 'case37_adm_80x80_Firoo_tams_solver_new_prolong_coarsewells_level0'
 # description = 'case38_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0'
-description = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
+# description = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
+description = 'case41_adm_biph_v'
 compositional_data = CompositionalData(description=description)
 manage_operators = SparseOperators(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
@@ -311,7 +312,6 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     print(sim.t)
     loop_array['total_simulation_time'][0] += simulation_time
     loop_array['n_total_loops'][0] += 1
-    import pdb; pdb.set_trace()
 
     if (loop) % n_loops_for_acumulate == 0:
 

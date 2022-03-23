@@ -1,3 +1,4 @@
+import pdb
 from networkx.convert_matrix import _generate_weighted_edges
 import numpy as np
 from packs.utils import utils_old
@@ -20,10 +21,16 @@ def create_dual_and_primal(centroids_volumes: np.ndarray, volumes_dimension: np.
     # centroids_volumes2 = centroids_volumes
     # ###########
     
-    dimension = get_dimension_of_problem(centroids_volumes2)
+    dimension_for_dual, axis_dim = get_dimension_of_problem(centroids_volumes2)
+    dimension = 3
     L = get_l_total(centroids_nodes)
     primal_coarse_ids, all_separated = create_primal(centroids_volumes2, volumes_dimension, cr, dimension)
-    dual_ids = create_dual(centroids_volumes2, cr, dimension, L, volumes_dimension, adjacencies_internal_faces, all_separated)
+    
+    context = {
+        'axis_dim': axis_dim
+    }
+    
+    dual_ids = create_dual(centroids_volumes2, cr, dimension, L, volumes_dimension, adjacencies_internal_faces, all_separated, **context)
     # M.data['DUAL_1'][:] = dual_ids
     # M.data['GID_1'][:] = primal_coarse_ids
     # M.data.update_variables_to_mesh()
@@ -62,6 +69,7 @@ def get_min_and_max(vector: np.ndarray):
     
 def get_dimension_of_problem(centroids_volumes: np.ndarray):
     dimension = 0
+    axis_dim = np.array([0, 0, 0])
     
     unique_cents = ([
         np.unique(centroids_volumes[:, 0]),
@@ -69,11 +77,12 @@ def get_dimension_of_problem(centroids_volumes: np.ndarray):
         np.unique(centroids_volumes[:, 2])
     ])
     
-    for cent in unique_cents:
+    for i, cent in enumerate(unique_cents):
         if len(cent) > 1:
             dimension += 1
+            axis_dim[i] = 1
     
-    return dimension
+    return dimension, axis_dim
 
 def get_all_separated(dimension: int, centroids_volumes: np.ndarray, cr: np.ndarray):
     
@@ -138,9 +147,9 @@ def get_coarse_volumes(all_separated_limits: np.ndarray, centroids_volumes: np.n
     
     return coarse_ids
 
-def create_dual(centroids_volumes: np.ndarray, cr: np.ndarray, dimension: int, l_total: np.ndarray, volumes_dimension: np.ndarray, adjacencies_internal_faces: np.ndarray, all_separated: np.ndarray):
+def create_dual(centroids_volumes: np.ndarray, cr: np.ndarray, dimension: int, l_total: np.ndarray, volumes_dimension: np.ndarray, adjacencies_internal_faces: np.ndarray, all_separated: np.ndarray, **kwargs):
     
-    vertices_ids = define_vertices(centroids_volumes, cr, l_total, volumes_dimension, all_separated)
+    vertices_ids = define_vertices(centroids_volumes, cr, l_total, volumes_dimension, all_separated, **kwargs)
     # identify_vertices_id = np.repeat(0, len(vertices_ids))
     # identify_vertices(vertices_ids, centroids_volumes, identify_vertices_id)
     
@@ -157,22 +166,32 @@ def create_dual(centroids_volumes: np.ndarray, cr: np.ndarray, dimension: int, l
     # import pdb; pdb.set_trace()
     return dual_ids
 
-def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.ndarray, volumes_dimension, all_separated):
+def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.ndarray, volumes_dimension, all_separated, **kwargs):
     # gids = np.arange(len(centroids_volumes))
+    
     centroids_min = centroids_volumes.min(axis=0)
     centroids_max = centroids_volumes.max(axis=0)
     vertices_by_direction = []
     for dim in range(3):
-        vi = define_vertices_by_direction(centroids_min[dim], centroids_max[dim], cr[dim], l_total[dim], centroids_volumes[:, dim], volumes_dimension, all_separated[dim])
+        vi = define_vertices_by_direction(centroids_min[dim], centroids_max[dim], cr[dim], l_total[dim], centroids_volumes[:, dim], volumes_dimension, all_separated[dim], dim=dim)
         vertices_by_direction.append(vi)
     
     vertices_by_direction = np.array(vertices_by_direction, dtype='O')
     vv = vertices_by_direction
-    all_vertices = np.array(np.meshgrid(vv[0], vv[1], vv[2]))
-    all_vertices = all_vertices.reshape((all_vertices.shape[0], all_vertices.shape[1], all_vertices.shape[2])).T
-    all_vertices = all_vertices.reshape((all_vertices.shape[0]*all_vertices.shape[1], all_vertices.shape[2]))
-    indexes = []
-    
+    x, y, z = np.array(np.meshgrid(vv[0], vv[1], vv[2]))
+    all_vertices = np.array([
+        x.flatten(),
+        y.flatten(),
+        z.flatten()
+    ]).T
+    del x, y, z
+    # test = all_vertices.copy()
+    # try:
+    #     all_vertices = all_vertices.reshape((all_vertices.shape[0], all_vertices.shape[1], all_vertices.shape[2])).T
+    # except ValueError:
+    #     import pdb; pdb.set_trace()
+    # all_vertices = all_vertices.reshape((all_vertices.shape[0]*all_vertices.shape[1], all_vertices.shape[2]))    
+    indexes = []    
     for vertice in all_vertices:
         dist = np.linalg.norm(centroids_volumes - vertice, axis=1)
         index = np.argwhere(dist <= dist.min())[0][0]
@@ -180,9 +199,12 @@ def define_vertices(centroids_volumes: np.ndarray, cr: np.ndarray, l_total: np.n
     
     return np.array(indexes)
     
-def define_vertices_by_direction(vmin: float, vmax: float, cr_direction: int, l_dimension: float, centroids_volumes_dimension: np.ndarray, volumes_dimension, all_separated_dimension: np.ndarray):
+def define_vertices_by_direction(vmin: float, vmax: float, cr_direction: int, l_dimension: float, centroids_volumes_dimension: np.ndarray, volumes_dimension, all_separated_dimension: np.ndarray, **kwargs):
     # import pdb; pdb.set_trace()
     # min_dimensions_by_axis = volumes_dimension.min(axis=0)
+    # dim = kwargs.get('dim')
+    # if dim == 2:
+    #     import pdb; pdb.set_trace()
     if vmin == vmax:
         return np.array([vmin])
     else:

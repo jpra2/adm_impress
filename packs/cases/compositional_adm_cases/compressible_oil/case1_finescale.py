@@ -14,7 +14,7 @@ from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 # description = 'case25_finescale_80x80'
 # description = 'case32_finescale_80x80_BL_direct_solver'
 # description = 'case37_finescale_80x80_Firoozabadi_direct_solver'
-description = 'case40_adm_80x80_Firoozabadi_tams_solver'
+description = 'case40_finescale_biph_v'
 compositional_data = CompositionalData(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
 cumulative_compositional_datamanager.create()
