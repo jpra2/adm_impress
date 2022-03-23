@@ -11,8 +11,8 @@ from packs.multiscale.operators.prolongation.AMS.paralell2.local_operator import
 
 class MasterLocalOperator(CommonMasterMethods):
 
-    def __init__(self, problems_list, n_volumes, **kwargs):
-        self.update_FC = kwargs.get('update_FC')
+    def __init__(self, problems_list, n_volumes, update_FC=False, **kwargs):
+        self.update_FC = update_FC
         problems_list: Sequence[DualSubdomain]
         self.n_cpu = self.get_n_cpu()
         # self.n_cpu = n_cpu - 1
