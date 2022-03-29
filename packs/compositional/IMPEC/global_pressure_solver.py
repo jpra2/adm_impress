@@ -1,3 +1,4 @@
+from ast import Global
 import scipy.sparse as sp
 import numpy as np
 
@@ -85,9 +86,25 @@ class GlobalIMPECPressureSolver:
         @return: independent terms
         """
         # import pdb; pdb.set_trace()
+        t0_internal_faces_prod = xkj_internal_faces * Csi_j_internal_faces * mobilities_internal_faces
         pressure_term = GlobalIMPECPressureSolver.pressure_independent_term(Vbulk, porosity, Cf, dVtdP, P)
-        gravity_term = GlobalIMPECPressureSolver.gravity_independent_term(xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces, rho_j_internal_faces, pretransmissibility_internal_faces, n_volumes, n_components, internal_faces_adjacencies, dVtdk, z_centroids, g)
-        capillary_term = GlobalIMPECPressureSolver.capillary_independent_term(xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces, pretransmissibility_internal_faces, n_components, n_phases, n_volumes, dVtdk, Pcap, internal_faces_adjacencies)
+        # gravity_term = GlobalIMPECPressureSolver.gravity_independent_term(xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces, rho_j_internal_faces, pretransmissibility_internal_faces, n_volumes, n_components, internal_faces_adjacencies, dVtdk, z_centroids, g)
+        # capillary_term = GlobalIMPECPressureSolver.capillary_independent_term(xkj_internal_faces, Csi_j_internal_faces, mobilities_internal_faces, pretransmissibility_internal_faces, n_components, n_phases, n_volumes, dVtdk, Pcap, internal_faces_adjacencies)
+        
+        capillary_term, gravity_term = GlobalIMPECPressureSolver.capillary_and_gravity_independent_term(
+            t0_internal_faces_prod,
+            pretransmissibility_internal_faces,
+            g,
+            rho_j_internal_faces,
+            n_volumes,
+            z_centroids,
+            n_components,
+            internal_faces_adjacencies,
+            dVtdk,
+            n_phases,
+            Pcap
+        )
+        
         volume_term = GlobalIMPECPressureSolver.volume_discrepancy_independent_term(Vp, Vt)
         well_term = GlobalIMPECPressureSolver.well_term(well_volumes_flux_prescription, values_flux_prescription, n_components, n_volumes, dVtdk)
         independent_terms = pressure_term - volume_term + delta_t * well_term - delta_t * (capillary_term + gravity_term)
@@ -176,6 +193,59 @@ class GlobalIMPECPressureSolver:
 
         return cap
 
+    @staticmethod
+    def capillary_and_gravity_independent_term(t0_internal_faces_prod, pretransmissibility_internal_faces, g, rho_j_internal_faces, n_volumes, z_centroids, n_components, internal_faces_adjacencies, dVtdk, n_phases, Pcap):
+        """Get capillary and gravity terms
+
+        Args:
+            t0_internal_faces_prod (_type_): _description_
+            pretransmissibility_internal_faces (_type_): _description_
+            g (_type_): _description_
+            rho_j_internal_faces (_type_): _description_
+            n_volumes (_type_): _description_
+            z_centroids (_type_): _description_
+            n_components (_type_): _description_
+            internal_faces_adjacencies (_type_): _description_
+            dVtdk (_type_): _description_
+            n_phases (_type_): _description_
+            Pcap (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+    
+        
+        z = z_centroids
+        v0 = internal_faces_adjacencies
+        dVtk = dVtdk
+        
+        t0_j = t0_internal_faces_prod * pretransmissibility_internal_faces
+        t0_k = g * np.sum(rho_j_internal_faces * t0_j, axis=1)
+        
+        cap = np.zeros([n_volumes])
+        grav = np.zeros([n_volumes, n_volumes])
+        
+        if any((z - z[0]) != 0):
+            for i in range(n_components):
+                lines = np.array([v0[:, 0], v0[:, 1], v0[:, 0], v0[:, 1]]).flatten()
+                cols = np.array([v0[:, 1], v0[:, 0], v0[:, 0], v0[:, 1]]).flatten()
+                data = np.array([t0_k[i,:], t0_k[i,:], -t0_k[i,:], -t0_k[i,:]]).flatten()
+                t0_rho = sp.csc_matrix((data, (lines, cols)), shape = (n_volumes, n_volumes)).toarray()
+                grav += t0_rho * dVtk[i,:]
+
+                for j in range(n_phases):
+                    lines = np.array([v0[:, 0], v0[:, 1], v0[:, 0], v0[:, 1]]).flatten()
+                    cols = np.array([v0[:, 1], v0[:, 0], v0[:, 0], v0[:, 1]]).flatten()
+                    data = np.array([t0_j[i,j,:], t0_j[i,j,:], -t0_j[i,j,:], -t0_j[i,j,:]]).flatten()
+                    t0 = sp.csc_matrix((data, (lines, cols)), shape = (n_volumes, n_volumes))*dVtk[i,:]
+                    cap += t0 @ Pcap[j,:]
+
+        gravity_term = grav @ z
+        #import pdb; pdb.set_trace()
+        # capillary_term = np.sum(self.dVtk * np.sum (fprop.xkj *
+        #         fprop.Csi_j * fprop.mobilities * fprop.Pcap, axis = 1), axis = 0)
+        return cap, gravity_term
+        
     @staticmethod
     def volume_discrepancy_independent_term(Vp, Vt):
         """
