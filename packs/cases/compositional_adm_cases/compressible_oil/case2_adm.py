@@ -67,7 +67,7 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case38_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0'
 # description = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
 # description = 'case41_adm_biph_v'
-description = 'case42_adm_biph_v_with-FC'
+description = 'case45_test'
 
 
 compositional_data = CompositionalData(description=description)
@@ -175,7 +175,7 @@ local_problem_params = {
     'scipy_solver': SolverSp(),
     'tolerance': 1e-18,
     'iterative_solver_finescale': 'cg', # ['cg', 'gmres']
-    'global_solver': 'nu-adm_finescale-it', # ['nu-adm', 'tams_nu-adm', 'finescale', 'nu-adm_finescale-it']
+    'adm_solver': 'tams', # ['tams', 'iterative-finescale']
     'well_volumes': np.concatenate([wells['ws_p'], wells['values_p']]),
     'wells_producer': wells['ws_p'],
     'loop': 0

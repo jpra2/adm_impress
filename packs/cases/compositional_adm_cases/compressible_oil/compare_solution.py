@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from packs.cases.compositional_adm_cases.compressible_oil.all_functions import organize_cases_by_loop, extrair_dado, erro_abs, get_data_from_loop_array, create_loop_array_structured
 
-key_list = ['loop_array', 'pressure']
+# key_list = ['loop_array', 'pressure']
+key_list = ['loop_array']
 
 # description = 'case1_finescale_'
 # description1 = 'case3_finescale_3k'
@@ -33,13 +34,13 @@ fig_str = 'figura_'
 # description2 = 'case36_adm_80x80_Firoo_tams_solver_new_prolong'
 # description2 = 'case37_adm_80x80_Firoo_tams_solver_new_prolong_coarsewells_level0'
 # description2 = 'case38_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0'
-description2 = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
+# description2 = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
+description2 = 'case45_test'
 # description2 = 'case22_adm_6k_5000_'
 # description2 = 'case23_finescale_6k_5000_'
 case2 = CumulativeCompositionalDataManager(description=description2)
 # datas_case2 = case2.load_all_datas()
 datas_case2 = case2.load_all_datas_from_keys(key_list)
-
 
 n_cases = min(len(datas_case1), len(datas_case2))
 
