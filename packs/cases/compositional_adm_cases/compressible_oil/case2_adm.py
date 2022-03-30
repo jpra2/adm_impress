@@ -67,7 +67,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case38_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0'
 # description = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
 # description = 'case41_adm_biph_v'
-description = 'case45_test'
+# description = 'case45_test'
+description = 'case46_test-limit_maxiter_tams-10'
 
 
 compositional_data = CompositionalData(description=description)
@@ -187,6 +188,7 @@ params.update({
     'adm_method': adm,
     'neumann_subds': neumann_subds,
     'data_impress': data_impress,
+    'tams_itcounter': 0,
 })
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
@@ -235,7 +237,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         'porous_volume': fprop.Vp,
         'total_volume': fprop.Vt
     })
-    
+
     # global_vector_update[:] = True # update the prolongation operator in all dual volumes
     for phase in range(ctes.n_phases):
         functions_update.update_global_vector_for_latest_variable(
