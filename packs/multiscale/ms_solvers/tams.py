@@ -63,6 +63,6 @@ class TamsSolverFV:
         res_f[:] = OP*res_c
         x += res_f
         
-        x=spsolve(A,b)
+        # x=spsolve(A,b)
 
         return x, eps, it_counter

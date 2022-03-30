@@ -22,11 +22,9 @@ import time
 from packs.multiscale.ms_solvers import TamsSolverFV
 
 
-def update_local_parameters(dt, fprop, **kwargs):
-    params = kwargs.get('params')
-    kwargs.update({
-        'dVtdP': params['dVtdP'],
-        'dVtdk': params['dVtdNk'],
+def update_local_parameters(dt, fprop, params):
+    
+    params.update({
         'P': fprop.P,
         'xkj_internal_faces': fprop.xkj_internal_faces,
         'Csi_j_internal_faces': fprop.Csi_j_internal_faces,
@@ -38,7 +36,6 @@ def update_local_parameters(dt, fprop, **kwargs):
         'rho_j': fprop.rho_j,
         'rho_j_internal_faces': fprop.rho_j_internal_faces
     })
-    return kwargs
 
 
 
@@ -377,8 +374,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         return Pnew, Ft_internal_faces, self.q
 
-    def update_transmissibility_adm(self, M, wells, fprop, delta_t, **kwargs):
-        params = kwargs.get('params')
+    def update_transmissibility_adm(self, M, wells, fprop, delta_t, params, **kwargs):
+        
         self.t0_internal_faces_prod = fprop.xkj_internal_faces * \
                                       fprop.Csi_j_internal_faces * \
                                       fprop.mobilities_internal_faces
@@ -423,11 +420,13 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         # diagT = T.diagonal().flatten()
         # diagT += ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP
-        # T.setdiag(diagT)
+        # T.setdiag(diaparams['diagonal_term'] = diagonal_termgT)
 
         # T.setdiag(T.diagonal().flatten() + (ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP))
         diagonal_term = ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP
-        params['diagonal_term'] = diagonal_term
+        params.update({
+            'diagonal_term': diagonal_term
+        })
         T.setdiag(T.diagonal().flatten() + diagonal_term)
 
         # self.T_noCC = np.copy(T) #Transmissibility without contour conditions
@@ -509,36 +508,37 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         return Pnew, Ft_internal_faces, self.q
 
-    def get_pressure(self, M, wells, fprop, Pold, delta_t, **kwargs):
-        return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, **kwargs)
-        # return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, **kwargs)
+    def get_pressure(self, M, wells, fprop, Pold, delta_t, params, **kwargs):
+        return self.get_pressure_adm(M, wells, fprop, Pold, delta_t, params, **kwargs)
+        # return self.get_pressure_finescale(M, wells, fprop, Pold, delta_t, params, **kwargs)
     
-    def get_pressure_adm(self, M, wells, fprop, Pold, delta_t, **kwargs):
+    def get_pressure_adm(self, M, wells, fprop, Pold, delta_t, params, **kwargs):
         adm_solver = kwargs.get('adm_solver')
         if adm_solver == 'tams':
-            return self.get_pressure_adm_tams(M, wells, fprop, Pold, delta_t, **kwargs)
+            return self.get_pressure_adm_tams(M, wells, fprop, Pold, delta_t, params, **kwargs)
         elif adm_solver == 'iterative-finescale':
             return self.get_pressure_adm_ms_direct(M, wells, fprop, Pold, delta_t, **kwargs)
         else:
             raise ValueError('adm_solver error')
             
-    def get_pressure_adm_tams(self, M, wells, fprop, Pold, delta_t, **kwargs):
-        adm_method: AdmNonNested = kwargs.get('adm_method')
-        params = kwargs.get('params')
-        neumann_subds = kwargs.get('neumann_subds')
-        data_impress= kwargs.get('data_impress')
+    def get_pressure_adm_tams(self, M, wells, fprop, Pold, delta_t, params, **kwargs):
+        adm_method: AdmNonNested = params.get('adm_method')
+        neumann_subds = params.get('neumann_subds')
+        data_impress= params.get('data_impress')
         elements_lv0 = kwargs.get('elements_lv0')
-        ml_data = kwargs.get('multilevel_data')
+        ml_data = params.get('multilevel_data')
         all_coarse_intersect_faces = np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1']))
-        mlo: MultilevelOperators = kwargs.get('multilevel_operators')
-        dual_subdomains: Sequence[DualSubdomain] = kwargs.get('dual_subdomains')
-        global_vector_update = kwargs.get('global_vector_update')
-        OP_AMS = kwargs.get('OP_AMS')
+        mlo: MultilevelOperators = params.get('multilevel_operators')
+        dual_subdomains: Sequence[DualSubdomain] = params.get('dual_subdomains')
+        global_vector_update = params.get('global_vector_update')
+        OP_AMS = params.get('OP_AMS')
+        master_local_operator = params.get('master_local_operator') ## prolongation operator functions
+        master_neumann: MasterLocalSolver = params.get('master_neumann') ## neumann problem functions
         
-        T, T_noCC, T_advec = self.update_transmissibility_adm(M, wells, fprop, delta_t, **kwargs)
+        T, T_noCC, T_advec = self.update_transmissibility_adm(M, wells, fprop, delta_t, params, **kwargs)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
         
-        master_local_operator = kwargs.get('master_local_operator')
+        
         OP_AMS, cfs  = mlo.run_paralel_2(
             T_advec,
             D,
@@ -604,7 +604,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
 
-        kwargs = update_local_parameters(delta_t, fprop, **kwargs)
+        ## updating params variables for neumann problems
+        update_local_parameters(delta_t, fprop, params)
 
         update_local_problem(
             neumann_subds.neumann_subds,
@@ -616,30 +617,30 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             elements_lv0['volumes'],
             elements_lv0['neig_internal_faces'],
             all_coarse_intersect_faces,
+            params,
             **kwargs
         )
 
-        master_neumann: MasterLocalSolver = kwargs.get('master_neumann')
+        
         # local_solution = master_neumann.run()
         local_solution = master_neumann.run_serial()
-        err = np.absolute(local_solution - solution)
-        print(f'erro maximo na pressao {err.max()}')
-        print(f'norma do erro {np.linalg.norm(err)}')
-        print()
+        # err = np.absolute(local_solution - solution)
+        # print(f'erro maximo na pressao {err.max()}')
+        # print(f'norma do erro {np.linalg.norm(err)}')
+        # print()
 
         ft_internal_faces_local_solution = self.update_total_flux_internal_faces(M, fprop, local_solution)
         other_faces = np.setdiff1d(elements_lv0['internal_faces'], all_coarse_intersect_faces)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][other_faces]] = ft_internal_faces_local_solution[:, elements_lv0['remaped_internal_faces'][other_faces]]
         #########################################################
         
-        err_vel = np.absolute(Ft_internal_faces - Ft_internal_faces_adm)
-        print(f'erro maximo na velocidade {err_vel.max()}')
-        print(f'norma do erro na velocidade {np.linalg.norm(err_vel)}')
-        print()
-        
-        import pdb; pdb.set_trace()        
+        # err_vel = np.absolute(Ft_internal_faces - Ft_internal_faces_adm)
+        # print(f'erro maximo na velocidade {err_vel.max()}')
+        # print(f'norma do erro na velocidade {np.linalg.norm(err_vel)}')
+        # print()     
         
         self.update_flux_wells(fprop, Pnew, wells, delta_t)
+        import pdb; pdb.set_trace()
         return Pnew, Ft_internal_faces, self.q
     
     def get_pressure_adm_iterative_finescale(self, M, wells, fprop, Pold, delta_t, **kwargs):

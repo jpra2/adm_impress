@@ -255,6 +255,8 @@ class GlobalIMPECPressureSolver:
         @return: volume discrepancy term (n_volumes)
         """
         volume_discrepancy_term = Vp - Vt
+        if np.max(abs(volume_discrepancy_term)) > 5e-4:
+            print('hit: ', np.max(abs(volume_discrepancy_term)))
         return volume_discrepancy_term
 
     @staticmethod
@@ -270,11 +272,12 @@ class GlobalIMPECPressureSolver:
         """
         _q = np.zeros([n_components, n_volumes])
         well_term = np.zeros(n_volumes)
+        
+        ws_q = well_volumes_flux_prescription
 
-        if len(well_volumes_flux_prescription) > 0:
-            _q[:, well_volumes_flux_prescription] = values_flux_prescription
-            well_term[well_volumes_flux_prescription] = np.sum(dVtdk[:, well_volumes_flux_prescription] *
-                                              _q[:, well_volumes_flux_prescription], axis=0)
+        if len(ws_q) > 0:
+            _q[:, ws_q] = values_flux_prescription
+            well_term[ws_q] = np.sum(dVtdk[:, ws_q] * _q[:, ws_q], axis=0)
         return well_term
 
     @staticmethod

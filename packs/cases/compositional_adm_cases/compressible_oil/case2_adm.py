@@ -137,6 +137,18 @@ params['pretransmissibility'] = data_impress['pretransmissibility']
 # trilinos_solver = solverTril()
 
 local_problem_params = {
+    # 'trilinos_solver': trilinos_solver
+    'elements_lv0': elements_lv0,
+    'scipy_solver': SolverSp(),
+    'tolerance': 1e-18,
+    'iterative_solver_finescale': 'cg', # ['cg', 'gmres']
+    'adm_solver': 'tams', # ['tams', 'iterative-finescale']
+    # 'well_volumes': np.concatenate([wells['ws_p'], wells['values_p']]),
+    'wells_producer': wells['ws_p'],
+    'loop': 0
+}
+
+params.update({
     'multilevel_data': ml_data,
     'Vbulk': ctes.Vbulk,
     'porosity': ctes.porosity,
@@ -171,15 +183,11 @@ local_problem_params = {
     'dual_subdomains': dual_subdomains,
     'master_neumann': master_neumann,
     'master_local_operator': master_local_operator,
-    # 'trilinos_solver': trilinos_solver
-    'scipy_solver': SolverSp(),
-    'tolerance': 1e-18,
-    'iterative_solver_finescale': 'cg', # ['cg', 'gmres']
-    'adm_solver': 'tams', # ['tams', 'iterative-finescale']
-    'well_volumes': np.concatenate([wells['ws_p'], wells['values_p']]),
-    'wells_producer': wells['ws_p'],
-    'loop': 0
-}
+    'multilevel_operators': mlo,
+    'adm_method': adm,
+    'neumann_subds': neumann_subds,
+    'data_impress': data_impress,
+})
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
 latest_density = np.zeros(fprop.rho_j.shape)
@@ -215,17 +223,19 @@ print_mesh_volumes_data(M, 'results/dual_test.vtk')
 while run_criteria < stop_criteria:# and loop < loop_max:
 # while t_simulation < tmax_simulation:
     # import pdb; pdb.set_trace()
-    params['pressure'] = fprop.P
-    params['mobilities'] = fprop.mobilities
-    params['composition'] = fprop.Csi_j
-    params['mol_number'] = fprop.Nk
-    params['Sg'] = fprop.Sg
-    params['Sw'] = fprop.Sw
-    params['So'] = fprop.So
-    params['z'] = fprop.z
-    params['porous_volume'] = fprop.Vp
-    params['total_volume'] = fprop.Vt
-
+    params.update({
+        'pressure': fprop.P,
+        'mobilities': fprop.mobilities,
+        'composition': fprop.Csi_j,
+        'mol_number': fprop.Nk,
+        'Sg': fprop.Sg,
+        'Sw': fprop.Sw,
+        'So': fprop.So,
+        'z': fprop.z,
+        'porous_volume': fprop.Vp,
+        'total_volume': fprop.Vt
+    })
+    
     # global_vector_update[:] = True # update the prolongation operator in all dual volumes
     for phase in range(ctes.n_phases):
         functions_update.update_global_vector_for_latest_variable(
@@ -274,12 +284,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
 
     t0 = time.time()
     sim.run(M, wells, fprop, load,
-            multilevel_operators=mlo,
             params=params,
-            adm_method=adm,
-            neumann_subds=neumann_subds,
-            data_impress=data_impress,
-            elements_lv0=elements_lv0,
             **local_problem_params)
     simulation_time = time.time() - t0
 
@@ -305,11 +310,12 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         if sim.t + sim.delta_t > t_next:
             sim.delta_t = t_next - sim.t
 
-    params['mobilities_internal_faces'] = fprop.mobilities_internal_faces
-    params['composition_internal_faces'] = fprop.Csi_j_internal_faces
-    params['xkj_internal_faces'] = fprop.xkj_internal_faces
-    params['rho_phase_internal_faces'] = fprop.rho_j_internal_faces
-
+    params.update({
+        'mobilities_internal_faces': fprop.mobilities_internal_faces,
+        'composition_internal_faces': fprop.Csi_j_internal_faces,
+        'xkj_internal_faces': fprop.xkj_internal_faces,
+        'rho_phase_internal_faces': fprop.rho_j_internal_faces
+    })
 
     loop = sim.loop
     print(sim.t)
