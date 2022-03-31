@@ -127,7 +127,7 @@ ncoarse_ids = len(np.unique(data_impress['GID_1']))
 OP_AMS = sp.lil_matrix((ctes.n_volumes, ncoarse_ids)).tocsc()
 
 keywords1 = {
-    'update_FC': True
+    'update_FC': False
 }
 
 master_neumann = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
@@ -245,7 +245,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             global_vector_update,
             latest_mobility[:, phase, :]*latest_density[:, phase, :],
             fprop.mobilities[:, phase, :]*fprop.rho_j[:, phase, :],
-            0.3
+            0.1
         )
 
     # for comp in range(fprop.z.shape[0]):

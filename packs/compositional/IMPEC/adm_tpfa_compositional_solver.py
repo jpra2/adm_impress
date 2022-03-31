@@ -537,19 +537,35 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         T, T_noCC, T_advec = self.update_transmissibility_adm(M, wells, fprop, delta_t, params, **kwargs)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
-
-
-        OP_AMS, cfs  = mlo.run_paralel_2(
+        
+        import time
+        t0 = time.time()
+        OP_AMS, cfs = self.get_basis_functions(
+            OP_AMS,
+            mlo,
             T_advec,
             D,
             dual_subdomains,
             global_vector_update,
-            # params['diagonal_term'],
             np.zeros(D.shape[0]),
-            OP_AMS,
-            1,
             master_local_operator
         )
+        t1 = time.time()
+        print(f'op time: {t1 - t0}')
+        import pdb; pdb.set_trace()
+
+
+        # OP_AMS, cfs  = mlo.run_paralel_2(
+        #     T_advec,
+        #     D,
+        #     dual_subdomains,
+        #     global_vector_update,
+        #     # params['diagonal_term'],
+        #     np.zeros(D.shape[0]),
+        #     OP_AMS,
+        #     1,
+        #     master_local_operator
+        # )
 
         n_levels = 2
         transm_int_fac = np.array(T_noCC[ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
@@ -728,3 +744,34 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         self.update_flux_wells(fprop, Pnew, wells, delta_t)
 
         return Pnew, Ft_internal_faces, self.q
+
+    def get_multiscale_flux():
+        pass
+    
+    def get_basis_functions(self, OP_AMS, mlo, T_advec, D, dual_subdomains, global_vector_update, diagonal_to_op, master_local_operator):
+        
+        # OP_AMS, cfs  = mlo.run_paralel_2(
+        #     T_advec,
+        #     D,
+        #     dual_subdomains,
+        #     global_vector_update,
+        #     diagonal_to_op,
+        #     OP_AMS,
+        #     1,
+        #     master_local_operator
+        # )
+        
+        OP_AMS, cfs  = mlo.run_paralel_3(
+            T_advec,
+            D,
+            dual_subdomains,
+            global_vector_update,
+            diagonal_to_op,
+            OP_AMS,
+            1,
+            master_local_operator
+        )
+        
+        return OP_AMS, cfs
+        
+        pass
