@@ -68,7 +68,8 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
 # description = 'case41_adm_biph_v'
 # description = 'case45_test'
-description = 'case46_test-limit_maxiter_tams-10'
+# description = 'case46_test-limit_maxiter_tams-5'
+description = 'case47-test-limit_maxiter_tams_cg-20_thres-update-BF-0.3'
 
 
 compositional_data = CompositionalData(description=description)
@@ -244,7 +245,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             global_vector_update,
             latest_mobility[:, phase, :]*latest_density[:, phase, :],
             fprop.mobilities[:, phase, :]*fprop.rho_j[:, phase, :],
-            0.1
+            0.3
         )
 
     # for comp in range(fprop.z.shape[0]):

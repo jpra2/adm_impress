@@ -35,7 +35,8 @@ fig_str = 'figura_'
 # description2 = 'case37_adm_80x80_Firoo_tams_solver_new_prolong_coarsewells_level0'
 # description2 = 'case38_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0'
 # description2 = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
-description2 = 'case45_test'
+# description2 = 'case45_test'
+description2 = 'case46_test-limit_maxiter_tams-10'
 # description2 = 'case22_adm_6k_5000_'
 # description2 = 'case23_finescale_6k_5000_'
 case2 = CumulativeCompositionalDataManager(description=description2)
@@ -200,7 +201,7 @@ ax1.set_xlim(min(case2_time), max(case2_time) + 1)
 
 ax2.plot(case1_time, case1_simulation_time, '-', label='Finescale')
 ax2.plot(case2_time, case2_simulation_time, '-', label='Adm')
-ax2.plot(case1_time, np.repeat(np.mean(case1_simulation_time), len(case1_simulation_time)), 0.05, color='black')
+ax2.plot(case1_time, np.repeat(np.mean(case1_simulation_time), len(case1_simulation_time)), 0.05, color='red')
 ax2.plot(case2_time, np.repeat(np.mean(case2_simulation_time), len(case2_simulation_time)), 0.05, color='black')
 
 t1 = np.mean(np.mean(case1_simulation_time))

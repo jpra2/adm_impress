@@ -584,7 +584,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             fprop.P,
             restriction_list[0],
             prolongation_list[0],
-            res_tol=1e-11,
+            res_tol=1e-10,
             x_tol=1e-10,
             max_it = 100
             # wells_producer = wells_producer
