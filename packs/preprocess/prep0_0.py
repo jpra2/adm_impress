@@ -164,7 +164,7 @@ class Preprocess0:
                 np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
 
             elif tipo == 'cartesian_region':
-                indices=np.repeat(False,len(centroids))
+
                 x_inf=d0['x_inf']
                 x_sup=d0['x_sup']
                 y_inf=d0['y_inf']
@@ -176,6 +176,7 @@ class Preprocess0:
                 zc=centroids[:,2]
                 x, y, z = symbols('x y z')
                 for i in range(len(x_inf)):
+                    indices=np.repeat(False,len(centroids))
                     x_i=parse_expr(x_inf[i])
                     x_s=parse_expr(x_sup[i])
                     y_i=parse_expr(y_inf[i])
@@ -190,10 +191,14 @@ class Preprocess0:
                     fz_s=lambdify([x,y,z],z_s)(xc,yc,zc)
                     inds=(xc>fx_i) & (xc<fx_s) & (yc>fy_i) & (yc<fy_s) & (zc>fz_i) & (zc<fz_s)
                     indices=indices | inds
-                indices=np.arange(len(centroids))[indices]
-                n_volumes = len(indices)
-
-                M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value, n_volumes, axis=0)
+                    indices=np.arange(len(centroids))[indices]
+                    n_volumes = len(indices)
+                    # import pdb; pdb.set_trace()
+                    if True:
+                        M.data[M.data.variables_impress['permeability']][indices] = np.repeat(np.array([[value[0][i], 0.0, 0.0, 0.0, value[0][i], 0.0, 0.0, 0.0, value[0][i]]]), n_volumes, axis=0)
+                    else:
+                        M.data[M.data.variables_impress['permeability']][indices] = np.repeat(value[i], n_volumes, axis=0)
+                        import pdb; pdb.set_trace()
                 np.save("flying/permeability.npy",M.data[M.data.variables_impress['permeability']])
             elif tipo == 'polar_region':
                 r, t = symbols('r t')

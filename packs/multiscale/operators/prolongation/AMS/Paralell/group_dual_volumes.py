@@ -128,7 +128,7 @@ def group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim
     if len(old_groups)==0:
         val=1
     else:
-        val=6
+        val=1
     for ind in range(1,val):
         groups2 = get_coupled_dual_volumes(mlo,T,M,data_impress,neta_lim, ind=ind)
         # neta_lim/=2

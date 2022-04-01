@@ -54,14 +54,18 @@ def export_multilevel_results(vals_n1_adm,vals_vpi,vals_delta_t,vals_wor, t_comp
 
 
 def plot_operator(T,OP_AMS, primals):
-    OP_AMS_c=T*OP_AMS
+
+    dif=OP_AMS-OP_Pure_AMS
     for i in range(len(primals)):
-        tag_ams=M.core.mb.tag_get_handle("OP_AMS_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-        fb_ams = OP_AMS[:, primals[i]].toarray()
-        tag_tp=M.core.mb.tag_get_handle("TP_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
-        tp_ams = OP_AMS_c[:, primals[i]].toarray()
+        tag_a_ams=M.core.mb.tag_get_handle("A_AMS_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        tag_ams=M.core.mb.tag_get_handle("AMS_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        tag_dif=M.core.mb.tag_get_handle("ADIF_"+str(primals[i]), 1, types.MB_TYPE_DOUBLE, types.MB_TAG_SPARSE, True)
+        fb_a_ams = OP_AMS[:, primals[i]].toarray()
+        fb_ams = OP_Pure_AMS[:, primals[i]].toarray()
+        diff = dif[:, primals[i]].toarray()
         M.core.mb.tag_set_data(tag_ams, M.core.all_volumes, fb_ams)
-        M.core.mb.tag_set_data(tag_tp, M.core.all_volumes, tp_ams)
+        M.core.mb.tag_set_data(tag_a_ams, M.core.all_volumes, fb_a_ams)
+        M.core.mb.tag_set_data(tag_dif, M.core.all_volumes, diff)
 
 def plot_net_flux(OR_AMS,OP_AMS):
     Tc=OR_AMS*T*OP_AMS
@@ -241,6 +245,7 @@ tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
 tpfa_solver.run()
 neta_lim=np.load('flying/neta_lim_dual.npy')[0]
 elements_lv0['neta_lim']=neta_lim
+OP_Pure_AMS=mlo['prolongation_level_1']
 OP=group_dual_volumes_and_get_OP(mlo, T, M, data_impress, tpfa_solver, neta_lim=neta_lim)
 
 # mlo=tpfalize(M,mlo,data_impress)
@@ -275,8 +280,8 @@ OR_AMS=mlo['restriction_level_1']
 
 
 
-# plot_operator(T,OP_AMS,np.arange(OP_AMS.shape[1]))
-# write_file_with_tag_range('OP_AMS_63',[0,np.inf])
+plot_operator(T,OP_AMS,np.array([18,25,28,56,86,88]))
+write_file_with_tag_range('A_AMS_25',[0,np.inf])
 from scipy.sparse import csc_matrix
 import matplotlib as mpl
 mpl.rc('font', **{'size'   : 22})
