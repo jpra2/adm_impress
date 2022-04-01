@@ -152,8 +152,6 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
     m_object = params.get('m_object')
 
     Tglobal = fine_scale_transmissibility_no_bc
-    dg = diagonal_term
-    diff = dg - Tglobal.sum(axis=1).flatten()
     # ft_internal_faces_for_prescription = Ft_internal_faces.copy()
     ft_internal_faces_for_prescription = np.zeros(Ft_internal_faces.shape)
     ft_internal_faces_for_prescription[:, map_internal_faces[all_coarse_intersect_faces]] = Ft_internal_faces[:, map_internal_faces[all_coarse_intersect_faces]]

@@ -6,8 +6,8 @@ import numpy as np
 from multiprocessing import Queue, Value
 from ctypes import c_bool
 import queue
-from packs.multiscale.neuman_local_problems.local_solver import LocalSolver1, run_thing
-
+from packs.multiscale.neuman_local_problems.local_solver import LocalSolver1, run_thing, LocalSolver2
+from packs.compositional.IMPEC.global_pressure_solver import GlobalIMPECPressureSolver as Gips
 
 class CommonMasterMethods:
     
@@ -67,7 +67,9 @@ class CommonMasterMethods:
 class MasterLocalSolver(CommonMasterMethods):
 
     def __init__(self, problems_list, n_volumes):
-        self.n_cpu = self.get_n_cpu()
+        self.n_cpu = self.get_n_cpu() - 1
+        if self.n_cpu <= 0:
+            self.n_cpu = 1
         self.n_volumes = n_volumes
         self.problems_list = problems_list
         n_problems = len(problems_list)
@@ -100,6 +102,28 @@ class MasterLocalSolver(CommonMasterMethods):
         # return m2w, w2m, procs, _queue, values
         return procs, process_args, process_targets, process_kwargs
 
+    def init_subproblems2(self, problems_per_cpu, w2m, values, _queue, local_params, **kwargs):
+        """
+
+        @param problems_per_cpu: list of list local problems in cpu shape = (?, n_cpu)
+        @return: m2w: master to worker list communicator
+                 w2m: worker to master list communicator
+                 procs: list of process
+                 queue: queue shared between processes
+        """
+        n = len(problems_per_cpu)
+        # master2worker = [mp.Pipe() for _ in range(n)]
+        # _queue = Queue()
+        # m2w, w2m = list(zip(*master2worker))
+        # values = [Value(c_bool, False) for _ in range(n)]
+        # m2w, w2m, _queue, values = self.initialize_params(n)
+        procs = [mp.Process(target=run_thing, args=[LocalSolver2(subdomains, _queue, comm, finished, id_process, local_params, **kwargs)]) for subdomains, comm, finished, id_process in zip(problems_per_cpu, w2m, values, range(n))]
+        process_args = [proc._args for proc in procs]
+        process_targets = [proc._target for proc in procs]
+        process_kwargs = [proc._kwargs for proc in procs]
+
+        # return m2w, w2m, procs, _queue, values
+        return procs, process_args, process_targets, process_kwargs
 
     def run(self):
         
@@ -151,5 +175,29 @@ class MasterLocalSolver(CommonMasterMethods):
             solution[subd.volumes] = resp
         
         return solution
+    
+    def run2(self, neumann_subds, local_params, **kwargs):
+        
+        solution = np.zeros(self.n_volumes)
+        
+        procs, process_args, process_targets, process_kwargs = self.init_subproblems2(self.problems_per_cpu, self.w2m, self.finished, self.queue, local_params, **kwargs)
+        
+        for proc in procs:
+            proc.start()
 
+        while(not self.all_process_finished(self.finished)):
+            try:
+                resp = self.queue.get_nowait()
+            except queue.Empty:
+                # print('\nFila vazia\n')
+                pass
+            else:
+                solution[resp[0]] = resp[1]
 
+        while(not self.queue.empty()):
+            resp = self.queue.get()
+            solution[resp[0]] = resp[1]
+        
+        self.set_false_finished(self.finished)
+
+        return solution

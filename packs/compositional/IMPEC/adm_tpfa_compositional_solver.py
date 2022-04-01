@@ -4,6 +4,7 @@ import pdb
 import scipy
 
 from packs.compositional.IMPEC.pressure_solver import TPFASolver
+from packs.data_class import elements_lv0
 from packs.utils.test_functions import test_instance
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
 from packs.utils import constants as ctes
@@ -20,9 +21,12 @@ from packs.solvers.solvers_trilinos.solvers_tril import solverTril
 from packs.solvers.solvers_scipy.solver_sp import SolverSp
 import time
 from packs.multiscale.ms_solvers import TamsSolverFV
+from packs.compositional.IMPEC.global_pressure_solver import GlobalIMPECPressureSolver as Gips
 
 
 def update_local_parameters(dt, fprop, params):
+    
+    param_local_list = ['Vbulk', 'porosity', 'Cf', 'dVtdP', 'P', 'n_components', 'n_phases', 'dVtdk', 'z_centroids', 'xkj_internal_faces', 'Csi_j_internal_faces', 'mobilities_internal_faces', 'pretransmissibility_internal_faces', 'Pcap', 'Vp', 'Vt', 'delta_t', 'g', 'rho_j', 'rho_j_internal_faces', 'n_volumes']
 
     params.update({
         'P': fprop.P,
@@ -36,6 +40,9 @@ def update_local_parameters(dt, fprop, params):
         'rho_j': fprop.rho_j,
         'rho_j_internal_faces': fprop.rho_j_internal_faces
     })
+    
+    local_params = {i: params[i] for i in param_local_list}
+    return local_params
 
 
 
@@ -538,8 +545,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         T, T_noCC, T_advec = self.update_transmissibility_adm(M, wells, fprop, delta_t, params, **kwargs)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
         
-        import time
-        t0 = time.time()
         OP_AMS, cfs = self.get_basis_functions(
             OP_AMS,
             mlo,
@@ -550,10 +555,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             np.zeros(D.shape[0]),
             master_local_operator
         )
-        t1 = time.time()
-        print(f'op time: {t1 - t0}')
-        import pdb; pdb.set_trace()
-
 
         # OP_AMS, cfs  = mlo.run_paralel_2(
         #     T_advec,
@@ -613,6 +614,12 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             'tams_itcounter': iterations
         })
         Pnew = solution
+        
+        ## updating params variables for neumann problems
+        local_params = update_local_parameters(delta_t, fprop, params)
+        local_params.update({
+            'remaped_internal_faces': elements_lv0['remaped_internal_faces']
+        })
 
         ############################################
         ## calculo do fluxo
@@ -621,30 +628,23 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
 
-        ## updating params variables for neumann problems
-        update_local_parameters(delta_t, fprop, params)
-
-        update_local_problem(
-            neumann_subds.neumann_subds,
-            T_noCC,
-            params['diagonal_term'],
-            solution,
+        local_solution = self.get_local_solution(Ft_internal_faces_adm, all_coarse_intersect_faces, neumann_subds, T_noCC, params, solution, master_neumann, **kwargs)
+        
+        local_solution2 = self.get_local_solution_paralell(
             Ft_internal_faces_adm,
-            elements_lv0['remaped_internal_faces'],
-            elements_lv0['volumes'],
-            elements_lv0['neig_internal_faces'],
-            all_coarse_intersect_faces,
-            params,
+            all_coarse_intersect_faces, 
+            neumann_subds,
+            T_noCC, 
+            params['diagonal_term'], 
+            local_params, 
+            solution, 
+            master_neumann, 
             **kwargs
         )
-
-
-        # local_solution = master_neumann.run()
-        local_solution = master_neumann.run_serial()
-        # err = np.absolute(local_solution - solution)
-        # print(f'erro maximo na pressao {err.max()}')
-        # print(f'norma do erro {np.linalg.norm(err)}')
-        # print()
+        
+        err = local_solution - local_solution2
+        print(f'erro local solution {np.linalg.norm(err)}')
+        import pdb; pdb.set_trace()
 
         ft_internal_faces_local_solution = self.update_total_flux_internal_faces(M, fprop, local_solution)
         other_faces = np.setdiff1d(elements_lv0['internal_faces'], all_coarse_intersect_faces)
@@ -745,8 +745,69 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         return Pnew, Ft_internal_faces, self.q
 
-    def get_multiscale_flux():
-        pass
+    def get_local_solution(self, Ft_internal_faces_adm, all_coarse_intersect_faces, neumann_subds, T_noCC, params, solution, master_neumann: MasterLocalSolver, **kwargs):
+        t0 = time.time()
+        elements_lv0 = kwargs.get('elements_lv0')
+        
+        update_local_problem(
+            neumann_subds.neumann_subds,
+            T_noCC,
+            params['diagonal_term'],
+            solution,
+            Ft_internal_faces_adm,
+            elements_lv0['remaped_internal_faces'],
+            elements_lv0['volumes'],
+            elements_lv0['neig_internal_faces'],
+            all_coarse_intersect_faces,
+            params,
+            **kwargs
+        )
+        
+        # local_solution = master_neumann.run() ## paralell
+        local_solution = master_neumann.run_serial()
+        t1 = time.time()
+        print(f'time Serial local solution: {t1 - t0}')
+        
+        return local_solution
+    
+    def get_local_solution_paralell(self, Ft_internal_faces_adm, all_coarse_intersect_faces, neumann_subds, T_noCC, diagonal_term, local_params, solution, master_neumann: MasterLocalSolver, **kwargs):
+        t0 = time.time()
+        elements_lv0 = kwargs.get('elements_lv0')
+        v0 = elements_lv0['neig_internal_faces']
+        map_internal_faces = elements_lv0['remaped_internal_faces']
+        
+        ft_internal_faces_for_prescription = np.zeros(Ft_internal_faces_adm.shape)
+        ft_internal_faces_for_prescription[:, map_internal_faces[all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, map_internal_faces[all_coarse_intersect_faces]]
+        
+        global_molar_flux_prescription = Gips.update_flux(
+            ft_internal_faces_for_prescription,
+            local_params['rho_j_internal_faces'],
+            local_params['mobilities_internal_faces'],
+            local_params['Pcap'],
+            v0,
+            local_params['z_centroids'],
+            local_params['pretransmissibility_internal_faces'],
+            local_params['g'],
+            local_params['xkj_internal_faces'],
+            local_params['Csi_j_internal_faces'],
+            local_params['n_components'],
+            local_params['n_volumes']
+        )
+        
+        local_kwargs = {
+            'global_molar_flux_prescription': global_molar_flux_prescription,
+            'fine_scale_transmissibility_no_bc': T_noCC,
+            'map_internal_faces': elements_lv0['remaped_internal_faces'],
+            'adm_pressure': solution,
+            'diagonal_term': diagonal_term
+        }
+        
+        local_solution = master_neumann.run2(
+            neumann_subds.neumann_subds, local_params, **local_kwargs
+        )
+        t1 = time.time()
+        print(f'time Paralell local solution: {t1 - t0}')
+        return local_solution
     
     def get_basis_functions(self, OP_AMS, mlo, T_advec, D, dual_subdomains, global_vector_update, diagonal_to_op, master_local_operator):
         
@@ -761,6 +822,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         #     master_local_operator
         # )
         
+        #################
+        ### op totally paralell
         OP_AMS, cfs  = mlo.run_paralel_3(
             T_advec,
             D,
@@ -771,6 +834,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             1,
             master_local_operator
         )
+        #################
         
         return OP_AMS, cfs
         
