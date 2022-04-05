@@ -1,12 +1,13 @@
 #2-phase problem with 3 components - moshiri
-mesh_name: 200x1x1_5k.msh
-name_save_file: 'results_case1_Moshiri_Manzari_5k_200_FR3_MLP' #150683
+mesh_name: 8x1x1_5k.msh
+name_save_file: 'results_case1_Moshiri_Manzari_5k_8_FR3_CFL09m_RK3_TVD' #150683
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
 water_component: false
 use_vpi: false
+
 
 load_compositional_data: False
 load_data: False
@@ -26,7 +27,7 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.7
+  CFL: 0.9
 
   solver:
     IMPSAT: false
@@ -44,11 +45,11 @@ compositional_data:
     MDW: false
     DW: false
 
-  vpis_para_gravar_vtk: [0.2]
+  vpis_para_gravar_vtk: [0.51]
   time_to_save: [86400] #[2592000]
   maximum_time: 86400  #2592000
   phase_viscosity: LorenzBrayClark
-  relative_permeability: BrooksAndCorey #StoneII
+  relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
   equation_of_state: PengRobinson
 
@@ -61,12 +62,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 30
-    deltaSlim: 100
+    deltaNlim: 10
+    deltaSlim: 10
     deltaVlim: 10
-    delta_t_ini: 86.4 #864
+    delta_t_ini: 86.4
     delta_tmax: 86400
-    delta_tmin: 0.00864
+    delta_tmin: 0.000864
 
   water_data:
     mi_W: 1e-3
@@ -86,7 +87,6 @@ compositional_data:
     krw0: .0
     krg0: 1
     kro0: 1.
-
     n_o: 2.
     n_g: 2.
     n_w: 0.
@@ -122,7 +122,6 @@ Permeability:
     type: all
     value: [9.869233e-15, 0, 0, 0, 9.869233e-15, 0, 0, 0, 9.869233e-15]
 
-
 Pressure:
   r1:
     type: all
@@ -136,7 +135,7 @@ Temperature:
 Wells:
   P1:
     p0: [0.0, 0.0, 0]
-    p1: [0.0075, 1, 1]
+    p1: [0.1875, 1, 1]
     type_region: box
     type: Injector
     prescription: P
@@ -145,7 +144,7 @@ Wells:
     injection_condition: reservoir
 
   P2:
-    p0: [1.4925, 0.0, 0]
+    p0: [1.3125, 0.0, 0]
     p1: [1.5, 1, 1]
     prescription: P
     type: Producer

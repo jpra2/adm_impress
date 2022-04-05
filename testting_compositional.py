@@ -31,8 +31,8 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'
         run_criteria = sim.vpi
-        print('vpi: ', sim.vpi)
-        print('progress... {}[%]'.format(np.round(sim.vpi/sim.vpi_save[-1]*100,4)))
+        #print('vpi: ', sim.vpi)
+        #print('progress... {}[%]'.format(np.round(sim.vpi/sim.vpi_save[-1]*100,4)))
 
     else:
         'If using time-step unit as second'
@@ -53,12 +53,12 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         if sim.t + sim.delta_t > t_next:
             sim.delta_t = t_next - sim.t
 
-        print('progress... {}[%]'.format(np.round(sim.t/sim.time_save[-1]*100,4)))
+        #print('progress... {}[%]'.format(np.round(sim.t/sim.time_save[-1]*100,4)))
     loop = sim.loop
-    print('dt: ', sim.delta_t)
+    #print('dt: ', sim.delta_t)
 
 
 tf = time.time()
-print('Total computational time: ', tf-t) #total simulation time
+#print('Total computational time: ', tf-t) #total simulation time
 print('Loops: ', sim.loop)
 sim.save_infos(data_impress, M) #Save data to file

@@ -51,7 +51,11 @@ for  arq in arquivos:
         for data in datas[datas.shape[0]-1:]:
             zCH4_100_FR4_RK3 = data[10][1] #CFL2
             t100_FR4_RK3_CFL2 = data[2]
-            import pdb; pdb.set_trace()
+
+        datas = np.load('flying/results_Orr_3k_C518_200x1x1_IMPEC_FR2_932.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            zCH4_200_FR2 = data[10][0] #CFL2
+
 
         datas = np.load('flying/results_Orr_3k_C518_200x1x1_IMPEC_FOU_253.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
@@ -79,11 +83,11 @@ for  arq in arquivos:
 
         plt.figure(2)
         plt.plot(x_100, zCH4_100_FR4_RK3, '-mv', mfc='none')
-        plt.plot(x_100, zCH4_100_FR4, '-co', mfc='none')
+        plt.plot(x_200, zCH4_200_FR2, '-co', mfc='none')
         plt.plot(zCH4_x, zCH4, '-k')
         #plt.plot(x_axis_xCH4_LLF_50, xCH4_LLF_50, '-sk', mfc='none')
         plt.grid()
-        plt.legend(('FR P4 - 100 CV','FR P4 RK3 - 100 CV','MOC (Orr, 2005)'))
+        plt.legend(('FR P4 - 100 CV','FR P2 RK3 - 200 CV','MOC (Orr, 2005)'))
         plt.ylabel('Methane global molar fraction ')
         plt.title('Low Volatile Intermediate Component Case')
         plt.xlabel('Distance')

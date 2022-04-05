@@ -97,7 +97,7 @@ class TPFASolver:
         self.q = np.zeros([ctes.n_components, ctes.n_volumes])
         well_term = np.zeros(ctes.n_volumes)
         if len(wells['ws_q']) > 0:
-            self.q[:,wells['ws_q']] =  wells['values_q']
+            self.q[:,wells['ws_q']] =  wells['values_q'] #mol/s
             well_term[wells['ws_q']] = np.sum(self.dVtk[:,wells['ws_q']] *
                 self.q[:,wells['ws_q']], axis = 0)
         return well_term
@@ -133,6 +133,7 @@ class TPFASolver:
         wp = wells['ws_p']
 
         if len(wp)>=1:
+            
             #if Pnew[0]<Pnew[1]: import pdb; pdb.set_trace()
             well_term =  (self.T_noCC[wp,:] @ Pnew - self.pressure_term[wp] +
                 self.volume_term[wp]) / delta_t  + self.capillary_term[wp] + \

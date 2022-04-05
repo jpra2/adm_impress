@@ -74,7 +74,7 @@ for  arq in arquivos:
             ind = abs(centroid_x - (centroid_y))<1e-15
             zC1_diagonal_40x40_FOU = zC1_40x40_FOU[ind]
             x_diagonal_40x40_FOU = (((centroid_x[ind])**2)*2)**(1/2)
-
+            
         datas = np.load('flying/results_Hoteit_Firoo_2k_ex1_IMPEC_MUSCL_upw_5560.npy', allow_pickle=True)
         for data in datas[-1:]:
             zC1_40x40_MUSCL_upw = data[10][0]

@@ -28,10 +28,21 @@ monophasic_data:
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 1
+  solver:
+    IMPSAT: true
+
   MUSCL:
-    set: False
+    set: false
+
   FR:
     set: false
+    order: 3
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
+    DW: false
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [8640000, 17280000]
   maximum_time: 86400 #17280000
@@ -93,6 +104,7 @@ compositional_data:
     Pv: [8e6, 0., 0., 0., 0., 0.]
     vshift_parameter: [0.0, 0.0, 0.0, 0., 0., 0.]
     Pb_guess: 12e6
+    constant_K: false
 
 #water saturation data
 Saturation:
@@ -110,7 +122,6 @@ Permeability:
   r1:
     type: all
     value: [1e-14, 0, 0, 0, 1e-14, 0, 0, 0, 1e-14]
-
 
 Pressure:
   r1:

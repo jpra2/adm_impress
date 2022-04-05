@@ -11,6 +11,8 @@ flying = 'flying'
 name = 'results'
 arquivos = os.listdir(flying)
 
+xD = np.loadtxt('case_plots/x_BL_FR_semi_analytical.txt')
+SwD = np.loadtxt('case_plots/Sw_BL_FR_semi_analytical.txt')
 
 fi, A, Swr, Sor, ftime, L = 0.2, 0.02592, 0, 0, 1500, 300
 for  arq in arquivos:
@@ -434,7 +436,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example Bastian - FR 2nd order')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR2_meshes.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR2_meshes.png')
 
         plt.figure(2)
         plt.plot(x8_avg, Sw8_avg_FR3, 'tab:pink', x16_avg, Sw16_avg_FR3, 'b', x32_avg, Sw32_avg_FR3, 'y',
@@ -447,7 +449,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example Bastian - FR 3rd order')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR3_meshes.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR3_meshes.png')
 
         plt.figure(3)
         plt.plot(x8_avg, Sw8_avg_FR4, 'tab:pink', x16_avg, Sw16_avg_FR4, 'b', x32_avg, Sw32_avg_FR4, 'y',
@@ -460,7 +462,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example Bastian - FR 4th order')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR4_meshes.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR4_meshes.png')
 
         plt.figure(4)
         x = np.log10([32, 64, 128, 256, 512])
@@ -477,7 +479,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example Bastian - FR 2nd order')
         plt.ylabel('log$_{10}(E_{L_1})$')
         plt.xlabel('$log_{10}(N)$')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR2_converg.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR2_converg.png')
 
         plt.figure(5)
         y3 = np.log10([e32_L1_FR3, e64_L1_FR3, e128_L1_FR3, e256_L1_FR3, e512_L1_FR3])
@@ -492,7 +494,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example Bastian - FR 3rd order')
         plt.ylabel('log$_{10}(E_{L_1})$')
         plt.xlabel('$log_{10}(N)$')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR3_converg.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR3_converg.png')
 
         plt.figure(6)
         y4 = np.log10([e32_L1_FR4, e64_L1_FR4, e128_L1_FR4, e256_L1_FR4, e512_L1_FR4])
@@ -507,7 +509,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example Bastian - FR 4th order')
         plt.ylabel('log$_{10}(E_{L_1})$')
         plt.xlabel('$log_{10}(N)$')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR4_converg.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_FR4_converg.png')
 
         plt.figure(7)
         plt.plot(x,y,'-bo',x,y3,'-rP', x, y4, '-gv')
@@ -527,7 +529,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example Bastian - 32 elements')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_32_comparison.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_32_comparison.png')
 
         fig = plt.figure(9)
         plt.plot(x32_avg, Sw32_avg, '-ro', x32_avg, Sw32_avg_FR3, '-gs', x32_avg, Sw32_avg_FR4, '-bv',
@@ -538,7 +540,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example Bastian - 32 elements')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_32_comparison_zoom.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Bastian_32_comparison_zoom.png')
         import pdb; pdb.set_trace()
 
         plt.figure(3)
@@ -547,7 +549,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example - 64 elements')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_64_comparison.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_64_comparison.png')
 
         plt.figure(4)
         plt.plot(x128, Sw128, 'r', x128, Sw128_upw, 'g', xD, SwD, 'k', x128, Sw128_FR, 'b')
@@ -555,7 +557,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example - 128 elements')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_128_comparison.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_128_comparison.png')
 
         plt.figure(5)
         plt.plot( x256, Sw256_upw, 'g', xD, SwD, 'k', x256, Sw256_FR, 'b', x256, Sw256, 'r')
@@ -563,7 +565,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example - 256 elements')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_256_comparison.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_256_comparison.png')
 
         plt.figure(6)
         plt.plot(x512, Sw512_upw, 'g', xD, SwD, 'k', x512, Sw512_FR, 'b', x512, Sw512, 'r', x512, Sw512_FR3, 'y')
@@ -571,7 +573,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example - 512 elements')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_512_comparison.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_512_comparison.png')
 
         plt.figure(7)
         plt.plot(x8, Sw8, 'r', x8, Sw8_upw, 'g', xD, SwD, 'k', x8, Sw8, 'b')
@@ -579,7 +581,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example - 8 elements')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_8_comparison.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_8_comparison.png')
 
         plt.figure(8)
         plt.plot(x16, Sw16, 'r', x16, Sw16_upw, 'g', xD, SwD, 'k', x16, Sw16_FR, 'b')
@@ -587,7 +589,7 @@ for  arq in arquivos:
         plt.title('Buckley-Leverett Solution Example - 16 elements')
         plt.ylabel('Water Saturation')
         plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_16_comparison.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/saturation_BL_Darlan_16_comparison.png')
 
         plt.figure(15)
         x = np.log10(np.array([8,16,32,64,128,256, 512]))
@@ -605,6 +607,6 @@ for  arq in arquivos:
         plt.xlabel('$log_{10}(N)$')
         plt.legend(('MUSCL-2nd order', 'Reference Line', 'FOU', 'FR'))
         plt.grid()
-        plt.savefig('results/compositional/FR_paper/BL_Darlan_L1_convergence_order2' +'.eps', format='eps')
+        plt.savefig('results/compositional/FR_paper/BL_Darlan_L1_convergence_order2' +'.png')
 
         import pdb; pdb.set_trace()

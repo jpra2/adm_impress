@@ -1,6 +1,6 @@
 #Compressive Oil case with 1 component in 1-D reservoir
-mesh_name: 80x1x1_Burger.msh
-name_save_file: 'results_Burger_80_FR4'
+mesh_name: 80x1x1_Burg.msh
+name_save_file: 'results_Burger_80_MUSCL_LLF_RK3_nolim'
 
 compositional: True
 hidrocarbon_components: false
@@ -27,15 +27,27 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.3
+  CFL: 0.9
+
+  solver:
+    IMPSAT: false
+
   MUSCL:
-    set: false
-  FR:
     set: true
-    order: 4
-  vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [1.5]
-  maximum_time: 1.5
+
+  FR:
+    set: false
+    order: 2
+
+  RiemannSolver:
+    ROE: false
+    LLF: true
+    MDW: false
+    DW: false
+
+  vpis_para_gravar_vtk: [0.3]
+  time_to_save: [0.5]
+  maximum_time: 0.5
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -50,11 +62,11 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: .001
-    deltaSlim: .0001
-    deltaVlim: .1
-    delta_t_ini: 0.0003
-    delta_tmax: 0.0003
+    deltaNlim: 100
+    deltaSlim: 100
+    deltaVlim: 100
+    delta_t_ini: 0.023 #FOU: 0.07; FRP2: 0.023; FRP3: 0.014; FRP4: 0.01
+    delta_tmax: 100
     delta_tmin: 0.00001
 
   water_data:
@@ -91,6 +103,7 @@ compositional_data:
     Pv: [0]
     Pb_guess: [0.0]
     vshift_parameter: [0.085]
+    constant_K: False
 
 
 #water saturation data
@@ -123,8 +136,8 @@ Temperature:
 Wells:
 
   P1:
-    p0: [0.0, 0.0, -0.03048]
-    p1: [0.001191015625, 0.03048, 0.0]
+    p0: [0.0, 0.0, -1]
+    p1: [0.0125, 1, 0.0]
     prescription: Q
     type: Injector
     type_region: box
@@ -132,10 +145,11 @@ Wells:
     z: [1.]
     ksi_total: 55484.31862337
     value_type: volumetric
+    injection_condition: surface
 
   P2:
-    p0: [0.6086089844, 0.0, -0.03048]
-    p1: [0.6096, 0.03048, 0.0]
+    p0: [0.9875, 0.0, -1]
+    p1: [1, 1, 0.0]
     prescription: P
     type: Producer
     type_region: box

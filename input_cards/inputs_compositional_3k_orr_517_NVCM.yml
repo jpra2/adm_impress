@@ -1,6 +1,6 @@
 #2-phase problem in 1D with 2 components - Orr chapter 4 fig 4.16
 mesh_name: 200x1x1_3k_Orr.msh
-name_save_file: 'results_Orr_3k_C5_IMPEC_FR2'
+name_save_file: 'results_Orr_3k_C5_IMPEC_FR3'
 
 compositional: True
 hidrocarbon_components: True
@@ -37,7 +37,7 @@ compositional_data:
 
   FR:
     set: true
-    order: 2
+    order: 3
 
   RiemannSolver:
     ROE: false
@@ -62,8 +62,8 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 0.2
-    deltaSlim: 0.001
+    deltaNlim: 4
+    deltaSlim: 10
     deltaVlim: 100
     delta_t_ini: 8.64 #864
     delta_tmax: 86400

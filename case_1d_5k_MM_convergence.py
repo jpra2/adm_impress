@@ -422,7 +422,6 @@ for  arq in arquivos:
         sizeletter = 12
         plt.rcParams['figure.dpi'] = 300
         plt.rcParams['savefig.dpi'] = 300
-
         plt.rcParams.update({'font.size': sizeletter})
 
         plt.figure(1)
@@ -586,7 +585,7 @@ for  arq in arquivos:
         #cluster = ['o', 's', 'v', 'p', 'D', '*', '<']
         #plt.scatter(t_FOU,eL1_FOU, '-r', marker=cluster, mfc='none', markersize=size)
         #plt.scatter(t_MUSCL,eL1_MUSCL, '-g', marker=cluster[0:-2], mfc='none', markersize=size)
-        '''plt.plot(t32_FOU, e32_L1_FOU, '-ro', mfc='none', markersize=size_FOU)
+        plt.plot(t32_FOU, e32_L1_FOU, '-ro', mfc='none', markersize=size_FOU)
         plt.plot(t32_MUSCL, e32_L1_MUSCL, '-go', mfc='g', markersize=size_MUSCL)
         plt.plot(t64_FOU, e64_L1_FOU, '-rs', mfc='none', markersize=size_FOU)
         plt.plot(t64_MUSCL, e64_L1_MUSCL, '-gs', mfc='g', markersize=size_MUSCL)
@@ -597,7 +596,7 @@ for  arq in arquivos:
         plt.plot(t512_FOU, e512_L1_FOU, '-rD', mfc='none', markersize=size_FOU)
         plt.plot(t512_MUSCL, e512_L1_MUSCL, '-gD', mfc='g', markersize=size_MUSCL)
         plt.plot(t1024_FOU, e1024_L1_FOU, '-r*', mfc='none', markersize=size_FOU)
-        plt.plot(t2048_FOU, e2048_L1_FOU, '-r<', mfc='none', markersize=size_FOU)'''
+        plt.plot(t2048_FOU, e2048_L1_FOU, '-r<', mfc='none', markersize=size_FOU)
         legend_elements = [Line2D([0], [0], color='g', label='MUSCL'),
                    Line2D([0], [0], color='w', markerfacecolor='g', marker='o', markeredgecolor='g', label='32 VC', markersize=size_MUSCL),#, mfc='none'),
                    Line2D([0], [0], marker='s', color='w', markerfacecolor='g', label='64 VC', markeredgecolor='g', markersize=size_MUSCL),#, mfc='none'),

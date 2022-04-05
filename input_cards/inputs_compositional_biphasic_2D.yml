@@ -28,7 +28,7 @@ compositional_data:
   CFL: 0.9
 
   solver:
-    IMPSAT: false
+    IMPSAT: true
 
   MUSCL:
     set: false
@@ -134,19 +134,19 @@ Temperature:
 
 Wells:
   P1:
-    p0: [0.0, 0.59436, -0.03048]
-    p1: [0.01524, 0.6096, 0.0]
-    p0: [0.0, 0.60198, -0.03048]
-    p1: [0.00762, 0.6096, 0.0]
     #p0: [0.0, 0.57912, -0.03048]
     #p1: [0.03048, 0.6096, 0.0]
+    p0: [0.0, 0.59436, -0.03048]
+    p1: [0.01524, 0.6096, 0.0]
+    #p0: [0.0, 0.60198, -0.03048]
+    #p1: [0.00762, 0.6096, 0.0]
     prescription: Q
     type: Injector
     type_region: box
     value: 3.2774128e-8
     z: [0., 1.]
     ksi_total: 55484.31862337
-    injection_condition: 'surface'
+    injection_condition: surface
     value_type: volumetric
 
   P2:

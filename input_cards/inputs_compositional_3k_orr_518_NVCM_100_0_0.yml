@@ -27,7 +27,7 @@ monophasic_data:
 # Case 1 of Firoozabadi paper
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 2
+  CFL: 2.2
 
   solver:
     IMPSAT: false
@@ -37,7 +37,7 @@ compositional_data:
 
   FR:
     set: true
-    order: 4
+    order: 2
 
   RiemannSolver:
     ROE: false

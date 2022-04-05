@@ -64,14 +64,13 @@ class WellsCompositional(Wells):
                     values_q_vol.append(val.tolist())
                     values_q_vol *= nv
 
-
                     vals = np.repeat(values, nv)
                     if len(values_q)>0:
                         vals = (vals).reshape((len(well['z']),nv))
                         values_q = np.concatenate((values_q,vals), axis=1)
                         if inj_cond == 'surface':
                             values_q = (vals / well['ksi_total']).sum(axis=0)
-                        values_q = np.concatenate((values_q, values_q), axis=0)
+                            values_q = np.concatenate((values_q, values_q), axis=1)
 
                     else:
                         values_q = np.append(values_q, vals).reshape((len(well['z']),nv))

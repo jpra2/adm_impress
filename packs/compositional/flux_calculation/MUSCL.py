@@ -20,7 +20,12 @@ class MUSCL:
         #self.P_face[ctes_MUSCL.faces_contour] = P_old[ctes.v0[ctes_MUSCL.faces_contour,0]]
         dNk_face, dNk_face_neig = self.get_faces_gradient(M, fprop, dNk_vols)
 
-        Phi = self.Van_Leer_slope_limiter(dNk_face, dNk_face_neig)
+        #Phi = self.Van_Leer_slope_limiter(dNk_face, dNk_face_neig)
+        Phi = self.Van_Albada1_slope_limiter(dNk_face, dNk_face_neig)
+
+        #BURGERS
+        #Phi[:] = 1
+        #Phi[:,:,1] = -1
 
         Nk_face, z_face = self.get_extrapolated_compositions(fprop, Phi, dNk_face_neig)
 
@@ -29,6 +34,7 @@ class MUSCL:
             ftot, Pot_hid)
         #alpha = fprop.Fk_vols_total/fprop.Nk
         #import pdb; pdb.set_trace()
+
         return alpha, Fk_vols_total
 
     def volume_gradient_reconstruction(self, M, fprop, wells):
@@ -41,20 +47,22 @@ class MUSCL:
         dNk_by_axes *= ctes_MUSCL.versor_ds
         dNk_vols = dNk_by_axes.sum(axis = 3)
 
+        #burgers
+        #dNk0 = fprop.Nk[:,1] - fprop.Nk[:,0]
+        #dNkend = fprop.Nk[:,-1] - fprop.Nk[:,-2]
+        #dNk_vols[:,ctes_MUSCL.all_neig_by_axes==1] = 1/2*np.array([[dNk0[0],dNkend[0]]])
+
         dNkds_vols = np.copy(dNk_vols)
         dNkds_vols[:,ctes_MUSCL.ds_vols!=0] = dNk_vols[:,ctes_MUSCL.ds_vols != 0] / \
             ctes_MUSCL.ds_vols[ctes_MUSCL.ds_vols != 0][np.newaxis,:]
 
-        dNkds_vols[:,ctes_MUSCL.all_neig_by_axes==1] = 0 #*dNkds_vols[:,:,all_neig.sum(axis=1)==1]
+        dNkds_vols[:,ctes_MUSCL.all_neig_by_axes==1] = 0 #dNkds_vols[:,ctes_MUSCL.all_neig_by_axes==1]
         #dNkds_vols[:,:,ctes.v0[ctes_MUSCL.faces_contour].flatten()] = 0 # zero in the contour volumes
         return dNkds_vols
 
     def get_faces_gradient(self, M, fprop, dNkds_vols):
         #ds_face = (M.data['centroid_volumes'][ctes.v0[:,1],:] -  M.data['centroid_volumes'][ctes.v0[:,0],:])
-        #if any(ctes_MUSCL.ds_face.flatten()<0): import pdb; pdb.set_trace()
-        #versor_ds_face = np.sum(ctes_MUSCL.versor_ds,axis=0)
         #ds_face_abs = abs(ds_face)
-
         dNk_face = (fprop.Nk[:,ctes.v0[:,1]] - fprop.Nk[:,ctes.v0[:,0]]) #* ctes_MUSCL.versor_ds_face[np.newaxis,:]
         dNk_face_vols = 2. * (dNkds_vols[:,:,ctes.v0] *ctes_MUSCL.ds_face.T[np.newaxis,:,:,np.newaxis]).sum(axis=1)
         dNk_face_neig = dNk_face_vols - dNk_face[:,:,np.newaxis]
@@ -83,7 +91,7 @@ class MUSCL:
         return Phi
 
     def get_extrapolated_compositions(self, fprop, Phi, dNk_face_neig):
-        Phi[abs(dNk_face_neig)<1e-30] = 0
+        #Phi[abs(dNk_face_neig)<1e-30] = 0
         Nk_face = fprop.Nk[:,ctes.v0] + Phi / 2 * dNk_face_neig
         #Nk_face[(abs(Nk_face)<1e-30)] = fprop.Nk[:,ctes.v0][(abs(Nk_face)<1e-30)]
         if any(Nk_face.flatten()<0): import pdb; pdb.set_trace()
@@ -119,7 +127,11 @@ class MUSCL:
     def update_flux(self, M, wells, fprop, Nk_face, ftotal, Pot_hid):
         Fk_internal_faces = np.zeros((ctes.n_components,ctes.n_internal_faces))
         RS = RiemannSolvers(ctes.v0, ctes.pretransmissibility_internal_faces)
-        Fk_face = RS.get_Fk_face(fprop, M, Nk_face, self.P_face, ftotal)
+        Vp_face = np.concatenate((fprop.Vp[ctes.v0[:,0]], fprop.Vp[ctes.v0[:,1]]), axis=0)
+
+        Fk_face = RS.get_Fk_face(fprop, M, Nk_face, self.P_face, Vp_face, ftotal)
+        #Fk_face = (Nk_face**2/2)/(1/ctes.n_volumes) #burgers
+
         ponteiro = np.zeros(ctes.n_internal_faces,dtype=bool)
         'Corrigir o cálculo do fluxo por upw - aplicar antese Fk_face vem um só'
         if ctes.RS['LLF']:
@@ -151,15 +163,34 @@ class MUSCL:
             #alpha_wv[:,~ponteiro_alpha] = 1e-100
             Fk_internal_faces[:,~ponteiro] = self.update_flux_upwind(Pot_hid, \
                 Fk_face, ~ponteiro)
-        #import pdb; pdb.set_trace()
 
-        ponteiro[ctes_MUSCL.faces_contour] = True
-        Fk_internal_faces[:,ponteiro] = self.update_flux_upwind(fprop.P[np.newaxis,:], \
-            Fk_face[:,ponteiro], ponteiro)
-
+        #FOR THE BURGERS PROBLEM AND BASTIAN
+        '''Nk_face_contour = np.empty((ctes.n_components,1,2))
+        dNk_face_0 = (fprop.Nk[:,1] - fprop.Nk[:,0])
+        dNk_face_end = (fprop.Nk[:,-1] - fprop.Nk[:,-2])
+        Nk_face_contour[:,0,1] = fprop.Nk[:,0] - 1/2*dNk_face_0
+        Nk_face_contour[:,0,0] = fprop.Nk[:,-1] + 1/2*dNk_face_end
+        P_face = self.P_face
+        #Nk_face_contour[-1,0,0] = 1*fprop.Csi_j[0,-1,0]*fprop.Vp[0] #BASTIAN
+        Vp_face_contour = fprop.Vp[:2]
+        RS_contour = RiemannSolvers(np.array([ctes.n_volumes-1,0])[np.newaxis], np.array([ctes.pretransmissibility_internal_faces[0]]))
+        Fk_faces_contour = (Nk_face_contour**2)/2/(1/ctes.n_volumes)
+        Fk_face_contour_RS, alpha_wv2 =  RS_contour.LLF(M, fprop, Nk_face_contour, P_face[np.newaxis,0],
+            ftotal[:,0][:,np.newaxis], Fk_faces_contour, np.ones(1,dtype=bool))
+        '''
+        #ponteiro[ctes_MUSCL.faces_contour] = True
+        #Fk_internal_faces[:,ponteiro] = self.update_flux_upwind(fprop.P[np.newaxis,:], \
+        #    Fk_face[:,ponteiro], ponteiro)
+        Fk_internal_faces[:,0] = Fk_face[:,0,0]
+        Fk_internal_faces[:,1] = Fk_face[:,1,0]
         '-------- Perform volume balance to obtain flux through volumes -------'
         Fk_vols_total = Flux().update_flux_volumes(Fk_internal_faces)
+
+        #BURGERS
+        #Fk_vols_total[:,0] += Fk_face_contour_RS[0]
+        #Fk_vols_total[:,-1] -= Fk_face_contour_RS[0]
+
         if any(np.isnan(Fk_vols_total).flatten()): import pdb; pdb.set_trace()
         #Fk_vols_total[:ctes.Nc][fprop.z==0] = 0
-        if any(Fk_vols_total[:ctes.Nc][fprop.z==0]<0): import pdb; pdb.set_trace()
+        #if any(Fk_vols_total[:ctes.Nc][fprop.z==0]<0): import pdb; pdb.set_trace()
         return alpha_wv, Fk_vols_total

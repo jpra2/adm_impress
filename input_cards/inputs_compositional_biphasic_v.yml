@@ -32,7 +32,7 @@ compositional_data:
     IMPSAT: false
 
   MUSCL:
-    set: true
+    set: false
 
   FR:
     set: false
@@ -40,7 +40,7 @@ compositional_data:
 
   RiemannSolver:
     ROE: false
-    LLF: true
+    LLF: false
     MDW: false
     DW: false
 

@@ -26,7 +26,7 @@ monophasic_data:
 # Case 1 of Firoozabadi paper
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.3
+  CFL: 0.5
 
   solver:
     IMPSAT: false
@@ -45,8 +45,8 @@ compositional_data:
     DW: false
 
   vpis_para_gravar_vtk: [1]
-  time_to_save: [86400]
-  maximum_time: 86400.
+  time_to_save: [85092]
+  maximum_time: 85092.
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -61,12 +61,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 40
+    deltaNlim: 80
     deltaSlim: 80
     deltaVlim: 100
     delta_t_ini: 8.64 #864
     delta_tmax: 86400
-    delta_tmin: 8.64
+    delta_tmin: 0.0864
 
   water_data:
     mi_W: 1e-3
@@ -95,7 +95,7 @@ compositional_data:
     z: [0.0, 1.0]
     Tc: [304.2, 615]
     Pc: [7376460, 2208885]
-    vc: [0.0939e-3, 0.624e-3,]
+    vc: [0.09412e-3, 0.624e-3]
     Mw: [44.010e-3, 142.286e-3]
     w: [0.0225, 0.491]
     Bin: [[0.,0.102], [0.102,0.]]

@@ -110,13 +110,14 @@ def jacobiP_(order, alpha, beta, points):
     aold = 2/(2+alpha+beta)*np.sqrt((alpha+1)*(beta+1)/(alpha+beta+3))
 
     #Forward recurrence using the symmetry of the recurrence.
-    for i in range(order-1):
-        h1 = 2*i+alpha+beta
-        anew = 2/(h1+2)*np.sqrt( (i+1)*(i+1+alpha+beta)*(i+1+alpha)* \
-            (i+1+beta)/(h1+1)/(h1+3));
-        bnew = - (alpha^2-beta^2)/h1/(h1+2)
-        PL[i+2,:] = 1/anew*( -aold*PL[i,:] + (xp-bnew)*PL[i+1,:])
+    for i in range(1,order):
+        h1 = 2*(i)+alpha+beta
+        anew = 2/(h1+2)*np.sqrt((i+1)*(i+1+alpha+beta)*(i+1+alpha)* \
+            (i+1+beta)/(h1+1)/(h1+3))
+        bnew = - (alpha**2-beta**2)/h1/(h1+2)
+        PL[i+1,:] = 1/anew*( -aold*PL[i-1,:] + (xp-bnew)*PL[i,:])
         aold =anew
+
     return PL[order,:].T
 
 def jacobiP(order, alpha, beta, points):
@@ -124,6 +125,7 @@ def jacobiP(order, alpha, beta, points):
 
 def gradVandermonde(n_points, points):
     Vr = np.zeros((n_points,n_points)) # Allocate
+
     for i in range(n_points):	# All Polynomial Degrees up to kDeg
         for j in range(n_points):
             Vr[j,i] = dJacobiP(i,0,0,points[j])
@@ -166,4 +168,3 @@ def run(M):
     V_H = Vandermonde2(n_points, points)
     GV_H = gradVandermonde(n_points, points)
     Dr = GV_H@np.linalg.inv(V_H)
-    

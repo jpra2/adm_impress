@@ -344,7 +344,7 @@ for arq in arquivos:
             e16_L1_4 = np.sum(abs(Nk16_ans_4 - Nk16_FR4)) * 1 / n
             R16_4 = math.log(e8_L1_4/e16_L1_4, 2)
 
-        datas = np.load('flying/results_Burger_32_15t_FR4_5001.npy', allow_pickle=True)
+        datas = np.load('flying/results_Burger_32_FR4_RK3_15t_65.npy', allow_pickle=True)
 
         for data in datas[1:]:
             Nk32_FRx = data[12][0]
@@ -361,6 +361,25 @@ for arq in arquivos:
                 Nk32_ans_4[i] = root_scalar(f, args=(x32_4[i], t), method='toms748', bracket=[-1, 1]).root
 
             e32_L1_4 = np.sum(abs(Nk32_ans_4 - Nk32_FR4)) * 1 / n
+            R32_4 = math.log(e16_L1_4/e32_L1_4,2)
+
+        datas = np.load('flying/results_Burger_32_FR4_RK3_15t_MLP_62.npy', allow_pickle=True)
+
+        for data in datas[1:]:
+            Nk32_FRx = data[12][0]
+            Nk32_FR4med_MLP = 1/2*np.sum(GL.weights*Nk32_FRx, axis=-1)
+
+            Nk32_FR4_MLP = data[12][0].flatten()
+            n = 32
+            x32_4 = np.empty((n,4))
+            for i in range(len(points)):
+                x32_4[:,i] = np.linspace(0+(points[i] + 1)*1/(2*n),1-(1-points[i])*1/(2*n),n)
+            x32_4 = x32_4.flatten()
+            Nk32_ans_4 = np.empty_like(Nk32_FR4)
+            for i in range(n*4):
+                Nk32_ans_4[i] = root_scalar(f, args=(x32_4[i], t), method='toms748', bracket=[-1, 1]).root
+
+            e32_L1_4 = np.sum(abs(Nk32_ans_4 - Nk32_FR4_MLP)) * 1 / n
             R32_4 = math.log(e16_L1_4/e32_L1_4,2)
 
         datas = np.load('flying/results_Burger_64_15t_FR4_3001.npy', allow_pickle=True)
@@ -550,19 +569,14 @@ for arq in arquivos:
         plt.title('Resultados para malha 80x1x1')
         plt.savefig('results/compositional/FR_paper/Burger/Nk_Burgers_comparison_15t_80CV.png')
 
-        import pdb; pdb.set_trace()
-        plt.figure(6)
-        x = np.log10(np.array([8,16,32,64,128,256,512]))
-        y = np.log10(np.array([e8_L1, e16_L1, e32_L1, e64_L1, e128_L1, e256_L1, e512_L1]))
-        y_FR3 = np.log10(np.array([e8_L1_3, e16_L1_3, e32_L1_3, e64_L1_3, e128_L1_3, e256_L1_3, e512_L1_3]))
-        y_FR4 = np.log10(np.array([e8_L1_4, e16_L1_4, e32_L1_4, e64_L1_4, e128_L1_4, e256_L1_4, e512_L1_4]))
-        #y_FR5 = np.log10(np.array([e8_L1_5, e16_L1_5, e32_L1_5, e64_L1_5, e128_L1_5, e256_L1_5]))
-        #y_MUSCL = np.log10(np.array([e32_L1_MUSCL, e64_L1_MUSCL, e128_L1_MUSCL, e256_L1_MUSCL, e512_L1_MUSCL]))
-        y_ref = -2*x +2
-        plt.plot(x, y, 'r', x, y_FR3, 'g', x, y_FR4, 'y')
+        plt.figure(200)
+        plt.plot(x32, Nk32_FR4med, '-go', mfc='none')
+        plt.plot(x32, Nk32_FR4med_MLP, '-rs', mfc='none')
+        plt.plot(x, Nk_ans, 'k-')
         plt.grid()
-        plt.ylabel('$log_{10}({E}_{L_1})$')
-        plt.xlabel('$log_{10}(N)$')
-        plt.legend(('FR-2nd order', 'FR-3rd order', 'FR-4th order', 'FR-5th order'))
-        plt.savefig('results/compositional/FR_paper/Burger/Nk_Burgers_convergence_15t.eps', format='eps')
+        plt.ylabel('N')
+        plt.xlabel('Distance')
+        plt.legend(('FR-P3 hMLP', 'FR-P3 MLP', 'Reference'))
+        plt.savefig('results/compositional/FR/Nk_Burgers_MLP_hMLP.png')
+
         import pdb; pdb.set_trace()

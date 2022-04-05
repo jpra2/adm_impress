@@ -221,25 +221,23 @@ class FR:
         Nk_face_contour[:,0,1] = Nk_SP[:,0,0]
         Nk_face_contour[:,0,0] = Nk_SP[:,-1,-1]
         #Nk_face_contour[-1,0,0] = 1*fprop.Csi_j[0,-1,0]*fprop.Vp[0] #BASTIAN
-
         Vp_face_contour = fprop.Vp[:2]
-        RS_contour = RiemannSolvers(np.array([0,ctes.n_volumes-1])[np.newaxis], np.array([ctes.pretransmissibility_internal_faces[0]]))
-        Fk_faces_contour = RS_contour.get_Fk_face(fprop, M, Nk_face_contour, \
-            P_face[np.newaxis,0], Vp_face_contour, Ft_internal[:,0][:,np.newaxis])
+        RS_contour = RiemannSolvers(np.array([ctes.n_volumes-1,0])[np.newaxis], np.array([ctes.pretransmissibility_internal_faces[0]]))
+        Fk_faces_contour = (Nk_face_contour**2)/2*(1/ctes.n_volumes)
+        #Fk_faces_contour = RS_contour.get_Fk_face(fprop, M, Nk_face_contour, \
+        #    P_face[np.newaxis,0], Vp_face_contour, Ft_internal[:,0][:,np.newaxis])
         Fk_face_contour_RS, alpha_wv =  RS_contour.LLF(M, fprop, Nk_face_contour, P_face[np.newaxis,0],
             Ft_internal[:,0][:,np.newaxis], Fk_faces_contour, np.ones(1,dtype=bool))
-
+        '''
         RS = RiemannSolvers(ctes_FR.v0, ctes.pretransmissibility_internal_faces)
         Fk_face_RS, alpha_wv =  RS.LLF(M, fprop, Nk_faces, P_face, Ft_internal, Fk_faces, \
-            np.ones_like(Ft_internal[0],dtype=bool))'''
+            np.ones_like(Ft_internal[0],dtype=bool))
         #ponteiro = np.zeros_like(Ft_internal[0], dtype=bool)
         #ponteiro[[0,1]] = True
         #Fk_face_RS[:,ponteiro] = MUSCL().update_flux_upwind(fprop.P[np.newaxis,:], Fk_faces[:,ponteiro], ponteiro)
 
         Fk_face_RS[:,0] = Fk_faces[:,0,0]
         Fk_face_RS[:,1] = Fk_faces[:,1,0]
-
-        #Fk_face_RS[:,[0,1]] = Fk_face_contour_RS
 
         'Obtaining Flux at each CV side - by finding faces that compounds the CV \
         this only works for 1D problems'
@@ -262,9 +260,8 @@ class FR:
                 (Fk_vols_RS_neig[:,:,1] - Fk_D_r)[:,:,np.newaxis] * ctes_FR.dgRB[np.newaxis,:]
         return dFk_C
 
-
     def minmod(self, dNks):
-        s = (np.sign(dNks[...,0]) + np.sign(dNks[...,1]) + np.sign(dNks[...,2]))/3
+        s = (np.sum(np.sign(dNks),axis=-1))/3
         mmod = np.zeros_like(dNks[...,0])
         ids2 = abs(s)==1
         mmod[ids2] = (s * np.min(abs(dNks),axis=-1))[ids2]
@@ -273,8 +270,8 @@ class FR:
     def minmodB(self, us, M, h):
         #TVB based minmod function
         mfunc = np.copy(us[...,0])
-        #par = (M*h**2)
-        par = 1e-330
+        par = (M*h**2)
+        par = 1e-4 * np.max(abs(us),axis=-1)
         ids = (np.abs(mfunc) > par)
         mfunc[ids] = self.minmod(us[ids,:])
         return mfunc
@@ -288,9 +285,9 @@ class FR:
         Nk_avg = self.projections(Nk, 0)
         Nk_avg0 = Nk_avg[...,0]
 
-        eps0 = 1e-330
+        eps0 = 1e-8 * abs(Nk_avg0)#np.max(abs(Nk_avg0),axis=1)[:,np.newaxis] * np.ones_like(Nk_avg0)
         Nk_L = Nk_SP[...,0]
-        Nk_R = Nk_SP[...,1]
+        Nk_R = Nk_SP[...,-1]
 
         #only works for 1D
         Nk_avg_neig_1 = np.concatenate((Nk_avg0[:,0][:,np.newaxis], Nk_avg0[:,0:-1]),axis=1)
@@ -310,35 +307,38 @@ class FR:
         ponteiro = np.zeros((ctes.n_components,ctes.n_volumes),dtype=bool)
         dL = abs((Nk_L-Nk_lim_L))#/Nk_L)
         dR = abs((Nk_R-Nk_lim_R))#/Nk_R)
+
         ponteiro[(dL>eps0) + (dR>eps0)] = True
 
         #Limit function
         c_vols = M.data['centroid_volumes'][:,0]
-        xSP1 = c_vols - c_vols[0]
+        xSP1 = (c_vols - c_vols[0])
         c_faces = c_vols[ctes.v0]
         h = c_vols[0]*2
 
         x0 = np.ones((ctes_FR.n_points,ctes.n_volumes)) * (xSP1 + h/2)[np.newaxis,:]
-        x_SPs = x0 + (ctes_FR.points * h/ctes.n_points)[:,np.newaxis]
+        x_SPs = x0 + (ctes_FR.points * h/2)[:,np.newaxis]
 
         Nk_P1 = self.projections(Nk, 1)
-
         ux = (2/h)*(ctes_FR.Dr@Nk_P1[ponteiro,:].T)
         ux = ux.T
         ux1 = (Nk_avg0-Nk_avg_neig_1)/h
         ux2 = (Nk_avg_neig_2-Nk_avg0)/h
         us = np.concatenate((ux[...,0][...,np.newaxis],ux2[ponteiro,np.newaxis]),axis=-1)
-        us =  np.concatenate((us,ux1[ponteiro,np.newaxis]),axis=-1)
+        us =  np.concatenate((us, ux1[ponteiro,np.newaxis]),axis=-1)
         Nk_lim = np.copy(Nk_SP)
+        #minmod = (self.minmodB(us, 0.2, h)[...,np.newaxis])
+        minmod = (self.minmod(us)[...,np.newaxis])
         Nk_lim[ponteiro] = Nk_avg[ponteiro] + ((x_SPs - x0).T[np.newaxis,:] * \
-            np.ones_like(Nk_SP))[ponteiro]* (self.minmodB(us, 0.2, h)[...,np.newaxis])
+            np.ones_like(Nk_SP))[ponteiro] * minmod
+        #Nk_lim[(Nk_lim<0) * (abs(Nk_lim)<1e-15)] = 0
         if any((Nk_lim<0).flatten()): import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         return Nk_lim
 
     def MLP_slope_limiter(self, M, fprop, Nk_SP_in, wells):
 
         inds = np.array([0,-1])
-
 
         Nk = (np.linalg.inv(ctes_FR.V)[np.newaxis,] @ Nk_SP_in[:,:,:, np.newaxis])[:,:,:,0]
         Nk_SP = self.projections(Nk, ctes_FR.n_points-1)
@@ -374,7 +374,6 @@ class FR:
         phi_Pn = np.zeros_like(Phi_P1)
         Nk_P2 = Nk_SP
 
-        #phi_Pn[:,[0,-1]]=1
 
         if ctes_FR.n_points > 2:
             '---------------Hierarchical MLP limiting procedure----------------'
@@ -414,7 +413,11 @@ class FR:
                 phi_P2 = self.troubled_cell_marker(M, fprop, Nk_P1_vertex2, \
                     Nk_P0_vertex2, Nk_P2, Nk_neig2, Nk_faces2)
 
+            phi_Pn[np.sum(Nk_SP<0,axis=-1,dtype=bool)] = 0
+
             phi_P2[phi_Pn==1] = 1
+            phi_P2[np.sum(Nk_P2<0,axis=-1,dtype=bool)] = 0
+
             Phi_P1[phi_P2==1] = 1
 
         #tornando nao hierarquico
@@ -422,16 +425,20 @@ class FR:
         #phi_Pn[:] = 1
 
         #Phi_P1[:] = 1
+
         Nk_SPlim = (Nk_P0 + Phi_P1[:,:, np.newaxis] * (Nk_P1 - Nk_P0) + \
             phi_P2[:,:,np.newaxis] * ((Nk_P2 - Nk_P1) + phi_Pn[:,:,np.newaxis] * (Nk_SP - Nk_P2)))
 
+        #vols_neg = np.sum(Nk_SPlim<0,axis=-1,dtype=bool)
+        #Nk_SPlim[vols_neg,:] = Nk_P0[vols_neg,:]
+        Nk_SPlim[abs(Nk_SPlim)<1e-300]=abs(Nk_SPlim[abs(Nk_SPlim)<1e-300])
         Nk = 1 / sum(ctes_FR.weights) * np.sum(ctes_FR.weights * Nk_SPlim,axis=2)
 
         z = Nk[0:ctes.Nc,:] / np.sum(Nk[0:ctes.Nc,:], axis = 0)
         #if any(abs(z[1,90:]-0.3)>1e-4): import pdb; pdb.set_trace()
 
-        '''if any(abs(Nk_SPlim[Nk_SPlim<0])):
-            import pdb; pdb.set_trace()'''
+        if any(abs(Nk_SPlim[Nk_SPlim<0])):
+            import pdb; pdb.set_trace()
 
         '''C_high_order_check1 = (Nk_SPlim[:,:,inds] <= np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]) #<= machine_error
         C_high_order_check2 = (Nk_SPlim[:,:,inds] >= np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]) #>= -machine_error
@@ -596,24 +603,25 @@ class FR:
         C1, C2 = self.smooth_extrema_cond(fprop, Nk_P0_vertex, Nk_P1_vertex, Nk_Pmvertex, Nk_neig)
 
         ''' Dehativation inequality for nearly constant region'''
-        e = 1e-3
-        C3 = (abs(Nk_Pmvertex - Nk_P0_vertex)/Nk_P0_vertex <= e)
+        e = 1e-7
+        C3 = (abs(Nk_Pmvertex - Nk_P0_vertex) <= e)
         #import pdb; pdb.set_trace()
-        Nf = self.Gibbs_Wilbraham_oscilations(M, Nk_faces)
+        #Nf = self.Gibbs_Wilbraham_oscilations(M, Nk_faces)
 
         '''A3 step'''
         #P1_proj_cond[C3] = True
         C3_cells = np.min(1*(C3),axis=-1)
+        C3_cells[:] = 0
 
         '''A4-1 step'''
         P1_proj_cond_cells = np.min(1*(P1_proj_cond),axis=-1)
 
         'Type I trouble'
-        condI = (P1_proj_cond_cells==1)
+        '''condI = (P1_proj_cond_cells==1)
         aux_I = P1_proj_cond_cells[condI]
         aux_Nf_I = Nf[condI]
         aux_I[aux_Nf_I>=1] = 0
-        P1_proj_cond_cells[condI] = aux_I
+        P1_proj_cond_cells[condI] = aux_I'''
 
         '''A4-2 step'''
         smooth_extrema = C1+C2
@@ -621,15 +629,13 @@ class FR:
 
         'Type II trouble'
         #shock_condition = abs(p_neig_l-p_neig_r)>=0.1*p_neig_l#
-        aux_II = smooth_extrema_cells[smooth_extrema_cells==1]
+        '''aux_II = smooth_extrema_cells[smooth_extrema_cells==1]
         aux_Nf_II = Nf[smooth_extrema_cells==1]
         aux_II[aux_Nf_II>=1] = 0
-        smooth_extrema_cells[smooth_extrema_cells==1] = aux_II
+        smooth_extrema_cells[smooth_extrema_cells==1] = aux_II'''
 
-        phi_Pm = 1*((P1_proj_cond_cells + smooth_extrema_cells).astype(bool))
+        phi_Pm = 1*((P1_proj_cond_cells + smooth_extrema_cells+C3_cells).astype(bool))
         #phi_Pm = 1*((P1_proj_cond_cells).astype(bool))
+        #if any((phi_Pm[:,:,np.newaxis]*Nk_Pmvertex).flatten()<0): import pdb; pdb.set_trace()
 
-        if any((phi_Pm[:,:,np.newaxis]*Nk_Pmvertex).flatten()<0): import pdb; pdb.set_trace()
-
-        if any(phi_Pm.flatten()>1): import pdb; pdb.set_trace()
         return phi_Pm
