@@ -83,10 +83,12 @@ class BrooksAndCorey:
         den_g = (saturations[1] - self.Sgr)
         den = np.array([den_o, den_g, den_w])
 
-        ns = np.empty((3))
+        dSordSj_par = (Sorw-Sorg)/(1 - Swr - Sorg)
+        dSordSj = np.array([dSordSj_par, -dSordSj_par, dSordSj_par])
+
         ns = np.array([self.n_o, self.n_g, self.n_w])
         dkrj_dSj = ns[np.newaxis,:,np.newaxis] * krs / den[np.newaxis,:]
-
+        dkrj_dSj[0,...] *= (1 - dSordSj)
         dkrj_dSj[:,den==0] = 0
         #dkrsdSj = np.empty((3,3,len(saturations[0])))
         dkrsdSj = -dkrj_dSj[np.newaxis,...] * np.ones((3,3,len(saturations[0])))
