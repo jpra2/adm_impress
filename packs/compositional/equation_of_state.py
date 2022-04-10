@@ -295,14 +295,51 @@ class PengRobinson:
         dA_dyij = (2 * P / ((ctes.R * T)**2)) * soma_ykjaki
         return dA_dxij, dA_dyij
 
-    def dB_dxij(self):
+    def dB_dxij(self, fprop):
+        P = fprop.P
+        T = fprop.T
 
-        dB_dxij = (P / (ctes.R * T)) * self.b
-        dB_dyij = (P / (ctes.R * T)) * self.b
+        dB_dxij = (P / (ctes.R * T)) * self.b[:, np.newaxis]
+        dB_dyij = (P / (ctes.R * T)) * self.b[:, np.newaxis]
         return dB_dxij, dB_dyij
 
     def dZ_dxij(self, fprop):
-        dA_dxij, dA_dyij = self.dA_dxij(fprop)
-        dB_dxij, dB_dyij = self.dB_dxij(fprop)
-        # Eq B.31
-        pass
+        x = fprop.xkj[0:ctes.Nc,0,:]
+        y = fprop.xkj[0:ctes.Nc,1,:]
+        P = fprop.P
+
+        dA_dx, dA_dy = self.dA_dxij(fprop)
+        dB_dx, dB_dy = self.dB_dxij(fprop)
+
+        Al, Bl = self.coefficients_cubic_EOS_vectorized(x, P)
+        Zl = self.Z_vectorized(Al, Bl, np.ones(ctes.n_volumes))
+        Av, Bv = self.coefficients_cubic_EOS_vectorized(y, P)
+        Zv = self.Z_vectorized(Av, Bv, np.zeros(ctes.n_volumes))
+
+        dF_dZl = 3*(Zl**2) - 2*Zl*(1 - Bl) + (Al - 3*(Bl**2) - 2*Bl)
+        dF_dZv = 3*(Zv**2) - 2*Zv*(1 - Bv) + (Av - 3*(Bv**2) - 2*Bv)
+
+        dZl_dx = ((Bl - Zl)*dA_dx + (Al - 2*Bl - 3*(Bl**2) + 2*(3*Bl + 1)*Zl - (Zl**2))*dB_dx) / dF_dZl
+        dZv_dy = ((Bv - Zv)*dA_dy + (Av - 2*Bv - 3*(Bv**2) + 2*(3*Bv + 1)*Zv - (Zv**2))*dB_dy) / dF_dZv
+        return dZl_dx, dZv_dy
+
+    def dxkj_dnij_dP(self, fprop):
+        x = fprop.xkj[0:ctes.Nc,0,:]
+        y = fprop.xkj[0:ctes.Nc,1,:]
+        Nl = fprop.Nj[0,0,:]
+        Nv = fprop.Nj[0,1,:]
+        P = fprop.P
+        T = fprop.T
+
+        dlnfildP, dlnfildnij, dZldP_parcial, dZldnij_parcial, Zl = \
+                self.get_phase_derivatives(P, T, x, Nl, np.ones(ctes.n_volumes))
+        dlnfivdP, dlnfivdnij, dZvdP_parcial, dZvdnij_parcial, Zv = \
+                self.get_phase_derivatives(P, T, y, Nv, np.zeros(ctes.n_volumes))
+        dnldP, dnvdP, dnldNk, dnvdNk, dnildP, dnivdP, dnildNk, dnivdNk = \
+                self.dnij_dNk_dP(dlnfildP, dlnfivdP, dlnfildnij, dlnfivdnij, Nl, Nv)
+
+        dx_dP = (1 / Nl) * (dnildP - x*dnldP)
+        dy_dP = (1 / Nv) * (dnivdP - y*dnvdP)
+        dx_dP = np.append(dx_dP, np.zeros([1, ctes.n_volumes]), axis=0)
+        dy_dP = np.append(dy_dP, np.zeros([1, ctes.n_volumes]), axis=0)
+        return dx_dP, dy_dP, dnildP, dnivdP, dnldP, dnvdP, dnildNk, dnivdNk, dnldNk, dnvdNk

@@ -48,7 +48,7 @@ compositional_data:
   time_to_save: [8640000, 17280000]
   maximum_time: 17280000 #17280000
   phase_viscosity: LorenzBrayClark
-  relative_permeability: StoneII
+  relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
   equation_of_state: PengRobinson
 
@@ -84,12 +84,10 @@ compositional_data:
 
   relative_permeability_data:
     krw0: 0.4
-    krow0: 0.9
-    krog0: 0.9
+    kro0: 0.9
     krg0: 0.9
 
-    n_og: 2.
-    n_ow: 2.
+    n_o: 2.
     n_w: 2.
     n_g: 2.
 

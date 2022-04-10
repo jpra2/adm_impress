@@ -82,3 +82,126 @@ class LorenzBrayClark:
         self.phase_viscosity_atm(component_molar_fractions)
         mi_phase = self.phase_viscosity()
         return mi_phase
+
+    ''' Calculo analitico das derivadas da viscosidade em função de P e Nk '''
+    def derivative_phase_viscosity_dP_dNk(self, fprop, dx_dP, dy_dP, dCsi_j_dP, dx_dnij, dy_dnij, dCsi_j_dnij, dnildP, dnivdP, dnildNk, dnivdNk):
+        self.component_viscosity(fprop)
+        self.phase_viscosity_atm(fprop.xkj)
+        dxij_dP = np.zeros_like(self.component_molar_fractions)
+        dxij_dP[:,0,:] = dx_dP[0:ctes.Nc]
+        dxij_dP[:,1,:] = dy_dP[0:ctes.Nc]
+        dxij_dnij = np.zeros([2, ctes.Nc, ctes.Nc, ctes.n_volumes])
+        dxij_dnij[0] = dx_dnij
+        dxij_dnij[1] = dy_dnij
+        dnij_dP = np.zeros([2, ctes.Nc, ctes.n_volumes])
+        dnij_dP[0] = dnildP
+        dnij_dP[1] = dnivdP
+        dnij_dNk = np.zeros([2, ctes.Nc, ctes.Nc, ctes.n_volumes])
+        dnij_dNk[0] = dnildNk
+        dnij_dNk[1] = dnivdNk
+
+        d_mi_atm_dP, d_mi_atm_dnij = self.derivative_mi_atm_dP_dnij(dxij_dP, dxij_dnij)
+        a = np.array([0.1023, 0.023364, 0.058533, -0.040758, 0.0093324])
+        phase_reduced_molar_density = (self.phase_molar_densities[:,0:2,:]) * \
+            np.sum(self.component_molar_fractions * self.vc[:,np.newaxis,np.newaxis], axis = 0)
+        Xs = a[0]+ a[1] * phase_reduced_molar_density + a[2] * \
+            phase_reduced_molar_density ** 2 + a[3] * \
+            phase_reduced_molar_density ** 3 + a[4] * \
+            phase_reduced_molar_density ** 4
+        dXs4_dP, dXs4_dnij = self.dXs4_dP_dnij(dCsi_j_dP, dCsi_j_dnij, dxij_dP, dxij_dnij, a, phase_reduced_molar_density, Xs)
+        dneta_dP, dneta_dnij = self.dneta_dP_dnij(dxij_dP, dxij_dnij)
+        neta = (np.sum(self.component_molar_fractions *
+                ctes.Tc[:,np.newaxis,np.newaxis] , axis = 0)) ** (1/6) \
+                / (np.sum(self.component_molar_fractions *
+                self.Mw[:,np.newaxis,np.newaxis], axis = 0) ** (1/2)
+                * np.sum(self.component_molar_fractions *
+                self.Pc[:,np.newaxis,np.newaxis], axis = 0) ** (2/3))
+
+        dmi_phase_dP = (d_mi_atm_dP + ((dXs4_dP*neta - (Xs**4 - 1e-4)*dneta_dP) / \
+                         (neta**2))) * 1e-3
+        dmi_phase_dnij = (d_mi_atm_dnij + ((dXs4_dnij*neta[:,np.newaxis] - \
+            (Xs[:,:,np.newaxis]**4 - 1e-4)*dneta_dnij) / (neta[:,np.newaxis]**2))) * 1e-3
+
+        dmi_dP = np.sum(dnij_dP * dmi_phase_dnij, axis = 2) + dmi_phase_dP
+        dmi_dP = np.append(dmi_dP, np.zeros([1,1,ctes.n_volumes]), axis=1)
+
+        dmi_dNk_aux = np.sum(dnij_dNk * dmi_phase_dnij[:,:,:,np.newaxis], axis = 2)
+        dmi_dNk = np.zeros([1, ctes.n_phases, ctes.Nc+1, ctes.n_volumes])
+        dmi_dNk[:,0:2,0:ctes.Nc] = dmi_dNk_aux
+        return dmi_dP, dmi_dNk
+
+    def derivative_mi_atm_dP_dnij(self, dxij_dP, dxij_dnij):
+        d_mi_atm_dP = (np.sum(dxij_dP * self.mi_components * \
+            self.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0)*\
+            np.sum(self.component_molar_fractions*self.Mw[:, np.newaxis, np.newaxis] ** (1/2) , axis = 0)\
+            - np.sum(self.component_molar_fractions * self.mi_components *\
+            self.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0)*\
+            np.sum(dxij_dP * self.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0)) / \
+            ((np.sum(self.component_molar_fractions * \
+            self.Mw[:, np.newaxis, np.newaxis] ** (1/2) , axis = 0))**2)
+
+        d_mi_atm_dnij = (np.sum(dxij_dnij * self.mi_components * \
+            self.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 1)*\
+            np.sum(self.component_molar_fractions*self.Mw[:, np.newaxis, np.newaxis] ** \
+                   (1/2) , axis = 0)[:,np.newaxis]\
+            - np.sum(self.component_molar_fractions * self.mi_components *\
+            self.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 0)[:,np.newaxis]*\
+            np.sum(dxij_dnij * self.Mw[:, np.newaxis, np.newaxis] ** (1/2), axis = 1)) / \
+            ((np.sum(self.component_molar_fractions * \
+            self.Mw[:, np.newaxis, np.newaxis] ** (1/2) , axis = 0))**2)[:,np.newaxis]
+
+        return d_mi_atm_dP, d_mi_atm_dnij
+
+    def dXs4_dP_dnij(self, dCsi_j_dP, dCsi_j_dnij, dxij_dP, dxij_dnij, a, phase_reduced_molar_density, Xs):
+        dCsi_j_dP = dCsi_j_dP * (10**-6) # mole/m³.Pa to mole/cm³.Pa, fica na mesma unidade do resto do modelo
+        dCsi_j_dnij = dCsi_j_dnij * (10**-6) # mole/m³.mol to mole/cm³.mol, fica na mesma unidade do resto do modelo
+
+        dphase_reduced_molar_density_dP = dCsi_j_dP[:,0:2,:]*\
+            np.sum(self.component_molar_fractions * self.vc[:,np.newaxis,np.newaxis], axis = 0)\
+            + self.phase_molar_densities[:,0:2,:] * np.sum(dxij_dP * \
+            self.vc[:,np.newaxis,np.newaxis], axis = 0)
+        dphase_reduced_molar_density_dnij = dCsi_j_dnij[0:2] * \
+            np.sum(self.component_molar_fractions * self.vc[:,np.newaxis,np.newaxis], axis = 0)[:,np.newaxis]\
+            + self.phase_molar_densities[:,0:2,:][:,:,np.newaxis] * np.sum(dxij_dnij * \
+            self.vc[:,np.newaxis,np.newaxis], axis = 1)
+
+        dXs_dP = a[1]*dphase_reduced_molar_density_dP + \
+            a[2]*2*phase_reduced_molar_density*dphase_reduced_molar_density_dP + \
+            a[3]*3*(phase_reduced_molar_density**2)*dphase_reduced_molar_density_dP + \
+            a[4]*4*(phase_reduced_molar_density**3)*dphase_reduced_molar_density_dP
+
+        dXs_dnij = a[1]*dphase_reduced_molar_density_dnij + \
+            a[2]*2*phase_reduced_molar_density[:,:,np.newaxis]*dphase_reduced_molar_density_dnij + \
+            a[3]*3*(phase_reduced_molar_density[:,:,np.newaxis]**2)*dphase_reduced_molar_density_dnij + \
+            a[4]*4*(phase_reduced_molar_density[:,:,np.newaxis]**3)*dphase_reduced_molar_density_dnij
+
+        dXs4_dP = 4 * (Xs**3) * dXs_dP
+        dXs4_dnij = 4 * (Xs[:,:,np.newaxis]**3) * dXs_dnij
+        return dXs4_dP, dXs4_dnij
+
+    def dneta_dP_dnij(self, dxij_dP, dxij_dnij):
+        aux = (np.sum(self.component_molar_fractions *
+            self.Mw[:,np.newaxis,np.newaxis], axis = 0) ** (1/2)
+            * np.sum(self.component_molar_fractions *
+            self.Pc[:,np.newaxis,np.newaxis], axis = 0) ** (2/3))
+
+        somat_xkj_Tc = np.sum(self.component_molar_fractions *
+                ctes.Tc[:,np.newaxis,np.newaxis] , axis = 0)
+        somat_xkj_Mw = np.sum(self.component_molar_fractions *
+            self.Mw[:,np.newaxis,np.newaxis], axis = 0)
+        somat_xkj_Pc = np.sum(self.component_molar_fractions *
+            self.Pc[:,np.newaxis,np.newaxis], axis = 0)
+
+        dneta_dP = ((1/6)*((somat_xkj_Tc)**(-5/6))*np.sum(dxij_dP*\
+                ctes.Tc[:,np.newaxis,np.newaxis], axis = 0)*aux - (somat_xkj_Tc**(1/6))*\
+                ((1/2)*(somat_xkj_Mw**(-1/2))* np.sum(dxij_dP*\
+                self.Mw[:,np.newaxis,np.newaxis], axis = 0)*(somat_xkj_Pc**(2/3)) + \
+                (somat_xkj_Mw**0.5)*(2/3)*(somat_xkj_Pc**(-1/3))*np.sum(dxij_dP*\
+                self.Pc[:,np.newaxis,np.newaxis], axis = 0))) / (aux**2)
+        dneta_dnij = ((1/6)*((somat_xkj_Tc)**(-5/6))[:,np.newaxis]*np.sum(dxij_dnij*\
+                ctes.Tc[:,np.newaxis,np.newaxis], axis = 1)*aux[:,np.newaxis] - (somat_xkj_Tc**(1/6))[:,np.newaxis]*\
+                ((1/2)*(somat_xkj_Mw**(-1/2))[:,np.newaxis]* np.sum(dxij_dnij*\
+                self.Mw[:,np.newaxis,np.newaxis], axis = 1)*(somat_xkj_Pc**(2/3))[:,np.newaxis] + \
+                (somat_xkj_Mw**0.5)[:,np.newaxis]*(2/3)*(somat_xkj_Pc**(-1/3))[:,np.newaxis]*np.sum(dxij_dnij*\
+                self.Pc[:,np.newaxis,np.newaxis], axis = 1))) / (aux**2)[:,np.newaxis]
+        return dneta_dP, dneta_dnij
