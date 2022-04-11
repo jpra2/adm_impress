@@ -1,6 +1,6 @@
 #2-phase problem with 3 components - moshiri
 mesh_name: 256x1x1_5k.msh
-name_save_file: 'results_case1_Moshiri_Manzari_5k_256_FOU_CFL09' #150683
+name_save_file: 'results_case1_Moshiri_Manzari_5k_256_FR4_CFL09m_RK3_TVD' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -36,8 +36,8 @@ compositional_data:
     set: false
 
   FR:
-    set: false
-    order: 3
+    set: true
+    order: 4
 
   RiemannSolver:
     ROE: false

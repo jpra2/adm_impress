@@ -44,17 +44,17 @@ class FR:
 
         dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_1(np.copy(Nk_SP_old), q_SP, dFk_SP, delta_t)
-        Nk_SP = self.slopeLimN(M, Nk_SP)
+        Nk_SP = self.slopeLim1(M, Nk_SP)
         #Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
 
         dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_2(np.copy(Nk_SP_old), q_SP, np.copy(Nk_SP), dFk_SP, delta_t)
-        Nk_SP = self.slopeLimN(M, Nk_SP)
+        Nk_SP = self.slopeLim1(M, Nk_SP)
         #Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
 
         dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_3(np.copy(Nk_SP_old), q_SP, np.copy(Nk_SP), dFk_SP, delta_t)
-        Nk_SP = self.slopeLimN(M, Nk_SP)
+        Nk_SP = self.slopeLim1(M, Nk_SP)
         #Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
 
         Fk_vols_total = np.min(abs(dFk_SP),axis=2)
@@ -261,7 +261,9 @@ class FR:
         return dFk_C
 
     def minmod(self, dNks):
-        s = (np.sum(np.sign(dNks),axis=-1))/3
+        sign = np.sign(dNks)
+        sign[sign==0] = 1
+        s = (np.sum(sign,axis=-1))/3
         mmod = np.zeros_like(dNks[...,0])
         ids2 = abs(s)==1
         mmod[ids2] = (s * np.min(abs(dNks),axis=-1))[ids2]
@@ -276,6 +278,48 @@ class FR:
         mfunc[ids] = self.minmod(us[ids,:])
         return mfunc
 
+    def slopeLim1(self, M, Nk_SP_in):
+        #Compute cell averages
+        Nk = (np.linalg.inv(ctes_FR.V)[np.newaxis,] @ Nk_SP_in[:,:,:, np.newaxis])[:,:,:,0]
+        Nk_SP = self.projections(Nk, ctes_FR.n_points-1)
+
+        'Projected n=0'
+        Nk_avg = self.projections(Nk, 0)
+        Nk_avg0 = Nk_avg[...,0]
+
+        'Projected n=1'
+        Nk_P1 = self.projections(Nk, 1)
+
+        #only works for 1D
+        Nk_avg_neig_1 = np.concatenate((Nk_avg0[:,0][:,np.newaxis], Nk_avg0[:,0:-1]),axis=1)
+        Nk_avg_neig_2 = np.concatenate((Nk_avg0[:,1:], Nk_avg0[:,-1][:,np.newaxis]),axis=1)
+
+        #Limit function
+        c_vols = M.data['centroid_volumes'][:,0]
+        xSP1 = (c_vols - c_vols[0])
+        c_faces = c_vols[ctes.v0]
+        h = c_vols[0]*2
+
+        x0 = np.ones((ctes_FR.n_points,ctes.n_volumes)) * (xSP1 + h/2)[np.newaxis,:]
+        x_SPs = x0 + (ctes_FR.points * h/2)[:,np.newaxis]
+
+        ponteiro = np.ones_like(Nk_P1[...,0],dtype=bool)
+        ux = (2/h)*(ctes_FR.Dr@Nk_P1[ponteiro,:].T).T
+        ux1 = (Nk_avg0-Nk_avg_neig_1)/h
+        ux2 = (Nk_avg_neig_2-Nk_avg0)/h
+
+        us = np.concatenate((ux[...,0][...,np.newaxis],ux2[ponteiro,np.newaxis]),axis=-1)
+        us =  np.concatenate((us, ux1[ponteiro,np.newaxis]),axis=-1)
+        Nk_lim = np.copy(Nk_SP)
+
+        minmod = (self.minmod(us)[...,np.newaxis])
+        Nk_lim[ponteiro] = Nk_avg[ponteiro] + ((x_SPs - x0).T[np.newaxis,:] * \
+            np.ones_like(Nk_SP))[ponteiro] * minmod
+
+        if any((Nk_lim<0).flatten()): import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
+        return Nk_lim
+
     def slopeLimN(self, M, Nk_SP_in):
         #Compute cell averages
         Nk = (np.linalg.inv(ctes_FR.V)[np.newaxis,] @ Nk_SP_in[:,:,:, np.newaxis])[:,:,:,0]
@@ -285,7 +329,7 @@ class FR:
         Nk_avg = self.projections(Nk, 0)
         Nk_avg0 = Nk_avg[...,0]
 
-        eps0 = 1e-8 * abs(Nk_avg0)#np.max(abs(Nk_avg0),axis=1)[:,np.newaxis] * np.ones_like(Nk_avg0)
+        eps0 = 1e-8 * abs(Nk_avg0)#,axis=0)[:,np.newaxis] * np.ones_like(Nk_avg0)
         Nk_L = Nk_SP[...,0]
         Nk_R = Nk_SP[...,-1]
 
@@ -305,11 +349,10 @@ class FR:
         Nk_lim_R = Nk_avg0 + self.minmod(dNkR)
 
         ponteiro = np.zeros((ctes.n_components,ctes.n_volumes),dtype=bool)
-        dL = abs((Nk_L-Nk_lim_L))#/Nk_L)
-        dR = abs((Nk_R-Nk_lim_R))#/Nk_R)
-
+        dL = abs((Nk_L-Nk_lim_L))#/np.sum(Nk_L,axis=0)
+        dR = abs((Nk_R-Nk_lim_R))#/np.sum(Nk_R,axis=0)
         ponteiro[(dL>eps0) + (dR>eps0)] = True
-
+        #ponteiro[:] = True
         #Limit function
         c_vols = M.data['centroid_volumes'][:,0]
         xSP1 = (c_vols - c_vols[0])
@@ -327,10 +370,18 @@ class FR:
         us = np.concatenate((ux[...,0][...,np.newaxis],ux2[ponteiro,np.newaxis]),axis=-1)
         us =  np.concatenate((us, ux1[ponteiro,np.newaxis]),axis=-1)
         Nk_lim = np.copy(Nk_SP)
+
         #minmod = (self.minmodB(us, 0.2, h)[...,np.newaxis])
         minmod = (self.minmod(us)[...,np.newaxis])
         Nk_lim[ponteiro] = Nk_avg[ponteiro] + ((x_SPs - x0).T[np.newaxis,:] * \
             np.ones_like(Nk_SP))[ponteiro] * minmod
+
+        '''if ctes.n_points == 4:
+            Nk_P2 = self.projections(Nk, 2)
+            Nk_lim[Nk_lim<0] = Nk_P2[Nk_lim<0]
+        Nk_lim[Nk_lim<0] = Nk_P1[Nk_lim<0]
+        Nk_lim[Nk_lim<0] = Nk_avg[Nk_lim<0]'''
+        #Nk_lim[:,[0,-1]] = Nk_P1[:,[0,-1]]
         #Nk_lim[(Nk_lim<0) * (abs(Nk_lim)<1e-15)] = 0
         if any((Nk_lim<0).flatten()): import pdb; pdb.set_trace()
         #import pdb; pdb.set_trace()

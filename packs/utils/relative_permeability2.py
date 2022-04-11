@@ -84,17 +84,17 @@ class BrooksAndCorey:
         den = np.array([den_o, den_g, den_w])
 
         dSordSj_par = (Sorw-Sorg)/(1 - Swr - Sorg)
-        dSordSj = np.array([1-dSordSj_par, -1+dSordSj_par, -1-dSordSj_par])
+        dSordSj = -np.array([dSordSj_par, -dSordSj_par, dSordSj_par])
 
         ns = np.array([self.n_o, self.n_g, self.n_w])
         dkrj_dSj = ns[np.newaxis,:,np.newaxis] * krs / den[np.newaxis,:]
         dkrj_dSj[:,den==0] = 0
-        #dkrsdSj = np.empty((3,3,len(saturations[0])))
         dkrsdSj = -dkrj_dSj[np.newaxis,...] * np.ones((3,3,len(saturations[0])))
 
         np.einsum('iij->ij',dkrsdSj[0,:])[...] = dkrj_dSj[0,:]
         np.seterr(**old_settings)
-        dkrsdSj[0,:,0,:] *= dSordSj
+        dSordSj *= dkrj_dSj[0,0]
+        dkrsdSj[0,:,0,:] += dSordSj
         return dkrsdSj.transpose(0,2,1,3)
 
 class StoneII:

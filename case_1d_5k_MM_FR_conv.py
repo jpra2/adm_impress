@@ -130,6 +130,7 @@ for  arq in arquivos:
             e256_L1_FR2 = (sum(abs(f(x_256)-data[10][0]))*(L/n))
 
 
+
         'FR3'
 
         datas = np.load('flying/results_case1_Moshiri_Manzari_5k_8_FR3_CFL09m_RK3_MLPmod_49.npy', allow_pickle=True)
@@ -185,6 +186,115 @@ for  arq in arquivos:
             n=256
             x_256 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
             e256_L1_FR3 = (sum(abs(f(x_256)-data[10][0]))*(L/n))
+
+        'FR3+TVB'
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_8_FR3_CFL09m_RK3_TVD_56.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR3_TVB_8 = data[7]
+            z_FR3_TVB_8 = data[10]
+            t_FR3_TVB_8 = data[2]
+            n=8
+            e8_L1_FR3_TVB = (sum(abs(f(x_8)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_16_FR3_CFL09m_RK3_TVD_114.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR3_TVB_16 = data[7]
+            z_FR3_TVB_16 = data[10]
+            t_FR3_TVB_16 = data[2]
+            n=16
+            e16_L1_FR3_TVB = (sum(abs(f(x_16)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_32_FR3_CFL09m_RK3_TVD_234.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR3_TVB_32 = data[7]
+            z_FR3_TVB_32 = data[10]
+            t_FR3_TVB_32 = data[2]
+            n=32
+            x_32 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e32_L1_FR3_TVB = (sum(abs(f(x_32)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_64_FR3_CFL09m_RK3_TVD_481.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR3_TVB_64 = data[7]
+            z_FR3_TVB_64 = data[10]
+            t_FR3_TVB_64 = data[2]
+            n=64
+            x_64 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e64_L1_FR3_TVB = (sum(abs(f(x_64)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_128_FR3_CFL09m_RK3_TVD_973.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR3_TVB_128 = data[7]
+            z_FR3_TVB_128 = data[10]
+            t_FR3_TVB_128 = data[2]
+            n=128
+            x_128 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e128_L1_FR3_TVB = (sum(abs(f(x_128)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_256_FR3_CFL09m_RK3_TVD_1968.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR3_TVB_256 = data[7]
+            z_FR3_TVB_256 = data[10]
+            t_FR3_TVB_256 = data[2]
+            n=256
+            x_256 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e256_L1_FR3_TVB = (sum(abs(f(x_256)-data[10][0]))*(L/n))
+
+
+        'FR4+TVB'
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_8_FR4_CFL09m_RK3_TVD_78.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR4_TVB_8 = data[7]
+            z_FR4_TVB_8 = data[10]
+            t_FR4_TVB_8 = data[2]
+            n=8
+            e8_L1_FR4_TVB = (sum(abs(f(x_8)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_16_FR4_CFL09m_RK3_TVD_159.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR4_TVB_16 = data[7]
+            z_FR4_TVB_16 = data[10]
+            t_FR4_TVB_16 = data[2]
+            n=16
+            e16_L1_FR4_TVB = (sum(abs(f(x_16)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_32_FR4_CFL09m_RK3_TVD_328.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR4_TVB_32 = data[7]
+            z_FR4_TVB_32 = data[10]
+            t_FR4_TVB_32 = data[2]
+            n=32
+            x_32 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e32_L1_FR4_TVB = (sum(abs(f(x_32)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_64_FR4_CFL09m_RK3_TVD_673.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR4_TVB_64 = data[7]
+            z_FR4_TVB_64 = data[10]
+            t_FR4_TVB_64 = data[2]
+            n=64
+            x_64 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e64_L1_FR4_TVB = (sum(abs(f(x_64)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_128_FR4_CFL09m_RK3_TVD_1362.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR4_TVB_128 = data[7]
+            z_FR4_TVB_128 = data[10]
+            t_FR4_TVB_128 = data[2]
+            n=128
+            x_128 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e128_L1_FR4_TVB = (sum(abs(f(x_128)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_256_FR4_CFL09m_RK3_TVD_2771.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR4_TVB_256 = data[7]
+            z_FR4_TVB_256 = data[10]
+            t_FR4_TVB_256 = data[2]
+            n=256
+            x_256 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e256_L1_FR4_TVB = (sum(abs(f(x_256)-data[10][0]))*(L/n))
 
 
         'FR4'
@@ -297,7 +407,65 @@ for  arq in arquivos:
             e256_L1_MUSCL = (sum(abs(f(x_256)-data[10][0]))*(L/n))
             t_MUSCL_256 = data[2]
 
+        'FR2_TVB'
+        #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_8_FR2_CFL2m_35.npy', allow_pickle=True)
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_8_FR2_CFL09m_RK3_TVD_34.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_TVB_8 = data[7]
+            z_FR2_TVB_8 = data[10]
+            t_FR2_TVB_8 = data[2]
+            n=8
+            x_8 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e8_L1_FR2_TVB = (sum(abs(f(x_8)-data[10][0]))*(L/n))
 
+
+        #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_16_FR2_CFL2_33.npy', allow_pickle=True)
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_16_FR2_CFL09m_RK3_TVD_69.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_TVB_16 = data[7]
+            z_FR2_TVB_16 = data[10]
+            t_FR2_TVB_16 = data[2]
+            n=16
+            x_16 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e16_L1_FR2_TVB = (sum(abs(f(x_16)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_32_FR2_CFL09m_RK3_TVD_141.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_TVB_32 = data[7]
+            z_FR2_TVB_32 = data[10]
+            t_FR2_TVB_32 = data[2]
+            n=32
+            x_32 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e32_L1_FR2_TVB = (sum(abs(f(x_32)-data[10][0]))*(L/n))
+
+        #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_64_FR2_CFL2_132.npy', allow_pickle=True)
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_64_FR2_CFL09m_RK3_TVD_289.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_TVB_64 = data[7]
+            z_FR2_TVB_64 = data[10]
+            t_FR2_TVB_64 = data[2]
+            n=64
+            x_64 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e64_L1_FR2_TVB = (sum(abs(f(x_64)-data[10][0]))*(L/n))
+
+        #datas = np.load('flying/results_case1_Moshiri_Manzari_5k_128_FR2_CFL2_262.npy', allow_pickle=True)
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_128_FR2_CFL09m_RK3_TVD_584.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_TVB_128 = data[7]
+            z_FR2_TVB_128 = data[10]
+            t_FR2_TVB_128 = data[2]
+            n=128
+            x_128 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e128_L1_FR2_TVB = (sum(abs(f(x_128)-data[10][0]))*(L/n))
+
+        datas = np.load('flying/results_case1_Moshiri_Manzari_5k_256_FR2_CFL09m_RK3_TVD_1170.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            Sg_FR2_TVB_256 = data[7]
+            z_FR2_TVB_256 = data[10]
+            t_FR2_TVB_256 = data[2]
+            n=256
+            x_256 = np.linspace(0+1.5/(2*n),1.5*(1-1/(2*n)),n)
+            e256_L1_FR2_TVB = (sum(abs(f(x_256)-data[10][0]))*(L/n))
 
         'FOU'
         datas = np.load('flying/results_case1_Moshiri_Manzari_5k_8_FOU_CFL09_11.npy', allow_pickle=True)
@@ -392,51 +560,55 @@ for  arq in arquivos:
 
         plt.figure(1)
         plt.plot(x_zC1_MOC, zC1_MOC, 'k')
-        plt.plot(x_128, z_FR2_128[1,:], '-ys')
-        plt.plot(x_128, z_FR3_128[1,:], '-bv')
-        plt.plot(x_128, z_FR4_128[1,:], '-ro')
+        plt.plot(x_128, z_FOU_128[1,:], '-ro')
         plt.plot(x_128, z_MUSCL_128[1,:], '-g*')
-        plt.legend(('MOC', 'FR-P1', 'FR-P2', 'FR-P3','MUSCL'))
+        #plt.plot(x_128, z_FR2_128[1,:], '-ys')
+        plt.plot(x_128, z_FR2_TVB_128[1,:], '-bv')
+        plt.plot(x_128, z_FR3_TVB_128[1,:], '-ys')
+        plt.plot(x_128, z_FR4_TVB_128[1,:], '-m<')
+        plt.legend(('MOC', 'FOU', 'MUSCL', 'FR-P1+TVB', 'FR-P2+TVB', 'FR-P3+TVB'))
         plt.grid()
         plt.xlim((1, 1.14))
         plt.ylim((0, 0.65))
         plt.title('NVCM example with 128x1x1 mesh')
         plt.ylabel('zC1')
         plt.xlabel('Distance')
-        plt.savefig('results/compositional/FR/5k_zC1_FR_MLPmod_128.png')
-
+        plt.savefig('results/compositional/FR/5k_zC1_FR_TVB_128.png')
 
         plt.figure(2)
-        plt.plot(x_zC1_MOC, zC1_MOC, 'k')
-        plt.plot(x_64, z_FR2_64[1,:], '-ys', mfc='none')
-        plt.plot(x_64, z_FR3_64[1,:], '-bv', mfc='none')
-        plt.plot(x_64, z_FR4_64[1,:], '-ro', mfc='none')
-        plt.plot(x_64, z_MUSCL_64[1,:], '-g*', mfc='none')
-        plt.xlim((1, 1.5))
-        plt.ylim((0, 0.65))
-        plt.legend(('MOC', 'FR-P1', 'FR-P2','FR-P3', 'MUSCL'))
+        plt.plot(x_4000, zCO2_FOU_4000, 'k')
+        plt.plot(x_128, z_FOU_128[0,:], '-r')
+        plt.plot(x_128, z_MUSCL_128[0,:], '-g')
+        #plt.plot(x_128, z_FR2_128[0,:], '-y')
+        plt.plot(x_128, z_FR2_TVB_128[0,:], '-b')
+        plt.plot(x_128, z_FR3_TVB_128[0,:], '-y')
+        plt.plot(x_128, z_FR4_TVB_128[0,:], '-m')
+        plt.legend(('MOC', 'FOU', 'MUSCL', 'FR-P1+TVB', 'FR-P2+TVB', 'FR-P3+TVB'))
         plt.grid()
-        plt.title('NVCM example with 64x1x1 mesh')
-        plt.ylabel('zC1')
+        plt.xlim((0.55, 1.1))
+        plt.ylim((0.75, 1))
+        plt.title('NVCM example with 128x1x1 mesh')
+        plt.ylabel('zCO2')
         plt.xlabel('Distance')
-        plt.savefig('results/compositional/FR/5k_zC1_FR_MLPmod_64.png')
-
+        plt.savefig('results/compositional/FR/5k_zCO2_FR_TVB_128.png')
 
         plt.figure(3)
-        plt.plot(x_zC1_MOC, zC1_MOC, 'k')
-        #plt.plot(x_256, z_FR2_256[1,:], '-gv', mfc='none')
-        plt.plot(x_256, z_FR2_256[1,:], '-ys', mfc='none')
-        plt.plot(x_256, z_FR3_256[1,:], '-bv', mfc='none')
-        plt.plot(x_256, z_FR4_256[1,:], '-ro', mfc='none')
-        plt.plot(x_256, z_MUSCL_256[1,:], '-g*', mfc='none')
-        plt.legend(('MOC','FR-P1', 'FR-P2', 'FR-P3', 'MUSCL'))
+        plt.plot(x_4000, Sg_FOU_4000, 'k')
+        plt.plot(x_128, Sg_FOU_128, '-r')
+        plt.plot(x_128, Sg_MUSCL_128, '-g')
+        #plt.plot(x_128, Sg_FR2_128, '-y')
+        plt.plot(x_128, Sg_FR2_TVB_128, '-b')
+        plt.plot(x_128, Sg_FR3_TVB_128, '-y')
+        plt.plot(x_128, Sg_FR4_TVB_128, '-m')
+        plt.legend(('MOC', 'FOU', 'MUSCL', 'FR-P1+TVB', 'FR-P1+TVB', 'FR-P2+TVB', 'FR-P3+TVB'))
         plt.grid()
-        plt.xlim((1, 1.14))
-        plt.ylim((0, 0.65))
-        plt.title('NVCM example with 256x1x1 mesh')
-        plt.ylabel('zC1')
+        plt.xlim((0.4, 1.2))
+        #plt.ylim((0, 0.65))
+        plt.title('NVCM example with 128x1x1 mesh')
+        plt.ylabel('zCO2')
         plt.xlabel('Distance')
-        plt.savefig('results/compositional/FR/5k_zC1_FR_MLPmod_256.png')
+        plt.savefig('results/compositional/FR/5k_Sg_FR_TVB_128.png')
+
 
         plt.figure(4)
         e_FR2 = np.log10(np.array([e8_L1_FR2, e16_L1_FR2, e32_L1_FR2, e64_L1_FR2, e128_L1_FR2, e256_L1_FR2]))
@@ -446,47 +618,50 @@ for  arq in arquivos:
         e_FOU = np.log10(np.array([e8_L1_FOU, e16_L1_FOU, e32_L1_FOU, e64_L1_FOU, e128_L1_FOU, e256_L1_FOU]))
 
         x = np.log10(np.array([8,16,32,64,128,256]))
+        y = -x
+
         plt.plot(x, e_FOU, '-m<', mfc='none')
         plt.plot(x, e_MUSCL, '-g*', mfc='none')
         plt.plot(x, e_FR2, '-ys', mfc='none')
         plt.plot(x, e_FR3, '-bv', mfc='none')
         plt.plot(x, e_FR4, '-ro', mfc='none')
+        plt.plot(x,y,'-k')
         #plt.plot(x_256, z_FR2_256[1,:], '-gv', mfc='none')
-        plt.legend(('FOU', 'MUSCL', 'FR-$\mathcal{P}_1$', 'FR-$\mathcal{P}_2$', 'FR-$\mathcal{P}_3$' ))
+        plt.legend(('FOU', 'MUSCL', 'FR-$\mathcal{P}_1$', 'FR-$\mathcal{P}_2$', 'FR-$\mathcal{P}_3$','1st order' ))
         plt.grid()
         plt.ylabel('log(|$E_{L1}$|)')
         plt.xlabel('log($n_b$)')
-        plt.savefig('results/compositional/FR/5k_erro_zC1_FR_MLPmod.png')
-
+        plt.savefig('results/compositional/FR/5k_erro_zC1_FR_MLPmod_TVB2.png')
 
         plt.figure(5)
-        x = np.array([8,16,32,64,128,256])
-        t_FR2 = np.array([t_FR2_8, t_FR2_16, t_FR2_32, t_FR2_64, t_FR2_128, t_FR2_256])
-        t_FR3 = np.array([t_FR3_8, t_FR3_16, t_FR3_32, t_FR3_64, t_FR3_128, t_FR3_256])
-        t_FR4 = np.array([t_FR4_8, t_FR4_16, t_FR4_32, t_FR4_64, t_FR4_128, t_FR4_256])
-        t_MUSCL = np.array([t_MUSCL_8, t_MUSCL_16, t_MUSCL_32, t_MUSCL_64, t_MUSCL_128, t_MUSCL_256])
-        t_FOU = np.array([t_FOU_8, t_FOU_16, t_FOU_32, t_FOU_64, t_FOU_128, t_FOU_256, t_FOU_512, t_FOU_1024, t_FOU_2048])
-
+        x = np.log10(np.array([8,16,32,64,128,256]))
+        x_FOU = np.log10(np.array([8,16,32,64,128,256, 512, 1024, 2048]))
         e_FR2 = np.array([e8_L1_FR2, e16_L1_FR2, e32_L1_FR2, e64_L1_FR2, e128_L1_FR2, e256_L1_FR2])
+        e_FR2_TVB = np.array([e8_L1_FR2_TVB, e16_L1_FR2_TVB, e32_L1_FR2_TVB, e64_L1_FR2_TVB, e128_L1_FR2_TVB, e256_L1_FR2_TVB])
         e_FR3 = np.array([e8_L1_FR3, e16_L1_FR3, e32_L1_FR3, e64_L1_FR3, e128_L1_FR3, e256_L1_FR3])
+        e_FR3_TVB = np.array([e8_L1_FR3_TVB, e16_L1_FR3_TVB, e32_L1_FR3_TVB, e64_L1_FR3_TVB, e128_L1_FR3_TVB, e256_L1_FR3_TVB])
         e_FR4 = np.array([e8_L1_FR4, e16_L1_FR4, e32_L1_FR4, e64_L1_FR4, e128_L1_FR4, e256_L1_FR4])
+        e_FR4_TVB = np.array([e8_L1_FR4_TVB, e16_L1_FR4_TVB, e32_L1_FR4_TVB, e64_L1_FR4_TVB, e128_L1_FR4_TVB, e256_L1_FR4_TVB])
+
         e_MUSCL = np.array([e8_L1_MUSCL, e16_L1_MUSCL, e32_L1_MUSCL, e64_L1_MUSCL, e128_L1_MUSCL, e256_L1_MUSCL])
         e_FOU = np.array([e8_L1_FOU, e16_L1_FOU, e32_L1_FOU, e64_L1_FOU, e128_L1_FOU, e256_L1_FOU, e512_L1_FOU, e1024_L1_FOU, e2048_L1_FOU])
-
-        plt.plot(t_FR2, e_FR2, '-ys', mfc='none')
-        plt.plot(t_FR3, e_FR3, '-bo', mfc='none')
-        plt.plot(t_FR4, e_FR4, '-rv', mfc='none')
-        plt.plot(t_MUSCL, e_MUSCL, '-g*', mfc='none')
-        plt.plot(t_FOU, e_FOU, '-m>', mfc='none')
-
-        plt.legend(('FR-P1', 'FR-P2', 'FR-P3', 'MUSCL', 'FOU'))
+        plt.plot(x, np.log10(e_FOU[:6]), '-m>', mfc='none')
+        plt.plot(x, np.log10(e_MUSCL), '-g*', mfc='none')
+        #plt.plot(x, np.log10(e_FR2), '-ys', mfc='none')
+        plt.plot(x, np.log10(e_FR2_TVB), '-yo', mfc='none')
+        #plt.plot(x, np.log10(e_FR3), '-bs', mfc='none')
+        plt.plot(x, np.log10(e_FR3_TVB), '-bv', mfc='none')
+        #plt.plot(x, np.log10(e_FR4), '-rs', mfc='none')
+        plt.plot(x, np.log10(e_FR4_TVB), '-rs', mfc='none')
+        y = -x
+        #plt.plot(x,y,'k')
+        plt.legend(('FOU', 'MUSCL', 'FR-P1+hMLP', 'FR-P1+TVD', \
+        'FR-P2+hMLP', 'FR-P2+TVD','FR-P3+hMLP', 'FR-P3+TVD'))
         plt.grid()
-        plt.xscale('log')
-        plt.yscale('log')
         plt.title('NVCM example')
-        plt.ylabel('$|E_{L1}|$')
-        plt.xlabel('time[s]')
-        plt.savefig('results/compositional/FR/5k_error_time_comp_MLPmod.png')
+        plt.ylabel('$log(|E_{L1}|)$')
+        plt.xlabel('log($n_b$)')
+        plt.savefig('results/compositional/FR/5k_EL1_comp_TVB.png')
 
         plt.figure(6)
         plt.plot(x_zC1_MOC, zC1_MOC, 'k')
@@ -501,5 +676,5 @@ for  arq in arquivos:
         plt.title('NVCM example with 32x1x1 mesh')
         plt.ylabel('zC1')
         plt.xlabel('Distance')
-        plt.savefig('results/compositional/FR/5k_zC1_FR_MLPmod_32.png')
+        plt.savefig('results/compositional/FR/5k_zC1_FR_TVB_32.png')
         import pdb; pdb.set_trace()

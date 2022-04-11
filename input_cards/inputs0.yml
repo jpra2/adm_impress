@@ -35,7 +35,7 @@ Wells:
     - 0.0
     - 0
     p1:
-    - 0.09375
+    - 0.005859375
     - 1
     - 1
     prescription: P
@@ -50,7 +50,7 @@ Wells:
     - 0
   P2:
     p0:
-    - 1.40625
+    - 1.494140625
     - 0.0
     - 0
     p1:
@@ -67,7 +67,7 @@ compositional_data:
   Cpc: 62052.84
   Epc: 2
   FR:
-    order: 2
+    order: 4
     set: true
   MUSCL:
     set: false
@@ -184,7 +184,7 @@ compositional_data:
     deltaVlim: 10
     delta_t_ini: 86.4
     delta_tmax: 86400
-    delta_tmin: 0.000864
+    delta_tmin: 8.64
   time_to_save:
   - 86400
   vpis_para_gravar_vtk:
@@ -204,11 +204,11 @@ hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: 16x1x1_5k.msh
+mesh_name: 256x1x1_5k.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_case1_Moshiri_Manzari_5k_16_FR2_CFL09m_RK3_TVD
+name_save_file: results_case1_Moshiri_Manzari_5k_256_FR4_CFL09m_RK3_TVD
 read_permeability: false
 set_permeability: true
 set_porosity: true
