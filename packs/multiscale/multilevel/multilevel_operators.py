@@ -382,7 +382,7 @@ class MultilevelOperators(DataManager):
         return OP_AMS, correction_function
 
     def run_paralel_3(self, T_fine_without_bc, global_source_term, dual_subdomains, global_vector_update, global_diagonal_term, OP_AMS, level, master_local_operator, **kwargs):
-    
+
         master: MasterLocalOperator = master_local_operator
         context = {
             'global_vector_update': global_vector_update,
@@ -406,6 +406,35 @@ class MultilevelOperators(DataManager):
         # OR = self._data[self.restriction + str(level)]
 
         return OP_AMS, correction_function
+
+    def run_serial(self, T_fine_without_bc, global_source_term, dual_subdomains, global_vector_update, global_diagonal_term, OP_AMS, level, master_local_operator, **kwargs):
+
+        #########
+        ## set update for op and local matrices
+        DualSubdomainMethods.set_local_update(dual_subdomains, global_vector_update)
+        #########
+
+        ########
+        ## update local matrices
+        DualSubdomainMethods.update_matrices_dual_subdomains(dual_subdomains, T_fine_without_bc, global_diagonal_term)
+        ########
+
+        ########
+        ## update local source term
+        DualSubdomainMethods.update_local_source_terms_dual_subdomains(dual_subdomains, global_source_term)
+        ########
+
+        master = master_local_operator
+        OP_AMS, correction_function = master.run_serial(OP_AMS, dual_subdomains)
+
+        self._data[self.prolongation + str(level)] = OP_AMS
+        self._data[self.pcorr_n + str(level)] = correction_function
+        # self._data[self.cmatrix + str(level)] = Cmatrix
+        self._data[self.prolongation_lcd + str(level)] = sp.find(OP_AMS)
+        # OR = self._data[self.restriction + str(level)]
+
+        return OP_AMS, correction_function
+
 
     def get_OP_paralel(self, level, dual_volumes, local_couple, couple_bound):
         #

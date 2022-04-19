@@ -9,6 +9,7 @@ from packs.multiscale.neuman_local_problems.local_solver import run_thing, run_t
 from packs.multiscale.preprocess.dual_domains import DualSubdomainMethods, DualSubdomain
 from collections.abc import Sequence
 from packs.multiscale.operators.prolongation.AMS.paralell2.local_operator import LocalOperator
+import scipy.sparse as sp
 
 class MasterLocalOperator(CommonMasterMethods):
 
@@ -46,7 +47,7 @@ class MasterLocalOperator(CommonMasterMethods):
 
         # return m2w, w2m, procs, _queue, values
         return procs, process_args, process_targets, process_kwargs
-    
+
     def init_subproblems2(self, problems_per_cpu, w2m, values, _queue, update_FC, **kwargs):
         #### run_thing2 for local subproblems
 
@@ -104,11 +105,11 @@ class MasterLocalOperator(CommonMasterMethods):
         return OP_AMS, correction_function
 
     def run2(self, OP_AMS, dual_subdomains, **kwargs):
-        
+
         correction_function = np.zeros(self.n_volumes)
         # procs = self.init_subproblems(self.problems_per_cpu, self.w2m, self.finished, self.queue)
         procs, procs_args, procs_targets, procs_kwargs = self.init_subproblems2(self.problems_per_cpu, self.w2m, self.finished, self.queue, self.update_FC, **kwargs)
-        
+
         for proc in procs:
             proc.start()
 
@@ -133,19 +134,52 @@ class MasterLocalOperator(CommonMasterMethods):
             resp = self.queue.get()
             set_data_to_op(OP_AMS, resp[0])
             set_data_to_cf(correction_function, resp[1])
-        
+
         for comm in self.m2w:
             as_list = comm.recv()
             for resp in as_list:
-                dual_subdomains[resp[0]].As.update(resp[1])    
+                dual_subdomains[resp[0]].As.update(resp[1])
 
         self.set_false_finished(self.finished)
 
         return OP_AMS, correction_function
-        
 
+    def run_serial(self, OP_AMS, dual_subdomains, **kwargs):
 
+        if self.update_FC:
+            return self.run_serial_update_FC(OP_AMS, dual_subdomains, **kwargs)
+        else:
+            correction_function = np.zeros(self.n_volumes)
 
+            for dual in dual_subdomains:
+                if dual.test_update():
+                    # dual.update_lu_matrices()
+                    local_op = sp.find(dual.ams_solver.get_OP_AMS_TPFA_by_AS(dual.As))
+                    # local_op = dual.ams_solver.get_OP_AMS_TPFA_by_AS_and_local_lu(dual.As, dual.lu_matrices)
+                    # local_op = sp.find(local_op)
+                    local_op[0][:] = dual.gids[local_op[0]]
+                    local_op[1][:] = dual.rmap_lcid_cid[local_op[1]]
+                    OP_AMS[local_op[0], local_op[1]] = local_op[2]
+
+            return OP_AMS, correction_function
+
+    def run_serial_update_FC(self, OP_AMS, dual_subdomains, **kwargs):
+        correction_function = np.zeros(self.n_volumes)
+
+        for dual in dual_subdomains:
+            if dual.test_update():
+                # dual.update_lu_matrices()
+                local_op = sp.find(dual.ams_solver.get_OP_AMS_TPFA_by_AS(dual.As))
+                # local_op = dual.ams_solver.get_OP_AMS_TPFA_by_AS_and_local_lu(dual.As, dual.lu_matrices)
+                # local_op = sp.find(local_op)
+                local_op[0][:] = dual.gids[local_op[0]]
+                local_op[1][:] = dual.rmap_lcid_cid[local_op[1]]
+                OP_AMS[local_op[0], local_op[1]] = local_op[2]
+
+                local_pcorr = dual.ams_solver.get_pcorr2(dual.As, dual.local_source_term)
+                correction_function[dual.gids] = local_pcorr
+
+        return OP_AMS, correction_function
 
 def set_data_to_op_dep0(OP_AMS, resp):
 

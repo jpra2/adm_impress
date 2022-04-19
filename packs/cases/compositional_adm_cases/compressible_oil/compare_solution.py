@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from packs.cases.compositional_adm_cases.compressible_oil.all_functions import organize_cases_by_loop, extrair_dado, erro_abs, get_data_from_loop_array, create_loop_array_structured
+from packs.cases.compositional_adm_cases.compressible_oil import descriptions
 
 # key_list = ['loop_array', 'pressure']
 key_list = ['loop_array']
@@ -36,7 +37,11 @@ fig_str = 'figura_'
 # description2 = 'case38_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0'
 # description2 = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
 # description2 = 'case45_test'
-description2 = 'case46_test-limit_maxiter_tams-10'
+# description2 = 'case46_test-limit_maxiter_tams-10'
+# description2 = 'case47-test-limit_maxiter_tams_cg-20_thres-update-BF-0.3'
+# description2 = 'case48-test-limit_maxiter_tams_cg-1000_thres-update-BF-0.1_by_dvtol'
+# description2 = 'case49-test-limit_maxiter_tams_cg-1000_thres-update-BF-0.1_by_dvtol'
+description2 = descriptions.case2_adm_description
 # description2 = 'case22_adm_6k_5000_'
 # description2 = 'case23_finescale_6k_5000_'
 case2 = CumulativeCompositionalDataManager(description=description2)
@@ -197,12 +202,18 @@ ax1.plot(case2_time, case2_active_volumes, '-')
 # ax1.bar(case2_time, case2_active_volumes)
 ax1.set_xlabel('time [days]')
 ax1.set_ylabel('Active volumes')
-ax1.set_xlim(min(case2_time), max(case2_time) + 1)
+ax1.set_xlim(min(case2_time), max(case2_time))
 
 ax2.plot(case1_time, case1_simulation_time, '-', label='Finescale')
 ax2.plot(case2_time, case2_simulation_time, '-', label='Adm')
-ax2.plot(case1_time, np.repeat(np.mean(case1_simulation_time), len(case1_simulation_time)), 0.05, color='red')
-ax2.plot(case2_time, np.repeat(np.mean(case2_simulation_time), len(case2_simulation_time)), 0.05, color='black')
+# ax2.plot(case1_time, np.repeat(np.mean(case1_simulation_time), len(case1_simulation_time)), 0.05, color='red')
+# ax2.plot(case2_time, np.repeat(np.mean(case2_simulation_time), len(case2_simulation_time)), 0.05, color='black')
+ax2.axhline(y=np.mean(case1_simulation_time), color='red')
+ax2.axhline(y=np.mean(case2_simulation_time), color='black')
+ax2.annotate(round(np.mean(case1_simulation_time), 1), (0, np.mean(case1_simulation_time)))
+ax2.annotate(round(np.mean(case2_simulation_time), 1), (0, np.mean(case2_simulation_time)))
+ax2.grid(True)
+
 
 t1 = np.mean(np.mean(case1_simulation_time))
 t2 = np.mean(case2_simulation_time)
@@ -212,7 +223,7 @@ t2sum = case2_simulation_time.sum()
 # ax1.fill(case2_time, case2_active_volumes)
 ax2.set_xlabel('time [days]')
 ax2.set_ylabel('Simulation_time [s]')
-ax2.set_xlim(min(case2_time), max(case2_time) + 1)
+ax2.set_xlim(min(case2_time), max(case2_time))
 ax2.legend()
 # fig.tight_layout()
 
@@ -242,7 +253,7 @@ ax2.plot(case1_time, case1_gas_rate, '-', label='Finescale')
 ax2.plot(case2_time, case2_gas_rate, '-', label='Adm')
 ax2.set_xlabel('time [days]')
 ax2.set_ylabel('Gas rate [m3/s]')
-ax2.set_xlim(min(case2_time), max(case2_time) + 1)
+ax2.set_xlim(min(case2_time), max(case2_time))
 ax2.legend()
 # fig.tight_layout()
 
@@ -256,6 +267,20 @@ plt.subplots_adjust(left=0.15,
 # plt.savefig(fig_str + description2 + 'Flow_rate' + '.png')
 plt.savefig(fig_str + description2 + 'Flow_rate_iterative' + '.png')
 ###############################################
+
+########################
+case2_tams_iterations = case2_structured_loop_array['tams_iterations'].flatten()
+case2_tams_iterations = case2_tams_iterations[test2]
+fig, ax = plt.subplots()
+ax.plot(case2_time, case2_tams_iterations, '-', label='Tams Iterations')
+ax.set_xlabel('time [days]')
+ax.set_ylabel('Iterations')
+# fig.suptitle('Volumes para atualizar as funcoes de base')
+plt.savefig(fig_str + description2 + 'Tams_iterations' + '.png')
+########################
+
+
+
 
 
 
