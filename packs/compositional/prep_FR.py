@@ -162,9 +162,10 @@ def run(M):
     #points = np.round(points,2)
     #L = np.round(L,2)
     #dL = np.round(dL,2)
+
     V = np.polynomial.legendre.legvander(points,n_points-1)
     x_points, v0, vols_vec = auxiliary_terms(M, points, n_points)
 
-    V_H = Vandermonde2(n_points, points)
-    GV_H = gradVandermonde(n_points, points)
-    Dr = GV_H@np.linalg.inv(V_H)
+    #V_H = Vandermonde2(n_points, points)
+    #GV_H = gradVandermonde(n_points, points)
+    #Dr = GV_H@np.linalg.inv(V_H)

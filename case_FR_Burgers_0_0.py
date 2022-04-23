@@ -682,7 +682,7 @@ for arq in arquivos:
         plt.grid()
         plt.ylabel('$log_{10}({E}_{L_1})$')
         plt.xlabel('$log_{10}(N)$')
-        plt.legend(('FR - $\mathcal{P}_1$', 'FR - $\mathcal{P}_2$', 'FR - $\mathcal{P}_3$', 'MUSCL'))
+        plt.legend(('FR - P1', 'FR - P2', 'FR - P3', 'MUSCL'))
         plt.savefig('results/compositional/FR/Nk_Burgers_convergence.png')
 
         plt.figure(4)

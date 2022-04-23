@@ -1,6 +1,6 @@
 #2-phase problem with 3 components - moshiri
 mesh_name: 256x1x1_5k.msh
-name_save_file: 'results_case1_Moshiri_Manzari_5k_256_FR4_CFL09m_RK3_TVD' #150683
+name_save_file: 'results_case1_Moshiri_Manzari_5k_256_FR4_CFL09m_RK3_MLPmod' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -65,9 +65,9 @@ compositional_data:
     deltaNlim: 10
     deltaSlim: 10
     deltaVlim: 10
-    delta_t_ini: 86.4
+    delta_t_ini: 8.64
     delta_tmax: 86400
-    delta_tmin: 8.64
+    delta_tmin: 0.0864
 
   water_data:
     mi_W: 1e-3

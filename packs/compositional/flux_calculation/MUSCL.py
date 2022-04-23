@@ -84,7 +84,7 @@ class MUSCL:
         np.seterr(divide='ignore', invalid='ignore')
         r_face = dNk_face[:,:,np.newaxis] / dNk_face_neig
         r_face[dNk_face_neig==0] = 0
-        phi = (r_face**2 + abs(r_face)) / (r_face**2 + 1)
+        phi = (r_face**2 + (r_face)) / (r_face**2 + 1)
         phi[r_face<0]=0 #so botei pra caso r==-1
         Phi = phi
         Phi[:,:,1] = -Phi[:,:,1]
@@ -93,7 +93,7 @@ class MUSCL:
     def get_extrapolated_compositions(self, fprop, Phi, dNk_face_neig):
         #Phi[abs(dNk_face_neig)<1e-30] = 0
         Nk_face = fprop.Nk[:,ctes.v0] + Phi / 2 * dNk_face_neig
-        #Nk_face[(abs(Nk_face)<1e-30)] = fprop.Nk[:,ctes.v0][(abs(Nk_face)<1e-30)]
+        Nk_face[(Nk_face<0)*(abs(Nk_face)<1e-300)] = 0
         if any(Nk_face.flatten()<0): import pdb; pdb.set_trace()
         z_face = Nk_face[0:ctes.Nc] / np.sum(Nk_face[0:ctes.Nc], axis = 0)
         return Nk_face, z_face

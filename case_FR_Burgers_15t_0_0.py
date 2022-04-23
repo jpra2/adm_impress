@@ -577,7 +577,7 @@ for arq in arquivos:
         plt.ylabel('N')
         plt.xlabel('Distance')
         plt.title('Results for t=1.5 and 64CV mesh')
-        plt.legend(('FR-$\mathcal{P}_3$ hMLP', 'FR-$\mathcal{P}_3$ MLP', 'Reference'))
+        plt.legend(('FR-P3+hMLP', 'FR-P3+MLP', 'Reference'))
         plt.savefig('results/compositional/FR/Nk_Burgers_MLP_hMLP.png')
 
         import pdb; pdb.set_trace()

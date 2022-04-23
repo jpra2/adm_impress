@@ -75,7 +75,7 @@ class StabilityCheck:
         Pv = Pv[:,np.newaxis] * np.ones_like(self.z)
         self.x = self.z
         self.y = self.z
-        
+
         self.L[self.P > Pv[self.z==1]] = 1
         self.L[self.P < Pv[self.z==1]] = 0.
 

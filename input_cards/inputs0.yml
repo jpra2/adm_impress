@@ -182,9 +182,9 @@ compositional_data:
     deltaPlim: 68.9476
     deltaSlim: 10
     deltaVlim: 10
-    delta_t_ini: 86.4
+    delta_t_ini: 8.64
     delta_tmax: 86400
-    delta_tmin: 8.64
+    delta_tmin: 0.0864
   time_to_save:
   - 86400
   vpis_para_gravar_vtk:
@@ -208,7 +208,7 @@ mesh_name: 256x1x1_5k.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_case1_Moshiri_Manzari_5k_256_FR4_CFL09m_RK3_TVD
+name_save_file: results_case1_Moshiri_Manzari_5k_256_FR4_CFL09m_RK3_MLPmod
 read_permeability: false
 set_permeability: true
 set_porosity: true

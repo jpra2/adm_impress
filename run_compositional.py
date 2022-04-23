@@ -161,13 +161,12 @@ class run_simulation:
 
         if ctes.load_k and ctes.compressible_k:
             #if self.z
-            
+
             self.p2 = StabilityCheck(fprop.P, fprop.T)
             fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
             self.p2.run_init(fprop.P, np.copy(fprop.z))#, wells)
-
             if len(wells['ws_inj'])>0 and not self.p2.constant_K:
 
                 if any(wells['inj_cond']=='reservoir'):
@@ -197,6 +196,7 @@ class run_simulation:
         #if any(fprop.L!=0): import pdb; pdb.set_trace()
         '----------------------- Update fluid properties ----------------------'
         self.p1.run_inside_loop(M, fprop)
+        #if (fprop.Sg[-37]<fprop.Sg[-36])*(fprop.Sg[-37]<fprop.Sg[-38]): import pdb; pdb.set_trace()
 
 
         '-------------------- Advance in time and save results ----------------'
@@ -267,7 +267,8 @@ class run_simulation:
     def update_current_compositional_results(self, M, wells, fprop):
         #total_flux_internal_faces = fprop.total_flux_internal_faces.ravel() #* M.faces.normal[M.faces.internal]
         #total_flux_internal_faces_vector = fprop.total_flux_internal_faces.T * np.abs(M.faces.normal[M.faces.internal])
-        if ctes.FR: Nk = fprop.Nk_SP
+        if ctes.FR: Nk = fprop.Nk_SP;
+
         else: Nk = fprop.Nk
 
         self.current_compositional_results = np.array([self.loop, self.vpi, self.sim_time,

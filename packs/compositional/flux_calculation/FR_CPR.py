@@ -44,23 +44,26 @@ class FR:
 
         dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_1(np.copy(Nk_SP_old), q_SP, dFk_SP, delta_t)
-        Nk_SP = self.slopeLim1(M, Nk_SP)
-        #Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
+        #Nk_SP = self.slopeLim1(M, Nk_SP)
+        Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
 
         dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_2(np.copy(Nk_SP_old), q_SP, np.copy(Nk_SP), dFk_SP, delta_t)
-        Nk_SP = self.slopeLim1(M, Nk_SP)
-        #Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
+        #Nk_SP = self.slopeLim1(M, Nk_SP)
+        Nk_SP = self.MLP_slope_limiter(M, fprop, np.copy(Nk_SP), wells)
 
         dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_3(np.copy(Nk_SP_old), q_SP, np.copy(Nk_SP), dFk_SP, delta_t)
-        Nk_SP = self.slopeLim1(M, Nk_SP)
-        #Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
+        #Nk_SP = self.slopeLim1(M, Nk_SP)
+        Nk_SP = self.MLP_slope_limiter(M, fprop, np.copy(Nk_SP), wells)
 
         Fk_vols_total = np.min(abs(dFk_SP),axis=2)
         Nk = 1 / sum(ctes_FR.weights) * np.sum(ctes_FR.weights * Nk_SP,axis=2)
         z = Nk[0:ctes.Nc,:] / np.sum(Nk[0:ctes.Nc,:], axis = 0)
 
+        #Nk2 = (np.linalg.inv(ctes_FR.V)[np.newaxis,] @ Nk_SP[:,:,:, np.newaxis])[:,:,:,0]
+        #Nk_avg = self.projections(Nk2, 0)
+        #import pdb; pdb.set_trace()
         if (any((z<0).flatten())): import pdb; pdb.set_trace()
         return wave_velocity, Nk, z, Nk_SP, Fk_vols_total
 
@@ -396,7 +399,9 @@ class FR:
 
         #self.machine_error = np.max(abs(Nk_SP - Nk_SP_in))
         #if self.machine_error<np.finfo(np.float64).eps: machine_error = np.finfo(np.float64).eps
-        self.machine_error = 0 #1e-150 #1e-323 #1e-700 #1e-150
+        #self.machine_error = 0 #1e-150 #1e-323 #1e-700 #1e-150
+        #self.machine_error = 1e-15 * np.max(abs(Nk_P0))
+        self.machine_error = np.finfo(np.float64).eps
 
         inds = np.array([0,-1])
 
@@ -423,8 +428,7 @@ class FR:
 
         phi_P2 = np.zeros_like(Phi_P1)
         phi_Pn = np.zeros_like(Phi_P1)
-        Nk_P2 = Nk_SP
-
+        Nk_P2 = np.copy(Nk_SP)
 
         if ctes_FR.n_points > 2:
             '---------------Hierarchical MLP limiting procedure----------------'
@@ -432,7 +436,7 @@ class FR:
             #axis=1 due to reshaping of the argument [~phi_Pn.astype(bool)]
             phi_Pn = self.troubled_cell_marker(M, fprop, Nk_P1_vertex, Nk_P0_vertex,\
                 Nk_SP, Nk_neig, Nk_faces)
-            phi_P2 = phi_Pn
+            phi_P2[:] = phi_Pn
 
             if ctes_FR.n_points==4:
 
@@ -467,6 +471,7 @@ class FR:
             phi_Pn[np.sum(Nk_SP<0,axis=-1,dtype=bool)] = 0
 
             phi_P2[phi_Pn==1] = 1
+
             phi_P2[np.sum(Nk_P2<0,axis=-1,dtype=bool)] = 0
 
             Phi_P1[phi_P2==1] = 1
@@ -476,16 +481,17 @@ class FR:
         #phi_Pn[:] = 1
 
         #Phi_P1[:] = 1
+        #phi_P2[:] = 0
 
+        if any(Phi_P1[phi_P2==1]!=1): import pdb; pdb.set_trace()
         Nk_SPlim = (Nk_P0 + Phi_P1[:,:, np.newaxis] * (Nk_P1 - Nk_P0) + \
             phi_P2[:,:,np.newaxis] * ((Nk_P2 - Nk_P1) + phi_Pn[:,:,np.newaxis] * (Nk_SP - Nk_P2)))
 
         #vols_neg = np.sum(Nk_SPlim<0,axis=-1,dtype=bool)
         #Nk_SPlim[vols_neg,:] = Nk_P0[vols_neg,:]
-        Nk_SPlim[abs(Nk_SPlim)<1e-300]=abs(Nk_SPlim[abs(Nk_SPlim)<1e-300])
-        Nk = 1 / sum(ctes_FR.weights) * np.sum(ctes_FR.weights * Nk_SPlim,axis=2)
-
-        z = Nk[0:ctes.Nc,:] / np.sum(Nk[0:ctes.Nc,:], axis = 0)
+        Nk_SPlim[(abs(Nk_SPlim)<1e-300)]=abs(Nk_SPlim[abs(Nk_SPlim)<1e-300])
+        #Nk = 1 / sum(ctes_FR.weights) * np.sum(ctes_FR.weights * Nk_SPlim,axis=2)
+        #z = Nk[0:ctes.Nc,:] / np.sum(Nk[0:ctes.Nc,:], axis = 0)
         #if any(abs(z[1,90:]-0.3)>1e-4): import pdb; pdb.set_trace()
 
         if any(abs(Nk_SPlim[Nk_SPlim<0])):
@@ -519,7 +525,16 @@ class FR:
         #Phi_r = self.MLP_vk(M, Nk_neig, Nk_P0_vertex, Linear_term)
 
         Phi_P1 = np.ones_like(Phi_r)
-        Phi_P1[abs(Nk_P1_vertex - Nk_P0_vertex) >= self.machine_error] = Phi_r[abs(Nk_P1_vertex - Nk_P0_vertex) >= self.machine_error]
+        #z_P1 = Nk_P1_vertex/np.sum(Nk_P1_vertex,axis=0)
+        #z_P0 = Nk_P0_vertex/np.sum(Nk_P0_vertex,axis=0)
+        Nk_P1_adim = Nk_P1_vertex/np.max(Nk_P0_vertex,axis=1)[:,np.newaxis]
+        Nk_P0_adim = Nk_P0_vertex/np.max(Nk_P0_vertex,axis=1)[:,np.newaxis]
+
+        P1_adim = abs(Nk_P1_adim - Nk_P0_adim)
+        P1_condition = P1_adim >= self.machine_error
+        #P1_condition = abs(Nk_P1_vertex - Nk_P0_vertex)>=self.machine_error
+        negative_N_condition = Nk_P1_vertex<0
+        Phi_P1[(P1_condition) + (negative_N_condition)] = Phi_r[(P1_condition)+(negative_N_condition)]
         Phi_P1 = np.min(Phi_P1, axis = 2)
 
         #FOR THE BURGERS PROBLEM
@@ -540,7 +555,7 @@ class FR:
         r1 = (f_min - Nk_P0_vertex) / Linear_term
         r2 = (f_max - Nk_P0_vertex) / Linear_term
         rs = np.concatenate((r1[...,np.newaxis], r2[...,np.newaxis]),axis = -1)
-        rs[Linear_term == 0] = 1
+        rs[Linear_term==0] = 1
         r = np.max(rs, axis = -1)
         Phi_r_u1 = r
         Phi_r_u1[Phi_r_u1>1] = 1
@@ -603,8 +618,14 @@ class FR:
 
         C_troubled1 = (Nk_P1_vertex <= np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
         C_troubled2 = (Nk_P1_vertex >= np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
-        #C_troubled1[abs((Nk_P1_vertex - np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])) <= self.machine_error] = True
-        #C_troubled2[abs((Nk_P1_vertex - np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])) <= self.machine_error] = True
+
+        Nk_neig_max_vols = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        Nk_neig_min_vols = np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        op1 = abs((Nk_P1_vertex - Nk_neig_max_vols)/Nk_neig_max_vols)
+        op2 = abs((Nk_P1_vertex - Nk_neig_min_vols)/Nk_neig_min_vols)
+        C_troubled1[op1 <= self.machine_error] = True
+        C_troubled2[op2 <= self.machine_error] = True
+        
         troubled_cells = (C_troubled1 * C_troubled2)
         return troubled_cells
 
@@ -615,9 +636,15 @@ class FR:
 
         Nk_less_max = (Nk_Pm_vertex < np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
         Nk_big_min = (Nk_Pm_vertex > np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
-        #Nk_less_max[abs(Nk_Pm_vertex - np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]) <= self.machine_error] = True
-        #Nk_big_min[abs(Nk_Pm_vertex - np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]) <= self.machine_error] = True
-        C1 = ((Linear_term) > 0) * ((High_order_term) < 0) * (Nk_big_min)
+
+        Nk_neig_max_vols = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        Nk_neig_min_vols = np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        op1 = abs((Nk_Pm_vertex - Nk_neig_max_vols)/Nk_neig_max_vols)
+        op2 = abs((Nk_Pm_vertex - Nk_neig_min_vols)/Nk_neig_min_vols)
+        Nk_less_max[op1 <= self.machine_error] = False
+        Nk_big_min[op2 <= self.machine_error] = False
+
+        C1 = ((Linear_term) > 0) * (High_order_term < 0) * (Nk_big_min)
         C2 = ((Linear_term) < 0) * (High_order_term > 0) * (Nk_less_max)
         return C1, C2
 
@@ -642,6 +669,13 @@ class FR:
         Nf = np.sum(trbl_bound_detector_vols, axis = -1)
         return Nf
 
+    def augmented_MLP_condition(self, Nk_Pm_vertex, Nk_neig):
+        Nk_avg_vertex_max = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        Nk_avg_vertex_min = np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        C = (Nk_Pm_vertex <= Nk_avg_vertex_max) * (Nk_Pm_vertex >= Nk_avg_vertex_min)
+        #equal = (abs(Nk_Pm_vertex - Nk_avg_vertex_max)<1e-300) * (abs(Nk_Pm_vertex >= Nk_avg_vertex_min)<1e-300)
+        return C
+
     def troubled_cell_marker(self, M, fprop, Nk_P1_vertex, Nk_P0_vertex, Nk_Pm, Nk_neig, Nk_faces):
 
         #Nk_faces_avg = 1/2 * np.sum(ctes_FR.weights[np.newaxis,np.newaxis,:,np.newaxis] * Nk_faces, axis=2)
@@ -650,6 +684,8 @@ class FR:
         Nk_Pmvertex = Nk_Pm[:,:,inds]
 
         P1_proj_cond = self.P1_projected_cond(Nk_P1_vertex, Nk_neig)
+
+        #A_MLP_cond = self.augmented_MLP_condition(Nk_Pmvertex, Nk_neig)
 
         C1, C2 = self.smooth_extrema_cond(fprop, Nk_P0_vertex, Nk_P1_vertex, Nk_Pmvertex, Nk_neig)
 
@@ -665,7 +701,10 @@ class FR:
         C3_cells[:] = 0
 
         '''A4-1 step'''
+        #P1_proj_cond[P1_proj_cond==1] = A_MLP_cond[P1_proj_cond==1]
+
         P1_proj_cond_cells = np.min(1*(P1_proj_cond),axis=-1)
+        #A_MLP_cond_cells = np.min(1*(A_MLP_cond),axis=-1)
 
         'Type I trouble'
         '''condI = (P1_proj_cond_cells==1)
@@ -677,7 +716,7 @@ class FR:
         '''A4-2 step'''
         smooth_extrema = C1+C2
         smooth_extrema_cells = np.min(1*smooth_extrema,axis=-1)
-
+        #smooth_extrema_cells[:] = 0
         'Type II trouble'
         #shock_condition = abs(p_neig_l-p_neig_r)>=0.1*p_neig_l#
         '''aux_II = smooth_extrema_cells[smooth_extrema_cells==1]
@@ -686,6 +725,8 @@ class FR:
         smooth_extrema_cells[smooth_extrema_cells==1] = aux_II'''
 
         phi_Pm = 1*((P1_proj_cond_cells + smooth_extrema_cells+C3_cells).astype(bool))
+        #phi_Pm = 1*((A_MLP_cond_cells + smooth_extrema_cells+C3_cells).astype(bool))
+
         #phi_Pm = 1*((P1_proj_cond_cells).astype(bool))
         #if any((phi_Pm[:,:,np.newaxis]*Nk_Pmvertex).flatten()<0): import pdb; pdb.set_trace()
 

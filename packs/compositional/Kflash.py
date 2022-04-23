@@ -28,7 +28,7 @@ class StabilityCheck(SC):
         self.V = (Vmin + Vmax) * 0.5
         ponteiro = np.ones_like(self.V,dtype=bool)
 
-        self.V, self.x, self.y = self.solve_objective_function_Whitson_for_V(self.V, Vmax, \
+        self.V, self.x, self.y = self.solve_objective_function_Whitson_for_V(np.copy(self.V), Vmax, \
             Vmin, np.copy(self.K), self.z)
         #self.Yinghui_method(ponteiro) #ajeitar!
         #import pdb; pdb.set_trace()

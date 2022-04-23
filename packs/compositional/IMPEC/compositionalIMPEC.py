@@ -118,7 +118,6 @@ class CompositionalFVM:
             r=1
 
         if not ctes.FR:
-            #Fk_vols_total *= 1/ctes.ds_faces
             fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, fprop.qk_molar,
                 Fk_vols_total, delta_t)
             '''Nk1 = RK3.update_composition_RK3_1(np.copy(Nk_old), fprop.qk_molar,
@@ -137,15 +136,14 @@ class CompositionalFVM:
                 P_old, Nk2, Nk_SP_old, Pot_hid, delta_t, t, G)
             fprop.Nk = RK3.update_composition_RK3_3(np.copy(Nk_old), fprop.qk_molar,
                 np.copy(Nk2),Fk_vols_total, delta_t)
-            fprop.z = fprop.Nk[:ctes.Nc]/np.sum(fprop.Nk[:ctes.Nc],axis=0)'''
-
+            fprop.z = fprop.Nk[:ctes.Nc]/np.sum(fprop.Nk[:ctes.Nc],axis=0)
+            '''
         #if fprop.z[-1,0] > 0: import pdb; pdb.set_trace()
 
         fprop.wave_velocity = wave_velocity
         fprop.Ft_internal = Ft_internal
-
+        fprop.Nk[(fprop.Nk<0)*(abs(fprop.Nk)<1e-300)] = 0
         #if fprop.P[0]<fprop.P[1]: import pdb; pdb.set_trace()
-        #fprop.Nk[(fprop.Nk<0)*(abs(fprop.Nk)<1e-14)]= 0
         if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
         #if any(fprop.Sw>1): import pdb; pdb.set_trace()
         #fprop.Nk[fprop.Nk<0] = 1e-30

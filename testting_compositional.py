@@ -53,7 +53,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         if sim.t + sim.delta_t > t_next:
             sim.delta_t = t_next - sim.t
 
-        #print('progress... {}[%]'.format(np.round(sim.t/sim.time_save[-1]*100,4)))
+        print('progress... {}[%]'.format(np.round(sim.t/sim.time_save[-1]*100,4)))
     loop = sim.loop
     #print('dt: ', sim.delta_t)
 
