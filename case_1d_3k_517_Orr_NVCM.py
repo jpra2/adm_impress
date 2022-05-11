@@ -111,6 +111,20 @@ for  arq in arquivos:
             n=256
             x_256 = np.linspace(0+2/(2*n),2*(1-1/(2*n)),n)
 
+        'FR4'
+        datas = np.load('flying/results_Orr_3k_C517_128x1x1_IMPEC_FR4_1081.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            zCH4_128_FR4 = data[10][1]
+            n=128
+            x_128 = np.linspace(0+2/(2*n),2*(1-1/(2*n)),n)
+
+        'FR3'
+        datas = np.load('flying/results_Orr_3k_C517_128x1x1_IMPEC_FR3_797.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            zCH4_128_FR3 = data[10][1]
+            n=128
+            x_128 = np.linspace(0+2/(2*n),2*(1-1/(2*n)),n)
+
 
         plt.figure(1)
         plt.plot(x_8, zCH4_8_FR2, '-g', mfc='none')
@@ -129,11 +143,9 @@ for  arq in arquivos:
         plt.savefig('results/compositional/3k_methane_Orr_NVCM_FR2.png')
 
         plt.figure(2)
-        plt.plot(x_200, zCH4_200_FOU, '-b')
-        plt.plot(x_200, zCH4_200_MUSCL_LLF, '-r')
-        plt.plot(x_200, zCH4_200_FR2, '-g')
-        plt.plot(x_200, zCH4_200_FR3, '-y')
         plt.plot(zCH4_x, zCH4, '-k')
+        plt.plot(x_128, zCH4_128_FR4, '-y', mfc='none')
+        plt.plot(x_128, zCH4_128_FR3, '-b', mfc='none')
         #plt.plot(x_axis_xCH4_LLF_50, xCH4_LLF_50, '-sk', mfc='none')
         plt.grid()
 
@@ -141,5 +153,5 @@ for  arq in arquivos:
         plt.ylabel('Methane global molar fraction ')
         plt.title('FR P1 64 CV')
         plt.xlabel('Distance')
-        plt.savefig('results/compositional/3k_methane_Orr_NVCM_200.png')
+        plt.savefig('results/compositional/3k_methane_Orr_NVCM_FR4_128.png')
         import pdb; pdb.set_trace()

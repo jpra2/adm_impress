@@ -159,9 +159,13 @@ def run(M):
     dgRB, dgLB, gRB, gLB = correction_function(n_points)
     L, dL = Lagrange_poly(n_points, points)
 
-    #points = np.round(points,2)
-    #L = np.round(L,2)
-    #dL = np.round(dL,2)
+    points[abs(points)<1e-15] = 0
+    L[abs(L)<5e-15] = 0
+    dL[abs(dL)<5e-15] = 0
+    '''points = np.round(points,2)
+    L = np.round(L,2)
+    dL = np.round(dL,2)'''
+
 
     V = np.polynomial.legendre.legvander(points,n_points-1)
     x_points, v0, vols_vec = auxiliary_terms(M, points, n_points)

@@ -27,7 +27,7 @@ monophasic_data:
 # Case 1 of Firoozabadi paper
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 2.2
+  CFL: 0.9
 
   solver:
     IMPSAT: false
@@ -37,7 +37,7 @@ compositional_data:
 
   FR:
     set: true
-    order: 2
+    order: 4
 
   RiemannSolver:
     ROE: false
@@ -93,7 +93,7 @@ compositional_data:
 
 #  CO2 CH4 C10
   component_data:
-    z: [0., 0.3, 0.7]
+    z: [0.3, 0, 0.7]
     Tc: [304.2, 190.6, 615]
     Pc: [7376460, 4600155, 2208885]
     vc: [0.0939e-3, 9.85988846e-05, 0.624e-3,]
@@ -103,7 +103,7 @@ compositional_data:
     Pv: [8e6, 0., 0]
     vshift_parameter: [0.0, 0., 0]
     constant_K: true
-    K: [0.5, 2.5, 0.05]
+    K: [2.5, 0.5, 0.05]
 
 #water saturation data
 Saturation:
@@ -138,7 +138,7 @@ Wells:
     p1: [0.02, 1, 1.0]
     type_region: box
     type: Injector
-    z: [0.2, 0.8, 0.]
+    z: [0.8, 0.2, 0.]
     injection_condition: reservoir
     prescription: P
     value: 700e6

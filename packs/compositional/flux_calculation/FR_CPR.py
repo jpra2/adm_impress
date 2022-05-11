@@ -8,6 +8,8 @@ from packs.directories import data_loaded
 import scipy.sparse as sp
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 class FR:
 
     def __init__(self):
@@ -232,9 +234,16 @@ class FR:
         Fk_face_contour_RS, alpha_wv =  RS_contour.LLF(M, fprop, Nk_face_contour, P_face[np.newaxis,0],
             Ft_internal[:,0][:,np.newaxis], Fk_faces_contour, np.ones(1,dtype=bool))
         '''
+
         RS = RiemannSolvers(ctes_FR.v0, ctes.pretransmissibility_internal_faces)
-        Fk_face_RS, alpha_wv =  RS.LLF(M, fprop, Nk_faces, P_face, Ft_internal, Fk_faces, \
-            np.ones_like(Ft_internal[0],dtype=bool))
+        if ctes.RS['LLF']:
+            Fk_face_RS, alpha_wv =  RS.LLF(M, fprop, Nk_faces, P_face, Ft_internal, Fk_faces, \
+                np.ones_like(Ft_internal[0],dtype=bool))
+        else:
+            Fk_face_RS = Fk_faces[...,0]
+            alpha_wv,m = RS.medium_wave_velocity(M, fprop, Nk_faces, P_face, \
+            Ft_internal, np.ones_like(Ft_internal[0],dtype=bool))
+
         #ponteiro = np.zeros_like(Ft_internal[0], dtype=bool)
         #ponteiro[[0,1]] = True
         #Fk_face_RS[:,ponteiro] = MUSCL().update_flux_upwind(fprop.P[np.newaxis,:], Fk_faces[:,ponteiro], ponteiro)
@@ -397,11 +406,12 @@ class FR:
         Nk = (np.linalg.inv(ctes_FR.V)[np.newaxis,] @ Nk_SP_in[:,:,:, np.newaxis])[:,:,:,0]
         Nk_SP = self.projections(Nk, ctes_FR.n_points-1)
 
-        #self.machine_error = np.max(abs(Nk_SP - Nk_SP_in))
+        #dNk_error = abs(Nk_SP - Nk_SP_in)
+        #self.machine_error = np.max(dNk_error,axis=-1)
         #if self.machine_error<np.finfo(np.float64).eps: machine_error = np.finfo(np.float64).eps
-        #self.machine_error = 0 #1e-150 #1e-323 #1e-700 #1e-150
+        self.machine_error = 0 #1e-150 #1e-323 #1e-700 #1e-150
         #self.machine_error = 1e-15 * np.max(abs(Nk_P0))
-        self.machine_error = np.finfo(np.float64).eps
+        #self.machine_error = np.finfo(np.float64).eps
 
         inds = np.array([0,-1])
 
@@ -424,7 +434,7 @@ class FR:
         Nk_neig[:,:,0] = Nk_P0_vertex[:,ctes_FR.v0[:,0],0]
         Nk_neig[:,:,1] = Nk_P0_vertex[:,ctes_FR.v0[:,1],0]
 
-        Phi_P1 = self.P1_limiter(M, Nk, Nk_SP, Nk_P0_vertex, Nk_P1_vertex, Nk_neig, Nk_faces)
+        Phi_P1 = self.P1_limiter(Nk_P0_vertex, Nk_P1_vertex, Nk_neig, fprop.Vp)
 
         phi_P2 = np.zeros_like(Phi_P1)
         phi_Pn = np.zeros_like(Phi_P1)
@@ -433,7 +443,6 @@ class FR:
         if ctes_FR.n_points > 2:
             '---------------Hierarchical MLP limiting procedure----------------'
 
-            #axis=1 due to reshaping of the argument [~phi_Pn.astype(bool)]
             phi_Pn = self.troubled_cell_marker(M, fprop, Nk_P1_vertex, Nk_P0_vertex,\
                 Nk_SP, Nk_neig, Nk_faces)
             phi_P2[:] = phi_Pn
@@ -444,7 +453,6 @@ class FR:
                 Nk2 = np.zeros_like(Nk)
                 Nk2[:,:,0:3] = Nk[:,:,0:3]
                 Nk_P2 = self.projections(Nk, 2)
-                Nk_P2_vertex = Nk_P2[:,:,inds]
 
                 'Projected P2 into n=1'
                 Nk_P12 = self.projections(Nk2, 1)
@@ -470,9 +478,8 @@ class FR:
 
             phi_Pn[np.sum(Nk_SP<0,axis=-1,dtype=bool)] = 0
 
-            phi_P2[phi_Pn==1] = 1
-
             phi_P2[np.sum(Nk_P2<0,axis=-1,dtype=bool)] = 0
+            phi_P2[phi_Pn==1] = 1
 
             Phi_P1[phi_P2==1] = 1
 
@@ -481,11 +488,10 @@ class FR:
         #phi_Pn[:] = 1
 
         #Phi_P1[:] = 1
-        #phi_P2[:] = 0
 
-        if any(Phi_P1[phi_P2==1]!=1): import pdb; pdb.set_trace()
         Nk_SPlim = (Nk_P0 + Phi_P1[:,:, np.newaxis] * (Nk_P1 - Nk_P0) + \
-            phi_P2[:,:,np.newaxis] * ((Nk_P2 - Nk_P1) + phi_Pn[:,:,np.newaxis] * (Nk_SP - Nk_P2)))
+            phi_P2[:,:,np.newaxis] * ((Nk_P2 - Nk_P1) + \
+            phi_Pn[:,:,np.newaxis] * (Nk_SP - Nk_P2)))
 
         #vols_neg = np.sum(Nk_SPlim<0,axis=-1,dtype=bool)
         #Nk_SPlim[vols_neg,:] = Nk_P0[vols_neg,:]
@@ -496,6 +502,17 @@ class FR:
 
         if any(abs(Nk_SPlim[Nk_SPlim<0])):
             import pdb; pdb.set_trace()
+
+        '''plt.figure(1)
+        #plt.plot(M.volumes.center(M.volumes.all)[:,0], phi_Pn[0,:], '.k')
+        plt.plot(M.volumes.center(M.volumes.all)[:,0], phi_Pn[0,:], 'rs',markersize=3, mfc='none')
+        plt.plot(M.volumes.center(M.volumes.all)[:,0], Phi_P1[0,:], '.b',mfc='none')
+        plt.legend(('phi_P2', 'phi_P1'))
+        plt.xlim(0.7,1.1)
+        plt.grid()
+        plt.savefig('results/compositional/FR/AAA_Phis_CO2_3.png')
+        plt.close(1)'''
+
 
         '''C_high_order_check1 = (Nk_SPlim[:,:,inds] <= np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]) #<= machine_error
         C_high_order_check2 = (Nk_SPlim[:,:,inds] >= np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]) #>= -machine_error
@@ -515,7 +532,7 @@ class FR:
         Nk_Pm = (ctes_FR.V[np.newaxis,] @ Nkm[:,:,:,np.newaxis])[:,:,:,0]
         return Nk_Pm
 
-    def P1_limiter(self, M, Nk, Nk_Pm, Nk_P0_vertex, Nk_P1_vertex, Nk_neig, Nk_faces):
+    def P1_limiter(self, Nk_P0_vertex, Nk_P1_vertex, Nk_neig, Vp):
         Linear_term = Nk_P1_vertex - Nk_P0_vertex
 
         'Neigboring vertex points values'
@@ -527,13 +544,15 @@ class FR:
         Phi_P1 = np.ones_like(Phi_r)
         #z_P1 = Nk_P1_vertex/np.sum(Nk_P1_vertex,axis=0)
         #z_P0 = Nk_P0_vertex/np.sum(Nk_P0_vertex,axis=0)
-        Nk_P1_adim = Nk_P1_vertex/np.max(Nk_P0_vertex,axis=1)[:,np.newaxis]
-        Nk_P0_adim = Nk_P0_vertex/np.max(Nk_P0_vertex,axis=1)[:,np.newaxis]
+        #magnitude = 10**(np.floor(np.log10(Nk_P0_vertex)))
 
+        Nk_P1_adim = Nk_P1_vertex#np.max(Nk_P0_vertex,axis=1)[:,np.newaxis]
+        Nk_P0_adim = Nk_P0_vertex#np.max(Nk_P0_vertex,axis=1)[:,np.newaxis]
         P1_adim = abs(Nk_P1_adim - Nk_P0_adim)
-        P1_condition = P1_adim >= self.machine_error
+        P1_condition = P1_adim > 0 # self.machine_error[...,np.newaxis]
+
         #P1_condition = abs(Nk_P1_vertex - Nk_P0_vertex)>=self.machine_error
-        negative_N_condition = Nk_P1_vertex<0
+        negative_N_condition = (Nk_P1_vertex<0)
         Phi_P1[(P1_condition) + (negative_N_condition)] = Phi_r[(P1_condition)+(negative_N_condition)]
         Phi_P1 = np.min(Phi_P1, axis = 2)
 
@@ -556,8 +575,9 @@ class FR:
         r2 = (f_max - Nk_P0_vertex) / Linear_term
         rs = np.concatenate((r1[...,np.newaxis], r2[...,np.newaxis]),axis = -1)
         rs[Linear_term==0] = 1
+        rs[rs>1] = 1
         r = np.max(rs, axis = -1)
-        Phi_r_u1 = r
+        Phi_r_u1 = np.copy(r)
         Phi_r_u1[Phi_r_u1>1] = 1
         Phi_r_u1[Phi_r_u1<0] = 0
         return Phi_r_u1
@@ -570,7 +590,7 @@ class FR:
         rs = np.concatenate((r1[...,np.newaxis], r2[...,np.newaxis]),axis = -1)
         rs[Linear_term == 0] = 1
         r = np.max(rs, axis = -1)
-        Phi_r_u1 = r
+        Phi_r_u1 = np.copy(r)
         Phi_r_u1[Phi_r_u1>1] = 1
         Phi_r_u1[Phi_r_u1<0] = 0
         return Phi_r_u1
@@ -619,13 +639,20 @@ class FR:
         C_troubled1 = (Nk_P1_vertex <= np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
         C_troubled2 = (Nk_P1_vertex >= np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
 
-        Nk_neig_max_vols = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        '''Nk_neig_max_vols = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
         Nk_neig_min_vols = np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
         op1 = abs((Nk_P1_vertex - Nk_neig_max_vols)/Nk_neig_max_vols)
         op2 = abs((Nk_P1_vertex - Nk_neig_min_vols)/Nk_neig_min_vols)
-        C_troubled1[op1 <= self.machine_error] = True
-        C_troubled2[op2 <= self.machine_error] = True
-        
+        C_troubled1 = op1 <= self.machine_error
+        C_troubled2 = op2 <= self.machine_error'''
+
+        '''Nk_neig_max_vols = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        Nk_neig_min_vols = np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        op1 = abs((Nk_P1_vertex - Nk_neig_max_vols)/Nk_neig_max_vols)
+        op2 = abs((Nk_P1_vertex - Nk_neig_min_vols)/Nk_neig_min_vols)
+        C_troubled1[op1 >= 5e-1] = False
+        C_troubled2[op2 >= 5e-1] = False'''
+
         troubled_cells = (C_troubled1 * C_troubled2)
         return troubled_cells
 
@@ -637,12 +664,12 @@ class FR:
         Nk_less_max = (Nk_Pm_vertex < np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
         Nk_big_min = (Nk_Pm_vertex > np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
 
-        Nk_neig_max_vols = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        '''Nk_neig_max_vols = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
         Nk_neig_min_vols = np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
         op1 = abs((Nk_Pm_vertex - Nk_neig_max_vols)/Nk_neig_max_vols)
         op2 = abs((Nk_Pm_vertex - Nk_neig_min_vols)/Nk_neig_min_vols)
         Nk_less_max[op1 <= self.machine_error] = False
-        Nk_big_min[op2 <= self.machine_error] = False
+        Nk_big_min[op2 <= self.machine_error] = False'''
 
         C1 = ((Linear_term) > 0) * (High_order_term < 0) * (Nk_big_min)
         C2 = ((Linear_term) < 0) * (High_order_term > 0) * (Nk_less_max)
@@ -690,15 +717,23 @@ class FR:
         C1, C2 = self.smooth_extrema_cond(fprop, Nk_P0_vertex, Nk_P1_vertex, Nk_Pmvertex, Nk_neig)
 
         ''' Dehativation inequality for nearly constant region'''
-        e = 1e-7
-        C3 = (abs(Nk_Pmvertex - Nk_P0_vertex) <= e)
+
+        #magnitude = 10**(np.floor(np.log10(Nk_P0_vertex)))
+        #Vp_Nkshape = fprop.Vp[np.newaxis,:,np.newaxis]*np.ones_like(Nk_P0_vertex)
+
+        densityP0_vertex = Nk_P0_vertex#/Vp_Nkshape
+        densityPm_vertex = (Nk_Pmvertex)#/Vp_Nkshape
+        #Nkt = fprop.Nk.sum(axis=0)[np.newaxis,:,np.newaxis]*np.ones_like(Nk_P0_vertex)
+        #C3_right = np.concatenate((self.machine_error*abs(densityP0_vertex),Nkt),axis=2)
+        C3_right = 1e-3*abs(densityP0_vertex[...,0])#np.max(C3_right,axis=-1)
+        C3 = (abs(densityPm_vertex-densityP0_vertex)<= C3_right[...,np.newaxis])
         #import pdb; pdb.set_trace()
         #Nf = self.Gibbs_Wilbraham_oscilations(M, Nk_faces)
-
+        C3[:] = 0
         '''A3 step'''
         #P1_proj_cond[C3] = True
         C3_cells = np.min(1*(C3),axis=-1)
-        C3_cells[:] = 0
+        #C3_cells[:] = 0
 
         '''A4-1 step'''
         #P1_proj_cond[P1_proj_cond==1] = A_MLP_cond[P1_proj_cond==1]
@@ -714,7 +749,7 @@ class FR:
         P1_proj_cond_cells[condI] = aux_I'''
 
         '''A4-2 step'''
-        smooth_extrema = C1+C2
+        smooth_extrema = C1+C2+C3
         smooth_extrema_cells = np.min(1*smooth_extrema,axis=-1)
         #smooth_extrema_cells[:] = 0
         'Type II trouble'
@@ -724,7 +759,7 @@ class FR:
         aux_II[aux_Nf_II>=1] = 0
         smooth_extrema_cells[smooth_extrema_cells==1] = aux_II'''
 
-        phi_Pm = 1*((P1_proj_cond_cells + smooth_extrema_cells+C3_cells).astype(bool))
+        phi_Pm = 1*((P1_proj_cond_cells + smooth_extrema_cells).astype(bool))
         #phi_Pm = 1*((A_MLP_cond_cells + smooth_extrema_cells+C3_cells).astype(bool))
 
         #phi_Pm = 1*((P1_proj_cond_cells).astype(bool))

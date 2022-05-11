@@ -23,6 +23,7 @@ else:
 class run_simulation:
     '''Class created to compute simulation properties at each simulation time'''
     def __init__(self, name_current, name_all):
+        #name_all = name_all + data_loaded['solver'] + hiperbolic_method + ctes.RS + ctes.
         self.name_current_results =os.path.join(direc.flying, name_current + '.npy')
         self.name_all_results = os.path.join(direc.flying, name_all)
         self.loop = 0

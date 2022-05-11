@@ -133,7 +133,7 @@ class TPFASolver:
         wp = wells['ws_p']
 
         if len(wp)>=1:
-            
+
             #if Pnew[0]<Pnew[1]: import pdb; pdb.set_trace()
             well_term =  (self.T_noCC[wp,:] @ Pnew - self.pressure_term[wp] +
                 self.volume_term[wp]) / delta_t  + self.capillary_term[wp] + \
