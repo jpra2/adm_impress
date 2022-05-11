@@ -229,8 +229,8 @@ assert (n_loops_for_export % n_loops_for_acumulate) == 0
 
 tmax_simulation = 15 # dias
 t_simulation = sim.t/86400
-M.data.update_variables_to_mesh()
-print_mesh_volumes_data(M, 'results/dual_test.vtk')
+# M.data.update_variables_to_mesh()
+# print_mesh_volumes_data(M, 'results/dual_test.vtk')
 
 global_vector_update[:] = True
 

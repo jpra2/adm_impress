@@ -640,7 +640,12 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         Ft_internal_faces = np.zeros(Ft_internal_faces_adm.shape)
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
 
+        t2 = time.time()
         local_solution = self.get_local_solution_serial(Ft_internal_faces_adm, all_coarse_intersect_faces, neumann_subds, T_noCC, params, solution, master_neumann, **kwargs)
+        t3 = time.time()
+        print('######################################')
+        print(f'\nLocal solution time: {t3 - t2} \n')
+        print('######################################')
 
         # local_solution2 = self.get_local_solution_paralell(
         #     Ft_internal_faces_adm,
@@ -764,7 +769,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
     def get_local_solution_serial(self, Ft_internal_faces_adm, all_coarse_intersect_faces, neumann_subds, T_noCC, params, solution, master_neumann: MasterLocalSolver, **kwargs):
 
         elements_lv0 = kwargs.get('elements_lv0')
-
+        t0 = time.time()
         update_local_problem(
             neumann_subds.neumann_subds,
             T_noCC,
@@ -778,9 +783,18 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             params,
             **kwargs
         )
+        t1 = time.time()
+        print('######################################')
+        print(f'\nUpdate neumann local problem time: {t1 - t0} \n')
+        print('######################################')
 
         # local_solution = master_neumann.run() ## paralell
+        t0 = time.time()
         local_solution = master_neumann.run_serial()
+        t1 = time.time()
+        print('######################################')
+        print(f'\nSolve inner local solution time: {t1 - t0} \n')
+        print('######################################')
 
         return local_solution
 

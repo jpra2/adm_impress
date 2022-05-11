@@ -19,6 +19,7 @@ case1 = CumulativeCompositionalDataManager(description=description1)
 datas_case1 = case1.load_all_datas_from_keys(key_list)
 
 fig_str = 'figura_'
+fig_ext = '.png'
 
 # description = 'case2_adm_'
 # description = 'case4_adm_3k'
@@ -161,7 +162,7 @@ ax2.legend()
 fig.tight_layout()
 
 # plt.savefig(fig_str + description2 + 'Production' + '.png')
-plt.savefig(fig_str + description2 + 'Production_iterative' + '.png')
+plt.savefig(fig_str + description2 + 'Production_iterative' + fig_ext)
 ########################################################
 
 ######################################################
@@ -192,7 +193,7 @@ plt.subplots_adjust(left=0.1,
 fig.suptitle('Volumes para atualizar as funcoes de base')
 
 # plt.savefig(fig_str + description2 + 'Total_volumes' + '.png')
-plt.savefig(fig_str + description2 + 'Total_volumes_iterative' + '.png')
+plt.savefig(fig_str + description2 + 'Total_volumes_iterative' + fig_ext)
 ####################################################
 
 ###################################################
@@ -235,7 +236,7 @@ plt.subplots_adjust(left=0.15,
                     hspace=0.4)
 
 # plt.savefig(fig_str + description2 + 'Active_volumes' + '.png')
-plt.savefig(fig_str + description2 + 'Active_volumes_iterative' + '.png')
+plt.savefig(fig_str + description2 + 'Active_volumes_iterative' + fig_ext)
 #################################################
 
 #################################################
@@ -265,7 +266,7 @@ plt.subplots_adjust(left=0.15,
                     hspace=0.4)
 
 # plt.savefig(fig_str + description2 + 'Flow_rate' + '.png')
-plt.savefig(fig_str + description2 + 'Flow_rate_iterative' + '.png')
+plt.savefig(fig_str + description2 + 'Flow_rate_iterative' + fig_ext)
 ###############################################
 
 ########################
@@ -276,7 +277,7 @@ ax.plot(case2_time, case2_tams_iterations, '-', label='Tams Iterations')
 ax.set_xlabel('time [days]')
 ax.set_ylabel('Iterations')
 # fig.suptitle('Volumes para atualizar as funcoes de base')
-plt.savefig(fig_str + description2 + 'Tams_iterations' + '.png')
+plt.savefig(fig_str + description2 + 'Tams_iterations' + fig_ext)
 ########################
 
 
