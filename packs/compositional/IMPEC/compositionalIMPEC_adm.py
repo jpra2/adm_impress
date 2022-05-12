@@ -20,10 +20,9 @@ class CompositionalFvmADM(CompositionalFVM):
         ]
     }
 
-    def __call__(self, M, wells, fprop, delta_t, t, **kwargs):
+    def __call__(self, M, wells, fprop, delta_t, t, params, **kwargs):
         # test_kwargs_keys(CompositionalFVM._kwargs_keys['__call__'], kwargs.keys())
         # import pdb; pdb.set_trace()
-        params=kwargs.get('params')
 
         G = self.update_gravity_term(fprop)
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
@@ -40,7 +39,7 @@ class CompositionalFvmADM(CompositionalFVM):
         psolve = AdmTpfaCompositionalSolver(dVjdNk, dVjdP)
         params.update({
             'dVtdP': psolve.dVtP,
-            'dVtdNk': psolve.dVtk
+            'dVtdk': psolve.dVtk
         })
         P_old = np.copy(fprop.P)
         Nk_old = np.copy(fprop.Nk)
@@ -53,7 +52,7 @@ class CompositionalFvmADM(CompositionalFVM):
             # fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells, fprop, P_old, delta_t, **kwargs)
             
             fprop.P, Ft_internal, fprop.qk_molar = psolve.get_pressure(M, wells,
-                fprop, P_old, delta_t, **kwargs)
+                fprop, P_old, delta_t, params=params, **kwargs)
             if any(np.isnan(fprop.P)): import pdb; pdb.set_trace()
 
             '''total_flux_internal_faces = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)

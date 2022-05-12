@@ -9,7 +9,9 @@ class MetaDict:
 
     def has_key(self, k):
         return k in self._data
-
+    
+    def __getitem__(self, key):
+        return self._data[key]
     def update(self, *args, **kwargs):
         return self._data.update(*args, **kwargs)
 
@@ -24,6 +26,9 @@ class MetaDict:
 
     def pop(self, *args):
         return self._data.pop(*args)
+    
+    def get(self, *args):
+        return self._data.get(*args)
 
     def insert_data(self, data:dict):
         if isinstance(data, dict):

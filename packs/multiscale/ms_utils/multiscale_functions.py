@@ -134,7 +134,7 @@ def print_mesh_volumes_data(m_object: FineScaleMesh, file_name):
 
 
 def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, diagonal_term, adm_pressure,
-                         Ft_internal_faces, map_internal_faces, gids_volumes, adjacencies_internal_faces, all_coarse_intersect_faces, **kwargs):
+                         Ft_internal_faces, map_internal_faces, gids_volumes, adjacencies_internal_faces, all_coarse_intersect_faces, params, **kwargs):
     """
         @param neumann_subds_list: local primal subdomains structure
         @param fine_scale_transmissibility_no_bc: fine scale transmissibility without boundary conditions
@@ -149,7 +149,7 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
 
     v0 = adjacencies_internal_faces
     elements_lv0 = kwargs.get('elements_lv0')
-    m_object = kwargs.get('m_object')
+    m_object = params.get('m_object')
 
     Tglobal = fine_scale_transmissibility_no_bc
     # ft_internal_faces_for_prescription = Ft_internal_faces.copy()
@@ -158,17 +158,17 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
     
     global_molar_flux_prescription = Gips.update_flux(
         ft_internal_faces_for_prescription,
-        kwargs['rho_j_internal_faces'],
-        kwargs['mobilities_internal_faces'],
-        kwargs['Pcap'],
+        params['rho_j_internal_faces'],
+        params['mobilities_internal_faces'],
+        params['Pcap'],
         v0,
-        kwargs['z_centroids'],
-        kwargs['pretransmissibility_internal_faces'],
-        kwargs['g'],
-        kwargs['xkj_internal_faces'],
-        kwargs['Csi_j_internal_faces'],
-        kwargs['n_components'],
-        kwargs['n_volumes']
+        params['z_centroids'],
+        params['pretransmissibility_internal_faces'],
+        params['g'],
+        params['xkj_internal_faces'],
+        params['Csi_j_internal_faces'],
+        params['n_components'],
+        params['n_volumes']
     )
     m_object.data['flux_volumes'][:] = global_molar_flux_prescription[0]
 
@@ -178,33 +178,33 @@ def update_local_problem(neumann_subds_list, fine_scale_transmissibility_no_bc, 
         local_flux_prescription = global_molar_flux_prescription[:, subd.volumes]
 
         subd.local_rhs = Gips.mount_independent_term(
-            kwargs['Vbulk'][subd.volumes],
-            kwargs['porosity'][subd.volumes],
-            kwargs['Cf'],
-            kwargs['dVtdP'][subd.volumes],
-            kwargs['P'][subd.volumes],
+            params['Vbulk'][subd.volumes],
+            params['porosity'][subd.volumes],
+            params['Cf'],
+            params['dVtdP'][subd.volumes],
+            params['P'][subd.volumes],
             len(subd.volumes),
-            kwargs['n_components'],
-            kwargs['n_phases'],
+            params['n_components'],
+            params['n_phases'],
             subd.map_volumes[subd.adj_intern_local_faces],
-            kwargs['dVtdk'][:, subd.volumes],
-            kwargs['z_centroids'][subd.volumes],
-            kwargs['xkj_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
-            kwargs['Csi_j_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
-            kwargs['mobilities_internal_faces'][: , :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
-            kwargs['pretransmissibility_internal_faces'][elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
-            kwargs['Pcap'][:, subd.volumes],
-            kwargs['Vp'][subd.volumes],
-            kwargs['Vt'][subd.volumes],
+            params['dVtdk'][:, subd.volumes],
+            params['z_centroids'][subd.volumes],
+            params['xkj_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
+            params['Csi_j_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
+            params['mobilities_internal_faces'][: , :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
+            params['pretransmissibility_internal_faces'][elements_lv0['remaped_internal_faces'][subd.intern_local_faces]],
+            params['Pcap'][:, subd.volumes],
+            params['Vp'][subd.volumes],
+            params['Vt'][subd.volumes],
             subd.map_volumes[subd.ind_neum],
             local_flux_prescription[:, subd.map_volumes[subd.ind_neum]],
-            kwargs['delta_t'],
-            kwargs['g'],
+            params['delta_t'],
+            params['g'],
             subd.map_volumes[subd.ind_diric],
             subd.adm_pressure[subd.map_volumes[subd.ind_diric]],
             subd.map_volumes[subd.ind_diric],
-            kwargs['rho_j'][:, :, subd.volumes],
-            kwargs['rho_j_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]]
+            params['rho_j'][:, :, subd.volumes],
+            params['rho_j_internal_faces'][:, :, elements_lv0['remaped_internal_faces'][subd.intern_local_faces]]
         )
         # local_rhs += subd.flux_prescription
         # local_rhs[subd.map_volumes[subd.ind_diric]] = adm_pressure[subd.ind_diric]

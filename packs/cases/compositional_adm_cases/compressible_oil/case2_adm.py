@@ -23,6 +23,7 @@ from packs.multiscale.ms_utils.multiscale_functions import print_mesh_volumes_da
 from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 from packs.solvers.solvers_trilinos.solvers_tril import solverTril
 from packs.solvers.solvers_scipy.solver_sp import SolverSp
+from packs.cases.compositional_adm_cases.compressible_oil import descriptions
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -67,7 +68,12 @@ load_multilevel_data = data_loaded['load_multilevel_data']
 # description = 'case38_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0'
 # description = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
 # description = 'case41_adm_biph_v'
-description = 'case45_test'
+# description = 'case45_test'
+# description = 'case46_test-limit_maxiter_tams-5'
+# description = 'case47-test-limit_maxiter_tams_cg-20_thres-update-BF-0.3'
+# description = 'case48-test-limit_maxiter_tams_cg-1000_thres-update-BF-0.1_by_dvtol'
+# description = 'case49-test-limit_maxiter_tams_cg-1000_thres-update-BF-0.1_by_dvtol'
+description = descriptions.case2_adm_description
 
 
 compositional_data = CompositionalData(description=description)
@@ -125,7 +131,7 @@ ncoarse_ids = len(np.unique(data_impress['GID_1']))
 OP_AMS = sp.lil_matrix((ctes.n_volumes, ncoarse_ids)).tocsc()
 
 keywords1 = {
-    'update_FC': True
+    'update_FC': False
 }
 
 master_neumann = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
@@ -137,6 +143,19 @@ params['pretransmissibility'] = data_impress['pretransmissibility']
 # trilinos_solver = solverTril()
 
 local_problem_params = {
+    # 'trilinos_solver': trilinos_solver
+    'elements_lv0': elements_lv0,
+    'scipy_solver': SolverSp(),
+    'tolerance': 1e-18,
+    'iterative_solver_finescale': 'cg', # ['cg', 'gmres']
+    'adm_solver': 'tams', # ['tams', 'iterative-finescale']
+    # 'well_volumes': np.concatenate([wells['ws_p'], wells['values_p']]),
+    'wells_producer': wells['ws_p'],
+    'loop': 0,
+    'dvtol': 1e-5
+}
+
+params.update({
     'multilevel_data': ml_data,
     'Vbulk': ctes.Vbulk,
     'porosity': ctes.porosity,
@@ -171,18 +190,19 @@ local_problem_params = {
     'dual_subdomains': dual_subdomains,
     'master_neumann': master_neumann,
     'master_local_operator': master_local_operator,
-    # 'trilinos_solver': trilinos_solver
-    'scipy_solver': SolverSp(),
-    'tolerance': 1e-18,
-    'iterative_solver_finescale': 'cg', # ['cg', 'gmres']
-    'adm_solver': 'tams', # ['tams', 'iterative-finescale']
-    'well_volumes': np.concatenate([wells['ws_p'], wells['values_p']]),
-    'wells_producer': wells['ws_p'],
-    'loop': 0
-}
+    'multilevel_operators': mlo,
+    'adm_method': adm,
+    'neumann_subds': neumann_subds,
+    'data_impress': data_impress,
+    'tams_itcounter': 0,
+    'internal_faces_velocity': np.ones(len(elements_lv0['internal_faces'])),
+    'all_coarse_intersect_faces_level_1': np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1'])),
+    'other_faces_level_1': np.setdiff1d(elements_lv0['internal_faces'], np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1'])))
+})
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
 latest_density = np.zeros(fprop.rho_j.shape)
+latest_internal_faces_velocity = np.zeros(len(elements_lv0['internal_faces']))
 global_vector_update[:] = False
 total_volumes_updated = copy.deepcopy(global_vector_update)
 data_impress['LEVEL'][:] = 1
@@ -209,31 +229,36 @@ assert (n_loops_for_export % n_loops_for_acumulate) == 0
 
 tmax_simulation = 15 # dias
 t_simulation = sim.t/86400
-M.data.update_variables_to_mesh()
-print_mesh_volumes_data(M, 'results/dual_test.vtk')
+# M.data.update_variables_to_mesh()
+# print_mesh_volumes_data(M, 'results/dual_test.vtk')
+
+global_vector_update[:] = True
 
 while run_criteria < stop_criteria:# and loop < loop_max:
 # while t_simulation < tmax_simulation:
     # import pdb; pdb.set_trace()
-    params['pressure'] = fprop.P
-    params['mobilities'] = fprop.mobilities
-    params['composition'] = fprop.Csi_j
-    params['mol_number'] = fprop.Nk
-    params['Sg'] = fprop.Sg
-    params['Sw'] = fprop.Sw
-    params['So'] = fprop.So
-    params['z'] = fprop.z
-    params['porous_volume'] = fprop.Vp
-    params['total_volume'] = fprop.Vt
+    params.update({
+        'pressure': fprop.P,
+        'mobilities': fprop.mobilities,
+        'composition': fprop.Csi_j,
+        'mol_number': fprop.Nk,
+        'Sg': fprop.Sg,
+        'Sw': fprop.Sw,
+        'So': fprop.So,
+        'z': fprop.z,
+        'porous_volume': fprop.Vp,
+        'total_volume': fprop.Vt
+    })
 
     # global_vector_update[:] = True # update the prolongation operator in all dual volumes
-    for phase in range(ctes.n_phases):
-        functions_update.update_global_vector_for_latest_variable(
-            global_vector_update,
-            latest_mobility[:, phase, :]*latest_density[:, phase, :],
-            fprop.mobilities[:, phase, :]*fprop.rho_j[:, phase, :],
-            0.1
-        )
+    # for phase in range(ctes.n_phases):
+    #     functions_update.update_global_vector_for_latest_variable(
+    #         global_vector_update,
+    #         latest_mobility[:, phase, :]*latest_density[:, phase, :],
+    #         fprop.mobilities[:, phase, :]*fprop.rho_j[:, phase, :],
+    #         0.1
+    #     )
+
 
     # for comp in range(fprop.z.shape[0]):
     #     functions_update.update_global_vector_for_volumes_adjacencies_variable(
@@ -249,6 +274,9 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             latest_mobility[:, :, dual.gids] = fprop.mobilities[:, :, dual.gids]
             latest_density[:, :, dual.gids] = fprop.rho_j[:, :, dual.gids]
             total_volumes_updated[dual.gids] = True
+    print('#####################################')
+    print(f'\nGlobal update sum: {global_vector_update.sum()}\n')
+    print('#####################################')
 
     functions_update.set_level0_delta_sat(
         data_impress['LEVEL'],
@@ -274,12 +302,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
 
     t0 = time.time()
     sim.run(M, wells, fprop, load,
-            multilevel_operators=mlo,
             params=params,
-            adm_method=adm,
-            neumann_subds=neumann_subds,
-            data_impress=data_impress,
-            elements_lv0=elements_lv0,
             **local_problem_params)
     simulation_time = time.time() - t0
 
@@ -305,11 +328,12 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         if sim.t + sim.delta_t > t_next:
             sim.delta_t = t_next - sim.t
 
-    params['mobilities_internal_faces'] = fprop.mobilities_internal_faces
-    params['composition_internal_faces'] = fprop.Csi_j_internal_faces
-    params['xkj_internal_faces'] = fprop.xkj_internal_faces
-    params['rho_phase_internal_faces'] = fprop.rho_j_internal_faces
-
+    params.update({
+        'mobilities_internal_faces': fprop.mobilities_internal_faces,
+        'composition_internal_faces': fprop.Csi_j_internal_faces,
+        'xkj_internal_faces': fprop.xkj_internal_faces,
+        'rho_phase_internal_faces': fprop.rho_j_internal_faces
+    })
 
     loop = sim.loop
     print(sim.t)
@@ -329,6 +353,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         loop_array['active_volumes'][0] = params['active_volumes']
         loop_array['oil_rate'][0] = np.sum(fprop.q_phase[:,0])
         loop_array['gas_rate'][0] = np.sum(fprop.q_phase[:,1])
+        loop_array['tams_iterations'] = params['tams_itcounter']
 
         compositional_data.update({
             'pressure': fprop.P,
@@ -365,6 +390,15 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     local_problem_params.update({
         'loop': loop
     })
+
+    functions_update.update_global_vector_by_internal_face_variable(
+        global_vector_update,
+        latest_internal_faces_velocity,
+        params['internal_faces_velocity'],
+        elements_lv0['neig_internal_faces'],
+        local_problem_params['dvtol']
+    )
+
 
     if loop % 2500 == 0:
         print('sleeping...')
