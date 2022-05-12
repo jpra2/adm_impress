@@ -46,8 +46,9 @@ class delta_time:
          Nk = np.copy(self.Nk)
 
          delta_tcfl[0] = CFL / np.max(abs(fprop.wave_velocity)) #make nan
+
          Nk[Nk==0] = 1e-100
-         #import pdb; pdb.set_trace()
+
          delta_tcfl[1:] = CFL/np.max(abs(fprop.qk_molar[:,wells['all_wells']]/Nk[:,wells['all_wells']]))#,axis=0)
          delta_tcfl = min(abs(delta_tcfl))
 
@@ -112,13 +113,13 @@ class delta_time:
         else: delta_t = min(delta_tp, delta_ts, delta_tn, delta_tv)
 
         #delta_t = delta_tcfl
-
+        #import pdb; pdb.set_trace()
         if delta_t > min(delta_tmax,delta_tcfl): delta_t = min(delta_tmax, delta_tcfl)
         #if delta_t > delta_tmax: delta_t = delta_tmax
         #import pdb; pdb.set_trace()
-        if delta_t == delta_ts: print('S')
+        '''if delta_t == delta_ts: print('S')
         if delta_t == delta_tcfl: print('CFL')
         if delta_t == delta_tv: print('V')
         if delta_t == delta_tn: print('N')
-        if delta_t < delta_tmin: delta_t = delta_tmin
+        if delta_t < delta_tmin: delta_t = delta_tmin'''
         return delta_t

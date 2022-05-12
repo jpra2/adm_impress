@@ -41,13 +41,13 @@ compositional_data:
   CFL: 0.7
 
   solver:
-    IMPSAT: false
+    IMPSAT: true
 
   MUSCL:
     set: false
 
   FR:
-    set: true
+    set: false
     order: 3
 
   RiemannSolver:

@@ -39,10 +39,11 @@ class RiemannSolvers:
 
     def LLF(self, M, fprop, Nk_face, P_face, ftotal, Fk_face, ponteiro_LLF):
         ponteiro = np.ones_like(ftotal[0],dtype=bool)
+
         #dNk_small = abs(Nk_face[:,:,0]-Nk_face[:,:,1])<1e-25
         #dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-20
         #ponteiro[dNkmax_small] = False
-        alpha_5 = np.empty((ctes.n_components, ctes.n_internal_faces, 5))
+        alpha_5 = np.empty((ctes.n_components, len(ftotal[0]), 5))
         if any(ponteiro):
             alpha_5[:,ponteiro,:], eigvec_m = self.wave_velocity_LLF(M, fprop, Nk_face,
                                 P_face, ftotal, ponteiro)
@@ -54,6 +55,7 @@ class RiemannSolvers:
 
         Fk_internal_faces[...,ponteiro_LLF] = self.update_flux_LLF(Fk_face[:,ponteiro_LLF],
             Nk_face[:,ponteiro_LLF], alpha_LLF[ponteiro_LLF,:])
+
         #alpha_corr = self.Harten_entropy_corr(alpha_5)
         #Fk_internal_faces[...,~ponteiro_LLF] = self.update_flux_ROE(Fk_face[:,~ponteiro_LLF],
         #    Nk_face[:,~ponteiro_LLF], alpha_5[:,~ponteiro_LLF,-1], eigvec_m[...,~ponteiro_LLF])
@@ -253,6 +255,7 @@ class RiemannSolvers:
 
         mobilities_face = PropertiesCalc().update_mobilities(fprop, So_face,
             Sg_face, Sw_face, Csi_j_face, xkj_face)
+
         return mobilities_face, rho_j_face, Csi_j_face, xkj_face
 
     def Fk_from_Nk(self, fprop, M, Nk, P_face, Vp_face, ftotal, ponteiro):
@@ -293,10 +296,10 @@ class RiemannSolvers:
         Fk = f.update_Fk_internal_faces(xkj, Csi_j, Fj)
         return Fk, rho_j
 
-    def get_Fk_face(self, fprop, M, Nk_face, P_face, ftotal):
+    def get_Fk_face(self, fprop, M, Nk_face, P_face, Vp_face, ftotal):
         ft_Nks = np.tile(ftotal,2)
         Nks = np.concatenate((Nk_face[:,:,0], Nk_face[:,:,1]), axis=1)
-        Vp_face = np.concatenate((fprop.Vp[ctes.v0[:,0]], fprop.Vp[ctes.v0[:,1]]), axis=0)
+        #Vp_face = np.concatenate((fprop.Vp[ctes.v0[:,0]], fprop.Vp[ctes.v0[:,1]]), axis=0)
         P_faces = np.concatenate((P_face[:,0],P_face[:,1]))
         Fk_faces = self.Fk_from_Nk(fprop, M, Nks, P_faces, Vp_face, ft_Nks, np.ones_like(ftotal[0], dtype=bool))
         Fk_faceL, Fk_faceR = np.hsplit(Fk_faces, 2)

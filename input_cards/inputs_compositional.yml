@@ -28,15 +28,22 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.5
+  CFL: 0.9
   solver:
     IMPSAT: false
 
   MUSCL:
     set: false
+
   FR:
     set: false
-    order: 2
+    order: 4
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
+    DW: false
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [274752] #, 432000., 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0]
   maximum_time: 274752 #1530144.0
@@ -95,6 +102,7 @@ compositional_data:
     Pv: [0]
     Pb_guess: [9.5e6]
     vshift_parameter: [0.085]
+    constant_K: false
 
 
 #water saturation data

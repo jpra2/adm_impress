@@ -71,11 +71,11 @@ Wells:
     value: 5.0e6
 compositional: true
 compositional_data:
-  CFL: 0.9
+  CFL: 0.7
   Cpc: 62052.84
   Epc: 2
   FR:
-    order: 3
+    order: 2
     set: false
   MUSCL:
     set: false
@@ -95,6 +95,7 @@ compositional_data:
     Mw:
     - 0.016
     - 0.044096
+    Pb_guess: 2e6
     Pc:
     - 4599000
     - 4248000

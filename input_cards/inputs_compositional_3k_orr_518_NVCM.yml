@@ -1,6 +1,6 @@
 #2-phase problem in 1D with 2 components - Orr chapter 4 fig 4.16
 mesh_name: 200x1x1_3k_Orr.msh
-name_save_file: 'results_Orr_3k_C518_200x1x1_IMPEC_FR4'
+name_save_file: 'results_Orr_3k_C518_200x1x1_IMPEC_FR2'
 
 compositional: True
 hidrocarbon_components: True
@@ -37,7 +37,7 @@ compositional_data:
 
   FR:
     set: true
-    order: 4
+    order: 2
 
   RiemannSolver:
     ROE: false
@@ -91,19 +91,19 @@ compositional_data:
     n_g: 2.
     n_w: 0.
 
-#  CO2 CH4 C10
+#  CH4 C4 C10
   component_data:
-    z: [0., 0.3, 0.7]
-    Tc: [304.2, 190.6, 615]
-    Pc: [7376460, 4600155, 2208885]
-    vc: [0.0939e-3, 9.85988846e-05, 0.624e-3,]
-    Mw: [44.010e-3, 16.043e-3, 142.286e-3]
-    w: [0.0225, 0.008, 0.491]
-    Bin: [[0.,0.1, 0.102], [0.1, 0., 0.035], [0.102,0.035, 0.]]
+    z: [0.3, 0., 0.7]
+    Tc: [190.6, 425.2 ,615]
+    Pc: [4600155, 38e5,2208885]
+    vc: [9.85988846e-05, 25.5e-5,0.624e-3,]
+    Mw: [16.043e-3, 58.124e-3,142.286e-3]
+    w: [0.008, 0.199,0.491]
+    Bin: [[0.0, 0.02, 0.035], [0.02, 0.0, 0.0], [0.035, 0.0, 0.0]]
     Pv: [8e6, 0., 0]
     vshift_parameter: [0.0, 0., 0]
     constant_K: true
-    K: [0.5, 2.5, 0.05]
+    K: [2.5, 0.5, 0.05]
 
 #water saturation data
 Saturation:
@@ -138,7 +138,7 @@ Wells:
     p1: [0.01, 1, 1.0]
     type_region: box
     type: Injector
-    z: [0.2, 0.8, 0.]
+    z: [0.8, 0.2, 0.]
     injection_condition: reservoir
     prescription: P
     value: 700e6

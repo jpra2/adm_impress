@@ -183,6 +183,7 @@ class StabilityCheck:
             ponteiro_aux = ponteiro[ponteiro]
             ponteiro_aux[stop_criteria < 1e-9] = False
             ponteiro[ponteiro] = ponteiro_aux
+
             i+=1
             if i>100:
                 print('SP1 loop')
@@ -496,6 +497,7 @@ class StabilityCheck:
                 print('Vloop')
                 ponteiro[ponteiro] = False
 
+
         V[np.isinf(V)] = 1
 
         x = z / (1 + V[np.newaxis,:] * (K - 1))
@@ -539,16 +541,18 @@ class StabilityCheck:
             lnphiv, Zv[ponteiro] = self.lnphi_Z_based_on_deltaG(self.y[:,ponteiro], self.P[ponteiro], self.ph_V[ponteiro])
             fv = np.exp(lnphiv) * (self.y[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             fl = np.exp(lnphil) * (self.x[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
+
             fv[(abs(fl)<1e-300) + (abs(fv)<1e-300)] = fl[(abs(fl)<1e-300) + (abs(fv)<1e-300)]
             fv[fv == 0] = 1e-30
             razao[:,ponteiro] = fl/fv
             if any(np.isnan(razao).flatten()):
                 if razao.shape[1]<300:
                     print('nan')
-                    #import pdb; pdb.set_trace()
+                    import pdb; pdb.set_trace()
             razao[np.isnan(razao)] = 1
             razao[np.isinf(razao)] = 1
-            self.K[:,ponteiro] *= razao[:,ponteiro] #* self.K[:,ponteiro]
+
+            self.K[:,ponteiro] *= razao[:,ponteiro]
             #stop_criteria = np.max(abs(fv / fl - 1), axis = 0)
             stop_criteria = np.sum(abs(razao[:,ponteiro] - 1)**2, axis = 0) #Dandekar's
             ponteiro_aux = ponteiro[ponteiro]
@@ -562,7 +566,7 @@ class StabilityCheck:
 
         t1 = time.time()
         # THINK OF A BETTER WAY TO ORGANIZE THIS
-        
+
         self.z[self.z==1e-30] = 0
         self.x[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
         self.y[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]

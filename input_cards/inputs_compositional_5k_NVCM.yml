@@ -1,6 +1,6 @@
 #2-phase problem with 3 components - moshiri
 mesh_name: 200x1x1_5k.msh
-name_save_file: 'results_case1_Moshiri_Manzari_5k_200_FR3' #150683
+name_save_file: 'results_case1_Moshiri_Manzari_5k_200_FR3_MLP' #150683
 
 compositional: True
 hidrocarbon_components: True

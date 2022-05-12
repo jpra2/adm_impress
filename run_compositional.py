@@ -23,6 +23,7 @@ else:
 class run_simulation:
     '''Class created to compute simulation properties at each simulation time'''
     def __init__(self, name_current, name_all):
+        #name_all = name_all + data_loaded['solver'] + hiperbolic_method + ctes.RS + ctes.
         self.name_current_results =os.path.join(direc.flying, name_current + '.npy')
         self.name_all_results = os.path.join(direc.flying, name_all)
         self.loop = 0
@@ -46,16 +47,17 @@ class run_simulation:
         ''' Function to initialize mesh (preprocess) get and compute initial mesh \
         properties '''
         M, elements_lv0, data_impress, wells = initial_mesh(mesh, load=load, convert=convert)
-
         ctes.init(M, wells)
         ctes.component_properties()
 
         if ctes.FR:
             from packs.compositional import prep_FR as ctes_FR
             ctes_FR.run(M)
+
         if ctes.MUSCL:
             from packs.compositional import prep_MUSCL as ctes_MUSCL
             ctes_MUSCL.run(M)
+
         fprop = self.get_initial_properties(M, wells)
         return M, data_impress, wells, fprop, load
 
@@ -108,8 +110,7 @@ class run_simulation:
             #p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
             #L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
             #    p_well.run_init(ctes.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']])
-        else:
-            fprop.x = []; fprop.y = []; fprop.L = []; fprop.V = []; wells['inj_p_term'] = []
+        else: wells['inj_p_term'] = []
 
     def get_initial_properties(self, M, wells):
         ''' get initial fluid - oil, gas and water data and calculate initial \
@@ -119,7 +120,7 @@ class run_simulation:
 
         '------------------------- Perform initial flash ----------------------'
         self.get_well_inj_properties(M, fprop, wells)
-
+        #fprop.z[:,0] = np.array([0,1])
         if ctes.load_k:
 
             self.p2 = StabilityCheck(fprop.P, fprop.T)
@@ -167,7 +168,6 @@ class run_simulation:
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
             self.p2.run_init(fprop.P, np.copy(fprop.z))#, wells)
-
             if len(wells['ws_inj'])>0 and not self.p2.constant_K:
 
                 if any(wells['inj_cond']=='reservoir'):
@@ -197,6 +197,7 @@ class run_simulation:
         #if any(fprop.L!=0): import pdb; pdb.set_trace()
         '----------------------- Update fluid properties ----------------------'
         self.p1.run_inside_loop(M, fprop)
+        #if (fprop.Sg[-37]<fprop.Sg[-36])*(fprop.Sg[-37]<fprop.Sg[-38]): import pdb; pdb.set_trace()
 
 
         '-------------------- Advance in time and save results ----------------'
@@ -223,7 +224,7 @@ class run_simulation:
         if ctes.load_k:
             p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
             z_prod = fprop.qk_prod/np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
-            
+
             if (abs(z_prod.sum()-1)>1e-15) or np.isnan(z_prod.sum()): z_prod = fprop.z[:,wells['ws_prod']]
             L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
                 p_well.run_init(ctes.P_SC, z_prod[0:ctes.Nc])
@@ -265,11 +266,12 @@ class run_simulation:
             self.vector_time.append(self.t)
 
     def update_current_compositional_results(self, M, wells, fprop):
-
         #total_flux_internal_faces = fprop.total_flux_internal_faces.ravel() #* M.faces.normal[M.faces.internal]
         #total_flux_internal_faces_vector = fprop.total_flux_internal_faces.T * np.abs(M.faces.normal[M.faces.internal])
-        if ctes.FR: Nk = fprop.Nk_SP
+        if ctes.FR: Nk = fprop.Nk_SP;
+
         else: Nk = fprop.Nk
+
         self.current_compositional_results = np.array([self.loop, self.vpi, self.sim_time,
             self.t, fprop.P, fprop.Sw, fprop.So, fprop.Sg, self.oil_production,
             self.gas_production, fprop.z, M.data['centroid_volumes'], Nk, fprop.xkj,
@@ -279,9 +281,9 @@ class run_simulation:
         M.data['So'][:] = fprop.So
         M.data['pressure'][:] = fprop.P
         M.data['Sg'][:] = fprop.Sg
-        M.data['zC1'][:] = fprop.z[0,:]
+        #M.data['zC1'][:] = fprop.z[0,:]
         #M.data['perm'][:] = M.data[M.data.variables_impress['permeability']].reshape([ctes.n_volumes,3,3]).sum(axis=-1)[:,0]
-        #M.data['zc1'][:] = fprop.z[0,:]
+
         M.data.update_variables_to_mesh()
         # M.core.print(file = self.name_all_results + str(self.loop), extension ='.vtk')
 

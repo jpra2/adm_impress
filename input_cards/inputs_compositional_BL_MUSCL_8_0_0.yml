@@ -27,6 +27,8 @@ monophasic_data:
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.3
+  IMPSAT: false
+
   MUSCL:
     set: false
   FR:

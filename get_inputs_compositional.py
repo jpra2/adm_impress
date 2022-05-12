@@ -37,6 +37,7 @@ class FluidProperties:
         self.P = self.P * np.ones(ctes.n_volumes)
         self.P[wells['ws_p']] = wells['values_p']
         self.Sw = M.data['saturation']
+        
         if ctes.load_k:
             self.z = np.array([data_loaded['compositional_data']['component_data']['z']]).astype(float).T
             self.z = self.z * np.ones(ctes.n_volumes)

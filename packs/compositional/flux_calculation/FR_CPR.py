@@ -2,10 +2,13 @@ from .riemann_solvers import RiemannSolvers
 from .. import prep_FR as ctes_FR
 from ..IMPEC.properties_calculation import PropertiesCalc
 from ..IMPEC.composition_solver import RK3, Euler
+from .MUSCL import MUSCL
 from packs.utils import constants as ctes
 from packs.directories import data_loaded
 import scipy.sparse as sp
 import numpy as np
+
+import matplotlib.pyplot as plt
 
 class FR:
 
@@ -32,6 +35,8 @@ class FR:
         Nk_SP = np.copy(Nk_SP_old)
 
         q_SP = fprop.qk_molar[:,:,np.newaxis] * np.ones_like(Nk_SP)
+        #q_SP[:] = 0 #BASTIAN
+
         self.P_faces = np.sum(P_old[ctes_FR.v0],axis=-1)*0.5
         self.P_SP = self.get_pressure_SP(wells, P_old)
         self.Nk_SP_old = Nk_SP_old
@@ -41,21 +46,26 @@ class FR:
 
         dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_1(np.copy(Nk_SP_old), q_SP, dFk_SP, delta_t)
+        #Nk_SP = self.slopeLim1(M, Nk_SP)
         Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
 
         dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_2(np.copy(Nk_SP_old), q_SP, np.copy(Nk_SP), dFk_SP, delta_t)
-        Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
+        #Nk_SP = self.slopeLim1(M, Nk_SP)
+        Nk_SP = self.MLP_slope_limiter(M, fprop, np.copy(Nk_SP), wells)
 
         dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_3(np.copy(Nk_SP_old), q_SP, np.copy(Nk_SP), dFk_SP, delta_t)
-        Nk_SP = self.MLP_slope_limiter(M, fprop, Nk_SP, wells)
+        #Nk_SP = self.slopeLim1(M, Nk_SP)
+        Nk_SP = self.MLP_slope_limiter(M, fprop, np.copy(Nk_SP), wells)
 
         Fk_vols_total = np.min(abs(dFk_SP),axis=2)
         Nk = 1 / sum(ctes_FR.weights) * np.sum(ctes_FR.weights * Nk_SP,axis=2)
-
         z = Nk[0:ctes.Nc,:] / np.sum(Nk[0:ctes.Nc,:], axis = 0)
 
+        #Nk2 = (np.linalg.inv(ctes_FR.V)[np.newaxis,] @ Nk_SP[:,:,:, np.newaxis])[:,:,:,0]
+        #Nk_avg = self.projections(Nk2, 0)
+        #import pdb; pdb.set_trace()
         if (any((z<0).flatten())): import pdb; pdb.set_trace()
         return wave_velocity, Nk, z, Nk_SP, Fk_vols_total
 
@@ -63,6 +73,29 @@ class FR:
 
         Fk_SP = self.component_flux_SP(fprop, M, Nk_SP)
         #Fk_SP = self.get_Fk_Ft_SP(fprop, M, Nk_SP)
+
+        #FOR THE BURGERS PROBLEM
+        #Fk_SP = (Nk_SP**2/2)/(1/ctes.n_volumes)
+
+        #FOR THE BASTIAN PROBLEM
+        '''Csi_j_SP = fprop.Csi_j[:,:,:,np.newaxis]*np.ones((1,ctes.n_phases,ctes.n_volumes,ctes_FR.n_points))
+        Sw_SP = Nk_SP[-1] * (1/Csi_j_SP[0,-1]) / fprop.Vp[0]
+        mobilities = np.empty_like(Csi_j_SP)
+        xkj = np.zeros((ctes.n_components,ctes.n_phases,ctes.n_volumes,ctes_FR.n_points))
+        xkj[0:-1,0:-1,:] = 1
+        xkj[-1,-1,:] = 1
+        L_face = np.ones_like(Sw_SP)
+        V_face = 1 - L_face
+        So_SP = np.empty_like(Sw_SP)
+        Sg_SP = np.empty_like(Sw_SP)
+        So_SP, Sg_SP =  PropertiesCalc().update_saturations(Sw_SP,
+            Csi_j_SP, L_face, V_face)
+        for i in range(ctes_FR.n_points):
+            mobilities[:,:,:,i] = PropertiesCalc().update_mobilities(fprop, So_SP[:,i], Sg_SP[:,i],
+                Sw_SP[:,i], Csi_j_SP[:,:,:,i], xkj[:,:,:,i])
+        f = mobilities[0,...]/(np.sum(mobilities[0,...],axis=0))
+        Fj_SP = f * Ft_internal[0,0] #self.Flux_SP(fprop, wells, M, Fk_faces)
+        Fk_SP = np.sum(xkj * Csi_j_SP * Fj_SP, axis = 1)'''
 
         Fk_faces, Fk_vols_RS_neig, wave_velocity = self.Riemann_Solver(M, fprop, wells, Nk_SP,
             Fk_SP, Ft_internal)
@@ -82,13 +115,7 @@ class FR:
         dFk_SP = - 2 * dFk_SP #this way only works for uniform mesh
         #up! transforming from local space to original global space (this could be done to the g and L functions
         #only, however, I rather do like this, so it's done just once)
-        #if any(dFk_SP[:,0,:].flatten()>0): import pdb; pdb.set_trace()
-        #dF = (dFk_SP[:,[0,-1],0] - dFk_SP[:,[0,-1],1]) +  (dFk_SP[:,[0,-1],1] - dFk_SP[:,[0,-1],2])
-        #if any(abs(dF).flatten()>1e-15): import pdb; pdb.set_trace()
-        #import pdb; pdb.set_trace()
-        '''self.dFk_C = -2*dFk_C@ ctes_FR.x_points
-        self.dFk_D = -2*dFk_D@ ctes_FR.x_points
-        self.Fk_SP = Fk_SP'''
+
         return dFk_SP, wave_velocity
 
     def total_flux_SP(self, fprop, wells, Ft_internal):
@@ -108,20 +135,6 @@ class FR:
             data = np.array([Ft_face_phi[:,:,i,0], Ft_face_phi[:,:,i,1]]).flatten()
             Ft_SP_reshaped[:,:,i] = sp.csc_matrix((data, (lines, cols)), shape = (1, ctes.n_volumes)).toarray()
         Ft_SP = 2 * Ft_SP_reshaped #np.concatenate(np.dsplit(Ft_SP_reshaped, ctes_FR.n_points), axis = 2)
-
-        '''if ctes_FR.n_points==3:
-            P_f = fprop.P[ctes.v0].sum(axis=-1)/2
-            Pot_hid = P_f[ctes_FR.vols_vec]
-            Pot_hidj = Pot_hid[:,0]
-            Pot_hidj_up = Pot_hid[:,-1]
-            z = ctes.z
-            z_up = ctes.z
-            K_vols = ctes.pretransmissibility_internal_faces[ctes_FR.vols_vec[:,0]]
-            #mob_1 = fprop.mobilities_internal_faces[...,ctes_FR.vols_vec].sum(axis=-1)/2
-            xx = - np.sum(fprop.mobilities
-                * K_vols * ((Pot_hidj_up - Pot_hidj) -
-                ctes.g * fprop.rho_j * (z_up - z)), axis = 1)
-            Ft_SP[:,1:-1,1] = xx[:,1:-1]'''
 
         #Ft_SP[0,wells['all_wells'],:] = ((Ft_internal[0,ctes_FR.vols_vec][wells['all_wells']]).sum(axis=-1)/2)[:,np.newaxis]
         #Ft_SP[:,wells['all_wells']] = (Ft_SP_reshaped[:,wells['all_wells']]).sum(axis=-1)[:,:,np.newaxis]
@@ -208,21 +221,33 @@ class FR:
         Fk_faces[:,:,1] = Fk_SP[:,ctes_FR.v0[:,1],0]
         Fk_faces[:,:,0] = Fk_SP[:,ctes_FR.v0[:,0],-1]
 
+        #FOR THE BURGERS PROBLEM AND BASTIAN
         '''Nk_face_contour = np.empty((ctes.n_components,1,2))
         Nk_face_contour[:,0,1] = Nk_SP[:,0,0]
         Nk_face_contour[:,0,0] = Nk_SP[:,-1,-1]
-        Nk_face_contour[-1,0,0] = 1*fprop.Csi_j[0,-1,0]*fprop.Vp[0]
+        #Nk_face_contour[-1,0,0] = 1*fprop.Csi_j[0,-1,0]*fprop.Vp[0] #BASTIAN
+        Vp_face_contour = fprop.Vp[:2]
+        RS_contour = RiemannSolvers(np.array([ctes.n_volumes-1,0])[np.newaxis], np.array([ctes.pretransmissibility_internal_faces[0]]))
+        Fk_faces_contour = (Nk_face_contour**2)/2*(1/ctes.n_volumes)
+        #Fk_faces_contour = RS_contour.get_Fk_face(fprop, M, Nk_face_contour, \
+        #    P_face[np.newaxis,0], Vp_face_contour, Ft_internal[:,0][:,np.newaxis])
+        Fk_face_contour_RS, alpha_wv =  RS_contour.LLF(M, fprop, Nk_face_contour, P_face[np.newaxis,0],
+            Ft_internal[:,0][:,np.newaxis], Fk_faces_contour, np.ones(1,dtype=bool))
+        '''
 
-        Fk_faces_contour = RiemannSolvers(np.array([0,ctes.n_volumes-1])[np.newaxis]).get_Fk_face(fprop, M,
-            Nk_face_contour, P_face[np.newaxis,0], Ft_internal[:,0][:,np.newaxis])
-        Fk_face_contour_RS, alpha_wv =  RiemannSolvers(np.array([0,ctes.n_volumes-1])[np.newaxis]).LLF(M, fprop, Nk_face_contour, P_face[np.newaxis,0],
-            Ft_internal[:,0][:,np.newaxis], Fk_faces_contour, np.zeros(1,dtype=bool))'''
         RS = RiemannSolvers(ctes_FR.v0, ctes.pretransmissibility_internal_faces)
-        Fk_face_RS, alpha_wv =  RS.LLF(M, fprop, Nk_faces, P_face, Ft_internal, Fk_faces, \
-            np.ones_like(Ft_internal[0],dtype=bool))
+        if ctes.RS['LLF']:
+            Fk_face_RS, alpha_wv =  RS.LLF(M, fprop, Nk_faces, P_face, Ft_internal, Fk_faces, \
+                np.ones_like(Ft_internal[0],dtype=bool))
+        else:
+            Fk_face_RS = Fk_faces[...,0]
+            alpha_wv,m = RS.medium_wave_velocity(M, fprop, Nk_faces, P_face, \
+            Ft_internal, np.ones_like(Ft_internal[0],dtype=bool))
+
         #ponteiro = np.zeros_like(Ft_internal[0], dtype=bool)
         #ponteiro[[0,1]] = True
         #Fk_face_RS[:,ponteiro] = MUSCL().update_flux_upwind(fprop.P[np.newaxis,:], Fk_faces[:,ponteiro], ponteiro)
+
         Fk_face_RS[:,0] = Fk_faces[:,0,0]
         Fk_face_RS[:,1] = Fk_faces[:,1,0]
 
@@ -233,8 +258,11 @@ class FR:
         self.vols_vec[ctes_FR.v0[:,0],1] = lines
         self.vols_vec[ctes_FR.v0[:,1],0] = lines
         Fk_vols_RS_neig = Fk_face_RS[:,ctes_FR.vols_vec]
-        Fk_vols_RS_neig[:,self.vols_vec<0] = 0 #Fk_face_contour_RS
-        #Fk_vols_RS_neig[:,vols_vec<0] = ((Fk_vols_RS_neig[:,wells['all_wells']]).sum(axis=2))
+        Fk_vols_RS_neig[:,self.vols_vec<0] = 0 #Fk_face_contour_RS #FOR THE BURGERS
+
+        #For the bastian
+        #Fk_vols_RS_neig[-1,-1] = 0
+        #Fk_vols_RS_neig[0,-1,-1] = 2 * Fk_vols_RS_neig[0,-1,-1]
         return Fk_faces, Fk_vols_RS_neig, alpha_wv
 
     def dFlux_Continuous(self, Fk_SP, Fk_vols_RS_neig):
@@ -244,6 +272,133 @@ class FR:
                 (Fk_vols_RS_neig[:,:,1] - Fk_D_r)[:,:,np.newaxis] * ctes_FR.dgRB[np.newaxis,:]
         return dFk_C
 
+    def minmod(self, dNks):
+        sign = np.sign(dNks)
+        sign[sign==0] = 1
+        s = (np.sum(sign,axis=-1))/3
+        mmod = np.zeros_like(dNks[...,0])
+        ids2 = abs(s)==1
+        mmod[ids2] = (s * np.min(abs(dNks),axis=-1))[ids2]
+        return mmod
+
+    def minmodB(self, us, M, h):
+        #TVB based minmod function
+        mfunc = np.copy(us[...,0])
+        par = (M*h**2)
+        par = 1e-4 * np.max(abs(us),axis=-1)
+        ids = (np.abs(mfunc) > par)
+        mfunc[ids] = self.minmod(us[ids,:])
+        return mfunc
+
+    def slopeLim1(self, M, Nk_SP_in):
+        #Compute cell averages
+        Nk = (np.linalg.inv(ctes_FR.V)[np.newaxis,] @ Nk_SP_in[:,:,:, np.newaxis])[:,:,:,0]
+        Nk_SP = self.projections(Nk, ctes_FR.n_points-1)
+
+        'Projected n=0'
+        Nk_avg = self.projections(Nk, 0)
+        Nk_avg0 = Nk_avg[...,0]
+
+        'Projected n=1'
+        Nk_P1 = self.projections(Nk, 1)
+
+        #only works for 1D
+        Nk_avg_neig_1 = np.concatenate((Nk_avg0[:,0][:,np.newaxis], Nk_avg0[:,0:-1]),axis=1)
+        Nk_avg_neig_2 = np.concatenate((Nk_avg0[:,1:], Nk_avg0[:,-1][:,np.newaxis]),axis=1)
+
+        #Limit function
+        c_vols = M.data['centroid_volumes'][:,0]
+        xSP1 = (c_vols - c_vols[0])
+        c_faces = c_vols[ctes.v0]
+        h = c_vols[0]*2
+
+        x0 = np.ones((ctes_FR.n_points,ctes.n_volumes)) * (xSP1 + h/2)[np.newaxis,:]
+        x_SPs = x0 + (ctes_FR.points * h/2)[:,np.newaxis]
+
+        ponteiro = np.ones_like(Nk_P1[...,0],dtype=bool)
+        ux = (2/h)*(ctes_FR.Dr@Nk_P1[ponteiro,:].T).T
+        ux1 = (Nk_avg0-Nk_avg_neig_1)/h
+        ux2 = (Nk_avg_neig_2-Nk_avg0)/h
+
+        us = np.concatenate((ux[...,0][...,np.newaxis],ux2[ponteiro,np.newaxis]),axis=-1)
+        us =  np.concatenate((us, ux1[ponteiro,np.newaxis]),axis=-1)
+        Nk_lim = np.copy(Nk_SP)
+
+        minmod = (self.minmod(us)[...,np.newaxis])
+        Nk_lim[ponteiro] = Nk_avg[ponteiro] + ((x_SPs - x0).T[np.newaxis,:] * \
+            np.ones_like(Nk_SP))[ponteiro] * minmod
+
+        if any((Nk_lim<0).flatten()): import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
+        return Nk_lim
+
+    def slopeLimN(self, M, Nk_SP_in):
+        #Compute cell averages
+        Nk = (np.linalg.inv(ctes_FR.V)[np.newaxis,] @ Nk_SP_in[:,:,:, np.newaxis])[:,:,:,0]
+        Nk_SP = self.projections(Nk, ctes_FR.n_points-1)
+
+        'Projected n=0'
+        Nk_avg = self.projections(Nk, 0)
+        Nk_avg0 = Nk_avg[...,0]
+
+        eps0 = 1e-8 * abs(Nk_avg0)#,axis=0)[:,np.newaxis] * np.ones_like(Nk_avg0)
+        Nk_L = Nk_SP[...,0]
+        Nk_R = Nk_SP[...,-1]
+
+        #only works for 1D
+        Nk_avg_neig_1 = np.concatenate((Nk_avg0[:,0][:,np.newaxis], Nk_avg0[:,0:-1]),axis=1)
+        Nk_avg_neig_2 = np.concatenate((Nk_avg0[:,1:], Nk_avg0[:,-1][:,np.newaxis]),axis=1)
+
+        dNkL1 = (Nk_avg0 - Nk_L)
+        dNkR1 = (Nk_R - Nk_avg0)
+        dNk2 = (Nk_avg0 - Nk_avg_neig_1)
+        dNk3 = (Nk_avg_neig_2 - Nk_avg0)
+
+        dNk = np.concatenate((dNk2[...,np.newaxis], dNk3[...,np.newaxis]),axis=-1)
+        dNkL = np.concatenate((dNk, dNkL1[...,np.newaxis]),axis=-1)
+        dNkR = np.concatenate((dNk, dNkR1[...,np.newaxis]),axis=-1)
+        Nk_lim_L = Nk_avg0 - self.minmod(dNkL)
+        Nk_lim_R = Nk_avg0 + self.minmod(dNkR)
+
+        ponteiro = np.zeros((ctes.n_components,ctes.n_volumes),dtype=bool)
+        dL = abs((Nk_L-Nk_lim_L))#/np.sum(Nk_L,axis=0)
+        dR = abs((Nk_R-Nk_lim_R))#/np.sum(Nk_R,axis=0)
+        ponteiro[(dL>eps0) + (dR>eps0)] = True
+        #ponteiro[:] = True
+        #Limit function
+        c_vols = M.data['centroid_volumes'][:,0]
+        xSP1 = (c_vols - c_vols[0])
+        c_faces = c_vols[ctes.v0]
+        h = c_vols[0]*2
+
+        x0 = np.ones((ctes_FR.n_points,ctes.n_volumes)) * (xSP1 + h/2)[np.newaxis,:]
+        x_SPs = x0 + (ctes_FR.points * h/2)[:,np.newaxis]
+
+        Nk_P1 = self.projections(Nk, 1)
+        ux = (2/h)*(ctes_FR.Dr@Nk_P1[ponteiro,:].T)
+        ux = ux.T
+        ux1 = (Nk_avg0-Nk_avg_neig_1)/h
+        ux2 = (Nk_avg_neig_2-Nk_avg0)/h
+        us = np.concatenate((ux[...,0][...,np.newaxis],ux2[ponteiro,np.newaxis]),axis=-1)
+        us =  np.concatenate((us, ux1[ponteiro,np.newaxis]),axis=-1)
+        Nk_lim = np.copy(Nk_SP)
+
+        #minmod = (self.minmodB(us, 0.2, h)[...,np.newaxis])
+        minmod = (self.minmod(us)[...,np.newaxis])
+        Nk_lim[ponteiro] = Nk_avg[ponteiro] + ((x_SPs - x0).T[np.newaxis,:] * \
+            np.ones_like(Nk_SP))[ponteiro] * minmod
+
+        '''if ctes.n_points == 4:
+            Nk_P2 = self.projections(Nk, 2)
+            Nk_lim[Nk_lim<0] = Nk_P2[Nk_lim<0]
+        Nk_lim[Nk_lim<0] = Nk_P1[Nk_lim<0]
+        Nk_lim[Nk_lim<0] = Nk_avg[Nk_lim<0]'''
+        #Nk_lim[:,[0,-1]] = Nk_P1[:,[0,-1]]
+        #Nk_lim[(Nk_lim<0) * (abs(Nk_lim)<1e-15)] = 0
+        if any((Nk_lim<0).flatten()): import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
+        return Nk_lim
+
     def MLP_slope_limiter(self, M, fprop, Nk_SP_in, wells):
 
         inds = np.array([0,-1])
@@ -251,9 +406,12 @@ class FR:
         Nk = (np.linalg.inv(ctes_FR.V)[np.newaxis,] @ Nk_SP_in[:,:,:, np.newaxis])[:,:,:,0]
         Nk_SP = self.projections(Nk, ctes_FR.n_points-1)
 
-        #self.machine_error = np.max(abs(Nk_SP - Nk_SP_in))
-        #if machine_error<np.finfo(np.float64).eps: machine_error = np.finfo(np.float64).eps
+        #dNk_error = abs(Nk_SP - Nk_SP_in)
+        #self.machine_error = np.max(dNk_error,axis=-1)
+        #if self.machine_error<np.finfo(np.float64).eps: machine_error = np.finfo(np.float64).eps
         self.machine_error = 0 #1e-150 #1e-323 #1e-700 #1e-150
+        #self.machine_error = 1e-15 * np.max(abs(Nk_P0))
+        #self.machine_error = np.finfo(np.float64).eps
 
         inds = np.array([0,-1])
 
@@ -276,20 +434,18 @@ class FR:
         Nk_neig[:,:,0] = Nk_P0_vertex[:,ctes_FR.v0[:,0],0]
         Nk_neig[:,:,1] = Nk_P0_vertex[:,ctes_FR.v0[:,1],0]
 
-        Phi_P1 = self.P1_limiter(M, Nk, Nk_SP, Nk_P0_vertex, Nk_P1_vertex, Nk_neig, \
-            Nk_faces)
+        Phi_P1 = self.P1_limiter(Nk_P0_vertex, Nk_P1_vertex, Nk_neig, fprop.Vp)
 
         phi_P2 = np.zeros_like(Phi_P1)
         phi_Pn = np.zeros_like(Phi_P1)
-        Nk_P2 = Nk_SP
+        Nk_P2 = np.copy(Nk_SP)
 
         if ctes_FR.n_points > 2:
             '---------------Hierarchical MLP limiting procedure----------------'
 
-            #axis=1 due to reshaping of the argument [~phi_Pn.astype(bool)]
             phi_Pn = self.troubled_cell_marker(M, fprop, Nk_P1_vertex, Nk_P0_vertex,\
                 Nk_SP, Nk_neig, Nk_faces)
-            phi_P2 = phi_Pn
+            phi_P2[:] = phi_Pn
 
             if ctes_FR.n_points==4:
 
@@ -297,7 +453,6 @@ class FR:
                 Nk2 = np.zeros_like(Nk)
                 Nk2[:,:,0:3] = Nk[:,:,0:3]
                 Nk_P2 = self.projections(Nk, 2)
-                Nk_P2_vertex = Nk_P2[:,:,inds]
 
                 'Projected P2 into n=1'
                 Nk_P12 = self.projections(Nk2, 1)
@@ -321,24 +476,43 @@ class FR:
                 phi_P2 = self.troubled_cell_marker(M, fprop, Nk_P1_vertex2, \
                     Nk_P0_vertex2, Nk_P2, Nk_neig2, Nk_faces2)
 
+            phi_Pn[np.sum(Nk_SP<0,axis=-1,dtype=bool)] = 0
+
+            phi_P2[np.sum(Nk_P2<0,axis=-1,dtype=bool)] = 0
             phi_P2[phi_Pn==1] = 1
+
             Phi_P1[phi_P2==1] = 1
-            #phi_P2[np.sum(Nk_P2<0,axis=-1, dtype=bool)*np.sum(Nk_SP<0,axis=-1, dtype=bool)] = 0
-            ##Phi_P1[np.sum(Nk_P1<0,axis=-1, dtype=bool)*(phi_P2==0)] = 0
-        '''Phi_P1 = np.min(Phi_P1, axis=0)[np.newaxis,:]
-        phi_P2 = np.min(phi_P2, axis=0)[np.newaxis,:]
-        phi_Pn = np.min(phi_Pn, axis=0)[np.newaxis,:]'''
 
+        #tornando nao hierarquico
+        #phi_P2[:] = 1
+        #phi_Pn[:] = 1
 
-        Nk_SPlim = (Nk_P0 + Phi_P1[:,:,np.newaxis] * (Nk_P1 - Nk_P0) + \
-            phi_P2[:,:,np.newaxis] * ((Nk_P2 - Nk_P1) + phi_Pn[:,:,np.newaxis] * (Nk_SP - Nk_P2)))
+        #Phi_P1[:] = 1
 
-        Nk = 1 / sum(ctes_FR.weights) * np.sum(ctes_FR.weights * Nk_SPlim,axis=2)
+        Nk_SPlim = (Nk_P0 + Phi_P1[:,:, np.newaxis] * (Nk_P1 - Nk_P0) + \
+            phi_P2[:,:,np.newaxis] * ((Nk_P2 - Nk_P1) + \
+            phi_Pn[:,:,np.newaxis] * (Nk_SP - Nk_P2)))
 
-        z = Nk[0:ctes.Nc,:] / np.sum(Nk[0:ctes.Nc,:], axis = 0)
+        #vols_neg = np.sum(Nk_SPlim<0,axis=-1,dtype=bool)
+        #Nk_SPlim[vols_neg,:] = Nk_P0[vols_neg,:]
+        Nk_SPlim[(abs(Nk_SPlim)<1e-300)]=abs(Nk_SPlim[abs(Nk_SPlim)<1e-300])
+        #Nk = 1 / sum(ctes_FR.weights) * np.sum(ctes_FR.weights * Nk_SPlim,axis=2)
+        #z = Nk[0:ctes.Nc,:] / np.sum(Nk[0:ctes.Nc,:], axis = 0)
         #if any(abs(z[1,90:]-0.3)>1e-4): import pdb; pdb.set_trace()
+
         if any(abs(Nk_SPlim[Nk_SPlim<0])):
             import pdb; pdb.set_trace()
+
+        '''plt.figure(1)
+        #plt.plot(M.volumes.center(M.volumes.all)[:,0], phi_Pn[0,:], '.k')
+        plt.plot(M.volumes.center(M.volumes.all)[:,0], phi_Pn[0,:], 'rs',markersize=3, mfc='none')
+        plt.plot(M.volumes.center(M.volumes.all)[:,0], Phi_P1[0,:], '.b',mfc='none')
+        plt.legend(('phi_P2', 'phi_P1'))
+        plt.xlim(0.7,1.1)
+        plt.grid()
+        plt.savefig('results/compositional/FR/AAA_Phis_CO2_3.png')
+        plt.close(1)'''
+
 
         '''C_high_order_check1 = (Nk_SPlim[:,:,inds] <= np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]) #<= machine_error
         C_high_order_check2 = (Nk_SPlim[:,:,inds] >= np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]) #>= -machine_error
@@ -358,7 +532,7 @@ class FR:
         Nk_Pm = (ctes_FR.V[np.newaxis,] @ Nkm[:,:,:,np.newaxis])[:,:,:,0]
         return Nk_Pm
 
-    def P1_limiter(self, M, Nk, Nk_Pm, Nk_P0_vertex, Nk_P1_vertex, Nk_neig, Nk_faces):
+    def P1_limiter(self, Nk_P0_vertex, Nk_P1_vertex, Nk_neig, Vp):
         Linear_term = Nk_P1_vertex - Nk_P0_vertex
 
         'Neigboring vertex points values'
@@ -368,10 +542,23 @@ class FR:
         #Phi_r = self.MLP_vk(M, Nk_neig, Nk_P0_vertex, Linear_term)
 
         Phi_P1 = np.ones_like(Phi_r)
-        Phi_P1[abs(Nk_P1_vertex - Nk_P0_vertex) >= self.machine_error] = Phi_r[abs(Nk_P1_vertex - Nk_P0_vertex) >= self.machine_error]
+        #z_P1 = Nk_P1_vertex/np.sum(Nk_P1_vertex,axis=0)
+        #z_P0 = Nk_P0_vertex/np.sum(Nk_P0_vertex,axis=0)
+        #magnitude = 10**(np.floor(np.log10(Nk_P0_vertex)))
+
+        Nk_P1_adim = Nk_P1_vertex#np.max(Nk_P0_vertex,axis=1)[:,np.newaxis]
+        Nk_P0_adim = Nk_P0_vertex#np.max(Nk_P0_vertex,axis=1)[:,np.newaxis]
+        P1_adim = abs(Nk_P1_adim - Nk_P0_adim)
+        P1_condition = P1_adim > 0 # self.machine_error[...,np.newaxis]
+
+        #P1_condition = abs(Nk_P1_vertex - Nk_P0_vertex)>=self.machine_error
+        negative_N_condition = (Nk_P1_vertex<0)
+        Phi_P1[(P1_condition) + (negative_N_condition)] = Phi_r[(P1_condition)+(negative_N_condition)]
         Phi_P1 = np.min(Phi_P1, axis = 2)
-        #Phi_P1[:,-1] = 0
-        #Phi_P1[:,0] = 0
+
+        #FOR THE BURGERS PROBLEM
+        #Phi_P1[:,-1] = 1
+        #Phi_P1[:,0] = 1
         return Phi_P1
 
     def MLP_u1_mod(self, Nk_neig, Nk_P0_vertex, Linear_term):
@@ -387,9 +574,10 @@ class FR:
         r1 = (f_min - Nk_P0_vertex) / Linear_term
         r2 = (f_max - Nk_P0_vertex) / Linear_term
         rs = np.concatenate((r1[...,np.newaxis], r2[...,np.newaxis]),axis = -1)
-        rs[Linear_term == 0] = 1
+        rs[Linear_term==0] = 1
+        rs[rs>1] = 1
         r = np.max(rs, axis = -1)
-        Phi_r_u1 = r
+        Phi_r_u1 = np.copy(r)
         Phi_r_u1[Phi_r_u1>1] = 1
         Phi_r_u1[Phi_r_u1<0] = 0
         return Phi_r_u1
@@ -402,7 +590,7 @@ class FR:
         rs = np.concatenate((r1[...,np.newaxis], r2[...,np.newaxis]),axis = -1)
         rs[Linear_term == 0] = 1
         r = np.max(rs, axis = -1)
-        Phi_r_u1 = r
+        Phi_r_u1 = np.copy(r)
         Phi_r_u1[Phi_r_u1>1] = 1
         Phi_r_u1[Phi_r_u1<0] = 0
         return Phi_r_u1
@@ -436,8 +624,8 @@ class FR:
 
         Phi_r_u2[delta_minus==0] = 1
 
-        Phi_r_u2[Phi_r_u2 > 1] = 1
-        Phi_r_u2[Phi_r_u2 < 0] = 0
+        #Phi_r_u2[Phi_r_u2 > 1] = 1
+        #Phi_r_u2[Phi_r_u2 < 0] = 0
 
         return Phi_r_u2
 
@@ -450,8 +638,21 @@ class FR:
 
         C_troubled1 = (Nk_P1_vertex <= np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
         C_troubled2 = (Nk_P1_vertex >= np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
-        #C_troubled1[abs((Nk_P1_vertex - np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])) <= self.machine_error] = True
-        #C_troubled2[abs((Nk_P1_vertex - np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])) <= self.machine_error] = True
+
+        '''Nk_neig_max_vols = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        Nk_neig_min_vols = np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        op1 = abs((Nk_P1_vertex - Nk_neig_max_vols)/Nk_neig_max_vols)
+        op2 = abs((Nk_P1_vertex - Nk_neig_min_vols)/Nk_neig_min_vols)
+        C_troubled1 = op1 <= self.machine_error
+        C_troubled2 = op2 <= self.machine_error'''
+
+        '''Nk_neig_max_vols = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        Nk_neig_min_vols = np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        op1 = abs((Nk_P1_vertex - Nk_neig_max_vols)/Nk_neig_max_vols)
+        op2 = abs((Nk_P1_vertex - Nk_neig_min_vols)/Nk_neig_min_vols)
+        C_troubled1[op1 >= 5e-1] = False
+        C_troubled2[op2 >= 5e-1] = False'''
+
         troubled_cells = (C_troubled1 * C_troubled2)
         return troubled_cells
 
@@ -462,9 +663,15 @@ class FR:
 
         Nk_less_max = (Nk_Pm_vertex < np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
         Nk_big_min = (Nk_Pm_vertex > np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
-        #Nk_less_max[abs(Nk_Pm_vertex - np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]) <= self.machine_error] = True
-        #Nk_big_min[abs(Nk_Pm_vertex - np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]) <= self.machine_error] = True
-        C1 = ((Linear_term) > 0) * ((High_order_term) < 0) * (Nk_big_min)
+
+        '''Nk_neig_max_vols = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        Nk_neig_min_vols = np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        op1 = abs((Nk_Pm_vertex - Nk_neig_max_vols)/Nk_neig_max_vols)
+        op2 = abs((Nk_Pm_vertex - Nk_neig_min_vols)/Nk_neig_min_vols)
+        Nk_less_max[op1 <= self.machine_error] = False
+        Nk_big_min[op2 <= self.machine_error] = False'''
+
+        C1 = ((Linear_term) > 0) * (High_order_term < 0) * (Nk_big_min)
         C2 = ((Linear_term) < 0) * (High_order_term > 0) * (Nk_less_max)
         return C1, C2
 
@@ -489,6 +696,13 @@ class FR:
         Nf = np.sum(trbl_bound_detector_vols, axis = -1)
         return Nf
 
+    def augmented_MLP_condition(self, Nk_Pm_vertex, Nk_neig):
+        Nk_avg_vertex_max = np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        Nk_avg_vertex_min = np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec]
+        C = (Nk_Pm_vertex <= Nk_avg_vertex_max) * (Nk_Pm_vertex >= Nk_avg_vertex_min)
+        #equal = (abs(Nk_Pm_vertex - Nk_avg_vertex_max)<1e-300) * (abs(Nk_Pm_vertex >= Nk_avg_vertex_min)<1e-300)
+        return C
+
     def troubled_cell_marker(self, M, fprop, Nk_P1_vertex, Nk_P0_vertex, Nk_Pm, Nk_neig, Nk_faces):
 
         #Nk_faces_avg = 1/2 * np.sum(ctes_FR.weights[np.newaxis,np.newaxis,:,np.newaxis] * Nk_faces, axis=2)
@@ -498,58 +712,57 @@ class FR:
 
         P1_proj_cond = self.P1_projected_cond(Nk_P1_vertex, Nk_neig)
 
-        'Augmented MLP condition - troubled-cell marker'
-
-        '''C_troubled1 = (Nk_Pmvertex <= np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
-        C_troubled2 = (Nk_Pmvertex >= np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])
-        C_troubled1[abs((Nk_Pmvertex - np.max(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])) <= machine_error] = True
-        C_troubled2[abs((Nk_Pmvertex - np.min(Nk_neig, axis = 2)[:,ctes_FR.vols_vec])) <= machine_error] = True
-        troubled_cells = (C_troubled1 * C_troubled2)
-        phi_Pm =  np.min(1*(troubled_cells), axis = 2)'''
+        #A_MLP_cond = self.augmented_MLP_condition(Nk_Pmvertex, Nk_neig)
 
         C1, C2 = self.smooth_extrema_cond(fprop, Nk_P0_vertex, Nk_P1_vertex, Nk_Pmvertex, Nk_neig)
 
         ''' Dehativation inequality for nearly constant region'''
-        e=1e-1
 
-        #cC3 = np.concatenate((e*abs(Nk_P0_vertex), fprop.Vp[np.newaxis,:,np.newaxis]*\
-        #    np.ones_like(Nk_P0_vertex)),axis=-1)
-        cC3 = np.concatenate((e*np.ones_like(Nk_P0_vertex), (fprop.Vp/np.sum(fprop.Vp))[np.newaxis,:,np.newaxis]* \
-             np.ones_like(Nk_P0_vertex)),axis=-1)
-        #cC3 = e*abs(Nk_P0_vertex)
-        C3 = (abs(Nk_Pmvertex - Nk_P0_vertex)/abs(Nk_P0_vertex) <= np.max(cC3,axis=-1)[:,:,np.newaxis])
+        #magnitude = 10**(np.floor(np.log10(Nk_P0_vertex)))
+        #Vp_Nkshape = fprop.Vp[np.newaxis,:,np.newaxis]*np.ones_like(Nk_P0_vertex)
 
-        Nf = self.Gibbs_Wilbraham_oscilations(M, Nk_faces)
-
+        densityP0_vertex = Nk_P0_vertex#/Vp_Nkshape
+        densityPm_vertex = (Nk_Pmvertex)#/Vp_Nkshape
+        #Nkt = fprop.Nk.sum(axis=0)[np.newaxis,:,np.newaxis]*np.ones_like(Nk_P0_vertex)
+        #C3_right = np.concatenate((self.machine_error*abs(densityP0_vertex),Nkt),axis=2)
+        C3_right = 1e-3*abs(densityP0_vertex[...,0])#np.max(C3_right,axis=-1)
+        C3 = (abs(densityPm_vertex-densityP0_vertex)<= C3_right[...,np.newaxis])
+        #import pdb; pdb.set_trace()
+        #Nf = self.Gibbs_Wilbraham_oscilations(M, Nk_faces)
+        C3[:] = 0
         '''A3 step'''
-        P1_proj_cond[C3] = False
+        #P1_proj_cond[C3] = True
+        C3_cells = np.min(1*(C3),axis=-1)
+        #C3_cells[:] = 0
 
         '''A4-1 step'''
+        #P1_proj_cond[P1_proj_cond==1] = A_MLP_cond[P1_proj_cond==1]
+
         P1_proj_cond_cells = np.min(1*(P1_proj_cond),axis=-1)
+        #A_MLP_cond_cells = np.min(1*(A_MLP_cond),axis=-1)
 
         'Type I trouble'
-
-        aux_I = P1_proj_cond_cells[P1_proj_cond_cells==1]
-        aux_Nf_I = Nf[P1_proj_cond_cells==1]
+        '''condI = (P1_proj_cond_cells==1)
+        aux_I = P1_proj_cond_cells[condI]
+        aux_Nf_I = Nf[condI]
         aux_I[aux_Nf_I>=1] = 0
-        P1_proj_cond_cells[P1_proj_cond_cells==1] = aux_I
+        P1_proj_cond_cells[condI] = aux_I'''
 
         '''A4-2 step'''
-        smooth_extrema = C1+C2
+        smooth_extrema = C1+C2+C3
         smooth_extrema_cells = np.min(1*smooth_extrema,axis=-1)
-
+        #smooth_extrema_cells[:] = 0
         'Type II trouble'
         #shock_condition = abs(p_neig_l-p_neig_r)>=0.1*p_neig_l#
-        aux_II = smooth_extrema_cells[smooth_extrema_cells==1]
+        '''aux_II = smooth_extrema_cells[smooth_extrema_cells==1]
         aux_Nf_II = Nf[smooth_extrema_cells==1]
         aux_II[aux_Nf_II>=1] = 0
-        smooth_extrema_cells[smooth_extrema_cells==1] = aux_II
+        smooth_extrema_cells[smooth_extrema_cells==1] = aux_II'''
 
         phi_Pm = 1*((P1_proj_cond_cells + smooth_extrema_cells).astype(bool))
+        #phi_Pm = 1*((A_MLP_cond_cells + smooth_extrema_cells+C3_cells).astype(bool))
+
         #phi_Pm = 1*((P1_proj_cond_cells).astype(bool))
+        #if any((phi_Pm[:,:,np.newaxis]*Nk_Pmvertex).flatten()<0): import pdb; pdb.set_trace()
 
-        if any((phi_Pm[:,:,np.newaxis]*Nk_Pmvertex).flatten()<0): import pdb; pdb.set_trace()
-        #phi_Pm = np.ones_like(phi_Pm)
-
-        if any(phi_Pm.flatten()>1): import pdb; pdb.set_trace()
         return phi_Pm
