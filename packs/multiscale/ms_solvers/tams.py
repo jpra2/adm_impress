@@ -13,7 +13,17 @@ class TamsSolverFV:
     """
 
     @staticmethod
-    def richardson_solver(A: csc_matrix, b: np.ndarray, x0: np.ndarray, OR: csc_matrix, OP: csc_matrix, res_tol: float = 1e-10, x_tol: float = 1e-10, max_it: int = np.inf, **kwargs) -> np.ndarray:
+    def richardson_solver(
+        A: csc_matrix, 
+        b: np.ndarray, 
+        x0: np.ndarray, 
+        OR: csc_matrix, 
+        OP: csc_matrix, 
+        res_tol: float=1e-10, 
+        x_tol: float=1e-10, 
+        max_it: int=np.inf,
+        pcorr: np.ndarray=None,
+        **kwargs) -> np.ndarray:
         """Richardson iterative solver
 
         Args:
@@ -25,6 +35,7 @@ class TamsSolverFV:
             res_tol (float): tolerance for L2 residual error - np.linalg.norm(rk)
             x_tol (float): L_inf error tolerance = np.absolute(x).max()
             max_it (int): max iteration counter, if max_it = np.inf (default), the code runs until b_tol and res_tol.
+            pcorr(np.ndarray): correction functions
 
         Returns:
             x (np.ndarray): answer
@@ -45,12 +56,18 @@ class TamsSolverFV:
         # Tc_inv = inv(Ac_it)
         x = x0.copy()
         x0_in = x0.copy()
-        res_f = b-A*x0
-        res_c = OR*res_f
+        if pcorr:
+            assert pcorr.shape == b.shape
+        else:
+            pcorr = np.zeros_like(b)
+        # res_f = b-A*x
+        res_f = b-A*(x-pcorr)
+        res_c = R*res_f
 
         while it_counter < max_it and eps > x_tol:
-            res_c[:] = spsolve(Ac_it, R*(b-A*x))
-            res_f[:] = OP*res_c
+            # res_c[:] = spsolve(Ac_it, R*(b-A*x))
+            res_c[:] = spsolve(Ac_it, res_c)
+            res_f[:] = OP*res_c + pcorr
             x += res_f
             res_f[:], exitcode = cg(A, b-A*x, maxiter=20, x0=res_f, tol=res_tol)
             x += res_f
@@ -58,9 +75,11 @@ class TamsSolverFV:
             print(f'eps: {eps}')
             x0_in[:] = x.copy()
             it_counter += 1
+            res_f[:] = b-A*(x-pcorr)
+            res_c[:] = R*res_f
 
-        res_c[:] = spsolve(OR*A*OP, OR*(b-A*x))
-        res_f[:] = OP*res_c
+        res_c[:] = spsolve(OR*A*OP, OR*(b-A*(x-pcorr)))
+        res_f[:] = OP*res_c + pcorr
         x += res_f
 
         # x=spsolve(A,b)
