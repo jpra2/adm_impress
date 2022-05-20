@@ -35,7 +35,7 @@ Wells:
     - 0.0
     - 0
     p1:
-    - 0.1953125
+    - 6.25
     - 1
     - 1
     prescription: P
@@ -48,7 +48,7 @@ Wells:
     - 0.0
   P2:
     p0:
-    - 49.8046875
+    - 43.75
     - 0.0
     - 0
     p1:
@@ -65,7 +65,7 @@ compositional_data:
   Cpc: 62052.84
   Epc: 2
   FR:
-    order: 2
+    order: 3
     set: false
   MUSCL:
     set: false
@@ -141,10 +141,10 @@ compositional_data:
   solver:
     IMPSAT: false
   time_data:
-    deltaNlim: 0.5
+    deltaNlim: 10
     deltaPlim: 68.9476
-    deltaSlim: 0.25
-    deltaVlim: 0.5
+    deltaSlim: 0.35
+    deltaVlim: 0.0004
     delta_t_ini: 56.4
     delta_tmax: 86400
     delta_tmin: 8.64
@@ -167,11 +167,11 @@ hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: 200x1x1_3k.msh
+mesh_name: 8x1x1_3k.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_case2_Moshiri_Manzari_3k_200_LLF_ha
+name_save_file: results_case2_Moshiri_Manzari_3k_8_FR3
 read_permeability: false
 set_permeability: true
 set_porosity: true

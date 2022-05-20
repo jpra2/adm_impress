@@ -20,7 +20,7 @@ class StabilityCheck(SC):
         Vmax = 1. - Lmin
         Vmin = 1. - Lmax
 
-        self.z[self.z==0] = 1e-30
+        self.z[self.z==0] = 1e-300
 
         #Vmin = ((K1-KNc)*z[self.K==K1]-(1-KNc))/((1-KNc)*(K1-1))
         #proposed by Li et al for Whitson method
@@ -32,7 +32,7 @@ class StabilityCheck(SC):
             Vmin, np.copy(self.K), self.z)
         #self.Yinghui_method(ponteiro) #ajeitar!
         #import pdb; pdb.set_trace()
-        self.z[z==0] = z[z==0]
+        self.z[z==0] = 0#z[z==0]
 
         self.x[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
         self.y[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
@@ -44,7 +44,7 @@ class StabilityCheck(SC):
         #ksi = np.array([37342.0019279, 37342.0019279, 37342.0019279, 37342.0019279 , 37342.0019279 ])
         ksi = 37342.0019279 * np.ones_like(self.z[:,0])
         #ksi = np.array([33484.14713005, 13285.2303, 5462.52752046])
-
+        ctes.Mw[:] = 10
         ksi_L = np.sum(self.x / ksi[:,np.newaxis], axis=0)
         ksi_V = np.sum(self.y / ksi[:,np.newaxis], axis=0)
         Mw_L = np.sum(self.x * ctes.Mw[:,np.newaxis], axis = 0)

@@ -47,6 +47,7 @@ class FirstOrder:
         a[B] = beta[B]'''
         #a[a>1] = 1
 
+        #comment for burger
         Fk_vols_total = UPW.update_flux(M, fprop, Ft_internal, fprop.rho_j_internal_faces, \
             mobilities_internal_faces)
 
@@ -73,9 +74,9 @@ class FirstOrder:
 
 
         #burger
-        #a[:,0:-1] = wave_velocity
-        #Fk_face_all = 0.5*(Fk_faces_all.sum(axis=-1)-abs(a)*(Nk_faces_all[...,1] - Nk_faces_all[...,0]))
-        '''Fk_face_all = Fk_faces_all[...,0]
+        '''a[:,0:-1] = wave_velocity
+        Fk_face_all = 0.5*(Fk_faces_all.sum(axis=-1)-abs(a)*(Nk_faces_all[...,1] - Nk_faces_all[...,0]))
+        Fk_face_all = Fk_faces_all[...,0]
         Fk_face_all[a<=0] = Fk_faces_all[a<=0,1]
         Fk_internal_faces = Fk_face_all[:,:-1]
         self.vols_vec = -np.ones((ctes.n_volumes,2),dtype=int)
@@ -185,7 +186,7 @@ class FirstOrder:
         Pot_hidj_up = Pot_hid[:,ctes.v0[:,1]]
 
         Pot_hidj_up = -Pot_hidj
-        
+
         prop_face = np.zeros([prop.shape[0], prop.shape[1], ctes.n_internal_faces])
         prop_vols = prop[:,:,ctes.v0[:,0]]
         prop_vols_up = prop[:,:,ctes.v0[:,1]]

@@ -1,6 +1,6 @@
 #Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 32x1x1_Burg.msh
-name_save_file: 'results_Burger_32_FR4_RK3_nolim'
+name_save_file: 'results_Burger_32_15t_FR4_RK3_hMLPor_noSE'
 
 compositional: True
 hidrocarbon_components: false
@@ -40,13 +40,13 @@ compositional_data:
 
   RiemannSolver:
     ROE: false
-    LLF: false
+    LLF: true
     MDW: false
     DW: false
 
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [0.3]
-  maximum_time: 0.3
+  time_to_save: [1.5]
+  maximum_time: 1.5
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang

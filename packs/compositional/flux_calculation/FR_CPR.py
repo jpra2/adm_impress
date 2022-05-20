@@ -71,7 +71,7 @@ class FR:
 
     def dFk_SP_from_Pspace(self, M, fprop, wells, Ft_internal, Nk_SP, P_old):
 
-        Fk_SP = self.component_flux_SP(fprop, M, Nk_SP)
+        Fk_SP = self.component_flux_SP(fprop, M, Nk_SP) #comment for burgers
         #Fk_SP = self.get_Fk_Ft_SP(fprop, M, Nk_SP)
 
         #FOR THE BURGERS PROBLEM
@@ -232,8 +232,8 @@ class FR:
         #Fk_faces_contour = RS_contour.get_Fk_face(fprop, M, Nk_face_contour, \
         #    P_face[np.newaxis,0], Vp_face_contour, Ft_internal[:,0][:,np.newaxis])
         Fk_face_contour_RS, alpha_wv =  RS_contour.LLF(M, fprop, Nk_face_contour, P_face[np.newaxis,0],
-            Ft_internal[:,0][:,np.newaxis], Fk_faces_contour, np.ones(1,dtype=bool))
-        '''
+            Ft_internal[:,0][:,np.newaxis], Fk_faces_contour, np.ones(1,dtype=bool))'''
+
 
         RS = RiemannSolvers(ctes_FR.v0, ctes.pretransmissibility_internal_faces)
         if ctes.RS['LLF']:
@@ -248,8 +248,8 @@ class FR:
         #ponteiro[[0,1]] = True
         #Fk_face_RS[:,ponteiro] = MUSCL().update_flux_upwind(fprop.P[np.newaxis,:], Fk_faces[:,ponteiro], ponteiro)
 
-        Fk_face_RS[:,0] = Fk_faces[:,0,0]
-        Fk_face_RS[:,1] = Fk_faces[:,1,0]
+        Fk_face_RS[:,0] = Fk_faces[:,0,0] #comment for burgers
+        Fk_face_RS[:,1] = Fk_faces[:,1,0] #comment for burgers
 
         'Obtaining Flux at each CV side - by finding faces that compounds the CV \
         this only works for 1D problems'
@@ -537,22 +537,18 @@ class FR:
 
         'Neigboring vertex points values'
 
-        Phi_r = self.MLP_u1_mod(Nk_neig, Nk_P0_vertex, Linear_term)
-        #Phi_r = self.MLP_u1(Nk_neig, Nk_P0_vertex, Linear_term)
+        Phi_r_mod = self.MLP_u1_mod(Nk_neig, Nk_P0_vertex, Linear_term)
+        '''Phi_r = self.MLP_u1(Nk_neig, Nk_P0_vertex, Linear_term)
         #Phi_r = self.MLP_vk(M, Nk_neig, Nk_P0_vertex, Linear_term)
 
+        Nk_P_t = Nk_P0_vertex + np.min(Phi_r,axis=2)[...,np.newaxis] * (Nk_P1_vertex - Nk_P0_vertex)
+        Phi_r[Nk_P_t<0] = Phi_r_mod[Nk_P_t<0]'''
+
         Phi_P1 = np.ones_like(Phi_r)
-        #z_P1 = Nk_P1_vertex/np.sum(Nk_P1_vertex,axis=0)
-        #z_P0 = Nk_P0_vertex/np.sum(Nk_P0_vertex,axis=0)
-        #magnitude = 10**(np.floor(np.log10(Nk_P0_vertex)))
 
-        Nk_P1_adim = Nk_P1_vertex#np.max(Nk_P0_vertex,axis=1)[:,np.newaxis]
-        Nk_P0_adim = Nk_P0_vertex#np.max(Nk_P0_vertex,axis=1)[:,np.newaxis]
-        P1_adim = abs(Nk_P1_adim - Nk_P0_adim)
-        P1_condition = P1_adim > 0 # self.machine_error[...,np.newaxis]
-
-        #P1_condition = abs(Nk_P1_vertex - Nk_P0_vertex)>=self.machine_error
+        P1_condition = abs(Linear_term) > 0 # self.machine_error[...,np.newaxis]
         negative_N_condition = (Nk_P1_vertex<0)
+
         Phi_P1[(P1_condition) + (negative_N_condition)] = Phi_r[(P1_condition)+(negative_N_condition)]
         Phi_P1 = np.min(Phi_P1, axis = 2)
 
@@ -575,7 +571,7 @@ class FR:
         r2 = (f_max - Nk_P0_vertex) / Linear_term
         rs = np.concatenate((r1[...,np.newaxis], r2[...,np.newaxis]),axis = -1)
         rs[Linear_term==0] = 1
-        rs[rs>1] = 1
+        #rs[rs>1] = 1
         r = np.max(rs, axis = -1)
         Phi_r_u1 = np.copy(r)
         Phi_r_u1[Phi_r_u1>1] = 1
@@ -762,7 +758,7 @@ class FR:
         phi_Pm = 1*((P1_proj_cond_cells + smooth_extrema_cells).astype(bool))
         #phi_Pm = 1*((A_MLP_cond_cells + smooth_extrema_cells+C3_cells).astype(bool))
 
-        #phi_Pm = 1*((P1_proj_cond_cells).astype(bool))
+        #phi_Pm = 1*((P1_proj_cond_cells).astype(bool)) #burgers
         #if any((phi_Pm[:,:,np.newaxis]*Nk_Pmvertex).flatten()<0): import pdb; pdb.set_trace()
 
         return phi_Pm

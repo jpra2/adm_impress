@@ -48,10 +48,10 @@ class MUSCL:
         dNk_vols = dNk_by_axes.sum(axis = 3)
 
         #burgers
-        #dNk0 = fprop.Nk[:,1] - fprop.Nk[:,0]
-        #dNkend = fprop.Nk[:,-1] - fprop.Nk[:,-2]
-        #dNk_vols[:,ctes_MUSCL.all_neig_by_axes==1] = 1/2*np.array([[dNk0[0],dNkend[0]]])
-
+        '''dNk0 = fprop.Nk[:,1] - fprop.Nk[:,0]
+        dNkend = fprop.Nk[:,-1] - fprop.Nk[:,-2]
+        dNk_vols[:,ctes_MUSCL.all_neig_by_axes==1] = 1/2*np.array([[dNk0[0],dNkend[0]]])
+        '''
         dNkds_vols = np.copy(dNk_vols)
         dNkds_vols[:,ctes_MUSCL.ds_vols!=0] = dNk_vols[:,ctes_MUSCL.ds_vols != 0] / \
             ctes_MUSCL.ds_vols[ctes_MUSCL.ds_vols != 0][np.newaxis,:]
@@ -181,8 +181,9 @@ class MUSCL:
         #ponteiro[ctes_MUSCL.faces_contour] = True
         #Fk_internal_faces[:,ponteiro] = self.update_flux_upwind(fprop.P[np.newaxis,:], \
         #    Fk_face[:,ponteiro], ponteiro)
-        Fk_internal_faces[:,0] = Fk_face[:,0,0]
-        Fk_internal_faces[:,1] = Fk_face[:,1,0]
+        
+        Fk_internal_faces[:,0] = Fk_face[:,0,0] #comment for burgers
+        Fk_internal_faces[:,1] = Fk_face[:,1,0] #comment for burgers
         '-------- Perform volume balance to obtain flux through volumes -------'
         Fk_vols_total = Flux().update_flux_volumes(Fk_internal_faces)
 

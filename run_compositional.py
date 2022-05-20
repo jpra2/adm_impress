@@ -162,7 +162,6 @@ class run_simulation:
 
         if ctes.load_k and ctes.compressible_k:
             #if self.z
-
             self.p2 = StabilityCheck(fprop.P, fprop.T)
             fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
