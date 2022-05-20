@@ -14,8 +14,8 @@ n_levels: 3
 Crs:
   # Cr1: [3, 3, 1]
   # Cr2: [9, 9, 1]
-  Cr1: [7, 7, 1]
-  Cr2: [3, 3, 1]
+  Cr1: [7, 1, 1]
+  Cr2: [3, 1, 1]
 get_correction_term: false
 load_operators: false
 load_multilevel_data: false
@@ -49,6 +49,13 @@ compositional_data:
   FR:
     set: false
     order: 3
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
+    DW: false
+
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [274752] #, 432000., 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0]
   maximum_time: 274752 #1530144.0
@@ -107,6 +114,7 @@ compositional_data:
     Pv: [0]
     Pb_guess: [9.5e6]
     vshift_parameter: [0.085]
+    constant_K: False
 
 
 #water saturation data

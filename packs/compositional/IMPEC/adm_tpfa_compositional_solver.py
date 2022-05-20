@@ -609,8 +609,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             restriction_list[0],
             prolongation_list[0],
             res_tol=1e-10,
-            x_tol=1e-10,
-            max_it = 1000
+            x_tol=1e-10
             # wells_producer = wells_producer
         )
         t1 = time.time()

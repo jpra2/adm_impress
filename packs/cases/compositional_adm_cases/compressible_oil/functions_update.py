@@ -9,9 +9,14 @@ def update_global_vector_for_volumes_adjacencies_variable(global_vector_update, 
         global_vector_update[vols] = True
 
 def update_global_vector_for_latest_variable(global_vector_update, latest_variable, new_variable, delta_lim):
-    delta = np.abs(latest_variable - new_variable)
-    test = (delta >= delta_lim)
-    # latest_variable[test] = new_variable[test]
+    # import pdb; pdb.set_trace()
+    # delta = np.abs(latest_variable - new_variable)
+    # test = (delta >= delta_lim)
+    ratio = new_variable/latest_variable
+    test = ratio > (1/(1 + delta_lim))
+    test = (ratio < (1 + delta_lim)) & test
+    test = ~test
+    latest_variable[test] = new_variable[test]
     global_vector_update[test.flatten()] = True
 
 def set_level0_delta_sat(level, saturation, adjacencies, delta_lim):

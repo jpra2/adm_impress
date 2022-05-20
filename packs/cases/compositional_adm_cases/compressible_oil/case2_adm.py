@@ -201,6 +201,7 @@ params.update({
 })
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
+latest_mobility[:] = 0.001
 latest_density = np.zeros(fprop.rho_j.shape)
 latest_internal_faces_velocity = np.zeros(len(elements_lv0['internal_faces']))
 global_vector_update[:] = False
@@ -258,6 +259,14 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     #         fprop.mobilities[:, phase, :]*fprop.rho_j[:, phase, :],
     #         0.1
     #     )
+
+    for phase in range(ctes.n_phases):
+        functions_update.update_global_vector_for_latest_variable(
+            global_vector_update,
+            latest_mobility[:, phase, :],
+            fprop.mobilities[:, phase, :],
+            0.1
+        )
 
 
     # for comp in range(fprop.z.shape[0]):
@@ -391,14 +400,21 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         'loop': loop
     })
 
-    functions_update.update_global_vector_by_internal_face_variable(
-        global_vector_update,
-        latest_internal_faces_velocity,
-        params['internal_faces_velocity'],
-        elements_lv0['neig_internal_faces'],
-        local_problem_params['dvtol']
-    )
-
+    # functions_update.update_global_vector_by_internal_face_variable(
+    #     global_vector_update,
+    #     latest_internal_faces_velocity,
+    #     params['internal_faces_velocity'],
+    #     elements_lv0['neig_internal_faces'],
+    #     local_problem_params['dvtol']
+    # )
+    #
+    # for phase in range(ctes.n_phases):
+    #     functions_update.update_global_vector_for_latest_variable(
+    #         global_vector_update,
+    #         latest_mobility[:, phase, :],
+    #         fprop.mobilities[:, phase, :],
+    #         0.1
+    #     )
 
     if loop % 2500 == 0:
         print('sleeping...')

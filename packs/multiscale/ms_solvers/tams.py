@@ -14,13 +14,13 @@ class TamsSolverFV:
 
     @staticmethod
     def richardson_solver(
-        A: csc_matrix, 
-        b: np.ndarray, 
-        x0: np.ndarray, 
-        OR: csc_matrix, 
-        OP: csc_matrix, 
-        res_tol: float=1e-10, 
-        x_tol: float=1e-10, 
+        A: csc_matrix,
+        b: np.ndarray,
+        x0: np.ndarray,
+        OR: csc_matrix,
+        OP: csc_matrix,
+        res_tol: float=1e-10,
+        x_tol: float=1e-10,
         max_it: int=np.inf,
         pcorr: np.ndarray=None,
         **kwargs) -> np.ndarray:
@@ -69,7 +69,8 @@ class TamsSolverFV:
             res_c[:] = spsolve(Ac_it, res_c)
             res_f[:] = OP*res_c + pcorr
             x += res_f
-            res_f[:], exitcode = cg(A, b-A*x, maxiter=20, x0=res_f, tol=res_tol)
+            # res_f[:], exitcode = cg(A, b-A*x, maxiter=20, x0=res_f, tol=res_tol)
+            res_f[:], exitcode = cg(A, b-A*x, x0=res_f, tol=res_tol)
             x += res_f
             eps = np.absolute(res_f).max()/np.absolute(x).max()
             print(f'eps: {eps}')
