@@ -56,8 +56,11 @@ class NewtonSolver:
             delta_x = -Jacobian_inv.dot(residuo_test)
 
             jacobiana_test2 = jacobiana.copy()
-            jacobiana_test2[(ctes.n_components + 1) * ctes.bhp_ind , (ctes.n_components + 1) * ctes.bhp_ind] += 1e10
-
+            jacobiana_test2[(ctes.n_components + 1) * ctes.bhp_ind , (ctes.n_components + 1) * ctes.bhp_ind] += 1e16
+            try:
+                Jacobian_inv_2 = np.linalg.inv(jacobiana_test2)
+            except: import pdb; pdb.set_trace()
+            delta_x_2 = -Jacobian_inv_2.dot(residuo)
             # atualizar variaveis do fprop
             # G = self.update_gravity_term(fprop)
             # Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
