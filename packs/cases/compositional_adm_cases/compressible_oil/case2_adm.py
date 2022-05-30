@@ -107,7 +107,6 @@ M, data_impress, wells, fprop, load, elements_lv0 = sim.initialize(load, convert
 
 
 ml_data = MultilevelData(data_impress, M, load=load_multilevel_data, n_levels=n_levels)
-
 # import pdb; pdb.set_trace()
 # data_impress['DUAL_1'][:] = dual_ids
 # data_impress['GID_1'][:] = primal_ids
@@ -119,6 +118,13 @@ ml_data = MultilevelData(data_impress, M, load=load_multilevel_data, n_levels=n_
 
 ml_data.run()
 data_impress.update_variables_to_mesh()
+# for i in ml_data.keys():
+#     print(i)
+volumes_without_grav_level_0 = ml_data['volumes_without_grav_level_0']
+v1 = volumes_without_grav_level_0
+# print(ml_data.keys())
+# import pdb; pdb.set_trace()
+
 
 mlo = MultilevelOperators(n_levels, data_impress, elements_lv0, ml_data, load=load_operators, get_correction_term=get_correction_term)
 neumann_subds = NeumannSubdomains(elements_lv0, ml_data, data_impress, wells)
@@ -141,12 +147,12 @@ params['area'] = data_impress['area']
 params['pretransmissibility'] = data_impress['pretransmissibility']
 
 # trilinos_solver = solverTril()
-
+scipy_solver = SolverSp()
 local_problem_params = {
     # 'trilinos_solver': trilinos_solver
     'elements_lv0': elements_lv0,
-    'scipy_solver': SolverSp(),
-    'tolerance': 1e-18,
+    'scipy_solver': scipy_solver,
+    'tolerance': 1e-8,
     'iterative_solver_finescale': 'cg', # ['cg', 'gmres']
     'adm_solver': 'tams', # ['tams', 'iterative-finescale']
     # 'well_volumes': np.concatenate([wells['ws_p'], wells['values_p']]),

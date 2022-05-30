@@ -484,18 +484,20 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         level_vector[level0] = 0
 
-    def get_pressure_finescale(self, M, wells, fprop, Pold, delta_t, **kwargs):
-        params = kwargs.get('params')
+    def get_pressure_finescale(self, M, wells, fprop, Pold, delta_t, params, **kwargs):
+        # params = kwargs.get('params')
         # k = 1
         T = self.update_transmissibility(M, wells, fprop, delta_t)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
         # T *= k
         # D *= k
-        tolerance = kwargs.get('tolerance')
+        # tolerance = kwargs.get('tolerance')
         # Pnew = self.update_pressure(T, D)
         scipy_solver: SolverSp = kwargs.get('scipy_solver')
         # import pdb; pdb.set_trace()
-        # solution = scipy_solver.gmres_solver(T, D, x0=params['pressure'], tol=tolerance)
+        # # solution = scipy_solver.gmres_solver(T, D, x0=params['pressure'], tol=tolerance)
+        # solution = scipy_solver.conjugate_gradient_solver(T, D, x0=params['pressure'], tol=tolerance)
+        # solution = scipy_solver.LinearCG(T, D, x0=params['pressure'], tol=tolerance)
         solution = scipy_solver.direct_solver(T, D)
         Pnew = solution
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop, Pnew)
@@ -608,9 +610,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             fprop.P,
             restriction_list[0],
             prolongation_list[0],
-            res_tol=1e-10,
-            x_tol=1e-10
+            res_tol=1e-15,
+            x_tol=1e-10,
             # wells_producer = wells_producer
+            **kwargs
         )
         t1 = time.time()
         print('##################################')
@@ -618,6 +621,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         print('##################################')
         n_active_volumes = prolongation_list[0].shape[1]
         ##################################
+        # import pdb; pdb.set_trace()
 
         params.update({
             'active_volumes': n_active_volumes,
@@ -679,7 +683,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         self.update_flux_wells(fprop, Pnew, wells, delta_t)
         # import pdb; pdb.set_trace()
         return Pnew, Ft_internal_faces, self.q
-
+    
     def get_pressure_adm_iterative_finescale(self, M, wells, fprop, Pold, delta_t, **kwargs):
         adm_method: AdmNonNested = kwargs.get('adm_method')
         params = kwargs.get('params')

@@ -72,6 +72,7 @@ class SolverSp:
     def conjugate_gradient_solver(self, A, b, x0=None, tol=1e-5, precond=None, maxiter=None):
 
         print('\nSolving conjugate gradient solver\n')
+        counter_callback = ScipyCounter(disp=False)
 
         n = A.shape[0]
         if precond:
@@ -86,3 +87,38 @@ class SolverSp:
         x, exitcode = linalg.cg(A, b, x0=x0, tol=tol, M=M, maxiter=maxiter)
 
         return x
+
+    def LinearCG(self, A, b, x0, tol=1e-5, maxiter=np.inf):
+        xk = x0.copy()
+        rk = A*xk - b
+        pk = -rk
+        rk_norm = np.linalg.norm(rk)
+        
+        # print()
+        # print('Linear CG solve...')
+        # print()
+        
+        num_iter = 0
+        # curve_x = [xk]
+        curve_x = xk.copy()
+        while rk_norm > tol and num_iter < maxiter:
+            apk = A*pk
+            rkrk = np.dot(rk, rk)
+            
+            alpha = rkrk / np.dot(pk, apk)
+            xk = xk + alpha * pk
+            rk = rk + alpha * apk
+            beta = np.dot(rk, rk) / rkrk
+            pk = -rk + beta * pk
+            
+            num_iter += 1
+            # curve_x.append(xk)
+            curve_x = xk.copy()
+            rk_norm = np.linalg.norm(rk)
+            # print('Iteration: {} \t x = {} \t residual = {:.4f}'.format(num_iter, xk, rk_norm))
+            # print('Iteration: {} \t x = {} \t residual = {}'.format(num_iter, xk, rk_norm))
+        
+        # print('\nSolution: \t x = {}'.format(xk))
+            
+        # return np.array(curve_x[-1])
+        return np.array(curve_x)
