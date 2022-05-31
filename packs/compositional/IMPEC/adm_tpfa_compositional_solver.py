@@ -628,8 +628,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             fprop.P,
             restriction_list[0],
             prolongation_list[0],
-            res_tol=1e-20,
-            x_tol=1e-12,
+            res_tol=1e-18,
+            x_tol=1e-10,
             # wells_producer = wells_producer
             **kwargs
         )
