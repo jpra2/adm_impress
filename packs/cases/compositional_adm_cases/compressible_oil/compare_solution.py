@@ -207,11 +207,11 @@ ax1.set_ylabel('Active volumes')
 ax1.set_xlim(min(case2_time), max(case2_time))
 
 ax2.plot(case1_time, case1_simulation_time, '-', label='Finescale')
-ax2.plot(case2_time, case2_simulation_time, '-', label='Adm')
+ax2.plot(case2_time, case2_simulation_time, '-', label='NU-ADM')
 # ax2.plot(case1_time, np.repeat(np.mean(case1_simulation_time), len(case1_simulation_time)), 0.05, color='red')
 # ax2.plot(case2_time, np.repeat(np.mean(case2_simulation_time), len(case2_simulation_time)), 0.05, color='black')
-ax2.axhline(y=np.mean(case1_simulation_time), color='red')
-ax2.axhline(y=np.mean(case2_simulation_time), color='black')
+ax2.axhline(y=np.mean(case1_simulation_time), color='red', label='Finescale mean')
+ax2.axhline(y=np.mean(case2_simulation_time), color='black', label='NU-ADM mean')
 ax2.annotate(round(np.mean(case1_simulation_time), 1), (0, np.mean(case1_simulation_time)))
 ax2.annotate(round(np.mean(case2_simulation_time), 1), (0, np.mean(case2_simulation_time)))
 ax2.grid(True)
@@ -248,7 +248,7 @@ ax1.plot(case2_time, case2_oil_rate, '-', label='Adm')
 # ax1.bar(case2_time, case2_active_volumes)
 ax1.set_xlabel('time [days]')
 ax1.set_ylabel('Oil rate [m3/s]')
-ax1.set_xlim(min(case2_time), max(case2_time) + 1)
+ax1.set_xlim(min(case2_time), max(case2_time))
 ax1.legend()
 
 ax2.plot(case1_time, case1_gas_rate, '-', label='Finescale')
@@ -280,6 +280,17 @@ ax.set_ylabel('Iterations')
 # fig.suptitle('Volumes para atualizar as funcoes de base')
 plt.savefig(fig_str + description2 + 'Tams_iterations' + fig_ext)
 ########################
+
+#########################################
+fig, ax = plt.subplots()
+y_values = [case1_simulation_time.sum(), case2_simulation_time.sum()]
+x_values = ['Finescale', 'NU-ADM']
+ax.bar(x_values, y_values, width=0.4)
+ax.set_ylabel('Total simulation time')
+
+plt.savefig(fig_str + description2 + 'Total_simulation_time' + fig_ext)
+###############################
+
 
 
 
