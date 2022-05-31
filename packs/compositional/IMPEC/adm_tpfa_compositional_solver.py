@@ -45,7 +45,19 @@ def update_local_parameters(dt, fprop, params):
     return local_params
 
 
+def set_level0_negative_composition(fprop, params):
+        
+        test1 = fprop.Nk < 0
+        if np.any(test1):
+            for compositions in fprop.Nk:
+                test = compositions < 0
+                if np.any(test):
+                    vols = np.unique(np.concatenate(params['volumes_to_volumes'][test]))
+                    params['level0_negative_composition'][vols] = True
 
+            # data_impress['LEVEL'][
+            #     params['level0_negative_composition']
+            # ] = 0
 
 class AdmTpfaCompositionalSolver(TPFASolver):
 
@@ -484,18 +496,20 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         level_vector[level0] = 0
 
-    def get_pressure_finescale(self, M, wells, fprop, Pold, delta_t, **kwargs):
-        params = kwargs.get('params')
+    def get_pressure_finescale(self, M, wells, fprop, Pold, delta_t, params, **kwargs):
+        # params = kwargs.get('params')
         # k = 1
         T = self.update_transmissibility(M, wells, fprop, delta_t)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
         # T *= k
         # D *= k
-        tolerance = kwargs.get('tolerance')
+        # tolerance = kwargs.get('tolerance')
         # Pnew = self.update_pressure(T, D)
         scipy_solver: SolverSp = kwargs.get('scipy_solver')
         # import pdb; pdb.set_trace()
-        # solution = scipy_solver.gmres_solver(T, D, x0=params['pressure'], tol=tolerance)
+        # # solution = scipy_solver.gmres_solver(T, D, x0=params['pressure'], tol=tolerance)
+        # solution = scipy_solver.conjugate_gradient_solver(T, D, x0=params['pressure'], tol=tolerance)
+        # solution = scipy_solver.LinearCG(T, D, x0=params['pressure'], tol=tolerance)
         solution = scipy_solver.direct_solver(T, D)
         Pnew = solution
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop, Pnew)
@@ -581,8 +595,14 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         data_impress['transmissibility'][elements_lv0['boundary_faces']] = 0
 
         self.set_level0_wells_v2(data_impress['LEVEL'], adm_method.all_wells_ids, ctes.n_volumes, data_impress['GID_1']) # lvel 0 in all coarse ids
+        # set_level0_negative_composition(fprop, data_impress, params)
+        data_impress['LEVEL'][
+                params['level0_negative_composition']
+            ] = 0   
+        
         gid_0 = data_impress['GID_0'][data_impress['LEVEL'] == 0]
         gid_1 = data_impress['GID_0'][data_impress['LEVEL'] == 1]
+        
         adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
 
         cfs[data_impress['LEVEL'] == 0] = 0
@@ -608,9 +628,10 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             fprop.P,
             restriction_list[0],
             prolongation_list[0],
-            res_tol=1e-10,
-            x_tol=1e-10
+            res_tol=1e-20,
+            x_tol=1e-12,
             # wells_producer = wells_producer
+            **kwargs
         )
         t1 = time.time()
         print('##################################')
@@ -618,6 +639,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         print('##################################')
         n_active_volumes = prolongation_list[0].shape[1]
         ##################################
+        # import pdb; pdb.set_trace()
 
         params.update({
             'active_volumes': n_active_volumes,
@@ -679,7 +701,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         self.update_flux_wells(fprop, Pnew, wells, delta_t)
         # import pdb; pdb.set_trace()
         return Pnew, Ft_internal_faces, self.q
-
+    
     def get_pressure_adm_iterative_finescale(self, M, wells, fprop, Pold, delta_t, **kwargs):
         adm_method: AdmNonNested = kwargs.get('adm_method')
         params = kwargs.get('params')
@@ -876,3 +898,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         ########################
 
         return OP_AMS, cfs
+
+    
+        

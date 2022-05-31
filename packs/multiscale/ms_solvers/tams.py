@@ -3,6 +3,7 @@ import pdb
 from scipy.sparse import csc_matrix
 import numpy as np
 from scipy.sparse.linalg import gmres, lgmres, spsolve, cg, inv
+from packs.solvers.solvers_scipy.solver_sp import SolverSp
 
 class TamsSolverFV:
     """
@@ -40,11 +41,13 @@ class TamsSolverFV:
         Returns:
             x (np.ndarray): answer
         """
+        scipy_solver: SolverSp = kwargs.get('scipy_solver')
         wells_producer = kwargs.get('wells_producer')
-        if wells_producer:
-            pass
-        else:
-            wells_producer = np.array([])
+        # if wells_producer:
+        #     pass
+        # else:
+        #     wells_producer = np.array([])
+        wells_producer = np.array([])
         # ids = np.setdiff1d(np.arange(len(x0)), wells_producer)
 
         it_counter = 0
@@ -55,34 +58,39 @@ class TamsSolverFV:
         Ac_it = R*Ac_it
         # Tc_inv = inv(Ac_it)
         x = x0.copy()
-        x0_in = x0.copy()
-        if pcorr:
-            assert pcorr.shape == b.shape
-        else:
-            pcorr = np.zeros_like(b)
-        # res_f = b-A*x
-        res_f = b-A*(x-pcorr)
+        # x0_in = x0.copy()
+        # if pcorr:
+        #     assert pcorr.shape == b.shape
+        # else:
+        #     pcorr = np.zeros_like(b)
+        res_f = b-A*x
+        # res_f = b-A*(x-pcorr)
         res_c = R*res_f
 
         while it_counter < max_it and eps > x_tol:
-            # res_c[:] = spsolve(Ac_it, R*(b-A*x))
-            res_c[:] = spsolve(Ac_it, res_c)
-            res_f[:] = OP*res_c + pcorr
+            res_c[:] = spsolve(Ac_it, R*(b-A*x))
+            # res_c[:] = spsolve(Ac_it, res_c)
+            # res_f[:] = OP*res_c + pcorr
+            res_f[:] = OP*res_c
             x += res_f
             # res_f[:], exitcode = cg(A, b-A*x, maxiter=20, x0=res_f, tol=res_tol)
-            res_f[:], exitcode = cg(A, b-A*x, x0=res_f, tol=res_tol)
+            # res_f[:], exitcode = cg(A, b-A*x, x0=res_f, tol=res_tol)
+            res_f[:] = scipy_solver.LinearCG(A, b-A*x, x0=res_f, tol=res_tol, maxiter=1000)
             x += res_f
             eps = np.absolute(res_f).max()/np.absolute(x).max()
             print(f'eps: {eps}')
-            x0_in[:] = x.copy()
+            # x0_in[:] = x.copy()
             it_counter += 1
-            res_f[:] = b-A*(x-pcorr)
-            res_c[:] = R*res_f
+            # res_f[:] = b-A*(x-pcorr)
+            # res_c[:] = R*res_f
+            if it_counter % 1001 == 0:
+                import pdb; pdb.set_trace()
 
-        res_c[:] = spsolve(OR*A*OP, OR*(b-A*(x-pcorr)))
-        res_f[:] = OP*res_c + pcorr
+        # res_c[:] = spsolve(OR*A*OP, OR*(b-A*(x-pcorr)))
+        res_c[:] = spsolve(OR*A*OP, OR*(b-A*x))
+        # res_f[:] = OP*res_c + pcorr
+        res_f[:] = OP*res_c
         x += res_f
 
         # x=spsolve(A,b)
-
         return x, eps, it_counter
