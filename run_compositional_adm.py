@@ -47,6 +47,7 @@ class RunSimulationAdm(run_simulation):
 
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
+        params['level0_negative_composition'][:] = False
 
         '---- Get pressure field and new time step (if the past time step does \
         not obey the CFL condition) -------------------------------------------'
@@ -57,6 +58,8 @@ class RunSimulationAdm(run_simulation):
         self.delta_t = CompositionalFvmADM()(M, wells, fprop, delta_t=self.delta_t, t=self.t, params=params, **kwargs)
 
         self.t += self.delta_t
+        
+        print(f'\n Delta t: {self.delta_t} \n')
 
         '----------------- Perform Phase stability test and flash -------------'
 

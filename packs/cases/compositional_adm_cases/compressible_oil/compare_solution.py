@@ -12,7 +12,8 @@ key_list = ['loop_array']
 # description1 = 'case3_finescale_3k'
 # description1 = 'case17_finescale_6k_5000_'
 # description1 = 'case23_finescale_6k_5000_' # iterative
-description1 = 'case37_finescale_80x80_Firoozabadi_direct_solver' # iterative
+# description1 = 'case37_finescale_80x80_Firoozabadi_direct_solver' # iterative
+description1 = descriptions.case1_finescale # iterative
 # description = 'case2_adm_'
 # compositional_data = CompositionalData(description=description)
 case1 = CumulativeCompositionalDataManager(description=description1)

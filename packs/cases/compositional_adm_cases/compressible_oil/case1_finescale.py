@@ -7,6 +7,7 @@ from packs.data_class.compositional_cumulative_datamanager import CumulativeComp
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 import numpy as np
 from packs.cases.compositional_adm_cases.compressible_oil import all_functions
+from packs.cases.compositional_adm_cases.compressible_oil import descriptions
 
 
 # description = 'case3_finescale_3k'
@@ -14,7 +15,8 @@ from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 # description = 'case25_finescale_80x80'
 # description = 'case32_finescale_80x80_BL_direct_solver'
 # description = 'case37_finescale_80x80_Firoozabadi_direct_solver'
-description = 'case40_finescale_biph_v'
+# description = 'case40_finescale_biph_v'
+description = descriptions.case1_finescale
 compositional_data = CompositionalData(description=description)
 cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
 cumulative_compositional_datamanager.create()
@@ -85,6 +87,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             sim.delta_t = t_next - sim.t
     loop = sim.loop
     print(sim.t)
+    print(f'\nDelta t: {sim.delta_t}\n')
 
     loop_array['total_simulation_time'][0] += simulation_time
     loop_array['n_total_loops'][0] += 1

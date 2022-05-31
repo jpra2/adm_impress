@@ -10,6 +10,7 @@ from packs.compositional.IMPEC.compositionalIMPEC import CompositionalFVM
 from .composition_solver import Euler, RK3
 from .flux_calculation import FirstOrder, MUSCL, FR
 import math
+from packs.compositional.IMPEC.adm_tpfa_compositional_solver import set_level0_negative_composition
 
 class CompositionalFvmADM(CompositionalFVM):
     
@@ -113,6 +114,13 @@ class CompositionalFvmADM(CompositionalFVM):
             #Fk_vols_total *= 1/ctes.ds_faces
             fprop.Nk, fprop.z = Euler().update_composition(fprop.Nk, fprop.qk_molar,
                 Fk_vols_total, delta_t)
+        
+        
+        set_level0_negative_composition(fprop, params)
+        test1 = fprop.Nk < 0
+        # test2 = np.absolute(fprop.Nk) < 1e-8
+        fprop.Nk[test1] = 0
+        
 
         fprop.wave_velocity = wave_velocity
         # fprop.total_flux_internal_faces = total_flux_internal_faces

@@ -45,7 +45,19 @@ def update_local_parameters(dt, fprop, params):
     return local_params
 
 
+def set_level0_negative_composition(fprop, params):
+        
+        test1 = fprop.Nk < 0
+        if np.any(test1):
+            for compositions in fprop.Nk:
+                test = compositions < 0
+                if np.any(test):
+                    vols = np.unique(np.concatenate(params['volumes_to_volumes'][test]))
+                    params['level0_negative_composition'][vols] = True
 
+            # data_impress['LEVEL'][
+            #     params['level0_negative_composition']
+            # ] = 0
 
 class AdmTpfaCompositionalSolver(TPFASolver):
 
@@ -583,8 +595,14 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         data_impress['transmissibility'][elements_lv0['boundary_faces']] = 0
 
         self.set_level0_wells_v2(data_impress['LEVEL'], adm_method.all_wells_ids, ctes.n_volumes, data_impress['GID_1']) # lvel 0 in all coarse ids
+        # set_level0_negative_composition(fprop, data_impress, params)
+        data_impress['LEVEL'][
+                params['level0_negative_composition']
+            ] = 0   
+        
         gid_0 = data_impress['GID_0'][data_impress['LEVEL'] == 0]
         gid_1 = data_impress['GID_0'][data_impress['LEVEL'] == 1]
+        
         adm_method.set_adm_mesh_non_nested(v0=gid_0, v1=gid_1, pare=True)
 
         cfs[data_impress['LEVEL'] == 0] = 0
@@ -610,8 +628,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             fprop.P,
             restriction_list[0],
             prolongation_list[0],
-            res_tol=1e-15,
-            x_tol=1e-10,
+            res_tol=1e-20,
+            x_tol=1e-12,
             # wells_producer = wells_producer
             **kwargs
         )
@@ -880,3 +898,6 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         ########################
 
         return OP_AMS, cfs
+
+    
+        

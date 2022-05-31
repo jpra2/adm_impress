@@ -1,4 +1,5 @@
 import copy
+from impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
 
 from packs.directories import data_loaded
 from run_compositional_adm import RunSimulationAdm
@@ -125,7 +126,6 @@ v1 = volumes_without_grav_level_0
 # print(ml_data.keys())
 # import pdb; pdb.set_trace()
 
-
 mlo = MultilevelOperators(n_levels, data_impress, elements_lv0, ml_data, load=load_operators, get_correction_term=get_correction_term)
 neumann_subds = NeumannSubdomains(elements_lv0, ml_data, data_impress, wells)
 adm = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
@@ -145,6 +145,16 @@ master_local_operator = MasterLocalOperator(dual_subdomains, ctes.n_volumes, **k
 
 params['area'] = data_impress['area']
 params['pretransmissibility'] = data_impress['pretransmissibility']
+
+
+def create_volumes_to_volumes(M: FineScaleMesh):
+    v1 = M.volumes.bridge_adjacencies(M.volumes.all, 2, 3)
+    v2 = []
+    for vols in v1:
+        v2.append(np.unique(np.hstack([np.hstack(v1[vols]), vols])))
+    
+    v2 = np.array(v2)
+    return v2
 
 # trilinos_solver = solverTril()
 scipy_solver = SolverSp()
@@ -203,8 +213,10 @@ params.update({
     'tams_itcounter': 0,
     'internal_faces_velocity': np.ones(len(elements_lv0['internal_faces'])),
     'all_coarse_intersect_faces_level_1': np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1'])),
-    'other_faces_level_1': np.setdiff1d(elements_lv0['internal_faces'], np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1'])))
-})
+    'other_faces_level_1': np.setdiff1d(elements_lv0['internal_faces'], np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1']))),
+    'volumes_to_volumes': create_volumes_to_volumes(M),
+    'level0_negative_composition': np.full(ctes.n_volumes, False, bool)
+})   
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
 latest_mobility[:] = 0.001
