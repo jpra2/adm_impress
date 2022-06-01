@@ -27,7 +27,7 @@ class Flux:
     def update_flux(self, M, fprop, Ft_internal_faces, rho_j_internal_faces,
         mobilities_internal_faces):
         ''' Main function that calls others '''
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         self.Nk = fprop.Nk
         Fj_internal_faces = self.update_Fj_internal_faces(Ft_internal_faces,
             rho_j_internal_faces, mobilities_internal_faces, fprop.Pcap[:,ctes.v0],

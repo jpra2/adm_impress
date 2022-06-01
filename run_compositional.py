@@ -100,7 +100,7 @@ class run_simulation:
         '---- Get pressure field and new time step (if the past time step does \
         not obey the CFL condition) -------------------------------------------'
         import pdb; pdb.set_trace()
-        self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t)
+        self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t, self.p2, StabilityCheck, self.p1)
 
         self.t += self.delta_t
         '----------------- Perform Phase stability test and flash -------------'

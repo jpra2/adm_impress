@@ -13,6 +13,7 @@ class TPFASolver:
         T = self.update_transmissibility(M, wells, fprop, delta_t)
         D = self.update_independent_terms(M, fprop, Pold, wells, delta_t)
         Pnew = self.update_pressure(T, D)
+        #import pdb; pdb.set_trace()
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop, Pnew)
         self.update_flux_wells(fprop, Pnew, wells, delta_t)
         return Pnew, Ft_internal_faces, self.q

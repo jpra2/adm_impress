@@ -7,10 +7,11 @@ from packs.utils import constants as ctes
 from packs.directories import data_loaded
 from .composition_solver import Euler, RK3
 import math
+import copy
 
 class CompositionalFVM:
 
-    def __call__(self, M, wells, fprop, delta_t, t):
+    def __call__(self, M, wells, fprop, delta_t, t, flash, StabilityCheck, p1):
         G = self.update_gravity_term(fprop)
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
         '''if ctes.MUSCL or ctes.FR:
@@ -32,13 +33,17 @@ class CompositionalFVM:
 
             fprop.Nk = np.copy(Nk_old)
 
-            # TESTAR O CALCULO DOS RESIDUOS ---------------------------------------------------
-
+            # TESTAR SOLVER DE NEWTON ---------------------------------------------------
+            fprop_aux = copy.deepcopy(fprop)
             #solve = NewtonSolver(M, wells, fprop, delta_t, Pot_hid, Nk_old)
-            solve = NewtonSolver(fprop)
+            solve = NewtonSolver(fprop_aux)
             #solve.solver()
-            solve.solver(wells, fprop, delta_t, Nk_old, G)
+            solve.solver(wells, fprop_aux, delta_t, Nk_old, G, flash, StabilityCheck, p1, M)
+            import pdb; pdb.set_trace()
+            Copia_fprop = False
 
+            # Depois de convergir:
+            fprop = copy.deepcopy(fprop_aux)
             # FIM DO TESTE --------------------------------------------------------------------
             import pdb; pdb.set_trace()
 
@@ -46,9 +51,9 @@ class CompositionalFVM:
 
 
 
-
+            # Colocar um If para o FI não calcular pela expressão abaixo
             fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells, fprop, P_old, delta_t)
-
+            import pdb; pdb.set_trace()
             '''total_flux_internal_faces = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
             q = np.zeros_like(fprop.Nk)
             frj = fprop.mobilities[:,...] / \
@@ -84,7 +89,7 @@ class CompositionalFVM:
             ''' For the composition calculation the time step might be different\
              because it treats composition explicitly and this explicit models \
              are conditionally stable - which can be based on the CFL parameter '''
-
+            import pdb; pdb.set_trace()
             delta_t_new = delta_time.update_CFL(delta_t, Fk_vols_total, fprop.Nk, wave_velocity)
             r = delta_t_new/delta_t
             delta_t = delta_t_new
@@ -96,7 +101,7 @@ class CompositionalFVM:
                 Fk_vols_total, delta_t)
         else:
             fprop.Nk = Nk; fprop.z = z; fprop.Nk_SP = Nk_SP
-
+        import pdb; pdb.set_trace()
         fprop.wave_velocity = wave_velocity
         fprop.total_flux_internal_faces = total_flux_internal_faces
         #import pdb; pdb.set_trace()
