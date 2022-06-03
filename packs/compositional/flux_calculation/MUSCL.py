@@ -20,8 +20,10 @@ class MUSCL:
         #self.P_face[ctes_MUSCL.faces_contour] = P_old[ctes.v0[ctes_MUSCL.faces_contour,0]]
         dNk_face, dNk_face_neig = self.get_faces_gradient(M, fprop, dNk_vols)
 
+        lim = getattr(self, ctes.MUSCL['lim'])
         #Phi = self.Van_Leer_slope_limiter(dNk_face, dNk_face_neig)
-        Phi = self.Van_Albada1_slope_limiter(dNk_face, dNk_face_neig)
+        #Phi = self.Van_Albada1_slope_limiter(dNk_face, dNk_face_neig)
+        Phi = lim(dNk_face, dNk_face_neig)
 
         #BURGERS
         #Phi[:] = 1
@@ -70,7 +72,7 @@ class MUSCL:
         #dNk_face_vols[abs(dNk_face_neig)<1e-25] = dNk_face2[abs(dNk_face_neig)<1e-25]
         return dNk_face, dNk_face_neig
 
-    def Van_Leer_slope_limiter(self, dNk_face, dNk_face_neig):
+    def Van_Leer(self, dNk_face, dNk_face_neig):
         np.seterr(divide='ignore', invalid='ignore')
         r_face = dNk_face[:,:,np.newaxis] / dNk_face_neig
         r_face[dNk_face_neig==0] = 0
@@ -80,11 +82,22 @@ class MUSCL:
         Phi[:,:,1] = -Phi[:,:,1]
         return Phi
 
-    def Van_Albada1_slope_limiter(self, dNk_face, dNk_face_neig):
+    def Van_Albada1(self, dNk_face, dNk_face_neig):
         np.seterr(divide='ignore', invalid='ignore')
         r_face = dNk_face[:,:,np.newaxis] / dNk_face_neig
         r_face[dNk_face_neig==0] = 0
         phi = (r_face**2 + (r_face)) / (r_face**2 + 1)
+        phi[r_face<0]=0 #so botei pra caso r==-1
+        Phi = phi
+        Phi[:,:,1] = -Phi[:,:,1]
+        return Phi
+
+    def minmod(self, dNk_face, dNk_face_neig):
+        np.seterr(divide='ignore', invalid='ignore')
+        r_face = dNk_face[:,:,np.newaxis] / dNk_face_neig
+        r_face[dNk_face_neig==0] = 0
+        phi = np.copy(r_face)
+        phi[r_face>1]=1
         phi[r_face<0]=0 #so botei pra caso r==-1
         Phi = phi
         Phi[:,:,1] = -Phi[:,:,1]
@@ -134,35 +147,11 @@ class MUSCL:
 
         ponteiro = np.zeros(ctes.n_internal_faces,dtype=bool)
         'Corrigir o cálculo do fluxo por upw - aplicar antese Fk_face vem um só'
-        if ctes.RS['LLF']:
-            alpha_wv = np.zeros((ctes.n_internal_faces, 5))
-            Fk_internal_faces[:,~ponteiro], alpha_wv[~ponteiro,:] = RS.LLF(M, \
+        solver = getattr(RS, ctes.RS)
+        alpha_wv = np.zeros((ctes.n_internal_faces, 5))
+        Fk_internal_faces[:,~ponteiro], alpha_wv[~ponteiro,:] = solver(M, \
                 fprop, Nk_face, self.P_face, ftotal, Fk_face, ~ponteiro)
 
-        elif ctes.RS['MDW']:
-            alpha_wv = np.zeros((ctes.n_internal_faces))
-            Fk_internal_faces[:,~ponteiro], alpha_wv[~ponteiro] = RS.MDW(M, \
-                fprop, Nk_face, self.P_face, ftotal, Fk_face, ~ponteiro)
-
-        elif ctes.RS['DW']:
-            alpha_wv = np.zeros((ctes.n_internal_faces))
-            Fk_internal_faces[:,~ponteiro], alpha_wv[~ponteiro] = RS.DW(M, \
-                fprop, Nk_face, self.P_face, ftotal, Fk_face, ~ponteiro)
-
-        elif ctes.RS['ROE']:
-            alpha_wv = np.zeros((ctes.n_internal_faces))
-            Fk_internal_faces[:,~ponteiro], alpha_wv[~ponteiro] = RS.ROE_LLF(M, \
-                fprop, Nk_face, self.P_face, ftotal, Fk_face)
-        else:
-            alpha_wv = np.zeros((ctes.n_components, ctes.n_internal_faces))
-            ponteiro_alpha = np.zeros_like(ponteiro)
-            dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-15
-            ponteiro_alpha[dNkmax_small] = False
-            alpha_wv[:,~ponteiro_alpha], m = RS.medium_wave_velocity(M, fprop, Nk_face, self.P_face, \
-                ftotal, ~ponteiro_alpha)
-            #alpha_wv[:,~ponteiro_alpha] = 1e-100
-            Fk_internal_faces[:,~ponteiro] = self.update_flux_upwind(Pot_hid, \
-                Fk_face, ~ponteiro)
 
         #FOR THE BURGERS PROBLEM AND BASTIAN
         '''Nk_face_contour = np.empty((ctes.n_components,1,2))
@@ -181,7 +170,7 @@ class MUSCL:
         #ponteiro[ctes_MUSCL.faces_contour] = True
         #Fk_internal_faces[:,ponteiro] = self.update_flux_upwind(fprop.P[np.newaxis,:], \
         #    Fk_face[:,ponteiro], ponteiro)
-        
+
         Fk_internal_faces[:,0] = Fk_face[:,0,0] #comment for burgers
         Fk_internal_faces[:,1] = Fk_face[:,1,0] #comment for burgers
         '-------- Perform volume balance to obtain flux through volumes -------'

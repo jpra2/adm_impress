@@ -40,7 +40,7 @@ for  arq in arquivos:
 
         """---------------------- Convergence Study -------------------------"""
 
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_IMPEC_FOU_NEW_230.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_FOU_675.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_FOU_200 = data[6]
             Sg_FOU_200 = data[7]
@@ -51,6 +51,8 @@ for  arq in arquivos:
             n = 200
             x_200 = np.linspace(0+50/(2*n),50-50/(2*n),n)
             t_FOU_200 = data[2]
+
+
 
         datas = np.load('flying/results_case2_Moshiri_Manzari_3k_500_IMPEC_FOU_1516.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
@@ -66,7 +68,7 @@ for  arq in arquivos:
 
             #e250_L1_FOU = (sum(abs(f(x_250)-xkj_IMPEC_250[0,0,:]))*(1/n))
 
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_IMPEC_MUSCL_LLF_NEW_1165.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_MUSCL_LLF_E_VA_936.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_MUSCL_200 = data[6]
             Sg_MUSCL_200 = data[7]
@@ -101,21 +103,57 @@ for  arq in arquivos:
             n=500
             x_500 = np.linspace(0+1/(2*n),50-1/(2*n),n)
 
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_FR2_LLF_RK3_993.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_FR2_LLF_RK3_t2_1260.npy', allow_pickle=True)
+
+        for data in datas[datas.shape[0]-1:]:
+            So_FR2_200 = data[6]
+            Sg_FR2_200 = data[7]
+            xkj_FR2_200 = data[13]
+
+            xkj_FR2_200[:,1,Sg_FR2_200==0] = 0
+            xkj_FR2_200[:,0,So_FR2_200==0] = 0
+            t_FR2_200 = data[2]
+
+        '''datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_FR3_LLF_RK3_t_1847.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_FR3_200 = data[6]
+            Sg_FR3_200 = data[7]
+            xkj_FR3_200 = data[13]
+
+            xkj_FR3_200[:,1,Sg_FR3_200==0] = 0
+            xkj_FR3_200[:,0,So_FR3_200==0] = 0
+            t_FR3_200 = data[2]
+
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_FR4_LLF_RK3_t_2483.npy', allow_pickle=True)
+        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_FR4_LLF_RK3_t2_1697.npy', allow_pickle=True)
+        #datas = np.load('flying/results_case2_Moshiri_Manzari_3k_200_FR4_LLF_RK3_1674.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_FR4_200 = data[6]
+            Sg_FR4_200 = data[7]
+            xkj_FR4_200 = data[13]
+
+            xkj_FR4_200[:,1,Sg_FR4_200==0] = 0
+            xkj_FR4_200[:,0,So_FR4_200==0] = 0
+            t_FR4_200 = data[2]'''
+
 
         plt.figure(1)
         plt.plot(x_200, xkj_FOU_200[0,0], 'r')
         plt.plot(x_200, xkj_MUSCL_200[0,0], 'b')
-        #plt.plot(x_250, xkj_MUSCL_250[0,0], 'g')
-        plt.plot(x_500, xkj_FOU_500[0,0], 'g')
+        plt.plot(x_200, xkj_FR2_200[0,0], 'c')
+        #plt.plot(x_200, xkj_FR3_200[0,0], 'y')
+        #plt.plot(x_200, xkj_FR4_200[0,0], 'm')
+        #plt.plot(x_500, xkj_FOU_500[0,0], 'g')
         plt.plot(x_CMG, xCH4_CMG, 'k')
-        plt.plot(x_axis_xCH4, xCH4, '-y')
+        plt.plot(x_axis_xCH4, xCH4, '--k')
         plt.xlim(20,30)
         plt.ylim(-0.05, 0.35)
         plt.grid()
-        plt.legend(( 'FOU-200', 'MUSCL-200', 'FOU-500', 'Referência CMG', 'Referência MM'), loc=10)
+        plt.legend(( 'FOU-200', 'MUSCL-200', 'FR-P1','FR-P2','FR-P3', 'Referência CMG'))
         plt.ylabel('Fração molar do metano na fase líquida')
         plt.xlabel('Distância em x')
-        plt.savefig('results/compositional/TCC2/3k_methane_x_MM_IMPEC_200.png')
+        plt.savefig('results/compositional/FR/3k_methane_x_MM_FR2_200.png')
 
 
         import pdb; pdb.set_trace()

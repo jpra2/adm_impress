@@ -11,20 +11,28 @@ class FirstOrder:
     def __init__(self):
         pass
 
-    def run(self,  M, fprop, ft_internal, P_old, Nk_old, G):
-        if ctes.RS['LLF']:
-            Fk_vols_total, wave_velocity = self.LLF(M, fprop, \
-            ft_internal, P_old, Nk_old)
-        elif ctes.RS['DW']:
-            Fk_vols_total, wave_velocity = self.DW(M, fprop, ft_internal, P_old)
-        elif ctes.RS['MDW']:
-            Fk_vols_total, wave_velocity = self.MDW(M, fprop, ft_internal, P_old)
-        elif ctes.RS['ROE']:
-            Fk_vols_total, wave_velocity = self.ROE(M, fprop, ft_internal, P_old)
+    def run(self,  M, fprop, Ft_internal, P_old, Nk_old, G):
+
+        if ctes.RS != 'UPW':
+            Nk_face = Nk_old[:,ctes.v0]
+            P_face = P_old[ctes.v0].sum(axis=-1)/2
+            P_face = np.concatenate((P_face[:,np.newaxis], P_face[:,np.newaxis]),axis=1)
+            Vp_face = fprop.Vp[ctes.v0].sum(axis=-1)/2
+
+            RS = RiemannSolvers(ctes.v0, ctes.pretransmissibility_internal_faces)
+
+            Fk_face = RS.get_Fk_face(fprop, M, Nk_face, P_face, Vp_face, Ft_internal)
+            solver = getattr(RS, ctes.RS)
+            Fk_internal_faces, wave_velocity = solver(M, fprop, Nk_face, P_face,
+                Ft_internal, Fk_face, np.ones_like(Ft_internal[0],dtype=bool))
+            Fk_internal_faces[:,[0,1]] = Fk_face[:,[0,1],0]
+
+            Fk_vols_total = Flux().update_flux_volumes(Fk_internal_faces)
+
         else:
             self.get_faces_properties_upwind(fprop, G)
             Fk_vols_total, wave_velocity = self.FOU(M, fprop, \
-                ft_internal, fprop.mobilities_internal_faces)
+                Ft_internal, fprop.mobilities_internal_faces)
         return Fk_vols_total, wave_velocity
 
     def FOU(self, M, fprop, Ft_internal, mobilities_internal_faces):
@@ -90,85 +98,6 @@ class FirstOrder:
 
         return Fk_vols_total, wave_velocity
 
-    def LLF(self, M, fprop, Ft_internal, P_old, Nk_old):
-
-        Nk_face = Nk_old[:,ctes.v0]
-        P_face = P_old[ctes.v0].sum(axis=-1)/2
-        P_face = np.concatenate((P_face[:,np.newaxis], P_face[:,np.newaxis]),axis=1)
-        RS = RiemannSolvers(ctes.v0, ctes.pretransmissibility_internal_faces)
-
-        Fk_face = RS.get_Fk_face(fprop, M, Nk_face, P_face, Ft_internal)
-        Fk_internal_faces, wave_velocity = RS.LLF(M, fprop, Nk_face, P_face,
-            Ft_internal, Fk_face, np.ones_like(Ft_internal[0],dtype=bool))
-
-        '''wave_velocity_LR = wave_velocity_5[...,:2]
-        upw = (wave_velocity_LR[...,0] * wave_velocity_LR[...,1])<=0
-        upw[(wave_velocity_LR[...,0]==0) * (wave_velocity_LR[...,1]==0)] = False
-        upw_cond = np.sum(upw, axis=0, dtype=bool)'''
-        # contour faces upwind clássico (organize this later)
-        Fk_internal_faces[:,[0,1]] = Fk_face[:,[0,1],0]
-
-        Fk_vols_total = Flux().update_flux_volumes(Fk_internal_faces)
-
-        return Fk_vols_total, wave_velocity
-
-    def MDW(self, M, fprop, Ft_internal, P_old):
-
-        Nk_face = fprop.Nk[:,ctes.v0]
-        P_face = P_old[ctes.v0].sum(axis=-1)/2
-        P_face = np.concatenate((P_face[:,np.newaxis], P_face[:,np.newaxis]),axis=1)
-
-        RS = RiemannSolvers(ctes.v0, ctes.pretransmissibility_internal_faces)
-
-        Fk_face = RS.get_Fk_face(fprop, M, Nk_face, P_face, Ft_internal)
-        ponteiro = np.zeros(ctes.n_internal_faces,dtype=bool)
-        Fk_internal_faces, wave_velocity = RS.MDW(M, fprop, Nk_face, P_face,
-            Ft_internal, Fk_face, ~ponteiro)
-
-        # contour faces upwind clássico (organize this later)
-        Fk_internal_faces[...,0] = Fk_face[:,0,0]
-        #Fk_internal_faces[...,2] = Fk_face[:,2,0]
-        #Fk_internal_faces[...,1] = Fk_face[:,1,0]
-
-        Fk_vols_total = Flux().update_flux_volumes(Fk_internal_faces)
-        return Fk_vols_total, wave_velocity
-
-    def DW(self, M, fprop, Ft_internal, P_old):
-
-        Nk_face = fprop.Nk[:,ctes.v0]
-        P_face = P_old[ctes.v0].sum(axis=-1)/2
-        P_face = np.concatenate((P_face[:,np.newaxis], P_face[:,np.newaxis]),axis=1)
-
-        RS = RiemannSolvers(ctes.v0, ctes.pretransmissibility_internal_faces)
-
-        Fk_face = RS.get_Fk_face(fprop, M, Nk_face, P_face, Ft_internal)
-        ponteiro = np.zeros(ctes.n_internal_faces,dtype=bool)
-        Fk_internal_faces, wave_velocity = RS.DW(M, fprop, Nk_face, P_face,
-            Ft_internal, Fk_face)
-
-        # contour faces upwind clássico (organize this later)
-        Fk_internal_faces[...,0] = Fk_face[:,0,0]
-        #Fk_internal_faces[...,1] = Fk_face[:,1,0]
-
-        Fk_vols_total = Flux().update_flux_volumes(Fk_internal_faces)
-        return Fk_vols_total, wave_velocity
-
-    def ROE(self, M, fprop, Ft_internal, P_old):
-        Nk_face = fprop.Nk[:,ctes.v0]
-        P_face = P_old[ctes.v0].sum(axis=-1)/2
-        P_face = np.concatenate((P_face[:,np.newaxis], P_face[:,np.newaxis]),axis=1)
-        RS = RiemannSolvers(ctes.v0, ctes.pretransmissibility_internal_faces)
-
-        Fk_face = RS.get_Fk_face(fprop, M, Nk_face, P_face, Ft_internal)
-        Fk_internal_faces, wave_velocity = RS.ROE_MDW(M, fprop, Nk_face, P_face,
-            Ft_internal, Fk_face)
-
-        # contour faces upwind clássico (organize this later)
-        Fk_internal_faces[...,0] = Fk_face[:,0,0]
-        #Fk_internal_faces[...,1] = Fk_face[:,1,0]
-
-        Fk_vols_total = Flux().update_flux_volumes(Fk_internal_faces)
-        return Fk_vols_total, wave_velocity
 
     def get_faces_properties_upwind(self, fprop, G):
         ''' Using one-point upwind approximation '''

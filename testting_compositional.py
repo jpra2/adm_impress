@@ -32,7 +32,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         'If using time-step unit as vpi'
         run_criteria = sim.vpi
         #print('vpi: ', sim.vpi)
-        #print('progress... {}[%]'.format(np.round(sim.vpi/sim.vpi_save[-1]*100,4)))
+        print('progress... {}[%]'.format(np.round(sim.vpi/sim.vpi_save[-1]*100,4)))
 
     else:
         'If using time-step unit as second'

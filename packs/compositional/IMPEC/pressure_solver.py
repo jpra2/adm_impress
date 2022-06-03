@@ -138,6 +138,10 @@ class TPFASolver:
             well_term =  (self.T_noCC[wp,:] @ Pnew - self.pressure_term[wp] +
                 self.volume_term[wp]) / delta_t  + self.capillary_term[wp] + \
                 self.gravity_term[wp]
+            #import pdb; pdb.set_trace()
+            if well_term[0]<0:
+                import pdb; pdb.set_trace()
+                well_term = -well_term
             mob_ratio = fprop.mobilities[:,:,wp] / np.sum(fprop.mobilities[:,:,wp], axis = 1)
 
             q_term = fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp]
@@ -145,6 +149,8 @@ class TPFASolver:
             ws_p_inj = np.argwhere(wells['ws_p']==wells['ws_inj']).flatten()
             q_term[...,ws_p_inj] = wells['inj_p_term']
             #import pdb; pdb.set_trace()
+            fprop.qt_inj = well_term[ws_p_inj]
+
 
             self.q[:,wp] = np.sum(q_term * well_term, axis = 1)
             fprop.qk_prod = self.q[:,wells['ws_prod']]

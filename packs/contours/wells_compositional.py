@@ -57,10 +57,10 @@ class WellsCompositional(Wells):
                     value_type = well['value_type']
                     values = val
 
-                    if value_type == 'volumetric':
+                    '''if value_type == 'volumetric':
                         if inj_cond[-1] == 'surface':
                             values = (1 - well['z'][-1]) * well['ksi_total'] * val
-                            values[-1] = val[-1] * well['ksi_total']
+                            values[-1] = val[-1] * well['ksi_total']'''
                     values_q_vol.append(val.tolist())
                     values_q_vol *= nv
 
@@ -69,13 +69,13 @@ class WellsCompositional(Wells):
                         vals = (vals).reshape((len(well['z']),nv))
                         values_q = np.concatenate((values_q,vals), axis=1)
                         if inj_cond == 'surface':
-                            values_q = (vals / well['ksi_total']).sum(axis=0)
+                            values_q = (vals).sum(axis=0)
                             values_q = np.concatenate((values_q, values_q), axis=1)
 
                     else:
                         values_q = np.append(values_q, vals).reshape((len(well['z']),nv))
                         if inj_cond == 'surface':
-                            values_q = (values_q / well['ksi_total']).sum(axis=0)
+                            values_q = (values_q).sum(axis=0)
 
                 elif prescription == 'P':
                     val = value

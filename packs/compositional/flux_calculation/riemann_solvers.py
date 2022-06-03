@@ -15,6 +15,23 @@ class RiemannSolvers:
         self.v0 = v0
         self.pretransmissibility = pretransmissibility
 
+    def UPW(self, M, fprop, Nk_face, P_face, Ft_internal, Fk_face, ponteiro_UPW):
+        #"upwind direction"
+        Pot_hid = fprop.P + fprop.Pcap #- G[0,:,:]
+        Pot_hidj = Pot_hid[0,ctes.v0[:,0]]
+        Pot_hidj_up = Pot_hid[0,ctes.v0[:,1]]
+        Fk_internal_faces = np.copy(Fk_face[...,0])
+        Fk_internal_faces[:,Pot_hidj>Pot_hidj_up] = np.copy(Fk_face[:,Pot_hidj>Pot_hidj_up,1])
+
+        ponteiro = np.ones(ctes.n_internal_faces,dtype=bool)
+        #dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-20
+        #ponteiro[dNkmax_small] = False
+        wave_velocity = np.zeros((ctes.n_components, ctes.n_internal_faces))
+        if any(ponteiro): #try to remove this if
+            wave_velocity[:,ponteiro],m = self.medium_wave_velocity(M, fprop, Nk_face, P_face, \
+            Ft_internal, ponteiro)
+        return Fk_internal_faces, wave_velocity
+
     def ROE_entropy_correction(self, wave_velocity):
         wave_velocity_LR = wave_velocity[:,:,:2]
         C1 = ((wave_velocity_LR[:,:,0]<=0) * (wave_velocity_LR[:,:,1]>=0))

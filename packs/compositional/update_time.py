@@ -53,6 +53,7 @@ class delta_time:
          delta_tcfl = min(abs(delta_tcfl))
 
          np.seterr(**old_settings)
+         #import pdb; pdb.set_trace()
 
          delta_tcfl = delta_tcfl/(2*(ctes.n_points-1)+1)
          return delta_tcfl
@@ -116,7 +117,9 @@ class delta_time:
         #import pdb; pdb.set_trace()
         if delta_t > min(delta_tmax,delta_tcfl): delta_t = min(delta_tmax, delta_tcfl)
         #if delta_t > delta_tmax: delta_t = delta_tmax
-        #import pdb; pdb.set_trace()
+        #if delta_t<delta_tmin: delta_t=delta_tmin
+        #print(delta_t)
+
         '''if delta_t == delta_ts: print('S')
         if delta_t == delta_tcfl: print('CFL')
         if delta_t == delta_tv: print('V')
