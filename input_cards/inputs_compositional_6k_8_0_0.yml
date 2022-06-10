@@ -1,6 +1,6 @@
 #Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 8x1x1_6k.msh
-name_save_file: 'results_water_inj_6k_8_FOU_modified_caset2'
+name_save_file: 'results_water_inj_6k_8_FI_modified_caset2_CFL_0,5'
 
 compositional: True
 hidrocarbon_components: True
@@ -27,10 +27,10 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.5
+  CFL: 0.9
   solver:
     IMPSAT: false
-    FI: true
+    FI: True
 
   MUSCL:
     set: false
@@ -45,8 +45,8 @@ compositional_data:
     MDW: false
 
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [8640000, 17280000]
-  maximum_time: 17280000 #17280000
+  time_to_save: [864000, 1728000]
+  maximum_time: 1728000 #17280000
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -62,8 +62,8 @@ compositional_data:
   time_data:
     deltaPlim: 68.9476
     deltaNlim: .1
-    deltaSlim: .001
-    deltaVlim: .1
+    deltaSlim: .01
+    deltaVlim: 1.
     delta_t_ini: 100
     delta_tmax: 86400
     delta_tmin: 10

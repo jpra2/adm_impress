@@ -5,6 +5,8 @@ from scipy import linalg
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 from packs.utils import relative_permeability2, phase_viscosity, capillary_pressure
+import time
+from scipy import sparse
 #from ..equation_of_state import PengRobinson as PR
 
 
@@ -25,9 +27,12 @@ class NewtonSolver:
         #P_Newton = np.copy(fprop.P)
         #P_Newton_aux = P_Newton.reshape(1, len(P_Newton))
         #variaveis_primarias = np.append(P_Newton_aux, Nk_newton, axis = 0)
+        t0_Newton = time.time()
+        dt_flash = 0.0
 
+        self.well_term(wells)
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
-        stop_criteria = 1e-4
+        stop_criteria = 1e-3
         contador = 0
         residuo = self.residual_calculation(fprop, Pot_hid, wells, Nk_old, delta_t)
 
@@ -42,11 +47,10 @@ class NewtonSolver:
 
             residuo = self.residual_calculation(fprop, Pot_hid, wells, Nk_old, delta_t)
             jacobiana = self.jacobian_calculation(fprop, Pot_hid, delta_t)
-
+            #T = sp.csr_matrix((ctes.n_volumes, ctes.n_volumes))
             #import pdb; pdb.set_trace()
-            Here = False
-
             # Solução do sistema
+            """
             jacobiana_test = np.delete(jacobiana, (ctes.n_components + 1) * ctes.bhp_ind, axis=0)
             jacobiana_test = np.delete(jacobiana_test, (ctes.n_components + 1) * ctes.bhp_ind, axis=1)
             residuo_test = np.delete(residuo, (ctes.n_components + 1) * ctes.bhp_ind, axis=0)
@@ -54,25 +58,31 @@ class NewtonSolver:
                 Jacobian_inv = np.linalg.inv(jacobiana_test)
             except: import pdb; pdb.set_trace()
             delta_x = -Jacobian_inv.dot(residuo_test)
+            """
 
             jacobiana_test2 = jacobiana.copy()
             jacobiana_test2[(ctes.n_components + 1) * ctes.bhp_ind , (ctes.n_components + 1) * ctes.bhp_ind] += 1e16
+            """
             try:
                 Jacobian_inv_2 = np.linalg.inv(jacobiana_test2)
             except: import pdb; pdb.set_trace()
             delta_x_2 = -Jacobian_inv_2.dot(residuo)
+            """
+            #delta_x_2 = spsolve(jacobiana_test2, -residuo)[:,np.newaxis]
+            Jb = sparse.csr_matrix(jacobiana_test2)
+            delta_x_2 = spsolve(Jb, -residuo)
 
-
-
+            #import pdb; pdb.set_trace()
             # Atualização das variáveis
             #Pnew = fprop.P.copy()
             #Nk_new = fprop.Nk.copy()
             detla_x_new = np.reshape(delta_x_2, (ctes.n_components + 1, ctes.n_components + 1)).T
+            #delta_x_aux = - np.linalg.inv(jacobiana).dot(residuo)
             #Pnew += detla_x_new[0]
             #Nk_new += detla_x_new[1:]
-            fprop.P += detla_x_new[0]
+            '''fprop.P += detla_x_new[0]
             fprop.Nk += detla_x_new[1:]
-            fprop.z = fprop.Nk[:-1] / fprop.Nk[:-1].sum(axis=0)
+            fprop.z = fprop.Nk[:-1] / fprop.Nk[:-1].sum(axis=0)'''
 
             # Calcular termo de poço com pressão prescrita
             wp = wells['ws_p']
@@ -82,23 +92,27 @@ class NewtonSolver:
             z = ctes.z[ctes.v0[:,0]]
             z_up = ctes.z[ctes.v0[:,1]]
             d_Pot_hid_new = Pot_hidj_up_new - Pot_hidj_new - ctes.g * fprop.rho_j_internal_faces * (z_up - z)
-
             flux_new = transmissibility * d_Pot_hid_new
             Fk_internal_faces_new = flux_new.sum(axis = 1)
             Fk_vols_total_new = self.component_flux_volumes(Fk_internal_faces_new)
-            self.q[:,wp] = q_new = (fprop.Nk[:,wp] - Nk_old[:,wp])/delta_t - (-Fk_vols_total_new[:,wp])
+            #self.q[:,wp] = (fprop.Nk[:,wp] - Nk_old[:,wp])/delta_t - Fk_vols_total_new[:,wp]
+            #self.q[:,wp] = (fprop.Nk[:,wp] - Nk_old[:,wp])/delta_t - Fk_vols_total_new[:,wp] - \
+                #residuo[int((ctes.n_components+1)*wp + 1): int((ctes.n_components+1)*(wp+1))] / delta_t
+            #self.q[:,wp] = residuo[int((ctes.n_components+1)*wp + 1): int((ctes.n_components+1)*(wp+1))] / delta_t
 
-            import pdb; pdb.set_trace()
-            Here = True
+            #import pdb; pdb.set_trace()
             #Nk_new = fprop.Nk.copy()
             #Nk_new[...,wp] = Nk_new[...,wp] - self.q[...,wp]
-            #fprop.Nk[:,wp] = fprop.Nk[:,wp] - self.q[:,wp]
+            self.q[:,wp] = - Fk_vols_total_new[:,wp]
+            'fprop.Nk[:,wp] = fprop.Nk[:,wp] + self.q[:,wp] * delta_t'
 
 
 
-
+            fprop.P += detla_x_new[0]
+            fprop.Nk += detla_x_new[1:]
+            fprop.z = fprop.Nk[0:ctes.Nc,:] / fprop.Nk[0:ctes.Nc,:].sum(axis=0)
             '----------------- Perform Phase stability test and flash -------------'
-
+            t0_flash = time.time()
             if ctes.load_k and ctes.compressible_k:
 
                 #self.p2 = StabilityCheck(fprop.P, fprop.T)
@@ -120,14 +134,58 @@ class NewtonSolver:
             G = self.update_gravity_term(fprop)
             Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
 
+            t1_flash = time.time()
+            dti_flash = t1_flash - t0_flash
+            dt_flash += dti_flash
+            # Calcular termo de poço com pressão prescrita
+            '''wp = wells['ws_p']
+            transmissibility = self.transmissibility_FI(fprop)
+            Pot_hidj_new = fprop.P[ctes.v0[:,0]]
+            Pot_hidj_up_new = fprop.P[ctes.v0[:,1]]
+            z = ctes.z[ctes.v0[:,0]]
+            z_up = ctes.z[ctes.v0[:,1]]
+            d_Pot_hid_new = Pot_hidj_up_new - Pot_hidj_new - ctes.g * fprop.rho_j_internal_faces * (z_up - z)
+            flux_new = transmissibility * d_Pot_hid_new
+            Fk_internal_faces_new = flux_new.sum(axis = 1)
+            Fk_vols_total_new = self.component_flux_volumes(Fk_internal_faces_new)
+            #self.q[:,wp] = (fprop.Nk[:,wp] - Nk_old[:,wp])/delta_t - Fk_vols_total_new[:,wp]
+            #self.q[:,wp] = (fprop.Nk[:,wp] - Nk_old[:,wp])/delta_t - Fk_vols_total_new[:,wp] - \
+                #residuo[int((ctes.n_components+1)*wp + 1): int((ctes.n_components+1)*(wp+1))] / delta_t
+            #self.q[:,wp] = residuo[int((ctes.n_components+1)*wp + 1): int((ctes.n_components+1)*(wp+1))] / delta_t
+            #fprop.Nk[:,wp] = fprop.Nk[:,wp] + self.q[:,wp]
+            #p1.run_inside_loop(M, fprop)'''
+
             #import pdb; pdb.set_trace()
             contador += 1
-            if contador > 100:
+            if contador > 1000:
                 import pdb; pdb.set_trace()
 
-        import pdb; pdb.set_trace()
-        out_loop = True
-        return residuo
+        print(f'{contador} iterações de Newton')
+
+        # Retornar termos que são necessários para o cálculo do CFL
+        transmissibility = self.transmissibility_FI(fprop)
+        Pot_hidj_new = fprop.P[ctes.v0[:,0]]
+        Pot_hidj_up_new = fprop.P[ctes.v0[:,1]]
+        z = ctes.z[ctes.v0[:,0]]
+        z_up = ctes.z[ctes.v0[:,1]]
+        d_Pot_hid_new = Pot_hidj_up_new - Pot_hidj_new - ctes.g * fprop.rho_j_internal_faces * (z_up - z)
+        flux_new = transmissibility * d_Pot_hid_new
+        Fk_internal_faces_new = flux_new.sum(axis = 1)
+        Fk_vols_total_new = self.component_flux_volumes(Fk_internal_faces_new)
+        wave_velocity = Fk_vols_total_new/fprop.Nk
+
+        #import pdb; pdb.set_trace()
+        #out_loop = True
+
+        Ft_internal_faces = - np.sum(fprop.mobilities_internal_faces
+            * ctes.pretransmissibility_internal_faces * ((Pot_hidj_up_new - Pot_hidj_new) -
+            ctes.g * fprop.rho_j_internal_faces * (z_up - z)), axis = 1)
+
+        t1_Newton = time.time()
+        dt_newton = t1_Newton - t0_Newton
+        aux = (dt_flash / dt_newton) * 100
+        #print(f'{aux} % flash')
+        return Fk_vols_total_new, wave_velocity, Ft_internal_faces
 
     def residual_calculation(self, fprop, Pot_hid, wells, Nk_old, delta_t):
         # Equacao de conservacao da massa
@@ -143,9 +201,10 @@ class NewtonSolver:
         Fk_internal_faces = flux.sum(axis = 1)
         Fk_vols_total = self.component_flux_volumes(Fk_internal_faces)
         '''Eduarda considera fluxo saindo negativo e entrando positivo'''
-        self.well_term(wells)
+        #self.well_term(wells)
         #import pdb; pdb.set_trace()
-        residuo_massa = (fprop.Nk - Nk_old) - delta_t * Fk_vols_total - delta_t * self.q
+        residuo_massa = (fprop.Nk - Nk_old) - delta_t * (Fk_vols_total + self.q)
+        #residuo_massa = (fprop.Nk - Nk_old) - delta_t * Fk_vols_total + delta_t * self.q
 
         # Restricao de volume poroso
         aux = fprop.Nj / fprop.Csi_j

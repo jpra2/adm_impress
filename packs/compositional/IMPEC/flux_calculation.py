@@ -62,12 +62,14 @@ class Flux:
     def update_flux_volumes(self, Fk_internal_faces):
         ''' Function to compute component molar flux balance through the control \
         volume interfaces '''
+        #import pdb; pdb.set_trace()
         cx = np.arange(ctes.n_components)
         lines = np.array([np.repeat(cx,len(ctes.v0[:,0])), np.repeat(cx,len(ctes.v0[:,1]))]).astype(int).flatten()
         cols = np.array([np.tile(ctes.v0[:,0],ctes.n_components), np.tile(ctes.v0[:,1], ctes.n_components)]).flatten()
         data = np.array([-Fk_internal_faces, Fk_internal_faces]).flatten()
         Fk_vols_total = sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_components, ctes.n_volumes)).toarray()
-
+        #import pdb; pdb.set_trace()
+        here = True
         '''
         inds = np.array([0,-1])
         a = (self.Nk[:,inds] - abs(self.Nk[:,inds]))/2

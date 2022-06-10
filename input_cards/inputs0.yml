@@ -67,7 +67,7 @@ Wells:
     value: 8.960e6
 compositional: true
 compositional_data:
-  CFL: 0.5
+  CFL: 0.9
   Cpc: 62052.84
   Epc: 2
   FR:
@@ -178,7 +178,7 @@ compositional_data:
     - 0.15
     - 0.05
   equation_of_state: PengRobinson
-  maximum_time: 17280000
+  maximum_time: 1728000
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   relative_permeability_data:
@@ -200,14 +200,14 @@ compositional_data:
   time_data:
     deltaNlim: 0.1
     deltaPlim: 68.9476
-    deltaSlim: 0.001
-    deltaVlim: 0.1
+    deltaSlim: 0.01
+    deltaVlim: 1.0
     delta_t_ini: 100
     delta_tmax: 86400
     delta_tmin: 10
   time_to_save:
-  - 8640000
-  - 17280000
+  - 864000
+  - 1728000
   vpis_para_gravar_vtk:
   - 0.1
   - 0.3
@@ -231,7 +231,7 @@ mesh_name: 8x1x1_6k.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_water_inj_6k_8_FOU_modified_caset2
+name_save_file: results_water_inj_6k_8_FI_modified_caset2_CFL_0,5
 read_permeability: false
 set_permeability: true
 set_porosity: true

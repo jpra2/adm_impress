@@ -7,12 +7,13 @@ from packs.utils import constants as ctes # Falta mexer
 import os
 import numpy as np
 import time
+import copy
 
 if data_loaded['compositional_data']['solver']['IMPSAT']:
     from packs.compositional.IMPSAT.compositionalIMPSAT import CompositionalFVM
     from packs.compositional.IMPSAT.properties_calculation import PropertiesCalc
 elif data_loaded['compositional_data']['solver']['FI']:
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     from packs.compositional.FI.compositionalFI import CompositionalFVM
     from packs.compositional.FI.properties_calculation import PropertiesCalc
 else:
@@ -99,37 +100,51 @@ class run_simulation:
 
         '---- Get pressure field and new time step (if the past time step does \
         not obey the CFL condition) -------------------------------------------'
-        import pdb; pdb.set_trace()
-        self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t, self.p2, StabilityCheck, self.p1)
+
+        #import pdb; pdb.set_trace()
+        if data_loaded['compositional_data']['solver']['FI']:
+            self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t, self.p2, StabilityCheck, self.p1)
+            #fprop = fprop_aux
+            #fprop = copy.deepcopy(fprop_aux)
+            #import pdb; pdb.set_trace()
+        else:
+            self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t)
 
         self.t += self.delta_t
-        '----------------- Perform Phase stability test and flash -------------'
 
-        if ctes.load_k and ctes.compressible_k:
 
-            #self.p2 = StabilityCheck(fprop.P, fprop.T)
-            fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
-            fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
-            fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
-            self.p2.run(fprop.P, np.copy(fprop.z))
+        # Nao precisa no FI
+        if not data_loaded['compositional_data']['solver']['FI']:
+            '----------------- Perform Phase stability test and flash -------------'
 
-            if len(wells['ws_q'])>0 and any((wells['inj_cond']=='reservoir')) and not self.p2.constant_K:
-                z = (wells['z'][wells['inj_cond']=='reservoir']).T
-                p_well = StabilityCheck(fprop.P[wells['ws_q'][wells['inj_cond']=='reservoir']], fprop.T)
-                L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-                p_well.run_init(fprop.P[wells['ws_q'][wells['inj_cond']=='reservoir']],z[0:ctes.Nc])
-                wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
+            if ctes.load_k and ctes.compressible_k:
 
-        '----------------------- Update fluid properties ----------------------'
+                #self.p2 = StabilityCheck(fprop.P, fprop.T)
+                fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
+                fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
+                fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
+                self.p2.run(fprop.P, np.copy(fprop.z))
 
-        self.p1.run_inside_loop(M, fprop)
+                if len(wells['ws_q'])>0 and any((wells['inj_cond']=='reservoir')) and not self.p2.constant_K:
+                    z = (wells['z'][wells['inj_cond']=='reservoir']).T
+                    p_well = StabilityCheck(fprop.P[wells['ws_q'][wells['inj_cond']=='reservoir']], fprop.T)
+                    L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
+                    p_well.run_init(fprop.P[wells['ws_q'][wells['inj_cond']=='reservoir']],z[0:ctes.Nc])
+                    wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
 
+                    '----------------------- Update fluid properties ----------------------'
+
+                    self.p1.run_inside_loop(M, fprop)
+
+
+        # Precisa no FI
         '-------------------- Advance in time and save results ----------------'
 
         self.update_vpi(fprop, wells)
         #if self.vpi>0.2: import pdb; pdb.set_trace()
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
-        if len(wells['ws_p'])>0: self.update_production(fprop, wells)
+        #if len(wells['ws_p'])>0: self.update_production(fprop, wells)
+        # Calcular esse termo de produção
 
         self.update_loop()
         t1 = time.time()
