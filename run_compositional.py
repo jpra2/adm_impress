@@ -46,6 +46,7 @@ class run_simulation:
     def initialize(self, load, convert, mesh):
         ''' Function to initialize mesh (preprocess) get and compute initial mesh \
         properties '''
+
         M, elements_lv0, data_impress, wells = initial_mesh(mesh, load=load, convert=convert)
         ctes.init(M, wells)
         ctes.component_properties()
@@ -54,7 +55,7 @@ class run_simulation:
             from packs.compositional import prep_FR as ctes_FR
             ctes_FR.run(M)
 
-        if ctes.MUSCL:
+        if ctes.MUSCL['set']:
             from packs.compositional import prep_MUSCL as ctes_MUSCL
             ctes_MUSCL.run(M)
 
@@ -64,7 +65,7 @@ class run_simulation:
     def get_well_inj_properties(self, M, fprop, wells):
 
         z = (wells['z']).T
-
+        if (wells['ws_p']!=wells['ws_inj']): wells['inj_p_term'] = []
         #q_wells = wells['ws_inj']#[wells['inj_cond']=='reservoir']
         if ctes.load_k and any(z[0:ctes.Nc].flatten()>0):
             if any(wells['inj_cond']=='reservoir'):
@@ -86,36 +87,46 @@ class run_simulation:
             xkj_ws = np.ones((ctes.n_components,ctes.n_phases,len(ws_p_inj)))
             xkj_ws[:ctes.Nc,0] = x[...,ws_inj_p]
             xkj_ws[:ctes.Nc,1] = y[...,ws_inj_p]
+            mobility_ratio_ws = np.empty((1,ctes.n_phases,len(ws_p_inj)))
+            Csi_j_ws = np.empty((1,ctes.n_phases,len(ws_p_inj)))
+
             if ctes.load_w:
                 xkj_ws[:ctes.Nc,-1] = 0
                 xkj_ws[-1,:-1] = 0
+                Csi_j_ws[:,2,:] = fprop.Csi_W
+                mobility_ratio_ws[:,2,:] = 0 #?? CHANGE THIS!!
 
-            mobility_ratio_ws = np.empty((1,ctes.n_phases,len(ws_p_inj)))
-            mobility_ratio_ws[:,0] = (L/(L+V))[ws_p_inj]
-            mobility_ratio_ws[:,1] = (V/(L+V))[ws_p_inj]
-            Csi_j_ws = np.empty((1,ctes.n_phases,len(ws_p_inj)))
+
+            mobility_ratio_ws[:,0] = (L/(L+V))[ws_p_inj] #?? CHANGE THIS!!
+            mobility_ratio_ws[:,1] = (V/(L+V))[ws_p_inj] #?? CHANGE THIS!!
             Csi_j_ws[:,0,:] = Csi_L[ws_p_inj]
             Csi_j_ws[:,1,:] = Csi_V[ws_p_inj]
+
             wells['inj_p_term'] = xkj_ws * mobility_ratio_ws * Csi_j_ws
             'if the injector well has a prescribed flux condition'
             if len(wells['ws_q'])>0:
-                self.q_vol = np.copy(wells['values_q'][:,wells['inj_cond']=='reservoir'])
+                self.q_vol = np.copy(wells['values_q'])
                 #rever esse Csi_L*L + Csi_V*V
-                wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
-                wells['values_q_vol'][:,wells['inj_cond']=='reservoir'] = self.q_vol
+                wells['values_q'] = (Csi_V * V + Csi_L * L) * self.q_vol
+                wells['values_q_vol'] = self.q_vol
 
             ctes.P_SC *= np.ones_like(wells['ws_prod'])
             ctes.T_SC = fprop.T#* np.ones_like(wells['ws_prod'])
             #p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
             #L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
             #    p_well.run_init(ctes.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']])
-        else: wells['inj_p_term'] = []
+        elif ctes.load_w:
+            wells['values_q'] = fprop.Csi_W[0] * wells['values_q_vol']
+
+
 
     def get_initial_properties(self, M, wells):
         ''' get initial fluid - oil, gas and water data and calculate initial \
         properties'''
 
         fprop = FluidProperties(M, wells) # load reservoir properties data and initialize other data
+        if ctes.load_w:
+            fprop.inputs_water_properties(M) #load water properties
 
         '------------------------- Perform initial flash ----------------------'
         self.get_well_inj_properties(M, fprop, wells)
@@ -136,8 +147,6 @@ class run_simulation:
 
         else: fprop.x = []; fprop.y = []; fprop.L = []; fprop.V = []; wells['inj_term'] = []
 
-        if ctes.load_w:
-            fprop.inputs_water_properties(M) #load water properties
 
         '----------------------- Calculate fluid properties -------------------'
 
@@ -158,7 +167,7 @@ class run_simulation:
 
         self.t += self.delta_t
         '----------------- Perform Phase stability test and flash -------------'
-        if fprop.Sg[0]<1: import pdb; pdb.set_trace()
+        #if fprop.Sg[0]<1: import pdb; pdb.set_trace()
         if any(fprop.Sg>1): import pdb; pdb.set_trace()
         if ctes.load_k and ctes.compressible_k:
             #if self.z
@@ -167,6 +176,7 @@ class run_simulation:
             fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
             fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
             self.p2.run_init(fprop.P, np.copy(fprop.z))#, wells)
+
             if len(wells['ws_inj'])>0 and not self.p2.constant_K:
 
                 if any(wells['inj_cond']=='reservoir'):
@@ -196,7 +206,6 @@ class run_simulation:
         #if any(fprop.L!=0): import pdb; pdb.set_trace()
         '----------------------- Update fluid properties ----------------------'
         self.p1.run_inside_loop(M, fprop)
-        #if (fprop.Sg[-37]<fprop.Sg[-36])*(fprop.Sg[-37]<fprop.Sg[-38]): import pdb; pdb.set_trace()
 
 
         '-------------------- Advance in time and save results ----------------'
@@ -207,7 +216,7 @@ class run_simulation:
         t1 = time.time()
         dt = t1 - t0
         self.sim_time += dt
-
+        #import pdb; pdb.set_trace()
         if self.use_vpi:
             if np.round(self.vpi,2) in self.vpi_save:
                 self.update_current_compositional_results(M, wells, fprop) #ver quem vou salvar
@@ -243,9 +252,10 @@ class run_simulation:
             flux_vols_total = wells['values_q_vol']
             flux_total_inj = np.absolute(flux_vols_total)
         else: flux_total_inj = np.zeros(2)
-        flux_total_inj = abs(fprop.qt_inj)
+        #flux_total_inj = abs(fprop.qt_inj)
         #import pdb; pdb.set_trace()
         #print(self.vpi)
+        
         self.vpi = self.vpi + (flux_total_inj.sum())/sum(fprop.Vp)*self.delta_t
         #print(self.vpi)
         #if self.vpi>0.5: import pdb; pdb.set_trace()

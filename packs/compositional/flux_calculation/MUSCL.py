@@ -11,9 +11,10 @@ class MUSCL:
     """ Class created for the second order MUSCL implementation for the \
     calculation of the advective terms """
 
-    def run(self, M, fprop, wells, P_old, ftot, Pot_hid):
+    def run(self, M, fprop, wells, P_old, Nk_old, ftot, Pot_hid):
 
         ''' Global function that calls others '''
+        self.Nk = np.copy(Nk_old)
         self.P_face = np.sum(P_old[ctes.v0], axis=1) * 0.5
         self.P_face = np.concatenate((self.P_face[:,np.newaxis], self.P_face[:,np.newaxis]),axis=1)
         dNk_vols = self.volume_gradient_reconstruction(M, fprop, wells)
@@ -34,13 +35,13 @@ class MUSCL:
         #G = self.update_gravity_term() # for now, it has no gravity
         alpha, Fk_vols_total = self.update_flux(M, wells, fprop, Nk_face,
             ftot, Pot_hid)
-        #alpha = fprop.Fk_vols_total/fprop.Nk
+        #alpha = fprop.Fk_vols_total/self.Nk
         #import pdb; pdb.set_trace()
 
         return alpha, Fk_vols_total
 
     def volume_gradient_reconstruction(self, M, fprop, wells):
-        Nk_neig =  fprop.Nk[:,np.newaxis,:] * ctes_MUSCL.allneig_and_vol[np.newaxis,:,:]
+        Nk_neig =  self.Nk[:,np.newaxis,:] * ctes_MUSCL.allneig_and_vol[np.newaxis,:,:]
         Nk = Nk_neig.transpose(0,2,1)
 
         dNk = Nk_neig - Nk
@@ -50,8 +51,8 @@ class MUSCL:
         dNk_vols = dNk_by_axes.sum(axis = 3)
 
         #burgers
-        '''dNk0 = fprop.Nk[:,1] - fprop.Nk[:,0]
-        dNkend = fprop.Nk[:,-1] - fprop.Nk[:,-2]
+        '''dNk0 = self.Nk[:,1] - self.Nk[:,0]
+        dNkend = self.Nk[:,-1] - self.Nk[:,-2]
         dNk_vols[:,ctes_MUSCL.all_neig_by_axes==1] = 1/2*np.array([[dNk0[0],dNkend[0]]])
         '''
         dNkds_vols = np.copy(dNk_vols)
@@ -65,7 +66,7 @@ class MUSCL:
     def get_faces_gradient(self, M, fprop, dNkds_vols):
         #ds_face = (M.data['centroid_volumes'][ctes.v0[:,1],:] -  M.data['centroid_volumes'][ctes.v0[:,0],:])
         #ds_face_abs = abs(ds_face)
-        dNk_face = (fprop.Nk[:,ctes.v0[:,1]] - fprop.Nk[:,ctes.v0[:,0]]) #* ctes_MUSCL.versor_ds_face[np.newaxis,:]
+        dNk_face = (self.Nk[:,ctes.v0[:,1]] - self.Nk[:,ctes.v0[:,0]]) #* ctes_MUSCL.versor_ds_face[np.newaxis,:]
         dNk_face_vols = 2. * (dNkds_vols[:,:,ctes.v0] *ctes_MUSCL.ds_face.T[np.newaxis,:,:,np.newaxis]).sum(axis=1)
         dNk_face_neig = dNk_face_vols - dNk_face[:,:,np.newaxis]
         #dNk_face2 = dNk_face[...,np.newaxis]  * np.ones_like(dNk_face_neig)
@@ -105,8 +106,8 @@ class MUSCL:
 
     def get_extrapolated_compositions(self, fprop, Phi, dNk_face_neig):
         #Phi[abs(dNk_face_neig)<1e-30] = 0
-        Nk_face = fprop.Nk[:,ctes.v0] + Phi / 2 * dNk_face_neig
-        Nk_face[(Nk_face<0)*(abs(Nk_face)<1e-300)] = 0
+        Nk_face = self.Nk[:,ctes.v0] + Phi / 2 * dNk_face_neig
+        Nk_face[(Nk_face<0)*(abs(Nk_face)<1e-90)] = 0
         if any(Nk_face.flatten()<0): import pdb; pdb.set_trace()
         z_face = Nk_face[0:ctes.Nc] / np.sum(Nk_face[0:ctes.Nc], axis = 0)
         return Nk_face, z_face
@@ -148,17 +149,18 @@ class MUSCL:
         ponteiro = np.zeros(ctes.n_internal_faces,dtype=bool)
         'Corrigir o cálculo do fluxo por upw - aplicar antese Fk_face vem um só'
         solver = getattr(RS, ctes.RS)
-        alpha_wv = np.zeros((ctes.n_internal_faces, 5))
-        Fk_internal_faces[:,~ponteiro], alpha_wv[~ponteiro,:] = solver(M, \
+        #alpha_wv = np.zeros((ctes.n_internal_faces, 5))
+
+        Fk_internal_faces[:,~ponteiro], alpha_wv = solver(M, \
                 fprop, Nk_face, self.P_face, ftotal, Fk_face, ~ponteiro)
 
 
         #FOR THE BURGERS PROBLEM AND BASTIAN
         '''Nk_face_contour = np.empty((ctes.n_components,1,2))
-        dNk_face_0 = (fprop.Nk[:,1] - fprop.Nk[:,0])
-        dNk_face_end = (fprop.Nk[:,-1] - fprop.Nk[:,-2])
-        Nk_face_contour[:,0,1] = fprop.Nk[:,0] - 1/2*dNk_face_0
-        Nk_face_contour[:,0,0] = fprop.Nk[:,-1] + 1/2*dNk_face_end
+        dNk_face_0 = (self.Nk[:,1] - self.Nk[:,0])
+        dNk_face_end = (self.Nk[:,-1] - self.Nk[:,-2])
+        Nk_face_contour[:,0,1] = self.Nk[:,0] - 1/2*dNk_face_0
+        Nk_face_contour[:,0,0] = self.Nk[:,-1] + 1/2*dNk_face_end
         P_face = self.P_face
         #Nk_face_contour[-1,0,0] = 1*fprop.Csi_j[0,-1,0]*fprop.Vp[0] #BASTIAN
         Vp_face_contour = fprop.Vp[:2]

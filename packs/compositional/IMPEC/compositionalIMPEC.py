@@ -16,9 +16,12 @@ class CompositionalFVM:
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
 
         #self.get_faces_properties_upwind(fprop, G)
+        '''if ctes.n_points>1:
+            self.get_faces_properties_weighted_average(fprop, G)
+        else: self.get_faces_properties_upwind(fprop, G)'''
         self.get_faces_properties_weighted_average(fprop, G)
         #self.get_faces_properties_harmonic_average(fprop, G)
-        self.get_phase_densities_internal_faces(fprop)
+        self.get_phase_densities_internal_faces(fprop, G)
         t1_prop = time.time()
         r = 0.8 # enter the while loop
 
@@ -31,7 +34,7 @@ class CompositionalFVM:
 
 
         while (r!=1.):
-            fprop.Nk = np.copy(Nk_old)
+            #fprop.Nk = np.copy(Nk_old)
 
             fprop.P, Ft_internal, fprop.qk_molar = psolve.get_pressure(M, wells,
                 fprop, P_old, delta_t)
@@ -203,10 +206,12 @@ class CompositionalFVM:
              are conditionally stable - which can be based on the CFL parameter '''
 
             delta_t_new = delta_time.update_CFL(delta_t, fprop, wells, Fk_vols_total, fprop.Nk, wave_velocity)
-            r = delta_t_new/delta_t
-            #delta_t = delta_t_new
-            r=1
+            #if any(Ft_internal[0]<0): delta_t_new=delta_t/2
 
+            r = delta_t_new/delta_t
+            delta_t = delta_t_new
+            #r=1
+        
         if not ctes.FR:
             time_integration = getattr(self, ctes.time_integration)
             time_integration(M, fprop, wells, P_old, Pot_hid, G, Nk_old, \
@@ -218,10 +223,11 @@ class CompositionalFVM:
         fprop.Ft_internal = Ft_internal
         #fprop.Nk[(fprop.Nk<0)*(abs(fprop.Nk)<1e-300)] = 0
         #if fprop.P[0]<fprop.P[1]: import pdb; pdb.set_trace()
+        fprop.Nk[abs(fprop.Nk)<1e-300] = abs(fprop.Nk[abs(fprop.Nk)<1e-300])
         if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
         #if any(fprop.Sw>1): import pdb; pdb.set_trace()
         #fprop.Nk[fprop.Nk<0] = 1e-30
-
+        if any(Ft_internal[0]<0): import pdb; pdb.set_trace()
         if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
         #if any(Ft_internal.flatten()<-1e-6): import pdb; pdb.set_trace()
         return delta_t
@@ -251,8 +257,9 @@ class CompositionalFVM:
             dVjdNk[ctes.n_components-1,-1,:] = 1 / fprop.Csi_j[0,-1,:]
             dVjdP[0,-1,:] = - fprop.Nk[ctes.n_components-1,:] * fprop.Csi_W0 * ctes.Cw / (fprop.Csi_W)**2
 
-        dVjdNk[:,:,:] = 1/fprop.Csi_j #1 / fprop.Csi_j[0,-1,:]
-        dVjdP[0,:,:] = 0 #fprop.Nj[ctes.n_components-1,:] * fprop.Csi_W0 * ctes.Cw / (fprop.Csi_W)**2
+        if data_loaded['compositional_data']['component_data']['constant_K']:
+            dVjdNk[:,:,:] = 1/fprop.Csi_j #1 / fprop.Csi_j[0,-1,:] #
+            dVjdP[0,:,:] = 0 #fprop.Nj[ctes.n_components-1,:] * fprop.Csi_W0 * ctes.Cw / (fprop.Csi_W)**2
 
         return dVjdNk, dVjdP
 
@@ -301,10 +308,18 @@ class CompositionalFVM:
 
 
     def get_faces_properties_harmonic_average(self, fprop, G):
-        #fprop.mobilities_internal_faces = self.harmonic_average(fprop.Vj, fprop.mobilities)
-        fprop.mobilities_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.mobilities)
+        fprop.mobilities_internal_faces = self.harmonic_average(fprop.Vj, fprop.mobilities)
+        #fprop.mobilities_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.mobilities)
         fprop.Csi_j_internal_faces = self.harmonic_average(fprop.Vj, fprop.Csi_j)
         fprop.xkj_internal_faces = self.harmonic_average(fprop.Vj, fprop.xkj)
+
+        '''fprop.mobilities_internal_faces[...,0] = fprop.mobilities[...,0]
+        fprop.Csi_j_internal_faces[...,0] = fprop.Csi_j[...,0]
+        fprop.xkj_internal_faces[...,0] = fprop.xkj[...,0]'''
+
+        '''fprop.mobilities_internal_faces[...,1] = fprop.mobilities[...,-2]
+        fprop.Csi_j_internal_faces[...,1] = fprop.Csi_j[...,-2]
+        fprop.xkj_internal_faces[...,1] = fprop.xkj[...,-2]'''
 
     def get_faces_properties_weighted_average(self, fprop, G):
         #fprop.mobilities_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.mobilities)
@@ -312,11 +327,17 @@ class CompositionalFVM:
         fprop.Csi_j_internal_faces = self.weighted_by_volume_average(fprop, fprop.Csi_j)
         fprop.xkj_internal_faces = self.weighted_by_volume_average(fprop, fprop.xkj)
         #import pdb; pdb.set_trace()
-        '''fprop.mobilities_internal_faces[...,0] = fprop.mobilities[...,0]
+        #upwind no contorno
+        fprop.mobilities_internal_faces[...,0] = fprop.mobilities[...,0]
         fprop.Csi_j_internal_faces[...,0] = fprop.Csi_j[...,0]
-        fprop.xkj_internal_faces[...,0] = fprop.xkj[...,0]'''
+        fprop.xkj_internal_faces[...,0] = fprop.xkj[...,0]
 
-    def get_phase_densities_internal_faces(self, fprop):
+        fprop.mobilities_internal_faces[...,1] = fprop.mobilities[...,-1]
+        fprop.Csi_j_internal_faces[...,1] = fprop.Csi_j[...,-1]
+        fprop.xkj_internal_faces[...,1] = fprop.xkj[...,-1]
+
+    def get_phase_densities_internal_faces(self, fprop, G):
+        #fprop.rho_j_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.rho_j)
         fprop.rho_j_internal_faces = self.weighted_by_volume_average(fprop, fprop.rho_j)
 
         #material balance error calculation:

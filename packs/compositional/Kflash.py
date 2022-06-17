@@ -39,7 +39,7 @@ class StabilityCheck(SC):
         self.V[self.V<0] = 0
         self.V[self.V>1] = 1
         self.L = 1 - self.V
-
+        import pdb; pdb.set_trace()
         #ksi = np.array([37342.0019279, 37138.91334958, 13792.42036739,  5248.87665093, 3013.74120719])
         #ksi = np.array([37342.0019279, 37342.0019279, 37342.0019279, 37342.0019279 , 37342.0019279 ])
         ksi = 37342.0019279 * np.ones_like(self.z[:,0])

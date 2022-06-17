@@ -15,7 +15,7 @@ def compute_flux(M, fprop, wells, ft_internal, P_old, Nk_old, Pot_hid, \
     if ctes.MUSCL['set']:
         from .MUSCL import MUSCL
         wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
-            ft_internal, Pot_hid) #trocar ordem da saida
+            Nk_old, ft_internal, Pot_hid) #trocar ordem da saida
     elif ctes.FR:
         from .FR_CPR import FR
         wave_velocity, fprop.Nk, fprop.z, fprop.Nk_SP, Fk_vols_total = FR().run(M, fprop, wells,

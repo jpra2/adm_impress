@@ -17,6 +17,7 @@ class StabilityCheck:
     def __init__(self, P, T):
         # this is called once
         P = np.copy(P)
+        #P[:] = 6.95e6
         self.EOS = ctes.EOS_class(T) #só para os casos isotérmicos - non isothermal entrariam em run (eu acho)
         self.ph_L = np.ones(len(P), dtype = bool)
         self.ph_V = np.zeros(len(P), dtype = bool)
@@ -559,7 +560,7 @@ class StabilityCheck:
             ponteiro_aux[(stop_criteria < 1e-11)] = False
             ponteiro[ponteiro] = ponteiro_aux
             #ponteiro[(abs(self.V)>1e300)] = False
-            if i>200:
+            if i>300:
                 print('Floop')
                 #import pdb; pdb.set_trace()
                 ponteiro[ponteiro] = False

@@ -12,7 +12,7 @@ class FirstOrder:
         pass
 
     def run(self,  M, fprop, Ft_internal, P_old, Nk_old, G):
-
+        self.Nk = np.copy(Nk_old)
         if ctes.RS != 'UPW':
             Nk_face = Nk_old[:,ctes.v0]
             P_face = P_old[ctes.v0].sum(axis=-1)/2
@@ -39,10 +39,10 @@ class FirstOrder:
         UPW = Flux()
 
         #BURGERS
-        '''Nk_faces = fprop.Nk[:,ctes.v0]
+        '''Nk_faces = self.Nk[:,ctes.v0]
         Nk_faces_contour = np.copy(Nk_faces[:,np.newaxis,0])
-        Nk_faces_contour[:,0,0] = fprop.Nk[:,-1]
-        Nk_faces_contour[:,0,1] = fprop.Nk[:,0]
+        Nk_faces_contour[:,0,0] = self.Nk[:,-1]
+        Nk_faces_contour[:,0,1] = self.Nk[:,0]
         Nk_faces_all = np.concatenate((Nk_faces,Nk_faces_contour),axis=1)
 
         Fk_faces_all = (Nk_faces_all**2/2)/(1/ctes.n_volumes)
@@ -60,7 +60,7 @@ class FirstOrder:
             mobilities_internal_faces)
 
         RS = RiemannSolvers(ctes.v0, ctes.pretransmissibility_internal_faces)
-        Nk_face = fprop.Nk[:,ctes.v0]#.sum(axis=-1)/2
+        Nk_face = self.Nk[:,ctes.v0]#.sum(axis=-1)/2
         P_face = fprop.P[ctes.v0].sum(axis=-1)/2
         P_face = np.concatenate((P_face[:,np.newaxis], P_face[:,np.newaxis]),axis=1)
 
@@ -72,13 +72,13 @@ class FirstOrder:
             wave_velocity[:,ponteiro],m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, \
             Ft_internal, ponteiro)
 
-        #wave_velocity[:,ponteiro] = 1e-10
+            #wave_velocity[:,ponteiro] = 1e-10
         #Fk_face = RS.get_Fk_face(fprop, M, Nk_face, fprop.P[ctes.v0], Ft_internal)
         #wave_velocity_RH = (Fk_face[...,1] - Fk_face[...,0])/(Nk_face[...,1] - Nk_face[...,0])
         #e = 1e-5
         #wave_velocity[abs(Nk_face[...,1] - Nk_face[...,0])>e] = wave_velocity_RH[abs(Nk_face[...,1] - Nk_face[...,0])>e]
         #import pdb; pdb.set_trace()
-        #wave_velocity = Fk_vols_total/fprop.Nk #np.max(abs(wave_velocity),axis=0)
+        #wave_velocity = Fk_vols_total/self.Nk #np.max(abs(wave_velocity),axis=0)
 
 
         #burger

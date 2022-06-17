@@ -1,6 +1,6 @@
 #2-phase problem with 3 components - moshiri
 mesh_name: 5000x1x1_3k.msh
-name_save_file: 'results_case2_Moshiri_Manzari_3k_5000_FOU' #150683
+name_save_file: 'results_case2_Moshiri_Manzari_3k_5000_FOU_UPW_b0_wa' #150683
 
 compositional: True
 hidrocarbon_components: True
@@ -27,22 +27,30 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.9
+  CFL: 0.7
 
   solver:
     IMPSAT: false
 
   MUSCL:
     set: false
+    minmod: false
+    VanAlbada1: false
+    VanLeer: false
 
   FR:
     set: false
-    order: 2
+    order: 4
 
   RiemannSolver:
     ROE: false
     LLF: false
     MDW: false
+    DW: false
+
+  time_integration:
+    Euler: true
+    RK3: false
 
   vpis_para_gravar_vtk: [0.51]
   time_to_save: [16070400] #2592000
@@ -61,10 +69,10 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: .1
-    deltaSlim: .001
-    deltaVlim: .0001
-    delta_t_ini: 86.4
+    deltaNlim: 1
+    deltaSlim: .5
+    deltaVlim: .5
+    delta_t_ini: 8.64
     delta_tmax: 86400
     delta_tmin: .00864
 
@@ -94,11 +102,11 @@ compositional_data:
   component_data:
     z: [0.0, 0.25, 0.75]
     Tc: [190.56, 305.32, 369.83]
-    Pc: [4599000, 4873000, 4248000]
-    vc: [9.85988846e-05, 1.45500276e-04, 2.00001177e-04]
+    Pc: [4599000, 4872000, 4248000]
+    vc: [9.85988846e-05, 1.45530140e-04, 2.00001177e-04]
     Mw: [16.043e-3, 30.070e-3, 44.096e-3]
     w: [0.0115, 0.0995, 0.1523]
-    Bin: [[0.,0.,.0], [0.,0.,0.], [0.,0.,.0]]
+    Bin: [[0.,0.0,0.0], [0.0,0.,0.0], [0.0,0.0,.0]]
     Pv: [8e6, 0., 0.]
     vshift_parameter: [0.0, 0., 0.]
     Pb_guess: 2e6

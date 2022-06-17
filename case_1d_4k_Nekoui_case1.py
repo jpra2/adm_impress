@@ -87,6 +87,18 @@ for  arq in arquivos:
             Sg_200_FOU = data[7]
             t_200_FOU = data[2]
 
+        datas = np.load('flying/results_4k_Nekoui_case1_200x1x1_IMPEC_3ts_FOU_517.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            i=0
+            z_3t_200_FOU = np.empty((4,200,3))
+            Sg_3t_200_FOU = np.empty((200,3))
+            P_3t_200_FOU = np.empty((200,3))
+            for data in datas[1:]:
+                P_3t_200_FOU[...,i] = data[4]
+                z_3t_200_FOU[...,i] = data[10]
+                Sg_3t_200_FOU[...,i] = data[7]
+                i+=1
+
         datas = np.load('flying/results_4k_Nekoui_case1_350x1x1_IMPEC_FOU_494.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             z_350_FOU = data[10]
@@ -450,10 +462,10 @@ for  arq in arquivos:
 
 
         plt.figure(1)
-        s=3
+        s=5
         plt.plot(x_ans_zCO2, zCO2_ans, '-k', mfc='none', markersize=s+1)
-        plt.plot(x_100/0.5, z_100_FOU[1,:], '-ro', mfc='none', markersize=s)
-        plt.plot(x_100/0.5, z_100_MUSCL[1,:], '-bs', mfc='none', markersize=s)
+        plt.plot(x_100/0.5, z_100_FOU[1,:], '-bo', mfc='none', markersize=s)
+        plt.plot(x_100/0.5, z_100_MUSCL[1,:], '-ms', mfc='none', markersize=s)
         #plt.plot(x_100/0.5, z_100_FR2[1,:], '-gv', mfc='none', markersize=s)
         #plt.plot(x_100/0.5, z_100_FR3[1,:], '-.g', mfc='none', markersize=s)
         plt.plot(x_100/0.5, z_100_FR4[1,:], '-r*', mfc='none', markersize=s)
@@ -469,9 +481,9 @@ for  arq in arquivos:
         plt.close()
 
         plt.figure(1)
-        s=3
-        plt.plot(x_100/0.5, z_100_FOU[1,:], '-ro', mfc='none', markersize=s)
-        plt.plot(x_100/0.5, z_100_MUSCL[1,:], '-bs', mfc='none', markersize=s)
+        s=5
+        plt.plot(x_100/0.5, z_100_FOU[1,:], '-bo', mfc='none', markersize=s)
+        plt.plot(x_100/0.5, z_100_MUSCL[1,:], '-ms', mfc='none', markersize=s)
         #plt.plot(x_100/0.5, z_100_FR2[1,:], '-gv', mfc='none', markersize=s)
         plt.plot(x_100/0.5, z_100_FR3[1,:], '-.g', mfc='none', markersize=s)
         #plt.plot(x_100/0.5, z_100_FR4[1,:], '-.c', mfc='none', markersize=s)
@@ -489,10 +501,10 @@ for  arq in arquivos:
 
 
         plt.figure(1)
-        s=3
+        s=5
         plt.plot(x_ans_zCO2, zCO2_ans, '-k', mfc='none', markersize=s)
-        plt.plot(x_200/0.5, z_200_FOU[1,:], '-ro', mfc='none', markersize=s)
-        plt.plot(x_200/0.5, z_200_MUSCL[1,:], '-bs', mfc='none', markersize=s)
+        plt.plot(x_200/0.5, z_200_FOU[1,:], '-bo', mfc='none', markersize=s)
+        plt.plot(x_200/0.5, z_200_MUSCL[1,:], '-ms', mfc='none', markersize=s)
         #plt.plot(x_200/0.5, z_200_FR2[1,:], '-gv', mfc='none', markersize=s)
         #plt.plot(x_200/0.5, z_200_FR3[1,:], '-.g', mfc='none', markersize=s)
         plt.plot(x_200/0.5, z_200_FR4[1,:], '-r*', mfc='none', markersize=s)
@@ -509,9 +521,9 @@ for  arq in arquivos:
         plt.close()
 
         plt.figure(1)
-        s=3
-        plt.plot(x_200/0.5, z_200_FOU[1,:], '-ro', mfc='none', markersize=s)
-        plt.plot(x_200/0.5, z_200_MUSCL[1,:], '-bs', mfc='none', markersize=s)
+        s=5
+        plt.plot(x_200/0.5, z_200_FOU[1,:], '-bo', mfc='none', markersize=s)
+        plt.plot(x_200/0.5, z_200_MUSCL[1,:], '-ms', mfc='none', markersize=s)
         #plt.plot(x_200/0.5, z_200_FR2[1,:], '-gv', mfc='none', markersize=s)
         plt.plot(x_200/0.5, z_200_FR3[1,:], '-.g', mfc='none', markersize=s)
         #plt.plot(x_200/0.5, z_200_FR4[1,:], '-.c', mfc='none', markersize=s)
@@ -529,7 +541,7 @@ for  arq in arquivos:
         plt.close()
 
         plt.figure(1)
-        s=3
+        s=5
         plt.plot(x_ans_zCO2, zCO2_ans, '-k', mfc='none', markersize=s)
 
         plt.plot(x_2000/0.5, z_2000_FOU[1,:], '--b', mfc='none', markersize=s)
@@ -573,10 +585,11 @@ for  arq in arquivos:
         plt.figure(1)
         s=3
         plt.plot(x_ans_03t, Sg_ans_03t, '-k', mfc='none', markersize=s)
+        plt.plot(x_200, Sg_3t_200_FOU[...,0], '-bs', mfc='none', markersize=s)
         plt.plot(x_200, Sg_3t_200_FR2[...,0], '-gv', mfc='none', markersize=s)
         plt.plot(x_200, Sg_3t_200_FR3[...,0], '-yo', mfc='none', markersize=s)
         plt.plot(x_200, Sg_3t_200_FR4[...,0], '-.r', mfc='none', markersize=s)
-        plt.legend(('Reference', 'FR-P1', 'FR-P2', 'FR-P3'))
+        plt.legend(('Reference', 'FOU', 'FR-P1', 'FR-P2', 'FR-P3'))
         plt.title('Results for 200x1x1 mesh (t=636s)')
         plt.grid()
         plt.ylabel('$Sg$')
@@ -588,10 +601,11 @@ for  arq in arquivos:
         plt.figure(1)
         s=3
         plt.plot(x_ans_06t, Sg_ans_06t, '-k', mfc='none', markersize=s)
+        plt.plot(x_200, Sg_3t_200_FOU[...,1], '-bs', mfc='none', markersize=s)
         plt.plot(x_200, Sg_3t_200_FR2[...,1], '-gv', mfc='none', markersize=s)
         plt.plot(x_200, Sg_3t_200_FR3[...,1], '-yo', mfc='none', markersize=s)
         plt.plot(x_200, Sg_3t_200_FR4[...,1], '-.r', mfc='none', markersize=s)
-        plt.legend(('Reference', 'FR-P1', 'FR-P2', 'FR-P3'))
+        plt.legend(('Reference', 'FOU', 'FR-P1', 'FR-P2', 'FR-P3'))
         plt.title('Results for 200x1x1 mesh (t=1272s)')
         plt.grid()
         plt.ylabel('$Sg$')
@@ -603,10 +617,11 @@ for  arq in arquivos:
         plt.figure(1)
         s=3
         plt.plot(x_ans_09t, Sg_ans_09t, '-k', mfc='none', markersize=s)
+        plt.plot(x_200, Sg_3t_200_FOU[...,2], '-bs', mfc='none', markersize=s)
         plt.plot(x_200, Sg_3t_200_FR2[...,2], '-gv', mfc='none', markersize=s)
         plt.plot(x_200, Sg_3t_200_FR3[...,2], '-yo', mfc='none', markersize=s)
         plt.plot(x_200, Sg_3t_200_FR4[...,2], '-.r', mfc='none', markersize=s)
-        plt.legend(('Reference', 'FR-P1', 'FR-P2', 'FR-P3'))
+        plt.legend(('Reference', 'FOU', 'FR-P1', 'FR-P2', 'FR-P3'))
         plt.title('Results for 200x1x1 mesh (t=1908s)')
         plt.grid()
         plt.ylabel('$Sg$')
