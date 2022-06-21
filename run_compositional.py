@@ -137,21 +137,21 @@ class run_simulation:
                     self.p1.run_inside_loop(M, fprop)
 
 
-        # Precisa no FI
+
         '-------------------- Advance in time and save results ----------------'
 
         self.update_vpi(fprop, wells)
         #if self.vpi>0.2: import pdb; pdb.set_trace()
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         #if len(wells['ws_p'])>0: self.update_production(fprop, wells)
-        # Calcular esse termo de produção
+        '''Calcular esse termo de produção'''
 
         self.update_loop()
         t1 = time.time()
         dt = t1 - t0
         self.sim_time +=dt
         if self.use_vpi:
-            if np.round(self.vpi,3) in self.vpi_save:
+            if np.round(self.vpi,2) in self.vpi_save:
                 self.update_current_compositional_results(M, wells, fprop) #ver quem vou salvar
         else:
             if self.time_save[0] == 0.0 or self.t in self.time_save:
@@ -204,7 +204,7 @@ class run_simulation:
         M.core.print(file = self.name_all_results + str(self.loop), extension ='.vtk')
 
     def export_current_compositional_results(self):
-         np.save(self.name_current_results, self.current_compositional_results)
+        np.save(self.name_current_results, self.current_compositional_results)
 
     def export_all_results(self):
          np.save(self.name_all_results + str(self.loop) + '.npy', np.array(self.all_results))

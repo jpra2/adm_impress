@@ -339,7 +339,9 @@ class PengRobinson:
                 self.dnij_dNk_dP(dlnfildP, dlnfivdP, dlnfildnij, dlnfivdnij, Nl, Nv)
 
         dx_dP = (1 / Nl) * (dnildP - x*dnldP)
+        dx_dP[:,Nl==0] = 0.0
         dy_dP = (1 / Nv) * (dnivdP - y*dnvdP)
+        dy_dP[:,Nv==0] = 0.0
         dx_dP = np.append(dx_dP, np.zeros([1, ctes.n_volumes]), axis=0)
         dy_dP = np.append(dy_dP, np.zeros([1, ctes.n_volumes]), axis=0)
         return dx_dP, dy_dP, dnildP, dnivdP, dnldP, dnvdP, dnildNk, dnivdNk, dnldNk, dnvdNk

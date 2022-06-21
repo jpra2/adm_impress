@@ -2,6 +2,7 @@ import pdb
 from packs.directories import data_loaded
 from run_compositional import run_simulation
 import time
+import numpy as np
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -32,6 +33,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'
         run_criteria = sim.vpi
+        print('progress... {}[%]'.format(np.round(sim.vpi/sim.vpi_save[-1]*100,4)))
     else:
         'If using time-step unit as second'
         run_criteria = sim.t
@@ -50,12 +52,15 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         simulation time plus delta_t is equal to the final time'
         if sim.t + sim.delta_t > t_next:
             sim.delta_t = t_next - sim.t
+
+        print('progress... {}[%]'.format(np.round(sim.t/sim.time_save[-1]*100,4)))
     loop = sim.loop
-    print(sim.t)
+    #print('dt: ', sim.delta_t)
 
 
 
 tf = time.time()
-print('Total computational time: ', tf-t) #total simulation time
+#print('Total computational time: ', tf-t) #total simulation time
+print('Loops: ', sim.loop)
 import pdb; pdb.set_trace()
 sim.save_infos(data_impress, M) #Save data to file
