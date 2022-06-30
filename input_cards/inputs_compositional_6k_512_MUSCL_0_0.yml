@@ -30,7 +30,6 @@ compositional_data:
   CFL: 0.5
   solver:
     IMPSAT: false
-    FI: false
 
   MUSCL:
     set: false
@@ -41,7 +40,7 @@ compositional_data:
 
   RiemannSolver:
     ROE: false
-    LLF: false
+    LLF: true
     MDW: false
 
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]

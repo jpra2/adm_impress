@@ -75,7 +75,7 @@ class NewtonSolver:
             #Pnew = fprop.P.copy()
             #Nk_new = fprop.Nk.copy()
             detla_x_new = np.reshape(delta_x_2, (ctes.n_volumes, ctes.n_components + 1)).T
-            #detla_x_new[0] = detla_x_new[0]/2
+            detla_x_new[0] = detla_x_new[0]/2
             #detla_x_new = detla_x_new/2
             'Gambiarra'
 
@@ -112,24 +112,47 @@ class NewtonSolver:
             fprop.Nk += detla_x_new[1:]
             fprop.z = fprop.Nk[0:ctes.Nc,:] / fprop.Nk[0:ctes.Nc,:].sum(axis=0)
             '----------------- Perform Phase stability test and flash -------------'
-            t0_flash = time.time()
-            if ctes.load_k and ctes.compressible_k:
 
-                #self.p2 = StabilityCheck(fprop.P, fprop.T)
+            t0_flash = time.time()
+            #if fprop.Sg[0]<1: import pdb; pdb.set_trace()
+            if any(fprop.Sg>1): import pdb; pdb.set_trace()
+            if ctes.load_k and ctes.compressible_k:
+                #if self.z
+                self.p2 = StabilityCheck(fprop.P, fprop.T)
                 fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
                 fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
                 fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
-                flash.run(fprop.P, np.copy(fprop.z))
+                self.p2.run_init(fprop.P, np.copy(fprop.z))#, wells)
 
-                if len(wells['ws_q'])>0 and any((wells['inj_cond']=='reservoir')) and not flash.constant_K:
-                    z = (wells['z'][wells['inj_cond']=='reservoir']).T
-                    p_well = StabilityCheck(fprop.P[wells['ws_q'][wells['inj_cond']=='reservoir']], fprop.T)
-                    L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-                    p_well.run_init(fprop.P[wells['ws_q'][wells['inj_cond']=='reservoir']],z[0:ctes.Nc])
-                    wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
+                if len(wells['ws_inj'])>0 and not self.p2.constant_K:
+
+                    if any(wells['inj_cond']=='reservoir'):
+                        injP_bool = wells['ws_p'] == wells['ws_inj']
+                        injP = wells['ws_p'][injP_bool]
+
+                        z = (wells['z']).T
+
+                        p_well = StabilityCheck(fprop.P[wells['ws_inj']], fprop.T)
+                        L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
+                        p_well.run_init(fprop.P[wells['ws_inj']],z[0:ctes.Nc])
+
+                        if any(injP_bool):
+                            qk_molar = fprop.qk_molar[:,injP]
+                            #wells['values_q_vol'] = np.zeros_like((ctes.n_components,len(injP)))
+                            wells['values_q_vol'] = qk_molar / \
+                                ((Csi_V * V + Csi_L * L))#[wells['inj_cond']=='reservoir']
+                        else:
+                            wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
+                            #wells['values_q_vol'][:,wells['inj_cond']=='reservoir'] = self.q_vol
+                    #else:
+                        #wells['inj_p_term'] = []
+                        #qk_molar = wells['values_q'][:,wells['inj_cond']=='surface']
+                        #wells['values_q_vol'][:,wells['inj_cond']=='surface'] = qk_molar / \
+                        #    ((Csi_V * V + Csi_L * L))[wells['inj_cond']=='surface']
+
+            #if any(fprop.L!=0): import pdb; pdb.set_trace()
 
             '----------------------- Update fluid properties ----------------------'
-
             p1.run_inside_loop(M, fprop)
             G = self.update_gravity_term(fprop)
             Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
@@ -187,6 +210,8 @@ class NewtonSolver:
         dt_newton = t1_Newton - t0_Newton
         aux = (dt_flash / dt_newton) * 100
         #print(f'{aux} % flash')
+        #import pdb; pdb.set_trace()
+        fprop.qk_molar = self.q
         return Fk_vols_total_new, wave_velocity, Ft_internal_faces
 
     def residual_calculation(self, fprop, Pot_hid, wells, Nk_old, delta_t):
@@ -431,8 +456,8 @@ class NewtonSolver:
         phase_viscosity = self.phase_viscosity_class(fprop, Csi_j)
         dmi_dP, dmi_dNk = phase_viscosity.derivative_phase_viscosity_dP_dNk(fprop, dx_dP, dy_dP, dCsi_j_dP, dx_dnij, dy_dnij, dCsi_j_dnij, dnildP, dnivdP, dnildNk, dnivdNk)
         'Problema do BL a viscosidade é constante. Será que a derivada fica igual a 0?'
-        dmi_dP = np.zeros_like(dmi_dP)
-        dmi_dNk = np.zeros_like(dmi_dNk)
+        #dmi_dP = np.zeros_like(dmi_dP)
+        #dmi_dNk = np.zeros_like(dmi_dNk)
 
         dmobilities_dP = (fprop.mis*dkrj_dP - relative_permeability*dmi_dP)/(fprop.mis**2)
         aux = (fprop.mobilities * fprop.Csi_j)[:,:,np.newaxis] * dxij_dP
@@ -469,7 +494,7 @@ class NewtonSolver:
         '''Logica testada para 1D'''
         dtransmissibility_faceup_dP_P = dtransmissibility_dP[:,:,:,ctes.v0[:,0]]
         dtransmissibility_facedown_dP_P = dtransmissibility_dP[:,:,:,ctes.v0[:,1]]
-        bool = Pot_hid[:,ctes.v0[:,0]] < Pot_hid[:,ctes.v0[:,1]]
+        bool = Pot_hid[:,ctes.v0[:,0]] <= Pot_hid[:,ctes.v0[:,1]]
         dtransmissibility_faceup_dP_P[:,:,bool] = 0.0
         dtransmissibility_facedown_dP_P[:,:,~bool] = 0.0
 
@@ -503,7 +528,7 @@ class NewtonSolver:
         # Blocos vizinhos
         dtransmissibility_faceup_dP_E = dtransmissibility_dP[:,:,:,ctes.v0[:,1]]
         dtransmissibility_facedown_dP_W = dtransmissibility_dP[:,:,:,ctes.v0[:,0]]
-        bool = Pot_hid[:,ctes.v0[:,0]] < Pot_hid[:,ctes.v0[:,1]]
+        bool = Pot_hid[:,ctes.v0[:,0]] <= Pot_hid[:,ctes.v0[:,1]]
         dtransmissibility_faceup_dP_E[:,:,~bool] = 0.0
         dtransmissibility_facedown_dP_W[:,:,bool] = 0.0
 
@@ -535,7 +560,7 @@ class NewtonSolver:
         # Derivada em função da composição - diagonal principal
         dtransmissibility_faceup_dNk_P = dtransmissibility_dNk[:,:,:,ctes.v0[:,0]]
         dtransmissibility_facedown_dNk_P = dtransmissibility_dNk[:,:,:,ctes.v0[:,1]]
-        bool = Pot_hid[:,ctes.v0[:,0]] < Pot_hid[:,ctes.v0[:,1]]
+        bool = Pot_hid[:,ctes.v0[:,0]] <= Pot_hid[:,ctes.v0[:,1]]
         dtransmissibility_faceup_dNk_P[:,:,bool] = 0.0
         dtransmissibility_facedown_dNk_P[:,:,~bool] = 0.0
 

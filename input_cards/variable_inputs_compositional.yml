@@ -218,6 +218,27 @@ saturation:
   sparse: True
   level: 0
 
+So:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+Sg:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+zC1:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
 saturation_last:
   type: volumes
   data size: 1
@@ -301,3 +322,10 @@ verif_rest:
   data type: float
   sparse: True
   level: 0
+
+perm:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes

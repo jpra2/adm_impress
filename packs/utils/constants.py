@@ -22,21 +22,70 @@ def init(M, wells):
     global bhp_ind
     global vols_no_wells
     global ds_faces
+    global P_SC
+    global n_points
+    global time_integration
+    global hyperbolic_method
+
+    P_SC = 101325
 
     EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
-    MUSCL = data_loaded['compositional_data']['MUSCL']['set']
+    MUSCL = dict()
+    MUSCL['set'] = data_loaded['compositional_data']['MUSCL']['set']
+    if MUSCL['set']:
+        if data_loaded['compositional_data']['MUSCL']['minmod']:
+            MUSCL['lim'] = 'minmod'
+        elif data_loaded['compositional_data']['MUSCL']['VanAlbada1']:
+            MUSCL['lim'] = 'Van_Albada1'
+        elif data_loaded['compositional_data']['MUSCL']['VanLeer']:
+            MUSCL['lim'] = 'Van_Leer'
+        else: raise NameError('Missing inform the limiting strategy for MUSCL')
+
     FR = data_loaded['compositional_data']['FR']['set']
 
-    RS = dict()
-    RS['LLF'] = data_loaded['compositional_data']['RiemannSolver']['LLF']
-    RS['MDW'] = data_loaded['compositional_data']['RiemannSolver']['MDW']
-    RS['ROE'] = data_loaded['compositional_data']['RiemannSolver']['ROE']
+    if data_loaded['compositional_data']['MUSCL']['set']:
+        hyperbolic_method = 'MUSCL'
+    elif data_loaded['compositional_data']['FR']['set']:
+        hyperbolic_method = 'FR'
+
+    if MUSCL['set']: n_points = 2
+    elif FR: n_points = data_loaded['compositional_data']['FR']['order']
+    else: n_points=1
+
+    #RS = dict()
+    if data_loaded['compositional_data']['RiemannSolver']['LLF']:
+        RS = 'LLF'
+    elif data_loaded['compositional_data']['RiemannSolver']['MDW']:
+        RS = 'MDW'
+    elif data_loaded['compositional_data']['RiemannSolver']['DW']:
+        RS = 'DW'
+    elif data_loaded['compositional_data']['RiemannSolver']['ROE']:
+        RS = 'ROE'
+    else:
+        RS = 'UPW'
+        print('No Riemann Solver was marked -> default: traditional upwind')
+
+    if data_loaded['compositional_data']['time_integration']['Euler']:
+        time_integration = 'Euler'
+
+    elif data_loaded['compositional_data']['time_integration']['RK3']:
+        time_integration = 'RK3'
+    else: raise NameError('Missing inform the time integration method used')
+    
 
     Pf = np.array(data_loaded['compositional_data']['Pf']).astype(float)
     Cf = np.array(data_loaded['compositional_data']['rock_compressibility']).astype(float)
     R = 8.3144598
     n_volumes = len(M.volumes.all)
-    v0 = M.faces.bridge_adjacencies(M.faces.internal,2,3)
+
+    v00 = M.faces.bridge_adjacencies(M.faces.internal,2,3)
+    c_int = M.faces.center(M.faces.internal)
+    c_vols = M.volumes.center(M.volumes.all)
+    pos = (c_int[:,np.newaxis,:] - c_vols[v00]).sum(axis=2)
+    v0 = np.copy(v00)
+    v0[:,0] = v00[pos>0]
+    v0[:,1] = v00[pos<0]
+
     porosity = M.data['poro']
     Vbulk = M.data['volume']
     internal_faces = M.faces.internal

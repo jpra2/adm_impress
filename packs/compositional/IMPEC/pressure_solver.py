@@ -81,7 +81,7 @@ class TPFASolver:
                     cap += t0 @ fprop.Pcap[j,:]
 
         gravity_term = grav @ ctes.z
-
+        #import pdb; pdb.set_trace()
         # capillary_term = np.sum(self.dVtk * np.sum (fprop.xkj *
         #         fprop.Csi_j * fprop.mobilities * fprop.Pcap, axis = 1), axis = 0)
         return cap, gravity_term
@@ -97,7 +97,7 @@ class TPFASolver:
         self.q = np.zeros([ctes.n_components, ctes.n_volumes])
         well_term = np.zeros(ctes.n_volumes)
         if len(wells['ws_q']) > 0:
-            self.q[:,wells['ws_q']] =  wells['values_q']
+            self.q[:,wells['ws_q']] =  wells['values_q'] #mol/s
             well_term[wells['ws_q']] = np.sum(self.dVtk[:,wells['ws_q']] *
                 self.q[:,wells['ws_q']], axis = 0)
         return well_term
@@ -131,12 +131,27 @@ class TPFASolver:
 
     def update_flux_wells(self, fprop, Pnew, wells, delta_t):
         wp = wells['ws_p']
-
+        fprop.qt_inj = wells['values_q_vol']
         if len(wp)>=1:
-            if Pnew[2]>Pnew[1]: import pdb; pdb.set_trace()
+
+            #if Pnew[0]<Pnew[1]: import pdb; pdb.set_trace()
             well_term =  (self.T_noCC[wp,:] @ Pnew - self.pressure_term[wp] +
                 self.volume_term[wp]) / delta_t  + self.capillary_term[wp] + \
                 self.gravity_term[wp]
+            #import pdb; pdb.set_trace()
+            if (len(wp)>1) and (well_term[0]<0):
+                import pdb; pdb.set_trace()
+                well_term = -well_term
             mob_ratio = fprop.mobilities[:,:,wp] / np.sum(fprop.mobilities[:,:,wp], axis = 1)
-            self.q[:,wp] = np.sum(fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp] * well_term, axis = 1)
+
+            q_term = fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp]
+
+            ws_p_inj = np.argwhere(wells['ws_p']==wells['ws_inj']).flatten()
+            q_term[...,ws_p_inj] = wells['inj_p_term']
+            #import pdb; pdb.set_trace()
+            fprop.qt_inj = well_term[ws_p_inj]
+
+
+            self.q[:,wp] = np.sum(q_term * well_term, axis = 1)
+            fprop.qk_prod = self.q[:,wells['ws_prod']]
             fprop.q_phase = mob_ratio * well_term

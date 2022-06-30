@@ -29,14 +29,20 @@ compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
   solver:
-    IMPSAT: False
+    IMPSAT: false
 
   MUSCL:
-    set: False
+    set: false
 
   FR:
-    set: False
-    order: 2
+    set: false
+    order: 3
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
+    DW: false
 
   vpis_para_gravar_vtk: [0.1, 0.2, 0.3, 0.4]
   time_to_save: [4320000., 8640000, 12960000, 17280000]
@@ -97,6 +103,7 @@ compositional_data:
     vshift_parameter: [-190]
     Pv: [0.]
     Pb_guess: [0.]
+    constant_K: false
 
 #water saturation data
 Saturation:

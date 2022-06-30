@@ -6,7 +6,6 @@ import numpy as np
 import sympy.utilities.lambdify as lambdify
 import math
 
-
 class PropertiesCalc:
     def __init__(self):
         self.relative_permeability_class = getattr(relative_permeability2,
@@ -20,24 +19,36 @@ class PropertiesCalc:
     def run_outside_loop(self, M, fprop, wells):
         ''' This function was created to calculate the fluid properties at t=0'''
 
+        #FOR THE BURGERS PROBLEM
+        '''x = np.linspace(0+1/(2*ctes.n_volumes),1-1/(2*ctes.n_volumes),ctes.n_volumes)
+        fprop.Nk = np.array([(1/(2*math.pi))*np.sin(2*math.pi*x)])
+        fprop.Vp = self.update_porous_volume(fprop.P)
+        #M.data['centroid_volumes'][:,0] = x
+        ctes.pretransmissibility_internal_faces = 1/((1/ctes.n_volumes)) * \
+            np.ones(ctes.n_internal_faces)'''
+
+        fprop.Vp = self.update_porous_volume(fprop.P)
+
         if ctes.load_w:
             self.update_water_properties(M, fprop)
 
         if ctes.load_k:
             fprop.So, fprop.Sg = self.update_saturations(M.data['saturation'],
-                            fprop.Csi_j, fprop.L, fprop.V)
+                            fprop.Csi_j.copy(), fprop.L, fprop.V)
         else:
             fprop.So = np.zeros(ctes.n_volumes)
             fprop.Sg = np.zeros(ctes.n_volumes)
 
+
         self.set_initial_volume(fprop)
-        self.set_initial_mole_numbers(fprop)
+        self.set_initial_mole_numbers(fprop) #comment for burgers
 
         fprop.mobilities = self.update_mobilities(fprop, fprop.So, fprop.Sg, fprop.Sw,
                           fprop.Csi_j, fprop.xkj)
 
         self.update_capillary_pressure(fprop)
         if ctes.FR: fprop.Nk_SP = self.set_Nk_Pspace(fprop)
+        else: fprop.Nk_SP = np.zeros_like(fprop.Nk)
 
     def run_inside_loop(self, M, fprop):
         ''' Function to update fluid and reservoir properties along the \
@@ -52,7 +63,7 @@ class PropertiesCalc:
         self.update_total_volume(fprop)
 
         fprop.So, fprop.Sg = self.update_saturations(M.data['saturation'],
-                            fprop.Csi_j, fprop.L, fprop.V)
+                            fprop.Csi_j.copy(), fprop.L, fprop.V)
 
         fprop.mobilities = self.update_mobilities(fprop, fprop.So, fprop.Sg, fprop.Sw,
                           fprop.Csi_j, fprop.xkj)
@@ -67,13 +78,18 @@ class PropertiesCalc:
         fprop.Csi_j[0, ctes.n_phases-1,:] = fprop.Csi_W
         fprop.rho_j[0,ctes.n_phases-1,:] = fprop.rho_W
 
-
     def set_initial_volume(self, fprop):
         self.Vo = fprop.Vp * fprop.So
         self.Vg = fprop.Vp * fprop.Sg
         self.Vw = fprop.Vp * fprop.Sw
         fprop.Vt = self.Vo + self.Vg + self.Vw
+        if ctes.load_k:
+            fprop.Vj = np.concatenate((self.Vo[np.newaxis,:],self.Vg[np.newaxis,:]),axis=0)
+            if ctes.load_w:
+                fprop.Vj = np.concatenate((fprop.Vj,self.Vw[np.newaxis,:]),axis=0)
 
+        else: fprop.Vj = self.Vw[np.newaxis,:]
+        fprop.Vj = fprop.Vj[np.newaxis,:]
 
     def set_initial_mole_numbers(self, fprop):
         if ctes.load_k:
@@ -85,7 +101,6 @@ class PropertiesCalc:
         Nkj = fprop.xkj * fprop.Nj
         fprop.Nk = np.sum(Nkj, axis = 1)
 
-
     def set_Nk_Pspace(self, fprop):
         from packs.compositional import prep_FR as ctes_FR
         'Function to get Nk at the solution points at t=0 for the FR approach. \
@@ -94,18 +109,38 @@ class PropertiesCalc:
         #Nk_vols_no_wells = fprop.Nk[:,ctes.vols_no_wells]
         Nk_SP = np.ones((ctes.n_components,ctes.n_volumes,ctes_FR.n_points))
         Nk_SP = Nk_SP * fprop.Nk[:,:,np.newaxis]
+
+        #For the Bastian problem
+        '''Sw_SP = np.ones((ctes.n_volumes,ctes_FR.n_points)) * 0
+        Nk_SP = np.ones((ctes.n_components,ctes.n_volumes,ctes_FR.n_points))
+        Nk_SP[-1,:] = Sw_SP * fprop.Csi_W0[0] * fprop.Vp[0]
+        Nk_SP[0:-1,:] =  Nk_SP[0:-1,:] * fprop.Nk[0:-1,:,np.newaxis]
+        Nk_SP[0:-1,0,0:] =  fprop.Nk[0:-1,1,np.newaxis]'''
+
+        # For the Burgers problem!
+        '''Nk_SP = (fprop.Nk)[:,:,np.newaxis] * np.ones((ctes.n_components, ctes.n_volumes, ctes_FR.n_points))
+        x = np.empty_like(Nk_SP[0])
+
+        for i in range(ctes_FR.n_points):
+            x[:,i] = np.linspace(0+(ctes_FR.points[i]+1)*1/(2*ctes.n_volumes),1-(1-ctes_FR.points[i])*1/(2*ctes.n_volumes),ctes.n_volumes)
+        Nk_SP =  np.array([(1/(2*math.pi))*np.sin(2*math.pi*x)])'''
         return Nk_SP
 
     def update_porous_volume(self, P):
         #fprop.porosity = ctes.porosity * (1 + ctes.Cf * (fprop.P - ctes.Pf))
         Vp = ctes.porosity * ctes.Vbulk * (1 + ctes.Cf*(P - ctes.Pf))
+
+        #FOR THE BURGERS PROBLEM ONLY
+        #Vp = (1/ctes.n_volumes) * np.ones(len(P))
         return Vp
 
     def update_saturations(self, Sw, Csi_j, L, V):
         if ctes.load_k:
+            Csi_j[Csi_j==0] = 1
             Sg = (1. - Sw) * (V / Csi_j[0,1,:]) / (V / Csi_j[0,1,:] + L /
                 Csi_j[0,0,:])
             So = 1 - Sw - Sg
+            So[So<0] = 0
         else: So = np.zeros_like(Sw); Sg = np.zeros_like(Sw)
         return So, Sg
 
@@ -131,7 +166,12 @@ class PropertiesCalc:
             fprop.Nj[0,ctes.n_phases-1,:] = fprop.Nk[ctes.n_components-1,:]
 
     def update_total_volume(self, fprop):
+        fprop.Vj = fprop.Nj / fprop.Csi_j
         fprop.Vt = np.sum(fprop.Nj / fprop.Csi_j, axis = 1).ravel()
+
+        #burgers
+        #fprop.Vt = fprop.Vp
+
 
     def update_relative_permeabilities(self, fprop, So, Sg, Sw):
         saturations = np.array([So, Sg, Sw])
@@ -142,6 +182,9 @@ class PropertiesCalc:
             krj[0,1,:] = krg
         if ctes.load_w:
             krj[0, ctes.n_phases-1,:] = krw
+
+        #burgers
+        #krj[0,-1,:] = 1
         return krj
 
     def relative_permeability_derivative_call(self, krs, saturations):
@@ -152,9 +195,13 @@ class PropertiesCalc:
         phase_viscosities = np.empty_like(Csi_j)
         if ctes.load_k:
             phase_viscosity = self.phase_viscosity_class(fprop, Csi_j)
-            phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
-            #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test
-            #phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
+            #phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
+            #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test; 0.000249 for 2D injec Li
+            phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
+            #phase_viscosities[0,0,:] = 6.5447e-4
+            #phase_viscosities[0,1,:] = 2.048e-5
+            #phase_viscosities[0,0,:] = 0.01
+            #phase_viscosities[0,1,:] = 0.001#1/5*phase_viscosities[0,0,:] #for 5k NVCM case mug=muo; for 3k Orr NVCM mug=1/5muo
         if ctes.load_w:
             phase_viscosities[0,ctes.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
         return phase_viscosities
@@ -163,6 +210,8 @@ class PropertiesCalc:
         krs = self.update_relative_permeabilities(fprop, So, Sg, Sw)
         fprop.mis = self.update_phase_viscosities(fprop, Csi_j, xkj)
         mobilities = krs / fprop.mis
+        #For the burgers problem
+        #mobilities[-1,:] = 1
         return mobilities
 
     def update_capillary_pressure(self, fprop):
@@ -179,4 +228,9 @@ class PropertiesCalc:
         Csi_W = Csi_W0 * (1 + ctes.Cw * (P - ctes.Pw))
         rho_W = Csi_W * ctes.Mw_w
         Sw = Nw * (1 / Csi_W) / Vp
+
+        #For the burgers problem
+        '''Csi_W = Nw**2/2/Vp
+        rho_W = Csi_W * ctes.Mw_w
+        Sw = Nw**2/2 * (1 / Csi_W) / Vp'''
         return Sw, Csi_W, rho_W

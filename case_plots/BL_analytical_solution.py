@@ -4,16 +4,16 @@ import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 
 'DATA ENTRY'
-krw_end = 1
+krw_end = 0.2
 kro_end = 1
 nw = 2
 no = 2
-Swr = 0.
-Sor = 0.
+Swr = 0.2
+Sor = 0.35
 mi_w = 1e-3
-mi_o = 1e-3
+mi_o = 0.02
 Sw = np.linspace(Swr, 1-Sor, 100000)
-td = 0.648
+td = 0.1265 ################################################
 
 'CALCULATION'
 S = (Sw - Swr)/(1 - Swr - Sor)
@@ -61,11 +61,11 @@ SwD = np.append(Sw1,Sw2)
 SwD = np.append(SwD,Sw3)
 
 
-with open('Sw_BL_FR_analytical.txt', 'w') as f:
+with open('Sw_BL_Darlan_semi_analytical.txt', 'w') as f:
     for item in SwD:
         f.write("%s\n" % item)
 
-with open('x_BL_FR_analytical.txt', 'w') as f:
+with open('x_BL_Darlan_semi_analytical.txt', 'w') as f:
     for item in xD:
         f.write("%s\n" % item)
 import pdb; pdb.set_trace()

@@ -16,6 +16,8 @@ class StabilityCheck:
 
     def __init__(self, P, T):
         # this is called once
+        P = np.copy(P)
+        #P[:] = 6.95e6
         self.EOS = ctes.EOS_class(T) #só para os casos isotérmicos - non isothermal entrariam em run (eu acho)
         self.ph_L = np.ones(len(P), dtype = bool)
         self.ph_V = np.zeros(len(P), dtype = bool)
@@ -28,46 +30,42 @@ class StabilityCheck:
         self.y = np.empty_like(self.x)
         self.L = np.empty(len(P))
         self.V = np.empty(len(P))
-        self.P = P
 
     def run_init(self, P, z, pflash = True, ponteiro_flash = []):
         #self.K = self.equilibrium_ratio_Wilson(P)
+        P = np.copy(P)
         if np.sum(pflash,dtype=bool)==True:
-            ponteiro_flash = np.zeros(len(P), dtype = bool)
+            ponteiro_flash = np.ones(len(P), dtype = bool)
             '-------------------- Get new time-step parameters --------------------'
         self.P = P
-        self.z = z
-        self.z[z==0] = 1e-30
+        self.z = np.copy(z)
         #ponteiro_flash[np.sum(self.z==0, dtype=bool)] = True
         #import pdb; pdb.set_trace()
-        if not pflash and any(~ponteiro_flash) and ctes.Nc>1:
+        #ponteiro_nc1 = np.zeros_like(ponteiro_flash_aux)
+        #ponteiro_nc1[]
+        self.z[self.z<=0] = 1e-30
+
+        '''if not pflash and any(~ponteiro_flash) and ctes.Nc>1:
+            #self.z[self.z==0] = 1e-30
             sp1, sp2 = self.StabilityTest(np.copy(~ponteiro_flash))
             ponteiro_aux = ponteiro_flash[~ponteiro_flash]
             #self.K[~ponteiro_flash] = Ksp1[(np.round(sp1,14) > 1)] + Ksp2[(np.round(sp2,14) > 1)]
             ponteiro_aux[(np.round(sp1,14) > 1) + (np.round(sp2,14) > 1)] = True #os que devem passar para o calculo de flash
-            ponteiro_flash[~ponteiro_flash] = ponteiro_aux
+            ponteiro_flash[~ponteiro_flash] = ponteiro_aux'''
 
-
-        if (any(ponteiro_flash) or np.sum(pflash,dtype=bool)) and ctes.Nc>1:
-            self.molar_properties(np.copy(ponteiro_flash) + np.ones_like(ponteiro_flash,dtype=bool)*pflash) #perform the actual flash
-
-        self.z[self.z==1e-30] = 0
-        self.x[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
-        self.y[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
-        self.V[self.V<0] = 0
-        self.V[self.V>1] = 1
-        self.L = 1 - self.V
-
-        if ctes.Nc==1: self.check_phase_nc_1()
-        #else: self.bubble_point_pressure(np.copy(~ponteiro_flash))
-
-        ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties()
+        #self.molar_properties(np.ones_like(ponteiro_flash,dtype=bool))
+        #self.check_phase_nc_1()
+        Kini = np.copy(self.K)
+        if ctes.Nc==1:
+            ksi_L, ksi_V, rho_L, rho_V = self.check_phase_nc_1()
+        else: ksi_L, ksi_V, rho_L, rho_V = self.molar_properties(np.copy(ponteiro_flash)) #perform the actual flash
+        #ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties()
         return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
 
-    def run(self, P, z):
+    def run(self, P, z, wells):
         ponteiro_flash = self.skip_phase_stability_test(P, z)
-        self.use_previous_K(P, z, ponteiro_flash)
         #ponteiro_flash = np.ones(len(P), dtype = bool)
+        self.use_previous_K(P, z, ponteiro_flash)
         #ponteiro_flash[wells['all_wells']] = True
         #ponteiro_flash[((self.V==0) + (self.L==0))*(P > self.P)] = False
         self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V = self.run_init(P, z, False, ponteiro_flash)
@@ -75,7 +73,7 @@ class StabilityCheck:
 
     def check_phase_nc_1(self):
         Pv = self.vapor_pressure_pure_substancies()
-        Pv = Pv * np.ones_like(self.z)
+        Pv = Pv[:,np.newaxis] * np.ones_like(self.z)
         self.x = self.z
         self.y = self.z
 
@@ -85,6 +83,11 @@ class StabilityCheck:
         self.V = 1. - self.L
         self.K = self.y/self.x
         self.K[self.x==0] = 1
+
+        lnphil, Zl = self.lnphi_Z_based_on_deltaG(self.x, self.P, self.ph_L)
+        lnphiv, Zv = self.lnphi_Z_based_on_deltaG(self.y, self.P, self.ph_V)
+        ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
+        return ksi_L, ksi_V, rho_L, rho_V
 
     def use_previous_K(self, P_new, z_new, ponteiro_flash):
         'Reference: Rezaveisi dissertation'
@@ -97,15 +100,19 @@ class StabilityCheck:
         ponteiro_K_aux = ponteiro_K[ponteiro_flash]
         ponteiro_K_aux[(cond1 >= 1) * (cond2 >= 1)] = True
         ponteiro_K[ponteiro_flash] = ponteiro_K_aux
+        #ponteiro_K[(self.K==1).sum(axis=0,dtype=bool)] = False
         self.K[:,~ponteiro_K] = self.equilibrium_ratio_Wilson(P_new[~ponteiro_K])
+        #self.K[:,:] = self.equilibrium_ratio_Wilson(P_new[:])
+        #if any((self.K==1).sum(axis=0,dtype=bool)): import pdb; pdb.set_trace()
 
     def skip_phase_stability_test(self, P_new, z_new):
         'Two conditions are used here:\
         2) Check if the Gibbs free energy of the K^n TWO PHASE mixture is less than the \
         mixture with the global composition z^(n+1))'
-
+        z_new[z_new==0] = 1e-30
         ponteiro_flash = np.ones(len(P_new), dtype = bool)
-        ponteiro_flash[((self.V==0) + (self.L==0))*(P_new > self.P)] = False
+        #dP_bigg_or_equal = (P_new>self.P) + (abs(P_new - self.P)<1)
+        ponteiro_flash[((self.V==0) + (self.L==0))] = False
         #ponteiro_flash[wells['all_wells']] = False
         lj = np.empty([1, 2, len(ponteiro_flash[ponteiro_flash])])
         xij = np.empty([ctes.Nc, 2, len(ponteiro_flash[ponteiro_flash])])
@@ -130,6 +137,11 @@ class StabilityCheck:
             ponteiro_flash[ponteiro_flash] = ponteiro_flash_aux
         return ponteiro_flash
 
+    def skip_phase_equilibrium(self):
+        pass
+
+        "SECOND HEURISTIC METHOD FROM RESAVEISI"
+
     def vapor_pressure_pure_substancies(self):
         '''Lee-Kesler Correlation - only valid for T < Tc'''
         Tr = self.T/ctes.Tc
@@ -146,7 +158,7 @@ class StabilityCheck:
     """------------------- Stability test calculation -----------------------"""
 
     def StabilityTest(self, ponteiro_stab_check):
-
+        # I can still improve this (saving lines only)
         ''' In the lnphi function: 0 stands for vapor phase and 1 for liquid '''
 
     #****************************INITIAL GUESS******************************#
@@ -154,12 +166,14 @@ class StabilityCheck:
 
     #*****************************Test one**********************************#
         #Used alone when the phase investigated (z) is clearly vapor like (ph = 0)
+
         ponteiro = np.copy(ponteiro_stab_check)
         Y = np.empty(self.z.shape)
         lnphiz = np.empty(self.z.shape)
         Y[:,ponteiro] = self.z[:,ponteiro] /self.K[:,ponteiro]
         y = Y / np.sum(Y, axis = 0)[np.newaxis,:]
         lnphiz[:,ponteiro] = self.EOS.lnphi(self.z[:,ponteiro], self.P[ponteiro], self.ph_V[ponteiro])
+        i=0
         while any(ponteiro):
             Y_old = np.copy(Y[:,ponteiro])
             lnphiy = self.EOS.lnphi(y[:,ponteiro], self.P[ponteiro], self.ph_L[ponteiro])
@@ -170,6 +184,13 @@ class StabilityCheck:
             ponteiro_aux = ponteiro[ponteiro]
             ponteiro_aux[stop_criteria < 1e-9] = False
             ponteiro[ponteiro] = ponteiro_aux
+
+            i+=1
+            if i>100:
+                print('SP1 loop')
+                ponteiro[ponteiro] = False
+        K_sp1 = (self.z/y)[:,ponteiro_stab_check]
+
         stationary_point1 = np.sum(Y[:,ponteiro_stab_check], axis = 0)
 
     #*****************************Test two**********************************#
@@ -179,6 +200,7 @@ class StabilityCheck:
         Y[:,ponteiro] = self.K[:,ponteiro] * self.z[:,ponteiro]
         y = Y / np.sum(Y, axis = 0)[np.newaxis,:]
         lnphiz[:,ponteiro] = self.EOS.lnphi(self.z[:,ponteiro], self.P[ponteiro], self.ph_L[ponteiro])
+        i = 0
         while any(ponteiro):
             Y_old = np.copy(Y[:,ponteiro])
             lnphiy = self.EOS.lnphi(y[:,ponteiro], self.P[ponteiro], self.ph_V[ponteiro])
@@ -189,41 +211,57 @@ class StabilityCheck:
             ponteiro_aux = ponteiro[ponteiro]
             ponteiro_aux[stop_criteria < 1e-9] = False
             ponteiro[ponteiro] = ponteiro_aux
+            i+=1
+            if i>100:
+                print('SP2 loop')
+                ponteiro[ponteiro] = False
+        K_sp2 = (y/self.z)[:,ponteiro_stab_check]
+
         stationary_point2 = np.sum(Y[:,ponteiro_stab_check], axis = 0)
 
+        K = self.K[:,ponteiro_stab_check]
+        sp1 = abs(stationary_point1 - 1)
+        sp2 = abs(stationary_point2 - 1)
+        K[:,sp1>sp2] = K_sp1[:,sp1>sp2]
+        K[:,sp2>sp1] = K_sp2[:,sp2>sp1]
+        KWilson_criteria = np.zeros_like(self.P,dtype=bool)
+        KWilson_criteria_aux = ~np.sum(~(abs(K-1)<1e-5),axis=0,dtype=bool)
+        KWilson_criteria[ponteiro_stab_check] = KWilson_criteria_aux
+        self.K[:,KWilson_criteria] = self.equilibrium_ratio_Wilson(self.P[KWilson_criteria])
+        self.K[:,~KWilson_criteria] = K
         return stationary_point1, stationary_point2
-
 
     """-------------------- Biphasic flash calculations ---------------------"""
 
     def molar_properties(self, ponteiro):
-        self.molar_properties_Whitson(ponteiro)
-        #self.molar_properties_Yinghui(ponteiro)
+        ksi_L, ksi_V, rho_L, rho_V = self.molar_properties_Whitson(ponteiro)
+        #ksi_L, ksi_V, rho_L, rho_V = self.molar_properties_Yinghui(ponteiro)
+        return ksi_L, ksi_V, rho_L, rho_V
 
-    def deltaG_molar_vectorized(self, l, P, ph):
-        lnphi = np.empty([2, ctes.Nc, len(ph)])
-        lnphi[0,:] = self.EOS.lnphi(l, P, 1 - ph)
-        lnphi[1,:] = self.EOS.lnphi(l, P, ph)
-        if any(np.isnan(lnphi).ravel()): import pdb; pdb.set_trace()
-        '''nan_vols = np.sum(np.isnan(lnphi),axis=1,dtype=bool) #soma a condicao do lnphi nan de cada componente em cada volume em cada ph
-        any_nan_vols_cond = nan_vols.sum(axis=0, dtype=bool) #soma o lnphi_nan condition em cada volume (soma as fases)
-        any_nan_vols = np.zeros_like(P, dtype=bool)
-        any_nan_vols[any_nan_vols_cond>0] = True #se em algum volume, uma das fases retorna nan, esse valor vai ser mudado
-        lnphi_aux = lnphi[:,:,any_nan_vols]
-        lnphi_aux[np.isnan(lnphi_aux)] = 2 * lnphi_aux[~np.isnan(lnphi_aux)]
-        lnphi[:,:,any_nan_vols] = lnphi_aux'''
+    def lnphi_Z_based_on_deltaG(self, xkj, P, ph):
+        lnphi, Z = self.EOS.lnphi_Z_deltaG(xkj, P, ph)
 
-        deltaG_molar = np.sum(l * (lnphi[1 - ph, : ,np.arange(len(ph))] - lnphi[1*ph, :, np.arange(len(ph))]).T, axis = 0)
-        ph[deltaG_molar<0] = 1 - ph[deltaG_molar<0]
-        return ph
+        # test phase ph is lnphi[...,0], the other phase is lnphi[...,1]
+        deltaG_molar = np.sum(xkj * (lnphi[...,1] - lnphi[...,0]), axis = 0)
 
-    def lnphi_based_on_deltaG(self, l, P, ph):
-        ph = self.deltaG_molar_vectorized(l, P, ph)
-        return self.EOS.lnphi(l, P, ph)
+        dG_neg = deltaG_molar<0
+
+        ph[dG_neg] = 1 - ph[dG_neg]
+
+        lnphi_out = np.copy(lnphi[...,0])
+        lnphi_out[:,dG_neg] = lnphi[:,dG_neg,1]
+        Z_out = np.copy(Z[...,0])
+        Z_out[dG_neg] = Z[dG_neg,1]
+        return lnphi_out, Z_out
 
     def solve_objective_function_Yinghui(self, z1, zi, K1, KNc, Ki, K, x):
         x1_min = z1 * (1 - KNc) / (K1 - KNc)
         x1_max = (1 - KNc) / (K1 - KNc)
+        K_equal_K1 = K==K1
+        K_equal_KNc = K==KNc
+
+        x1_max[abs(K1-KNc)<1e-15] = 1
+        x1_min[abs(K1-KNc)<1e-15] = 0
 
         vols_zi_neg = np.zeros(len(K1), dtype = bool)
         vols_zi_neg[np.sum(zi < 0, axis = 0, dtype=bool)] = True
@@ -241,10 +279,11 @@ class StabilityCheck:
                 theta - (K1_z_neg[np.newaxis,:] - Ki_z_neg))
 
         #aux_eq = (K - 1) * z1 / (z * (K1 - 1) / theta - (K1 - K))
-        cond = (Ki_z_neg[zi_z_neg != 0] - 1) * z1_z_neg[np.newaxis,:] / zi_z_neg[zi_z_neg != 0]
+        cond = (Ki_z_neg - 1) * z1_z_neg[np.newaxis,:] / zi_z_neg
+        cond[zi_z_neg == 0] = 0
         cond_aux = np.ones(cond.shape[1], dtype = bool)
         cond_aux[np.sum(cond <= 0, axis = 0, dtype=bool)] = False
-        aux_eq_cond = aux_eq[cond_aux]
+        aux_eq_cond = aux_eq[:,cond_aux]
         vols_aux = len(cond_aux==True)
 
         vols_aux = np.sum(cond_aux*1) + 1 - np.sign(np.sum(cond_aux*1))
@@ -255,7 +294,7 @@ class StabilityCheck:
         x1_max[vols_zi_neg] = x1_max_aux
 
         x1_min_aux = np.copy(x1_min[vols_zi_neg])
-        x1_min_aux[~cond_aux] = np.max(aux_eq[~cond_aux], axis = 0, initial=0)
+        x1_min_aux[~cond_aux] = np.max(aux_eq[:,~cond_aux], axis = 0, initial=0)
 
         x1_min_aux[x1_min_aux < 0] = 0
         x1_min[vols_zi_neg] = x1_min_aux
@@ -294,18 +333,20 @@ class StabilityCheck:
             x1_min = x1_min[ponteiro_aux]
             x1_max[f[ponteiro_aux] * df[ponteiro_aux] > 0] = x1[ponteiro][f[ponteiro_aux] * df[ponteiro_aux] > 0]
             x1_min[f[ponteiro_aux] * df[ponteiro_aux] < 0] = x1[ponteiro][f[ponteiro_aux] * df[ponteiro_aux] < 0]
-            #if i > 300: import pdb; pdb.set_trace()
+            if i > 300:
+                #import pdb; pdb.set_trace()
+                ponteiro[ponteiro] = False
 
         x1 = x1_new.copy()
         xi = (K1[np.newaxis,:] - 1) * zi * x1[np.newaxis,:] / (ft3_1 +
             ft3_2 * x1[np.newaxis,:])
 
         x_not_z1_zero = np.copy(x).T
-        x_not_z1_zero[(K == K1[np.newaxis,:]).T] = x1.T
-        x_not_z1_zero[(K == KNc[np.newaxis,:]).T] = (1 - np.sum(xi, axis = 0) - x1).T
+        x_not_z1_zero[K_equal_K1.T] = x1.T
+        x_not_z1_zero[K_equal_KNc.T] = (1 - np.sum(xi, axis = 0) - x1).T
         aux_xi = np.ones(x_not_z1_zero.shape,dtype=bool)
-        aux_xi[(K == K1[np.newaxis,:]).T] = False
-        aux_xi[(K == KNc[np.newaxis,:]).T] = False
+        aux_xi[K_equal_K1.T] = False
+        aux_xi[K_equal_KNc.T] = False
         x_not_z1_zero[aux_xi] = xi.T.ravel()
         return x_not_z1_zero.T
 
@@ -320,8 +361,21 @@ class StabilityCheck:
         z1 = z.T[(K == K1[np.newaxis,:]).T].T
 
         aux = np.ones(K.shape, dtype = bool)
-        aux[K == K1[np.newaxis,:]] = False
-        aux[K == KNc[np.newaxis,:]] = False
+        self.K_equal_K1 = K == K1[np.newaxis,:]
+        xs1 = self.K_equal_K1[:,self.K_equal_K1.sum(axis=0)>1]
+        if any(xs1): xs1[xs1][0] = False
+        self.K_equal_K1[:,self.K_equal_K1.sum(axis=0)>1] = xs1
+
+        self.K_equal_KNc = K == KNc[np.newaxis,:]
+        xs2 = self.K_equal_KNc[:,self.K_equal_KNc.sum(axis=0)>1]
+        if any(xs2):
+            xss2 = xs2[xs2]
+            xss2[0] = False
+            xs2[xs2]  = xss2
+            #ver caso onde todo mundo é igual
+        self.K_equal_KNc[:,self.K_equal_KNc.sum(axis=0)>1] = xs2
+        aux[self.K_equal_K1] = False
+        aux[self.K_equal_KNc] = False
         Ki = K.T[aux.T]
         zi = z.T[aux.T]
 
@@ -333,8 +387,8 @@ class StabilityCheck:
         #starting x
 
         """ Solution """
-
-        x[:,~(z1 == 0)] = self.solve_objective_function_Yinghui(z1[~(z1 == 0)], zi[:,~(z1 == 0)],
+        if any(~(z1==0)):
+            x[:,~(z1 == 0)] = self.solve_objective_function_Yinghui(z1[~(z1 == 0)], zi[:,~(z1 == 0)],
                                                 K1[~(z1 == 0)], KNc[~(z1 == 0)], Ki[:,~(z1 == 0)],
                                                 K[:,~(z1 == 0)], x[:,~(z1 == 0)])
 
@@ -364,12 +418,14 @@ class StabilityCheck:
         ponteiro_save = np.copy(ponteiro)
         i = 0
         #x1 = np.zeros_like(self.z[0])
+        Zl = np.empty_like(self.z[0])
+        Zv = np.empty_like(self.z[0])
 
         while any(ponteiro):
             i+=1
             self.Yinghui_method(ponteiro)
-            lnphil = self.lnphi_based_on_deltaG(self.x[:,ponteiro], self.P[ponteiro], self.ph_L[ponteiro])
-            lnphiv = self.lnphi_based_on_deltaG(self.y[:,ponteiro], self.P[ponteiro], self.ph_V[ponteiro])
+            lnphil, Zl[ponteiro] = self.lnphi_Z_based_on_deltaG(self.x[:,ponteiro], self.P[ponteiro], self.ph_L[ponteiro])
+            lnphiv, Zv[ponteiro] = self.lnphi_Z_based_on_deltaG(self.y[:,ponteiro], self.P[ponteiro], self.ph_V[ponteiro])
             fl = np.exp(lnphil) * (self.x[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             fv = np.exp(lnphiv) * (self.y[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             razao[:,ponteiro] = np.divide(fl, fv, out = razao[:,ponteiro] / razao[:,ponteiro] * (1 + 1e-10),
@@ -378,50 +434,80 @@ class StabilityCheck:
             self.K[:,ponteiro] = razao[:,ponteiro] * self.K[:,ponteiro]
             stop_criteria = np.max(abs(razao[:,ponteiro] - 1), axis = 0)
             ponteiro_aux = ponteiro[ponteiro]
-            ponteiro_aux[stop_criteria < 1e-9] = False
+            ponteiro_aux[(stop_criteria < 1e-9) * (i>2)] = False
             ponteiro[ponteiro] = ponteiro_aux
-            #ponteiro[(self.V<=0) + (self.V>=1)] = False
-            #if i > 600: break
+            if i > 600:
+                import pdb; pdb.set_trace()
+                ponteiro[ponteiro] = False
 
         V = (self.z[:,ponteiro_save][self.x[:,ponteiro_save] != 0] - self.x[:,ponteiro_save][self.x[:,ponteiro_save] != 0]) / \
                           (self.y[:,ponteiro_save][self.x[:,ponteiro_save] != 0] - self.x[:,ponteiro_save][self.x[:,ponteiro_save] != 0])
+        #V = (self.z[:,ponteiro_save] - self.x[:,ponteiro_save]) / \
+        #    (self.y[:,ponteiro_save] - self.x[:,ponteiro_save])
+        #den = (self.y[:,ponteiro_save] - self.x[:,ponteiro_save])
+        #V[den==0] = 0
+
         #vols_V = np.sum(self.x[:,ponteiro_save] == 0, dtype=bool, axis = 0)
         vv = np.argwhere((self.x[:,ponteiro_save]!=0) == True)
         vols_V, ind = np.unique(vv[:,1],return_index = True)
+        #V_aux = V[(self.x[:,ponteiro_save]!=0)]
         self.V[ponteiro_save] = V[ind]
+
+        self.x[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
+        self.y[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
+        self.V[self.V<0] = 0
+        self.V[self.V>1] = 1
+        self.L = 1 - self.V
+
         self.L[ponteiro_save] = 1. - self.V[ponteiro_save]
+        if any(np.sum(abs((self.V*self.y + self.L * self.x)-self.z),axis=0)>1e-4):
+            import pdb; pdb.set_trace()
+        ponteiro_1phase = np.zeros_like(self.V,dtype=bool)
+        ponteiro_1phase[((self.V)<=0) + ((self.V)>=1)] = True
+        ponteiro_1phase[~ponteiro_save] = True
+        lnphil, Zl[ponteiro_1phase] = self.lnphi_Z_based_on_deltaG(self.x[:,ponteiro_1phase], self.P[ponteiro_1phase], self.ph_L[ponteiro_1phase])
+        lnphiv, Zv[ponteiro_1phase] = self.lnphi_Z_based_on_deltaG(self.y[:,ponteiro_1phase], self.P[ponteiro_1phase], self.ph_V[ponteiro_1phase])
+        ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
+        return ksi_L, ksi_V, rho_L, rho_V
 
-    def solve_objective_function_Whitson_for_V(self, V, Vmax, Vmin, ponteiro):
+    def solve_objective_function_Whitson_for_V(self, V, Vmax, Vmin, K, z):
 
-        ponteiro_save = np.copy(ponteiro)
         i = 0
+        ponteiro = np.ones_like(V,dtype=bool)
         while any(ponteiro):
             i+=1
             Vold = np.copy(V[ponteiro])
-            f = np.sum((self.K[:,ponteiro] - 1) * self.z[:,ponteiro] / (1 + V[ponteiro][np.newaxis,:] *
-                (self.K[:,ponteiro] - 1)), axis = 0)
-            df = - np.sum((self.K[:,ponteiro] - 1) ** 2 * self.z[:,ponteiro] / (1 + V[ponteiro][np.newaxis,:] *
-                (self.K[:,ponteiro] - 1)) ** 2, axis = 0)
+            f = np.sum((K[:,ponteiro] - 1) * z[:,ponteiro] / (1 + V[ponteiro][np.newaxis,:] *
+                (K[:,ponteiro] - 1)), axis = 0)
+            df = - np.sum((K[:,ponteiro] - 1) ** 2 * z[:,ponteiro] / (1 + V[ponteiro][np.newaxis,:] *
+                (K[:,ponteiro] - 1)) ** 2, axis = 0)
             V[ponteiro] = V[ponteiro] - f / df #Newton-Raphson iterative method
-            V_aux = V[ponteiro]
-            V_aux[V_aux > Vmax[ponteiro]] = 0.5 * (Vmax[ponteiro] + Vold)[V_aux > Vmax[ponteiro]]
-            V_aux[V_aux < Vmin[ponteiro]] = 0.5 * (Vmin[ponteiro] + Vold)[V_aux < Vmin[ponteiro]]
-            V[ponteiro] = V_aux
+            V_aux = np.copy(V[ponteiro])
+            Vmax_Vold = (Vmax[ponteiro] + Vold)
+            Vmin_Vold = (Vmin[ponteiro] + Vold)
+            V_aux[V_aux > Vmax[ponteiro]] = 0.5 * Vmax_Vold[V_aux > Vmax[ponteiro]]
+            V_aux[V_aux < Vmin[ponteiro]] = 0.5 * Vmin_Vold[V_aux < Vmin[ponteiro]]
+            V[ponteiro] = np.copy(V_aux)
             stop_criteria = abs(V[ponteiro] / Vold - 1)
+            stop_criteria[Vold==0] = 0
             ponteiro_aux = ponteiro[ponteiro]
-            ponteiro_aux[stop_criteria < 1e-9] = False
+            ponteiro_aux[(stop_criteria < 1e-9)] = False
             ponteiro[ponteiro] = ponteiro_aux
-            #print(i)
-            if any(np.isnan(self.V)): self.V[np.isnan(self.V)] = 0
-            if i>200:
-                #import pdb; pdb.set_trace()
+            if any(np.isnan(V)): V[np.isnan(V)] = 0
+            if i>100:
+                print('Vloop')
                 ponteiro[ponteiro] = False
-            #    print('i>100')
 
-        self.V[ponteiro_save] = V[ponteiro_save]
-        self.x[:,ponteiro_save] = self.z[:,ponteiro_save] / (1 + self.V[ponteiro_save][np.newaxis,:] *
-                                (self.K[:,ponteiro_save] - 1))
-        self.y[:,ponteiro_save] = self.K[:,ponteiro_save] * self.x[:,ponteiro_save]
+
+        V[np.isinf(V)] = 1
+
+        x = z / (1 + V[np.newaxis,:] * (K - 1))
+        ponteiro_inf = np.isinf(x).sum(axis=0,dtype=bool)
+        ponteiro_nan = np.isnan(x).sum(axis=0,dtype=bool)
+        x[:,ponteiro_inf+ponteiro_nan] = z[:,ponteiro_nan+ponteiro_inf]
+        y = K * x
+        #self.y[self.y==0] = self.z[self.y==0]
+        return V, x, y
 
     def molar_properties_Whitson(self, ponteiro):
         Lmax = np.max(self.K, axis = 0)/(np.max(self.K, axis = 0) - 1)
@@ -432,34 +518,73 @@ class StabilityCheck:
         #Vmin = ((K1-KNc)*z[self.K==K1]-(1-KNc))/((1-KNc)*(K1-1))
         #proposed by Li et al for Whitson method
 
-        Vmin[Vmin>Vmax] = -Vmax[Vmin>Vmax]
+        Vmax[Vmax<Vmin] = abs(Vmax[Vmax<Vmin]) #add this tow lines to correct some problems with 1 component injection
+        Vmax[abs(Vmax)<1] = 1 #add this tow lines to correct some problems with 1 component injection
+        min_big_max = Vmin>Vmax
+        Vmin[min_big_max] = -1*Vmax[min_big_max]
+
         self.V[ponteiro] = (Vmin[ponteiro] + Vmax[ponteiro]) * 0.5
 
         ponteiro_save = np.copy(ponteiro)
         razao = np.ones(self.z.shape)/2
         i = 0
+        Zl = np.empty_like(self.V)
+        Zv = np.empty_like(Zl)
 
         while any(ponteiro):
             i+=1
-            self.solve_objective_function_Whitson_for_V(self.V, Vmax, Vmin, np.copy(ponteiro))
-            lnphil = self.lnphi_based_on_deltaG(self.x[:,ponteiro], self.P[ponteiro], self.ph_L[ponteiro])
-            lnphiv = self.lnphi_based_on_deltaG(self.y[:,ponteiro], self.P[ponteiro], self.ph_V[ponteiro])
-
+            Vold = np.copy(self.V)
+            self.V[ponteiro], self.x[:,ponteiro], self.y[:,ponteiro] = \
+                self.solve_objective_function_Whitson_for_V(Vold[ponteiro], \
+                np.copy(Vmax[ponteiro]), np.copy(Vmin[ponteiro]), \
+                np.copy(self.K[:,ponteiro]), np.copy(self.z[:,ponteiro]))
+            lnphil, Zl[ponteiro] = self.lnphi_Z_based_on_deltaG(self.x[:,ponteiro], self.P[ponteiro], self.ph_L[ponteiro])
+            lnphiv, Zv[ponteiro] = self.lnphi_Z_based_on_deltaG(self.y[:,ponteiro], self.P[ponteiro], self.ph_V[ponteiro])
             fv = np.exp(lnphiv) * (self.y[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             fl = np.exp(lnphil) * (self.x[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
-            razao[:,ponteiro] = np.divide(fl, fv, out = razao[:,ponteiro] / razao[:,ponteiro] * (1 + 1e-10),
-                              where = fv != 0)
-            self.K[:,ponteiro] = razao[:,ponteiro] * self.K[:,ponteiro]
-            stop_criteria = np.max(abs(fv / fl - 1), axis = 0)
+
+            fv[(abs(fl)<1e-300) + (abs(fv)<1e-300)] = fl[(abs(fl)<1e-300) + (abs(fv)<1e-300)]
+            fv[fv == 0] = 1e-30
+            razao[:,ponteiro] = fl/fv
+            if any(np.isnan(razao).flatten()):
+                if razao.shape[1]<300:
+                    print('nan')
+                    import pdb; pdb.set_trace()
+            razao[np.isnan(razao)] = 1
+            razao[np.isinf(razao)] = 1
+
+            self.K[:,ponteiro] *= razao[:,ponteiro]
+            #stop_criteria = np.max(abs(fv / fl - 1), axis = 0)
+            stop_criteria = np.sum(abs(razao[:,ponteiro] - 1)**2, axis = 0) #Dandekar's
             ponteiro_aux = ponteiro[ponteiro]
-            ponteiro_aux[stop_criteria < 1e-9] = False
+            ponteiro_aux[(stop_criteria < 1e-11)] = False
             ponteiro[ponteiro] = ponteiro_aux
-            ponteiro[((self.V)<0) + ((self.V)>1)] = False
-            #if i>300: ponteiro[ponteiro] = False
+            #ponteiro[(abs(self.V)>1e300)] = False
+            if i>300:
+                print('Floop')
                 #import pdb; pdb.set_trace()
+                ponteiro[ponteiro] = False
+
+        t1 = time.time()
+        # THINK OF A BETTER WAY TO ORGANIZE THIS
+
+        self.z[self.z==1e-30] = 0
+        self.x[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
+        self.y[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
+        self.V[self.V<0] = 0
+        self.V[self.V>1] = 1
+        self.L = 1 - self.V
+
+        ponteiro_1phase = np.zeros_like(self.V,dtype=bool)
+        ponteiro_1phase[((self.V)<=0) + ((self.V)>=1)] = True
+        ponteiro_1phase[~ponteiro_save] = True
+        lnphil, Zl[ponteiro_1phase] = self.lnphi_Z_based_on_deltaG(self.x[:,ponteiro_1phase], self.P[ponteiro_1phase], self.ph_L[ponteiro_1phase])
+        lnphiv, Zv[ponteiro_1phase] = self.lnphi_Z_based_on_deltaG(self.y[:,ponteiro_1phase], self.P[ponteiro_1phase], self.ph_V[ponteiro_1phase])
+
+        ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
+        return ksi_L, ksi_V, rho_L, rho_V
 
     def get_dlnphidP(self, T, xij, P, ph):
-        #self.EOS = ctes.EOS_class(T)
         A, B = self.EOS.coefficients_cubic_EOS_vectorized(xij, P)
         Z = self.EOS.Z_vectorized(A, B, ph)
         dAdP = self.EOS.dA_dP()
@@ -532,21 +657,17 @@ class StabilityCheck:
         self.L[ponteiro_save] = L
         self.V[ponteiro_save] = V
 
-    def update_EOS_dependent_properties(self):
+    def update_EOS_dependent_properties(self, Zl, Zv):
         #self.EOS = ctes.EOS_class(self.P, self.T)
-        ksi_L, rho_L = self.get_EOS_dependent_properties(self.T, self.x, self.P, self.ph_L)
-        ksi_V, rho_V = self.get_EOS_dependent_properties(self.T, self.y, self.P, self.ph_V)
+        ksi_L, rho_L = self.get_EOS_dependent_properties(self.T, self.x, self.P, Zl)
+        ksi_V, rho_V = self.get_EOS_dependent_properties(self.T, self.y, self.P, Zv)
         return ksi_L, ksi_V, rho_L, rho_V
 
-    def get_EOS_dependent_properties(self, T, l, P, ph):
+    def get_EOS_dependent_properties(self, T, xkj, P, Z):
         #l - any phase molar composition
-
-        A, B = ctes.EOS_class(T).coefficients_cubic_EOS_vectorized(l, P)
-        ph = self.deltaG_molar_vectorized(l, P, ph)
-        Z = self.EOS.Z_vectorized(A, B, ph)
         v = Z * ctes.R * T / P #vshift go here
         ksi_phase = 1 / v
-        Mw_phase = np.sum(l * ctes.Mw[:,np.newaxis], axis = 0)
+        Mw_phase = np.sum(xkj * ctes.Mw[:,np.newaxis], axis = 0)
         rho_phase = ksi_phase * Mw_phase
         return ksi_phase, rho_phase
 

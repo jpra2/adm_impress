@@ -3,7 +3,7 @@ from packs.directories import data_loaded
 from packs.utils import constants as ctes
 from sympy import Symbol, diff, poly
 import quadpy
-from scipy.special import legendre
+from scipy.special import legendre, jacobi, gamma
 
 
 global x
@@ -43,12 +43,12 @@ def correction_function(n_points):
     g2_coefs_LB = (n_points-1)/(2*n_points-1) * RRadau_coefs + n_points/(2*n_points-1) * RRadau_coefs_K_1
     g2_coefs_RB = (n_points-1)/(2*n_points-1) * LRadau_coefs + n_points/(2*n_points-1) * LRadau_coefs_K_1
 
-    dgLB_lump_Lo =  polynomial_der_coeffs(g2_coefs_LB.c[::-1])[:,:-1]
-    dgRB_lump_Lo =  polynomial_der_coeffs(g2_coefs_RB.c[::-1])[:,:-1]
+    #dgLB_lump_Lo =  polynomial_der_coeffs(g2_coefs_LB.c[::-1])[:,:-1]
+    #dgRB_lump_Lo =  polynomial_der_coeffs(g2_coefs_RB.c[::-1])[:,:-1]
     # starts with lower power term, and ends with a minor order than its original
     # function, i.e. dgLB[:,-1] is not zero because the vector has the number of
     # elements equal to the derivative order. This makes easier when computing dFk
-    return dgRB_Radau, dgLB_Radau, RRadau_coefs.c[::-1], LRadau_coefs.c[::-1]
+    return dgRB_Radau, dgLB_Radau, LRadau_coefs.c[::-1], RRadau_coefs.c[::-1]
     #return dgRB_lump_Lo, dgLB_lump_Lo, g2_coefs_RB.c[::-1], g2_coefs_LB.c[::-1]
 
 def polynomial_der_coeffs(P):
@@ -86,18 +86,71 @@ def auxiliary_terms(M, points, n_points):
 
     return x_points, v0, vols_vec
 
+def dJacobiP(order, alpha, beta, points):
+    return  np.sqrt(order*(order+alpha+beta+1))*jacobiP_((order-1)*np.sign(order), \
+        alpha+1, beta+1, points)
+
+def jacobiP_(order, alpha, beta, points):
+    xp = points; dims = np.size(points);
+    #if (dims(2)==1); xp = xp'; end;
+    PL = np.zeros((order+1,np.size(points)));
+
+    #Initial values P_0(x) and P_1(x)
+
+    gamma0 = 2.**(alpha+beta+1)/(alpha+beta+1)*gamma(alpha+1)* \
+            gamma(beta+1)/gamma(alpha+beta+1)
+    PL[0,:] = 1.0/np.sqrt(gamma0)
+    if (order==0): return PL.T
+
+    gamma1 = (alpha+1)*(beta+1)/(alpha+beta+3)*gamma0;
+    PL[1,:] = ((alpha+beta+2)*xp/2 + (alpha-beta)/2)/np.sqrt(gamma1)
+    if (order==1): return PL[order,:].T
+
+    #Repeat value in recurrence.
+    aold = 2/(2+alpha+beta)*np.sqrt((alpha+1)*(beta+1)/(alpha+beta+3))
+
+    #Forward recurrence using the symmetry of the recurrence.
+    for i in range(1,order):
+        h1 = 2*(i)+alpha+beta
+        anew = 2/(h1+2)*np.sqrt((i+1)*(i+1+alpha+beta)*(i+1+alpha)* \
+            (i+1+beta)/(h1+1)/(h1+3))
+        bnew = - (alpha**2-beta**2)/h1/(h1+2)
+        PL[i+1,:] = 1/anew*( -aold*PL[i-1,:] + (xp-bnew)*PL[i,:])
+        aold =anew
+
+    return PL[order,:].T
+
+def jacobiP(order, alpha, beta, points):
+    return jacobi(order, alpha, beta) * np.sqrt((2*order+1)/2)
+
+def gradVandermonde(n_points, points):
+    Vr = np.zeros((n_points,n_points)) # Allocate
+
+    for i in range(n_points):	# All Polynomial Degrees up to kDeg
+        for j in range(n_points):
+            Vr[j,i] = dJacobiP(i,0,0,points[j])
+    return Vr
+
+def Vandermonde2(n_points, points):
+    Vr = np.zeros((n_points,n_points)) # Allocate
+    for i in range(n_points):	# All Polynomial Degrees up to kDeg
+        for j in range(n_points):
+            Vr[j,i] = jacobiP_(i,0,0,points[j])
+    return Vr
+
 def run(M):
     global n_points
     global points
     global weights
     global L
     global dL
-    global dgRB, gRB
-    global dgLB, gLB
+    global dgRB
+    global dgLB
     global V
     global x_points
     global v0
     global vols_vec
+    global Dr
 
     n_points = data_loaded['compositional_data']['FR']['order']
     GL = quadpy.c1.gauss_lobatto(n_points)
@@ -105,8 +158,18 @@ def run(M):
     weights = GL.weights
     dgRB, dgLB, gRB, gLB = correction_function(n_points)
     L, dL = Lagrange_poly(n_points, points)
-    points = np.round(points,2)
+
+    points[abs(points)<1e-15] = 0
+    L[abs(L)<5e-15] = 0
+    dL[abs(dL)<5e-15] = 0
+    '''points = np.round(points,2)
     L = np.round(L,2)
-    dL = np.round(dL,2)
+    dL = np.round(dL,2)'''
+
+
     V = np.polynomial.legendre.legvander(points,n_points-1)
     x_points, v0, vols_vec = auxiliary_terms(M, points, n_points)
+
+    #V_H = Vandermonde2(n_points, points)
+    #GV_H = gradVandermonde(n_points, points)
+    #Dr = GV_H@np.linalg.inv(V_H)

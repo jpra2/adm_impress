@@ -27,13 +27,14 @@ sim = run_simulation(name_current, name_all)
 M, data_impress, wells, fprop, load = sim.initialize(load, convert, mesh)
 
 while run_criteria < stop_criteria:# and loop < loop_max:
-    #import pdb; pdb.set_trace()
-    sim.run(M, wells, fprop, load) # Comeca de fato a simulacao -----------------------------------------
+    sim.run(M, wells, fprop, load)
     #import pdb; pdb.set_trace()
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'
         run_criteria = sim.vpi
+        #print('vpi: ', sim.vpi)
         print('progress... {}[%]'.format(np.round(sim.vpi/sim.vpi_save[-1]*100,4)))
+
     else:
         'If using time-step unit as second'
         run_criteria = sim.t
@@ -55,8 +56,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
 
         print('progress... {}[%]'.format(np.round(sim.t/sim.time_save[-1]*100,4)))
     loop = sim.loop
-    #print('dt: ', sim.delta_t)
-
+    print('dt: ', sim.delta_t)
 
 
 tf = time.time()

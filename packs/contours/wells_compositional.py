@@ -22,7 +22,7 @@ class WellsCompositional(Wells):
         ws_prod = [] ## pocos produtores
         values_p = [] ## valor da pressao prescrita
         values_q = np.array([]) ## valor da vazao prescrita
-        values_q_vol =[]
+        values_q_vol =[] ## valor da vazao prescrita em m3/s
         inj_cond = []
         z = []
         for p in data_wells:
@@ -44,10 +44,11 @@ class WellsCompositional(Wells):
                 nv = len(vols)
                 if tipo == 'Injector':
                     z.append(well['z'])
+                    z *= nv
                     inj_cond.append(well['injection_condition'])
+                    inj_cond*=nv
 
                 if prescription == 'Q':
-
                     val = value/nv * np.array(well['z'])
                     if tipo == 'Producer':
                         val *= -1
@@ -56,27 +57,25 @@ class WellsCompositional(Wells):
                     value_type = well['value_type']
                     values = val
 
-
-                    if value_type == 'volumetric':
+                    '''if value_type == 'volumetric':
                         if inj_cond[-1] == 'surface':
                             values = (1 - well['z'][-1]) * well['ksi_total'] * val
-                            values[-1] = val[-1] * well['ksi_total']
-                            #values_q_vol.append(val)
-                        values_q_vol.append(val)
+                            values[-1] = val[-1] * well['ksi_total']'''
+                    values_q_vol.append(val.tolist())
+                    values_q_vol *= nv
 
                     vals = np.repeat(values, nv)
                     if len(values_q)>0:
                         vals = (vals).reshape((len(well['z']),nv))
                         values_q = np.concatenate((values_q,vals), axis=1)
                         if inj_cond == 'surface':
-                            values_q = (vals / well['ksi_total']).sum(axis=0)
-                        values_q = np.concatenate((values_q, values_q), axis=0)
-                    else:
+                            values_q = (vals).sum(axis=0)
+                            values_q = np.concatenate((values_q, values_q), axis=1)
 
+                    else:
                         values_q = np.append(values_q, vals).reshape((len(well['z']),nv))
                         if inj_cond == 'surface':
-                            values_q = (values_q / well['ksi_total']).sum(axis=0)
-                        else: values_q = values_q
+                            values_q = (values_q).sum(axis=0)
 
                 elif prescription == 'P':
                     val = value
@@ -104,6 +103,6 @@ class WellsCompositional(Wells):
         self['values_q'] = values_q
         self['all_wells'] = np.union1d(ws_inj, ws_prod).astype(int)
         self['values_p_ini'] = values_p.copy()
-        self['values_q_vol'] = values_q_vol
+        self['values_q_vol'] = np.array(values_q_vol).T
         self['inj_cond'] = np.array(inj_cond).flatten()
         self['z'] = np.array(z)

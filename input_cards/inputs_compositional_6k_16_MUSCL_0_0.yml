@@ -132,6 +132,7 @@ Wells:
     value: 0.00041377314814814814
     z: [0., 0., 0., 0., 0., 0., 1.]
     ksi_total: 55549.8
+    injection_condition: surface
     value_type: volumetric
 
   P2:

@@ -1,4 +1,4 @@
-#Compressive Oil case with 1 component in 1-D reservoir
+
 mesh_name: 8x1x1_BL_FR.msh
 name_save_file: 'results_BL_8_upw'
 

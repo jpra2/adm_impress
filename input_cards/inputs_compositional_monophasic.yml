@@ -1,14 +1,12 @@
 #Water case in 1D reservoir
 mesh_name: 100x1x1_m.msh
-name_save_file: results_monophasic_incompressible_w_IMPEC
+name_save_file: results_monophasic_incompressible_w_FOU
 n_test: 0
 compositional: True
 hidrocarbon_components: False
 compressible_fluid: False
 water_component: True
 use_vpi: False
-
-
 
 load_compositional_data: False
 load_data: False
@@ -31,8 +29,7 @@ compositional_data:
   CFL: 0.5
 
   solver:
-    IMPSAT: False
-    FI: False
+    IMPSAT: false
 
   MUSCL:
     set: false
@@ -44,11 +41,12 @@ compositional_data:
     ROE: false
     LLF: false
     MDW: false
+    DW: false
 
   #  Pensar em um jeito de reorganizar isso
-  vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [10]
-  maximum_time: 10
+  vpis_para_gravar_vtk: [0.]
+  time_to_save: [864]
+  maximum_time: 864
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -69,9 +67,9 @@ compositional_data:
     delta_t_ini: 0.1
     delta_tmax: 1
     delta_tmin: 0.0001
-  #rever isso de Cw=0 e Pw
+
   water_data:
-    mi_W: 1e-3
+    mi_W: 0.249e-3
     rho_W: 716.0253128
     Mw_w: 18.015e-3
     Cw: 0
@@ -79,18 +77,18 @@ compositional_data:
     mobility: True
 
   residual_saturations:
-    Sorw: 0
+    Sorw: 0.1
     Sorg: 0
-    Swr: 0.
+    Swr: 0.3
     Sgr: 0
 
   relative_permeability_data:
     krw0: 1.0
     krg0: 0.
-    kro0: 0
+    kro0: 0.9
     n_o: 2.
     n_g: 0
-    n_w: 0.
+    n_w: 1.
 
 #decane critical molar density is 1640 mol/m3
   component_data:
@@ -102,7 +100,7 @@ compositional_data:
     w: [0.4890]
     Bin: [0]
     vshift_parameter: [0.085]
-    constant_K: False
+    constant_K: false
 
 #water saturation data
 Saturation:
@@ -124,7 +122,7 @@ Permeability:
 Pressure:
   r1:
     type: all
-    value: 0
+    value: 13.78951458E6
 
 Temperature:
   r1:

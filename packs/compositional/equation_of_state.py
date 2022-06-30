@@ -32,7 +32,7 @@ class PengRobinson:
         self.psi = (l_reshape * self.aalpha_ik[:,:,np.newaxis]).sum(axis = 0)
         return A, B
 
-    def Z_vectorized(self, A, B, ph):
+    def Z_vectorized(self, A, B):
         coef = np.empty([4,len(B.ravel())])
         B_square = B * B
 
@@ -71,34 +71,52 @@ class PengRobinson:
         Zneg2 = Z[lines_Zneg2]
         Zneg2[Zneg2<B[lines_Zneg2,np.newaxis]] = np.repeat(np.max(Z[lines_Zneg2],axis=1, initial=0),2)
         Z[lines_Zneg2] = Zneg2
-
-        #Zsave = Z
-        Z = np.min(Z, axis = 1) * ph + np.max(Z, axis = 1) * (1 - ph)
-        Z = np.real(Z)
-
         return Z
 
-    def lnphi(self, l, P, ph):
-        xkj = l
-        A, B = self.coefficients_cubic_EOS_vectorized(l, P)
-        Z = self.Z_vectorized(A, B, ph)
+    def getZ_by_phase(self, Z, ph):
+        Z = np.min(Z, axis = 1) * ph + np.max(Z, axis = 1) * (1 - ph)
+        Z = np.real(Z)
+        return Z
+
+    def lnphi_Z_deltaG(self, xkj, P, ph):
+        A, B = self.coefficients_cubic_EOS_vectorized(xkj, P)
+        Z_all = self.Z_vectorized(A, B)
+        Z_ph1 = self.getZ_by_phase(Z_all, ph)
+        Z_ph2 = self.getZ_by_phase(Z_all, 1-ph)
+        Z = np.concatenate((Z_ph1[:,np.newaxis],Z_ph2[:,np.newaxis]),axis=-1)
+        lnphi = self.lnphi_calculation_deltaG(A, B, Z)
+        return lnphi, Z
+
+    def lnphi(self, xkj, P, ph):
+        A, B = self.coefficients_cubic_EOS_vectorized(xkj, P)
+        Z_all = self.Z_vectorized(A, B)
+        Z = self.getZ_by_phase(Z_all, ph)
         lnphi = self.lnphi_calculation(A, B, Z)
         if any(np.isnan(lnphi).ravel()): import pdb; pdb.set_trace()
         return lnphi
 
     def lnphi_calculation(self, A, B, Z):
         b_bm = self.b[:,np.newaxis] / self.bm[np.newaxis,:]
-        lnphi = b_bm * (Z[np.newaxis,:] - 1) - np.log((Z[np.newaxis,:] -
-                B[np.newaxis,:])) - A[np.newaxis,:] / (2 * (2 ** (1/2)) * B[np.newaxis,:]) \
+        lnphi = b_bm * (Z[np.newaxis,:] - 1) - np.log((Z - B))[np.newaxis,:] - \
+                (A / (2 * (2 ** (1/2)) * B))[np.newaxis,:] \
                 * (2 * self.psi / self.aalpha[np.newaxis,:] - b_bm) * \
-                np.log((Z[np.newaxis,:] + (1 + 2 ** (1/2)) * B[np.newaxis,:]) /
-                (Z[np.newaxis,:] + (1 - 2 ** (1/2)) * B[np.newaxis,:]))
+                np.log((Z + (1 + 2 ** (1/2)) * B) /
+                (Z + (1 - 2 ** (1/2)) * B))[np.newaxis,:]
         return lnphi
 
+    def lnphi_calculation_deltaG(self, A, B, Z):
+        b_bm = self.b[:,np.newaxis] / self.bm[np.newaxis,:]
+        lnphi = b_bm[...,np.newaxis] * (Z[np.newaxis,:] - 1) - np.log((Z - B[:,np.newaxis])[np.newaxis,:]) - \
+                ((A / (2 * (2 ** (1/2)) * B))[np.newaxis,:] \
+                * (2 * self.psi / self.aalpha[np.newaxis,:] - b_bm))[...,np.newaxis] * \
+                np.log((Z + (1 + 2 ** (1/2)) * B[:,np.newaxis]) /
+                (Z + (1 - 2 ** (1/2)) * B[:,np.newaxis]))[np.newaxis,:]
+        return lnphi
 
     """ Derivatives - Still need to organize this"""
 
     def get_all_derivatives(self, fprop):
+
         x = fprop.xkj[0:ctes.Nc,0,:]
         y = fprop.xkj[0:ctes.Nc,1,:]
         Nl = fprop.Nj[0,0,:]
@@ -121,7 +139,8 @@ class PengRobinson:
 
     def get_phase_derivatives(self, P, T, xij, Nj, ph):
         A, B = self.coefficients_cubic_EOS_vectorized(xij, P)
-        Z = self.Z_vectorized(A, B, ph)
+        Z = self.Z_vectorized(A, B)
+        Z = self.getZ_by_phase(Z, ph)
 
         self.Z_square = Z * Z
         self.B_square = B * B
@@ -244,7 +263,9 @@ class PengRobinson:
         '''Solving system of equations for dnivdNk and dnivdP'''
         dnivdP_aux = dnivdP[:,aux]
         dnivdNk_aux = dnivdNk[:,:,aux]
-        dnivdNk_aux = np.linalg.solve(matrix, dlnfildnij).transpose((1,2,0))
+        try:
+            dnivdNk_aux = np.linalg.solve(matrix, dlnfildnij).transpose((1,2,0))
+        except: import pdb; pdb.set_trace()
         dnivdP_aux =  np.linalg.solve(matrix, v.T).T
 
 
