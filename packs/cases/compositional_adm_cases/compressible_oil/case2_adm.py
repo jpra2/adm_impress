@@ -262,7 +262,6 @@ ALL_GIDS = np.array([
 ])
 
 ALL_VOLUMES_TO_FACES = [elements_lv0.volumes_to_faces(elements_lv0['volumes'])]
-# import pdb; pdb.set_trace()
 
 for i in range(1, 2):
     ff = []
@@ -433,11 +432,10 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         manage_operators.export()
-        # import pdb; pdb.set_trace()
-    
-    # file_name = 'results/test_' + str(loop)
-    # multilevel_visualization.visualize_levels(M, data_impress['LEVEL'], ALL_GIDS, ALL_VOLUMES_TO_FACES, file_name)
-
+        
+        file_name = 'results/test_'
+        multilevel_visualization.visualize_levels(M, data_impress['LEVEL'], ALL_GIDS, ALL_VOLUMES_TO_FACES, file_name, loop, elements_lv0['boundary_faces'])
+            
 
     global_vector_update[:] = False
     total_volumes_updated[:] = False
