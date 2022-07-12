@@ -1,4 +1,5 @@
 import copy
+from tkinter import ALL
 from impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
 
 from packs.directories import data_loaded
@@ -25,6 +26,7 @@ from packs.cases.compositional_adm_cases.compressible_oil import all_functions
 from packs.solvers.solvers_trilinos.solvers_tril import solverTril
 from packs.solvers.solvers_scipy.solver_sp import SolverSp
 from packs.cases.compositional_adm_cases.compressible_oil import descriptions
+from packs.utils import multilevel_visualization
 
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
@@ -125,7 +127,6 @@ volumes_without_grav_level_0 = ml_data['volumes_without_grav_level_0']
 v1 = volumes_without_grav_level_0
 # print(ml_data.keys())
 # import pdb; pdb.set_trace()
-
 mlo = MultilevelOperators(n_levels, data_impress, elements_lv0, ml_data, load=load_operators, get_correction_term=get_correction_term)
 neumann_subds = NeumannSubdomains(elements_lv0, ml_data, data_impress, wells)
 adm = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
@@ -253,6 +254,29 @@ t_simulation = sim.t/86400
 # print_mesh_volumes_data(M, 'results/dual_test.vtk')
 
 global_vector_update[:] = True
+
+ALL_GIDS = np.array([
+    data_impress['GID_0'],
+    data_impress['GID_1'],
+    data_impress['GID_2']
+])
+
+ALL_VOLUMES_TO_FACES = [elements_lv0.volumes_to_faces(elements_lv0['volumes'])]
+# import pdb; pdb.set_trace()
+
+for i in range(1, 2):
+    ff = []
+    cgids = np.unique(ALL_GIDS[i])
+    for cid in cgids:
+        ff.append(
+            np.setdiff1d(
+                ml_data['coarse_faces_level_' + str(i)][cid],
+                ml_data['coarse_internal_faces_level_' + str(i)][cid])    
+            )
+    ff = np.array(ff)
+    ALL_VOLUMES_TO_FACES.append(ff)
+
+ALL_VOLUMES_TO_FACES = np.array(ALL_VOLUMES_TO_FACES, dtype='O')
 
 while run_criteria < stop_criteria:# and loop < loop_max:
 # while t_simulation < tmax_simulation:
@@ -410,6 +434,9 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         cumulative_compositional_datamanager.export()
         manage_operators.export()
         # import pdb; pdb.set_trace()
+    
+    # file_name = 'results/test_' + str(loop)
+    # multilevel_visualization.visualize_levels(M, data_impress['LEVEL'], ALL_GIDS, ALL_VOLUMES_TO_FACES, file_name)
 
 
     global_vector_update[:] = False
@@ -439,6 +466,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     if loop % 2500 == 0:
         print('sleeping...')
         time.sleep(5)
+    
 
 
 loop_array['loop'][0] = loop
