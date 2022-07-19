@@ -15,6 +15,23 @@ class RiemannSolvers:
         self.v0 = v0
         self.pretransmissibility = pretransmissibility
 
+    def UPW(self, M, fprop, Nk_face, P_face, Ft_internal, Fk_face, ponteiro_UPW):
+        #"upwind direction"
+        Pot_hid = fprop.P + fprop.Pcap #- G[0,:,:]
+        Pot_hidj = Pot_hid[0,ctes.v0[:,0]]
+        Pot_hidj_up = Pot_hid[0,ctes.v0[:,1]]
+        Fk_internal_faces = np.copy(Fk_face[...,0])
+        Fk_internal_faces[:,Pot_hidj>Pot_hidj_up] = np.copy(Fk_face[:,Pot_hidj>Pot_hidj_up,1])
+
+        ponteiro = np.ones(ctes.n_internal_faces,dtype=bool)
+        #dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-20
+        #ponteiro[dNkmax_small] = False
+        wave_velocity = np.zeros((ctes.n_components, ctes.n_internal_faces))
+        if any(ponteiro): #try to remove this if
+            wave_velocity[:,ponteiro],m = self.medium_wave_velocity(M, fprop, Nk_face, P_face, \
+            Ft_internal, ponteiro)
+        return Fk_internal_faces, wave_velocity
+
     def ROE_entropy_correction(self, wave_velocity):
         wave_velocity_LR = wave_velocity[:,:,:2]
         C1 = ((wave_velocity_LR[:,:,0]<=0) * (wave_velocity_LR[:,:,1]>=0))
@@ -47,8 +64,15 @@ class RiemannSolvers:
         if any(ponteiro):
             alpha_5[:,ponteiro,:], eigvec_m = self.wave_velocity_LLF(M, fprop, Nk_face,
                                 P_face, ftotal, ponteiro)
+
+        alpha_LR, alpha_m, eigvec_m = self.LRM_wave_velocity(M, fprop, Nk_face,
+                                P_face, ftotal, ponteiro)
+        alpha_5 = np.concatenate((alpha_LR,alpha_m[...,np.newaxis]),axis=-1)
+
         #alpha_5[:,~ponteiro] = 0
         #alpha_5[dNk_small] = 0
+        #alpha_5, eigvec_m = self.LR_wave_velocity(M, fprop, Nk_face,
+        #                        P_face, ftotal, ponteiro)
         alpha_LLF = np.max(abs(alpha_5),axis=0) #* ctes.ds_faces[:,np.newaxis]
 
         Fk_internal_faces = np.zeros_like(Fk_face[...,0])
@@ -73,7 +97,7 @@ class RiemannSolvers:
                     P_face, ftotal, Fk_face, np.copy(ponteiro))
             alpha_MDW = np.max(abs(alpha_MDW_),axis=-1)
 
-        alphaLR = self.LR_wave_velocity(M, fprop, Nk_face, P_face, \
+        alphaLR,e = self.LR_wave_velocity(M, fprop, Nk_face, P_face, \
             ftotal, np.copy(ponteiro))
         alphaLRmax = np.max(abs(alphaLR),axis=0)
         alpha_max = np.max(alphaLRmax,axis=-1)
@@ -143,19 +167,20 @@ class RiemannSolvers:
         alpha[:,ponteiro_MDW] = alpha_MDW
         return Fk_internal_faces, alpha
 
-    def ROE_LLF(self, M, fprop, Nk_face, P_face, ftotal, Fk_face):
-        ponteiro = np.ones_like(ftotal[0],dtype=bool)
+    def ROE(self, M, fprop, Nk_face, P_face, ftotal, Fk_face, ponteiro):
+        #ponteiro = np.ones_like(ftotal[0],dtype=bool)
         Vpm = fprop.Vp[ctes.v0].sum(axis=-1)/2
         alpha_5, eigvec_m = self.wave_velocity_LLF(M, fprop, Nk_face, P_face, \
             ftotal, ponteiro)
-        alpha_m = alpha_5[...,-1]
+        alpha_m = np.max(abs(alpha_5),axis=-1)
         alpha_LLF = np.max(abs(alpha_5),axis=0)
         alpha_m = self.Harten_entropy_corr(alpha_m, alpha_5[...,[0,1]])
         ponteiro_LLF = self.umbilic_points(alpha_m)
         Fk_internal_faces = np.empty_like(Fk_face[...,0])
+        ponteiro_LLF[:] = False
 
-        Fk_internal_faces[...,ponteiro_LLF] = self.update_flux_LLF(Fk_face[:,ponteiro_LLF],
-            Nk_face[:,ponteiro_LLF], alpha_LLF[ponteiro_LLF,:])
+        '''Fk_internal_faces[...,ponteiro_LLF] = self.update_flux_LLF(Fk_face[:,ponteiro_LLF],
+            Nk_face[:,ponteiro_LLF], alpha_LLF[ponteiro_LLF,:])'''
 
         eigvec_m_ROE = eigvec_m[...,~ponteiro_LLF]
         real_eigvecs = np.isreal(eigvec_m_ROE)
@@ -163,7 +188,6 @@ class RiemannSolvers:
         if any(~real_eigvecs.flatten()): import pdb; pdb.set_trace()
 
         eigvec_m_ROE = np.real(eigvec_m_ROE)
-
         Fk_internal_faces[...,~ponteiro_LLF] = self.update_flux_ROE(Fk_face[:,~ponteiro_LLF],
             Nk_face[:,~ponteiro_LLF], alpha_m[:,~ponteiro_LLF], eigvec_m_ROE)
 
@@ -388,7 +412,7 @@ class RiemannSolvers:
 
         eigval1, v = np.linalg.eig(dFkdNk)
         dFkdNk_eigvalue = eigval1.T
-        return dFkdNk_eigvalue
+        return dFkdNk_eigvalue, v
 
     def LRM_wave_velocity(self, M, fprop, Nk_face, P_face, ftotal, ponteiro):
 

@@ -453,7 +453,7 @@ for arq in arquivos:
         for data in datas[1:]:
             Nk80_FR4med = 1/2*np.sum(GL.weights*data[12][0], axis=-1)
 
-
+        
         plt.figure(1)
         plt.plot(x8_2, Nk8_FR, '-b^', x16_2, Nk16_FR, '-yo', x32_2, Nk32_FR, '-rv',
                 x64_2, Nk64_FR, '-gs', x128_2, Nk128_FR, '-m<', x256_2, Nk256_FR, '-cP')

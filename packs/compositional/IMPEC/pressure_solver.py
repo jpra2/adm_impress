@@ -93,7 +93,7 @@ class TPFASolver:
             print('hit: ', np.max(abs(volume_discrepancy_term)))
         return volume_discrepancy_term
 
-    def well_term(self, fprop, wells):
+    def well_term(self, wells):
         self.q = np.zeros([ctes.n_components, ctes.n_volumes])
         well_term = np.zeros(ctes.n_volumes)
         if len(wells['ws_q']) > 0:
@@ -106,7 +106,7 @@ class TPFASolver:
         self.pressure_term = self.pressure_independent_term(fprop, Pold)
         self.capillary_term, self.gravity_term = self.capillary_and_gravity_independent_term(fprop)
         self.volume_term = self.volume_discrepancy_independent_term(fprop)
-        well_term = self.well_term(fprop, wells)
+        well_term = self.well_term(wells)
         independent_terms = self.pressure_term - self.volume_term  + delta_t * \
             well_term - delta_t * (self.capillary_term + self.gravity_term)
         independent_terms[wells['ws_p']] = wells['values_p'] + ctes.g * \
@@ -131,13 +131,16 @@ class TPFASolver:
 
     def update_flux_wells(self, fprop, Pnew, wells, delta_t):
         wp = wells['ws_p']
-
+        fprop.qt_inj = wells['values_q_vol']
         if len(wp)>=1:
 
             #if Pnew[0]<Pnew[1]: import pdb; pdb.set_trace()
             well_term =  (self.T_noCC[wp,:] @ Pnew - self.pressure_term[wp] +
                 self.volume_term[wp]) / delta_t  + self.capillary_term[wp] + \
                 self.gravity_term[wp]
+            #import pdb; pdb.set_trace()
+            if (len(wp)>1) and (well_term[0]<0):
+                well_term = -well_term
             mob_ratio = fprop.mobilities[:,:,wp] / np.sum(fprop.mobilities[:,:,wp], axis = 1)
 
             q_term = fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp]
@@ -145,6 +148,8 @@ class TPFASolver:
             ws_p_inj = np.argwhere(wells['ws_p']==wells['ws_inj']).flatten()
             q_term[...,ws_p_inj] = wells['inj_p_term']
             #import pdb; pdb.set_trace()
+            fprop.qt_inj = well_term[ws_p_inj]
+
 
             self.q[:,wp] = np.sum(q_term * well_term, axis = 1)
             fprop.qk_prod = self.q[:,wells['ws_prod']]

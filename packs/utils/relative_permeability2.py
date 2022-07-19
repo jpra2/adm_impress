@@ -24,11 +24,13 @@ class BrooksAndCorey:
 
         Sorg = np.ones_like(saturations[2]) * self.Sorg
         Sorw = np.ones_like(saturations[2]) * self.Sorw
-        Swr = np.ones(saturations[2].shape) * self.Swr
+        Swr = np.ones_like(saturations[2]) * self.Swr
+        Sgr = np.ones_like(saturations[2]) * self.Sgr
 
         Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
         Sorg[saturations[0] < self.Sorg] = saturations[0][saturations[0] < self.Sorg]
-        Swr[saturations[2] < Swr] = saturations[2][saturations[2] < Swr]
+        Swr[saturations[2] < self.Swr] = saturations[2][saturations[2] < self.Swr]
+        Sgr[saturations[1] < self.Sgr] = saturations[1][saturations[1] < self.Sgr]
 
         Sor = Sorw * (1 - saturations[1] / (1 - Swr - Sorg)) + \
                     Sorg * saturations[1] / (1 - Swr - Sorg)
@@ -36,9 +38,9 @@ class BrooksAndCorey:
 
         Sor[saturations[0] < Sor] = saturations[0][saturations[0] < Sor]
 
-        krw = self.krw0 * ((saturations[2] - Swr) / (1 - Swr - Sorw - self.Sgr)) ** self.n_w
-        kro = self.kro0 * ((saturations[0] - Sor) / (1 - Swr - Sorw - self.Sgr)) ** self.n_o
-        krg = self.krg0 * ((saturations[1] - self.Sgr) / (1 - Swr - Sorw - self.Sgr)) ** self.n_g
+        krw = self.krw0 * ((saturations[2] - Swr) / (1 - Swr - Sorw - Sgr)) ** self.n_w
+        kro = self.kro0 * ((saturations[0] - Sor) / (1 - Swr - Sorw - Sgr)) ** self.n_o
+        krg = self.krg0 * ((saturations[1] - Sgr) / (1 - Swr - Sorw - Sgr)) ** self.n_g
 
         #self.Sor = Sor; self.Swr = Swr
         '''parachor_number = np.array([71, 191, 431]) #entry parameter in grams.mole
@@ -66,12 +68,13 @@ class BrooksAndCorey:
 
         Sorg = np.ones_like(saturations[2]) * self.Sorg
         Sorw = np.ones_like(saturations[2]) * self.Sorw
-        Swr = np.ones(saturations[2].shape) * self.Swr
+        Swr = np.ones_like(saturations[2]) * self.Swr
+        Sgr = np.ones_like(saturations[2]) * self.Sgr
 
         Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
-        Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
         Sorg[saturations[0] < self.Sorg] = saturations[0][saturations[0] < self.Sorg]
-        Swr[saturations[2] < Swr] = saturations[2][saturations[2] < Swr]
+        Swr[saturations[2] < self.Swr] = saturations[2][saturations[2] < self.Swr]
+        Sgr[saturations[1] < self.Sgr] = saturations[1][saturations[1] < self.Sgr]
 
         Sor = Sorw * (1 - saturations[1] / (1 - Swr - Sorg)) + \
                     Sorg * saturations[1] / (1 - Swr - Sorg)
@@ -80,7 +83,7 @@ class BrooksAndCorey:
 
         den_w = (saturations[2] - Swr)
         den_o = (saturations[0] - Sor)
-        den_g = (saturations[1] - self.Sgr)
+        den_g = (saturations[1] - Sgr)
         den = np.array([den_o, den_g, den_w])
 
         dSordSj_par = (Sorw-Sorg)/(1 - Swr - Sorg)
@@ -118,16 +121,25 @@ class StoneII:
 
     def relative_permeabilities(self, saturations):
         #saturations = [So,Sg,Sw]
+        Sorg = np.ones_like(saturations[2]) * self.Sorg
+        Sorw = np.ones_like(saturations[2]) * self.Sorw
+        Swr = np.ones_like(saturations[2]) * self.Swr
+        Sgr = np.ones_like(saturations[2]) * self.Sgr
 
-        Sor = self.Sorw * (1 - saturations[1] / (1 - self.Swr - self.Sorg)) + \
-                    self.Sorg * saturations[1] / (1 - self.Swr - self.Sorg)
+        '''Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
+        Sorg[saturations[0] < self.Sorg] = saturations[0][saturations[0] < self.Sorg]
+        Swr[saturations[2] < self.Swr] = saturations[2][saturations[2] < self.Swr]
+        Sgr[saturations[1] < self.Sgr] = saturations[1][saturations[1] < self.Sgr]'''
+
+        Sor = Sorw * (1 - saturations[1] / (1 - Swr - Sorg)) + \
+                    Sorg * saturations[1] / (1 - Swr - Sorg)
 
         #Sor[saturations[0] < Sor] = saturations[0][saturations[0] < Sor]
 
-        krw = self.krw0 * ((saturations[2] - self.Swr) / (1 - self.Swr - self.Sorw)) ** self.n_w
-        krg = self.krg0 * ((saturations[1] - self.Sgr) / (1 - self.Swr - self.Sorg - self.Sgr)) ** self.n_g
-        krow = self.krow0 * ((1 - saturations[2] - self.Sorw) / (1 - self.Swr - self.Sorw)) ** self.n_ow
-        krog = self.krog0 * ((1. - saturations[1] - self.Sorg - self.Swr) / (1 - self.Swr - self.Sgr - self.Sorg)) ** self.n_og
+        krw = self.krw0 * ((saturations[2] - Swr) / (1 - Swr - Sorw)) ** self.n_w
+        krg = self.krg0 * ((saturations[1] - Sgr) / (1 - Swr - Sorg - Sgr)) ** self.n_g
+        krow = self.krow0 * ((1 - saturations[2] - Sorw) / (1 - Swr - Sorw)) ** self.n_ow
+        krog = self.krog0 * ((1. - saturations[1] - Sorg - Swr) / (1 - Swr - Sgr - Sorg)) ** self.n_og
 
         krw[saturations[2] <= self.Swr] = 0
         krow[saturations[2]<= self.Swr] = self.krow0
@@ -173,25 +185,43 @@ class StoneII:
         krw = krs[0,-1,:]
         krg = krs[0,1,:]
 
-        krow = self.krow0 * ((1 - saturations[2] - self.Sorw) / (1 - self.Swr - self.Sorw)) ** self.n_ow
-        krog = self.krog0 * ((1. - saturations[1] - self.Sorg - self.Swr) / (1 - self.Swr - self.Sgr - self.Sorg)) ** self.n_og
+        Sorg = np.ones_like(saturations[2]) * self.Sorg
+        Sorw = np.ones_like(saturations[2]) * self.Sorw
+        Swr = np.ones_like(saturations[2]) * self.Swr
+        Sgr = np.ones_like(saturations[2]) * self.Sgr
 
-        krow[saturations[2]<= self.Swr] = self.krow0
-        krow[saturations[0]<= self.Sorw] = 0
-        krog[saturations[0]<= self.Sorg] = 0
+        Sorw[saturations[0] < self.Sorw] = saturations[0][saturations[0] < self.Sorw]
+        Sorg[saturations[0] < self.Sorg] = saturations[0][saturations[0] < self.Sorg]
+        Swr[saturations[2] < self.Swr] = saturations[2][saturations[2] < self.Swr]
+        Sgr[saturations[1] < self.Sgr] = saturations[1][saturations[1] < self.Sgr]
 
-        dkrwdSw = krw * self.n_w / (saturations[2] - self.Swr)
-        dkrwdSw[saturations[2] <= self.Swr] = 0
-        dkrgdSg = krg * self.n_g / (saturations[1] - self.Sgr)
-        dkrgdSg[(saturations[1] <= self.Sgr)] = 0
-        dkrowdSw = - krow * self.n_ow / (1 - saturations[2] - self.Sorw)
+        Sor = Sorw * (1 - saturations[1] / (1 - Swr - Sorg)) + \
+                    Sorg * saturations[1] / (1 - Swr - Sorg)
+
+        Sor[saturations[0] < Sor] = saturations[0][saturations[0] < Sor]
+
+        krow = self.krow0 * ((1 - saturations[2] - Sorw) / (1 - Swr - Sorw)) ** self.n_ow
+        krog = self.krog0 * ((1. - saturations[1] - Sorg - Swr) / (1 - Swr - Sgr - Sorg)) ** self.n_og
+
+        krow[saturations[0]<= Sorw] = 0
+        krog[saturations[0]<= Sorg] = 0
+
+        dkrwdSw = krw * self.n_w / (saturations[2] - Swr)
+        dkrwdSw[saturations[2] == Swr] = 0
         dkrwdSo = -dkrwdSw
         dkrwdSg = -dkrwdSw
+
+        dkrgdSg = krg * self.n_g / (saturations[1] - Sgr)
+        dkrgdSg[(saturations[1] == Sgr)] = 0
         dkrgdSo = -dkrgdSg
         dkrgdSw = -dkrgdSg
+
+        dkrowdSw = - krow * self.n_ow / (1 - saturations[2] - Sorw)
+        dkrowdSw[(1 - saturations[2]) == Sorw] = 0
         dkrowdSo = - dkrowdSw
         dkrowdSg = - dkrowdSw
-        dkrogdSg = - krog * self.n_og / (1. - saturations[1] - self.Sorg - self.Swr)
+
+        dkrogdSg = - krog * self.n_og / (1. - saturations[1] - Sorg - Swr)
         dkrogdSw = - dkrogdSg
         dkrogdSo = - dkrogdSg
 

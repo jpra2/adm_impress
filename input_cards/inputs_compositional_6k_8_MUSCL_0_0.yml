@@ -5,7 +5,7 @@ name_save_file: 'results_water_inj_6k_8_MUSCL_modified_case'
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
-water_component: True
+water_component: Tr ue
 use_vpi: False
 
 

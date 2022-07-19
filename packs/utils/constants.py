@@ -23,23 +23,57 @@ def init(M, wells):
     global vols_no_wells
     global ds_faces
     global P_SC
+    global T_SC
     global n_points
+    global time_integration
+    global hyperbolic_method
 
     P_SC = 101325
+    T_SC = 288.706
 
     EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
-    MUSCL = data_loaded['compositional_data']['MUSCL']['set']
+    MUSCL = dict()
+    MUSCL['set'] = data_loaded['compositional_data']['MUSCL']['set']
+    if MUSCL['set']:
+        if data_loaded['compositional_data']['MUSCL']['minmod']:
+            MUSCL['lim'] = 'minmod'
+        elif data_loaded['compositional_data']['MUSCL']['VanAlbada1']:
+            MUSCL['lim'] = 'Van_Albada1'
+        elif data_loaded['compositional_data']['MUSCL']['VanLeer']:
+            MUSCL['lim'] = 'Van_Leer'
+        else: raise NameError('Missing inform the limiting strategy for MUSCL')
+
     FR = data_loaded['compositional_data']['FR']['set']
 
-    if MUSCL: n_points = 2
+    if data_loaded['compositional_data']['MUSCL']['set']:
+        hyperbolic_method = 'MUSCL'
+    elif data_loaded['compositional_data']['FR']['set']:
+        hyperbolic_method = 'FR'
+
+    if MUSCL['set']: n_points = 2
     elif FR: n_points = data_loaded['compositional_data']['FR']['order']
     else: n_points=1
 
-    RS = dict()
-    RS['LLF'] = data_loaded['compositional_data']['RiemannSolver']['LLF']
-    RS['MDW'] = data_loaded['compositional_data']['RiemannSolver']['MDW']
-    RS['DW'] = data_loaded['compositional_data']['RiemannSolver']['DW']
-    RS['ROE'] = data_loaded['compositional_data']['RiemannSolver']['ROE']
+    #RS = dict()
+    if data_loaded['compositional_data']['RiemannSolver']['LLF']:
+        RS = 'LLF'
+    elif data_loaded['compositional_data']['RiemannSolver']['MDW']:
+        RS = 'MDW'
+    elif data_loaded['compositional_data']['RiemannSolver']['DW']:
+        RS = 'DW'
+    elif data_loaded['compositional_data']['RiemannSolver']['ROE']:
+        RS = 'ROE'
+    else:
+        RS = 'UPW'
+        print('No Riemann Solver was marked -> default: traditional upwind')
+
+    if data_loaded['compositional_data']['time_integration']['Euler']:
+        time_integration = 'Euler'
+
+    elif data_loaded['compositional_data']['time_integration']['RK3']:
+        time_integration = 'RK3'
+    else: raise NameError('Missing inform the time integration method used')
+
 
     Pf = np.array(data_loaded['compositional_data']['Pf']).astype(float)
     Cf = np.array(data_loaded['compositional_data']['rock_compressibility']).astype(float)
