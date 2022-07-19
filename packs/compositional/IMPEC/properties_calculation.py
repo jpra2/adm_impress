@@ -198,12 +198,14 @@ class PropertiesCalc:
             #phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
             #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test; 0.000249 for 2D injec Li
             phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
+
             #phase_viscosities[0,0,:] = 6.5447e-4
             #phase_viscosities[0,1,:] = 2.048e-5
             #phase_viscosities[0,0,:] = 0.01
             #phase_viscosities[0,1,:] = 0.001#1/5*phase_viscosities[0,0,:] #for 5k NVCM case mug=muo; for 3k Orr NVCM mug=1/5muo
         if ctes.load_w:
             phase_viscosities[0,ctes.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
+
         return phase_viscosities
 
     def update_mobilities(self, fprop, So, Sg, Sw, Csi_j, xkj):

@@ -98,6 +98,7 @@ compositional_data:
     n_g: 2.
     n_w: 2.
 
+
 #  C1 C3 C6 C10 C15 C20
   component_data:
     z: [0.5, 0.03, 0.07, 0.2, 0.15, 0.05]

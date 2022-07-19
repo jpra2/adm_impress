@@ -23,11 +23,13 @@ def init(M, wells):
     global vols_no_wells
     global ds_faces
     global P_SC
+    global T_SC
     global n_points
     global time_integration
     global hyperbolic_method
 
     P_SC = 101325
+    T_SC = 288.706
 
     EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
     MUSCL = dict()
@@ -71,7 +73,7 @@ def init(M, wells):
     elif data_loaded['compositional_data']['time_integration']['RK3']:
         time_integration = 'RK3'
     else: raise NameError('Missing inform the time integration method used')
-    
+
 
     Pf = np.array(data_loaded['compositional_data']['Pf']).astype(float)
     Cf = np.array(data_loaded['compositional_data']['rock_compressibility']).astype(float)
