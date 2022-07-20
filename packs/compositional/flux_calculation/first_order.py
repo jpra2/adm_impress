@@ -114,7 +114,7 @@ class FirstOrder:
         Pot_hidj = Pot_hid[:,ctes.v0[:,0]]
         Pot_hidj_up = Pot_hid[:,ctes.v0[:,1]]
 
-        Pot_hidj_up = -Pot_hidj
+        #Pot_hidj_up = -Pot_hidj
 
         prop_face = np.zeros([prop.shape[0], prop.shape[1], ctes.n_internal_faces])
         prop_vols = prop[:,:,ctes.v0[:,0]]

@@ -27,6 +27,7 @@ sim = run_simulation(name_current, name_all)
 M, data_impress, wells, fprop, load = sim.initialize(load, convert, mesh)
 
 while run_criteria < stop_criteria:# and loop < loop_max:
+    #import pdb; pdb.set_trace()
     sim.run(M, wells, fprop, load)
     #import pdb; pdb.set_trace()
     if data_loaded['use_vpi']:
@@ -60,7 +61,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
 
 
 tf = time.time()
-#print('Total computational time: ', tf-t) #total simulation time
+print('Total computational time: ', tf-t) #total simulation time
 print('Loops: ', sim.loop)
 import pdb; pdb.set_trace()
 sim.save_infos(data_impress, M) #Save data to file

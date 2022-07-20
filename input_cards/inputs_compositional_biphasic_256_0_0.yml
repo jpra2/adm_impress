@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
-mesh_name: 32x1x1_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_32_FI_JACOBI'
+mesh_name: 256x1x1_BL.msh
+name_save_file: 'results_Buckley_Leverett_case_256_IMPEC'
 
 compositional: True
 hidrocarbon_components: True
@@ -29,7 +29,7 @@ compositional_data:
 
   solver:
     IMPSAT: false
-    FI: true
+    FI: false
 
   MUSCL:
     set: false
@@ -39,7 +39,7 @@ compositional_data:
 
   FR:
     set: false
-    order: 4
+    order: 2
 
   RiemannSolver:
     ROE: false
@@ -69,10 +69,10 @@ compositional_data:
   time_data:
     deltaPlim: 7
     deltaNlim: 100
-    deltaSlim: 0.8
+    deltaSlim: 50
     deltaVlim: 100
-    delta_t_ini: 10
-    delta_tmax: 16
+    delta_t_ini: 0.1
+    delta_tmax: 10
     delta_tmin: 0.001
     #2.765
 
@@ -144,7 +144,7 @@ Temperature:
 Wells:
   P1:
     p0: [0.0, 0.0, 0]
-    p1: [0.01905, 0.03048, 0.03048]
+    p1: [0.00238125, 0.03048, 0.03048]
     prescription: Q
     type: Injector
     type_region: box
@@ -155,7 +155,7 @@ Wells:
     value_type: volumetric
 
   P2:
-    p0: [0.59055, 0.0, 0.0]
+    p0: [0.60721875, 0.0, 0.0]
     p1: [0.6096, 0.03048, 0.03048]
     prescription: P
     type: Producer

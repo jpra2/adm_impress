@@ -51,7 +51,7 @@ for arq in arquivos:
             time_FI_new = data[3]
             
 
-        plt.figure(1)
+        """plt.figure(1)
         plt.title('BL Pressure - 64x1x1 mesh')
         plt.plot(x1, pressure, 'k')
         plt.plot(x1, pressure_FI, '-bo')
@@ -60,21 +60,22 @@ for arq in arquivos:
         plt.xlabel('Distance')
         plt.legend(('IMPEC', 'Fully Implicit - back', 'Fully Implicit - new'))
         plt.grid()
-        plt.savefig('results/BL_Pressure_64_1_2' + '{}'.format(n) + '.png')
+        plt.savefig('results/BL_Pressure_64_1_2' + '{}'.format(n) + '.png')"""
 
         plt.figure(2)
         plt.title('BL Sw - 64x1x1 mesh')
-        plt.plot(x1, Sw, 'k')
-        plt.plot(x1, Sw_FI, '-bo')
-        plt.plot(xD, SwD, 'g')
-        plt.plot(x1, Sw_FI_new, '-r+')
-        plt.legend(('IMPEC', 'Fully Implicit - back', 'Analytical Solution', 'Fully Implicit - new'))
+        #plt.plot(x1, Sw, 'k')
+        #plt.plot(x1, Sw_FI, '-bo')
+        plt.plot(xD, SwD, 'b')
+        plt.plot(x1, Sw_FI_new, 'r')
+        plt.legend(('Analytical Solution', 'Fully Implicit'))
+        #plt.legend(('IMPEC', 'Fully Implicit - back', 'Analytical Solution', 'Fully Implicit - new'))
         plt.ylabel('Water saturation')
         plt.xlabel('Distance')
         plt.grid()
         plt.savefig('results/BL_Sw_64_1_2' + '{}'.format(n) + '.png')
 
-        plt.figure(3)
+        """plt.figure(3)
         plt.title('BL So - 64x1x1 mesh')
         plt.plot(x1, So, 'k')
         plt.plot(x1, So_FI, '-bo')
@@ -94,6 +95,6 @@ for arq in arquivos:
         plt.ylabel('Saturação de gás ')
         plt.xlabel('Distância')
         plt.grid()
-        plt.savefig('results/BL_Sg_64_1_2' +'{}'.format(n) + '.png')
+        plt.savefig('results/BL_Sg_64_1_2' +'{}'.format(n) + '.png')"""
 
         import pdb; pdb.set_trace()

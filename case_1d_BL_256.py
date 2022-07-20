@@ -12,23 +12,9 @@ SwD = np.loadtxt('case_plots/Sw_BL_semi_analytical.txt')
 
 for arq in arquivos:
     if  arq.startswith(name):
-        n=128
+        n=256
 
-        datas = np.load('flying/BL_Teste2/results_Buckley_Leverett_case_128_IMPEC_TESTE2_246.npy', allow_pickle=True)
-        #import pdb; pdb.set_trace()
-        for data in datas[1:]:
-            Sw = data[5]
-            So = data[6]
-            Sg = data[7]
-            Oil_p = data[8]
-            Gas_p = data[9]
-            pressure = data[4]/1e3
-            time = data[3]
-            x1 = np.linspace(0.0, 0.6096, n)
-            x1 = x1/0.6096
-            #import pdb; pdb.set_trace()
-
-        datas2 = np.load('flying/BL_Teste2/results_Buckley_Leverett_case_128_FI_139.npy', allow_pickle=True)
+        datas2 = np.load('flying/results_Buckley_Leverett_case_256_FI_1384.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas2[1:]:
             Sw_FI = data[5]
@@ -38,21 +24,12 @@ for arq in arquivos:
             Gas_p_FI = data[9]
             pressure_FI = data[4]/1e3
             time_FI = data[3]
-
-        datas3 = np.load('flying/BL_Teste2/results_Buckley_Leverett_case_128_FI_TESTE_139.npy', allow_pickle=True)
-        #import pdb; pdb.set_trace()
-        for data in datas3[1:]:
-            Sw_FI_new = data[5]
-            So_FI_new = data[6]
-            Sg_FI_new = data[7]
-            Oil_p_FI_new = data[8]
-            Gas_p_FI_new = data[9]
-            pressure_FI_new = data[4]/1e3
-            time_FI_new = data[3]
+            x1 = np.linspace(0.0, 0.6096, n)
+            x1 = x1/0.6096
             
 
         """plt.figure(1)
-        plt.title('BL Pressure - 128x1x1 mesh')
+        plt.title('BL Pressure - 256x1x1 mesh')
         plt.plot(x1, pressure, 'k')
         plt.plot(x1, pressure_FI, 'b')
         plt.plot(x1, pressure_FI_new, 'r')
@@ -63,17 +40,16 @@ for arq in arquivos:
         plt.savefig('results/BL_Pressure_128_1_2' + '{}'.format(n) + '.png')"""
 
         plt.figure(2)
-        plt.title('BL Sw - 128x1x1 mesh')
+        plt.title('BL Sw - 256x1x1 mesh')
         #plt.plot(x1, Sw, 'k')
-        #plt.plot(x1, Sw_FI, 'b')
+        plt.plot(x1, Sw_FI, 'r')
         plt.plot(xD, SwD, 'b')
-        plt.plot(x1, Sw_FI_new, 'r')
-        plt.legend(('Analytical Solution', 'Fully Implicit'))
-        #plt.legend(('IMPEC', 'Fully Implicit - back', 'Analytical Solution', 'Fully Implicit - new'))
+        #plt.plot(x1, Sw_FI_new, 'r')
+        plt.legend(('Fully Implicit', 'Analytical Solution'))
         plt.ylabel('Water saturation')
         plt.xlabel('Distance')
         plt.grid()
-        plt.savefig('results/BL_Sw_' + '{}'.format(n) + '.png')
+        plt.savefig('results/BL_Sw_256' + '{}'.format(n) + '.png')
 
         """plt.figure(3)
         plt.title('BL So - 128x1x1 mesh')

@@ -19,6 +19,8 @@ class CompositionalFVM:
         else: self.get_faces_properties_upwind(fprop, G)'''
         self.get_faces_properties_upwind(fprop, G)
         self.get_phase_densities_internal_faces(fprop)
+        face_properties = self.get_faces_properties_upwind
+        phase_densities = self.get_phase_densities_internal_faces
 
         r = 0.8 # enter the while loop
 
@@ -40,7 +42,7 @@ class CompositionalFVM:
 
             solve = NewtonSolver(fprop)
             Fk_vols_total, wave_velocity, total_flux_internal_faces = \
-                solve.solver(wells, fprop, delta_t, Nk_old, G, flash, StabilityCheck, p1, M)
+                solve.solver(wells, fprop, delta_t, Nk_old, G, flash, StabilityCheck, p1, M, face_properties, phase_densities)
 
             # Depois de convergir:
             #fprop = copy.deepcopy(fprop_aux)
