@@ -15,10 +15,15 @@ else:
     from packs.compositional.IMPEC.compositionalIMPEC import CompositionalFVM
     from packs.compositional.IMPEC.properties_calculation import PropertiesCalc
 
-if data_loaded['compositional_data']['component_data']['constant_K']:
-    from packs.compositional.Kflash import StabilityCheck
+if data_loaded['water_miscible']:
+    from packs.compositional.stability_check_3ph import StabilityCheck
 else:
-    from packs.compositional.stability_check import StabilityCheck
+    if data_loaded['compositional_data']['component_data']['constant_K']:
+        from packs.compositional.Kflash import StabilityCheck
+    else:
+        from packs.compositional.stability_check import StabilityCheck
+
+
 
 class run_simulation:
     '''Class created to compute simulation properties at each simulation time'''
@@ -67,57 +72,54 @@ class run_simulation:
     def get_well_inj_properties(self, M, fprop, wells):
 
         z = (wells['z']).T
+        
         if (wells['ws_p']!=wells['ws_inj']): wells['inj_p_term'] = []
         #q_wells = wells['ws_inj']#[wells['inj_cond']=='reservoir']
-        if ctes.load_k and any(z[0:ctes.Nc].flatten()>0):
+        if not ctes.miscible_w: z = z[0:ctes.Nc]
+        if ctes.load_k and any(z.flatten()>0):
             if any(wells['inj_cond']=='reservoir'):
                 P = fprop.P[wells['ws_inj']]
             else:
                 P = np.array([ctes.P_SC])
 
             p_well = StabilityCheck(P, fprop.T)
-            L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-                p_well.run_init(P, z[0:ctes.Nc])
+            L, V, A, xkj_ws, Csi_j_ws, rho_j_ws =  \
+                p_well.run_init(P, z, ksi_W = fprop.Csi_W[wells['ws_inj']], \
+                rho_W = fprop.rho_W[wells['ws_inj']])
+        else:
+            L=np.zeros_like(wells['ws_inj']); V=np.copy(L)
+            A = np.ones_like(wells['ws_inj'])
+            Csi_j_ws = np.zeros_like(fprop.Csi_j[...,wells['ws_inj']])
+            Csi_j_ws[-1,-1,:] = fprop.Csi_W[wells['ws_inj']]
+            rho_j_ws = np.zeros_like(fprop.rho_j[...,wells['ws_inj']])
+            rho_j_ws[-1,-1,:] = fprop.rho_W[wells['ws_inj']]
+            xkj_ws = np.zeros_like(fprop.xkj[...,wells['ws_inj']])
+            xkj_ws[-1,1,:] = 1
 
-            'if the injector well has a prescribed pressure condition'
+        'if the injector well has a prescribed pressure condition'
 
-            ws_p_inj_ind = np.argwhere(wells['ws_p']==wells['ws_inj'])
-            ws_p_inj = wells['ws_p'][ws_p_inj_ind].flatten()
-            ws_inj_p = np.argwhere(wells['ws_inj']==wells['ws_p']).flatten()
+        ws_p_inj_ind = np.argwhere(wells['ws_p']==wells['ws_inj'])
+        ws_p_inj = wells['ws_p'][ws_p_inj_ind].flatten()
+        ws_inj_p = np.argwhere(wells['ws_inj']==wells['ws_p']).flatten()
 
-            fprop.z[..., ws_p_inj] = z[0:ctes.Nc,ws_inj_p]
-            xkj_ws = np.ones((ctes.n_components,ctes.n_phases,len(ws_p_inj)))
-            xkj_ws[:ctes.Nc,0] = x[...,ws_inj_p]
-            xkj_ws[:ctes.Nc,1] = y[...,ws_inj_p]
-            mobility_ratio_ws = np.empty((1,ctes.n_phases,len(ws_p_inj)))
-            Csi_j_ws = np.empty((1,ctes.n_phases,len(ws_p_inj)))
+        fprop.z[..., ws_p_inj] = z[:,ws_inj_p]
 
-            if ctes.load_w:
-                xkj_ws[:ctes.Nc,-1] = 0
-                xkj_ws[-1,:-1] = 0
-                Csi_j_ws[:,2,:] = fprop.Csi_W
-                mobility_ratio_ws[:,2,:] = 0 #?? CHANGE THIS!!
+        mobility_ratio_ws = np.empty((1,ctes.n_phases,len(ws_p_inj)))
 
-            mobility_ratio_ws[:,0] = (L/(L+V))[ws_p_inj] #?? CHANGE THIS!!
-            mobility_ratio_ws[:,1] = (V/(L+V))[ws_p_inj] #?? CHANGE THIS!!
-            Csi_j_ws[:,0,:] = Csi_L[ws_p_inj]
-            Csi_j_ws[:,1,:] = Csi_V[ws_p_inj]
+        mobility_ratio_ws[:,ctes.n_phases-1,:] = (A/(L+V+A))[ws_p_inj] #?? CHANGE THIS!!
 
-            wells['inj_p_term'] = xkj_ws * mobility_ratio_ws * Csi_j_ws
-            'if the injector well has a prescribed flux condition'
-            if len(wells['ws_q'])>0:
-                self.q_vol = np.copy(wells['values_q'])
-                #rever esse Csi_L*L + Csi_V*V
-                wells['values_q'] = (Csi_V * V + Csi_L * L) * self.q_vol
-                wells['values_q_vol'] = self.q_vol
+        mobility_ratio_ws[:,0] = (L/(L+V+A))[ws_p_inj] #?? CHANGE THIS!!
+        mobility_ratio_ws[:,1] = (V/(L+V+A))[ws_p_inj] #?? CHANGE THIS!!
 
-            #ctes.P_SC *= np.ones_like(wells['ws_prod'])
-            ctes.P_SC = fprop.P[wells['ws_prod']]*np.ones_like(wells['ws_prod'])
-            #p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
-            #L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-            #    p_well.run_init(ctes.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']])
-        elif ctes.load_w:
-            wells['values_q'] = fprop.Csi_W[0] * wells['values_q_vol']
+        wells['inj_p_term'] = xkj_ws * mobility_ratio_ws * Csi_j_ws
+
+        'if the injector well has a prescribed flux condition'
+        if len(wells['ws_q'])>0:
+            self.q_vol = np.copy(wells['values_q'])
+            #rever esse Csi_L*L + Csi_V*V
+            wells['values_q'] = (Csi_j_ws[:,1] * V + Csi_j_ws[:,0] * L +\
+                Csi_j_ws[:,ctes.n_phases-1]*A) * self.q_vol
+            wells['values_q_vol'] = self.q_vol
 
 
     def get_initial_properties(self, M, wells):
@@ -132,19 +134,17 @@ class run_simulation:
         self.get_well_inj_properties(M, fprop, wells)
         #fprop.z[:,0] = np.array([0,1])
         if ctes.load_k:
-
             self.p2 = StabilityCheck(fprop.P, fprop.T)
-            fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
-            fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
-            fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
-            self.p2.run_init(fprop.P, np.copy(fprop.z))
+            fprop.L, fprop.V, A, fprop.xkj, fprop.Csi_j, fprop.rho_j =  \
+            self.p2.run_init(fprop.P, np.copy(fprop.z), ksi_W = fprop.Csi_W, rho_W = fprop.rho_W)
 
             ctes.P_SC *= np.ones_like(wells['ws_prod'])
             p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
-            L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-                p_well.run_init(ctes.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']])
+            L, V, A, xkj, Csi_j, rho_j =  \
+                p_well.run_init(ctes.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']], \
+                ksi_W = fprop.Csi_W[wells['ws_prod']], rho_W = fprop.rho_W[wells['ws_prod']])
 
-        else: fprop.x = []; fprop.y = []; fprop.L = []; fprop.V = []; wells['inj_term'] = []
+        else: fprop.xkj = []; fprop.L = []; fprop.V = []; wells['inj_term'] = []
 
 
         '----------------------- Calculate fluid properties -------------------'
@@ -167,44 +167,16 @@ class run_simulation:
         self.t += self.delta_t
         '----------------- Perform Phase stability test and flash -------------'
         #if fprop.Sg[0]<1: import pdb; pdb.set_trace()
-        if any(fprop.Sg>1): import pdb; pdb.set_trace()
+
         if ctes.load_k and ctes.compressible_k:
             #if self.z
-            self.p2 = StabilityCheck(fprop.P, fprop.T)
-            fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
-            fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
-            fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
-            self.p2.run_init(fprop.P, np.copy(fprop.z))#, wells)
+            #self.p2 = StabilityCheck(fprop.P, fprop.T)
+            fprop.L, fprop.V, A, fprop.xkj, fprop.Csi_j, fprop.rho_j =  \
+            self.p2.run(fprop.P, np.copy(fprop.z), wells, \
+            ksi_W = fprop.Csi_W, rho_W = fprop.rho_W)
 
-            # Update wells injection rate if injection condition is the reservoir one
-            if len(wells['ws_inj'])>0 and not self.p2.constant_K:
-                # ORGANIZE THIS!!!
-                if any(wells['inj_cond']=='reservoir'):
-                    injP_bool = wells['ws_p'] == wells['ws_inj']
-                    injP = wells['ws_p'][injP_bool]
+        self.update_well_inj_rate(fprop, wells)
 
-                    z = (wells['z']).T
-                    if any(z[0:ctes.Nc]>0):
-                        p_well = StabilityCheck(fprop.P[wells['ws_inj']], fprop.T)
-                        L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-                        p_well.run_init(fprop.P[wells['ws_inj']],z[0:ctes.Nc])
-
-                        if any(injP_bool):
-                            qk_molar = fprop.qk_molar[:,injP]
-                            #wells['values_q_vol'] = np.zeros_like((ctes.n_components,len(injP)))
-                            wells['values_q_vol'] = qk_molar / \
-                                ((Csi_V * V + Csi_L * L))#[wells['inj_cond']=='reservoir']
-                        else:
-                            wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
-                    #wells['values_q_vol'][:,wells['inj_cond']=='reservoir'] = self.q_vol
-                    else:
-                        wells['values_q'][:,wells['inj_cond']=='reservoir'] = (fprop.Csi_j[:,-1,wells['inj_cond']=='reservoir']) * self.q_vol
-                    #wells['inj_p_term'] = []
-                    #qk_molar = wells['values_q'][:,wells['inj_cond']=='surface']
-                    #wells['values_q_vol'][:,wells['inj_cond']=='surface'] = qk_molar / \
-                    #    ((Csi_V * V + Csi_L * L))[wells['inj_cond']=='surface']
-
-        #if any(fprop.L!=0): import pdb; pdb.set_trace()
         '----------------------- Update fluid properties ----------------------'
         self.p1.run_inside_loop(M, fprop)
 
@@ -228,6 +200,35 @@ class run_simulation:
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         if len(wells['ws_prod'])>0: self.update_production(fprop, wells)
 
+    def update_well_inj_rate(self, fprop, wells):
+        # Update wells injection rate if injection condition is the reservoir one
+        ws_inj_reservoir = wells['inj_cond']=='reservoir'
+        if any(ws_inj_reservoir) and not self.p2.constant_K:
+            # look for injection wells with prescribed pressure
+            injP_bool = wells['ws_p'] == wells['ws_inj']
+            injP = wells['ws_p'][injP_bool]
+
+            z = (wells['z']).T
+            if not ctes.miscible_w: z = z[0:ctes.Nc]
+            if any(z>0):
+                p_well = StabilityCheck(fprop.P[wells['ws_inj']], fprop.T)
+                L, V, A, xkj, Csi_j, rho_j  =  \
+                p_well.run_init(fprop.P[wells['ws_inj']],z, \
+                    ksi_W = fprop.Csi_W[wells['ws_inj']],
+                    rho_W = fprop.rho_W[wells['ws_inj']])
+
+                if any(injP_bool): #tentar remover esse if!
+                    qk_molar = fprop.qk_molar[:,injP]
+                    #wells['values_q_vol'] = np.zeros_like((ctes.n_components,len(injP)))
+                    wells['values_q_vol'] = qk_molar / \
+                        ((Csi_j[:,1] * V + Csi_j[:,0] * L + Csi_j[:,ctes.n_phases-1] * A)[:,np.newaxis])#[wells['inj_cond']=='reservoir']
+                else:
+                    wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_j[:,1] * V + \
+                        Csi_j[:,0] * L+ Csi_j[:,ctes.n_phases-1]*A) * self.q_vol
+                #wells['values_q_vol'][:,wells['inj_cond']=='reservoir'] = self.q_vol
+            else:
+                wells['values_q'][:,wells['inj_cond']=='reservoir'] = (fprop.Csi_j[:,-1,wells['inj_cond']=='reservoir']) * self.q_vol
+
 
     def prod_rate_SC(self, fprop, wells):
         if ctes.load_k:
@@ -235,11 +236,12 @@ class run_simulation:
             z_prod = fprop.qk_prod/np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
 
             if (abs(z_prod.sum()-1)>1e-15) or np.isnan(z_prod.sum()): z_prod = fprop.z[:,wells['ws_prod']]
-            L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-                p_well.run_init(ctes.P_SC, z_prod[0:ctes.Nc])
+            L, V, A, xkj, Csi_j, rho_j  =  \
+                p_well.run_init(ctes.P_SC, z_prod[0:ctes.Nc], \
+                ksi_W = fprop.Csi_W[wells['ws_prod']], rho_W = fprop.rho_W[wells['ws_prod']])
             q_molar_prod = np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
-            self.oil_production_rate_t = abs(np.sum(L * q_molar_prod / Csi_L))
-            self.gas_production_rate_t = abs(np.sum(V * q_molar_prod / Csi_V))
+            self.oil_production_rate_t = abs(np.sum(L * q_molar_prod / Csi_j[:,0]))
+            self.gas_production_rate_t = abs(np.sum(V * q_molar_prod / Csi_j[:,1]))
             if abs(q_molar_prod)>1e3: import pdb; pdb.set_trace()
 
         else: self.oil_production_rate_t =[]; self.gas_production_rate_t =[]

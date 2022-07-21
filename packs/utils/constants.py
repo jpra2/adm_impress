@@ -112,6 +112,7 @@ def component_properties():
     global load_k
     global load_w
     global compressible_k
+    global miscible_w
     global n_phases
     global w
     global Bin
@@ -129,6 +130,7 @@ def component_properties():
     load_k = data_loaded['hidrocarbon_components']
     load_w = data_loaded['water_component']
     compressible_k = data_loaded['compressible_fluid']
+    miscible_w = data_loaded['water_miscible']
     n_phases = 2 * load_k + 1 * load_w
 
     if load_k:
@@ -148,4 +150,4 @@ def component_properties():
         Cw = np.array(data_loaded['compositional_data']['water_data']['Cw']).astype(float)
         Mw_w = data_loaded['compositional_data']['water_data']['Mw_w'] #* np.ones(n_volumes)
     else: Cw = 0
-    n_components = Nc + 1 * load_w
+    n_components = Nc + 1 * load_w * (1-miscible_w)

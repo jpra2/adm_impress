@@ -30,7 +30,11 @@ class PropertiesCalc:
         fprop.Vp = self.update_porous_volume(fprop.P)
 
         if ctes.load_w:
-            self.update_water_properties(M, fprop)
+            if ctes.miscible_w:
+                fprop.Sw, Csi_W_trash, rho_W_trash = \
+                self.update_water_saturation(fprop, fprop.Nk[-1,:], fprop.P, fprop.Vp, fprop.Csi_W0)
+            else:
+                self.update_water_properties(M, fprop)
 
         if ctes.load_k:
             fprop.So, fprop.Sg = self.update_saturations(M.data['saturation'],
@@ -57,7 +61,11 @@ class PropertiesCalc:
         fprop.Vp = self.update_porous_volume(fprop.P)
 
         if ctes.load_w:
-            self.update_water_properties(M, fprop)
+            if ctes.miscible_w:
+                fprop.Sw, Csi_W_trash, rho_W_trash = \
+                self.update_water_saturation(fprop, fprop.Nk[-1,:], fprop.P, fprop.Vp, fprop.Csi_W0)
+            else:
+                self.update_water_properties(M, fprop)
 
         self.update_mole_numbers(fprop)
         self.update_total_volume(fprop)
