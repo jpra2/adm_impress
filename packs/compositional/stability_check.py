@@ -30,8 +30,12 @@ class StabilityCheck:
         self.y = np.empty_like(self.x)
         self.L = np.empty(len(P))
         self.V = np.empty(len(P))
+        self.xkj = np.empty([ctes.Nc, ctes.n_phases, len(P)])
+        self.Csi_j =  np.empty([1, ctes.n_phases, len(P)])
+        self.rho_j =  np.empty([1, ctes.n_phases, len(P)])
 
-    def run_init(self, P, z, pflash = True, ponteiro_flash = []):
+
+    def run_init(self, P, z, pflash = True, ponteiro_flash = [], ksi_W=[], rho_W=[]):
         #self.K = self.equilibrium_ratio_Wilson(P)
         P = np.copy(P)
         if np.sum(pflash,dtype=bool)==True:
@@ -58,18 +62,41 @@ class StabilityCheck:
         Kini = np.copy(self.K)
         if ctes.Nc==1:
             ksi_L, ksi_V, rho_L, rho_V = self.check_phase_nc_1()
-        else: ksi_L, ksi_V, rho_L, rho_V = self.molar_properties(np.copy(ponteiro_flash)) #perform the actual flash
+        else:
+            ksi_L, ksi_V, rho_L, rho_V = self.molar_properties(np.copy(ponteiro_flash)) #perform the actual flash
         #ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties()
-        return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
 
-    def run(self, P, z, wells):
+
+        self.organize_outputs(ksi_W, ksi_L, ksi_V, rho_W, rho_L, rho_V)
+        A = np.zeros_like(self.L)
+        return self.L, self.V, A, self.xkj, self.Csi_j, self.rho_j
+
+    def organize_outputs(self, ksi_W, ksi_L, ksi_V, rho_W, rho_L, rho_V):
+        self.xkj[ctes.n_components-1,:,:] = 0
+        self.xkj[0:ctes.Nc,ctes.n_phases-1,:] = 0
+        self.xkj[ctes.n_components-1,ctes.n_phases-1,:] = 1
+        self.xkj[0:ctes.Nc,0,:] = self.x
+        self.xkj[0:ctes.Nc,1,:] = self.y
+
+        self.Csi_j[:,ctes.n_phases-1,:] = ksi_W
+        self.Csi_j[:,0,:]  = ksi_L
+        self.Csi_j[:,1,:]  = ksi_V
+
+        self.rho_j[:,ctes.n_phases-1,:] = rho_W
+        self.rho_j[:,0,:]  = rho_L
+        self.rho_j[:,1,:]  = rho_V
+
+    def run(self, P, z, wells, ksi_W, rho_W):
         ponteiro_flash = self.skip_phase_stability_test(P, z)
         #ponteiro_flash = np.ones(len(P), dtype = bool)
         self.use_previous_K(P, z, ponteiro_flash)
         #ponteiro_flash[wells['all_wells']] = True
         #ponteiro_flash[((self.V==0) + (self.L==0))*(P > self.P)] = False
-        self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V = self.run_init(P, z, False, ponteiro_flash)
-        return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
+        self.L, self.V, A, xkj, Csi_j, rho_j = self.run_init(P, z, False, \
+            ponteiro_flash, ksi_W = ksi_W, rho_W = rho_W)
+        #self.organize_outputs(ksi_W, ksi_L, ksi_V, rho_W, rho_L, rho_V)
+        #A = np.zeros_like(self.L)
+        return self.L, self.V, A, xkj, Csi_j, rho_j
 
     def check_phase_nc_1(self):
         Pv = self.vapor_pressure_pure_substancies()
