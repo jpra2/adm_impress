@@ -1,11 +1,12 @@
 #Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 8x1x1_6k_SchmallNEW.msh
-name_save_file: 'results_6k_SchmallNEW_8_FI_1days_dt1728'
+name_save_file: 'results_6k_SchmallNEW_8_FI_20days'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
 water_component: True
+water_miscible: false
 use_vpi: False
 
 
@@ -54,10 +55,10 @@ compositional_data:
     RK3: false
 
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [86400]
-  maximum_time: 86400 #17280000
+  time_to_save: [1728000]
+  maximum_time: 1728000 #17280000
   phase_viscosity: LorenzBrayClark
-  relative_permeability: BrooksAndCorey #StoneII
+  relative_permeability: StoneII
   capillary_pressure: Chang
   equation_of_state: PengRobinson
 
@@ -72,9 +73,9 @@ compositional_data:
     deltaPlim: 68.9476
     deltaNlim: .5
     deltaSlim: .15
-    deltaVlim: 50.005
-    delta_t_ini: 10
-    delta_tmax: 1728
+    deltaVlim: 0.05
+    delta_t_ini: 50
+    delta_tmax: 86000
     delta_tmin: 10
 
   water_data:
@@ -93,11 +94,14 @@ compositional_data:
 
   relative_permeability_data:
     krw0: 0.4
+    krow0: 0.9
+    krog0: 0.9
     krg0: 0.9
-    kro0: 0.9
-    n_o: 2.
-    n_g: 2.
+
+    n_og: 2.
+    n_ow: 2.
     n_w: 2.
+    n_g: 2.
 
 #  C1 C3 C6 C10 C15 C20
   component_data:

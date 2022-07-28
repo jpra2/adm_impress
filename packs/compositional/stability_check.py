@@ -670,37 +670,3 @@ class StabilityCheck:
         Mw_phase = np.sum(xkj * ctes.Mw[:,np.newaxis], axis = 0)
         rho_phase = ksi_phase * Mw_phase
         return ksi_phase, rho_phase
-
-    '''def TPD(self, z): #ainda não sei onde usar isso
-        x = np.zeros(self.Nc)
-
-        #**********************Tangent Plane distance plot*********************#
-        t = np.linspace(0.01, 0.99, 0.9 / 0.002) #vetor auxiliar
-        TPD = np.zeros(len(t)) ##F
-
-        for i in range(0, len(t)):
-            aux = 0;
-            lnphiz = self.lnphi(z, 1) #original phase
-
-            #x = np.array([1-t[i],t[i]]) #new phase composition (1-t e t) - apenas válido para Nc=2 acredito eu.
-            for k in range(0, ctes.Nc- 1):
-                x[k] = (1 - t[i]) / (ctes.Nc- 1)
-                x[ctes.Nc- 1] = t[i]
-
-            ''''''O modo que x varia implica no formato de TPD. No presente exemplo,
-            a fração molar do segundo componente de x varia direto com t, que é a
-            variável de plotagem. Logo, a distancia dos planos tangentes será
-            zero em z[Nc-1]. O contrário ocorreria''''''
-            lnphix = self.lnphi(x, 0); #new phase (vapor- ph=2)
-            for j in range(0,self.Nc):
-                fix = math.exp(lnphix[j]) * x[j] * self.P
-                fiz = math.exp(lnphiz[j]) * z[j] * self.P
-                aux = aux + x[j] * ctes.R* self.T * (math.log(fix / fiz))
-                TPD[i] = aux
-
-        plt.figure(0)
-        plt.plot(t, TPD)
-        plt.xlabel('x')
-        plt.ylabel('TPD')
-        plt.show()
-        return TPD'''

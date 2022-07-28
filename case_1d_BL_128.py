@@ -8,6 +8,7 @@ flying = 'flying'
 name = 'results'
 arquivos = os.listdir(flying)
 xD = np.loadtxt('case_plots/x_BL_semi_analytical.txt')
+xD[-1] = 0.0
 SwD = np.loadtxt('case_plots/Sw_BL_semi_analytical.txt')
 
 for arq in arquivos:
@@ -39,7 +40,7 @@ for arq in arquivos:
             pressure_FI = data[4]/1e3
             time_FI = data[3]
 
-        datas3 = np.load('flying/BL_Teste2/results_Buckley_Leverett_case_128_FI_TESTE_139.npy', allow_pickle=True)
+        datas3 = np.load('flying/BL_Teste2/results_Buckley_Leverett_case_128_FI_NOVO_139.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas3[1:]:
             Sw_FI_new = data[5]
@@ -62,8 +63,9 @@ for arq in arquivos:
         plt.grid()
         plt.savefig('results/BL_Pressure_128_1_2' + '{}'.format(n) + '.png')"""
 
+        #import pdb; pdb.set_trace()
         plt.figure(2)
-        plt.title('BL Sw - 128x1x1 mesh')
+        #plt.title('BL Sw - 128x1x1 mesh')
         #plt.plot(x1, Sw, 'k')
         #plt.plot(x1, Sw_FI, 'b')
         plt.plot(xD, SwD, 'b')
@@ -71,9 +73,9 @@ for arq in arquivos:
         plt.legend(('Analytical Solution', 'Fully Implicit'))
         #plt.legend(('IMPEC', 'Fully Implicit - back', 'Analytical Solution', 'Fully Implicit - new'))
         plt.ylabel('Water saturation')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance (m)')
         plt.grid()
-        plt.savefig('results/BL_Sw_' + '{}'.format(n) + '.png')
+        plt.savefig('results/BL_Sw_2' + '{}'.format(n) + '.png')
 
         """plt.figure(3)
         plt.title('BL So - 128x1x1 mesh')

@@ -39,7 +39,7 @@ for arq in arquivos:
             pressure_FI = data[4]/1e3
             time_FI = data[3]
 
-        datas3 = np.load('flying/BL_Teste2/results_Buckley_Leverett_32_FI_BACKTOBACK_43.npy', allow_pickle=True)
+        datas3 = np.load('flying/results_Buckley_Leverett_case_32_FI_NEW_44.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas3[1:]:
             Sw_FI_new = data[5]
@@ -70,7 +70,7 @@ for arq in arquivos:
         plt.legend(('Analytical Solution', 'Fully Implicit'))
         #plt.legend(('IMPEC', 'Fully Implicit - back', 'Analytical Solution', 'Fully Implicit - new'))
         plt.ylabel('Water saturation')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance (m)')
         plt.grid()
         plt.savefig('results/BL_Sw_32_1_2' + '{}'.format(n) + '.png')
 

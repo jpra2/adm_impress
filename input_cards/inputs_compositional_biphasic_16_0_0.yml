@@ -1,12 +1,11 @@
 #Buckley Leverett's horizontal case
-mesh_name: 256x1x1_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_256_IMPEC_NEW'
+mesh_name: 16x1x1_BL.msh
+name_save_file: 'results_Buckley_Leverett_case_16_FI_Novo'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: False
 water_component: True
-water_miscible: false
 use_vpi: True
 
 load_compositional_data: False
@@ -30,7 +29,7 @@ compositional_data:
 
   solver:
     IMPSAT: false
-    FI: false
+    FI: True
 
   MUSCL:
     set: false
@@ -40,7 +39,7 @@ compositional_data:
 
   FR:
     set: false
-    order: 2
+    order: 4
 
   RiemannSolver:
     ROE: false
@@ -72,8 +71,8 @@ compositional_data:
     deltaNlim: 100
     deltaSlim: 0.8
     deltaVlim: 100
-    delta_t_ini: 0.1
-    delta_tmax: 100
+    delta_t_ini: 10
+    delta_tmax: 20
     delta_tmin: 0.001
     #2.765
 
@@ -145,7 +144,7 @@ Temperature:
 Wells:
   P1:
     p0: [0.0, 0.0, 0]
-    p1: [0.00238125, 0.03048, 0.03048]
+    p1: [0.0381, 0.03048, 0.03048]
     prescription: Q
     type: Injector
     type_region: box
@@ -156,7 +155,7 @@ Wells:
     value_type: volumetric
 
   P2:
-    p0: [0.60721875, 0.0, 0.0]
+    p0: [0.5715, 0.0, 0.0]
     p1: [0.6096, 0.03048, 0.03048]
     prescription: P
     type: Producer

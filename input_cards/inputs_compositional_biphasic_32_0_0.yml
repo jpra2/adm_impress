@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 32x1x1_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_32_FI_JACOBI'
+name_save_file: 'results_Buckley_Leverett_case_32_FI_Novo'
 
 compositional: True
 hidrocarbon_components: True

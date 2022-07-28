@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 80x80_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_2D_80x80'
+name_save_file: 'results_Buckley_Leverett_case_2D_80x80_IMPEC_FOU'
 
 compositional: True
 hidrocarbon_components: True
@@ -43,6 +43,10 @@ compositional_data:
     MDW: false
     DW: false
 
+  time_integration:
+    Euler: true
+    RK3: false
+
   vpis_para_gravar_vtk: [0.20]
   time_to_save: [13284]
   maximum_time: 13284
@@ -60,12 +64,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 7
-    deltaNlim: 10
+    deltaNlim: 1
     deltaSlim: 0.2
     deltaVlim: 1
-    delta_t_ini: 0.5
+    delta_t_ini: 0.05
     delta_tmax: 8640
-    delta_tmin: 0.1
+    delta_tmin: 0.001
     #2.765
 
   water_data:

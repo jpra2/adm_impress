@@ -6,6 +6,7 @@ import numpy as np
 import sympy.utilities.lambdify as lambdify
 import math
 
+
 class PropertiesCalc:
     def __init__(self):
         self.relative_permeability_class = getattr(relative_permeability2,
@@ -30,7 +31,11 @@ class PropertiesCalc:
         fprop.Vp = self.update_porous_volume(fprop.P)
 
         if ctes.load_w:
-            self.update_water_properties(M, fprop)
+            if ctes.miscible_w:
+                fprop.Sw, Csi_W_trash, rho_W_trash = \
+                self.update_water_saturation(fprop, fprop.Nk[-1,:], fprop.P, fprop.Vp, fprop.Csi_W0)
+            else:
+                self.update_water_properties(M, fprop)
 
         if ctes.load_k:
             fprop.So, fprop.Sg = self.update_saturations(M.data['saturation'],
@@ -57,7 +62,11 @@ class PropertiesCalc:
         fprop.Vp = self.update_porous_volume(fprop.P)
 
         if ctes.load_w:
-            self.update_water_properties(M, fprop)
+            if ctes.miscible_w:
+                fprop.Sw, Csi_W_trash, rho_W_trash = \
+                self.update_water_saturation(fprop, fprop.Nk[-1,:], fprop.P, fprop.Vp, fprop.Csi_W0)
+            else:
+                self.update_water_properties(M, fprop)
 
         self.update_mole_numbers(fprop)
         self.update_total_volume(fprop)
@@ -198,12 +207,14 @@ class PropertiesCalc:
             #phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
             #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test; 0.000249 for 2D injec Li
             phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
+
             #phase_viscosities[0,0,:] = 6.5447e-4
             #phase_viscosities[0,1,:] = 2.048e-5
             #phase_viscosities[0,0,:] = 0.01
             #phase_viscosities[0,1,:] = 0.001#1/5*phase_viscosities[0,0,:] #for 5k NVCM case mug=muo; for 3k Orr NVCM mug=1/5muo
         if ctes.load_w:
             phase_viscosities[0,ctes.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
+
         return phase_viscosities
 
     def update_mobilities(self, fprop, So, Sg, Sw, Csi_j, xkj):

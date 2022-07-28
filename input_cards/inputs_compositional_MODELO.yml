@@ -1,6 +1,6 @@
 #Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 50x1x1_6k_SchmallNEW.msh
-name_save_file: 'results_6k_SchmallNEW_50_FI_20days'
+name_save_file: 'results_6k_SchmallNEW_50_IMPEC_MUSCL_ROE_VL_RK3'
 
 compositional: True
 hidrocarbon_components: True
@@ -24,41 +24,39 @@ monophasic_data:
   gama: 10000.0
   mi: 1.0
 
-
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: .5
+  CFL: .9
 
   solver:
     IMPSAT: false
-    FI: True
 
   MUSCL:
-    set: false
+    set: true
     minmod: false
     VanAlbada1: false
-    VanLeer: false
+    VanLeer: true
 
   FR:
     set: false
     order: 4
 
   RiemannSolver:
-    ROE: false
+    ROE: true
     LLF: false
     MDW: false
     DW: false
 
   time_integration:
-    Euler: true
-    RK3: false
+    Euler: false
+    RK3: true
 
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [1728000]
   maximum_time: 1728000
   phase_viscosity: LorenzBrayClark
-  relative_permeability: StoneII #BrooksAndCorey
+  relative_permeability: StoneII
   capillary_pressure: Chang
   equation_of_state: PengRobinson
 
@@ -71,11 +69,11 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 1.0
+    deltaNlim: 1
     deltaSlim: 0.5
-    deltaVlim: 1
+    deltaVlim: 1 #MUSCL: 0.01
     delta_t_ini: .0864
-    delta_tmax: 86.400
+    delta_tmax: 86400
     delta_tmin: .000864
 
   water_data:
@@ -153,7 +151,7 @@ Wells:
     type: Injector
     type_region: box
     value: 0.0000041377314814814814
-    z: [0., 0., 0., 0., 0., 0., 1.]
+    z: [0., 0., 0., 0., 0., 1.]
     ksi_total: 55549.8
     value_type: volumetric
     injection_condition: surface

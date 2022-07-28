@@ -12,9 +12,9 @@ SwD = np.loadtxt('case_plots/Sw_BL_semi_analytical.txt')
 
 for arq in arquivos:
     if  arq.startswith(name):
-        n=256
+        n=512
 
-        datas2 = np.load('flying/results_Buckley_Leverett_case_256_IMPEC_NEW_491.npy', allow_pickle=True)
+        datas2 = np.load('flying/results_Buckley_Leverett_case_512_FI_693.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas2[1:]:
             Sw_FI = data[5]
@@ -40,16 +40,16 @@ for arq in arquivos:
         plt.savefig('results/BL_Pressure_128_1_2' + '{}'.format(n) + '.png')"""
 
         plt.figure(2)
-        plt.title('BL Sw - 256x1x1 mesh')
+        #plt.title('BL Sw - 512x1x1 mesh')
         #plt.plot(x1, Sw, 'k')
-        plt.plot(x1, Sw_FI, 'r')
+        plt.plot(x1, Sw_FI, '--r')
         plt.plot(xD, SwD, 'b')
         #plt.plot(x1, Sw_FI_new, 'r')
         plt.legend(('Fully Implicit', 'Analytical Solution'))
         plt.ylabel('Water saturation')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance (m)')
         plt.grid()
-        plt.savefig('results/BL_Sw_256' + '{}'.format(n) + '.png')
+        plt.savefig('results/BL_Sw_512' + '{}'.format(n) + '.png')
 
         """plt.figure(3)
         plt.title('BL So - 128x1x1 mesh')

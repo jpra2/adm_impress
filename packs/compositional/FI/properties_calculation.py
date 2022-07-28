@@ -19,16 +19,22 @@ class PropertiesCalc:
 
     def run_outside_loop(self, M, fprop, wells):
         ''' This function was created to calculate the fluid properties at t=0'''
+        fprop.Vp = self.update_porous_volume(fprop.P)
 
         if ctes.load_w:
-            self.update_water_properties(M, fprop)
+            if ctes.miscible_w:
+                fprop.Sw, Csi_W_trash, rho_W_trash = \
+                self.update_water_saturation(fprop, fprop.Nk[-1,:], fprop.P, fprop.Vp, fprop.Csi_W0)
+            else:
+                self.update_water_properties(M, fprop)
 
         if ctes.load_k:
             fprop.So, fprop.Sg = self.update_saturations(M.data['saturation'],
-                            fprop.Csi_j, fprop.L, fprop.V)
+                            fprop.Csi_j.copy(), fprop.L, fprop.V)
         else:
             fprop.So = np.zeros(ctes.n_volumes)
             fprop.Sg = np.zeros(ctes.n_volumes)
+
 
         self.set_initial_volume(fprop)
         self.set_initial_mole_numbers(fprop)
@@ -38,6 +44,7 @@ class PropertiesCalc:
 
         self.update_capillary_pressure(fprop)
         if ctes.FR: fprop.Nk_SP = self.set_Nk_Pspace(fprop)
+        else: fprop.Nk_SP = np.zeros_like(fprop.Nk)
 
     def run_inside_loop(self, M, fprop):
         ''' Function to update fluid and reservoir properties along the \
@@ -46,13 +53,17 @@ class PropertiesCalc:
         fprop.Vp = self.update_porous_volume(fprop.P)
 
         if ctes.load_w:
-            self.update_water_properties(M, fprop)
+            if ctes.miscible_w:
+                fprop.Sw, Csi_W_trash, rho_W_trash = \
+                self.update_water_saturation(fprop, fprop.Nk[-1,:], fprop.P, fprop.Vp, fprop.Csi_W0)
+            else:
+                self.update_water_properties(M, fprop)
 
         self.update_mole_numbers(fprop)
         self.update_total_volume(fprop)
 
         fprop.So, fprop.Sg = self.update_saturations(M.data['saturation'],
-                            fprop.Csi_j, fprop.L, fprop.V)
+                            fprop.Csi_j.copy(), fprop.L, fprop.V)
 
         fprop.mobilities = self.update_mobilities(fprop, fprop.So, fprop.Sg, fprop.Sw,
                           fprop.Csi_j, fprop.xkj)
@@ -67,13 +78,18 @@ class PropertiesCalc:
         fprop.Csi_j[0, ctes.n_phases-1,:] = fprop.Csi_W
         fprop.rho_j[0,ctes.n_phases-1,:] = fprop.rho_W
 
-
     def set_initial_volume(self, fprop):
         self.Vo = fprop.Vp * fprop.So
         self.Vg = fprop.Vp * fprop.Sg
         self.Vw = fprop.Vp * fprop.Sw
         fprop.Vt = self.Vo + self.Vg + self.Vw
+        if ctes.load_k:
+            fprop.Vj = np.concatenate((self.Vo[np.newaxis,:],self.Vg[np.newaxis,:]),axis=0)
+            if ctes.load_w:
+                fprop.Vj = np.concatenate((fprop.Vj,self.Vw[np.newaxis,:]),axis=0)
 
+        else: fprop.Vj = self.Vw[np.newaxis,:]
+        fprop.Vj = fprop.Vj[np.newaxis,:]
 
     def set_initial_mole_numbers(self, fprop):
         if ctes.load_k:
@@ -84,7 +100,6 @@ class PropertiesCalc:
 
         Nkj = fprop.xkj * fprop.Nj
         fprop.Nk = np.sum(Nkj, axis = 1)
-
 
     def set_Nk_Pspace(self, fprop):
         from packs.compositional import prep_FR as ctes_FR
@@ -103,9 +118,11 @@ class PropertiesCalc:
 
     def update_saturations(self, Sw, Csi_j, L, V):
         if ctes.load_k:
+            Csi_j[Csi_j==0] = 1
             Sg = (1. - Sw) * (V / Csi_j[0,1,:]) / (V / Csi_j[0,1,:] + L /
                 Csi_j[0,0,:])
             So = 1 - Sw - Sg
+            So[So<0] = 0
         else: So = np.zeros_like(Sw); Sg = np.zeros_like(Sw)
         return So, Sg
 
@@ -131,6 +148,7 @@ class PropertiesCalc:
             fprop.Nj[0,ctes.n_phases-1,:] = fprop.Nk[ctes.n_components-1,:]
 
     def update_total_volume(self, fprop):
+        fprop.Vj = fprop.Nj / fprop.Csi_j
         fprop.Vt = np.sum(fprop.Nj / fprop.Csi_j, axis = 1).ravel()
 
     def update_relative_permeabilities(self, fprop, So, Sg, Sw):

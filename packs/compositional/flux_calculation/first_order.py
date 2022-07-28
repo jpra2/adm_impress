@@ -56,6 +56,7 @@ class FirstOrder:
         #a[a>1] = 1
 
         #comment for burger
+
         Fk_vols_total = UPW.update_flux(M, fprop, Ft_internal, fprop.rho_j_internal_faces, \
             mobilities_internal_faces)
 
@@ -73,7 +74,8 @@ class FirstOrder:
             Ft_internal, ponteiro)
 
             #wave_velocity[:,ponteiro] = 1e-10
-        #Fk_face = RS.get_Fk_face(fprop, M, Nk_face, fprop.P[ctes.v0], Ft_internal)
+
+        #Fk_face = RS.get_Fk_face(fprop, M, Nk_face, P_face, fprop.Vp[ctes.v0].flatten(), Ft_internal)
         #wave_velocity_RH = (Fk_face[...,1] - Fk_face[...,0])/(Nk_face[...,1] - Nk_face[...,0])
         #e = 1e-5
         #wave_velocity[abs(Nk_face[...,1] - Nk_face[...,0])>e] = wave_velocity_RH[abs(Nk_face[...,1] - Nk_face[...,0])>e]
@@ -101,10 +103,6 @@ class FirstOrder:
 
     def get_faces_properties_upwind(self, fprop, G):
         ''' Using one-point upwind approximation '''
-        Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
-        Pot_hidj = Pot_hid[:,ctes.v0[:,0]]
-        Pot_hidj_up = Pot_hid[:,ctes.v0[:,1]]
-
         fprop.mobilities_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.mobilities)
         fprop.Csi_j_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.Csi_j)
         fprop.xkj_internal_faces = self.upwind(fprop.P, fprop.Pcap, G, fprop.xkj)
@@ -115,7 +113,6 @@ class FirstOrder:
         Pot_hidj_up = Pot_hid[:,ctes.v0[:,1]]
 
         #Pot_hidj_up = -Pot_hidj
-
         prop_face = np.zeros([prop.shape[0], prop.shape[1], ctes.n_internal_faces])
         prop_vols = prop[:,:,ctes.v0[:,0]]
         prop_vols_up = prop[:,:,ctes.v0[:,1]]
