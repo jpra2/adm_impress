@@ -8,6 +8,8 @@ from packs.utils import relative_permeability2, phase_viscosity, capillary_press
 import time
 from scipy import sparse
 from scipy.sparse.linalg import gmres
+from scipy.sparse.linalg import cg
+from packs.directories import data_loaded
 
 
 class NewtonSolver:
@@ -21,6 +23,11 @@ class NewtonSolver:
         self.EOS = ctes.EOS_class(fprop.T)
         self.phase_viscosity_class = getattr(phase_viscosity,
         data_loaded['compositional_data']['phase_viscosity'])
+        if data_loaded['compositional_data']['relative_permeability'] == 'StoneII':
+            self.krw0, self.krow0, self.krog0, self.krg0, self.n_og, self.n_ow, self.n_w, self.n_g = \
+                            data_loaded['compositional_data']['relative_permeability_data'].values()
+            self.Sorw, self.Sorg, self.Swr, self.Sgr = \
+                            data_loaded['compositional_data']['residual_saturations'].values()
 
     def solver(self, wells, fprop, delta_t, Nk_old, G, flash, StabilityCheck, p1, M, face_properties, phase_densities):
         #Nk_newton = np.copy(fprop.Nk)
@@ -53,7 +60,9 @@ class NewtonSolver:
             jacobiana_boundary[(ctes.n_components + 1) * ctes.bhp_ind , (ctes.n_components + 1) * ctes.bhp_ind] = 1.0
 
             Jb = sparse.csr_matrix(jacobiana_boundary)
+            t0_solver = time.time()
             delta_x = spsolve(Jb, -residuo)
+            t1_solver = time.time()
             #delta_x = np.linalg.solve(jacobiana_boundary, -residuo)
 
             """
@@ -76,7 +85,32 @@ class NewtonSolver:
             #detla_x_new = np.reshape(delta_x_Jacobi, (ctes.n_volumes, ctes.n_components + 1)).T
             #detla_x_new = np.reshape(delta_x_Jacobi_GMRES, (ctes.n_volumes, ctes.n_components + 1)).T
             'Gambiarra'
-            #detla_x_new[0] = detla_x_new[0]/2
+            detla_x_new[0] = detla_x_new[0]/2
+
+            'Pre condicionador de Jacobi'
+            teste = np.zeros_like(jacobiana_boundary)
+            for i in range(ctes.n_volumes):
+                teste[(ctes.n_components+1)*i:(ctes.n_components+1)*(i+1), (ctes.n_components+1)*i:(ctes.n_components+1)*(i+1)] = \
+                    jacobiana_boundary[(ctes.n_components+1)*i:(ctes.n_components+1)*(i+1), (ctes.n_components+1)*i:(ctes.n_components+1)*(i+1)]
+
+            teste2 = np.linalg.inv(teste).dot(jacobiana_boundary)
+            Jb_test = sparse.csr_matrix(teste2)
+            residuo_test = np.linalg.inv(teste).dot(residuo)
+
+            t0_solver_test = time.time()
+            #delta_x_2 = spsolve(Jb_test, -residuo_test)
+            #delta_x_Jacobi = np.linalg.solve(teste2, -residuo_test) # O MAIS RÁPIDO
+            delta_x_Jacobi_GMRES, code = gmres(teste2, -residuo_test)
+            delta_x_Jacobi_CG, code = cg(Jb_test, -residuo_test)
+
+            #detla_x_new = np.reshape(delta_x_Jacobi_CG, (ctes.n_volumes, ctes.n_components + 1)).T
+            t1_solver_test = time.time()
+
+            #t1_solver - t0_solver
+            #t1_solver_test - t0_solver_test
+
+            #import pdb; pdb.set_trace()
+            #Here = True
 
             fprop.P += detla_x_new[0]
             fprop.Nk += detla_x_new[1:]
@@ -198,7 +232,7 @@ class NewtonSolver:
             #import pdb; pdb.set_trace()
             if contador > 100:
                 import pdb; pdb.set_trace()
-        #import pdb; pdb.set_trace()
+
         print(f'{contador} iterações de Newton')
 
         # Retornar termos que são necessários para o cálculo do CFL
@@ -460,14 +494,18 @@ class NewtonSolver:
         dkrs_dSj, kro, krg, krw = self.dkrs_dSj(fprop)
         relative_permeability = np.array([kro, krg, krw])
         dSj_dP, dSj_dNk = self.dSj_dP_dNk(fprop, dCsi_j_dP, dnldP, dnvdP, dnldNk, dnvdNk)
-        dkrj_dP, dkrj_dNk = self.dkrj_dP_dNk(dkrs_dSj, dSj_dP, dSj_dNk)
+
+        if data_loaded['compositional_data']['relative_permeability'] == 'StoneII':
+            dkrj_dP, dkrj_dNk = self.dkrj_dP_dNk_stone(dkrs_dSj, dSj_dP, dSj_dNk, fprop, relative_permeability)
+        else:
+            dkrj_dP, dkrj_dNk = self.dkrj_dP_dNk_corey(dkrs_dSj, dSj_dP, dSj_dNk)
 
         Csi_j = fprop.Csi_j.copy()
         phase_viscosity = self.phase_viscosity_class(fprop, Csi_j)
         dmi_dP, dmi_dNk = phase_viscosity.derivative_phase_viscosity_dP_dNk(fprop, dx_dP, dy_dP, dCsi_j_dP, dx_dnij, dy_dnij, dCsi_j_dnij, dnildP, dnivdP, dnildNk, dnivdNk)
         'Problema do BL a viscosidade é constante. derivada fica igual a 0'
-        dmi_dP = np.zeros_like(dmi_dP)
-        dmi_dNk = np.zeros_like(dmi_dNk)
+        #dmi_dP = np.zeros_like(dmi_dP)
+        #dmi_dNk = np.zeros_like(dmi_dNk)
 
         dmobilities_dP = (fprop.mis*dkrj_dP - relative_permeability*dmi_dP)/(fprop.mis**2)
         aux = (fprop.mobilities * fprop.Csi_j)[:,:,np.newaxis] * dxij_dP
@@ -811,12 +849,11 @@ class NewtonSolver:
 
         return dSj_dP, dSj_dNk
 
-    def dkrj_dP_dNk(self, dkrs_dSj, dSj_dP, dSj_dNk):
+    def dkrj_dP_dNk_corey(self, dkrs_dSj, dSj_dP, dSj_dNk):
         dkrj_dP = np.zeros_like(dSj_dP)
         dkrj_dNk = np.zeros_like(dSj_dNk)
 
         # Formulação do Varavei:
-
         'PARA O MODELO DE BROOKS E COREY'
         dkrj_dP[0,0] = dkrs_dSj[:,0,1,:] * dSj_dP[0,1,:] + dkrs_dSj[:,0,2,:] * dSj_dP[0,2,:]
         dkrj_dP[0,1] = dkrs_dSj[:,1,1,:] * dSj_dP[0,1,:]
@@ -825,16 +862,48 @@ class NewtonSolver:
         dkrj_dNk[0] = dkrs_dSj[:,2,2,:] * dSj_dNk[2,:,:] + dkrs_dSj[:,0,1,:] * dSj_dNk[1,:,:]
         dkrj_dNk[1] = dkrs_dSj[:,1,1,:] * dSj_dNk[1,:,:]
         dkrj_dNk[2] = dkrs_dSj[:,2,2,:] * dSj_dNk[2,:,:]
-        """
-        'PARA O MODELO DE STONES'
-        dkrj_dP[0,0] = dkrs_dSj[np.newaxis][:,0,1,:] * dSj_dP[0,1,:] + dkrs_dSj[np.newaxis][:,0,2,:] * dSj_dP[0,2,:]
+
+        '''
+        # Formulação do Bruno:
+        dkrj_dP[0,0] = dkrs_dSj[0,0,:]*dSj_dP[0,0,:] + dkrs_dSj[0,1,:]*dSj_dP[0,1,:] + dkrs_dSj[0,2,:]*dSj_dP[0,2,:]
+        dkrj_dP[0,1] = dkrs_dSj[1,0,:]*dSj_dP[0,0,:] + dkrs_dSj[1,1,:]*dSj_dP[0,1,:] + dkrs_dSj[1,2,:]*dSj_dP[0,2,:]
+        dkrj_dP[0,2] = dkrs_dSj[2,0,:]*dSj_dP[0,0,:] + dkrs_dSj[2,1,:]*dSj_dP[0,1,:] + dkrs_dSj[2,2,:]*dSj_dP[0,2,:]
+        '''
+        return dkrj_dP, dkrj_dNk
+
+    def dkrj_dP_dNk_stone(self, dkrs_dSj, dSj_dP, dSj_dNk, fprop, relative_permeability):
+        dkrj_dP = np.zeros_like(dSj_dP)
+        dkrj_dNk = np.zeros_like(dSj_dNk)
+
+        # Formulação do Varavei:
+        'PARA O MODELO DE STONE'
         dkrj_dP[0,1] = dkrs_dSj[np.newaxis][:,1,1,:] * dSj_dP[0,1,:]
         dkrj_dP[0,2] = dkrs_dSj[np.newaxis][:,2,2,:] * dSj_dP[0,2,:]
 
-        dkrj_dNk[0] = dkrs_dSj[np.newaxis][:,2,2,:] * dSj_dNk[2,:,:] + dkrs_dSj[np.newaxis][:,0,1,:] * dSj_dNk[1,:,:]
+        dkrow_dSw = self.krow0 * self.n_ow * (((1 - fprop.Sw - self.Sorw)**(self.n_ow - 1)) / \
+                    ((1 - self.Swr - self.Sorw)**self.n_ow)) * (-1)
+        dkrog_dSg = self.krog0 * self.n_og * (((1 - fprop.Sg - self.Swr - self.Sorg)**(self.n_og - 1)) / \
+                    ((1 - self.Swr - self.Sgr - self.Sorg)**self.n_og)) * (-1)
+        dkrow_dP = dkrow_dSw * dSj_dP[0,2]
+        dkrog_dP = dkrog_dSg * dSj_dP[0,1]
+        krog = self.krog0 * ((1. - fprop.Sg - self.Sorg - self.Swr) / (1 - self.Swr - self.Sgr - self.Sorg)) ** self.n_og
+        krow = self.krow0 * ((1 - fprop.Sw - self.Sorw) / (1 - self.Swr - self.Sorw)) ** self.n_ow
+
+        dkrj_dP[0,0] = self.krow0 * (((1/self.krow0)*dkrow_dP + dkrj_dP[0,2])*(krog/self.krow0 + relative_permeability[1]) + \
+                (krow/self.krow0 + relative_permeability[2])*((1/self.krow0)*dkrog_dP + dkrj_dP[0,1]) - \
+                (dkrj_dP[0,2] + dkrj_dP[0,1]))
+        #dkrj_dP[0,0] = dkrs_dSj[np.newaxis][:,0,1,:] * dSj_dP[0,1,:] + dkrs_dSj[np.newaxis][:,0,2,:] * dSj_dP[0,2,:]
+
+        #dkrj_dNk[0] = dkrs_dSj[np.newaxis][:,2,2,:] * dSj_dNk[2,:,:] + dkrs_dSj[np.newaxis][:,0,1,:] * dSj_dNk[1,:,:] # falta conferir
         dkrj_dNk[1] = dkrs_dSj[np.newaxis][:,1,1,:] * dSj_dNk[1,:,:]
         dkrj_dNk[2] = dkrs_dSj[np.newaxis][:,2,2,:] * dSj_dNk[2,:,:]
-        """
+
+        dkrow_dNk = dkrow_dSw * dSj_dNk[2,:,:]
+        dkrog_dNk = dkrog_dSg * dSj_dNk[1,:,:]
+        dkrj_dNk[0] = self.krow0 * (((1/self.krow0)*dkrow_dNk + dkrj_dNk[0,2])*(krog/self.krow0 + relative_permeability[1]) + \
+                (krow/self.krow0 + relative_permeability[2])*((1/self.krow0)*dkrog_dNk + dkrj_dNk[0,1]) - \
+                (dkrj_dNk[0,2] + dkrj_dNk[0,1]))
+
         '''
         # Formulação do Bruno:
         dkrj_dP[0,0] = dkrs_dSj[0,0,:]*dSj_dP[0,0,:] + dkrs_dSj[0,1,:]*dSj_dP[0,1,:] + dkrs_dSj[0,2,:]*dSj_dP[0,2,:]

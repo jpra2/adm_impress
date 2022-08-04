@@ -1,12 +1,11 @@
 #Buckley Leverett's horizontal case
 mesh_name: 64x1x1_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_64_FI_Novo'
+name_save_file: 'results_Buckley_Leverett_case_64_FI_POÇO'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: False
 water_component: True
-water_miscible: false
 use_vpi: True
 
 load_compositional_data: False
@@ -30,7 +29,7 @@ compositional_data:
 
   solver:
     IMPSAT: false
-    FI: true
+    FI: True
 
   MUSCL:
     set: false
@@ -73,7 +72,7 @@ compositional_data:
     deltaSlim: 0.8
     deltaVlim: 100
     delta_t_ini: 0.1
-    delta_tmax: 0.5
+    delta_tmax: 10
     delta_tmin: 0.001
     #2.765
 

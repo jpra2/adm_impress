@@ -1,83 +1,82 @@
-Crs:
-  Cr1:
-  - 25
-  - 1
-  - 1
-  Cr2:
-  - 1
-  - 1
-  - 1
 Permeability:
   r1:
     type: all
     value:
-    - 9.869233e-13
+    - 1e-14
     - 0
     - 0
     - 0
-    - 9.869233e-13
+    - 1e-14
     - 0
     - 0
     - 0
-    - 9.869233e-13
+    - 1e-14
 Porosity:
   r1:
     type: all
-    value: 0.3
+    value: 0.35
 Pressure:
   r1:
     type: all
-    value: 15.582e6
+    value: 10.34e6
 Saturation:
   r1:
     type: all
-    value: 0.0
+    value: 0.3
 Temperature:
   r1:
     type: all
-    value: 344.261
+    value: 344.25
 Wells:
   P1:
-    injection_condition: reservoir
+    injection_condition: surface
+    ksi_total: 55549.8
     p0:
     - 0.0
     - 0.0
     - 0
     p1:
-    - 0.4572
-    - 0.00762
-    - 0.00762
+    - 3.125
+    - 1.0
+    - 1
     prescription: Q
     type: Injector
     type_region: box
-    value: 3.6870894e-10
+    value: 4.137731481481481e-06
     value_type: volumetric
     z:
-    - 1
     - 0.0
     - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
   P2:
     p0:
-    - 17.8308
+    - 46.875
     - 0.0
     - 0
     p1:
-    - 18.288
-    - 0.00762
-    - 0.00762
+    - 50
+    - 1
+    - 1
     prescription: P
     type: Producer
     type_region: box
-    value: 15.582e6
+    value: 8.960e6
 compositional: true
 compositional_data:
-  CFL: 0.9
+  CFL: 0.7
   Cpc: 62052.84
   Epc: 2
   FR:
-    order: 3
+    order: 4
     set: false
   MUSCL:
+    VanAlbada1: false
+    VanLeer: false
+    minmod: false
     set: false
   Pf: 101325
   RiemannSolver:
@@ -89,110 +88,158 @@ compositional_data:
   component_data:
     Bin:
     - - 0.0
-      - 0.01475
-      - 0.04437
-    - - 0.01475
       - 0.0
-      - 0.00845
-    - - 0.04437
-      - 0.00845
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+    - - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+    - - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+    - - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+    - - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+    - - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
       - 0.0
     Mw:
     - 0.016043
-    - 0.058124
-    - 134e-3
-    Pb_guess: 2e6
+    - 0.044096
+    - 0.086177
+    - 0.142285
+    - 0.212419
+    - 0.282553
+    Pb_guess: 12e6
     Pc:
-    - 4600182.064
-    - 3799700.743
-    - 2534168.042
+    - 4599000
+    - 4248000
+    - 3025000
+    - 2110000
+    - 1.48e6
+    - 1.16e6
     Pv:
     - 8e6
     - 0.0
     - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
     Tc:
     - 190.56
-    - 425.2
-    - 622.1
+    - 369.83
+    - 507.6
+    - 617.7
+    - 708
+    - 768
     constant_K: false
     vc:
-    - 9.902144986e-05
-    - 0.0002550493842
-    - 0.000521100458
+    - 9.86e-05
+    - 2e-4
+    - 0.000371
+    - 0.0006
+    - 0.000889
+    - 0.00117
     vshift_parameter:
     - 0.0
     - 0.0
     - 0.0
-    w:
-    - 0.008
-    - 0.193
-    - 0.443774
-    z:
     - 0.0
-    - 0.64
-    - 0.36
+    - 0.0
+    - 0.0
+    w:
+    - 0.0115
+    - 0.1523
+    - 0.3013
+    - 0.489
+    - 0.6863
+    - 0.9069
+    z:
+    - 0.5
+    - 0.03
+    - 0.07
+    - 0.2
+    - 0.15
+    - 0.05
   equation_of_state: PengRobinson
-  maximum_time: 1036800
+  maximum_time: 1728000
   phase_viscosity: LorenzBrayClark
-  relative_permeability: StoneII
+  relative_permeability: BrooksAndCorey
   relative_permeability_data:
-    krg0: 1
-    krog0: 1
-    krow0: 1
-    krw0: 1
-    n_g: 1.0
-    n_og: 1.0
-    n_ow: 1.0
-    n_w: 1.0
+    krg0: 0.9
+    kro0: 0.9
+    krw0: 0.4
+    n_g: 2.0
+    n_o: 2.0
+    n_w: 2.0
   residual_saturations:
-    Sgr: 0.0001
-    Sorg: 0.0001
-    Sorw: 0
-    Swr: 0.0001
+    Sgr: 0.0
+    Sorg: 0.0
+    Sorw: 0.1
+    Swr: 0.3
   rock_compressibility: 0
   solver:
+    FI: true
     IMPSAT: false
   time_data:
-    deltaNlim: 0.5
+    deltaNlim: 0.35
     deltaPlim: 68.9476
-    deltaSlim: 0.2
-    deltaVlim: 0.1
-    delta_t_ini: 1
+    deltaSlim: 0.15
+    deltaVlim: 0.005
+    delta_t_ini: 100
     delta_tmax: 86400
-    delta_tmin: 8.64
+    delta_tmin: 1.0
   time_integration:
     Euler: true
     RK3: false
   time_to_save:
-  - 1036800
+  - 1728000
   vpis_para_gravar_vtk:
-  - 0.6
-  - 1.2
+  - 0.1
+  - 0.3
+  - 0.5
   water_data:
     Cw: 0
     Mw_w: 0.018015
     Pw: 10.34e6
     mi_W: 1e-3
-    mobility: false
+    mobility: true
     rho_W: 1000.73
 compressible_fluid: true
 convert_english_to_SI: false
 deletar_results: false
-get_correction_term: false
 gravity: false
 hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
-load_multilevel_data: false
 load_operators: false
-mesh_name: 40x1x1_3k4ph.msh
+mesh_name: 16x1x1_6k_SchmallNEW.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-n_levels: 3
-name_save_file: results_3k_4ph
+name_save_file: results_6k_SchmallNEW_16_FI
 read_permeability: false
 set_permeability: true
 set_porosity: true
 use_vpi: false
-water_component: false
+water_component: true

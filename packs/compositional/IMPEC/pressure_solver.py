@@ -93,11 +93,11 @@ class TPFASolver:
             print('hit: ', np.max(abs(volume_discrepancy_term)))
         return volume_discrepancy_term
 
-    def well_term(self, wells):
+    def well_term(self, fprop, wells):
         self.q = np.zeros([ctes.n_components, ctes.n_volumes])
         well_term = np.zeros(ctes.n_volumes)
         if len(wells['ws_q']) > 0:
-            self.q[:,wells['ws_q']] =  wells['values_q'] #mol/s
+            self.q[:,wells['ws_q']] =  wells['values_q']
             well_term[wells['ws_q']] = np.sum(self.dVtk[:,wells['ws_q']] *
                 self.q[:,wells['ws_q']], axis = 0)
         return well_term
@@ -106,7 +106,7 @@ class TPFASolver:
         self.pressure_term = self.pressure_independent_term(fprop, Pold)
         self.capillary_term, self.gravity_term = self.capillary_and_gravity_independent_term(fprop)
         self.volume_term = self.volume_discrepancy_independent_term(fprop)
-        well_term = self.well_term(wells)
+        well_term = self.well_term(fprop, wells)
         independent_terms = self.pressure_term - self.volume_term  + delta_t * \
             well_term - delta_t * (self.capillary_term + self.gravity_term)
         independent_terms[wells['ws_p']] = wells['values_p'] + ctes.g * \

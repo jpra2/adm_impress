@@ -62,7 +62,7 @@ for arq in arquivos:
             zC15_MUSCL = data[10][4]
             zC20_MUSCL = data[10][5]"""
 
-        datas3 = np.load('flying/6k/results_6k_SchmallNEW_32_FI_20days_Stones_1001.npy', allow_pickle=True)
+        datas3 = np.load('flying/6k/results_6k_SchmallNEW_32_FI_20days_KRNOVO_1001.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas3[1:]:
             Sw_FI = data[5]
@@ -92,7 +92,7 @@ for arq in arquivos:
         #plt.legend(('IMPEC', 'FI', 'FI Teste'))
         #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
         plt.grid()
-        plt.savefig('results/6k_32/20days/pressure_6k_20days' + '.png')
+        plt.savefig('results/6k_32/20days/pressure_6k_20days_2' + '.png')
 
         plt.figure(2)
         plt.title('t = 20 days - 32x1x1 mesh')
@@ -107,7 +107,7 @@ for arq in arquivos:
         plt.xlabel('Distance')
         plt.grid()
         #plt.ylim((0,1))
-        plt.savefig('results/6k_32/20days/saturation_oil_6k_20days' + '.png')
+        plt.savefig('results/6k_32/20days/saturation_oil_6k_20days_2' + '.png')
 
         plt.figure(3)
         plt.title('t = 20 days - 32x1x1 mesh')
@@ -122,7 +122,7 @@ for arq in arquivos:
         plt.xlabel('Distance')
         plt.grid()
         #plt.ylim((0,1))
-        plt.savefig('results/6k_32/20days/saturation_water_6k_20days' + '.png')
+        plt.savefig('results/6k_32/20days/saturation_water_6k_20days_2' + '.png')
 
         plt.figure(4)
         plt.title('t = 20 days - 32x1x1 mesh')
@@ -137,7 +137,7 @@ for arq in arquivos:
         plt.xlabel('Distance')
         plt.grid()
         #plt.ylim((0,1))
-        plt.savefig('results/6k_32/20days/saturation_gas_6k_20days' + '.png')
+        plt.savefig('results/6k_32/20days/saturation_gas_6k_20days_2' + '.png')
 
         """plt.figure(5)
         plt.title('t = 20 days - 32x1x1 mesh')

@@ -1,6 +1,6 @@
 #Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 16x1x1_6k_SchmallNEW.msh
-name_save_file: 'results_6k_SchmallNEW_16_IMPEC_FR4_LLF_RK3t'
+name_save_file: 'results_6k_SchmallNEW_16_FI'
 
 compositional: True
 hidrocarbon_components: True
@@ -31,6 +31,7 @@ compositional_data:
 
   solver:
     IMPSAT: false
+    FI: True
 
   MUSCL:
     set: false
@@ -39,18 +40,18 @@ compositional_data:
     VanLeer: false
 
   FR:
-    set: true
+    set: false
     order: 4
 
   RiemannSolver:
     ROE: false
-    LLF: true
+    LLF: false
     MDW: false
     DW: false
 
   time_integration:
-    Euler: false
-    RK3: true
+    Euler: true
+    RK3: false
 
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [1728000]

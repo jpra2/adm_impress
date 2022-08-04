@@ -1,12 +1,11 @@
 #Buckley Leverett's horizontal case
 mesh_name: 128x1x1_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_128_FI_NOVO'
+name_save_file: 'results_Buckley_Leverett_case_128_FI_MERGER'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: False
 water_component: True
-water_miscible: false
 use_vpi: True
 
 load_compositional_data: False
@@ -73,7 +72,7 @@ compositional_data:
     deltaSlim: 50
     deltaVlim: 100
     delta_t_ini: 5
-    delta_tmax: 50
+    delta_tmax: 5
     delta_tmin: 0.001
     #2.765
 

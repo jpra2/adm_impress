@@ -5,13 +5,10 @@ from ..IMPEC.properties_calculation import PropertiesCalc
 import numpy as np
 
 
-if ctes.miscible_w:
-    from packs.compositional.satability_check_3ph import StabilityCheck
+if data_loaded['compositional_data']['component_data']['constant_K']:
+    from packs.compositional.Kflash import StabilityCheck
 else:
-    if data_loaded['compositional_data']['component_data']['constant_K']:
-        from packs.compositional.Kflash import StabilityCheck
-    else:
-        from packs.compositional.stability_check import StabilityCheck
+    from packs.compositional.stability_check import StabilityCheck
 
 class RiemannSolvers:
     def __init__(self, v0, pretransmissibility):
@@ -236,11 +233,12 @@ class RiemannSolvers:
         interface '''
         if ctes.load_k:
             if ctes.compressible_k:
-                L_face, V_face, A_face, xkj_face, Csi_j_face, rho_j_face = \
-                    StabilityCheck(P_face, fprop.T).run_init(P_face, z_face, \
-                    ksi_W = Csi_j_face[:,ctes.n_phases-1], rho_W = rho_j_face[:,ctes.n_phases-1])
+                L_face, V_face, xkj_face[0:ctes.Nc,0,...], xkj_face[0:ctes.Nc,1,...], \
+                Csi_j_face[0,0,...], Csi_j_face[0,1,...], rho_j_face[0,0,...], \
+                rho_j_face[0,1,...] = StabilityCheck(P_face, fprop.T).run_init(P_face, z_face)
             else:
                 L_face = np.ones(len(P_face)); V_face = np.zeros(len(P_face))
+                xkj_face[0:ctes.Nc,0:2,:] = 1
 
                 rho_j_face[0,0,:] = np.tile(fprop.rho_j[0,0,self.v0[ponteiro,0]], v)
                 rho_j_face[0,1,:] = np.tile(fprop.rho_j[0,1,self.v0[ponteiro,0]], v) #constante, independe da pressao
@@ -250,7 +248,11 @@ class RiemannSolvers:
                 #self.reshape_constant_property(fprop.Csi_j[0,0:2,:], ponteiro, v)
         else: L_face = []; V_face = []
 
-        if ctes.load_w and not ctes.miscible_w:
+        if ctes.load_w:
+            xkj_face[-1,-1,...] = 1
+            xkj_face[-1,0:-1,...] = 0
+            xkj_face[0:ctes.Nc,-1,...] = 0
+
             if data_loaded['compositional_data']['water_data']['mobility']:
                 # Csi_W0 é constante independente de qualquer coisa(por teoria)
                 Csi_W0_face = np.tile(fprop.Csi_W0[self.v0[ponteiro,0]], v)

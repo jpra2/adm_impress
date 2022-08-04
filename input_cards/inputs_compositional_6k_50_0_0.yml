@@ -6,7 +6,6 @@ compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
 water_component: True
-water_miscible: false
 use_vpi: False
 
 

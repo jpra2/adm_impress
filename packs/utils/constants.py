@@ -71,7 +71,7 @@ def init(M, wells):
     elif data_loaded['compositional_data']['time_integration']['RK3']:
         time_integration = 'RK3'
     else: raise NameError('Missing inform the time integration method used')
-    
+
 
     Pf = np.array(data_loaded['compositional_data']['Pf']).astype(float)
     Cf = np.array(data_loaded['compositional_data']['rock_compressibility']).astype(float)
