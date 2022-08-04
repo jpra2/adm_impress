@@ -19,7 +19,6 @@ class Chang:
         Cpc = data_loaded['compositional_data']['Cpc']
         Epc = data_loaded['compositional_data']['Epc']
         Pcap = - Cpc * sigma * (self.porosity / self.permeabilities) **(1/2) * (S_term) ** Epc
-        import pdb; pdb.set_trace()
         return Pcap
 
     def sigma(self, i, j):

@@ -5,8 +5,9 @@ from .. import equation_of_state
 import numpy as np
 import sympy.utilities.lambdify as lambdify
 import math
+from packs.compositional.IMPEC.properties_calculation import PropertiesCalc as PropertiesCalc_2ph
 
-class PropertiesCalc:
+class PropertiesCalc(PropertiesCalc_2ph):
     def __init__(self):
         self.relative_permeability_class = getattr(relative_permeability2,
         data_loaded['compositional_data']['relative_permeability'])
@@ -30,7 +31,12 @@ class PropertiesCalc:
         fprop.Vp = self.update_porous_volume(fprop.P)
 
         if ctes.load_w:
-            self.update_water_properties(M, fprop)
+            if ctes.miscible_w:
+                fprop.Nk[-1,:] = fprop.Vp * fprop.Csi_W * fprop.Sw
+                fprop.Sw, Csi_W_trash, rho_W_trash = \
+                self.update_water_saturation(fprop, fprop.Nk[-1,:], fprop.P, fprop.Vp, fprop.Csi_W0)
+            else:
+                self.update_water_properties(M, fprop)
 
         if ctes.load_k:
             fprop.So, fprop.Sg = self.update_saturations(M.data['saturation'],
@@ -38,7 +44,6 @@ class PropertiesCalc:
         else:
             fprop.So = np.zeros(ctes.n_volumes)
             fprop.Sg = np.zeros(ctes.n_volumes)
-
 
         self.set_initial_volume(fprop)
 
@@ -58,7 +63,11 @@ class PropertiesCalc:
         fprop.Vp = self.update_porous_volume(fprop.P)
 
         if ctes.load_w:
-            self.update_water_properties(M, fprop)
+            if ctes.miscible_w:
+                fprop.Sw, Csi_W_trash, rho_W_trash = \
+                self.update_water_saturation(fprop, fprop.Nk[-1,:], fprop.P, fprop.Vp, fprop.Csi_W0)
+            else:
+                self.update_water_properties(M, fprop)
 
         self.update_mole_numbers(fprop)
         self.update_total_volume(fprop)

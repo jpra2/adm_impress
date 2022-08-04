@@ -14,7 +14,7 @@ class CompositionalFVM:
         G = self.update_gravity_term(fprop)
 
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
-        
+
         #self.get_faces_properties_upwind(fprop, G)
         '''if ctes.n_points>1:
             self.get_faces_properties_weighted_average(fprop, G)
@@ -37,7 +37,7 @@ class CompositionalFVM:
 
         while (r!=1.):
             #fprop.Nk = np.copy(Nk_old)
-
+            import pdb; pdb.set_trace()
             fprop.P, Ft_internal, fprop.qk_molar = psolve.get_pressure(M, wells,
                 fprop, P_old, delta_t)
 

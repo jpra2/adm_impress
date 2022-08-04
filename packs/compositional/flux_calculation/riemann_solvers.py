@@ -6,7 +6,7 @@ import numpy as np
 
 
 if ctes.miscible_w:
-    from packs.compositional.satability_check_3ph import StabilityCheck
+    from packs.compositional.stability_check_3ph import StabilityCheck
 else:
     if data_loaded['compositional_data']['component_data']['constant_K']:
         from packs.compositional.Kflash import StabilityCheck

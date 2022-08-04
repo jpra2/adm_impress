@@ -151,7 +151,7 @@ Wells:
     type: Injector
     type_region: box
     value: 0.0000041377314814814814
-    z: [0., 0., 0., 0., 0., 1.]
+    z: [0., 0., 0., 0., 0., 0, 1.]
     ksi_total: 55549.8
     value_type: volumetric
     injection_condition: surface

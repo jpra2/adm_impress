@@ -25,7 +25,7 @@ class TPFASolver:
         self.t0_internal_faces_prod = fprop.xkj_internal_faces * \
                                       fprop.Csi_j_internal_faces * \
                                       fprop.mobilities_internal_faces
-
+        
         ''' Transmissibility '''
         t0 = (self.t0_internal_faces_prod).sum(axis = 1)
         t0 = t0 * ctes.pretransmissibility_internal_faces

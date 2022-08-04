@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 500x1x1_bh.msh
-name_save_file: 'results_biphasic_het_500CV_IMPEC'
+name_save_file: 'results_biphasic_het_10sec_500CV_IMPEC'
 
 compositional: True
 hidrocarbon_components: True
@@ -52,7 +52,7 @@ compositional_data:
     RK3: false
 
   vpis_para_gravar_vtk: [0.20]
-  time_to_save: [4320000, 6912000, 10368000]
+  time_to_save: [2592000, 4320000, 6912000, 10368000]
   maximum_time: 10368000
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
@@ -101,7 +101,7 @@ compositional_data:
 
 #decane critical molar density is 1640 mol/m3
   component_data:
-    z: [1.]
+    z: [1., 0]
     Tc: [617.7] #617.7; 723; 768
     Pc: [2.11e6] #2.11e6; 1.4e6; 1.16e6
     vc: [0.00075] #0.0006; 0.000944; 0.00117
@@ -118,20 +118,62 @@ Saturation:
   r1:
     type: box
     p0: [0.0, 0.0, 0]
-    p1: [1.524, 1, 1]
-    value: 0.2
+    p1: [0.6096, 1, 1]
+    value: 0.48227077
 
   r2:
     type: box
-    p0: [1.524, 0.0, 0]
-    p1: [3.048, 1, 1]
-    value: 0.4
+    p0: [0.6096, 0.0, 0]
+    p1: [1.2191, 1, 1]
+    value: 0.62165371
 
   r3:
     type: box
+    p0: [1.2191, 0.0, 0]
+    p1: [1.8288, 1, 1]
+    value: 0.28547398
+
+  r4:
+    type: box
+    p0: [1.8288, 0.0, 0]
+    p1: [2.4384, 1, 1]
+    value: 0.44326456
+
+  r5:
+    type: box
+    p0: [2.4384, 0.0, 0]
+    p1: [3.048, 1, 1]
+    value: 0.31831652
+
+  r6:
+    type: box
     p0: [3.048, 0.0, 0]
+    p1: [3.6576, 1, 1]
+    value: 0.63923074
+
+  r7:
+    type: box
+    p0: [3.6576, 0.0, 0]
+    p1: [4.2672, 1, 1]
+    value: 0.377705
+
+  r8:
+    type: box
+    p0: [4.2672, 0.0, 0]
+    p1: [4.8768, 1, 1]
+    value: 0.48091657
+
+  r9:
+    type: box
+    p0: [4.8768, 0.0, 0]
+    p1: [5.4864, 1, 1]
+    value: 0.54459622
+
+  r10:
+    type: box
+    p0: [5.4864, 0.0, 0]
     p1: [6.096, 1, 1]
-    value: 0.2
+    value: 0.23253678
 
 
 Porosity:

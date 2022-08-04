@@ -125,6 +125,9 @@ def component_properties():
     global Mw_w
     global Cw
     global Pw
+    global Csi_W_def
+    
+    Csi_W_def = 55549.81959478213
 
     load_k = data_loaded['hidrocarbon_components']
     load_w = data_loaded['water_component']

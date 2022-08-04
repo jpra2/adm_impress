@@ -17,6 +17,7 @@ else:
 
 if data_loaded['water_miscible']:
     from packs.compositional.stability_check_3ph import StabilityCheck
+    from packs.compositional.IMPEC.properties_calculation_3ph import PropertiesCalc
 else:
     if data_loaded['compositional_data']['component_data']['constant_K']:
         from packs.compositional.Kflash import StabilityCheck
@@ -72,10 +73,9 @@ class run_simulation:
     def get_well_inj_properties(self, M, fprop, wells):
 
         z = (wells['z']).T
-        
         if (wells['ws_p']!=wells['ws_inj']): wells['inj_p_term'] = []
         #q_wells = wells['ws_inj']#[wells['inj_cond']=='reservoir']
-        if not ctes.miscible_w: z = z[0:ctes.Nc]
+
         if ctes.load_k and any(z.flatten()>0):
             if any(wells['inj_cond']=='reservoir'):
                 P = fprop.P[wells['ws_inj']]
@@ -127,16 +127,24 @@ class run_simulation:
         properties'''
 
         fprop = FluidProperties(M, wells) # load reservoir properties data and initialize other data
-        if ctes.load_w:
+        if ctes.load_w and not ctes.miscible_w:
             fprop.inputs_water_properties(M) #load water properties
-
+        else:
+            fprop.Csi_W = fprop.Csi_j[0,-1,:]
+            fprop.Csi_W0 = fprop.Csi_j[0,-1,:]
+            fprop.rho_W = fprop.Csi_j[0,-1,:]
         '------------------------- Perform initial flash ----------------------'
         self.get_well_inj_properties(M, fprop, wells)
         #fprop.z[:,0] = np.array([0,1])
         if ctes.load_k:
             self.p2 = StabilityCheck(fprop.P, fprop.T)
-            fprop.L, fprop.V, A, fprop.xkj, fprop.Csi_j, fprop.rho_j =  \
+            fprop.L, fprop.V, fprop.A, fprop.xkj, fprop.Csi_j, fprop.rho_j =  \
             self.p2.run_init(fprop.P, np.copy(fprop.z), ksi_W = fprop.Csi_W, rho_W = fprop.rho_W)
+
+            if ctes.miscible_w:
+                fprop.Csi_W = fprop.Csi_j[0,-1,:]
+                fprop.Csi_W0 = fprop.Csi_j[0,-1,:]
+                fprop.rho_W = fprop.Csi_j[0,-1,:]
 
             ctes.P_SC *= np.ones_like(wells['ws_prod'])
             p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
@@ -171,9 +179,14 @@ class run_simulation:
         if ctes.load_k and ctes.compressible_k:
             #if self.z
             #self.p2 = StabilityCheck(fprop.P, fprop.T)
-            fprop.L, fprop.V, A, fprop.xkj, fprop.Csi_j, fprop.rho_j =  \
+            fprop.L, fprop.V, fprop.A, fprop.xkj, fprop.Csi_j, fprop.rho_j =  \
             self.p2.run(fprop.P, np.copy(fprop.z), wells, \
             ksi_W = fprop.Csi_W, rho_W = fprop.rho_W)
+
+            if ctes.miscible_w:
+                fprop.Csi_W = fprop.Csi_j[0,-1,:]
+                fprop.Csi_W0 = fprop.Csi_j[0,-1,:]
+                fprop.rho_W = fprop.Csi_j[0,-1,:]
 
         self.update_well_inj_rate(fprop, wells)
 
