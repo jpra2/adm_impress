@@ -30,19 +30,12 @@ class NewtonSolver:
                             data_loaded['compositional_data']['residual_saturations'].values()
 
     def solver(self, wells, fprop, delta_t, Nk_old, G, flash, StabilityCheck, p1, M, face_properties, phase_densities):
-        #Nk_newton = np.copy(fprop.Nk)
-        #P_Newton = np.copy(fprop.P)
-        #P_Newton_aux = P_Newton.reshape(1, len(P_Newton))
-        #variaveis_primarias = np.append(P_Newton_aux, Nk_newton, axis = 0)
-        t0_Newton = time.time()
-        dt_flash = 0.0
 
         self.well_term(wells)
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
-        stop_criteria = 1e-6
+        stop_criteria = 1e-2
         contador = 0
         residuo = self.residual_calculation(fprop, Pot_hid, wells, Nk_old, delta_t)
-        #P_old = fprop.P.copy()
         while np.max(abs(residuo)) > stop_criteria:
             # calculo dos residuos, jacobiana, e solucao do sistema
 
@@ -50,74 +43,45 @@ class NewtonSolver:
             residuo = self.residual_calculation(fprop, Pot_hid, wells, Nk_old, delta_t)
             jacobiana = self.jacobian_calculation(fprop, Pot_hid, delta_t, wells)
 
-            # Solução do sistema
-            """
-            jacobiana_boundary = jacobiana.copy()
-            jacobiana_boundary[(ctes.n_components + 1) * ctes.bhp_ind , (ctes.n_components + 1) * ctes.bhp_ind] += 1e16*np.max(abs(jacobiana_boundary))
-            """
+            '---------------------- Solução do sistema --------------------------'
             jacobiana_boundary = jacobiana.copy()
             jacobiana_boundary[(ctes.n_components + 1) * ctes.bhp_ind , :] = 0.0
             jacobiana_boundary[(ctes.n_components + 1) * ctes.bhp_ind , (ctes.n_components + 1) * ctes.bhp_ind] = 1.0
 
             Jb = sparse.csr_matrix(jacobiana_boundary)
-            t0_solver = time.time()
             delta_x = spsolve(Jb, -residuo)
-            t1_solver = time.time()
             #delta_x = np.linalg.solve(jacobiana_boundary, -residuo)
 
-            """
-            # Teste do precondicionador de Jacobi:
-            diagonal = np.diag(jacobiana_boundary)
-            diagonal = np.diagflat(diagonal)
-            diagonal_inv = np.linalg.inv(diagonal)
-            jacobiana_Jacobi = diagonal_inv.dot(jacobiana_boundary)
-            residuo_Jacobi = diagonal_inv.dot(residuo)
-            #Jb_jacobi = sparse.csr_matrix(jacobiana_boundary)
-            #delta_x_Jacobi = spsolve(Jb_jacobi, -residuo_Jacobi)
-            #delta_x_Jacobi = np.linalg.solve(jacobiana_Jacobi, -residuo_Jacobi)
-            #delta_x_Jacobi_GMRES, code = gmres(jacobiana_Jacobi, -residuo_Jacobi)
-            #import pdb; pdb.set_trace()
-            #Here = True
-            # 3 possibilidades: delta_x, delta_x_Jacobi e delta_x_Jacobi_GMRES"""
-
-            # Atualização das variáveis
+            '--------------------- Atualização das variáveis ---------------------'
             detla_x_new = np.reshape(delta_x, (ctes.n_volumes, ctes.n_components + 1)).T
-            #detla_x_new = np.reshape(delta_x_Jacobi, (ctes.n_volumes, ctes.n_components + 1)).T
-            #detla_x_new = np.reshape(delta_x_Jacobi_GMRES, (ctes.n_volumes, ctes.n_components + 1)).T
-            'Gambiarra'
+            # Gambiarra
             detla_x_new[0] = detla_x_new[0]/2
 
-            'Pre condicionador de Jacobi'
-            teste = np.zeros_like(jacobiana_boundary)
+            """
+            '----------------- Pre condicionador de Jacobi ----------------------'
+            Jacobi_PC = np.zeros_like(jacobiana_boundary)
             for i in range(ctes.n_volumes):
-                teste[(ctes.n_components+1)*i:(ctes.n_components+1)*(i+1), (ctes.n_components+1)*i:(ctes.n_components+1)*(i+1)] = \
+                Jacobi_PC[(ctes.n_components+1)*i:(ctes.n_components+1)*(i+1), (ctes.n_components+1)*i:(ctes.n_components+1)*(i+1)] = \
                     jacobiana_boundary[(ctes.n_components+1)*i:(ctes.n_components+1)*(i+1), (ctes.n_components+1)*i:(ctes.n_components+1)*(i+1)]
+            jacobiana_PC = np.linalg.inv(Jacobi_PC).dot(jacobiana_boundary)
+            #Jb_PC = sparse.csr_matrix(jacobiana_PC)
+            residuo_PC = np.linalg.inv(Jacobi_PC).dot(residuo)
 
-            teste2 = np.linalg.inv(teste).dot(jacobiana_boundary)
-            Jb_test = sparse.csr_matrix(teste2)
-            residuo_test = np.linalg.inv(teste).dot(residuo)
-
-            t0_solver_test = time.time()
             #delta_x_2 = spsolve(Jb_test, -residuo_test)
-            #delta_x_Jacobi = np.linalg.solve(teste2, -residuo_test) # O MAIS RÁPIDO
-            delta_x_Jacobi_GMRES, code = gmres(teste2, -residuo_test)
-            delta_x_Jacobi_CG, code = cg(Jb_test, -residuo_test)
-
+            delta_x_Jacobi = np.linalg.solve(jacobiana_PC, -residuo_PC) # O MAIS RÁPIDO
+            detla_x_new = np.reshape(delta_x_Jacobi, (ctes.n_volumes, ctes.n_components + 1)).T
+            #delta_x_Jacobi_GMRES, code = gmres(teste2, -residuo_test)
+            #delta_x_Jacobi_CG, code = cg(Jb_test, -residuo_test)
             #detla_x_new = np.reshape(delta_x_Jacobi_CG, (ctes.n_volumes, ctes.n_components + 1)).T
-            t1_solver_test = time.time()
-
-            #t1_solver - t0_solver
-            #t1_solver_test - t0_solver_test
-
-            #import pdb; pdb.set_trace()
-            #Here = True
+            'Gambiarra'
+            detla_x_new[0] = detla_x_new[0]/2
+            """
 
             fprop.P += detla_x_new[0]
             fprop.Nk += detla_x_new[1:]
             fprop.z = fprop.Nk[0:ctes.Nc,:] / fprop.Nk[0:ctes.Nc,:].sum(axis=0)
 
             '----------------- Perform Phase stability test and flash -------------'
-            t0_flash = time.time()
             #if fprop.Sg[0]<1: import pdb; pdb.set_trace()
             if any(fprop.Sg>1): import pdb; pdb.set_trace()
             if ctes.load_k and ctes.compressible_k:
@@ -163,11 +127,7 @@ class NewtonSolver:
             face_properties(fprop, G)
             phase_densities(fprop)
 
-            t1_flash = time.time()
-            dti_flash = t1_flash - t0_flash
-            dt_flash += dti_flash
-
-            # Calcular termo de poço com pressão prescrita: aparentemente esta certo
+            'Calcular termo de poço com pressão prescrita'
             wp = wells['ws_p']
             transmissibility = self.transmissibility_FI(fprop)
             Pot_hidj_new = fprop.P[ctes.v0[:,0]]
@@ -179,7 +139,6 @@ class NewtonSolver:
             Fk_internal_faces_new = flux_new.sum(axis = 1)
             Fk_vols_total_new = self.component_flux_volumes(Fk_internal_faces_new)
 
-            #import pdb; pdb.set_trace()
             mob_ratio = fprop.mobilities[:,:,wp] / np.sum(fprop.mobilities[:,:,wp], axis = 1)
             q_term = fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp]
             #well_term = (- jacobiana.dot(delta_x)/delta_t)[(ctes.n_components + 1) * ctes.bhp_ind]
@@ -187,74 +146,18 @@ class NewtonSolver:
             self.q[:,wp] += np.sum(q_term * well_term, axis = 1)
             #self.q[:,wp] = - Fk_vols_total_new[:,wp]
 
-
-            """
-            residuo_test = np.zeros_like(residuo)
-            residuo_test[8*0:8*1] = residuo[::8]
-            Jb_test = np.zeros_like(jacobiana)
-
-            for i in range(8): # i = 0 ate 7
-                Jb_test[i,i] = jacobiana_boundary2[8*i, 8*i]
-                Jb_test[i, 7*i+8:7*(i+1)+8] = jacobiana_boundary2[8*i, 7*i+1+i:7*i+1+i + 7]
-
-                Jb_test[i*7+8:(i+1)*7+8, 0] = jacobiana_boundary2[8*i+1:8*i+8, 0]
-                Jb_test[i*7+8:(i+1)*7+8, 1] = jacobiana_boundary2[8*i+1:8*i+8, 8]
-                Jb_test[i*7+8:(i+1)*7+8, 2] = jacobiana_boundary2[8*i+1:8*i+8, 8*2]
-                Jb_test[i*7+8:(i+1)*7+8, 3] = jacobiana_boundary2[8*i+1:8*i+8, 8*3]
-                Jb_test[i*7+8:(i+1)*7+8, 4] = jacobiana_boundary2[8*i+1:8*i+8, 8*4]
-                Jb_test[i*7+8:(i+1)*7+8, 5] = jacobiana_boundary2[8*i+1:8*i+8, 8*5]
-                Jb_test[i*7+8:(i+1)*7+8, 6] = jacobiana_boundary2[8*i+1:8*i+8, 8*6]
-                Jb_test[i*7+8:(i+1)*7+8, 7] = jacobiana_boundary2[8*i+1:8*i+8, 8*7]
-
-                Jb_test[i*7+8:(i+1)*7+8, (i+1)*7+1:(i+2)*7+1] = jacobiana_boundary2[8*i+1:8*i+8, i*8+1:(i+1)*8]
-                Jb_test[i*7+8:(i+1)*7+8, (i+2)*7+1:(i+3)*7+1] = jacobiana_boundary2[8*i+1:8*i+8, i*8+9:(i+1)*8+8]
-                if i != 0:
-                    Jb_test[i*7+8:(i+1)*7+8, (i+0)*7+1:(i+1)*7+1] = jacobiana_boundary2[8*i+1:8*i+8, (i-1)*8+1:8*i]
-
-                residuo_test[(7+1)*(i+1)-i: 7*(i+2) + 1] = residuo[8*i+1:8*(i+1)]
-                #Jb_test[(7+1)*(i+1)-i: 7*(i+2) + 1] = jacobiana_boundary2[8*i+1:8*(i+1)]
-
-            # Teste de reordenar a matriz jacobiana - tão mal condicionada quanto antes
-            #import pdb; pdb.set_trace()
-            delta_test = spsolve(Jb_test, -residuo_test)
-
-            Fp = residuo_test[8*0:8*1]
-            Fs = residuo_test[8*1:]
-            Jpp = Jb_test[0:8, 0:8]
-            Jps = Jb_test[0:8, 8:]
-            Jsp = Jb_test[8:, 0:8]
-            Jss = Jb_test[8:, 8:]
-            #import pdb; pdb.set_trace()
-            """
-
             contador += 1
-            #residuo[(ctes.n_volumes-1)*(ctes.n_components + 1)] = 0.0
-            #import pdb; pdb.set_trace()
+            print(np.max(abs(residuo)))
             if contador > 100:
                 import pdb; pdb.set_trace()
 
         print(f'{contador} iterações de Newton')
-
+        import pdb; pdb.set_trace()
         # Retornar termos que são necessários para o cálculo do CFL
-        transmissibility = self.transmissibility_FI(fprop)
-        Pot_hidj_new = fprop.P[ctes.v0[:,0]]
-        Pot_hidj_up_new = fprop.P[ctes.v0[:,1]]
-        z = ctes.z[ctes.v0[:,0]]
-        z_up = ctes.z[ctes.v0[:,1]]
-        d_Pot_hid_new = Pot_hidj_up_new - Pot_hidj_new - ctes.g * fprop.rho_j_internal_faces * (z_up - z)
-        flux_new = transmissibility * d_Pot_hid_new
-        Fk_internal_faces_new = flux_new.sum(axis = 1)
-        Fk_vols_total_new = self.component_flux_volumes(Fk_internal_faces_new)
         wave_velocity = Fk_vols_total_new/fprop.Nk
-
         Ft_internal_faces = - np.sum(fprop.mobilities_internal_faces
             * ctes.pretransmissibility_internal_faces * ((Pot_hidj_up_new - Pot_hidj_new) -
             ctes.g * fprop.rho_j_internal_faces * (z_up - z)), axis = 1)
-
-        t1_Newton = time.time()
-        dt_newton = t1_Newton - t0_Newton
-        aux = (dt_flash / dt_newton) * 100
-        #print(f'{aux} % flash')
 
         fprop.qk_molar = self.q
         return Fk_vols_total_new, wave_velocity, Ft_internal_faces

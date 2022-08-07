@@ -44,60 +44,11 @@ class CompositionalFVM:
             Fk_vols_total, wave_velocity, total_flux_internal_faces = \
                 solve.solver(wells, fprop, delta_t, Nk_old, G, flash, StabilityCheck, p1, M, face_properties, phase_densities)
 
-            # Depois de convergir:
-            #fprop = copy.deepcopy(fprop_aux)
-            #fprop = fprop_aux
-            #import pdb; pdb.set_trace()
 
-
-
-            # deletar e\ou comentar
-            #fprop.P, total_flux_internal_faces, q = psolve.get_pressure(M, wells, fprop, P_old, delta_t)
-
-            '''total_flux_internal_faces = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
-            q = np.zeros_like(fprop.Nk)
-            frj = fprop.mobilities[:,...] / \
-                np.sum(fprop.mobilities[:,...], axis = 1)
-            frj[:,1,0] = 1
-            frj[:,0,0] = 0
-            q[:,wells['all_wells']] = np.sum(frj[:,:,wells['all_wells']] * fprop.Csi_j[:,:,wells['all_wells']]*\
-                np.array([[1, 0, 0, 0, 0],[0,0.25, 0.25, 0.25, 0.25]]).T[:,np.newaxis,:] * \
-                total_flux_internal_faces[:,0], axis=1)
-            q[:,-1] = -1*q[:,-1]
-            fprop.q_phase = total_flux_internal_faces[:,0][:,np.newaxis] * np.ones((1,2))
-            '''
-            '''
-            if ctes.MUSCL:
-                wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
-                    total_flux_internal_faces, Pot_hid)
-
-            elif ctes.FR:
-                wave_velocity, Nk, z, Nk_SP, Fk_vols_total = FR().run(M, fprop, wells,
-                    total_flux_internal_faces, Nk_SP_old, P_old, q, delta_t, t)
-            else:
-                if ctes.RS['LLF']:
-                    Fk_vols_total, wave_velocity = FirstOrder().LLF(M, fprop, total_flux_internal_faces, P_old)
-                elif ctes.RS['MDW']:
-                    Fk_vols_total, wave_velocity = FirstOrder().MDW(M, fprop, total_flux_internal_faces, P_old)
-                elif ctes.RS['ROE']:
-                    Fk_vols_total, wave_velocity = FirstOrder().ROE(M, fprop, total_flux_internal_faces, P_old)
-                else:
-                    self.get_faces_properties_upwind(fprop, G)
-                    import pdb; pdb.set_trace()
-                    Fk_vols_total, wave_velocity = FirstOrder().FOU(M, fprop, total_flux_internal_faces)
-            '''
-            ''' For the composition calculation the time step might be different\
-             because it treats composition explicitly and this explicit models \
-             are conditionally stable - which can be based on the CFL parameter '''
-
-
-            #import pdb; pdb.set_trace()
-            #delta_t_new = delta_time.update_CFL(delta_t, Fk_vols_total, fprop.Nk, wave_velocity)
             delta_t_new = delta_time.update_CFL(delta_t, fprop, wells, Fk_vols_total, fprop.Nk, wave_velocity)
             r = delta_t_new/delta_t
             delta_t = delta_t_new
         #import pdb; pdb.set_trace()
-        #Here = False
         #dd = q
 
         """if not ctes.FR:
