@@ -1,6 +1,6 @@
 #Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 8x1x1_6k_SchmallNEW.msh
-name_save_file: 'results_6k_SchmallNEW_8_FI_20days'
+name_save_file: 'results_6k_SchmallNEW_8_FI_20days_ADIMENSIONALIZADO_e2'
 
 compositional: True
 hidrocarbon_components: True
@@ -56,7 +56,7 @@ compositional_data:
 
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [1728000]
-  maximum_time: 1728000 #17280000
+  maximum_time: 1728000
   phase_viscosity: LorenzBrayClark
   relative_permeability: StoneII
   capillary_pressure: Chang

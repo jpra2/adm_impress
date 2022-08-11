@@ -36,7 +36,7 @@ Wells:
     - 0.0
     - 0
     p1:
-    - 1.5625
+    - 6.25
     - 1.0
     - 1
     prescription: Q
@@ -54,7 +54,7 @@ Wells:
     - 1.0
   P2:
     p0:
-    - 48.4375
+    - 43.75
     - 0.0
     - 0
     p1:
@@ -204,12 +204,12 @@ compositional_data:
     FI: true
     IMPSAT: false
   time_data:
-    deltaNlim: 0.35
+    deltaNlim: 0.5
     deltaPlim: 68.9476
     deltaSlim: 0.15
     deltaVlim: 0.05
-    delta_t_ini: 10
-    delta_tmax: 1728
+    delta_t_ini: 50
+    delta_tmax: 86000
     delta_tmin: 10
   time_integration:
     Euler: true
@@ -235,11 +235,11 @@ hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: 32x1x1_6k_SchmallNEW.msh
+mesh_name: 8x1x1_6k_SchmallNEW.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_6k_SchmallNEW_32_FI_20days_KRNOVO
+name_save_file: results_6k_SchmallNEW_8_FI_20days_ADIMENSIONALIZADO_e2
 read_permeability: false
 set_permeability: true
 set_porosity: true

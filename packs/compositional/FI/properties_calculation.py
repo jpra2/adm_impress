@@ -162,9 +162,9 @@ class PropertiesCalc:
         phase_viscosities = np.empty_like(Csi_j)
         if ctes.load_k:
             phase_viscosity = self.phase_viscosity_class(fprop, Csi_j)
-            #phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
+            phase_viscosities[0,0:2,:] = 0.02*np.ones([2,len(Csi_j[0,0,:])]) #0.02 only for BL test. for BL_Darlan use 1e-3
             #phase_viscosities[0,0:2,:] = 0.001*np.ones([2,len(Csi_j[0,0,:])]) #only for Dietz test
-            phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
+            #phase_viscosities[0,0:2,:] = phase_viscosity(fprop, xkj)
         if ctes.load_w:
             phase_viscosities[0,ctes.n_phases-1,:] = data_loaded['compositional_data']['water_data']['mi_W']
 

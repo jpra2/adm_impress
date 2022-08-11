@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 256x1x1_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_256_IMPEC_NEW'
+name_save_file: 'results_Buckley_Leverett_case_256_FI_ADIMENSIONALIZADO_e9dt5'
 
 compositional: True
 hidrocarbon_components: True
@@ -29,7 +29,7 @@ compositional_data:
 
   solver:
     IMPSAT: false
-    FI: false
+    FI: True
 
   MUSCL:
     set: false
@@ -72,7 +72,7 @@ compositional_data:
     deltaSlim: 0.8
     deltaVlim: 100
     delta_t_ini: 0.1
-    delta_tmax: 100
+    delta_tmax: 5
     delta_tmin: 0.001
     #2.765
 
