@@ -97,7 +97,7 @@ for arq in arquivos:
             zC15_FI_e1 = data[10][4]
             zC20_FI_e1 = data[10][5]
 
-        datas5 = np.load('flying/Teste_criterio_de_parada/8_CV/results_6k_SchmallNEW_8_FI_20days_SC1_0_22.npy', allow_pickle=True)
+        datas5 = np.load('flying/Teste_criterio_de_parada/8_CV/results_6k_SchmallNEW_8_FI_20days_ADIMENSIONALIZADO_e3_NEW_23.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas5[1:]:
             Sw_FI_e0 = data[5]

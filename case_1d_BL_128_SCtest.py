@@ -39,7 +39,7 @@ for arq in arquivos:
             pressure_FI_e6 = data[4]/1e3
             time_FI_e6 = data[3]
 
-        datas = np.load('flying/Teste_criterio_de_parada/BL/128_CV/results_Buckley_Leverett_case_128_FI_ADIMENSIONALIZADO_e3dt1_693.npy', allow_pickle=True)
+        datas = np.load('flying/Teste_criterio_de_parada/BL/128_CV/results_Buckley_Leverett_case_128_FI_ADIMENSIONALIZADO_e3dt1_NEW_693.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas[1:]:
             Sw_FI_e3 = data[5]
