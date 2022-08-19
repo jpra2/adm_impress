@@ -140,7 +140,6 @@ class StabilityCheck(StabilityCheck_2ph):
         self.x[self.x==1e-30] = 0
         self.y[self.y==1e-30] = 0
         self.z[self.z==1e-30] = 0
-        import pdb; pdb.set_trace()
         return self.L, self.V, self.A, self.xkj, self.Csi_j, self.rho_j
 
     def organize_outputs(self, ksi_L, ksi_V, ksi_A, rho_L, rho_V, rho_A):

@@ -374,6 +374,7 @@ compositional_data:
   - 0.8
   - 1.2
   water_data:
+    Csw: 0
     Cw: 0
     Mw_w: 0.018015
     Pw: 10.34e6

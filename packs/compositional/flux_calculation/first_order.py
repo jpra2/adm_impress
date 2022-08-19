@@ -69,18 +69,19 @@ class FirstOrder:
         #dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-20
         #ponteiro[dNkmax_small] = False
         wave_velocity = np.zeros((ctes.n_components, ctes.n_internal_faces))
-        if any(ponteiro):
-            wave_velocity[:,ponteiro],m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, \
-            Ft_internal, ponteiro)
+        #if any(ponteiro):
+        #    wave_velocity[:,ponteiro],m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, \
+        #    Ft_internal, ponteiro)
 
             #wave_velocity[:,ponteiro] = 1e-10
 
         #Fk_face = RS.get_Fk_face(fprop, M, Nk_face, P_face, fprop.Vp[ctes.v0].flatten(), Ft_internal)
         #wave_velocity_RH = (Fk_face[...,1] - Fk_face[...,0])/(Nk_face[...,1] - Nk_face[...,0])
-        #e = 1e-5
+        #e = 0
         #wave_velocity[abs(Nk_face[...,1] - Nk_face[...,0])>e] = wave_velocity_RH[abs(Nk_face[...,1] - Nk_face[...,0])>e]
         #import pdb; pdb.set_trace()
-        #wave_velocity = Fk_vols_total/self.Nk #np.max(abs(wave_velocity),axis=0)
+
+        wave_velocity = Fk_vols_total/self.Nk #np.max(abs(wave_velocity),axis=0)
 
 
         #burger

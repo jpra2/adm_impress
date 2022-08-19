@@ -37,7 +37,6 @@ class CompositionalFVM:
 
         while (r!=1.):
             #fprop.Nk = np.copy(Nk_old)
-            import pdb; pdb.set_trace()
             fprop.P, Ft_internal, fprop.qk_molar = psolve.get_pressure(M, wells,
                 fprop, P_old, delta_t)
 
@@ -250,18 +249,22 @@ class CompositionalFVM:
                 dVjdNk[0:ctes.Nc,1,:] =  np.zeros_like(dVjdNk[0:ctes.Nc,0])#1 / fprop.Csi_j[0,1,:]
                 dVjdP[0,0,:] = np.zeros(ctes.n_volumes)
                 dVjdP[0,1,:] = np.zeros_like(dVjdP[0,0,:])
+            if ctes.miscible_w:
+                dVjdP[0,0,:], dVjdP[0,1,:], dVjdP[0,2,:], \
+                dVjdNk[:,0,:], dVjdNk[:,1,:], dVjdNk[:,2,:] = \
+                self.EOS.get_all_derivatives(fprop)
             else:
                 dVjdP[0,0,:], dVjdP[0,1,:], dVjdNk[0:ctes.Nc,0,:], dVjdNk[0:ctes.Nc,1,:] = \
                 self.EOS.get_all_derivatives(fprop)
 
-        if ctes.load_w:
+        if ctes.load_w and not ctes.miscible_w:
             dVjdNk[ctes.n_components-1,-1,:] = 1 / fprop.Csi_j[0,-1,:]
             dVjdP[0,-1,:] = - fprop.Nk[ctes.n_components-1,:] * fprop.Csi_W0 * ctes.Cw / (fprop.Csi_W)**2
 
         if data_loaded['compositional_data']['component_data']['constant_K']:
             dVjdNk[:,:,:] = 1/fprop.Csi_j
             dVjdP[0,:,:] = 0
-
+        import pdb; pdb.set_trace()
         return dVjdNk, dVjdP
 
     def harmonic_average(self, Vl, prop):

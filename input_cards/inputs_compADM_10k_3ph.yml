@@ -98,6 +98,7 @@ compositional_data:
     Cw: 0 #4.35e-10
     Pw: 10.34e6
     mobility: False
+    Csw: 0
 
   residual_saturations:
     Sorw: 0.16

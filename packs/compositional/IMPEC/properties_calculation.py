@@ -86,8 +86,8 @@ class PropertiesCalc:
         fprop.Vt = self.Vo + self.Vg + self.Vw
         if ctes.load_k:
             fprop.Vj = np.concatenate((self.Vo[np.newaxis,:],self.Vg[np.newaxis,:]),axis=0)
-            if ctes.load_w:
-                fprop.Vj = np.concatenate((fprop.Vj,self.Vw[np.newaxis,:]),axis=0)
+        if ctes.load_w:
+            fprop.Vj = np.concatenate((fprop.Vj,self.Vw[np.newaxis,:]),axis=0)
 
         else: fprop.Vj = self.Vw[np.newaxis,:]
         fprop.Vj = fprop.Vj[np.newaxis,:]
@@ -135,11 +135,8 @@ class PropertiesCalc:
         #Vp = (1/ctes.n_volumes) * np.ones(len(P))
         return Vp
 
-    def update_saturations(self, Sw, Csi_j, L, V, A):
-        if ctes.miscible_w:
-            Sw #IMPLEMENTAR
-            import pdb; pdb.set_trace()
-        else: Sw = fprop.Sw
+    def update_saturations(self, Sw, Csi_j, L, V):
+
         if ctes.load_k:
             Csi_j[Csi_j==0] = 1
             Sg = (1. - Sw) * (V / Csi_j[0,1,:]) / (V / Csi_j[0,1,:] + L /
@@ -147,7 +144,7 @@ class PropertiesCalc:
             So = 1 - Sw - Sg
             So[So<0] = 0
         else: So = np.zeros_like(Sw); Sg = np.zeros_like(Sw)
-        return So, Sg, Sw
+        return So, Sg
 
     '''def update_saturations(self, fprop, Nj, Csi_j, Sw):
         if ctes.load_k:
@@ -173,10 +170,8 @@ class PropertiesCalc:
     def update_total_volume(self, fprop):
         fprop.Vj = fprop.Nj / fprop.Csi_j
         fprop.Vt = np.sum(fprop.Nj / fprop.Csi_j, axis = 1).ravel()
-
         #burgers
         #fprop.Vt = fprop.Vp
-
 
     def update_relative_permeabilities(self, fprop, So, Sg, Sw):
         saturations = np.array([So, Sg, Sw])

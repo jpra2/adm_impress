@@ -117,10 +117,14 @@ class PengRobinson:
 
     def get_all_derivatives(self, fprop):
 
-        x = fprop.xkj[0:ctes.Nc,0,:]
-        y = fprop.xkj[0:ctes.Nc,1,:]
+        x = fprop.xkj[:,0,:]
+        y = fprop.xkj[:,1,:]
+        a = fprop.xkj[:,2,:]
+
         Nl = fprop.Nj[0,0,:]
         Nv = fprop.Nj[0,1,:]
+        Na = fprop.Nj[0,2,:]
+
         P = fprop.P
         T = fprop.T
 
@@ -128,6 +132,10 @@ class PengRobinson:
                 self.get_phase_derivatives(P, T, x, Nl, np.ones(ctes.n_volumes))
         dlnfivdP, dlnfivdnij, dZvdP_parcial, dZvdnij_parcial, Zv = \
                 self.get_phase_derivatives(P, T, y, Nv, np.zeros(ctes.n_volumes))
+        dlnfiwdP, dlnfiwdnij, dZwdP_parcial, dZwdnij_parcial, Zv = \
+                self.get_phase_derivatives(P, T, a, Na, np.ones(ctes.n_volumes))
+        import pdb; pdb.set_trace()
+        
         dnldP, dnvdP, dnldNk, dnvdNk, dnildP, dnivdP, dnildNk, dnivdNk = \
                 self.dnij_dNk_dP(dlnfildP, dlnfivdP, dlnfildnij, dlnfivdnij, Nl, Nv)
         dZldP, dZvdP, dZldNk, dZvdNk = self.dZ_dP_dNk(dZldP_parcial,

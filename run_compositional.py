@@ -24,13 +24,11 @@ else:
     else:
         from packs.compositional.stability_check import StabilityCheck
 
-
-
 class run_simulation:
     '''Class created to compute simulation properties at each simulation time'''
     def __init__(self, name_current, name_all):
         #name_all = name_all + data_loaded['solver'] + hiperbolic_method + ctes.RS + ctes.
-        self.name_current_results =os.path.join(direc.flying, name_current + '.npy')
+        self.name_current_results = os.path.join(direc.flying, name_current + '.npy')
         self.name_all_results = os.path.join(direc.flying, name_all)
         self.loop = 0
         self.vpi = 0.0
@@ -75,7 +73,7 @@ class run_simulation:
         z = (wells['z']).T
         if (wells['ws_p']!=wells['ws_inj']): wells['inj_p_term'] = []
         #q_wells = wells['ws_inj']#[wells['inj_cond']=='reservoir']
-
+        if ~ctes.miscible_w: z=z[0:ctes.Nc]
         if ctes.load_k and any(z.flatten()>0):
             if any(wells['inj_cond']=='reservoir'):
                 P = fprop.P[wells['ws_inj']]
@@ -120,7 +118,6 @@ class run_simulation:
             wells['values_q'] = (Csi_j_ws[:,1] * V + Csi_j_ws[:,0] * L +\
                 Csi_j_ws[:,ctes.n_phases-1]*A) * self.q_vol
             wells['values_q_vol'] = self.q_vol
-
 
     def get_initial_properties(self, M, wells):
         ''' get initial fluid - oil, gas and water data and calculate initial \
@@ -179,6 +176,7 @@ class run_simulation:
         if ctes.load_k and ctes.compressible_k:
             #if self.z
             #self.p2 = StabilityCheck(fprop.P, fprop.T)
+
             fprop.L, fprop.V, fprop.A, fprop.xkj, fprop.Csi_j, fprop.rho_j =  \
             self.p2.run(fprop.P, np.copy(fprop.z), wells, \
             ksi_W = fprop.Csi_W, rho_W = fprop.rho_W)
@@ -242,12 +240,11 @@ class run_simulation:
             else:
                 wells['values_q'][:,wells['inj_cond']=='reservoir'] = (fprop.Csi_j[:,-1,wells['inj_cond']=='reservoir']) * self.q_vol
 
-
     def prod_rate_SC(self, fprop, wells):
         if ctes.load_k:
             p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
             z_prod = fprop.qk_prod/np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
-
+            if ~ctes.miscible_w: z_prod=z_prod[0:ctes.Nc]
             if (abs(z_prod.sum()-1)>1e-15) or np.isnan(z_prod.sum()): z_prod = fprop.z[:,wells['ws_prod']]
             L, V, A, xkj, Csi_j, rho_j  =  \
                 p_well.run_init(ctes.P_SC, z_prod[0:ctes.Nc], \

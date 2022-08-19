@@ -1,6 +1,6 @@
 import numpy as np
 from ..directories import data_loaded
-from ..compositional import equation_of_state
+from ..compositional import equation_of_state, equation_of_state_teste
 
 def init(M, wells):
     global n_volumes
@@ -31,7 +31,9 @@ def init(M, wells):
     P_SC = 101325
     T_SC = 288.706
 
-    EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
+    #EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
+    EOS_class = getattr(equation_of_state_teste, data_loaded['compositional_data']['equation_of_state'])
+
     MUSCL = dict()
     MUSCL['set'] = data_loaded['compositional_data']['MUSCL']['set']
     if MUSCL['set']:
@@ -126,7 +128,7 @@ def component_properties():
     global Cw
     global Pw
     global Csi_W_def
-    
+
     Csi_W_def = 55549.81959478213
 
     load_k = data_loaded['hidrocarbon_components']

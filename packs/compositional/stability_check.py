@@ -36,6 +36,7 @@ class StabilityCheck:
 
     def run_init(self, P, z, pflash = True, ponteiro_flash = [], ksi_W=[], rho_W=[]):
         #self.K = self.equilibrium_ratio_Wilson(P)
+        
         P = np.copy(P)
         if np.sum(pflash,dtype=bool)==True:
             ponteiro_flash = np.ones(len(P), dtype = bool)
@@ -65,7 +66,6 @@ class StabilityCheck:
             Zl, Zv = self.molar_properties(np.copy(ponteiro_flash)) #perform the actual flash
 
         ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
-
         self.organize_outputs(ksi_W, ksi_L, ksi_V, rho_W, rho_L, rho_V)
         A = np.zeros_like(self.L)
         return self.L, self.V, A, self.xkj, self.Csi_j, self.rho_j
