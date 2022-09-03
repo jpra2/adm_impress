@@ -606,7 +606,7 @@ for  arq in arquivos:
         plt.plot(x_200, Sg_3t_200_FR3[...,1], '-yo', mfc='none', markersize=s)
         plt.plot(x_200, Sg_3t_200_FR4[...,1], '-.r', mfc='none', markersize=s)
         plt.legend(('Reference', 'FOU', 'FR-P1', 'FR-P2', 'FR-P3'))
-        plt.title('Results for 200x1x1 mesh (t=1272s)')
+        plt.title('Results for 200x1x1 mesh (t=1,272s)')
         plt.grid()
         plt.ylabel('$Sg$')
         plt.xlim(0., 0.5)

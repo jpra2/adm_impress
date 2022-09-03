@@ -7,7 +7,7 @@ hidrocarbon_components: True
 compressible_fluid: True
 water_component: false
 use_vpi: false
-
+water_miscible: false
 
 load_compositional_data: False
 load_data: False
@@ -44,6 +44,10 @@ compositional_data:
     LLF: false
     MDW: false
     DW: false
+
+  time_integration:
+    Euler: true
+    RK3: false
 
   vpis_para_gravar_vtk: [0.2]
   time_to_save: [5045760]

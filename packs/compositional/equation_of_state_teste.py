@@ -92,7 +92,7 @@ class PengRobinson:
         Z_all = self.Z_vectorized(A, B)
         Z = self.getZ_by_phase(Z_all, ph)
         lnphi = self.lnphi_calculation(A, B, Z)
-        if any(np.isnan(lnphi).ravel()): import pdb; pdb.set_trace()
+        #if any(np.isnan(lnphi).ravel()): import pdb; pdb.set_trace()
         return lnphi
 
     def lnphi_calculation(self, A, B, Z):
@@ -119,11 +119,11 @@ class PengRobinson:
 
         x = fprop.xkj[:,0,:]
         y = fprop.xkj[:,1,:]
-        a = fprop.xkj[:,2,:]
+        w_ = fprop.xkj[:,2,:]
 
         Nl = fprop.Nj[0,0,:]
         Nv = fprop.Nj[0,1,:]
-        Na = fprop.Nj[0,2,:]
+        Nw = fprop.Nj[0,2,:]
 
         P = fprop.P
         T = fprop.T
@@ -132,24 +132,28 @@ class PengRobinson:
                 self.get_phase_derivatives(P, T, x, Nl, np.ones(ctes.n_volumes))
         dlnfivdP, dlnfivdnij, dZvdP_parcial, dZvdnij_parcial, Zv = \
                 self.get_phase_derivatives(P, T, y, Nv, np.zeros(ctes.n_volumes))
-        dlnfiwdP, dlnfiwdnij, dZwdP_parcial, dZwdnij_parcial, Zv = \
-                self.get_phase_derivatives(P, T, a, Na, np.ones(ctes.n_volumes))
-        import pdb; pdb.set_trace()
-        
-        dnldP, dnvdP, dnldNk, dnvdNk, dnildP, dnivdP, dnildNk, dnivdNk = \
-                self.dnij_dNk_dP(dlnfildP, dlnfivdP, dlnfildnij, dlnfivdnij, Nl, Nv)
-        dZldP, dZvdP, dZldNk, dZvdNk = self.dZ_dP_dNk(dZldP_parcial,
-                dZvdP_parcial, dZldnij_parcial, dZvdnij_parcial, dnildP,
-                dnivdP, dnildNk, dnivdNk)
-        dVldP, dVvdP, dVldNk, dVvdNk = self.dVj_dP_dNk(dnldP, dnvdP, dnldNk, dnvdNk, dZldP,
-                        dZvdP, dZldNk, dZvdNk, P, T, Zl, Zv, Nl, Nv)
-        return dVldP, dVvdP, dVldNk, dVvdNk
+        dlnfiwdP, dlnfiwdnij, dZwdP_parcial, dZwdnij_parcial, Zw = \
+                self.get_phase_derivatives(P, T, w_, Nw, np.ones(ctes.n_volumes))
+        #import pdb; pdb.set_trace()
+
+        dnldP, dnvdP, dnwdP, dnldNk, dnvdNk, dnwdNk, dnildP, dnivdP, dniwdP, dnildNk, dnivdNk, dniwdNk = \
+                self.dnij_dNk_dP(dlnfildP, dlnfivdP, dlnfiwdP, dlnfildnij, dlnfivdnij, dlnfiwdnij, Nl, Nv, Nw)
+        #import pdb; pdb.set_trace()
+        dZldP, dZvdP, dZwdP, dZldNk, dZvdNk, dZwdNk = self.dZ_dP_dNk(dZldP_parcial,
+               dZvdP_parcial, dZwdP_parcial, dZldnij_parcial, dZvdnij_parcial, dZwdnij_parcial,
+               dnildP, dnivdP, dniwdP, dnildNk, dnivdNk, dnivdNk)
+        #import pdb; pdb.set_trace()
+        dVldP, dVvdP, dVwdP, dVldNk, dVvdNk, dVwdNk = self.dVj_dP_dNk(dnldP, dnvdP, dnwdP,
+                                                      dnldNk, dnvdNk, dnwdNk, dZldP, dZvdP, dZwdP,
+                                                      dZldNk, dZvdNk, dZwdNk, P, T, Zl, Zv, Zw, Nl, Nv, Nw)
+
+        return dVldP, dVvdP, dVwdP, dVldNk, dVvdNk, dVwdNk
 
     def get_phase_derivatives(self, P, T, xij, Nj, ph):
         A, B = self.coefficients_cubic_EOS_vectorized(xij, P)
         Z = self.Z_vectorized(A, B)
         Z = self.getZ_by_phase(Z, ph)
-
+        xij[xij==0] = 1e-300 #OBSERVAR SE ISSO TA FUNCIONANDO
         self.Z_square = Z * Z
         self.B_square = B * B
 
@@ -247,65 +251,124 @@ class PengRobinson:
                                 (np.identity(ctes.Nc)[:,:,np.newaxis] -
                                 xij[:,np.newaxis, Nj!=0]) / Nj[Nj!=0])
 
+        #dlnfijdnij[np.isnan(dlnfijdnij)] = 0
+        #dlnfijdnij[np.isinf(dlnfijdnij)] = 0
         dlnfijdnij[:,:,Nj==0] = 0
         return dlnfijdnij
 
-    def dnij_dNk_dP(self, dlnfildP, dlnfivdP, dlnfildnij, dlnfivdnij, Nl, Nv):
+    def dnij_dNk_dP(self, dlnfildP, dlnfivdP, dlnfiwdP, dlnfildnij, dlnfivdnij, dlnfiwdnij, Nl, Nv, Nw):
         dnivdNk = np.empty(dlnfildnij.shape)
         dnivdP = np.empty(dlnfildP.shape)
         dnildNk = np.empty(dlnfildnij.shape)
         dnildP = np.empty(dlnfildP.shape)
+        dniwdNk = np.empty(dlnfildnij.shape)
+        dniwdP = np.empty(dlnfildP.shape)
 
         aux = np.ones(len(Nv),dtype=bool)
         aux[Nv == 0] = False
         aux[Nl == 0] = False
+        aux[Nw == 0] = False
 
         '''Making dlnf's matrix'''
         dlnfildnij = np.transpose(dlnfildnij[:,:,aux], (2,0,1))
         dlnfivdnij = np.transpose(dlnfivdnij[:,:,aux], (2,0,1))
-        matrix = dlnfildnij + dlnfivdnij
+        dlnfiwdnij = np.transpose(dlnfiwdnij[:,:,aux], (2,0,1))
+        A11 = dlnfildnij + dlnfivdnij
+        A12 = dlnfivdnij
+        A21 = dlnfivdnij
+        A22 = dlnfiwdnij + dlnfivdnij
 
         '''Independent tem vector for dnsdP '''
-        v = dlnfildP[:,aux] - dlnfivdP[:,aux]
+        B1 = dlnfivdP[:,aux] - dlnfildP[:,aux]
+        B2 = dlnfivdP[:,aux] - dlnfiwdP[:,aux]
 
-        '''Solving system of equations for dnivdNk and dnivdP'''
-        dnivdP_aux = dnivdP[:,aux]
-        dnivdNk_aux = dnivdNk[:,:,aux]
+        ''' Montagem do sistema three-phase'''
+        A_3ph = np.empty((1, 2*len(B1), 2*len(B1)))
+        B_3ph = np.empty((2*len(B1),1))
+
+        B_3ph[0:len(B1),:] = B1
+        #import pdb; pdb.set_trace()
+
+        B_3ph[(len(B1)):(2*len(B1)),:] = B2
+        #ver = np.shape(B1)
+        #import pdb; pdb.set_trace()
+        A_3ph[:, 0:len(B1), 0:len(B1)] = A11
+        A_3ph[:,len(B1):2*len(B1),0:len(B1)] = A21
+        A_3ph[:,0:len(B1),len(B1):2*len(B1)] = A12
+        A_3ph[:,len(B1):2*len(B1),len(B1):2*len(B1)] = A22
+
+        '''Solving system of equations for dnijdP'''
+        aux_3ph = np.ones(2*len(Nv),dtype=bool)
+        aux_3ph[0:len(Nv),] = aux
+        aux_3ph[len(Nv):2*len(Nv),] = aux
+        dnilwdP = np.empty((len(B_3ph), len(aux_3ph)))
+        dnilwdP_aux = dnilwdP[:,aux_3ph]
+
+        dnilwdP_aux =  np.linalg.solve(A_3ph, B_3ph.T).T
+
+        '''Calculate dnijdP '''
+        dnildP[:,aux] = dnilwdP_aux[0:len(B1),:]
+        dnildP[:,Nv==0] = 0
+        dnildP[:,Nl==0] = 0
+        dnildP[:,Nw==0] = 0
+
+        dniwdP[:,aux] = dnilwdP_aux[len(B1):2*len(B1),:]
+        dniwdP[:,Nv==0] = 0
+        dniwdP[:,Nl==0] = 0
+        dniwdP[:,Nw==0] = 0
+
+        dnivdP = - dnildP - dniwdP
+
+        '''Solving system of equations for dnilwdNk'''
+        dnilwdNk = np.empty((1,len(B_3ph), len(B_3ph)))
+        dlnfivdnij_3ph = np.empty((1, 2*len(B1), 2*len(B1)))
+
+        dlnfivdnij_3ph[:,0:len(B1),0:len(B1)] = dlnfivdnij
+        dlnfivdnij_3ph[:,len(B1):2*len(B1),len(B1):2*len(B1)] = dlnfivdnij
         try:
-            dnivdNk_aux = np.linalg.solve(matrix, dlnfildnij).transpose((1,2,0))
+            dnilwdNk_aux = np.linalg.solve(A_3ph, dlnfivdnij_3ph).transpose((1,2,0))
         except: import pdb; pdb.set_trace()
-        dnivdP_aux =  np.linalg.solve(matrix, v.T).T
+        dnildNk[:,:,aux] = dnilwdNk_aux[0:len(B1),0:len(B1),:]
+        dniwdNk[:,:,aux] = dnilwdNk_aux[len(B1):2*len(B1),len(B1):2*len(B1),:]
+        dnildNk[:,:,Nl==0] = 0
+        #dnildNk[:,:,Nw==0] = 0
+        #dniwdNk[:,:,Nl==0] = 0
+        dniwdNk[:,:,Nw==0] = 0
+        dnildNk[:,:,Nv==0] = np.identity(ctes.Nc)[:,:,np.newaxis]
+        dnildNk[:,:,Nw==0] = np.identity(ctes.Nc)[:,:,np.newaxis]
+        dniwdNk[:,:,Nv==0] = np.identity(ctes.Nc)[:,:,np.newaxis]
+        dniwdNk[:,:,Nl==0] = np.identity(ctes.Nc)[:,:,np.newaxis]
 
-        dnivdNk[:,:,aux] = dnivdNk_aux
-        dnivdNk[:,:,Nv==0] = 0
-        dnivdNk[:,:,Nl==0] = np.identity(ctes.Nc)[:,:,np.newaxis]
-
-        dnivdP[:,aux] = dnivdP_aux
-        dnivdP[:,Nv==0] = 0
-        dnivdP[:,Nl==0] = 0
+        dnivdNk = np.identity(ctes.Nc)[:,:,np.newaxis] - dnildNk - dniwdNk
 
         '''Calculate dnildP and dnildNk'''
-        dnildP = - dnivdP
-        dnildNk = np.identity(ctes.Nc)[:,:,np.newaxis] - dnivdNk
-
-        dnvdP = np.sum(dnivdP, axis = 0)
-        dnldP = - dnvdP
+        dnldP = np.sum(dnildP, axis = 0)
+        dnwdP = np.sum(dniwdP, axis = 0)
+        dnvdP = - dnldP - dnwdP
         dnldNk = np.sum(dnildNk, axis = 0)
         dnvdNk = np.sum(dnivdNk, axis = 0)
-        return dnldP, dnvdP, dnldNk, dnvdNk, dnildP, dnivdP, dnildNk, dnivdNk
+        dnwdNk = np.sum(dniwdNk, axis = 0)
+        return dnldP, dnvdP,  dnwdP, dnldNk, dnvdNk, dnwdNk, dnildP, dnivdP, dniwdP, dnildNk, dnivdNk, dniwdNk
 
-    def dZ_dP_dNk(self, dZldP, dZvdP, dZldnij, dZvdnij, dnildP, dnivdP, dnildNk, dnivdNk):
+
+    def dZ_dP_dNk(self, dZldP, dZvdP, dZwdP, dZldnij, dZvdnij, dZwdnij,
+                        dnildP, dnivdP, dniwdP, dnildNk, dnivdNk, dniwdNk):
         dZldP = dZldP + np.sum(dZldnij.sum(axis=0) * dnildP, axis = 0)
         dZvdP = dZvdP + np.sum(dZvdnij.sum(axis=0) * dnivdP, axis = 0)
+        dZwdP = dZwdP + np.sum(dZwdnij.sum(axis=0) * dniwdP, axis = 0)
         dZldNk = np.sum(dZldnij[0][:,np.newaxis,:] * dnildNk, axis = 0)
         dZvdNk = np.sum(dZvdnij[0][:,np.newaxis,:] * dnivdNk, axis = 0)
-        return dZldP, dZvdP, dZldNk, dZvdNk
+        dZwdNk = np.sum(dZwdnij[0][:,np.newaxis,:] * dniwdNk, axis = 0)
+        return dZldP, dZvdP, dZwdP, dZldNk, dZvdNk, dZwdNk
 
-    def dVj_dP_dNk(self, dnldP, dnvdP, dnldNk, dnvdNk, dZldP, dZvdP, dZldNk, dZvdNk, P, T, Zl, Zv, Nl, Nv):
+    def dVj_dP_dNk(self, dnldP, dnvdP, dnwdP, dnldNk, dnvdNk, dnwdNk,
+                   dZldP, dZvdP, dZwdP, dZldNk, dZvdNk, dZwdNk, P, T, Zl, Zv, Zw, Nl, Nv, Nw):
         coef = ctes.R * T / P
         dVldP = coef * (Nl * dZldP + Zl * dnldP - (Zl * Nl / P))
         dVvdP = coef * (Nv * dZvdP + Zv * dnvdP - (Zv * Nv / P))
+        dVwdP = coef * (Nw * dZwdP + Zw * dnwdP - (Zw * Nw / P))
         #dVvdP = coef * (Nv * dZvdP + Zv * dnvdP - (Zv * Nv / P))
         dVldNk = coef * (Nl * dZldNk + Zl * dnldNk)
         dVvdNk = coef * (Nv * dZvdNk + Zv * dnvdNk)
-        return dVldP, dVvdP, dVldNk, dVvdNk
+        dVwdNk = coef * (Nw * dZwdNk + Zw * dnwdNk)
+        return dVldP, dVvdP, dVwdP, dVldNk, dVvdNk, dVwdNk

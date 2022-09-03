@@ -556,7 +556,7 @@ for  arq in arquivos:
         plt.ylim((0, 0.65))
         plt.title('NVCM example with 128x1x1 mesh')
         plt.ylabel('$z_{C1}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zC1_FR_hMLPmod_128.png')
 
         plt.figure(2)
@@ -573,7 +573,7 @@ for  arq in arquivos:
         plt.ylim((0.75, 1))
         plt.title('NVCM example with 128x1x1 mesh')
         plt.ylabel('$z_{CO_2}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zCO2_FR_hMLPmod_128.png')
 
         plt.figure(3)
@@ -589,7 +589,7 @@ for  arq in arquivos:
         plt.title('NVCM example with 128x1x1 mesh')
         plt.ylabel('$S_g$')
         plt.xlim((0.4, 1.2))
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_Sg_FR_hMLPmod_128.png')
         plt.close()
 
@@ -606,7 +606,7 @@ for  arq in arquivos:
         plt.grid()
         plt.title('NVCM example with 256x1x1 mesh')
         plt.ylabel('$S_g$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_Sg_FR_hMLPmod_256.png')
         plt.close()
 
@@ -623,7 +623,7 @@ for  arq in arquivos:
         plt.grid()
         plt.title('NVCM example with 64x1x1 mesh')
         plt.ylabel('$S_g$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_Sg_FR_hMLPmod_64.png')
         plt.close()
         import pdb; pdb.set_trace()
@@ -688,7 +688,7 @@ for  arq in arquivos:
         plt.ylim((0, 0.65))
         plt.title('NVCM example with 64x1x1 mesh')
         plt.ylabel('$z_{C1}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zC1_FR_hMLPmod_64.png')
 
         plt.figure(7)
@@ -704,7 +704,7 @@ for  arq in arquivos:
         plt.ylim((0.75, 1))
         plt.title('NVCM example with 64x1x1 mesh')
         plt.ylabel('$z_{CO_2}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zCO2_FR_hMLPmod_64.png')
 
         plt.figure(8)
@@ -720,7 +720,7 @@ for  arq in arquivos:
         plt.ylim((0.75, 1))
         plt.title('NVCM example with 256x1x1 mesh')
         plt.ylabel('$z_{CO_2}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zCO2_FR_hMLPmod_256.png')
 
         plt.figure(9)
@@ -736,7 +736,7 @@ for  arq in arquivos:
         #plt.ylim((0, 0.65))
         plt.title('NVCM example with 256x1x1 mesh')
         plt.ylabel('$z_{CO_2}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_Sg_FR_hMLPmod_256.png')
 
         plt.figure(10)
@@ -753,7 +753,7 @@ for  arq in arquivos:
         plt.ylim((0, 0.65))
         plt.title('NVCM example with 256x1x1 mesh')
         plt.ylabel('$z_{C1}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zC1_FR_hMLPmod_256.png')
 
         plt.figure(11)
@@ -769,7 +769,7 @@ for  arq in arquivos:
         plt.ylim((0.75, 1))
         plt.title('NVCM example with 512x1x1 mesh')
         plt.ylabel('$z_{CO_2}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zCO2_FR_hMLPmod_512.png')
 
         plt.figure(12)
@@ -785,7 +785,7 @@ for  arq in arquivos:
         #plt.ylim((0, 0.65))
         plt.title('NVCM example with 512x1x1 mesh')
         plt.ylabel('$z_{CO_2}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_Sg_FR_hMLPmod_512.png')
 
         plt.figure(13)
@@ -802,7 +802,7 @@ for  arq in arquivos:
         plt.ylim((0, 0.65))
         plt.title('NVCM example with 512x1x1 mesh')
         plt.ylabel('$z_{C1}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zC1_FR_hMLPmod_512.png')
 
         plt.figure(14)
@@ -818,7 +818,7 @@ for  arq in arquivos:
         plt.ylim((0.75, 1))
         plt.title('NVCM example with 128x1x1 mesh')
         plt.ylabel('$z_{CO_2}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zCO2_FRs_hMLPmod_128.png')
         plt.close()
 
@@ -833,7 +833,7 @@ for  arq in arquivos:
         plt.ylim((0.75, 1))
         #plt.title('NVCM example with 128x1x1 mesh')
         plt.ylabel('$z_{CO_2}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zCO2_FR3_128_all_comparison.png')
         plt.close()
 
@@ -848,7 +848,7 @@ for  arq in arquivos:
         plt.ylim((0.75, 1))
         #plt.title('NVCM example with 128x1x1 mesh')
         plt.ylabel('$z_{CO_2}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zCO2_FR3_256_all_comparison.png')
         plt.close()
 
@@ -863,7 +863,7 @@ for  arq in arquivos:
         plt.ylim((0.75, 1))
         #plt.title('NVCM example with 128x1x1 mesh')
         plt.ylabel('$z_{CO_2}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zCO2_FR3_256_comparison.png')
         plt.close()
 
@@ -879,7 +879,7 @@ for  arq in arquivos:
         plt.ylim((0, 0.65))
         #plt.title('NVCM example with 128x1x1 mesh')
         plt.ylabel('$z_{C1}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zC1_FR3_128_all_comparison.png')
         plt.close()
 
@@ -895,7 +895,7 @@ for  arq in arquivos:
         plt.ylim((0, 0.65))
         #plt.title('NVCM example with 128x1x1 mesh')
         plt.ylabel('$z_{C1}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_zC1_FR3_256_all_comparison.png')
         plt.close()
 
@@ -910,7 +910,7 @@ for  arq in arquivos:
         plt.ylim((0, 0.65))
         #plt.title('NVCM example with 128x1x1 mesh')
         plt.ylabel('$z_{C1}$')
-        plt.xlabel('Distance')
+        plt.xlabel('Distance [m]')
         plt.savefig('results/compositional/FR/5k_C1_FR3_256_comparison.png')
         plt.close()
 

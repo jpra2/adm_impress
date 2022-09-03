@@ -89,7 +89,7 @@ class PropertiesCalc:
         if ctes.load_w:
             fprop.Vj = np.concatenate((fprop.Vj,self.Vw[np.newaxis,:]),axis=0)
 
-        else: fprop.Vj = self.Vw[np.newaxis,:]
+        elif not ctes.load_k: fprop.Vj = self.Vw[np.newaxis,:]
         fprop.Vj = fprop.Vj[np.newaxis,:]
 
     def set_initial_mole_numbers(self, fprop):

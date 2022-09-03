@@ -57,6 +57,7 @@ class StabilityCheck(StabilityCheck_2ph):
             self.K[:,sp[4]>1] = self.Kw[:,sp[4]>1]
 
         Zl, Zv = self.molar_properties(np.ones_like(ponteiro_flash, dtype=bool)) # calculo do flash bifasico
+        #3import pdb; pdb.set_trace()
         #self.z[self.z<=0] = 1e-30
 
         self.y[:,(self.V<0) + (self.V>1)] = z[:,(self.L>1) + (self.V>1)]
@@ -69,7 +70,7 @@ class StabilityCheck(StabilityCheck_2ph):
             self.x[self.x < 0] = 0.0
         if (self.y < 0.0).any() and (self.y[self.y < 0] > -1e-8).any():
             self.y[self.y < 0] = 0.0
-
+        #import pdb; pdb.set_trace()
         ponteiro_flash_3phase = np.zeros(len(self.P), dtype = bool)
         ponteiro_flash_3phase[(self.L != 1) & (self.V != 1)] = True
         ponteiro_flash_3phase2 = ponteiro_flash_3phase.copy()
@@ -120,7 +121,7 @@ class StabilityCheck(StabilityCheck_2ph):
         #self.rho_V[ponteiro_flash_3phase], self.rho_A[ponteiro_flash_3phase] = \
         ponteiro_flash_3phase[z[-1,:]==0] = False
         ponteiro_flash_3phase[z[-1,:]>0] = True
-
+        #import pdb; pdb.set_trace()
         Zl[ponteiro_flash_3phase], Zv[ponteiro_flash_3phase], Za =\
             self.molar_properties_3phase(self.z, ponteiro_flash_3phase.copy())
 
@@ -164,9 +165,12 @@ class StabilityCheck(StabilityCheck_2ph):
     def equilibrium_ratio_aqueous(self, z):
 
         self.Kw = np.zeros_like(z)
-        self.Kw[-1] = 0.999 / z[-1][0]
-        self.Kw[0:-1] = 0.001 / (len(z) - 1) / z[0:-1,[0]]
-        self.Kw[z==0] = 0.0
+        #import pdb; pdb.set_trace()
+        if any(z[-1][0].flatten())!=0:
+            self.Kw[-1] = 0.999 / z[-1][0]
+            self.Kw[0:-1] = 0.001 / (len(z) - 1) / z[0:-1,[0]]
+            self.Kw[z==0] = 0.0
+        ##import pdb; pdb.set_trace()
 
         #self.Kw = 0.001 / (len(z) - 1) / z
         #self.Kw[3] = 0.999 / z[-1]
@@ -401,8 +405,9 @@ class StabilityCheck(StabilityCheck_2ph):
             ponteiro_aux = ponteiro[ponteiro]
             ponteiro_aux[stop_criteria < 1e-9] = False
             ponteiro[ponteiro] = ponteiro_aux
+        #import pdb; pdb.set_trace()
 
-
+        #import pdb; pdb.set_trace()
         lny = np.log(y)
 
         #TPD = np.sum(y[:]*(lnphiy[:] + lny[:] - lnphix[:] - np.log(x)))
@@ -534,7 +539,7 @@ class StabilityCheck(StabilityCheck_2ph):
         self.V[ponteiro] = 0.5
         self.A[ponteiro] = 0.5
 
-        #self.K_A = self.Kw[:,ponteiro]
+        #self.K_A = self.Kw[:,ponteiro]molar_properties
         self.K_A[:, ponteiro] = self.Kw[:, ponteiro]
 
         #t0 = time.time()
@@ -548,6 +553,7 @@ class StabilityCheck(StabilityCheck_2ph):
         Zv = np.empty_like(Zl)
         Za = np.zeros_like(Zl)
         while any(ponteiro):
+            #import pdb; pdb.set_trace()
             self.solve_objective_function_Whitson_for_V_and_A(z, self.V, self.A, np.copy(ponteiro))
 
             lnphil, Zl[ponteiro] = self.lnphi_Z_based_on_deltaG(self.x[:,ponteiro], self.P[ponteiro], self.ph_L[ponteiro])
@@ -680,17 +686,20 @@ class StabilityCheck(StabilityCheck_2ph):
             Jacobian[:,1,0] = df_AdV
             Jacobian[:,1,1] = df_AdA
 
-            try:
-                Jacobian_inv = np.linalg.inv(Jacobian)
-            except: import pdb; pdb.set_trace()
-
             '''
             solucao = np.zeros_like(f.T)
             for i in range(ponteiro[ponteiro].size):
                 solucao[i] = f.T[i].dot(Jacobian_inv[i])
             '''
-            solucao_aux = f.T.dot(Jacobian_inv)
-            solucao = np.diagonal(solucao_aux).T
+            #try:
+                #Jacobian_inv = np.linalg.inv(Jacobian)
+            #except: import pdb; pdb.set_trace()
+            #solucao_aux = f.T.dot(Jacobian_inv)
+            #solucao = np.diagonal(solucao_aux).T
+
+            try:
+                solucao = np.linalg.solve(Jacobian, f.T)
+            except: import pdb; pdb.set_trace()
 
             V_and_A[:, ponteiro] = V_and_A[:, ponteiro] - solucao.T
             #import pdb; pdb.set_trace()

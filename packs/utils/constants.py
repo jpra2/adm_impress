@@ -30,9 +30,9 @@ def init(M, wells):
 
     P_SC = 101325
     T_SC = 288.706
-
-    #EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
-    EOS_class = getattr(equation_of_state_teste, data_loaded['compositional_data']['equation_of_state'])
+    if data_loaded['water_miscible']:
+        EOS_class = getattr(equation_of_state_teste, data_loaded['compositional_data']['equation_of_state'])
+    else: EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
 
     MUSCL = dict()
     MUSCL['set'] = data_loaded['compositional_data']['MUSCL']['set']
