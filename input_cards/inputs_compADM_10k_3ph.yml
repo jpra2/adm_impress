@@ -183,7 +183,7 @@ Permeability:
 Pressure:
   r1:
     type: all
-    value: 7092750 #6.205e6 # Pa
+    value: 6.205e6 # Pa
 
 Temperature:
   r1:

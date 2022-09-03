@@ -57,7 +57,7 @@ class StabilityCheck(StabilityCheck_2ph):
             self.K[:,sp[4]>1] = self.Kw[:,sp[4]>1]
 
         Zl, Zv = self.molar_properties(np.ones_like(ponteiro_flash, dtype=bool)) # calculo do flash bifasico
-        #3import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         #self.z[self.z<=0] = 1e-30
 
         self.y[:,(self.V<0) + (self.V>1)] = z[:,(self.L>1) + (self.V>1)]
@@ -141,6 +141,7 @@ class StabilityCheck(StabilityCheck_2ph):
         self.x[self.x==1e-30] = 0
         self.y[self.y==1e-30] = 0
         self.z[self.z==1e-30] = 0
+        import pdb; pdb.set_trace()
         return self.L, self.V, self.A, self.xkj, self.Csi_j, self.rho_j
 
     def organize_outputs(self, ksi_L, ksi_V, ksi_A, rho_L, rho_V, rho_A):

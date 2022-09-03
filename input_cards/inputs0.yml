@@ -18,7 +18,7 @@ Porosity:
 Pressure:
   r1:
     type: all
-    value: 7092750
+    value: 6.205e6
 Saturation:
   r1:
     type: all
