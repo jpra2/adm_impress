@@ -28,7 +28,7 @@ Sg_CMG = [float(line.rstrip('\n\r')) for line in fSg]
 for arq in arquivos:
     if  arq.startswith(name):
 
-        datas = np.load('flying/Teste_criterio_de_parada/16_CV/results_6k_SchmallNEW_16_FI_20days_SC0_0001_NEWDT_2001.npy', allow_pickle=True)
+        datas = np.load('flying/Teste_criterio_de_parada/16_CV/results_6k_SchmallNEW_16_FI_20days_ADIMENSIONALIZADO_POCONEW_91.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas[1:]:
             Sw_FI_e4 = data[5]

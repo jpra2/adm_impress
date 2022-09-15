@@ -42,7 +42,7 @@ class CompositionalFVM:
 
             solve = NewtonSolver(fprop)
             Fk_vols_total, wave_velocity, total_flux_internal_faces = \
-                solve.solver(wells, fprop, delta_t, Nk_old, G, flash, StabilityCheck, p1, M, face_properties, phase_densities)
+                solve.solver(wells, fprop, delta_t, Nk_old, G, flash, StabilityCheck, p1, M, face_properties, phase_densities, psolve, dVjdNk, dVjdP, P_old)
 
 
             delta_t_new = delta_time.update_CFL(delta_t, fprop, wells, Fk_vols_total, fprop.Nk, wave_velocity)

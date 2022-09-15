@@ -14,7 +14,8 @@ for arq in arquivos:
     if  arq.startswith(name):
         n=512
 
-        datas2 = np.load('flying/results_Buckley_Leverett_case_512_FI_693.npy', allow_pickle=True)
+        #datas2 = np.load('flying/results_Buckley_Leverett_case_512_FI_693.npy', allow_pickle=True)
+        datas2 = np.load('flying/results_Buckley_Leverett_case_512_FI_POCONEW_693.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas2[1:]:
             Sw_FI = data[5]

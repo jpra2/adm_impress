@@ -46,7 +46,7 @@ for arq in arquivos:
             zC20_FI_e6 = data[10][5]
             x1 = np.linspace(0, 50, n)
 
-        datas2 = np.load('flying/Teste_criterio_de_parada/32_CV/results_6k_SchmallNEW_32_FI_20days_ADIMENSIONALIZADO_e3_NEW_2001.npy', allow_pickle=True)
+        datas2 = np.load('flying/Teste_criterio_de_parada/32_CV/results_6k_SchmallNEW_32_FI_20days_ADIMENSIONALIZADO_e3_NEWDT_50.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas2[1:]:
             Sw_FI_e3 = data[5]

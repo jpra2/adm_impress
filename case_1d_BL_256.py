@@ -14,7 +14,8 @@ for arq in arquivos:
     if  arq.startswith(name):
         n=256
 
-        datas2 = np.load('flying/results_Buckley_Leverett_case_256_IMPEC_NEW_491.npy', allow_pickle=True)
+        #datas2 = np.load('flying/results_Buckley_Leverett_case_256_IMPEC_NEW_491.npy', allow_pickle=True)
+        datas2 = np.load('flying/results_Buckley_Leverett_case_256_FI_ADIMENSIONALIZADO_e4POCONEW_232.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas2[1:]:
             Sw_FI = data[5]

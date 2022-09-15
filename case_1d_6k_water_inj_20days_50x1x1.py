@@ -46,22 +46,21 @@ for arq in arquivos:
             zC20_FOU = data[10][5]
             x1 = np.linspace(0, 50, n)
 
-        """datas2 = np.load('flying/6k/.npy', allow_pickle=True)
+        datas2 = np.load('flying/6k/results_6k_SchmallNEW_50_FI_20days_POCONEW_203.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas2[1:]:
-            Sw_MUSCL = data[5]
-            So_MUSCL = data[6]
-            Sg_MUSCL = data[7]
-            Oil_p_MUSCL = data[8]
-            Gas_p_MUSCL = data[9]
-            pressure_MUSCL = data[4]/1e3
-            time_MUSCL = data[3]
-            zC1_MUSCL = data[10][0]
-            zC3_MUSCL = data[10][1]
-            zC6_MUSCL = data[10][2]
-            zC10_MUSCL = data[10][3]
-            zC15_MUSCL = data[10][4]
-            zC20_MUSCL = data[10][5]"""
+            Sw_FI_2 = data[5]
+            So_FI_2 = data[6]
+            Sg_FI_2 = data[7]
+            Oil_p_FI_2 = data[8]
+            Gas_p_FI_2 = data[9]
+            pressure_FI_2 = data[4]/1e3
+            zC1_FI_2 = data[10][0]
+            zC3_FI_2 = data[10][1]
+            zC6_FI_2 = data[10][2]
+            zC10_FI_2 = data[10][3]
+            zC15_FI_2 = data[10][4]
+            zC20_FI_2 = data[10][5]
 
         datas3 = np.load('flying/6k/results_6k_SchmallNEW_50_FI_20days_20001.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
@@ -87,9 +86,10 @@ for arq in arquivos:
         #plt.plot(x1, pressure_MUSCL, 'g')
         #plt.plot(x_CMG, pressure_CMG, '-bo')
         plt.plot(x1, pressure_FI, 'r')
+        plt.plot(x1, pressure_FI_2, '-b')
         plt.ylabel('Pressure (kPa)')
         plt.xlabel('Distance')
-        plt.legend(('IMPEC', 'FI'))
+        plt.legend(('IMPEC', 'FI', 'FI novo poço'))
         #plt.legend(('IMPEC', 'FI', 'FI Teste'))
         #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
         plt.grid()
@@ -101,7 +101,8 @@ for arq in arquivos:
         #plt.plot(x1, So_MUSCL, 'g')
         plt.plot(x_CMG, So_CMG, 'k')
         plt.plot(x1, So_FI, 'r')
-        plt.legend(('CMG', 'FI'))
+        plt.plot(x1, So_FI_2, '-b')
+        plt.legend(('CMG', 'FI', 'FI novo poço'))
         #plt.legend(('IMPEC', 'FI', 'FI Teste'))
         #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
         plt.ylabel('Oil saturation')
@@ -116,7 +117,8 @@ for arq in arquivos:
         #plt.plot(x1, Sw_MUSCL, 'g')
         plt.plot(x_CMG, Sw_CMG, 'k')
         plt.plot(x1, Sw_FI, 'r')
-        plt.legend(('CMG', 'FI'))
+        plt.plot(x1, Sw_FI_2, '-b')
+        plt.legend(('CMG', 'FI', 'FI novo poço'))
         #plt.legend(('IMPEC', 'FI', 'FI Teste'))
         #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
         plt.ylabel('Water saturation')
@@ -131,7 +133,8 @@ for arq in arquivos:
         #plt.plot(x1, Sg_MUSCL, 'g')
         plt.plot(x_CMG, Sg_CMG, 'k')
         plt.plot(x1, Sg_FI, 'r')
-        plt.legend(('CMG', 'FI'))
+        plt.plot(x1, Sg_FI_2, '-b')
+        plt.legend(('CMG', 'FI', 'FI novo poço'))
         #plt.legend(('IMPEC', 'FI', 'FI Teste'))
         #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
         plt.ylabel('Gas saturation')

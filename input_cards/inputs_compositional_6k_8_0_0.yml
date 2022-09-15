@@ -1,6 +1,6 @@
 #Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 8x1x1_6k_SchmallNEW.msh
-name_save_file: 'results_6k_SchmallNEW_8_FI_20days_ADIMENSIONALIZADO_e3_NEW'
+name_save_file: 'results_6k_SchmallNEW_8_FI_20days_ADIMENSIONALIZADO_POCONEW'
 
 compositional: True
 hidrocarbon_components: True
@@ -28,7 +28,7 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: .7
+  CFL: 2.0
 
   solver:
     IMPSAT: false

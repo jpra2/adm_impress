@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 8x1x1_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_8_FI_ADIMENSIONALIZADO_e3_NEW'
+name_save_file: 'results_Buckley_Leverett_case_8_FI_ADIMENSIONALIZADO_e4_POCONEW'
 
 compositional: True
 hidrocarbon_components: True

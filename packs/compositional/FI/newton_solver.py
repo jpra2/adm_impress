@@ -14,12 +14,7 @@ from packs.directories import data_loaded
 
 class NewtonSolver:
     def __init__(self, fprop):
-        #self.M = M
-        #self.wells = wells
-        #self.fprop = fprop
-        #self.delta_t = delta_t
-        #self.Pot_hid = Pot_hid
-        #self.Nk_old = Nk_old
+
         self.EOS = ctes.EOS_class(fprop.T)
         self.phase_viscosity_class = getattr(phase_viscosity,
         data_loaded['compositional_data']['phase_viscosity'])
@@ -29,34 +24,43 @@ class NewtonSolver:
             self.Sorw, self.Sorg, self.Swr, self.Sgr = \
                             data_loaded['compositional_data']['residual_saturations'].values()
 
-    def solver(self, wells, fprop, delta_t, Nk_old, G, flash, StabilityCheck, p1, M, face_properties, phase_densities):
+    def solver(self, wells, fprop, delta_t, Nk_old, G, flash, StabilityCheck, p1, M, face_properties, phase_densities, psolve, dVjdNk, dVjdP, P_old):
 
         self.well_term(wells)
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
-        stop_criteria = 1e-3 # TESTAR
+        stop_criteria = 1e-4 # TESTAR
         contador = 0
-        #residuo = self.residual_calculation(fprop, Pot_hid, wells, Nk_old, delta_t)
-        residuo = 10.0
-        while np.max(abs(residuo)) > stop_criteria:
-            # calculo dos residuos, jacobiana, e solucao do sistema
+
+        residuo = self.residual_calculation(fprop, Pot_hid, wells, Nk_old, delta_t)
+
+        # Adimensionalização dos residuos
+        residuo_adm = residuo.copy()
+        bool_inds = np.ones_like(residuo,dtype=bool)
+        bool_inds[0:len(residuo):ctes.n_components+1] = False
+        residuo_adm[bool_inds] = residuo[bool_inds] / Nk_old.T.flatten()
+        residuo_adm[~bool_inds] = residuo[~bool_inds] / fprop.Vp
+
+        while np.max(abs(residuo_adm)) > stop_criteria:
 
             ''' Rever para usar matriz esparsa '''
-            residuo = self.residual_calculation(fprop, Pot_hid, wells, Nk_old, delta_t)
             jacobiana = self.jacobian_calculation(fprop, Pot_hid, delta_t, wells)
 
             '---------------------- Solução do sistema --------------------------'
             jacobiana_boundary = jacobiana.copy()
             jacobiana_boundary[(ctes.n_components + 1) * ctes.bhp_ind , :] = 0.0
             jacobiana_boundary[(ctes.n_components + 1) * ctes.bhp_ind , (ctes.n_components + 1) * ctes.bhp_ind] = 1.0
+            residuo_boundary = residuo.copy()
+            residuo_boundary[(ctes.n_components + 1) * ctes.bhp_ind] = 0.0
 
             Jb = sparse.csr_matrix(jacobiana_boundary)
-            delta_x = spsolve(Jb, -residuo)
-            #delta_x = np.linalg.solve(jacobiana_boundary, -residuo)
+            delta_x = spsolve(Jb, -residuo_boundary)
+
 
             '--------------------- Atualização das variáveis ---------------------'
             detla_x_new = np.reshape(delta_x, (ctes.n_volumes, ctes.n_components + 1)).T
             # Gambiarra
             detla_x_new[0] = detla_x_new[0]/2
+
 
             """
             '----------------- Pre condicionador de Jacobi ----------------------'
@@ -77,6 +81,12 @@ class NewtonSolver:
             'Gambiarra'
             detla_x_new[0] = detla_x_new[0]/2
             """
+
+
+            detla_x_new[1:,-1] = 0.0 # Considerar que:
+            # Para a hipotese de considerar o bloco de P prescrita calculado separadamente
+            # Para o caso 6K, usar essa lógica
+            # Para o caso do BL = comentar
 
             fprop.P += detla_x_new[0]
             fprop.Nk += detla_x_new[1:]
@@ -121,6 +131,7 @@ class NewtonSolver:
 
             #if any(fprop.L!=0): import pdb; pdb.set_trace()
 
+
             '----------------------- Update fluid properties ----------------------'
             p1.run_inside_loop(M, fprop)
             G = self.update_gravity_term(fprop)
@@ -128,7 +139,8 @@ class NewtonSolver:
             face_properties(fprop, G)
             phase_densities(fprop)
 
-            'Calcular termo de poço com pressão prescrita'
+
+            '----- Calcular termo de poço com pressão prescrita caso nao adote o bloco separado----'
             wp = wells['ws_p']
             transmissibility = self.transmissibility_FI(fprop)
             Pot_hidj_new = fprop.P[ctes.v0[:,0]]
@@ -142,22 +154,111 @@ class NewtonSolver:
 
             mob_ratio = fprop.mobilities[:,:,wp] / np.sum(fprop.mobilities[:,:,wp], axis = 1)
             q_term = fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp]
-            #well_term = (- jacobiana.dot(delta_x)/delta_t)[(ctes.n_components + 1) * ctes.bhp_ind]
             well_term = -(fprop.Vt[wp] - fprop.Vp[wp])/delta_t
-            self.q[:,wp] += np.sum(q_term * well_term, axis = 1)
+
+            #self.q[:,wp] += np.sum(q_term * well_term, axis = 1)
             #self.q[:,wp] = - Fk_vols_total_new[:,wp]
+            # Fica comentado caso o bloco de P prescrita calculado separadamente
+            # Para o caso 6K, comentar
+            # Para o caso do BL, calcular dessa forma
+
 
             contador += 1
-            # Here
+
+            residuo = self.residual_calculation(fprop, Pot_hid, wells, Nk_old, delta_t)
+
+            # Adimensionalização dos residuos
             bool_inds = np.ones_like(residuo,dtype=bool)
             bool_inds[0:len(residuo):ctes.n_components+1] = False
-            residuo[bool_inds] = residuo[bool_inds] / Nk_old.T.flatten()
-            residuo[~bool_inds] = residuo[~bool_inds] / fprop.Vp
+            residuo_adm[bool_inds] = residuo[bool_inds] / Nk_old.T.flatten()
+            residuo_adm[~bool_inds] = residuo[~bool_inds] / fprop.Vp
+
+
+            residuo_adm[(ctes.n_components + 1) * ctes.bhp_ind] = 0.0 # Considerar que:
+            it = int((ctes.n_components + 1) * ctes.bhp_ind) # Considerar que:
+            residuo_adm[it:] = 0.0 # Considerar que:
+            # Para a hipotese de considerar o bloco de P prescrita calculado separadamente
+            # Para o caso 6K, usar essa lógica
+            # Para o caso do BL = comentar
+
+
             if contador > 100:
                 import pdb; pdb.set_trace()
 
         print(f'{contador} iterações de Newton')
-        #import pdb; pdb.set_trace()
+
+
+
+        '----- Calcular termo de poço com pressão prescrita caso o bloco seja separado----'
+        dVjdNk, dVjdP = self.dVt_derivatives(fprop)
+        self.dVtP = dVjdP.sum(axis=1)[0]
+        self.dVtk = dVjdNk.sum(axis=1)
+
+        well_term = ((ctes.Vbulk[wp] * ctes.porosity[wp] * ctes.Cf - self.dVtP[wp]) * (fprop.P[wp] - P_old[wp]) + \
+                        (fprop.Vp[wp] - fprop.Vt[wp]))/delta_t - (self.dVtk[:,wp] * Fk_vols_total_new[:,wp]).sum(axis=0)
+
+        if (len(wp)>1) and (well_term[0]<0):
+            well_term = -well_term
+            import pdb; pdb.set_trace()
+
+
+        mob_ratio = fprop.mobilities[:,:,wp] / np.sum(fprop.mobilities[:,:,wp], axis = 1)
+        q_term = fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp]
+
+        self.q[:,wp] = np.sum(q_term * well_term, axis = 1)
+
+        fprop.Nk[:,wp] = Nk_old[:,wp] + delta_t * (Fk_vols_total_new[:,wp] + self.q[:,wp])
+        fprop.z = fprop.Nk[0:ctes.Nc,:] / fprop.Nk[0:ctes.Nc,:].sum(axis=0)
+
+        '----------------- Perform Phase stability test and flash -------------'
+        #if fprop.Sg[0]<1: import pdb; pdb.set_trace()
+        if any(fprop.Sg>1): import pdb; pdb.set_trace()
+        if ctes.load_k and ctes.compressible_k:
+
+            self.p2 = StabilityCheck(fprop.P, fprop.T)
+            fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
+            fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
+            fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
+            self.p2.run_init(fprop.P, np.copy(fprop.z))#, wells)
+
+            if len(wells['ws_inj'])>0 and not self.p2.constant_K:
+
+                if any(wells['inj_cond']=='reservoir'):
+                    injP_bool = wells['ws_p'] == wells['ws_inj']
+                    injP = wells['ws_p'][injP_bool]
+
+                    z = (wells['z']).T
+
+                    p_well = StabilityCheck(fprop.P[wells['ws_inj']], fprop.T)
+                    L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
+                    p_well.run_init(fprop.P[wells['ws_inj']],z[0:ctes.Nc])
+
+                    if any(injP_bool):
+                        qk_molar = fprop.qk_molar[:,injP]
+                        #wells['values_q_vol'] = np.zeros_like((ctes.n_components,len(injP)))
+                        wells['values_q_vol'] = qk_molar / \
+                            ((Csi_V * V + Csi_L * L))#[wells['inj_cond']=='reservoir']
+                    else:
+                        wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
+                        #wells['values_q_vol'][:,wells['inj_cond']=='reservoir'] = self.q_vol
+                #else:
+                    #wells['inj_p_term'] = []
+                    #qk_molar = wells['values_q'][:,wells['inj_cond']=='surface']
+                    #wells['values_q_vol'][:,wells['inj_cond']=='surface'] = qk_molar / \
+                    #    ((Csi_V * V + Csi_L * L))[wells['inj_cond']=='surface']
+
+        #if any(fprop.L!=0): import pdb; pdb.set_trace()
+
+        '----------------------- Update fluid properties ----------------------'
+        p1.run_inside_loop(M, fprop)
+        G = self.update_gravity_term(fprop)
+        Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
+        face_properties(fprop, G)
+        phase_densities(fprop)
+        '--------------------------- FIM do termo de poço --------------------------'
+
+
+
         # Retornar termos que são necessários para o cálculo do CFL
         wave_velocity = Fk_vols_total_new/fprop.Nk
         Ft_internal_faces = - np.sum(fprop.mobilities_internal_faces
@@ -165,7 +266,9 @@ class NewtonSolver:
             ctes.g * fprop.rho_j_internal_faces * (z_up - z)), axis = 1)
 
         fprop.qk_molar = self.q
+
         return Fk_vols_total_new, wave_velocity, Ft_internal_faces
+
 
     def residual_calculation(self, fprop, Pot_hid, wells, Nk_old, delta_t):
         # Equacao de conservacao da massa
@@ -267,6 +370,49 @@ class NewtonSolver:
                 jacobian[i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1), \
                          (i+1)*(ctes.n_components + 1) : (i+2)*(ctes.n_components + 1)] = J_local_E
         if any(np.isnan(jacobian).flatten()): import pdb; pdb.set_trace()
+
+        """
+        import pdb; pdb.set_trace()
+        Here = True
+        '''------------------------ Teste ----------------------'''
+        #Teste = sp.csr_matrix((ctes.n_volumes*(ctes.n_components + 1), ctes.n_volumes*(ctes.n_components + 1)))
+        Teste = np.zeros([ctes.n_volumes*(ctes.n_components + 1), ctes.n_volumes*(ctes.n_components + 1)])
+        J_local = np.zeros([ctes.n_components + 1, ctes.n_components + 1])
+        J_local_W = np.zeros([ctes.n_components + 1, ctes.n_components + 1])
+        J_local_E = np.zeros([ctes.n_components + 1, ctes.n_components + 1])
+        for i in range(ctes.n_volumes):
+            J_local[0,0] = d_residuoporoso_dP[i]
+            J_local[0,1:] = d_residuoporoso_dNk[...,i]
+            J_local[1:,0] = d_consvmassa_dP_P[...,i]
+            J_local[1:,1:] = d_consvmassa_dNk_P[...,i]
+
+            J_local_W[1:,0] = d_consvmassa_dP_W[...,i]
+            J_local_W[1:,1:] = d_consvmassa_dNk_W[...,i]
+
+            J_local_E[1:,0] = d_consvmassa_dP_E[...,i]
+            J_local_E[1:,1:] = d_consvmassa_dNk_E[...,i]
+
+            index_right = ctes.v0[:, 1][ctes.v0[:, 0] == i]
+            index_left = ctes.v0[:, 0][ctes.v0[:, 1] == i]
+
+
+            Teste[i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1), \
+                i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1)] = J_local
+
+            Teste[i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1), \
+                     index_left*(ctes.n_components + 1) : (index_left+1)*(ctes.n_components + 1)] = J_local_W
+
+            Teste[i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1), \
+                     index_right*(ctes.n_components + 1) : (index_right+1)*(ctes.n_components + 1)] = J_local_E
+
+
+
+            lines = np.array([ctes.v0[:, 0], ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
+            cols = np.array([ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
+            data = np.array([-t0[i,:], -t0[i,:], +t0[i,:], +t0[i,:]]).flatten()
+
+        import pdb; pdb.set_trace()
+        """
         return jacobian
 
     def d_residuoporoso_dP(self, fprop):
@@ -898,3 +1044,23 @@ class NewtonSolver:
         else:
             G = np.zeros_like(fprop.rho_j)
         return G
+
+    def dVt_derivatives(self, fprop):
+        dVjdNk = np.zeros((ctes.n_components, ctes.n_phases, ctes.n_volumes))
+        dVjdP = np.empty((1, ctes.n_phases, ctes.n_volumes))
+        if ctes.load_k:
+            self.EOS = ctes.EOS_class(fprop.T)
+            if not ctes.compressible_k:
+                dVjdNk[0:ctes.Nc,0,:] = 1 / fprop.Csi_j[0,0,:]
+                dVjdNk[0:ctes.Nc,1,:] =  np.zeros_like(dVjdNk[0:ctes.Nc,0])#1 / fprop.Csi_j[0,1,:]
+                dVjdP[0,0,:] = np.zeros(ctes.n_volumes)
+                dVjdP[0,1,:] = np.zeros_like(dVjdP[0,0,:])
+            else:
+                dVjdP[0,0,:], dVjdP[0,1,:], dVjdNk[0:ctes.Nc,0,:], dVjdNk[0:ctes.Nc,1,:] = \
+                self.EOS.get_all_derivatives(fprop)
+
+        if ctes.load_w:
+            dVjdNk[ctes.n_components-1,2,:] = 1 / fprop.Csi_j[0,ctes.n_phases-1,:]
+            dVjdP[0,2,:] = - fprop.Nk[ctes.n_components-1,:] * fprop.Csi_W0 * ctes.Cw / (fprop.Csi_W)**2
+
+        return dVjdNk, dVjdP

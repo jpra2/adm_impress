@@ -240,6 +240,7 @@ class run_simulation:
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         #if len(wells['ws_prod'])>0: self.update_production(fprop, wells)
         # Comentar linha acima no FI
+        #import pdb; pdb.set_trace()
 
     def prod_rate_SC(self, fprop, wells):
         if ctes.load_k:

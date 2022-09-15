@@ -14,7 +14,7 @@ for arq in arquivos:
     if  arq.startswith(name):
         n=16
 
-        datas = np.load('flying/Teste_criterio_de_parada/BL/16_CV/results_Buckley_Leverett_case_16_FI_ADIMENSIONALIZADO_e9dt20_36.npy', allow_pickle=True)
+        datas = np.load('flying/Teste_criterio_de_parada/BL/16_CV/results_Buckley_Leverett_case_16_FI_ADIMENSIONALIZADO_e4NEWPOCO_36.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas[1:]:
             Sw_FI_e9 = data[5]

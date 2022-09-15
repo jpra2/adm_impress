@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 32x1x1_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_32_FI_ADIMENSIONALIZADO_e3dt20_NEW'
+name_save_file: 'results_Buckley_Leverett_case_32_FI_ADIMENSIONALIZADO_e4POCONEW'
 
 compositional: True
 hidrocarbon_components: True
@@ -72,7 +72,7 @@ compositional_data:
     deltaSlim: 0.8
     deltaVlim: 100
     delta_t_ini: 10
-    delta_tmax: 20
+    delta_tmax: 200
     delta_tmin: 0.001
     #2.765
 
