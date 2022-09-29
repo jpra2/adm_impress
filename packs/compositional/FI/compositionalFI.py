@@ -18,8 +18,10 @@ class CompositionalFVM:
             self.get_faces_properties_weighted_average(fprop, G)
         else: self.get_faces_properties_upwind(fprop, G)'''
         self.get_faces_properties_upwind(fprop, G)
+        #self.get_faces_properties_weighted_average(fprop, G)
         self.get_phase_densities_internal_faces(fprop)
         face_properties = self.get_faces_properties_upwind
+        #face_properties = self.get_faces_properties_weighted_average
         phase_densities = self.get_phase_densities_internal_faces
 
         r = 0.8 # enter the while loop
@@ -45,9 +47,10 @@ class CompositionalFVM:
                 solve.solver(wells, fprop, delta_t, Nk_old, G, flash, StabilityCheck, p1, M, face_properties, phase_densities, psolve, dVjdNk, dVjdP, P_old)
 
 
-            delta_t_new = delta_time.update_CFL(delta_t, fprop, wells, Fk_vols_total, fprop.Nk, wave_velocity)
-            r = delta_t_new/delta_t
-            delta_t = delta_t_new
+            #delta_t_new = delta_time.update_CFL(delta_t, fprop, wells, Fk_vols_total, fprop.Nk, wave_velocity)
+            #r = delta_t_new/delta_t
+            #delta_t = delta_t_new
+            r=1
         #import pdb; pdb.set_trace()
         #dd = q
 
@@ -150,10 +153,15 @@ class CompositionalFVM:
         fprop.mobilities_internal_faces = self.weighted_by_volume_average(fprop, fprop.mobilities)
         fprop.Csi_j_internal_faces = self.weighted_by_volume_average(fprop, fprop.Csi_j)
         fprop.xkj_internal_faces = self.weighted_by_volume_average(fprop, fprop.xkj)
+        #import pdb; pdb.set_trace()
+        #upwind no contorno
+        fprop.mobilities_internal_faces[...,0] = fprop.mobilities[...,0]
+        fprop.Csi_j_internal_faces[...,0] = fprop.Csi_j[...,0]
+        fprop.xkj_internal_faces[...,0] = fprop.xkj[...,0]
 
-        #fprop.mobilities_internal_faces[...,[0,1]] = fprop.mobilities[...,[0,-2]]
-        #fprop.Csi_j_internal_faces[...,[0,1]] = fprop.Csi_j[...,[0,-2]]
-        #fprop.xkj_internal_faces[...,[0,1]] = fprop.xkj[...,[0,-2]]
+        fprop.mobilities_internal_faces[...,1] = fprop.mobilities[...,-1]
+        fprop.Csi_j_internal_faces[...,1] = fprop.Csi_j[...,-1]
+        fprop.xkj_internal_faces[...,1] = fprop.xkj[...,-1]
 
     def get_phase_densities_internal_faces(self, fprop):
         fprop.rho_j_internal_faces = self.weighted_by_volume_average(fprop, fprop.rho_j)

@@ -46,23 +46,8 @@ for arq in arquivos:
             zC20_FOU = data[10][5]
             x1 = np.linspace(0, 50, n)
 
-        datas2 = np.load('flying/6k/results_6k_SchmallNEW_50_FI_20days_POCONEW_203.npy', allow_pickle=True)
-        #import pdb; pdb.set_trace()
-        for data in datas2[1:]:
-            Sw_FI_2 = data[5]
-            So_FI_2 = data[6]
-            Sg_FI_2 = data[7]
-            Oil_p_FI_2 = data[8]
-            Gas_p_FI_2 = data[9]
-            pressure_FI_2 = data[4]/1e3
-            zC1_FI_2 = data[10][0]
-            zC3_FI_2 = data[10][1]
-            zC6_FI_2 = data[10][2]
-            zC10_FI_2 = data[10][3]
-            zC15_FI_2 = data[10][4]
-            zC20_FI_2 = data[10][5]
 
-        datas3 = np.load('flying/6k/results_6k_SchmallNEW_50_FI_20days_20001.npy', allow_pickle=True)
+        datas3 = np.load('flying/6k/results_6k_SchmallNEW_50_FI_20days_POCONEW_203.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas3[1:]:
             Sw_FI = data[5]
@@ -78,6 +63,22 @@ for arq in arquivos:
             zC15_FI = data[10][4]
             zC20_FI = data[10][5]
 
+        datas3 = np.load('flying/6k/results_6k_SchmallNEW_50_FI_20days_DcsiDP_test_203.npy', allow_pickle=True)
+        #import pdb; pdb.set_trace()
+        for data in datas3[1:]:
+            Sw_FI_Dcsi = data[5]
+            So_FI_Dcsi = data[6]
+            Sg_FI_Dcsi = data[7]
+            Oil_p_FI_Dcsi = data[8]
+            Gas_p_FI_Dcsi = data[9]
+            pressure_FI_Dcsi = data[4]/1e3
+            zC1_FI_Dcsi = data[10][0]
+            zC3_FI_Dcsi = data[10][1]
+            zC6_FI_Dcsi = data[10][2]
+            zC10_FI_Dcsi = data[10][3]
+            zC15_FI_Dcsi = data[10][4]
+            zC20_FI_Dcsi = data[10][5]
+
 
         
         plt.figure(1)
@@ -86,12 +87,10 @@ for arq in arquivos:
         #plt.plot(x1, pressure_MUSCL, 'g')
         #plt.plot(x_CMG, pressure_CMG, '-bo')
         plt.plot(x1, pressure_FI, 'r')
-        plt.plot(x1, pressure_FI_2, '-b')
+        plt.plot(x1, pressure_FI_Dcsi, '--b')
         plt.ylabel('Pressure (kPa)')
         plt.xlabel('Distance')
-        plt.legend(('IMPEC', 'FI', 'FI novo poço'))
-        #plt.legend(('IMPEC', 'FI', 'FI Teste'))
-        #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
+        plt.legend(('IMPEC', 'FI', 'FI Dcsi_DP teste'))
         plt.grid()
         plt.savefig('results/6k_50/20days/pressure_6k_20days' + '.png')
 
@@ -101,10 +100,8 @@ for arq in arquivos:
         #plt.plot(x1, So_MUSCL, 'g')
         plt.plot(x_CMG, So_CMG, 'k')
         plt.plot(x1, So_FI, 'r')
-        plt.plot(x1, So_FI_2, '-b')
-        plt.legend(('CMG', 'FI', 'FI novo poço'))
-        #plt.legend(('IMPEC', 'FI', 'FI Teste'))
-        #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
+        plt.plot(x1, So_FI_Dcsi, '--b')
+        plt.legend(('CMG', 'FI', 'FI Dcsi_DP teste'))
         plt.ylabel('Oil saturation')
         plt.xlabel('Distance')
         plt.grid()
@@ -117,10 +114,8 @@ for arq in arquivos:
         #plt.plot(x1, Sw_MUSCL, 'g')
         plt.plot(x_CMG, Sw_CMG, 'k')
         plt.plot(x1, Sw_FI, 'r')
-        plt.plot(x1, Sw_FI_2, '-b')
-        plt.legend(('CMG', 'FI', 'FI novo poço'))
-        #plt.legend(('IMPEC', 'FI', 'FI Teste'))
-        #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
+        plt.plot(x1, Sw_FI_Dcsi, '--b')
+        plt.legend(('CMG', 'FI', 'FI Dcsi_DP teste'))
         plt.ylabel('Water saturation')
         plt.xlabel('Distance')
         plt.grid()
@@ -133,105 +128,13 @@ for arq in arquivos:
         #plt.plot(x1, Sg_MUSCL, 'g')
         plt.plot(x_CMG, Sg_CMG, 'k')
         plt.plot(x1, Sg_FI, 'r')
-        plt.plot(x1, Sg_FI_2, '-b')
-        plt.legend(('CMG', 'FI', 'FI novo poço'))
-        #plt.legend(('IMPEC', 'FI', 'FI Teste'))
-        #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
+        plt.plot(x1, Sg_FI_Dcsi, '--b')
+        plt.legend(('CMG', 'FI', 'FI Dcsi_DP teste'))
         plt.ylabel('Gas saturation')
         plt.xlabel('Distance')
         plt.grid()
         #plt.ylim((0,1))
         plt.savefig('results/6k_50/20days/saturation_gas_6k_20days' + '.png')
-
-        """plt.figure(5)
-        plt.title('t = 10 days - 50x1x1 mesh')
-        plt.plot(x1, zC1_FOU, 'k')
-        #plt.plot(x1, zC1_MUSCL, 'g')
-        plt.plot(x1, zC1_FI, '-bo')
-        #plt.plot(x1, zC1_FI2, 'r')
-        plt.legend(('IMPEC', 'FI'))
-        #plt.legend(('IMPEC', 'FI', 'FI Teste'))
-        #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
-        plt.ylabel('zC1')
-        plt.xlabel('Distance')
-        plt.grid()
-        #plt.ylim((0,1))
-        plt.savefig('results/6k_50/10days/zC1_6k_FOU_10days' + '.png')
-
-        plt.figure(6)
-        plt.title('t = 10 days - 50x1x1 mesh')
-        plt.plot(x1, zC3_FOU, 'k')
-        #plt.plot(x1, zC3_MUSCL, 'g')
-        plt.plot(x1, zC3_FI, '-bo')
-        #plt.plot(x1, zC3_FI2, 'r')
-        plt.legend(('IMPEC', 'FI'))
-        #plt.legend(('IMPEC', 'FI', 'FI Teste'))
-        #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
-        plt.ylabel('zC3')
-        plt.xlabel('Distance')
-        plt.grid()
-        #plt.ylim((0,1))
-        plt.savefig('results/6k_50/10days/zC3_6k_FOU_10days' + '.png')
-
-        plt.figure(7)
-        plt.title('t = 10 days - 50x1x1 mesh')
-        plt.plot(x1, zC6_FOU, 'k')
-        #plt.plot(x1, zC6_MUSCL, 'g')
-        plt.plot(x1, zC6_FI, '-bo')
-        #plt.plot(x1, zC6_FI2, 'r')
-        plt.legend(('IMPEC', 'FI'))
-        #plt.legend(('IMPEC', 'FI', 'FI Teste'))
-        #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
-        plt.ylabel('zC6')
-        plt.xlabel('Distance')
-        plt.grid()
-        #plt.ylim((0,1))
-        plt.savefig('results/6k_50/10days/zC6_6k_FOU_10days' + '.png')
-
-        plt.figure(8)
-        plt.title('t = 10 days - 50x1x1 mesh')
-        plt.plot(x1, zC10_FOU, 'k')
-        #plt.plot(x1, zC10_MUSCL, 'g')
-        plt.plot(x1, zC10_FI, '-bo')
-        #plt.plot(x1, zC10_FI2, 'r')
-        plt.legend(('IMPEC', 'FI'))
-        #plt.legend(('IMPEC', 'FI', 'FI Teste'))
-        #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
-        plt.ylabel('zC10')
-        plt.xlabel('Distance')
-        plt.grid()
-        #plt.ylim((0,1))
-        plt.savefig('results/6k_50/10days/zC10_6k_FOU_10days' + '.png')
-
-        plt.figure(9)
-        plt.title('t = 10 days - 50x1x1 mesh')
-        plt.plot(x1, zC15_FOU, 'k')
-        #plt.plot(x1, zC15_MUSCL, 'g')
-        plt.plot(x1, zC15_FI, '-bo')
-        #plt.plot(x1, zC15_FI2, 'r')
-        plt.legend(('IMPEC', 'FI'))
-        #plt.legend(('IMPEC', 'FI', 'FI Teste'))
-        #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
-        plt.ylabel('zC15')
-        plt.xlabel('Distance')
-        plt.grid()
-        #plt.ylim((0,1))
-        plt.savefig('results/6k_50/10days/zC15_6k_FOU_10days' + '.png')
-
-        plt.figure(10)
-        plt.title('t = 10 days - 50x1x1 mesh')
-        plt.plot(x1, zC20_FOU, 'k')
-        #plt.plot(x1, zC20_MUSCL, 'g')
-        plt.plot(x1, zC20_FI, '-bo')
-        #plt.plot(x1, zC20_FI2, 'r')
-        plt.legend(('IMPEC', 'FI'))
-        #plt.legend(('IMPEC', 'FI', 'FI Teste'))
-        #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
-        plt.ylabel('zC20')
-        plt.xlabel('Distance')
-        plt.grid()
-        #plt.ylim((0,1))
-        plt.savefig('results/6k_50/10days/zC20_6k_FOU_10days' + '.png')"""
 
         print('Done')
         import pdb; pdb.set_trace()

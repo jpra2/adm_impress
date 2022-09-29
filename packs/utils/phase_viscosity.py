@@ -124,7 +124,7 @@ class LorenzBrayClark:
             (Xs**4 - 1e-4)*dneta_dnij) / (neta[np.newaxis]**2))) * 1e-3
 
         dmi_dP = np.sum(dnij_dP * dmi_phase_dnij, axis = 0) + dmi_phase_dP
-        dmi_dP = np.append(dmi_dP, np.zeros([1,1,ctes.n_volumes]), axis=1)
+        if ctes.load_w: dmi_dP = np.append(dmi_dP, np.zeros([1,1,ctes.n_volumes]), axis=1)
 
         dmi_dNk_aux = np.sum(dnij_dNk * dmi_phase_dnij[:,np.newaxis], axis = 0)
         dmi_dNk = np.zeros([ctes.n_components, ctes.n_phases, ctes.n_volumes])

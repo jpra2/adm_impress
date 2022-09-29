@@ -202,7 +202,7 @@ class CompositionalFVM:
 
             Fk_vols_total, wave_velocity = compute_flux(M, fprop, wells, Ft_internal, \
                 P_old, Nk_old, Pot_hid, delta_t, t, G)
-
+            #import pdb; pdb.set_trace()
             ''' For the composition calculation the time step might be different\
              because it treats composition explicitly and this explicit models \
              are conditionally stable - which can be based on the CFL parameter '''

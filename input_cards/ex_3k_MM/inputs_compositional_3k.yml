@@ -1,6 +1,6 @@
 #2-phase problem with 3 components - moshiri
-mesh_name: 200x1x1_3k.msh
-name_save_file: 'results_case2_Moshiri_Manzari_3k_200_IMPEC_MUSCL_MDW' #150683
+mesh_name: 500x1x1_3k.msh
+name_save_file: 'results_case2_Moshiri_Manzari_3k_500_FI_DCsiDP'
 
 compositional: True
 hidrocarbon_components: True
@@ -27,13 +27,14 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: .7
+  CFL: 0.7 #2.0
 
   solver:
     IMPSAT: false
+    FI: true
 
   MUSCL:
-    set: true
+    set: false
 
   FR:
     set: false
@@ -42,8 +43,12 @@ compositional_data:
   RiemannSolver:
     ROE: false
     LLF: false
-    MDW: true
+    MDW: false
     DW: false
+
+  time_integration:
+    Euler: true
+    RK3: false
 
   vpis_para_gravar_vtk: [0.51]
   time_to_save: [16070400, 16156800] #[2592000]
@@ -136,7 +141,7 @@ Temperature:
 Wells:
   P1:
     p0: [0.0, 0.0, 0]
-    p1: [0.25, 1, 1]
+    p1: [0.1, 1, 1]
     type_region: box
     type: Injector
     prescription: P
@@ -149,7 +154,7 @@ Wells:
     #value_type: volumetric
 
   P2:
-    p0: [49.75, 0.0, 0]
+    p0: [49.9, 0.0, 0]
     p1: [50, 1, 1]
     prescription: P
     type: Producer

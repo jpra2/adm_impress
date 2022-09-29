@@ -69,7 +69,8 @@ class run_simulation:
     def get_well_inj_properties(self, M, fprop, wells):
 
         z = (wells['z']).T
-        if (wells['ws_p']!=wells['ws_inj']): wells['inj_p_term'] = []
+        import pdb; pdb.set_trace()
+        #if (wells['ws_p']!=wells['ws_inj']): wells['inj_p_term'] = []
         #q_wells = wells['ws_inj']#[wells['inj_cond']=='reservoir']
         if ctes.load_k and any(z[0:ctes.Nc].flatten()>0):
             if any(wells['inj_cond']=='reservoir'):

@@ -61,15 +61,15 @@ for  arq in arquivos:
             xkj_FI_200[:,0,So_FI_200==0] = 0
             t_FI_200 = data[2]
 
-        """datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_200_FI_TEST_CFL_1491.npy', allow_pickle=True)
+        datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_200_FI_DCsiDP_430.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
-            So_FI_200_CFL = data[6]
-            Sg_FI_200_CFL = data[7]
-            xkj_FI_200_CFL = data[13]
+            So_FI_200_Dcsi = data[6]
+            Sg_FI_200_Dcsi = data[7]
+            xkj_FI_200_Dcsi = data[13]
 
-            xkj_FI_200_CFL[:,1,Sg_FI_200_CFL==0] = 0
-            xkj_FI_200_CFL[:,0,So_FI_200_CFL==0] = 0
-            t_FI_200_CFL = data[2]"""
+            xkj_FI_200_Dcsi[:,1,Sg_FI_200_Dcsi==0] = 0
+            xkj_FI_200_Dcsi[:,0,So_FI_200_Dcsi==0] = 0
+            t_FI_200_Dcsi = data[2]
 
 
         datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_250_IMPEC_FOU_295.npy', allow_pickle=True)
@@ -119,6 +119,16 @@ for  arq in arquivos:
             xkj_FI_500[:,0,So_FI_500==0] = 0
             t_FI_500 = data[2]
 
+        datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_500_FI_DCsiDP_797.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_FI_500_Dcsi = data[6]
+            Sg_FI_500_Dcsi = data[7]
+            xkj_FI_500_Dcsi = data[13]
+
+            xkj_FI_500_Dcsi[:,1,Sg_FI_500_Dcsi==0] = 0
+            xkj_FI_500_Dcsi[:,0,So_FI_500_Dcsi==0] = 0
+            t_FI_500_Dcsi = data[2]
+
         datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_1000_IMPEC_FOU_1147.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_IMPEC_1000 = data[6]
@@ -143,7 +153,17 @@ for  arq in arquivos:
             xkj_FI_1000[:,0,So_FI_1000==0] = 0
             t_FI_1000 = data[2]
 
-        """datas = np.load('flying/results_case2_Moshiri_Manzari_3k_2000_IMPEC_CFL07_26868.npy', allow_pickle=True)
+        datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_1000_FI_CFL0_3_4606.npy', allow_pickle=True)
+        for data in datas[datas.shape[0]-1:]:
+            So_FI_1000_CFL = data[6]
+            Sg_FI_1000_CFL = data[7]
+            xkj_FI_1000_CFL = data[13]
+
+            xkj_FI_1000_CFL[:,1,Sg_FI_1000_CFL==0] = 0
+            xkj_FI_1000_CFL[:,0,So_FI_1000_CFL==0] = 0
+            t_FI_1000_CFL = data[2]
+
+        datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_2000_IMPEC_FOU_2856.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
             So_IMPEC_2000 = data[6]
             Sg_IMPEC_2000 = data[7]
@@ -155,57 +175,49 @@ for  arq in arquivos:
             n = 2000
             x_2000 = np.linspace(0+50/(2*n),50-50/(2*n),n)
             t_IMPEC_2000 = data[2]
-            e2000_L1_FOU = (sum(abs(f(x_2000)-xkj_IMPEC_2000))*(1/n))"""
-        
-        """
-        '''                              IMPSAT                              '''
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_250_IMPSAT_CFL07_840.npy', allow_pickle=True)
+            #e2000_L1_FOU = (sum(abs(f(x_2000)-xkj_IMPEC_2000))*(1/n))
+
+        datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_2000_FI_598.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
-            So_IMPSAT_250 = data[6]
-            Sg_IMPSAT_250 = data[7]
-            xkj_IMPSAT_250 = data[13]
+            So_FI_2000 = data[6]
+            Sg_FI_2000 = data[7]
+            xkj_FI_2000 = data[13]
 
-            xkj_IMPSAT_250[:,1,Sg_IMPSAT_250<1e-10] = 0
-            xkj_IMPSAT_250[:,0,So_IMPSAT_250<1e-10] = 0
-            n = 250
-            t_IMPSAT_250 = data[2]
-            e250_L1_IMPSAT = (sum(abs(f(x_250)-xkj_IMPSAT_250[0,0,:]))*(1/n))
+            xkj_FI_2000[:,1,Sg_FI_2000==0] = 0
+            xkj_FI_2000[:,0,So_FI_2000==0] = 0
+            t_FI_2000 = data[2]
 
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_500_IMPSAT_CFL07_3979.npy', allow_pickle=True)
+        datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_2000_FI_CFL0_7_2402.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
-            So_IMPSAT_500 = data[6]
-            Sg_IMPSAT_500 = data[7]
-            xkj_IMPSAT_500 = data[13]
+            So_FI_2000_CFL_07 = data[6]
+            Sg_FI_2000_CFL_07 = data[7]
+            xkj_FI_2000_CFL_07 = data[13]
 
-            xkj_IMPSAT_500[:,1,Sg_IMPSAT_500<1e-10] = 0
-            xkj_IMPSAT_500[:,0,So_IMPSAT_500<1e-10] = 0
-            n = 500
-            t_IMPSAT_500 = data[2]
-            e500_L1_IMPSAT = (sum(abs(f(x_500)-xkj_IMPSAT_500[0,0,:]))*(1/n))
+            xkj_FI_2000_CFL_07[:,1,Sg_FI_2000_CFL_07==0] = 0
+            xkj_FI_2000_CFL_07[:,0,So_FI_2000_CFL_07==0] = 0
+            t_FI_2000_CFL_07 = data[2]
 
-        datas = np.load('flying/results_case2_Moshiri_Manzari_3k_1000_IMPSAT_CFL07_7044.npy', allow_pickle=True)
+        datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_2000_FI_CFL_0_5_3928.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
-            So_IMPSAT_1000 = data[6]
-            Sg_IMPSAT_1000 = data[7]
-            xkj_IMPSAT_1000 = data[13]
+            So_FI_2000_CFL_05 = data[6]
+            Sg_FI_2000_CFL_05 = data[7]
+            xkj_FI_2000_CFL_05 = data[13]
 
-            xkj_IMPSAT_1000[:,1,Sg_IMPSAT_1000<1e-10] = 0
-            xkj_IMPSAT_1000[:,0,So_IMPSAT_1000<1e-10] = 0
-            n = 1000
-            t_IMPSAT_1000 = data[2]
-            e1000_L1_IMPSAT = (sum(abs(f(x_1000)-xkj_IMPSAT_1000[0,0,:]))*(1/n))
-        """
+            xkj_FI_2000_CFL_05[:,1,Sg_FI_2000_CFL_05==0] = 0
+            xkj_FI_2000_CFL_05[:,0,So_FI_2000_CFL_05==0] = 0
+            t_FI_2000_CFL_05 = data[2]
+
 
         plt.figure(1)
         plt.plot(x_200, xkj_IMPEC_200[0,0], 'r')
         plt.plot(x_200, xkj_FI_200[0,0], 'b')
-        #plt.plot(x_200, xkj_FI_200_CFL[0,0], '--y')
+        plt.plot(x_200, xkj_FI_200_Dcsi[0,0], '--y')
         #plt.plot(x_CMG, xCH4_CMG, 'k')
         plt.xlim(20,30)
         plt.ylim(-0.05, 0.35)
         plt.grid()
-        plt.legend(( 'IMPEC-200', 'FI-200'), loc=10)
-        #plt.legend(( 'IMPEC-250', 'IMPSAT-250', 'Referência CMG'), loc=10)
+        #plt.legend(( 'IMPEC-200', 'FI-200'), loc=10)
+        plt.legend(( 'IMPEC-200', 'FI-200', 'FI-200 Dcsi_DP teste'), loc=10)
         plt.ylabel('Fração molar do metano na fase líquida')
         plt.xlabel('Distância em x [m]')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_200.png')
@@ -227,13 +239,14 @@ for  arq in arquivos:
         plt.figure(3)
         plt.plot(x_500, xkj_IMPEC_500[0,0], 'r')
         plt.plot(x_500, xkj_FI_500[0,0], 'b')
+        plt.plot(x_500, xkj_FI_500_Dcsi[0,0], '--y')
         #plt.plot(x_CMG, xCH4_CMG, 'k')
         #plt.plot(x_axis_xCH4, xCH4, 'y')
         plt.xlim(20,30)
         plt.ylim(-0.05, 0.35)
         plt.grid()
-        plt.legend(( 'IMPEC-500', 'FI-500'), loc=10)
-        #plt.legend(( 'IMPEC-500', 'IMPSAT-500', 'Referência CMG'), loc=10)
+        #plt.legend(( 'IMPEC-500', 'FI-500'), loc=10)
+        plt.legend(( 'IMPEC-500', 'FI-500', 'FI-500 Dcsi_DP teste'), loc=10)
         plt.ylabel('Fração molar do metano na fase líquida')
         plt.xlabel('Distância em x')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_500.png')
@@ -241,46 +254,51 @@ for  arq in arquivos:
         plt.figure(4)
         plt.plot(x_1000, xkj_IMPEC_1000[0,0], 'r')
         plt.plot(x_1000, xkj_FI_1000[0,0], 'b')
+        plt.plot(x_1000, xkj_FI_1000_CFL[0,0], 'y')
         #plt.plot(x_axis_xCH4, xCH4, 'y')
         #plt.plot(x_CMG, xCH4_CMG, 'k')
         plt.xlim(20,30)
         plt.ylim(-0.05, 0.35)
         plt.grid()
-        plt.legend(( 'IMPEC-1000', 'FI-1000'), loc=10)
+        plt.legend(( 'IMPEC-1000', 'FI-1000', 'FI-1000 CFL 0,3'), loc=10)
         #plt.legend(( 'IMPEC-1000', 'FI-1000', 'Referência CMG'), loc=10)
         plt.ylabel('Fração molar do metano na fase líquida')
         plt.xlabel('Distância em x')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_1000.png')
 
         plt.figure(5)
-        plt.plot(x_200, xkj_FI_200[0,0], 'b')
-        plt.plot(x_250, xkj_FI_250[0,0], 'g')
-        plt.plot(x_500, xkj_FI_500[0,0], 'k')
-        plt.plot(x_1000, xkj_FI_1000[0,0], 'r')
+        plt.plot(x_2000, xkj_IMPEC_2000[0,0], 'r')
+        plt.plot(x_2000, xkj_FI_2000[0,0], 'b')
+        plt.plot(x_2000, xkj_FI_2000_CFL_07[0,0], 'y')
+        plt.plot(x_2000, xkj_FI_2000_CFL_05[0,0], '--c')
         #plt.plot(x_axis_xCH4, xCH4, 'y')
         #plt.plot(x_CMG, xCH4_CMG, 'k')
         plt.xlim(20,30)
         plt.ylim(-0.05, 0.35)
         plt.grid()
-        plt.legend(( 'FI-200 CVs', 'FI-250 CVs', 'FI-500 CVs', 'FI-1000 CVs'), loc=10)
+        plt.legend(( 'IMPEC-2000', 'FI-2000', 'FI-2000 CFL 0,7', 'FI-2000 CFL 0,5'))
+        #plt.legend(( 'IMPEC-2000', 'FI-2000', 'Reference CMG'))
+        plt.ylabel('Methane molar fraction in liquid phase')
+        plt.title('Case2 - Moshiri and Manzari\'s paper')
+        plt.xlabel('Dimensionless distance')
+        plt.savefig('results/compositional/3k_methane_x_MM_FI_2000.png')
+
+        plt.figure(6)
+        plt.plot(x_200, xkj_FI_200[0,0], 'b')
+        plt.plot(x_250, xkj_FI_250[0,0], 'g')
+        plt.plot(x_500, xkj_FI_500[0,0], 'k')
+        plt.plot(x_1000, xkj_FI_1000[0,0], 'r')
+        plt.plot(x_2000, xkj_FI_2000[0,0], 'c')
+        #plt.plot(x_axis_xCH4, xCH4, 'y')
+        #plt.plot(x_CMG, xCH4_CMG, 'k')
+        plt.xlim(20,30)
+        plt.ylim(-0.05, 0.35)
+        plt.grid()
+        plt.legend(( 'FI-200 CVs', 'FI-250 CVs', 'FI-500 CVs', 'FI-1000 CVs', 'FI-2000 CVs'), loc=10)
         #plt.legend(( 'IMPEC-1000', 'FI-1000', 'Referência CMG'), loc=10)
         plt.ylabel('Fração molar do metano na fase líquida')
         plt.xlabel('Distância em x')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_convergence.png')
 
         
-        """plt.figure(2)
-        plt.plot(x_2000, xkj_IMPEC_2000[0,0], 'r')
-        plt.plot(x_2000, xkj_IMPSAT_2000[0,0], 'b')
-        #plt.plot(x_axis_xCH4, xCH4, 'y')
-        plt.plot(x_CMG, xCH4_CMG, 'k')
-        plt.xlim(20,30)
-        plt.ylim(-0.05, 0.35)
-        plt.grid()
-        plt.legend(( 'IMPEC-2000', 'IMPSAT-2000', 'Reference CMG'))
-        plt.ylabel('Methane molar fraction in liquid phase')
-        plt.title('Case2 - Moshiri and Manzari\'s paper')
-        plt.xlabel('Dimensionless distance')
-        plt.savefig('results/compositional/3k_methane_x_MM_IMPEC_1000.png')"""
-
         import pdb; pdb.set_trace()

@@ -1,25 +1,25 @@
 #Water case in 1D reservoir
 mesh_name: 100x1x1_m.msh
 name_save_file: results_monophasic_incompressible_w_FOU
-n_test: 0
+
 compositional: True
 hidrocarbon_components: False
 compressible_fluid: False
 water_component: True
+water_miscible: false
 use_vpi: False
+
 
 load_compositional_data: False
 load_data: False
 convert_english_to_SI: False
 set_porosity: true
-set_permeability: true
 gravity: false
 deletar_results: false
 load_operators: false
 read_permeability: false
 monophasic_data: false
-set_permeability: True
-
+set_permeability: true
 monophasic_data:
   gama: 10000.0
   mi: 1.0
@@ -30,9 +30,14 @@ compositional_data:
 
   solver:
     IMPSAT: false
+    FI: false
 
   MUSCL:
     set: false
+    minmod: false
+    VanAlbada1: false
+    VanLeer: false
+
   FR:
     set: false
     order: 3
@@ -42,6 +47,10 @@ compositional_data:
     LLF: false
     MDW: false
     DW: false
+
+  time_integration:
+    Euler: true
+    RK3: false
 
   #  Pensar em um jeito de reorganizar isso
   vpis_para_gravar_vtk: [0.]

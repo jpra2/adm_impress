@@ -36,8 +36,8 @@ Wells:
     - 0.0
     - 0
     p1:
-    - 1.5625
-    - 1.0
+    - 1
+    - 1
     - 1
     prescription: Q
     type: Injector
@@ -54,7 +54,7 @@ Wells:
     - 1.0
   P2:
     p0:
-    - 48.4375
+    - 49
     - 0.0
     - 0
     p1:
@@ -67,7 +67,7 @@ Wells:
     value: 8.960e6
 compositional: true
 compositional_data:
-  CFL: 2.0
+  CFL: 1.5
   Cpc: 62052.84
   Epc: 2
   FR:
@@ -204,13 +204,13 @@ compositional_data:
     FI: true
     IMPSAT: false
   time_data:
-    deltaNlim: 0.35
+    deltaNlim: 0.5
     deltaPlim: 68.9476
     deltaSlim: 0.15
     deltaVlim: 0.5
     delta_t_ini: 10
-    delta_tmax: 86400
-    delta_tmin: 10
+    delta_tmax: 8640.0
+    delta_tmin: 0.000864
   time_integration:
     Euler: true
     RK3: false
@@ -235,14 +235,13 @@ hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: 32x1x1_6k_SchmallNEW.msh
+mesh_name: 50x1x1_6k_SchmallNEW.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_6k_SchmallNEW_32_FI_20days_ADIMENSIONALIZADO_e3_NEWDT
+name_save_file: results_6k_SchmallNEW_50_FI_20days_DcsiDP_test
 read_permeability: false
 set_permeability: true
 set_porosity: true
 use_vpi: false
 water_component: true
-water_miscible: false

@@ -29,6 +29,7 @@ class TPFASolver:
         ''' Transmissibility '''
         t0 = (self.t0_internal_faces_prod).sum(axis = 1)
         t0 = t0 * ctes.pretransmissibility_internal_faces
+        #import pdb; pdb.set_trace()
         T = sp.csr_matrix((ctes.n_volumes, ctes.n_volumes))
         # Look for a way of doing this not using a loop!!!
         for i in range(ctes.n_components):
