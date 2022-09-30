@@ -11,7 +11,7 @@ import copy
 
 class CompositionalFVM:
 
-    def __call__(self, M, wells, fprop, delta_t, t, flash, StabilityCheck, p1):
+    def __call__(self, M, wells, fprop, delta_t, t, StabilityCheck, p1):
         G = self.update_gravity_term(fprop)
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
         '''if ctes.MUSCL or ctes.FR:
@@ -27,12 +27,12 @@ class CompositionalFVM:
         r = 0.8 # enter the while loop
 
         dVjdNk, dVjdP = self.dVt_derivatives(fprop) # muda -----------------------------------------
-        psolve = TPFASolver(dVjdNk, dVjdP) # muda --------------------------------------------------
+        #psolve = TPFASolver(dVjdNk, dVjdP) # muda --------------------------------------------------
 
         P_old = np.copy(fprop.P)
         Nk_old = np.copy(fprop.Nk)
-        z_old = np.copy(fprop.z)
-        if ctes.FR: Nk_SP_old = np.copy(fprop.Nk_SP)
+        if ctes.load_k: z_old = np.copy(fprop.z)
+        #if ctes.FR: Nk_SP_old = np.copy(fprop.Nk_SP)
         while (r!=1.):
             #fprop.Nk = np.copy(Nk_old)
             #import pdb; pdb.set_trace()
@@ -40,11 +40,11 @@ class CompositionalFVM:
 
             #solve = NewtonSolver(fprop_aux)
             #Fk_vols_total, wave_velocity, total_flux_internal_faces = \
-                #solve.solver(wells, fprop_aux, delta_t, Nk_old, G, flash, StabilityCheck, p1, M)
+                #solve.solver(wells, fprop_aux, delta_t, Nk_old, G, StabilityCheck, p1, M)
 
             solve = NewtonSolver(fprop)
             Fk_vols_total, wave_velocity, total_flux_internal_faces = \
-                solve.solver(wells, fprop, delta_t, Nk_old, G, flash, StabilityCheck, p1, M, face_properties, phase_densities, psolve, dVjdNk, dVjdP, P_old)
+                solve.solver(wells, fprop, delta_t, Nk_old, G, StabilityCheck, p1, M, face_properties, phase_densities, dVjdNk, dVjdP, P_old)
 
 
             #delta_t_new = delta_time.update_CFL(delta_t, fprop, wells, Fk_vols_total, fprop.Nk, wave_velocity)
@@ -97,9 +97,13 @@ class CompositionalFVM:
                 dVjdP[0,0,:], dVjdP[0,1,:], dVjdNk[0:ctes.Nc,0,:], dVjdNk[0:ctes.Nc,1,:] = \
                 self.EOS.get_all_derivatives(fprop)
 
-        if ctes.load_w:
+        if ctes.load_k and ctes.load_w:
             dVjdNk[ctes.n_components-1,2,:] = 1 / fprop.Csi_j[0,ctes.n_phases-1,:]
             dVjdP[0,2,:] = - fprop.Nk[ctes.n_components-1,:] * fprop.Csi_W0 * ctes.Cw / (fprop.Csi_W)**2
+
+        if not ctes.load_k and ctes.load_w:
+            dVjdNk = 1 / fprop.Csi_j
+            dVjdP[0,:,:] = - fprop.Nk[ctes.n_components-1,:] * fprop.Csi_W0 * ctes.Cw / (fprop.Csi_W)**2
 
         return dVjdNk, dVjdP
 

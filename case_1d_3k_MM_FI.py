@@ -61,16 +61,6 @@ for  arq in arquivos:
             xkj_FI_200[:,0,So_FI_200==0] = 0
             t_FI_200 = data[2]
 
-        datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_200_FI_DCsiDP_430.npy', allow_pickle=True)
-        for data in datas[datas.shape[0]-1:]:
-            So_FI_200_Dcsi = data[6]
-            Sg_FI_200_Dcsi = data[7]
-            xkj_FI_200_Dcsi = data[13]
-
-            xkj_FI_200_Dcsi[:,1,Sg_FI_200_Dcsi==0] = 0
-            xkj_FI_200_Dcsi[:,0,So_FI_200_Dcsi==0] = 0
-            t_FI_200_Dcsi = data[2]
-
 
         datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_250_IMPEC_FOU_295.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
@@ -119,15 +109,15 @@ for  arq in arquivos:
             xkj_FI_500[:,0,So_FI_500==0] = 0
             t_FI_500 = data[2]
 
-        datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_500_FI_DCsiDP_797.npy', allow_pickle=True)
+        datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_500_FI_TESTE_W_796.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
-            So_FI_500_Dcsi = data[6]
-            Sg_FI_500_Dcsi = data[7]
-            xkj_FI_500_Dcsi = data[13]
+            So_FI_500_TesteW = data[6]
+            Sg_FI_500_TesteW = data[7]
+            xkj_FI_500_TesteW = data[13]
 
-            xkj_FI_500_Dcsi[:,1,Sg_FI_500_Dcsi==0] = 0
-            xkj_FI_500_Dcsi[:,0,So_FI_500_Dcsi==0] = 0
-            t_FI_500_Dcsi = data[2]
+            xkj_FI_500_TesteW[:,1,Sg_FI_500_TesteW==0] = 0
+            xkj_FI_500_TesteW[:,0,So_FI_500_TesteW==0] = 0
+            t_FI_500_TesteW = data[2]
 
         datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_1000_IMPEC_FOU_1147.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
@@ -211,13 +201,12 @@ for  arq in arquivos:
         plt.figure(1)
         plt.plot(x_200, xkj_IMPEC_200[0,0], 'r')
         plt.plot(x_200, xkj_FI_200[0,0], 'b')
-        plt.plot(x_200, xkj_FI_200_Dcsi[0,0], '--y')
         #plt.plot(x_CMG, xCH4_CMG, 'k')
         plt.xlim(20,30)
         plt.ylim(-0.05, 0.35)
         plt.grid()
-        #plt.legend(( 'IMPEC-200', 'FI-200'), loc=10)
-        plt.legend(( 'IMPEC-200', 'FI-200', 'FI-200 Dcsi_DP teste'), loc=10)
+        plt.legend(( 'IMPEC-200', 'FI-200'), loc=10)
+        #plt.legend(( 'IMPEC-200', 'FI-200', 'FI-200 Dcsi_DP teste'), loc=10)
         plt.ylabel('Fração molar do metano na fase líquida')
         plt.xlabel('Distância em x [m]')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_200.png')
@@ -239,14 +228,14 @@ for  arq in arquivos:
         plt.figure(3)
         plt.plot(x_500, xkj_IMPEC_500[0,0], 'r')
         plt.plot(x_500, xkj_FI_500[0,0], 'b')
-        plt.plot(x_500, xkj_FI_500_Dcsi[0,0], '--y')
+        plt.plot(x_500, xkj_FI_500_TesteW[0,0], '--y')
         #plt.plot(x_CMG, xCH4_CMG, 'k')
         #plt.plot(x_axis_xCH4, xCH4, 'y')
         plt.xlim(20,30)
         plt.ylim(-0.05, 0.35)
         plt.grid()
         #plt.legend(( 'IMPEC-500', 'FI-500'), loc=10)
-        plt.legend(( 'IMPEC-500', 'FI-500', 'FI-500 Dcsi_DP teste'), loc=10)
+        plt.legend(( 'IMPEC-500', 'FI-500', 'FI-500 Teste final'), loc=10)
         plt.ylabel('Fração molar do metano na fase líquida')
         plt.xlabel('Distância em x')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_500.png')

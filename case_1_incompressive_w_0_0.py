@@ -43,7 +43,7 @@ for i in range(1,n):
 for arq in arquivos:
     if  arq.startswith(name):
 
-        datas = np.load('flying/results_monophasic_incompressible_w_FOU_865.npy', allow_pickle=True)
+        datas = np.load('flying/Agua_1D/results_monophasic_incompressible_w_FI_865.npy', allow_pickle=True)
 
         for data in datas[-1:]:
             pressure = (data[4] - data[4][99] * np.ones(100))/6894.75729
@@ -66,9 +66,9 @@ for arq in arquivos:
         plt.figure(1)
         plt.plot(x, pressure,'bo', x, P, 'k', mfc='none')
         plt.grid()
-        plt.legend(('IMPEC', 'Solução Analítica'), prop={'size': sizeletter})
+        plt.legend(('FI', 'Solução Analítica'), prop={'size': sizeletter})
         plt.ylabel('Queda de pressão [psi]')
         plt.xlabel('Distância Adimensional')
         #plt.title('Water horizontal displacement')
-        plt.savefig('results/compositional/TCC2/pressure_hor_analytical_w' + str(loop) + '.png')
+        plt.savefig('results/Agua_1D/pressure_hor_analytical_w' + str(loop) + '.png')
         import pdb; pdb.set_trace()

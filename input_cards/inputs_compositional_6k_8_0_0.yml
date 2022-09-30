@@ -32,7 +32,7 @@ compositional_data:
 
   solver:
     IMPSAT: false
-    FI: False
+    FI: True
 
   MUSCL:
     set: false

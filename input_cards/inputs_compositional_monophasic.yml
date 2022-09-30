@@ -1,6 +1,6 @@
 #Water case in 1D reservoir
 mesh_name: 100x1x1_m.msh
-name_save_file: results_monophasic_incompressible_w_FOU
+name_save_file: results_monophasic_incompressible_w_FI
 
 compositional: True
 hidrocarbon_components: False
@@ -30,7 +30,7 @@ compositional_data:
 
   solver:
     IMPSAT: false
-    FI: false
+    FI: True
 
   MUSCL:
     set: false

@@ -169,10 +169,8 @@ class run_simulation:
         not obey the CFL condition) -------------------------------------------'
 
         if data_loaded['compositional_data']['solver']['FI']:
-            self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t, self.p2, StabilityCheck, self.p1)
-            #fprop = fprop_aux
-            #fprop = copy.deepcopy(fprop_aux)
-            #import pdb; pdb.set_trace()
+            self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t, StabilityCheck, self.p1)
+
         else:
             self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t)
 
