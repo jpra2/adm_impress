@@ -1,13 +1,12 @@
 #2-phase problem with 2 components - hotei and firoozabadi
-mesh_name: 40x40x1_Firoozabadi_ex1.msh
-name_save_file: 'results_Hoteit_Firoo_2k_ex1_IMPEC_MUSCL_vpi'
+mesh_name: 20x20x1_Firoozabadi_ex1.msh
+name_save_file: 'results_Hoteit_Firoo_2k_ex1_time_20x20x1_FI_CFL_5_0'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
 water_component: false
-use_vpi: true
-
+use_vpi: false
 
 load_compositional_data: False
 load_data: False
@@ -27,13 +26,17 @@ monophasic_data:
 # Case 1 of Firoozabadi paper
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.9
+  CFL: 5.0
 
   solver:
     IMPSAT: false
+    FI: True
 
   MUSCL:
-    set: true
+    set: false
+    minmod: false
+    VanAlbada1: false
+    VanLeer: false
 
   FR:
     set: false
@@ -44,6 +47,10 @@ compositional_data:
     LLF: false
     MDW: false
     DW: false
+
+  time_integration:
+    Euler: true
+    RK3: false
 
   vpis_para_gravar_vtk: [0.58]
   time_to_save: [21772800]
@@ -63,9 +70,9 @@ compositional_data:
   time_data:
     deltaPlim: 68.9476
     deltaNlim: 2
-    deltaSlim: .55
+    deltaSlim: .95
     deltaVlim: 0.001
-    delta_t_ini: 86.4
+    delta_t_ini: 8.64
     delta_tmax: 4320
     delta_tmin: 8.64
 
@@ -135,18 +142,18 @@ Temperature:
 Wells:
   P1:
     p0: [0.0, 0.0, -1.0]
-    p1: [1.25, 1.25, 0.0]
+    p1: [2.5, 2.5, 0.0]
     type_region: box
     type: Injector
     z: [1.0, 0.0]
-    injection_condition: surface
+    injection_condition: 'surface'
     prescription: Q
-    value: 0.0004918981481481481 #m3/s
+    value: [0.0004918981481481481] #m3/s
     ksi_total: 41.69170794 #densidade molar
     value_type: volumetric
 
   P2:
-    p0: [48.75, 48.75, -1.0]
+    p0: [47.5, 47.5, -1.0]
     p1: [50.0, 50.0, 0.0]
     prescription: P
     type: Producer

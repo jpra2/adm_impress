@@ -50,7 +50,7 @@ for arq in arquivos:
             pressure_FI_e3 = data[4]/1e3
             time_FI_e3 = data[3]
 
-        datas = np.load('flying/Teste_criterio_de_parada/BL/128_CV/results_Buckley_Leverett_case_128_FI_ADIMENSIONALIZADO_e4POCONEW_693.npy', allow_pickle=True)
+        datas = np.load('flying/results_Buckley_Leverett_case_128_FI_2DTeste_693.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas[1:]:
             Sw_FI_e2 = data[5]
@@ -83,7 +83,7 @@ for arq in arquivos:
         plt.plot(x1, Sw_FI_e3, 'y')
         plt.plot(x1, Sw_FI_e2, ':g')
         #plt.legend(('Analytical Solution', '1e-9', '1e-9 dt maior'))
-        plt.legend(('Analytical Solution', '1e-9', '1e-6', '1e-3 dt menor', '1e-2'))
+        plt.legend(('Analytical Solution', '1e-9', '1e-6', '1e-3 dt menor', '2D'))
         plt.ylabel('Water saturation')
         plt.xlabel('Distance (m)')
         plt.grid()

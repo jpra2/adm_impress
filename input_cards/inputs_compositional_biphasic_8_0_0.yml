@@ -6,6 +6,7 @@ compositional: True
 hidrocarbon_components: True
 compressible_fluid: False
 water_component: True
+water_miscible: false
 use_vpi: True
 
 load_compositional_data: False
@@ -74,7 +75,6 @@ compositional_data:
     delta_t_ini: 10
     delta_tmax: 20
     delta_tmin: 0.001
-    #2.765
 
   water_data:
     mi_W: 1e-3

@@ -18,7 +18,7 @@ Porosity:
 Pressure:
   r1:
     type: all
-    value: 6.9e6
+    value: 5.0e6
 Saturation:
   r1:
     type: all
@@ -26,48 +26,53 @@ Saturation:
 Temperature:
   r1:
     type: all
-    value: 311
+    value: 397
 Wells:
   P1:
-    injection_condition: reservoir
+    injection_condition: surface
+    ksi_total: 41.69170794
     p0:
     - 0.0
     - 0.0
-    - 0
+    - -1.0
     p1:
-    - 0.1
-    - 1
-    - 1
-    prescription: P
+    - 2.5
+    - 2.5
+    - 0.0
+    prescription: Q
     type: Injector
     type_region: box
-    value: 7e6
+    value:
+    - 0.0004918981481481481
+    value_type: volumetric
     z:
-    - 0.9
-    - 0.1
+    - 1.0
     - 0.0
   P2:
     p0:
-    - 49.9
-    - 0.0
-    - 0
+    - 47.5
+    - 47.5
+    - -1.0
     p1:
-    - 50
-    - 1
-    - 1
+    - 50.0
+    - 50.0
+    - 0.0
     prescription: P
     type: Producer
     type_region: box
-    value: 6.9e6
+    value: 5.0e6
 compositional: true
 compositional_data:
-  CFL: 0.7
+  CFL: 5.0
   Cpc: 62052.84
   Epc: 2
   FR:
     order: 3
     set: false
   MUSCL:
+    VanAlbada1: false
+    VanLeer: false
+    minmod: false
     set: false
   Pf: 101325
   RiemannSolver:
@@ -80,49 +85,35 @@ compositional_data:
     Bin:
     - - 0.0
       - 0.0
-      - 0.0
     - - 0.0
-      - 0.0
-      - 0.0
-    - - 0.0
-      - 0.0
       - 0.0
     Mw:
-    - 0.016043
-    - 0.03007
+    - 0.016
     - 0.044096
-    Pb_guess: 2e6
     Pc:
     - 4599000
-    - 4873000
     - 4248000
     Pv:
     - 8e6
     - 0.0
-    - 0.0
     Tc:
     - 190.56
-    - 305.32
     - 369.83
     constant_K: false
     vc:
-    - 9.85988846e-05
-    - 0.000145500276
+    - 9.84e-05
     - 0.000200001177
     vshift_parameter:
     - 0.0
     - 0.0
-    - 0.0
     w:
-    - 0.0115
-    - 0.0995
+    - 0.011
     - 0.1523
     z:
     - 0.0
-    - 0.25
-    - 0.75
+    - 1.0
   equation_of_state: PengRobinson
-  maximum_time: 16156800
+  maximum_time: 21772800.0
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   relative_permeability_data:
@@ -142,21 +133,20 @@ compositional_data:
     FI: true
     IMPSAT: false
   time_data:
-    deltaNlim: 3
+    deltaNlim: 2
     deltaPlim: 68.9476
-    deltaSlim: 0.25
-    deltaVlim: 0.1
-    delta_t_ini: 56.4
-    delta_tmax: 86400
+    deltaSlim: 0.95
+    deltaVlim: 0.001
+    delta_t_ini: 8.64
+    delta_tmax: 4320
     delta_tmin: 8.64
   time_integration:
     Euler: true
     RK3: false
   time_to_save:
-  - 16070400
-  - 16156800
+  - 21772800
   vpis_para_gravar_vtk:
-  - 0.51
+  - 0.58
   water_data:
     Cw: 0
     Mw_w: 0.018015
@@ -172,11 +162,11 @@ hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: 500x1x1_3k.msh
+mesh_name: 20x20x1_Firoozabadi_ex1.msh
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_case2_Moshiri_Manzari_3k_500_FI_TESTE_W
+name_save_file: results_Hoteit_Firoo_2k_ex1_time_20x20x1_FI_CFL_5_0
 read_permeability: false
 set_permeability: true
 set_porosity: true

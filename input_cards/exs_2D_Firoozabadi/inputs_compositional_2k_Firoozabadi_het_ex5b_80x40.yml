@@ -31,9 +31,13 @@ compositional_data:
 
   solver:
     IMPSAT: false
+    FI: false
 
   MUSCL:
     set: false
+    minmod: false
+    VanAlbada1: false
+    VanLeer: false
 
   FR:
     set: false
@@ -44,6 +48,10 @@ compositional_data:
     LLF: false
     MDW: false
     DW: false
+
+  time_integration:
+    Euler: true
+    RK3: false
 
   vpis_para_gravar_vtk: [0.35, 0.355, 0.36]
   time_to_save: [7864916]

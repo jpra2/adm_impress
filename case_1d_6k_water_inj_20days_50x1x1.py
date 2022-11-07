@@ -63,21 +63,21 @@ for arq in arquivos:
             zC15_FI = data[10][4]
             zC20_FI = data[10][5]
 
-        datas3 = np.load('flying/6k/results_6k_SchmallNEW_50_FI_20days_DcsiDP_test_203.npy', allow_pickle=True)
+        datas3 = np.load('flying/6k/results_6k_SchmallNEW_50_FI_20days_2DTeste_203.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas3[1:]:
-            Sw_FI_Dcsi = data[5]
-            So_FI_Dcsi = data[6]
-            Sg_FI_Dcsi = data[7]
-            Oil_p_FI_Dcsi = data[8]
-            Gas_p_FI_Dcsi = data[9]
-            pressure_FI_Dcsi = data[4]/1e3
-            zC1_FI_Dcsi = data[10][0]
-            zC3_FI_Dcsi = data[10][1]
-            zC6_FI_Dcsi = data[10][2]
-            zC10_FI_Dcsi = data[10][3]
-            zC15_FI_Dcsi = data[10][4]
-            zC20_FI_Dcsi = data[10][5]
+            Sw_FI_TesteW = data[5]
+            So_FI_TesteW = data[6]
+            Sg_FI_TesteW = data[7]
+            Oil_p_FI_TesteW = data[8]
+            Gas_p_FI_TesteW = data[9]
+            pressure_FI_TesteW = data[4]/1e3
+            zC1_FI_TesteW = data[10][0]
+            zC3_FI_TesteW = data[10][1]
+            zC6_FI_TesteW = data[10][2]
+            zC10_FI_TesteW = data[10][3]
+            zC15_FI_TesteW = data[10][4]
+            zC20_FI_TesteW = data[10][5]
 
 
         
@@ -87,12 +87,12 @@ for arq in arquivos:
         #plt.plot(x1, pressure_MUSCL, 'g')
         #plt.plot(x_CMG, pressure_CMG, '-bo')
         plt.plot(x1, pressure_FI, 'r')
-        plt.plot(x1, pressure_FI_Dcsi, '--b')
+        plt.plot(x1, pressure_FI_TesteW, '--b')
         plt.ylabel('Pressure (kPa)')
         plt.xlabel('Distance')
-        plt.legend(('IMPEC', 'FI', 'FI Dcsi_DP teste'))
+        plt.legend(('IMPEC', 'FI', 'FI teste final'))
         plt.grid()
-        plt.savefig('results/6k_50/20days/pressure_6k_20days' + '.png')
+        plt.savefig('results/6k/6k_50/20days/pressure_6k_20days' + '.png')
 
         plt.figure(2)
         plt.title('t = 20 days - 50x1x1 mesh')
@@ -100,13 +100,13 @@ for arq in arquivos:
         #plt.plot(x1, So_MUSCL, 'g')
         plt.plot(x_CMG, So_CMG, 'k')
         plt.plot(x1, So_FI, 'r')
-        plt.plot(x1, So_FI_Dcsi, '--b')
-        plt.legend(('CMG', 'FI', 'FI Dcsi_DP teste'))
+        plt.plot(x1, So_FI_TesteW, '--b')
+        plt.legend(('CMG', 'FI', 'FI teste final'))
         plt.ylabel('Oil saturation')
         plt.xlabel('Distance')
         plt.grid()
         #plt.ylim((0,1))
-        plt.savefig('results/6k_50/20days/saturation_oil_6k_20days' + '.png')
+        plt.savefig('results/6k/6k_50/20days/saturation_oil_6k_20days' + '.png')
 
         plt.figure(3)
         plt.title('t = 20 days - 50x1x1 mesh')
@@ -114,13 +114,13 @@ for arq in arquivos:
         #plt.plot(x1, Sw_MUSCL, 'g')
         plt.plot(x_CMG, Sw_CMG, 'k')
         plt.plot(x1, Sw_FI, 'r')
-        plt.plot(x1, Sw_FI_Dcsi, '--b')
-        plt.legend(('CMG', 'FI', 'FI Dcsi_DP teste'))
+        plt.plot(x1, Sw_FI_TesteW, '--b')
+        plt.legend(('CMG', 'FI', 'FI teste final'))
         plt.ylabel('Water saturation')
         plt.xlabel('Distance')
         plt.grid()
         #plt.ylim((0,1))
-        plt.savefig('results/6k_50/20days/saturation_water_6k_20days' + '.png')
+        plt.savefig('results/6k/6k_50/20days/saturation_water_6k_20days' + '.png')
 
         plt.figure(4)
         plt.title('t = 20 days - 50x1x1 mesh')
@@ -128,13 +128,13 @@ for arq in arquivos:
         #plt.plot(x1, Sg_MUSCL, 'g')
         plt.plot(x_CMG, Sg_CMG, 'k')
         plt.plot(x1, Sg_FI, 'r')
-        plt.plot(x1, Sg_FI_Dcsi, '--b')
-        plt.legend(('CMG', 'FI', 'FI Dcsi_DP teste'))
+        plt.plot(x1, Sg_FI_TesteW, '--b')
+        plt.legend(('CMG', 'FI', 'FI teste final'))
         plt.ylabel('Gas saturation')
         plt.xlabel('Distance')
         plt.grid()
         #plt.ylim((0,1))
-        plt.savefig('results/6k_50/20days/saturation_gas_6k_20days' + '.png')
+        plt.savefig('results/6k/6k_50/20days/saturation_gas_6k_20days' + '.png')
 
         print('Done')
         import pdb; pdb.set_trace()

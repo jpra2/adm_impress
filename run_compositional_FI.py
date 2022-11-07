@@ -271,6 +271,7 @@ class run_simulation:
         #print(self.vpi)
 
         self.vpi = self.vpi + (flux_total_inj.sum())/sum(fprop.Vp)*self.delta_t
+        #import pdb; pdb.set_trace()
         #print(self.vpi)
         #if self.vpi>0.5: import pdb; pdb.set_trace()
 

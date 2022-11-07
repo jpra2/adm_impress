@@ -57,55 +57,57 @@ for i in range(0,N):
 
 P *= 6894.757/1e6
 #    p_resp = np.linspace(0.623843,0,100)
+
 for  arq in arquivos:
     if  arq.startswith(name):
 
-        datas = np.load('flying/results_2d_injection_5_case_452.npy', allow_pickle=True)
+        datas = np.load('flying/Li_Case4_2D/results_2d_Li_Case4_5x5x1_FI_CFL_0_5_456.npy', allow_pickle=True)
 
         for data in datas[1:]:
-            pressure1 = data[4] / 1e6#6894.757
+            pressure_5x5x1 = data[4] / 1e6#6894.757
             """ Just for the 2D case """
             from packs.utils.utils_old import get_box
-            centroids = data[8]
+            centroids = data[11]
             p0 = [0,195.072,-0.3048]
             p1 = [609.6,316.992,0.]
             ind_ans = get_box(centroids,np.array([p0,p1]))
             cent_ind = centroids[ind_ans]
             cent_mix = cent_ind[:,0]
             ind_ans_sort = np.argsort(cent_mix)
-            pressure1_1 = pressure1[ind_ans]
-            pressure1_1 = pressure1_1[ind_ans_sort]
 
-            p0 = [0,121.9,-0.3048]
-            p1 = [609.6,243.8,0.]
+            pressure_5x5x1_1 = pressure_5x5x1[ind_ans]
+            pressure_5x5x1_1 = pressure_5x5x1_1[ind_ans_sort]
+
+            p0 = [0,121.92,-0.3048]
+            p1 = [609.6,243.84,0.]
             ind_ans = get_box(centroids,np.array([p0,p1]))
             cent_ind = centroids[ind_ans]
             cent_mix = cent_ind[:,0]
             ind_ans_sort = np.argsort(cent_mix)
-            pressure1_2 = pressure1[ind_ans]
-            pressure1_2 = pressure1_2[ind_ans_sort]
+            pressure_5x5x1_2 = pressure_5x5x1[ind_ans]
+            pressure_5x5x1_2 = pressure_5x5x1_2[ind_ans_sort]
 
-            pressure1 = 0.6*(pressure1_2 - pressure1_1) + pressure1_1
+            pressure_5x5x1 = 0.6*(pressure_5x5x1_2 - pressure_5x5x1_1) + pressure_5x5x1_1
             x1 = np.linspace(0,2000,5)
-            tck = interpolate.splrep(x1,pressure1,s=0)
+            tck = interpolate.splrep(x1,pressure_5x5x1,s=0)
             p1 = interpolate.splev(x,tck,der=0)
             e1 = (sum((P-p1)**2)/(5*5))**(1/2)
 
-        datas = np.load('flying/results_2d_injection_15_case_452.npy', allow_pickle=True)
+        datas = np.load('flying/Li_Case4_2D/results_2d_Li_Case4_15x15x1_FI_CFL_0_5_456.npy', allow_pickle=True)
 
         for data in datas[1:]:
-            pressure2 = data[4] / 1e6#6894.757
+            pressure_15x15x1 = data[4] / 1e6#6894.757
             """ Just for the 2D case """
             from packs.utils.utils_old import get_box
-            centroids = data[8]
+            centroids = data[11]
             p0 = [0,235.712,-0.3048]
-            p1 = [609.6,276.712,0.]
+            p1 = [609.6,276.352,0.]
             ind_ans = get_box(centroids,np.array([p0,p1]))
             cent_ind = centroids[ind_ans]
             cent_mix = cent_ind[:,0]
             ind_ans_sort = np.argsort(cent_mix)
-            pressure2_1 = pressure2[ind_ans]
-            pressure2_1 = pressure2_1[ind_ans_sort]
+            pressure_15x15x1_1 = pressure_15x15x1[ind_ans]
+            pressure_15x15x1_1 = pressure_15x15x1_1[ind_ans_sort]
 
             p0 = [0,203.2,-0.3048]
             p1 = [609.6,243.84,0.]
@@ -113,33 +115,33 @@ for  arq in arquivos:
             cent_ind = centroids[ind_ans]
             cent_mix = cent_ind[:,0]
             ind_ans_sort = np.argsort(cent_mix)
-            pressure2_2 = pressure2[ind_ans]
-            pressure2_2 = pressure2_2[ind_ans_sort]
+            pressure_15x15x1_2 = pressure_15x15x1[ind_ans]
+            pressure_15x15x1_2 = pressure_15x15x1_2[ind_ans_sort]
 
-            pressure2 = 0.8*(pressure2_2 - pressure2_1) + pressure2_1
+            pressure_15x15x1 = 0.8*(pressure_15x15x1_2 - pressure_15x15x1_1) + pressure_15x15x1_1
             x2 = np.linspace(0,2000,15)
 
-            tck = interpolate.splrep(x2,pressure2,s=0)
+            tck = interpolate.splrep(x2,pressure_15x15x1,s=0)
             p2 = interpolate.splev(x,tck,der=0)
 
             e2 = (sum((P-p2)**2)/(15*15))**(1/2)
             R2 = np.log(e2/e1)/np.log(5/15)
 
-        datas = np.load('flying/results_2d_injection_45_case_790.npy', allow_pickle=True)
+        datas = np.load('flying/Li_Case4_2D/results_2d_Li_Case4_45x45x1_FI_CFL_0_5_456.npy', allow_pickle=True)
 
         for data in datas[1:]:
-            pressure3 = data[4]  / 1e6#6894.757
+            pressure_45x45x1 = data[4]  / 1e6#6894.757
             """ Just for the 2D case """
             from packs.utils.utils_old import get_box
-            centroids = data[8]
+            centroids = data[11]
             p0 = [0,249.2586667,-0.3048]
             p1 = [609.6,262.8053333,0.0]
             ind_ans = get_box(centroids,np.array([p0,p1]))
             cent_ind = centroids[ind_ans]
             cent_mix = cent_ind[:,0]
             ind_ans_sort = np.argsort(cent_mix)
-            pressure3_1 = pressure3[ind_ans]
-            pressure3_1 = pressure3_1[ind_ans_sort]
+            pressure_45x45x1_1 = pressure_45x45x1[ind_ans]
+            pressure_45x45x1_1 = pressure_45x45x1_1[ind_ans_sort]
 
             p0 = [0,257.3866667,-0.3048]
             p1 = [609.6,270.9333333,0.0]
@@ -147,71 +149,16 @@ for  arq in arquivos:
             cent_ind = centroids[ind_ans]
             cent_mix = cent_ind[:,0]
             ind_ans_sort = np.argsort(cent_mix)
-            pressure3_2 = pressure3[ind_ans]
-            pressure3_2 = pressure3_2[ind_ans_sort]
+            pressure_45x45x1_2 = pressure_45x45x1[ind_ans]
+            pressure_45x45x1_2 = pressure_45x45x1_2[ind_ans_sort]
 
-            pressure3 = 0.40059*(pressure3_2 - pressure3_1) + pressure3_1
+            pressure_45x45x1 = 0.40059*(pressure_45x45x1_2 - pressure_45x45x1_1) + pressure_45x45x1_1
             x3 = np.linspace(0,2000,45)
-            tck = interpolate.splrep(x3,pressure3,s=0)
+            tck = interpolate.splrep(x3,pressure_45x45x1,s=0)
             p3 = interpolate.splev(x,tck,der=0)
 
             e3 = (sum((P-p3)**2)/(45*45))**(1/2)
             R3 = np.log(e3/e2)/np.log(15/45)
-
-        datas = np.load('flying/results_2d_injection_25_case_IMPEC_456.npy', allow_pickle=True)
-
-        for data in datas[-1:]:
-            pressure4 = data[4]/1e6#6894.757
-            """ Just for the 2D case """
-            from packs.utils.utils_old import get_box
-            centroids = data[11]
-
-            p0 = [0,243.84,-0.3048]
-            p1 = [609.6,268.224,0.0]
-            import pdb; pdb.set_trace()
-            ind_ans = get_box(centroids,np.array([p0,p1]))
-            cent_ind = centroids[ind_ans]
-            cent_mix = cent_ind[:,0]
-            ind_ans_sort = np.argsort(cent_mix)
-            pressure4_1 = pressure4[ind_ans]
-            pressure4 = pressure4_1[ind_ans_sort]
-
-            #pressure4 = 0.2*(pressure4_2-pressure4_1) + pressure4_1
-            x4 = np.linspace(0,2000,25)
-            tck = interpolate.splrep(x4,pressure4,s=0)
-            p4 = interpolate.splev(x,tck,der=0)
-            e4 = (sum((P-p4)**2)/(25*25))**(1/2)
-
-        '''datas = np.load('flying/results_2d_injection_case_35__74.npy', allow_pickle=True)
-
-        for data in datas[1:]:
-            pressure5 = data[4] / 6894.757
-            """ Just for the 2D case """
-            from packs.utils.utils_old import get_box
-            centroids = data[8]
-            p0 = [0,247.3234286,0]
-            p1 = [609.6,264.74057,0.3048]
-            ind_ans = get_box(centroids,np.array([p0,p1]))
-            cent_ind = centroids[ind_ans]
-            cent_mix = cent_ind[:,0]
-            ind_ans_sort = np.argsort(cent_mix)
-            pressure5_1 = pressure5[ind_ans]
-            pressure5_1 = pressure5_1[ind_ans_sort]
-
-            p0 = [0,261.2571429,0]
-            p1 = [609.6,278.6742857,0.3048]
-            ind_ans = get_box(centroids,np.array([p0,p1]))
-            cent_ind = centroids[ind_ans]
-            cent_mix = cent_ind[:,0]
-            ind_ans_sort = np.argsort(cent_mix)
-            pressure5_2 = pressure5[ind_ans]
-            pressure5_2 = pressure5_2[ind_ans_sort]
-
-            pressure5 = 0.2*(pressure5_2-pressure5_1) + pressure5_1
-            x5 = np.linspace(0,2000,35)
-            tck = interpolate.splrep(x5,pressure5,s=0)
-            p5 = interpolate.splev(x,tck,der=0)
-            e5 = (sum((P-p5)**2)/(25*25))**(1/2)'''
 
 
         #    p_resp = np.linspace(0.623843,0,100)
@@ -222,15 +169,15 @@ for  arq in arquivos:
         plt.rcParams.update({'font.size': sizeletter})
         plt.figure(1)
         #plt.title('t = 365 dias')
-        plt.plot(x1*0.3048, pressure1, '-ro', x2*0.3048, pressure2, '-bs', \
-            x3*0.3048, pressure3, '-gP', x4*0.3048, pressure4, 'y', x*0.3048, P, 'k', mfc='none', markersize=5)
-        plt.legend(('IMPEC FOU-25', 'IMPEC FOU-225', 'IMPEC FOU-2025',
+        plt.plot(x1*0.3048, pressure_5x5x1, '-ro', x2*0.3048, pressure_15x15x1, '-bs', \
+            x3*0.3048, pressure_45x45x1, '-gP', x*0.3048, P, 'k', mfc='none', markersize=5)
+        plt.legend(('FI-5x5x1', 'FI-15x15x1', 'FI-45x45x1',
             'Solução Analítica'), prop={'size': sizeletter-1})
         #plt.figure(2)
         #plt.plot( x4, pressure4, 'g', x, P, 'y')
         plt.grid()
         plt.ylabel('Pressão [MPa]')
         plt.xlabel('Distância na direção x [m]')
-        plt.savefig('results/compositional/TCC2/pressure_2d_FOU.png')
+        plt.savefig('results/pressure_2d_FI.png')
 
         import pdb; pdb.set_trace()

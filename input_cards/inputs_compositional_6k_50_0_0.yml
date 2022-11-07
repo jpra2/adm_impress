@@ -1,6 +1,6 @@
 #Compressive Oil case with 1 component in 1-D reservoir
 mesh_name: 50x1x1_6k_SchmallNEW.msh
-name_save_file: 'results_6k_SchmallNEW_50_FI_20days_DcsiDP_test'
+name_save_file: 'results_6k_SchmallNEW_50_FI_20days'
 
 compositional: True
 hidrocarbon_components: True
