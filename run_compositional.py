@@ -73,6 +73,7 @@ class run_simulation:
         z = (wells['z']).T
         if (wells['ws_p']!=wells['ws_inj']): wells['inj_p_term'] = []
         #q_wells = wells['ws_inj']#[wells['inj_cond']=='reservoir']
+
         if ~ctes.miscible_w: z=z[0:ctes.Nc]
         if ctes.load_k and any(z.flatten()>0):
             if any(wells['inj_cond']=='reservoir'):
@@ -108,7 +109,7 @@ class run_simulation:
 
         mobility_ratio_ws[:,0] = (L/(L+V+A))[ws_p_inj] #?? CHANGE THIS!!
         mobility_ratio_ws[:,1] = (V/(L+V+A))[ws_p_inj] #?? CHANGE THIS!!
-
+        
         wells['inj_p_term'] = xkj_ws * mobility_ratio_ws * Csi_j_ws
 
         'if the injector well has a prescribed flux condition'

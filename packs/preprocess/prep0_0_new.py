@@ -106,12 +106,14 @@ class PreprocessUnfied(Preprocess0):
         dist_cent[M.faces.boundary,0] = np.sum(d_fpoint_cent_boundary*abs(normals_faces[M.faces.boundary]),axis=-1)
         dist_cent[M.faces.boundary,1] = dist_cent[M.faces.boundary,0] #?? not sure about this
         dist_between_centers = np.sum(dist_cent,axis=1) #isso é a soma dos hs "h_face_cent_vol"
-        
+
         M.data[M.data.variables_impress['area']] = areas
         M.data[M.data.variables_impress['dist_cent']] = dist_between_centers
         M.data[M.data.variables_impress['volume']] = M.volumes.volume(M.volumes.all)
         M.data[M.data.variables_impress['NODES']] = M.nodes.center(M.nodes.all)
         M.data['h_face_cent_vol'] = dist_cent #util para o MPFA-D
+        M.data['faces_nodes'] = faces_nodes
+        M.data['faces_normals'] = normals_faces
         #M.data[M.data.variables_impress['hs']] = faces_hs
         #t1 = time.time()
         #print(t1-t0)
@@ -121,14 +123,15 @@ class PreprocessUnfied(Preprocess0):
     def run(self, M):
         self.update_centroids_and_unormal(M)
         self.set_permeability_and_phi(M)
-
-        if self.check_struct(M):
+        self.set_area_unstruct(M)
+        #import pdb; pdb.set_trace()
+        '''if self.check_struct(M):
             self.set_area_hex_structured(M)
             self.set_k_harm_hex_structured(M)
             self.set_pretransmissibility(M)
             self.set_transmissibility_monophasic(M)
             self.initial_gama(M)
-        else: self.set_area_unstruct(M)
+        else: self.set_area_unstruct(M)'''
 
         #self.set_pretransmissibility(M)
         #self.set_transmissibility_monophasic(M)
