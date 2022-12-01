@@ -61,11 +61,12 @@ def polynomial_der_coeffs(P):
     dP[:,-1] = 0
     return dP
 
-def RT0_shape_functions():
+def RT0_shape_functions(n_points, points):
     phi = np.empty((n_points,2))
-    phi[:,0] = 1 / 4 * (1 + x)
-    phi[:,1] = 1 / 4 * (1 - x)
+    phi[:,0] = 1 / 4 * (1 + points)
+    phi[:,1] = 1 / 4 * (1 - points)
     return phi
+
 
 def auxiliary_terms(M, points, n_points):
     x_points = np.array([points**i for i in range(n_points)])
@@ -138,6 +139,59 @@ def Vandermonde2(n_points, points):
             Vr[j,i] = jacobiP_(i,0,0,points[j])
     return Vr
 
+
+def bilinear_shape_functions_2D(M, n_points,x_points, y_points):
+    #function to map from the reference domain to the physical one
+    Ns = np.empty((n_points,4))
+    Ns[:,0] = 1/4*(1-x_points)*(1-y_points)
+    Ns[:,1] = 1/4*(1+x_points)*(1-y_points)
+    Ns[:,2] = 1/4*(1+x_points)*(1+y_points)
+    Ns[:,3] = 1/4*(1-x_points)*(1+y_points)
+
+    faces_vols = M.volumes.bridge_adjacencies(M.volumes.all,3,2)
+    faces_vols_center_fl = M.faces.center(faces_vols.flatten())
+    faces_vols_center = np.concatenate(np.split(faces_vols_center_fl[:,np.newaxis,:],len(faces_vols_center_fl)/6),axis=1)
+    ff=faces_vols_center.transpose(1,0,2)
+    faces_vols_2D_indx = faces_vols[ff[:,:,-1]==0] #faces index that represent the volumes in 2D
+    nodes_faces_vols_2D =  M.data['faces_nodes'][faces_vols_2D_indx]
+    nodes_faces_vols_2D_coords_fl = M.nodes.center(nodes_faces_vols_2D.flatten())
+    nodes_faces_vols_2D_coords = np.concatenate(np.split(nodes_faces_vols_2D_coords_fl[:,np.newaxis,:],len(nodes_faces_vols_2D_coords_fl[:,0])/4),axis=1)
+    nodes_faces_vols_2D_coords = nodes_faces_vols_2D_coords.transpose(1,0,2)[...,:2]
+
+    v0 = nodes_faces_vols_2D_coords[:,0]
+
+    angles = np.empty((ctes.n_volumes, 3))
+
+    for i in range(1,4):
+        v = nodes_faces_vols_2D_coords[:,i] - v0
+        angle = np.arctan(v[:,1]/v[:,0])
+        angle[angle<0]+=2*np.pi*np.ones_like(angle[angle<0]) # map the angle to 0,2pi interval
+        angles[:,i-1] = angle
+
+    angles_argsort = np.argsort(angles)
+
+    vs = nodes_faces_vols_2D_coords[:,1:]
+    vs_reord_aux = vs[:,angles_argsort] #rearrange vectors in the correct order,
+    # however this gets too much info just to vectorize.
+    #The info we need is in the diagonal:
+    vs_reord = np.diagonal(vs_reord_aux)
+    vs_reord = vs_reord.transpose(2,0,1) #correct matrix shape
+    nodes_faces_vols_2D_coords[:,1:] = vs_reord
+
+    Xs = Ns @ nodes_faces_vols_2D_coords
+    import pdb; pdb.set_trace()
+    #consegui pegar o Xs
+    return Ns
+
+def RT0_shape_functions_2D(n_points,x_points,y_points):
+    #function to map from the reference domain to the physical one
+    phi = np.empty((n_points,2,2))
+    phi[:,0,0] = -1/4*(1-x_points)
+    phi[:,0,1] = 1/4*(1+x_points)
+    phi[:,1,0] = -1/4*(1-y_points)
+    phi[:,1,1] = 1/4*(1+y_points)
+    return phi
+
 def run(M):
     global n_points
     global points
@@ -151,11 +205,17 @@ def run(M):
     global v0
     global vols_vec
     global Dr
+    global phi
+    global mesh_dim   #for the fr scheme
+
+    mesh_dim = 2-1 * (M.volumes.internal.shape==0)
 
     n_points = data_loaded['compositional_data']['FR']['order']
     GL = quadpy.c1.gauss_lobatto(n_points)
     points = GL.points
     weights = GL.weights
+
+
     dgRB, dgLB, gRB, gLB = correction_function(n_points)
     L, dL = Lagrange_poly(n_points, points)
 
@@ -166,9 +226,28 @@ def run(M):
     L = np.round(L,2)
     dL = np.round(dL,2)'''
 
+    if mesh_dim==2:
+        global x_points
+        global y_points
+
+        n_points *= n_points
+        n_pmatrx, neta = np.meshgrid(points, points)
+        w_pmatrx, weta = np.meshgrid(weights, weights)
+        x_points = np.reshape(n_pmatrx,[n_points])
+        w_lined = np.reshape(w_pmatrx,[n_points])
+        y_points = np.reshape(neta,[n_points])
+        w_eta = np.reshape(weta,[n_points])
+        points = x_points.copy() #change latter
+        bilinear_shape_functions_2D(M, n_points,x_points, y_points)
+        phi = RT0_shape_functions_2D(n_points,x_points,y_points)
+
+    else:
+        phi = RT0_shape_functions(n_points, points)
+
 
     V = np.polynomial.legendre.legvander(points,n_points-1)
-    x_points, v0, vols_vec = auxiliary_terms(M, points, n_points)
+    _points, v0, vols_vec = auxiliary_terms(M, points, n_points)
+    #phi = RT0_shape_functions(n_points, points)
 
     #V_H = Vandermonde2(n_points, points)
     #GV_H = gradVandermonde(n_points, points)
