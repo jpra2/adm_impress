@@ -143,7 +143,7 @@ for arq in arquivos:
             e512_L2_FI = np.sqrt(np.sum((f(x512)-Sw_FI_512)**2) * 1 / 512)
             R512_L2_FI = math.log(e256_L2_FI/e512_L2_FI,2)
 
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         plt.figure(1)
         #plt.title('BL Sw - mesh refinement')
         plt.plot(xD, SwD, 'b')
@@ -151,12 +151,12 @@ for arq in arquivos:
         plt.plot(x128, Sw_FI_128, '-.k')
         plt.plot(x256, Sw_FI_256, ':g')
         plt.plot(x512, Sw_FI_512, '--r')
-        plt.legend(('Analytical Solution', '64 CV', '128 CV', '256 CV', '512 CV'))
+        plt.legend(('Solução analítica', 'FI 64 CVs', 'FI 128 CVs', 'FI 256 CVs', 'FI 512 CVs'))
         #plt.legend(('IMPEC', 'Fully Implicit - back', 'Analytical Solution', 'Fully Implicit - new'))
-        plt.ylabel('Water saturation')
-        plt.xlabel('Distance (m)')
+        plt.ylabel('Saturação de água')
+        plt.xlabel('Distância (m)')
         plt.grid()
-        plt.savefig('results/BL_Sw_refinement_2' + '.png')
+        plt.savefig('results/BL_Sw_refinement_3' + '.png')
 
 
         plt.figure(2)
@@ -170,8 +170,24 @@ for arq in arquivos:
         #plt.title('Convergence rate - L1 norm')
         plt.ylabel('$log_{2}({E}_{L_1})$')
         plt.xlabel('$log_{2}(N)$')
-        plt.legend(('FI', 'Linear Convergence'))
+        plt.legend(('FI', 'Convergência linear'))
         plt.grid()
         plt.savefig('results/BL_L1_convergence_FI_2.png')
+
+        plt.figure(3)
+        x = np.log2(np.array([8,16,32,64,128,256,512]))
+        y = np.log2(np.array([e8_L2_FI, e16_L2_FI, e32_L2_FI, e64_L2_FI, e128_L2_FI, e256_L2_FI, e512_L2_FI]))
+        plt.plot(x, y,'-bo')
+
+        ref_line = x[0:]/2
+        #plt.plot(x[0:2], -np.array([ref_line[1],ref_line[1]])-5,'-k')
+        #plt.plot(np.array([x[0],x[0]]),-ref_line-5,'-k')
+        plt.plot(x[0:],-ref_line-3.5,'-k')
+        plt.plot()
+        plt.legend(('FI','2$nd$ order'))
+        plt.ylabel('$log_2({E}_{L_2})$')
+        plt.xlabel('$log_2(N)$')
+        plt.grid()
+        plt.savefig('results/BL_L2_convergence_FI.png')
 
         import pdb; pdb.set_trace()

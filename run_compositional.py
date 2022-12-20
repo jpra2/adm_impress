@@ -298,6 +298,7 @@ class run_simulation:
         if ctes.FR: Nk = fprop.Nk_SP;
 
         else: Nk = fprop.Nk
+        
 
         self.current_compositional_results = np.array([self.loop, self.vpi, self.sim_time,
             self.t, fprop.P, fprop.Sw, fprop.So, fprop.Sg, self.oil_production,

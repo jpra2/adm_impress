@@ -1,6 +1,6 @@
 #BL 2-D with 1 oil component
 mesh_name: 80x80x1_BL.msh
-name_save_file: 'results_2d_BL_2D_Li_80x80x1_FI_viscosidade_normal_CFL_5_0'
+name_save_file: 'results_2d_BL_2D_Li_80x80x1_FI_viscosidade_normal_CFL_10_0'
 
 compositional: True
 hidrocarbon_components: True
@@ -26,7 +26,7 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 5.0 #0.9
+  CFL: 10.0 #0.9
 
   solver:
     IMPSAT: false
@@ -72,9 +72,9 @@ compositional_data:
     deltaNlim: 10
     deltaSlim: 0.2
     deltaVlim: 1
-    delta_t_ini: 10
+    delta_t_ini: 1
     delta_tmax: 8640
-    delta_tmin: 0.1
+    delta_tmin: 0.01
 
   water_data:
     mi_W: 1e-3

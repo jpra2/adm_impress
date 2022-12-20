@@ -152,8 +152,8 @@ for arq in arquivos:
         #plt.title('Convergence rate - L1 norm')
         plt.ylabel('$log_{2}({E}_{L_1})$')
         plt.xlabel('$log_{2}(N)$')
-        plt.legend(('FI', 'Linear Convergence'))
+        plt.legend(('FI', 'Convergência linear'))
         plt.grid()
-        plt.savefig('results/BL_L1_convergence_FI_2.png')
+        plt.savefig('results/BL_L1_convergence_FI_3.png')
 
         import pdb; pdb.set_trace()
