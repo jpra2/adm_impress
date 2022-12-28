@@ -549,7 +549,7 @@ class StabilityCheck:
             if any(np.isnan(razao).flatten()):
                 if razao.shape[1]<300:
                     print('nan')
-                    import pdb; pdb.set_trace()
+                    #import pdb; pdb.set_trace()
             razao[np.isnan(razao)] = 1
             razao[np.isinf(razao)] = 1
 

@@ -257,6 +257,7 @@ class NewtonSolver:
                     L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
                     p_well.run_init(fprop.P[wells['ws_inj']],z[0:ctes.Nc])
 
+                    """
                     if any(injP_bool):
                         qk_molar = self.q[:,injP]
                         #qk_molar = fprop.qk_molar[:,injP]
@@ -266,6 +267,7 @@ class NewtonSolver:
                     else:
                         wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
                         #wells['values_q_vol'][:,wells['inj_cond']=='reservoir'] = self.q_vol
+                    """
                 #else:
                     #wells['inj_p_term'] = []
                     #qk_molar = wells['values_q'][:,wells['inj_cond']=='surface']

@@ -1,6 +1,6 @@
-#2-phase problem with 2 components - hotei and firoozabadi
-mesh_name: 80x40x1_Hoteit_Firoozabadi.msh
-name_save_file: 'results_Hoteit_Firoo_2k_ex5a_80x40_FI_VPI0_45_dtmin_864'
+#2-phase problem with 8 components - zidane 2015
+mesh_name: 20x20x1_Firoozabadi_ex1.msh # 10x10 ate 40x40
+name_save_file: 'results_Zidane_8k_ex3_20x20_IMPEC'
 
 compositional: True
 hidrocarbon_components: True
@@ -26,11 +26,11 @@ monophasic_data:
 # Case 1 of Firoozabadi paper
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 3.0
+  CFL: 0.5
 
   solver:
     IMPSAT: false
-    FI: True
+    FI: False
 
   MUSCL:
     set: false
@@ -52,9 +52,9 @@ compositional_data:
     Euler: true
     RK3: false
 
-  vpis_para_gravar_vtk: [0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45]
-  time_to_save: [21772800]
-  maximum_time: 21772800.
+  vpis_para_gravar_vtk: [0.60, 0.65, 0.70, 0.75, 0.80]
+  time_to_save: [21759840.]
+  maximum_time: 21759840.
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -69,12 +69,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 6 # 8
-    deltaSlim: .55 #.55
-    deltaVlim: 0.004 #0.003
-    delta_t_ini: 86.4 #432 # 864
-    delta_tmax: 8640 #8640 #43200 #43200
-    delta_tmin: 864 #86.4
+    deltaNlim: 10.0 # 8
+    deltaSlim: .15 #.55
+    deltaVlim: 0.01 #0.003
+    delta_t_ini: 10 #432 # 864
+    delta_tmax: 86400 #8640 #43200 #43200
+    delta_tmin: 86.4 #86.4
 
   water_data:
     mi_W: 1e-3
@@ -94,21 +94,28 @@ compositional_data:
     krw0: .0
     krg0: 1
     kro0: 1.
-    n_o: 1.
-    n_g: 1.
+    n_o: 2.
+    n_g: 2.
     n_w: 0.
 
-#  C1 C3
+#  CO2 N2 C1 C2-C3 C4-C5 C6-C10 C11-C24 C25+
   component_data:
-    z: [0.0, 1.0]
-    Tc: [190.56, 369.83]
-    Pc: [4599000, 4248000]
-    vc: [9.84e-05, 2.00001177e-04]
-    Mw: [16.0e-3, 44.096e-3]
-    w: [0.011, 0.1523]
-    Bin: [[0.,0.], [0.,0.]]
-    Pv: [8e6, 0.]
-    vshift_parameter: [0.0, 0.]
+    z: [0.0086, 0.0028, 0.4451, 0.1207, 0.0505, 0.1328, 0.1660, 0.0735]
+    Tc: [304.14, 126.21, 190.56, 327.81, 435.62, 574.42, 708.95, 891.47]
+    Pc: [7375000, 3390000, 4599000, 4654000, 3609000, 2504000, 1502000, 760000]
+    vc: [0.00214, 0.00321, 0.00615, 0.00474, 0.00437, 0.00425, 0.00443, 0.00417]
+    Mw: [44e-3, 28e-3, 16e-3, 34.96e-3, 62.98e-3, 110.21e-3, 211.91e-3, 462.79e-3]
+    w: [0.239, 0.039, 0.011, 0.11783, 0.21032, 0.41752, 0.66317, 1.7276]
+    Bin: [[0., 0., 0.15, 0.15, 0.15, 0.15, 0.15, 0.08],
+          [0., 0., 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+          [0.15, 0.1, 0., 0.0346, 0.0392, 0.0469, 0.0635, 0.1052],
+          [0.15, 0.1, 0.0346, 0., 0., 0., 0., 0.],
+          [0.15, 0.1, 0.0392, 0.0, 0.0, 0.0, 0.0, 0.0],
+          [0.15, 0.1, 0.0469, 0., 0., 0., 0., 0.],
+          [0.15, 0.1, 0.0635, 0., 0., 0., 0., 0.],
+          [0.08, 0.1, 0.1052, 0., 0., 0., 0., 0.]]
+    Pv: [8e6, 0., 0., 0., 0., 0., 0., 0.]
+    vshift_parameter: [0.0, 0., 0., 0., 0., 0., 0., 0.]
     constant_K: False
 
 #water saturation data
@@ -126,43 +133,37 @@ Porosity:
 Permeability:
   r1:
     type: box
-    p0: [0,10,-1]
-    p1: [50,20,0]
-    value: [9.869233e-17, 0, 0, 0, 9.869233e-17, 0, 0, 0, 9.869233e-17]
-
-  r2:
-    type: box
     p0: [0,0,-1]
-    p1: [50,10,0]
+    p1: [50,50,0]
     value: [9.869233e-15, 0, 0, 0, 9.869233e-15, 0, 0, 0, 9.869233e-15]
 
 Pressure:
   r1:
     type: all
-    value: 5.0e6
+    value: 2.76e7
 
 Temperature:
   r1:
     type: all
-    value: 397
+    value: 403.15
 
 Wells:
   P1:
     p0: [0.0, 0.0, -1.0]
-    p1: [0.625, 20, 0.0]
+    p1: [2.5, 2.5, 0.0] #50x50
     type_region: box
     type: Injector
-    z: [1.0, 0.0]
-    injection_condition: reservoir
+    z: [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    injection_condition: reservoir #surface
     prescription: Q
-    value: [0.0000724537037] #m3/s
-    ksi_total: 41.69170794 #densidade molar
+    value: [0.001543157] #m3/s
+    ksi_total: 11261.534213147756 #densidade molar
     value_type: volumetric
 
   P2:
-    p0: [49.375, 0, -1.0]
-    p1: [50.0, 20.0, 0.0]
+    p0: [47.5, 47.5, -1.0] #50x50
+    p1: [50.0, 50.0, 0.0]
     prescription: P
     type: Producer
     type_region: box
-    value: 5.0e6
+    value: 2.76e7

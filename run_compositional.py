@@ -222,7 +222,8 @@ class run_simulation:
 
 
         '-------------------- Advance in time and save results ----------------'
-        #self.prod_rate_SC(fprop, wells)
+        self.prod_rate_SC(fprop, wells)
+        # Comentar linha acima no FI
         self.update_vpi(fprop, wells)
 
         self.update_loop()
@@ -238,7 +239,7 @@ class run_simulation:
                 self.update_current_compositional_results(M, wells, fprop)
 
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
-        #if len(wells['ws_prod'])>0: self.update_production(fprop, wells)
+        if len(wells['ws_prod'])>0: self.update_production(fprop, wells)
         # Comentar linha acima no FI
         #import pdb; pdb.set_trace()
 
@@ -298,7 +299,7 @@ class run_simulation:
         if ctes.FR: Nk = fprop.Nk_SP;
 
         else: Nk = fprop.Nk
-        
+
 
         self.current_compositional_results = np.array([self.loop, self.vpi, self.sim_time,
             self.t, fprop.P, fprop.Sw, fprop.So, fprop.Sg, self.oil_production,

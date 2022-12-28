@@ -1,12 +1,12 @@
 #2-phase problem with 2 components - hotei and firoozabadi
 mesh_name: 40x20x1_Hoteit_Firoozabadi.msh
-name_save_file: 'results_Hoteit_Firoo_2k_ex5a_40x20_IMPEC_FOU'
+name_save_file: 'results_Hoteit_Firoo_2k_ex5a_40x20_FI_VPI0_45_dtmin_864'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
 water_component: false
-use_vpi: true
+use_vpi: True
 
 
 load_compositional_data: False
@@ -26,11 +26,11 @@ monophasic_data:
 # Case 1 of Firoozabadi paper
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.9
+  CFL: 3.0
 
   solver:
     IMPSAT: false
-    FI: false
+    FI: True
 
   MUSCL:
     set: false
@@ -52,9 +52,9 @@ compositional_data:
     Euler: true
     RK3: false
 
-  vpis_para_gravar_vtk: [0.30, 0.32, 0.35, 0.37]
-  time_to_save: [21262, 42525, 85050, 170100, 340200, 680400, 1360800, 2721600, 5443200, 8164800, 10886400, 16329600, 19051200, 21772800]
-  maximum_time: 21772800.
+  vpis_para_gravar_vtk: [0.41, 0.42, 0.43, 0.44, 0.45]
+  time_to_save: [1021342]
+  maximum_time: 1021342
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -69,12 +69,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 20 # 8
+    deltaNlim: 6 # 8
     deltaSlim: .55 #.55
-    deltaVlim: 0.001 #0.003
-    delta_t_ini: 432 #432 # 864
-    delta_tmax: 8640 #8640 #43200 #43200
-    delta_tmin: 8.64 #86.4
+    deltaVlim: 0.004 #0.003
+    delta_t_ini: 86.4 #432 # 864
+    delta_tmax: 8640 #43200 #43200
+    delta_tmin: 864 #86.4
 
   water_data:
     mi_W: 1e-3
@@ -153,7 +153,7 @@ Wells:
     type_region: box
     type: Injector
     z: [1.0, 0.0]
-    injection_condition: reservoir
+    injection_condition: reservoir #surface
     prescription: Q
     value: [0.0000724537037] #m3/s
     ksi_total: 41.69170794 #densidade molar

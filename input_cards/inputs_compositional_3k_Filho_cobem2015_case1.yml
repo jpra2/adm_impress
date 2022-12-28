@@ -1,12 +1,12 @@
-#2-phase problem with 3 components - marcondes 2010 paper
-mesh_name: 20x20x1_marcondes.msh
-name_save_file: 'results_Marcondes_3k_ex1_20x20x1_IMPEC'
+#3-phase problem with 3 components - filho cobem 2015
+mesh_name: 20x20x1_filho_3k.msh
+name_save_file: 'results_case1_2D_filho_cobem_3k_20x20x1_IMPEC_FOU'
 
 compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
 water_component: false
-use_vpi: false
+use_vpi: False
 
 load_compositional_data: False
 load_data: False
@@ -23,20 +23,17 @@ monophasic_data:
   mi: 1.0
 
 
-# Case 1 of Firoozabadi paper
+# Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.5
+  CFL: 0.7 #2.0
 
   solver:
     IMPSAT: false
-    FI: False
+    FI: false
 
   MUSCL:
     set: false
-    minmod: false
-    VanAlbada1: false
-    VanLeer: false
 
   FR:
     set: false
@@ -52,9 +49,9 @@ compositional_data:
     Euler: true
     RK3: false
 
-  vpis_para_gravar_vtk: [0.58]
-  time_to_save: [4320000]
-  maximum_time: 4320000
+  vpis_para_gravar_vtk: [1.0]
+  time_to_save: [15724800]
+  maximum_time: 15724800
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -68,13 +65,13 @@ compositional_data:
   Epc: 2
 
   time_data:
-    deltaPlim: 68.9476
-    deltaNlim: 2
-    deltaSlim: .15
-    deltaVlim: 0.1
-    delta_t_ini: 8.64
-    delta_tmax: 4320
-    delta_tmin: 8.64
+    deltaPlim: 20650
+    deltaNlim: 1.0
+    deltaSlim: .25
+    deltaVlim: 1.0
+    delta_t_ini: 10
+    delta_tmax: 86400
+    delta_tmin: 0.864
 
   water_data:
     mi_W: 1e-3
@@ -82,11 +79,11 @@ compositional_data:
     Mw_w: 18.015e-3
     Cw: 0 #4.35e-10
     Pw: 10.34e6
-    mobility: True
+    mobility: False
 
   residual_saturations:
-    Sorw: 0.
-    Sorg: 0.2
+    Sorw: 0.1
+    Sorg: 0.1
     Swr: 0.2
     Sgr: 0.1
 
@@ -98,17 +95,20 @@ compositional_data:
     n_g: 1.
     n_w: 1.
 
-#  C1 C3 C10
+#  C1 C3 C6 C10 C15 C20
   component_data:
-    z: [0.3, 0.3, 0.4]
-    Tc: [190.56, 369.83, 627]
-    Pc: [4599000, 4248000, 2.481e6]
-    vc: [9.84e-05, 2.00001177e-04, 5.32e-4]
-    Mw: [16.0e-3, 44.096e-3, 134e-3]
-    w: [0.011, 0.1523, 0.389]
-    Bin: [[0.,0., 0.], [0.,0., 0.], [0.,0., 0.]]
-    Pv: [8e6, 0., 0.]
-    vshift_parameter: [0.0, 0., 0.]
+    z: [0.500, 0.030, 0.070, 0.200, 0.150, 0.050]
+    Tc: [190.56, 369.83, 510, 627, 727, 793]
+    Pc: [4.599e6, 4.248e6, 3.271e6, 2.481e6, 1.853e6, 1.495e6]
+    vc: [9.86e-5, 0.2e-3, 0.348e-3, 0.532e-3, 0.777e-3, 0.997e-3]
+    Mw: [16.043e-3, 44.096e-3, 84e-3, 134e-3, 206e-3, 275e-3]
+    w: [0.0115, 0.1523, 0.251, 0.389, 0.571, 0.732]
+    Bin: [[0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.],
+          [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.],
+          [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.]]
+    Pv: [0., 0., 0., 0., 0., 0.]
+    vshift_parameter: [0., 0., 0., 0., 0., 0.]
+    Pb_guess: [0.0]
     constant_K: False
 
 #water saturation data
@@ -126,36 +126,36 @@ Porosity:
 Permeability:
   r1:
     type: all
-    value: [1e-14, 0, 0, 0, 1e-14, 0, 0, 0, 1e-14]
+    value: [1.97e-14, 0, 0, 0, 1.97e-14, 0, 0, 0, 1.97e-14]
 
 
 Pressure:
   r1:
     type: all
-    value: 3.45e6
+    value: 10.34e6
 
 Temperature:
   r1:
     type: all
-    value: 397
+    value: 344.26
 
 Wells:
   P1:
-    p0: [0.0, 0.0, -30.48]
-    p1: [8.5345, 8.5345, 0.0]
+    p0: [0.0, 0.0, -60.96]
+    p1: [12.192, 12.192, 0.0]
     type_region: box
     type: Injector
-    z: [1.0, 0.0, 0.0]
-    injection_condition: 'reservoir'
     prescription: Q
-    value: [0.164] #m3/s
-    ksi_total: 41.69170794 #densidade molar   #  1069.5317185220115
+    value: 3.275462963
+    z: [0.77, 0.20, 0.010, 0.010, 0.005, 0.005]
+    injection_condition: reservoir
+    ksi_total: 4705.380296340483
     value_type: volumetric
 
   P2:
-    p0: [162.1555, 162.1555, -30.48]
-    p1: [170.69, 170.69, 0.0]
+    p0: [231.648, 231.648, -60.96]
+    p1: [243.84, 243.84, 0.0]
     prescription: P
     type: Producer
     type_region: box
-    value: 3.45e6
+    value: 8.96e6

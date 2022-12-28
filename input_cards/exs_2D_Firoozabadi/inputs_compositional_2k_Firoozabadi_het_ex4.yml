@@ -1,6 +1,6 @@
 #2-phase problem with 2 components - hotei and firoozabadi
 mesh_name: 40x40x1_Hoteit_Firoozabadi_Case4.msh
-name_save_file: 'results_Hoteit_Firoo_2k_ex4_40x40_IMPEC_FOU'
+name_save_file: 'results_Hoteit_Firoo_2k_ex3_biphasic_40x40_FI'
 
 compositional: True
 hidrocarbon_components: True
@@ -26,11 +26,11 @@ monophasic_data:
 # Case 1 of Firoozabadi paper
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.9
+  CFL: 3.0
 
   solver:
     IMPSAT: false
-    FI: false
+    FI: True
 
   MUSCL:
     set: false
@@ -52,9 +52,9 @@ compositional_data:
     Euler: true
     RK3: false
 
-  vpis_para_gravar_vtk: [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.28, 0.30, 0.32, 0.35]
-  time_to_save: [21262, 42525, 85050, 170100, 340200, 680400, 1360800, 2721600, 5443200, 8164800, 10886400, 16329600, 19051200, 21772800]
-  maximum_time: 21772800.
+  vpis_para_gravar_vtk: [0.4, 0.45, 0.5, 0.55, 0.6]
+  time_to_save: [21759840.]
+  maximum_time: 21759840.
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -70,11 +70,11 @@ compositional_data:
   time_data:
     deltaPlim: 68.9476
     deltaNlim: 20 # 8
-    deltaSlim: .55 #.55
+    deltaSlim: .1 #.55
     deltaVlim: 0.001 #0.003
     delta_t_ini: 432 #432 # 864
     delta_tmax: 8640 #8640 #43200 #43200
-    delta_tmin: 8.64 #86.4
+    delta_tmin: 864 #86.4
 
   water_data:
     mi_W: 1e-3
@@ -133,12 +133,12 @@ Permeability:
 Pressure:
   r1:
     type: all
-    value: 5.0e6
+    value: 6.9e6 #5.0e6 #para ex 1
 
 Temperature:
   r1:
     type: all
-    value: 397
+    value: 311 # 397 #para ex 1
 
 Wells:
   P1:
@@ -147,9 +147,9 @@ Wells:
     type_region: box
     type: Injector
     z: [1.0, 0.0]
-    injection_condition: reservoir
+    injection_condition: reservoir #surface
     prescription: Q
-    value: 0.0000724537037 #m3/s
+    value: [0.000491898] #[0.0000724537037] #m3/s
     ksi_total: 41.69170794 #densidade molar
     value_type: volumetric
 
@@ -159,4 +159,4 @@ Wells:
     prescription: P
     type: Producer
     type_region: box
-    value: 5.0e6
+    value: 6.9e6 # 5.0e6 #para ex 1

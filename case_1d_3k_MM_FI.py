@@ -206,117 +206,113 @@ for  arq in arquivos:
 
 
 
-
         datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_200_IMPEC_FOU_teste_NATAL_246.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
-            So_FI_200_NATAL = data[6]
-            Sg_FI_200_NATAL = data[7]
-            xkj_FI_200_NATAL = data[13]
+            So_IMPEC_200_natal = data[6]
+            Sg_IMPEC_200_natal = data[7]
+            xkj_IMPEC_200_natal = data[13]
 
-            xkj_FI_200_NATAL[:,1,Sg_FI_200_NATAL==0] = 0
-            xkj_FI_200_NATAL[:,0,So_FI_200_NATAL==0] = 0
-            t_FI_200_NATAL = data[2]
+            xkj_IMPEC_200_natal[:,1,Sg_IMPEC_200_natal==0] = 0
+            xkj_IMPEC_200_natal[:,0,So_IMPEC_200_natal==0] = 0
+            n = 200
+            x_200 = np.linspace(0+50/(2*n),50-50/(2*n),n)
+            t_IMPEC_200_natal = data[2]
 
 
 
 
         plt.figure(1)
-        plt.plot(x_200, xkj_IMPEC_200[0,0], 'r')
-        plt.plot(x_200, xkj_FI_200[0,0], 'b')
+        #plt.plot(x_200, xkj_IMPEC_200[0,0], 'r')
+        plt.plot(x_200, xkj_FI_200[0,0], '--b')
         plt.plot(x_CMG, xCH4_CMG, 'k')
-
-        plt.plot(x_200, xkj_FI_200_NATAL[0,0], '--g')
-
-        plt.xlim(20,30)
-        plt.ylim(-0.05, 0.35)
+        #plt.plot(x_200, xkj_IMPEC_200_natal[0,0], ':g')
+        #plt.xlim(20,30)
+        #plt.ylim(-0.05, 0.35)
         plt.grid()
-        #plt.legend(( 'IMPEC-200', 'FI-200'), loc=10)
-        #plt.legend(( 'IMPEC-200', 'FI-200', 'CMG'), loc=10)
-        plt.legend(( 'IMPEC-200', 'FI-200', 'CMG', 'IMPEC teste'), loc=10)
+        #plt.legend(( 'IMPEC-200', 'FI-200', 'CMG', 'impec teste'), loc=10)
+        plt.legend(('FI - 200 CVs', 'CMG - 5000 CVs'), loc=10)
         plt.ylabel('Fração molar do metano na fase líquida')
-        plt.xlabel('Distância em x [m]')
+        plt.xlabel('Distância [m]')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_200.png')
 
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         plt.figure(2)
-        plt.plot(x_250, xkj_IMPEC_250[0,0], 'r')
-        plt.plot(x_250, xkj_FI_250[0,0], 'b')
+        #plt.plot(x_250, xkj_IMPEC_250[0,0], 'r')
+        plt.plot(x_250, xkj_FI_250[0,0], '--b')
         plt.plot(x_CMG, xCH4_CMG, 'k')
-        plt.xlim(20,30)
-        plt.ylim(-0.05, 0.35)
+        #plt.xlim(20,30)
+        #plt.ylim(-0.05, 0.35)
         plt.grid()
-        #plt.legend(( 'IMPEC-250', 'FI-250'), loc=10)
-        plt.legend(( 'IMPEC-250', 'FI-250', 'CMG'), loc=10)
-        #plt.legend(( 'IMPEC-250', 'IMPSAT-250', 'Referência CMG'), loc=10)
+        #plt.legend(( 'IMPEC-250', 'FI-250', 'CMG'), loc=10)
+        plt.legend(('FI - 250 CVs', 'CMG - 5000 CVs'), loc=10)
         plt.ylabel('Fração molar do metano na fase líquida')
-        plt.xlabel('Distância em x')
+        plt.xlabel('Distância [m]')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_250.png')
 
         plt.figure(3)
-        plt.plot(x_500, xkj_IMPEC_500[0,0], 'r')
-        plt.plot(x_500, xkj_FI_500[0,0], 'b')
+        #plt.plot(x_500, xkj_IMPEC_500[0,0], 'r')
+        plt.plot(x_500, xkj_FI_500[0,0], '--b')
         #plt.plot(x_500, xkj_FI_500_TesteW[0,0], '--y')
         plt.plot(x_CMG, xCH4_CMG, 'k')
         #plt.plot(x_axis_xCH4, xCH4, 'y')
-        plt.xlim(20,30)
-        plt.ylim(-0.05, 0.35)
+        #plt.xlim(20,30)
+        #plt.ylim(-0.05, 0.35)
         plt.grid()
-        #plt.legend(( 'IMPEC-500', 'FI-500'), loc=10)
-        plt.legend(( 'IMPEC-500', 'FI-500', 'CMG'), loc=10)
-        #plt.legend(( 'IMPEC-500', 'FI-500', 'FI-500 Teste final'), loc=10)
+        #plt.legend(( 'IMPEC-500', 'FI-500', 'CMG'), loc=10)
+        plt.legend(('FI - 500 CVs', 'CMG - 5000 CVs'), loc=10)
         plt.ylabel('Fração molar do metano na fase líquida')
-        plt.xlabel('Distância em x')
+        plt.xlabel('Distância [m]')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_500.png')
 
         plt.figure(4)
-        plt.plot(x_1000, xkj_IMPEC_1000[0,0], 'r')
-        plt.plot(x_1000, xkj_FI_1000[0,0], 'b')
-        plt.plot(x_1000, xkj_FI_1000_CFL[0,0], 'y')
+        #plt.plot(x_1000, xkj_IMPEC_1000[0,0], 'r')
+        #plt.plot(x_1000, xkj_FI_1000[0,0], 'b')
+        plt.plot(x_1000, xkj_FI_1000_CFL[0,0], '--b')
         #plt.plot(x_axis_xCH4, xCH4, 'y')
         plt.plot(x_CMG, xCH4_CMG, 'k')
-        plt.xlim(20,30)
-        plt.ylim(-0.05, 0.35)
+        #plt.xlim(20,30)
+        #plt.ylim(-0.05, 0.35)
         plt.grid()
-        #plt.legend(( 'IMPEC-1000', 'FI-1000', 'FI-1000 CFL 0,3'), loc=10)
-        plt.legend(( 'IMPEC-1000', 'FI-1000', 'FI-1000 CFL 0,3', 'CMG'), loc=10)
-        #plt.legend(( 'IMPEC-1000', 'FI-1000', 'Referência CMG'), loc=10)
+        plt.legend(('FI - 1000 CVs', 'CMG - 5000 CVs'), loc=10)
         plt.ylabel('Fração molar do metano na fase líquida')
-        plt.xlabel('Distância em x')
+        plt.xlabel('Distância [m]')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_1000.png')
 
         plt.figure(5)
-        plt.plot(x_2000, xkj_IMPEC_2000[0,0], 'r')
-        plt.plot(x_2000, xkj_FI_2000[0,0], 'b')
-        plt.plot(x_2000, xkj_FI_2000_CFL_07[0,0], 'y')
-        plt.plot(x_2000, xkj_FI_2000_CFL_05[0,0], '--c')
+        #plt.plot(x_2000, xkj_IMPEC_2000[0,0], 'r')
+        #plt.plot(x_2000, xkj_FI_2000[0,0], 'b')
+        #plt.plot(x_2000, xkj_FI_2000_CFL_07[0,0], 'y')
+        plt.plot(x_2000, xkj_FI_2000_CFL_05[0,0], '--b')
         #plt.plot(x_axis_xCH4, xCH4, 'y')
         plt.plot(x_CMG, xCH4_CMG, 'k')
-        plt.xlim(20,30)
-        plt.ylim(-0.05, 0.35)
+        #plt.xlim(20,30)
+        #plt.ylim(-0.05, 0.35)
         plt.grid()
-        plt.legend(( 'IMPEC-2000', 'FI-2000', 'FI-2000 CFL 0,7', 'FI-2000 CFL 0,5', 'CMG'))
-        #plt.legend(( 'IMPEC-2000', 'FI-2000', 'Reference CMG'))
-        plt.ylabel('Methane molar fraction in liquid phase')
-        plt.title('Case2 - Moshiri and Manzari\'s paper')
-        plt.xlabel('Dimensionless distance')
+        #plt.legend(( 'IMPEC-2000', 'FI-2000', 'FI-2000 CFL 0,7', 'FI-2000 CFL 0,5', 'CMG'))
+        plt.legend(('FI - 2000 CVs', 'CMG - 5000 CVs'), loc=6)
+        plt.ylabel('Fração molar do metano na fase líquida')
+        #plt.title('Case2 - Moshiri and Manzari\'s paper')
+        plt.xlabel('Distância [m]')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_2000.png')
 
         plt.figure(6)
-        plt.plot(x_200, xkj_FI_200[0,0], 'b')
-        plt.plot(x_250, xkj_FI_250[0,0], 'g')
-        plt.plot(x_500, xkj_FI_500[0,0], 'y')
-        plt.plot(x_1000, xkj_FI_1000[0,0], 'r')
-        plt.plot(x_2000, xkj_FI_2000[0,0], 'c')
+        #plt.plot(x_200, xkj_FI_200[0,0], 'b')
+        #plt.plot(x_250, xkj_FI_250[0,0], ':g')
+        plt.plot(x_500, xkj_FI_500[0,0], '.-y')
+        plt.plot(x_1000, xkj_FI_1000_CFL[0,0], ':r')
+        plt.plot(x_2000, xkj_FI_2000_CFL_05[0,0], '--c')
         #plt.plot(x_axis_xCH4, xCH4, 'y')
         plt.plot(x_CMG, xCH4_CMG, 'k')
-        plt.xlim(20,30)
-        plt.ylim(-0.05, 0.35)
+        #plt.xlim(20,30)
+        #plt.ylim(-0.05, 0.35)
         plt.grid()
-        plt.legend(( 'FI-200 CVs', 'FI-250 CVs', 'FI-500 CVs', 'FI-1000 CVs', 'FI-2000 CVs', 'CMG'), loc=10)
-        #plt.legend(( 'IMPEC-1000', 'FI-1000', 'Referência CMG'), loc=10)
+        plt.legend(( 'FI-500 CVs', 'FI-1000 CVs', 'FI-2000 CVs', 'CMG'), loc=10)
+        #plt.legend(( 'FI-200 CVs', 'FI-250 CVs', 'FI-500 CVs', 'FI-1000 CVs', 'FI-2000 CVs', 'CMG'), loc=10)
         plt.ylabel('Fração molar do metano na fase líquida')
-        plt.xlabel('Distância em x')
+        plt.xlabel('Distância [m]')
         plt.savefig('results/compositional/3k_methane_x_MM_FI_convergence.png')
 
         
         import pdb; pdb.set_trace()
+
+
