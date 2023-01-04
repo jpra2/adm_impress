@@ -143,16 +143,36 @@ for arq in arquivos:
             e512_L2_FI = np.sqrt(np.sum((f(x512)-Sw_FI_512)**2) * 1 / 512)
             R512_L2_FI = math.log(e256_L2_FI/e512_L2_FI,2)
 
+
+        datas = np.load('flying/results_Buckley_Leverett_case_1024_FI_693.npy', allow_pickle=True)
+        #import pdb; pdb.set_trace()
+        for data in datas[1:]:
+            Sw_FI_1024 = data[5]
+            So_FI_1024 = data[6]
+            Sg_FI_1024 = data[7]
+            Oil_p_FI_1024 = data[8]
+            Gas_p_FI_1024 = data[9]
+            pressure_FI_1024 = data[4]/1e3
+            time_FI_1024 = data[3]
+            x1024 = np.linspace(0.0, 0.6096, 1024)
+            x1024 = x1024/0.6096
+
+            e1024_L1_FI = (sum(abs(f(x1024)-Sw_FI_1024))*(1/1024))
+            R1024_L1_FI = math.log(e512_L1_FI/e1024_L1_FI,2)
+            e1024_L2_FI = np.sqrt(np.sum((f(x1024)-Sw_FI_1024)**2) * 1 / 1024)
+            R1024_L2_FI = math.log(e512_L2_FI/e1024_L2_FI,2)
+
         #import pdb; pdb.set_trace()
         plt.figure(1)
         #plt.title('BL Sw - mesh refinement')
         plt.plot(xD, SwD, 'b')
-        plt.plot(x64, Sw_FI_64, '.-c')
-        plt.plot(x128, Sw_FI_128, '-.k')
-        plt.plot(x256, Sw_FI_256, ':g')
-        plt.plot(x512, Sw_FI_512, '--r')
-        plt.legend(('Solução analítica', 'FI 64 CVs', 'FI 128 CVs', 'FI 256 CVs', 'FI 512 CVs'))
-        #plt.legend(('IMPEC', 'Fully Implicit - back', 'Analytical Solution', 'Fully Implicit - new'))
+        #plt.plot(x64, Sw_FI_64, '.-c')
+        plt.plot(x128, Sw_FI_128, '+c')
+        plt.plot(x256, Sw_FI_256, '-.k')
+        plt.plot(x512, Sw_FI_512, ':g')
+        plt.plot(x1024, Sw_FI_1024, '--r')
+        #plt.legend(('Solução analítica', 'FI 64 CVs', 'FI 128 CVs', 'FI 256 CVs', 'FI 512 CVs', 'FI 1024 CVs'))
+        plt.legend(('Solução analítica', 'FI 128 CVs', 'FI 256 CVs', 'FI 512 CVs', 'FI 1024 CVs'))
         plt.ylabel('Saturação de água')
         plt.xlabel('Distância (m)')
         plt.grid()
@@ -160,8 +180,8 @@ for arq in arquivos:
 
 
         plt.figure(2)
-        x = np.log2(np.array([8, 16, 32, 64, 128, 256, 512]))
-        y_FI = np.log2(np.array([e8_L1_FI, e16_L1_FI, e32_L1_FI, e64_L1_FI, e128_L1_FI, e256_L1_FI, e512_L1_FI]))
+        x = np.log2(np.array([8, 16, 32, 64, 128, 256, 512, 1024]))
+        y_FI = np.log2(np.array([e8_L1_FI, e16_L1_FI, e32_L1_FI, e64_L1_FI, e128_L1_FI, e256_L1_FI, e512_L1_FI, e1024_L1_FI]))
 
         y_ref = -x-2.0
 
@@ -175,8 +195,8 @@ for arq in arquivos:
         plt.savefig('results/BL_L1_convergence_FI_2.png')
 
         plt.figure(3)
-        x = np.log2(np.array([8,16,32,64,128,256,512]))
-        y = np.log2(np.array([e8_L2_FI, e16_L2_FI, e32_L2_FI, e64_L2_FI, e128_L2_FI, e256_L2_FI, e512_L2_FI]))
+        x = np.log2(np.array([8,16,32,64,128,256,512,1024]))
+        y = np.log2(np.array([e8_L2_FI, e16_L2_FI, e32_L2_FI, e64_L2_FI, e128_L2_FI, e256_L2_FI, e512_L2_FI, e1024_L2_FI]))
         plt.plot(x, y,'-bo')
 
         ref_line = x[0:]/2
@@ -189,5 +209,16 @@ for arq in arquivos:
         plt.xlabel('$log_2(N)$')
         plt.grid()
         plt.savefig('results/BL_L2_convergence_FI.png')
+
+        plt.figure(4)
+        plt.plot(x1024, Sw_FI_1024, '--r')
+        plt.plot(xD, SwD, 'b')
+        #plt.plot(x1, Sw_FI_new, 'r')
+        plt.legend(('FI 1024 CVs', 'Solução analítica'))
+        plt.ylabel('Saturação de água')
+        plt.xlabel('Distância (m)')
+        plt.grid()
+        n=1024
+        plt.savefig('results/BL_Sw_' + '{}'.format(n) + '.png')
 
         import pdb; pdb.set_trace()

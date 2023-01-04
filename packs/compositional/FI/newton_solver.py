@@ -25,6 +25,10 @@ class NewtonSolver:
                             data_loaded['compositional_data']['residual_saturations'].values()
 
     def solver(self, wells, fprop, delta_t, Nk_old, G, StabilityCheck, p1, M, face_properties, phase_densities, dVjdNk, dVjdP, P_old):
+        t0 = time.time()
+        dt_flash = 0
+        dt_solve = 0
+        dt_jacobiana = 0
 
         self.well_term(wells)
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
@@ -48,6 +52,7 @@ class NewtonSolver:
         while np.max(abs(residuo_adm)) > stop_criteria:
 
             ''' Rever para usar matriz esparsa '''
+            t0_jacobiana = time.time()
             jacobiana = self.jacobian_calculation(fprop, Pot_hid, delta_t, wells)
 
             '---------------------- Solução do sistema --------------------------'
@@ -60,18 +65,17 @@ class NewtonSolver:
             residuo_boundary = residuo.copy()
             residuo_boundary[(ctes.n_components + 1) * wp] = 0.0
             #residuo_boundary[(ctes.n_components + 1) * ctes.bhp_ind] = 0.0
+            t1_jacobiana = time.time()
+            dt_jacobiana += t1_jacobiana - t0_jacobiana
 
+            t0_solve = time.time()
             Jb = sparse.csr_matrix(jacobiana_boundary)
             delta_x = spsolve(Jb, -residuo_boundary)
+            t1_solve = time.time()
+            dt_solve += t1_solve - t0_solve
 
-
-            '--------------------- Atualização das variáveis ---------------------'
-            detla_x_new = np.reshape(delta_x, (ctes.n_volumes, ctes.n_components + 1)).T
-            # Gambiarra
-            #detla_x_new[0] = detla_x_new[0]/2
-
-            """
             '----------------- Pre condicionador de Jacobi ----------------------'
+            """
             Jacobi_PC = np.zeros_like(jacobiana_boundary)
             for i in range(ctes.n_volumes):
                 Jacobi_PC[(ctes.n_components+1)*i:(ctes.n_components+1)*(i+1), (ctes.n_components+1)*i:(ctes.n_components+1)*(i+1)] = \
@@ -87,8 +91,14 @@ class NewtonSolver:
             #delta_x_Jacobi_CG, code = cg(Jb_test, -residuo_test)
             #detla_x_new = np.reshape(delta_x_Jacobi_CG, (ctes.n_volumes, ctes.n_components + 1)).T
             'Gambiarra'
-            detla_x_new[0] = detla_x_new[0]/2
+            #detla_x_new[0] = detla_x_new[0]/2
             """
+
+
+            '--------------------- Atualização das variáveis ---------------------'
+            detla_x_new = np.reshape(delta_x, (ctes.n_volumes, ctes.n_components + 1)).T
+            # Gambiarra
+            #detla_x_new[0] = detla_x_new[0]/2
 
 
             detla_x_new[1:, wp] = 0.0 # Considerar que:
@@ -102,6 +112,7 @@ class NewtonSolver:
             fprop.Nk[fprop.Nk < 1e-20] = 0.0
             if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
             if ctes.load_k: fprop.z = fprop.Nk[0:ctes.Nc,:] / fprop.Nk[0:ctes.Nc,:].sum(axis=0)
+            t0_flash = time.time()
 
             '----------------- Perform Phase stability test and flash -------------'
             #if fprop.Sg[0]<1: import pdb; pdb.set_trace()
@@ -145,7 +156,8 @@ class NewtonSolver:
 
             #if any(fprop.L!=0): import pdb; pdb.set_trace()
 
-
+            t1_flash = time.time()
+            dt_flash += t1_flash - t0_flash
             '----------------------- Update fluid properties ----------------------'
             p1.run_inside_loop(M, fprop)
             G = self.update_gravity_term(fprop)
@@ -202,12 +214,12 @@ class NewtonSolver:
             # Para o caso 6K, usar essa lógica
             # Para o caso do BL = comentar
 
-
-            if contador > 100:
+            t1 = time.time()
+            if contador > 1000:
                 import pdb; pdb.set_trace()
 
         print(f'{contador} iterações de Newton')
-
+        import pdb; pdb.set_trace()
 
         '----- Calcular termo de poço com pressão prescrita caso o bloco seja separado----'
         dVjdNk, dVjdP = self.dVt_derivatives(fprop)

@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
-mesh_name: 512x1x1_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_512_FI'
+mesh_name: 1024x1x1_BL.msh
+name_save_file: 'results_Buckley_Leverett_case_1024_FI'
 
 compositional: True
 hidrocarbon_components: True
@@ -69,11 +69,11 @@ compositional_data:
   time_data:
     deltaPlim: 7
     deltaNlim: 100
-    deltaSlim: 50
+    deltaSlim: 0.8
     deltaVlim: 100
     delta_t_ini: 0.1
-    delta_tmax: 10
-    delta_tmin: 0.001
+    delta_tmax: 1
+    delta_tmin: 0.0001
     #2.765
 
   water_data:
@@ -144,7 +144,7 @@ Temperature:
 Wells:
   P1:
     p0: [0.0, 0.0, 0]
-    p1: [0.001190625, 0.03048, 0.03048]
+    p1: [0.000595312, 0.03048, 0.03048]
     prescription: Q
     type: Injector
     type_region: box
@@ -156,7 +156,7 @@ Wells:
 
   P2:
     p0: [0.608409375, 0.0, 0.0]
-    p1: [0.6096, 0.03048, 0.03048]
+    p1: [0.6090046875, 0.03048, 0.03048]
     prescription: P
     type: Producer
     type_region: box

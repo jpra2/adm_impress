@@ -1,3 +1,3 @@
-name_file: 'input_cards/marcondes2010/inputs_compositional_marcondes_3k_2D_ex1.yml'
+name_file: 'input_cards/inputs_compositional_6k_50_0_0.yml'
 variable_file: 'input_cards/variable_inputs_compositional.yml'
 simulation_type: 'compositional'

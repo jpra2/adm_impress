@@ -7,9 +7,7 @@ import csv
 flying = 'flying'
 name = 'results'
 arquivos = os.listdir(flying)
-n_200 = 200
-n_100 = 100
-n_50 = 50
+n= 400
 
 fx = open('x_points_CMG_SchmallNEW.txt','r')
 x_CMG = [float(line.rstrip('\n\r')) for line in fx]
@@ -30,7 +28,7 @@ Sg_CMG = [float(line.rstrip('\n\r')) for line in fSg]
 for arq in arquivos:
     if  arq.startswith(name):
 
-        datas = np.load('flying/6k/results_6k_SchmallNEW_50_IMPEC_20days_401.npy', allow_pickle=True)
+        datas = np.load('flying/results_6k_SchmallNEW_400_IMPEC_20days_1568.npy', allow_pickle=True)
         #import pdb; pdb.set_trace()
         for data in datas[1:]:
             Sw_FOU = data[5]
@@ -46,101 +44,47 @@ for arq in arquivos:
             zC10_FOU = data[10][3]
             zC15_FOU = data[10][4]
             zC20_FOU = data[10][5]
-            x1_50 = np.linspace(0, 50, n_50)
+            x1 = np.linspace(0, 50, n)
 
-        datas2 = np.load('flying/6k/100_0_0/results_6k_SchmallNEW_100_FI_20days_POCONEW_dtmenor_2003.npy', allow_pickle=True)
+
+
+
         #import pdb; pdb.set_trace()
-        for data in datas2[1:]:
-            Sw_FI_2 = data[5]
-            So_FI_2 = data[6]
-            Sg_FI_2 = data[7]
-            Oil_p_FI_2 = data[8]
-            Gas_p_FI_2 = data[9]
-            pressure_FI_2 = data[4]/1e3
-            zC1_FI_2 = data[10][0]
-            zC3_FI_2 = data[10][1]
-            zC6_FI_2 = data[10][2]
-            zC10_FI_2 = data[10][3]
-            zC15_FI_2 = data[10][4]
-            zC20_FI_2 = data[10][5]
-            x1_100 = np.linspace(0, 50, n_100)
-
-        datas3 = np.load('flying/6k/200_0_0/results_6k_SchmallNEW_200_FI_20days_POCONEW_2003.npy', allow_pickle=True)
-        #import pdb; pdb.set_trace()
-        for data in datas3[1:]:
-            Sw_FI = data[5]
-            So_FI = data[6]
-            Sg_FI = data[7]
-            Oil_p_FI = data[8]
-            Gas_p_FI = data[9]
-            pressure_FI = data[4]/1e3
-            zC1_FI = data[10][0]
-            zC3_FI = data[10][1]
-            zC6_FI = data[10][2]
-            zC10_FI = data[10][3]
-            zC15_FI = data[10][4]
-            zC20_FI = data[10][5]
-            x1_200 = np.linspace(0, 50, n_200)
-
-
-        import pdb; pdb.set_trace()
-        plt.figure(1)
-        #plt.title('t = 20 days - 200x1x1 mesh')
-        plt.plot(x1_50, pressure_FOU, 'k')
-        #plt.plot(x1, pressure_MUSCL, 'g')
-        #plt.plot(x_CMG, pressure_CMG, '-bo')
-        plt.plot(x1_200, pressure_FI, 'r')
-        plt.plot(x1_100, pressure_FI_2, '-b')
-        plt.ylabel('Pressão (kPa)')
-        plt.xlabel('Distância (m)')
-        plt.legend(('IMPEC 50 CVs', 'FI novo poço 200 CVs', 'FI novo poço 100 CVs dt menor'))
-        #plt.legend(('IMPEC', 'FI', 'FI Teste'))
-        #plt.legend(('IMPEC', 'MUSCL', 'FI dt 864', 'FI dt 1728'))
-        plt.grid()
-        plt.savefig('results/6k/6k_200/20days/pressure_6k_20days' + '.png')
-
         plt.figure(2)
         #plt.title('t = 20 days - 200x1x1 mesh')
-        #plt.plot(x1, So_FOU, 'k')
-        #plt.plot(x1, So_MUSCL, 'g')
         plt.plot(x_CMG, So_CMG, 'k')
-        plt.plot(x1_200, So_FI, '--r')
-        #plt.plot(x1_100, So_FI_2, '-b')
-        #plt.legend(('CMG', 'FI novo poço 200 CVs', 'FI novo poço 100 CVs dt menor'))
-        plt.legend(('CMG - 5000 CVs', 'FI 200 CVs'))
+        #plt.plot(x1_200, So_FI, '--r')
+        plt.plot(x1, So_FOU, 'k')
+        plt.legend(('CMG - 5000 CVs', 'IMPEC 400 CVs'))
         plt.ylabel('Saturação de óleo')
         plt.xlabel('Distância (m)')
         plt.grid()
         #plt.ylim((0,1))
-        plt.savefig('results/6k/6k_200/20days/saturation_oil_6k_20days_2' + '.png')
+        plt.savefig('results/6k/6k_400/saturation_oil_6k_20days_' + '.png')
 
         plt.figure(3)
         #plt.title('t = 20 days - 200x1x1 mesh')
-        #plt.plot(x1, Sw_FOU, 'k')
-        #plt.plot(x1, Sw_MUSCL, 'g')
         plt.plot(x_CMG, Sw_CMG, 'k')
-        plt.plot(x1_200, Sw_FI, '--b')
-        #plt.plot(x1_100, Sw_FI_2, '-b')
-        plt.legend(('CMG - 5000 CVs', 'FI 200 CVs'))
+        #plt.plot(x1_200, Sw_FI, '--r')
+        plt.plot(x1, Sw_FOU, 'k')
+        plt.legend(('CMG - 5000 CVs', 'IMPEC 400 CVs'))
         plt.ylabel('Saturação de água')
         plt.xlabel('Distância (m)')
         plt.grid()
         #plt.ylim((0,1))
-        plt.savefig('results/6k/6k_200/20days/saturation_water_6k_20days_2' + '.png')
+        plt.savefig('results/6k/6k_400/saturation_water_6k_20days_' + '.png')
 
         plt.figure(4)
         #plt.title('t = 20 days - 200x1x1 mesh')
-        #plt.plot(x1, Sg_FOU, 'k')
-        #plt.plot(x1, Sg_MUSCL, 'g')
         plt.plot(x_CMG, Sg_CMG, 'k')
-        plt.plot(x1_200, Sg_FI, '--g')
-        #plt.plot(x1_100, Sg_FI_2, '-b')
-        plt.legend(('CMG - 5000 CVs', 'FI 200 CVs'))
+        #plt.plot(x1_200, Sg_FI, '--r')
+        plt.plot(x1, Sg_FOU, 'k')
+        plt.legend(('CMG - 5000 CVs', 'IMPEC 400 CVs'))
         plt.ylabel('Saturação de gás')
         plt.xlabel('Distância (m)')
         plt.grid()
         #plt.ylim((0,1))
-        plt.savefig('results/6k/6k_200/20days/saturation_gas_6k_20days_2' + '.png')
+        plt.savefig('results/6k/6k_400/saturation_gas_6k_20days_' + '.png')
 
         """plt.figure(5)
         plt.title('t = 10 days - 50x1x1 mesh')
