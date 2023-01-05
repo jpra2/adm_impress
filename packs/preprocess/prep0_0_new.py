@@ -24,9 +24,11 @@ class PreprocessUnfied(Preprocess0):
 
         try:
             faces_quadr = (faces_edges.shape[1]==4)
-            return (faces_edges.shape[1]==4)
+            if data_loaded['mesh_type']=='unstructured': return False
+            else: return (faces_edges.shape[1]==4)
         except:
             return False
+
 
     def set_faces_normals(self, M):
         """ get faces normals """
@@ -123,15 +125,15 @@ class PreprocessUnfied(Preprocess0):
     def run(self, M):
         self.update_centroids_and_unormal(M)
         self.set_permeability_and_phi(M)
-        self.set_area_unstruct(M)
-        #import pdb; pdb.set_trace()
-        '''if self.check_struct(M):
+
+        #ajeitar isso para funcionar sem o if talvez
+        if self.check_struct(M):
             self.set_area_hex_structured(M)
             self.set_k_harm_hex_structured(M)
             self.set_pretransmissibility(M)
             self.set_transmissibility_monophasic(M)
             self.initial_gama(M)
-        else: self.set_area_unstruct(M)'''
+        else: self.set_area_unstruct(M)
 
         #self.set_pretransmissibility(M)
         #self.set_transmissibility_monophasic(M)

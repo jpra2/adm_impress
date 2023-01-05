@@ -122,6 +122,8 @@ class Preprocess0:
         M.data[M.data.variables_impress['volume']] = np.repeat(volume, n_volumes)
         M.data[M.data.variables_impress['NODES']] = coord_nodes
         M.data[M.data.variables_impress['hs']] = dd
+        M.data['faces_nodes'] = nodes_faces
+        M.data['faces_normals'] = normals
 
     def set_permeability_and_phi(self, M):
 
@@ -238,7 +240,7 @@ class Preprocess0:
         transmissibility = pretransmissibility_faces/mi_monofasic
 
         M.data[M.data.variables_impress['transmissibility']] = transmissibility
-        
+
     def update_centroids_and_unormal(self, M):
 
         M.data['centroid_volumes'] = M.volumes.center(M.volumes.all)
