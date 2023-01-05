@@ -3,6 +3,7 @@ from packs.directories import data_loaded
 from packs.utils import constants as ctes
 from sympy import Symbol, diff, poly
 import quadpy
+#from quadpy.c1 import gauss_lobatto
 from scipy.special import legendre, jacobi, gamma
 
 
@@ -72,10 +73,11 @@ def auxiliary_terms(M, points, n_points):
     x_points = np.array([points**i for i in range(n_points)])
     c_int = M.faces.center(M.faces.internal)
     c_vols = M.volumes.center(M.volumes.all)
-    pos = (c_int[:,np.newaxis,:] - c_vols[ctes.v0]).sum(axis=2)
+    pos = (c_int[:,np.newaxis,:] - c_vols[ctes.v0])
     v0 = np.copy(ctes.v0)
-    v0[:,0] = ctes.v0[pos>0]
-    v0[:,1] = ctes.v0[pos<0]
+    #this was to fix v0 considering left and right CV sides, however, in a unstruc mesh, this dont work
+    #v0[:,0] = ctes.v0[pos>0]
+    #v0[:,1] = ctes.v0[pos<0]
 
     'Get neigboring cells values'
     vols_vec = -np.ones((ctes.n_volumes,2),dtype=int)
@@ -139,7 +141,6 @@ def Vandermonde2(n_points, points):
             Vr[j,i] = jacobiP_(i,0,0,points[j])
     return Vr
 
-
 def bilinear_shape_functions_2D(M, n_points,x_points, y_points):
     #function to map from the reference domain to the physical one
     Ns = np.empty((n_points,4))
@@ -179,9 +180,49 @@ def bilinear_shape_functions_2D(M, n_points,x_points, y_points):
     nodes_faces_vols_2D_coords[:,1:] = vs_reord
 
     Xs = Ns @ nodes_faces_vols_2D_coords
-    import pdb; pdb.set_trace()
-    #consegui pegar o Xs
-    return Ns
+
+
+    faces_vols_coef = np.empty((ctes.n_volumes,4))
+    for i in range(4):
+        if i==3: i=-1
+        faces_vols_coef[:,i] = (nodes_faces_vols_2D_coords[:,i+1,1]-nodes_faces_vols_2D_coords[:,i,1])/ (nodes_faces_vols_2D_coords[:,i+1,0]-nodes_faces_vols_2D_coords[:,i,0])
+
+    faces_vols_straight = np.zeros_like(faces_vols_coef,dtype=bool)
+    faces_vols_straight[(faces_vols_coef==0) + np.isinf(faces_vols_coef)] = True
+    pts_on_faces = np.empty((ctes.n_volumes,n_points,4))
+
+    #ajeitar!!!! parei em: quais pontos estão nas faces - deu erro no volume zero
+    for i in range(9):
+        for j in range(4):
+            C1 = (Xs[:,i,1] - nodes_faces_vols_2D_coords[:,j,1])
+            #C1[abs(C1)<1e-15] = 0
+            C2 = faces_vols_coef[:,j]*(Xs[:,i,0] - nodes_faces_vols_2D_coords[:,j,0])
+            #C2[abs(C2)<1e-15] = 0
+            err = 1e-12
+            pts_on_faces[:,i,j] = abs(C1 - C2)<err
+            face_v =  np.isinf(abs(faces_vols_coef[:,j]))
+            face_h = (faces_vols_coef[:,j]==0)
+            if j==3: j=-1
+            #import pdb; pdb.set_trace()
+
+            C_v = abs(Xs[face_v,i,0] - nodes_faces_vols_2D_coords[face_v,j,0])<err
+            C_h = abs(Xs[face_h,i,1] - nodes_faces_vols_2D_coords[face_h,j,1])<err
+            pts_on_faces[face_v,i,j] = C_v * \
+                (((nodes_faces_vols_2D_coords[face_v,j+1,1]<=Xs[face_v,i,1]) * \
+                (Xs[face_v,i,1]<=nodes_faces_vols_2D_coords[face_v,j,1])) + \
+                ((nodes_faces_vols_2D_coords[face_v,j+1,1]>=Xs[face_v,i,1]) * \
+                (Xs[face_v,i,1]>=nodes_faces_vols_2D_coords[face_v,j,1])) +\
+                (abs(Xs[face_v,i,1]-nodes_faces_vols_2D_coords[face_v,j,1])<err) +\
+                (abs(Xs[face_v,i,1]-nodes_faces_vols_2D_coords[face_v,j+1,1])<err))
+            pts_on_faces[face_h,i,j] = C_h * \
+                (((nodes_faces_vols_2D_coords[face_h,j+1,0]<=Xs[face_h,i,0]) *\
+                (Xs[face_h,i,0]<=nodes_faces_vols_2D_coords[face_h,j,0])) + \
+                ((nodes_faces_vols_2D_coords[face_h,j+1,0]>=Xs[face_h,i,0]) * \
+                (Xs[face_h,i,0]>=nodes_faces_vols_2D_coords[face_h,j,0])) + \
+                (abs(Xs[face_h,i,0]-nodes_faces_vols_2D_coords[face_h,j,0])<err) + \
+                (abs(Xs[face_h,i,0]-nodes_faces_vols_2D_coords[face_h,j+1,0])<err))
+    pts_on_faces = pts_on_faces.astype(bool)
+    return Xs, pts_on_faces
 
 def RT0_shape_functions_2D(n_points,x_points,y_points):
     #function to map from the reference domain to the physical one
@@ -206,7 +247,8 @@ def run(M):
     global vols_vec
     global Dr
     global phi
-    global mesh_dim   #for the fr scheme
+    global mesh_dim
+    global pts_on_faces
 
     mesh_dim = 2-1 * (M.volumes.internal.shape==0)
 
@@ -238,7 +280,7 @@ def run(M):
         y_points = np.reshape(neta,[n_points])
         w_eta = np.reshape(weta,[n_points])
         points = x_points.copy() #change latter
-        bilinear_shape_functions_2D(M, n_points,x_points, y_points)
+        Xs, pts_on_faces = bilinear_shape_functions_2D(M, n_points,x_points, y_points)
         phi = RT0_shape_functions_2D(n_points,x_points,y_points)
 
     else:
