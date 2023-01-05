@@ -33,11 +33,18 @@ class run_simulation:
         self.loop = 0
         self.vpi = 0.0
         self.t = 0.0
-        self.oil_production = 0.
-        self.gas_production = 0.
-        self.oil_production_rate = []
-        self.gas_production_rate = []
-        self.cum_oil_prod = []
+        self.oil_production_RC = 0.
+        self.gas_production_RC = 0.
+        self.oil_production_SC = 0.
+        self.gas_production_SC = 0.
+        self.oil_production_rate_RC = []
+        self.gas_production_rate_RC = []
+        self.oil_production_rate_SC = []
+        self.gas_production_rate_SC = []
+        self.cum_oil_prod_RC = []
+        self.cum_gas_prod_RC = []
+        self.cum_oil_prod_SC = []
+        self.cum_gas_prod_SC = []
 
         self.vector_time = []
         self.use_vpi = data_loaded['use_vpi']
@@ -71,7 +78,8 @@ class run_simulation:
     def get_well_inj_properties(self, M, fprop, wells):
 
         z = (wells['z']).T
-        if (wells['ws_p']!=wells['ws_inj']): wells['inj_p_term'] = []
+        if (wells['ws_p']!=wells['ws_inj']):
+            wells['inj_p_term'] = []
         #q_wells = wells['ws_inj']#[wells['inj_cond']=='reservoir']
 
         if ~ctes.miscible_w: z=z[0:ctes.Nc]
@@ -100,17 +108,17 @@ class run_simulation:
         ws_p_inj_ind = np.argwhere(wells['ws_p']==wells['ws_inj'])
         ws_p_inj = wells['ws_p'][ws_p_inj_ind].flatten()
         ws_inj_p = np.argwhere(wells['ws_inj']==wells['ws_p']).flatten()
+        if len(ws_inj_p)>0:
+            fprop.z[..., ws_p_inj] = z[:,ws_inj_p]
 
-        fprop.z[..., ws_p_inj] = z[:,ws_inj_p]
+            mobility_ratio_ws = np.empty((1,ctes.n_phases,len(ws_p_inj)))
 
-        mobility_ratio_ws = np.empty((1,ctes.n_phases,len(ws_p_inj)))
+            mobility_ratio_ws[:,ctes.n_phases-1,:] = (A/(L+V+A))[ws_p_inj] #?? CHANGE THIS!!
 
-        mobility_ratio_ws[:,ctes.n_phases-1,:] = (A/(L+V+A))[ws_p_inj] #?? CHANGE THIS!!
+            mobility_ratio_ws[:,0] = (L/(L+V+A))[ws_p_inj] #?? CHANGE THIS!!
+            mobility_ratio_ws[:,1] = (V/(L+V+A))[ws_p_inj] #?? CHANGE THIS!!
 
-        mobility_ratio_ws[:,0] = (L/(L+V+A))[ws_p_inj] #?? CHANGE THIS!!
-        mobility_ratio_ws[:,1] = (V/(L+V+A))[ws_p_inj] #?? CHANGE THIS!!
-        
-        wells['inj_p_term'] = xkj_ws * mobility_ratio_ws * Csi_j_ws
+            wells['inj_p_term'] = xkj_ws * mobility_ratio_ws * Csi_j_ws
 
         'if the injector well has a prescribed flux condition'
         if len(wells['ws_q'])>0:
@@ -133,7 +141,7 @@ class run_simulation:
             fprop.rho_W = fprop.Csi_j[0,-1,:]
         '------------------------- Perform initial flash ----------------------'
         self.get_well_inj_properties(M, fprop, wells)
-        #fprop.z[:,0] = np.array([0,1])
+
         if ctes.load_k:
             self.p2 = StabilityCheck(fprop.P, fprop.T)
             fprop.L, fprop.V, fprop.A, fprop.xkj, fprop.Csi_j, fprop.rho_j =  \
@@ -151,7 +159,6 @@ class run_simulation:
                 ksi_W = fprop.Csi_W[wells['ws_prod']], rho_W = fprop.rho_W[wells['ws_prod']])
 
         else: fprop.xkj = []; fprop.L = []; fprop.V = []; wells['inj_term'] = []
-
 
         '----------------------- Calculate fluid properties -------------------'
 
@@ -172,15 +179,13 @@ class run_simulation:
 
         self.t += self.delta_t
         '----------------- Perform Phase stability test and flash -------------'
-        #if fprop.Sg[0]<1: import pdb; pdb.set_trace()
 
         if ctes.load_k and ctes.compressible_k:
-            #if self.z
-            #self.p2 = StabilityCheck(fprop.P, fprop.T)
+            self.p2 = StabilityCheck(fprop.P, fprop.T)
 
             fprop.L, fprop.V, fprop.A, fprop.xkj, fprop.Csi_j, fprop.rho_j =  \
-            self.p2.run(fprop.P, np.copy(fprop.z), wells, \
-            ksi_W = fprop.Csi_W, rho_W = fprop.rho_W)
+             self.p2.run_init(fprop.P, np.copy(fprop.z), wells, \
+             ksi_W = fprop.Csi_W, rho_W = fprop.rho_W)
 
             if ctes.miscible_w:
                 fprop.Csi_W = fprop.Csi_j[0,-1,:]
@@ -194,7 +199,11 @@ class run_simulation:
 
 
         '-------------------- Advance in time and save results ----------------'
-        self.prod_rate_SC(fprop, wells)
+        self.oil_production_rate_SC_t, self.gas_production_rate_SC_t = \
+            self.prod_rate_RCorSC(fprop, wells, ctes.P_SC)
+        self.oil_production_rate_RC_t, self.gas_production_rate_RC_t = \
+            self.prod_rate_RCorSC(fprop, wells, fprop.P[wells['ws_prod']])
+
         self.update_vpi(fprop, wells)
 
         self.update_loop()
@@ -210,7 +219,7 @@ class run_simulation:
                 self.update_current_compositional_results(M, wells, fprop)
 
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
-        if len(wells['ws_prod'])>0: self.update_production(fprop, wells)
+        if len(wells['ws_prod'])>0: self.update_production()
 
     def update_well_inj_rate(self, fprop, wells):
         # Update wells injection rate if injection condition is the reservoir one
@@ -241,21 +250,22 @@ class run_simulation:
             else:
                 wells['values_q'][:,wells['inj_cond']=='reservoir'] = (fprop.Csi_j[:,-1,wells['inj_cond']=='reservoir']) * self.q_vol
 
-    def prod_rate_SC(self, fprop, wells):
+    def prod_rate_RCorSC(self, fprop, wells, P):
         if ctes.load_k:
-            p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
+            p_well = StabilityCheck(P, ctes.T_SC)
             z_prod = fprop.qk_prod/np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
             if ~ctes.miscible_w: z_prod=z_prod[0:ctes.Nc]
             if (abs(z_prod.sum()-1)>1e-15) or np.isnan(z_prod.sum()): z_prod = fprop.z[:,wells['ws_prod']]
             L, V, A, xkj, Csi_j, rho_j  =  \
-                p_well.run_init(ctes.P_SC, z_prod[0:ctes.Nc], \
+                p_well.run_init(P, z_prod[0:ctes.Nc], \
                 ksi_W = fprop.Csi_W[wells['ws_prod']], rho_W = fprop.rho_W[wells['ws_prod']])
             q_molar_prod = np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
-            self.oil_production_rate_t = abs(np.sum(L * q_molar_prod / Csi_j[:,0]))
-            self.gas_production_rate_t = abs(np.sum(V * q_molar_prod / Csi_j[:,1]))
+            oil_production_rate_t = abs(np.sum(L * q_molar_prod / Csi_j[:,0]))
+            gas_production_rate_t = abs(np.sum(V * q_molar_prod / Csi_j[:,1]))
             if abs(q_molar_prod)>1e3: import pdb; pdb.set_trace()
 
-        else: self.oil_production_rate_t =[]; self.gas_production_rate_t =[]
+        else: oil_production_rate_t =[]; gas_production_rate_t =[]
+        return oil_production_rate_t, gas_production_rate_t
 
     def update_loop(self):
         ''' Function to count how many loops it has been since the simulation \
@@ -283,18 +293,27 @@ class run_simulation:
                         'Gas production rate', 'Cumulative oil production',
                          'time-step vector'])]
 
-    def update_production(self, fprop, wells):
+    def update_production(self):
         ''' Function to compute oil and gas production [m³] through time'''
 
         if ctes.load_k:
-            ws_p_prod = np.argwhere(wells['ws_p']==wells['ws_prod']).flatten()
-            self.oil_production +=  abs(self.oil_production_rate_t)*self.delta_t
-            self.gas_production +=  abs(self.gas_production_rate_t)*self.delta_t
+            self.oil_production_RC +=  abs(self.oil_production_rate_RC_t)*self.delta_t
+            self.gas_production_RC +=  abs(self.gas_production_rate_RC_t)*self.delta_t
 
-            self.oil_production_rate.append(self.oil_production_rate_t)
-            self.gas_production_rate.append(self.gas_production_rate_t)
+            self.oil_production_rate_RC.append(self.oil_production_rate_RC_t)
+            self.gas_production_rate_RC.append(self.gas_production_rate_RC_t)
+            self.cum_oil_prod_RC.append(self.oil_production_RC)
+            self.cum_gas_prod_RC.append(self.gas_production_RC)
+
+            self.oil_production_SC +=  abs(self.oil_production_rate_SC_t)*self.delta_t
+            self.gas_production_SC +=  abs(self.gas_production_rate_SC_t)*self.delta_t
+
+            self.oil_production_rate_SC.append(self.oil_production_rate_SC_t)
+            self.gas_production_rate_SC.append(self.gas_production_rate_SC_t)
+            self.cum_oil_prod_SC.append(self.oil_production_SC)
+            self.cum_gas_prod_SC.append(self.gas_production_SC)
+
             self.vector_time.append(self.t)
-            self.cum_oil_prod.append(self.oil_production)
 
     def update_current_compositional_results(self, M, wells, fprop):
         #total_flux_internal_faces = fprop.total_flux_internal_faces.ravel() #* M.faces.normal[M.faces.internal]
@@ -306,7 +325,8 @@ class run_simulation:
         self.current_compositional_results = np.array([self.loop, self.vpi, self.sim_time,
             self.t, fprop.P, fprop.Sw, fprop.So, fprop.Sg, self.oil_production,
             self.gas_production, fprop.z, M.data['centroid_volumes'], Nk, fprop.xkj,
-            self.oil_production_rate, self.gas_production_rate, self.cum_oil_prod,
+            self.oil_production_rate_RC, self.gas_production_rate_RC, self.cum_oil_prod_RC,
+            self.oil_production_rate_SC, self.gas_production_rate_SC, self.cum_oil_prod_SC,
             self.vector_time],dtype=object)
         self.all_results.append(self.current_compositional_results)
         M.data['saturation'][:] = fprop.Sw
