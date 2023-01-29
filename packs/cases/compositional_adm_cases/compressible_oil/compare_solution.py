@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from packs.cases.compositional_adm_cases.compressible_oil.all_functions import organize_cases_by_loop, extrair_dado, erro_abs, get_data_from_loop_array, create_loop_array_structured
 from packs.cases.compositional_adm_cases.compressible_oil import descriptions
+import os
 
 # key_list = ['loop_array', 'pressure']
 key_list = ['loop_array']
@@ -20,6 +21,7 @@ case1 = CumulativeCompositionalDataManager(description=description1)
 datas_case1 = case1.load_all_datas_from_keys(key_list)
 
 fig_str = 'figura_'
+# fig_ext = '.svg'
 fig_ext = '.png'
 
 # description = 'case2_adm_'
@@ -101,6 +103,7 @@ case2_active_volumes = case2_structured_loop_array['active_volumes'].flatten()
 max_time_case2 = case2_time.max()
 max_time_case1 = case1_time.max()
 max_time = min([case1_time.max(), case2_time.max()])
+# max_time = 0.7
 
 test1 = case1_time <= max_time
 test2 = case2_time <= max_time
@@ -139,20 +142,25 @@ case2_active_volumes = case2_active_volumes[test2]
 # erro_max = np.max(erro_rel, axis=1)
 
 ########################################################
-fig, (ax1, ax2) = plt.subplots(2, 1)
+plt.clf()
+fig, ax1 = plt.subplots()
 
 ax1.plot(case1_time, case1_oil_production, '-', label='Finescale')
 ax1.plot(case2_time, case2_oil_production, '-', label='Adm')
-ax1.set_ylabel('Oil production')
+ax1.set_ylabel('Oil production[m³]')
 ax1.set_xlabel('time [days]')
 ax1.legend()
+plt.savefig(fig_str + description2 + 'Oil_production' + fig_ext)
 
-ax2.plot(case1_time, case1_gas_production, '-', label='Finescale')
-ax2.plot(case2_time, case2_gas_production, '-', label='Adm')
-ax2.set_ylabel('Gas production')
-ax2.set_xlabel('time [days]')
-ax2.legend()
+plt.clf()
+fig, ax1 = plt.subplots()
 
+ax1.plot(case1_time, case1_gas_production, '-', label='Finescale')
+ax1.plot(case2_time, case2_gas_production, '-', label='Adm')
+ax1.set_ylabel('Gas production[m³]')
+ax1.set_xlabel('time [days]')
+ax1.legend()
+plt.savefig(fig_str + description2 + 'Gas_production' + fig_ext)
 # plt.subplots_adjust(left=0.1,
 #                     bottom=0.1,
 #                     right=0.9,
@@ -163,19 +171,25 @@ ax2.legend()
 fig.tight_layout()
 
 # plt.savefig(fig_str + description2 + 'Production' + '.png')
-plt.savefig(fig_str + description2 + 'Production_iterative' + fig_ext)
+#plt.savefig(fig_str + description2 + 'Production_iterative' + fig_ext)
 ########################################################
 
 ######################################################
-fig, (ax1, ax2) = plt.subplots(2, 1)
+plt.clf()
+fig, ax1 = plt.subplots()
 ax1.plot(case2_time, n_volumes_update, '-')
 ax1.set_xlabel('time [days]')
 ax1.set_ylabel('N volumes')
 
-ax2.plot(case2_time, total_volumes_updated, '-')
-ax2.set_xlabel('time [days]')
-ax2.set_ylabel('Total volumes')
+plt.savefig(fig_str + description2 + 'N_volumes' + fig_ext)
 
+plt.clf()
+fig, ax1 = plt.subplots()
+ax1.plot(case2_time, total_volumes_updated, '-')
+ax1.set_xlabel('time [days]')
+ax1.set_ylabel('Total volumes')
+
+plt.savefig(fig_str + description2 + 'Total volumes' + fig_ext)
 
 plt.subplots_adjust(left=0.1,
                     bottom=0.1,
@@ -191,42 +205,43 @@ plt.subplots_adjust(left=0.1,
 # )
 
 # fig.tight_layout()
-fig.suptitle('Volumes para atualizar as funcoes de base')
+#fig.suptitle('Volumes para atualizar as funcoes de base')
 
 # plt.savefig(fig_str + description2 + 'Total_volumes' + '.png')
-plt.savefig(fig_str + description2 + 'Total_volumes_iterative' + fig_ext)
 ####################################################
 
 ###################################################
-fig, (ax1, ax2) = plt.subplots(2, 1)
+plt.clf()
+fig, ax1 = plt.subplots()
 ax1.plot(case2_time, case2_active_volumes, '-')
 # ax1.fill(case2_time, case2_active_volumes)
 # ax1.bar(case2_time, case2_active_volumes)
 ax1.set_xlabel('time [days]')
 ax1.set_ylabel('Active volumes')
 ax1.set_xlim(min(case2_time), max(case2_time))
+plt.savefig(fig_str + description2 + 'Active_volumes' + fig_ext)
 
-ax2.plot(case1_time, case1_simulation_time, '-', label='Finescale')
-ax2.plot(case2_time, case2_simulation_time, '-', label='NU-ADM')
+plt.clf()
+fig, ax1 = plt.subplots()
+ax1.plot(case1_time, case1_simulation_time, '-', label='Finescale')
+ax1.plot(case2_time, case2_simulation_time, '-', label='NU-ADM')
 # ax2.plot(case1_time, np.repeat(np.mean(case1_simulation_time), len(case1_simulation_time)), 0.05, color='red')
 # ax2.plot(case2_time, np.repeat(np.mean(case2_simulation_time), len(case2_simulation_time)), 0.05, color='black')
-ax2.axhline(y=np.mean(case1_simulation_time), color='red', label='Finescale mean')
-ax2.axhline(y=np.mean(case2_simulation_time), color='black', label='NU-ADM mean')
-ax2.annotate(round(np.mean(case1_simulation_time), 1), (0, np.mean(case1_simulation_time)))
-ax2.annotate(round(np.mean(case2_simulation_time), 1), (0, np.mean(case2_simulation_time)))
-ax2.grid(True)
-
-
+ax1.axhline(y=np.mean(case1_simulation_time), color='red', label='Finescale mean')
+ax1.axhline(y=np.mean(case2_simulation_time), color='black', label='NU-ADM mean')
+ax1.annotate(round(np.mean(case1_simulation_time), 1), (0, np.mean(case1_simulation_time)))
+ax1.annotate(round(np.mean(case2_simulation_time), 1), (0, np.mean(case2_simulation_time)))
+ax1.grid(True)
 t1 = np.mean(np.mean(case1_simulation_time))
 t2 = np.mean(case2_simulation_time)
 t1sum = case1_simulation_time.sum()
 t2sum = case2_simulation_time.sum()
 # import pdb; pdb.set_trace()
 # ax1.fill(case2_time, case2_active_volumes)
-ax2.set_xlabel('time [days]')
-ax2.set_ylabel('Simulation_time [s]')
-ax2.set_xlim(min(case2_time), max(case2_time))
-ax2.legend()
+ax1.set_xlabel('time [days]')
+ax1.set_ylabel('Simulation_time [s]')
+ax1.set_xlim(min(case2_time), max(case2_time))
+ax1.legend()
 # fig.tight_layout()
 
 plt.subplots_adjust(left=0.15,
@@ -235,13 +250,13 @@ plt.subplots_adjust(left=0.15,
                     top=0.9,
                     wspace=0.4,
                     hspace=0.4)
-
-# plt.savefig(fig_str + description2 + 'Active_volumes' + '.png')
-plt.savefig(fig_str + description2 + 'Active_volumes_iterative' + fig_ext)
-#################################################
+plt.savefig(fig_str + description2 + 'Tempo desimulação' 'Active_volumes' + '.png')
 
 #################################################
-fig, (ax1, ax2) = plt.subplots(2, 1)
+
+#################################################
+plt.clf()
+fig, ax1 = plt.subplots()
 ax1.plot(case1_time, case1_oil_rate, '-', label='Finescale')
 ax1.plot(case2_time, case2_oil_rate, '-', label='Adm')
 # ax1.fill(case2_time, case2_active_volumes)
@@ -250,15 +265,17 @@ ax1.set_xlabel('time [days]')
 ax1.set_ylabel('Oil rate [m3/s]')
 ax1.set_xlim(min(case2_time), max(case2_time))
 ax1.legend()
+plt.savefig(fig_str + description2 + 'Oil_rate' + fig_ext)
 
-ax2.plot(case1_time, case1_gas_rate, '-', label='Finescale')
-ax2.plot(case2_time, case2_gas_rate, '-', label='Adm')
-ax2.set_xlabel('time [days]')
-ax2.set_ylabel('Gas rate [m3/s]')
-ax2.set_xlim(min(case2_time), max(case2_time))
-ax2.legend()
+fig, ax1 = plt.subplots()
+ax1.plot(case1_time, case1_gas_rate, '-', label='Finescale')
+ax1.plot(case2_time, case2_gas_rate, '-', label='Adm')
+ax1.set_xlabel('time [days]')
+ax1.set_ylabel('Gas rate [m3/s]')
+ax1.set_xlim(min(case2_time), max(case2_time))
+ax1.legend()
 # fig.tight_layout()
-
+plt.savefig(fig_str + description2 + 'Gas_rate' + fig_ext)
 plt.subplots_adjust(left=0.15,
                     bottom=0.1,
                     right=0.9,
@@ -267,12 +284,13 @@ plt.subplots_adjust(left=0.15,
                     hspace=0.4)
 
 # plt.savefig(fig_str + description2 + 'Flow_rate' + '.png')
-plt.savefig(fig_str + description2 + 'Flow_rate_iterative' + fig_ext)
+
 ###############################################
 
 ########################
 case2_tams_iterations = case2_structured_loop_array['tams_iterations'].flatten()
 case2_tams_iterations = case2_tams_iterations[test2]
+plt.clf()
 fig, ax = plt.subplots()
 ax.plot(case2_time, case2_tams_iterations, '-', label='Tams Iterations')
 ax.set_xlabel('time [days]')
@@ -282,17 +300,81 @@ plt.savefig(fig_str + description2 + 'Tams_iterations' + fig_ext)
 ########################
 
 #########################################
-fig, ax = plt.subplots()
-y_values = [case1_simulation_time.sum(), case2_simulation_time.sum()]
+# fig, ax = plt.subplots()
+plt.clf()
+y_values = [int(case1_simulation_time.sum()), int(case2_simulation_time.sum())]
 x_values = ['Finescale', 'NU-ADM']
-ax.bar(x_values, y_values, width=0.4)
-ax.set_ylabel('Total simulation time')
-
+bars = plt.bar(x_values, y_values, width=0.3)
+plt.ylabel('Total simulation time')
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x(), yval + 100, yval)
 plt.savefig(fig_str + description2 + 'Total_simulation_time' + fig_ext)
 ###############################
 
+# assign your bars to a variable so their attributes can be accessed
+# bars = plt.bar(x, height=y, width=.4)
+
+# # access the bar attributes to place the text in the appropriate location
+# for bar in bars:
+#     yval = bar.get_height()
+#     plt.text(bar.get_x(), yval + .005, yval)
+
+###########################################
+# # norma do erro production interpolado
+# x_finescale = case1_time
+# y_finescale = case1_oil_production
+# x_adm = case2_time
+# y_adm = case2_oil_production
+
+def get_minmax_interp(v0, v1):
+    n_points = min([len(v0), len(v1)])
+    minx_interp = max([v0.min(), v1.min()])
+    maxx_interp = min(v0.max(), v1.max())
+    resp_interp = np.linspace(minx_interp, maxx_interp, n_points)
+    return resp_interp 
+
+def erros_interp(x_finescale, y_finescale, x_adm, y_adm, name=''):
+    
+    x_interp = get_minmax_interp(x_finescale, x_adm)
+    
+    y_interp_finescale = np.interp(x_interp, x_finescale, y_finescale)
+    y_interp_adm = np.interp(x_interp, x_adm, y_adm)
+    
+    erro_abs = np.absolute(y_interp_finescale - y_interp_adm)
+    erro_rel = erro_abs/y_interp_finescale
+    log10_erro_rel = np.log10(erro_rel)
+    
+    plt.clf()
+    # fig, ax1 = plt.subplots()
+    # ax1.plot(x_interp, log10_erro_rel, '-', label='Log10 do erro relativo')
+    plt.plot(x_interp, log10_erro_rel, '-')
+    plt.ylabel('Log10 do erro relativo')
+    plt.xlabel('time [days]')
+    # ax1.set_ylabel('Log10 do erro relativo')
+    # ax1.set_xlabel('time [days]')
+    # ax1.legend()
+    
+    plt.savefig(fig_str + description2 + 'log10_erro_rel_' + name + fig_ext)
+    plt.clf()
+    return {
+        'erro_abs': erro_abs,
+        'erro_rel': erro_rel,
+        'log10_erro_rel': log10_erro_rel,
+        'x': x_interp
+    }
+
+file_name = 'erros_oil_prod_' + description2 + '.npz'
+file_name = os.path.join('flying', file_name)
+erros_oil = erros_interp(case1_time, case1_oil_production, case2_time, case2_oil_production, name='oil')
+np.savez(file_name, **erros_oil)
 
 
+file_name = 'erros_gas_prod_' + description2 + '.npz'
+file_name = os.path.join('flying', file_name)
+erros_gas = erros_interp(case1_time, case1_gas_production, case2_time, case2_gas_production, name='gas')
+np.savez(file_name, **erros_gas)
+########################
 
 
 

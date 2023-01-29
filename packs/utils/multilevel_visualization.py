@@ -40,7 +40,7 @@ def visualize_levels(M: FineScaleMesh, mesh_level: np.ndarray, gids: np.ndarray,
     M.core.mb.write_file(name + '_faces_' + str(loop) + ext, [meshset_faces])
     
     print('\n Success to export multilevel mesh \n')
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     
         
     

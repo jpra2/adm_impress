@@ -108,6 +108,14 @@ M, data_impress, wells, fprop, load, elements_lv0 = sim.initialize(load, convert
 # import pdb; pdb.set_trace()
 # load_multilevel_data = False
 
+# volumes = M.volumes.all[:]
+# c_volumes = M.volumes.center[:]
+# nodes_volumes = M.volumes.bridge_adjacencies(volumes, 3, 0)
+# c_nodes = M.nodes.center[:]
+# c_v0 = c_nodes[nodes_volumes[0]]
+
+# import pdb; pdb.set_trace()
+
 
 ml_data = MultilevelData(data_impress, M, load=load_multilevel_data, n_levels=n_levels)
 # import pdb; pdb.set_trace()
@@ -217,7 +225,9 @@ params.update({
     'all_coarse_intersect_faces_level_1': np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1'])),
     'other_faces_level_1': np.setdiff1d(elements_lv0['internal_faces'], np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1']))),
     'volumes_to_volumes': create_volumes_to_volumes(M),
-    'level0_negative_composition': np.full(ctes.n_volumes, False, bool)
+    'level0_negative_composition': np.full(ctes.n_volumes, False, bool),
+    'update_basis_functions': keywords1['update_basis_functions'],
+    'loop': 0
 })   
 
 latest_mobility = np.zeros(fprop.mobilities.shape)
@@ -248,8 +258,9 @@ n_loops_for_export = 100
 assert (n_loops_for_export % n_loops_for_acumulate) == 0
 
 
-tmax_simulation = 15 # dias
-t_simulation = sim.t/86400
+# tmax_simulation_day = 15 # dias
+tmax_simulation_day = 2.1 # dias
+t_simulation_day = sim.t/86400
 # M.data.update_variables_to_mesh()
 # print_mesh_volumes_data(M, 'results/dual_test.vtk')
 
@@ -277,8 +288,9 @@ for i in range(1, 2):
 
 ALL_VOLUMES_TO_FACES = np.array(ALL_VOLUMES_TO_FACES, dtype='O')
 
-while run_criteria < stop_criteria:# and loop < loop_max:
-# while t_simulation < tmax_simulation:
+# while run_criteria < stop_criteria:# and loop < loop_max:
+while t_simulation_day < tmax_simulation_day:
+# while True:
     # import pdb; pdb.set_trace()
     params.update({
         'pressure': fprop.P,
@@ -388,6 +400,9 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     })
 
     loop = sim.loop
+    params.update({
+        'loop': loop
+    })
     print(sim.t)
     loop_array['total_simulation_time'][0] += simulation_time
     loop_array['n_total_loops'][0] += 1
@@ -408,16 +423,16 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         loop_array['tams_iterations'] = params['tams_itcounter']
 
         compositional_data.update({
-            'pressure': fprop.P,
-            'Sg': fprop.Sg,
-            'Sw': fprop.Sw,
-            'So': fprop.So,
-            'global_composition': fprop.z,
-            'mols': fprop.Nk,
-            'xkj': fprop.xkj,
-            'Vp': fprop.Vp,
-            'latest_mobility': latest_mobility,
-            'latest_density': latest_density,
+            # 'pressure': fprop.P,
+            # 'Sg': fprop.Sg,
+            # 'Sw': fprop.Sw,
+            # 'So': fprop.So,
+            # 'global_composition': fprop.z,
+            # 'mols': fprop.Nk,
+            # 'xkj': fprop.xkj,
+            # 'Vp': fprop.Vp,
+            # 'latest_mobility': latest_mobility,
+            # 'latest_density': latest_density,
             'loop_array': loop_array
         })
         cumulative_compositional_datamanager.insert_data(compositional_data._data)
@@ -433,14 +448,16 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         cumulative_compositional_datamanager.export()
         manage_operators.export()
         
-        file_name = 'results/test_'
-        multilevel_visualization.visualize_levels(M, data_impress['LEVEL'], ALL_GIDS, ALL_VOLUMES_TO_FACES, file_name, loop, elements_lv0['boundary_faces'])
-            
+        file_name = 'results/images_' + description + '_'
+    
+    # if loop % 3*n_loops_for_export == 0:
+    #     multilevel_visualization.visualize_levels(M, data_impress['LEVEL'], ALL_GIDS, ALL_VOLUMES_TO_FACES, file_name, loop, elements_lv0['boundary_faces'])
+                
 
     global_vector_update[:] = False
     total_volumes_updated[:] = False
     data_impress['LEVEL'][:] = 1
-    t_simulation = sim.t/86400
+    t_simulation_day = sim.t/86400
     local_problem_params.update({
         'loop': loop
     })
@@ -461,9 +478,17 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     #         0.1
     #     )
 
+    print(f'Time in days: {t_simulation_day} \n')
+    print(f'LOOP: {loop} \n')
+    
     if loop % 2500 == 0:
         print('sleeping...')
         time.sleep(5)
+    
+    # if loop % 100000 == 0:
+    #     import pdb; pdb.set_trace()
+    print(simulation_time)
+    import pdb; pdb.set_trace()
     
 
 
@@ -479,15 +504,15 @@ loop_array['active_volumes'][0] = params['active_volumes']
 loop_array['oil_rate'][0] = np.sum(fprop.q_phase[:,0])
 loop_array['gas_rate'][0] = np.sum(fprop.q_phase[:,1])
 compositional_data.update({
-    'pressure': fprop.P,
-    'Sg': fprop.Sg,
-    'Sw': fprop.Sw,
-    'So': fprop.So,
-    'global_composition': fprop.z,
-    'mols': fprop.Nk,
-    'xkj': fprop.xkj,
-    'Vp': fprop.Vp,
-    'latest_mobility': latest_mobility,
+    # 'pressure': fprop.P,
+    # 'Sg': fprop.Sg,
+    # 'Sw': fprop.Sw,
+    # 'So': fprop.So,
+    # 'global_composition': fprop.z,
+    # 'mols': fprop.Nk,
+    # 'xkj': fprop.xkj,
+    # 'Vp': fprop.Vp,
+    # 'latest_mobility': latest_mobility,
     'loop_array': loop_array
 })
 cumulative_compositional_datamanager.insert_data(compositional_data._data)

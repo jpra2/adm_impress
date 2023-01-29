@@ -14,10 +14,10 @@ n_levels: 3
 Crs:
   # Cr1: [3, 3, 1]
   # Cr2: [9, 9, 1]
-  # Cr1: [11, 11, 1]
-  # Cr2: [3, 3, 1]
-  Cr1: [13, 13, 1]
+  Cr1: [11, 11, 1]
   Cr2: [3, 3, 1]
+  # Cr1: [13, 13, 1]
+  # Cr2: [3, 3, 1]
 get_correction_term: false
 load_operators: false
 load_multilevel_data: false
@@ -78,7 +78,7 @@ compositional_data:
     deltaPlim: 68.9476
     deltaNlim: 2
     deltaSlim: .55
-    deltaVlim: 0.001
+    deltaVlim: 0.0005
     delta_t_ini: 86.4
     delta_tmax: 4320
     delta_tmin: 8.64

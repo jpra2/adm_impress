@@ -55,10 +55,13 @@ M, data_impress, wells, fprop, load = sim.initialize(load, convert, mesh)
 # update_var.update_variables_for_initial_run_finescale(fprop, sim, compositional_data)
 # ########################
 
-# import pdb; pdb.set_trace()
+tmax_simulation_day = 15 # dias
+t_simulation_day = sim.t/86400
 
-while run_criteria < stop_criteria:# and loop < loop_max:
+# import pdb; pdb.set_trace()
+# while run_criteria < stop_criteria:# and loop < loop_max:
     # import pdb; pdb.set_trace()
+while True:
 
     t0 = time.time()
     sim.run(M, wells, fprop, load)
@@ -101,46 +104,57 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     loop_array['oil_rate'][0] = np.sum(fprop.q_phase[:, 0])
     loop_array['gas_rate'][0] = np.sum(fprop.q_phase[:, 1])
     compositional_data.update({
-        'pressure': fprop.P,
-        'Sg': fprop.Sg,
-        'Sw': fprop.Sw,
-        'So': fprop.So,
-        'q': fprop.qk_molar,
-        'global_composition': fprop.z,
-        'mols': fprop.Nk,
-        'xkj': fprop.xkj,
-        'Vp': fprop.Vp,
+        # 'pressure': fprop.P,
+        # 'Sg': fprop.Sg,
+        # 'Sw': fprop.Sw,
+        # 'So': fprop.So,
+        # 'q': fprop.qk_molar,
+        # 'global_composition': fprop.z,
+        # 'mols': fprop.Nk,
+        # 'xkj': fprop.xkj,
+        # 'Vp': fprop.Vp,
         'loop_array': loop_array
     })
     cumulative_compositional_datamanager.insert_data(compositional_data._data)
+    
+    t_simulation_day = sim.t/86400
 
     if loop % 100 == 0:
         # import pdb; pdb.set_trace()
         compositional_data.export_to_npz()
         cumulative_compositional_datamanager.export()
         # import pdb; pdb.set_trace()
+    
+    if loop % 2500 == 0:
+        print('sleeping...')
+        print(f'Time in days: {t_simulation_day} \n')
+        print(f'LOOP: {loop} \n')
+        time.sleep(5)
+    
+    if loop % 100000 == 0:
+        import pdb; pdb.set_trace()
 
     # import pdb; pdb.set_trace()
 
 
-# loop_array['loop'][0] = loop
-# loop_array['t'][0] = sim.t
-# loop_array['vpi'][0] = sim.vpi
-# loop_array['simulation_time'][0] = simulation_time
-# loop_array['oil_production'][0] = sim.oil_production
-# loop_array['gas_production'][0] = sim.gas_production
-# compositional_data.update({
-#     'pressure': fprop.P,
-#     'Sg': fprop.Sg,
-#     'Sw': fprop.Sw,
-#     'So': fprop.So,
-#     'global_composition': fprop.z,
-#     'mols': fprop.Nk,
-#     'xkj': fprop.xkj,
-#     'Vp': fprop.Vp,
-#     'loop_array': loop_array
-# })
-# cumulative_compositional_datamanager.insert_data(compositional_data._data)
+loop_array['loop'][0] = loop
+loop_array['t'][0] = sim.t
+loop_array['vpi'][0] = sim.vpi
+loop_array['simulation_time'][0] = simulation_time
+loop_array['oil_production'][0] = sim.oil_production
+loop_array['gas_production'][0] = sim.gas_production
+compositional_data.update({
+    # 'pressure': fprop.P,
+    # 'Sg': fprop.Sg,
+    # 'Sw': fprop.Sw,
+    # 'So': fprop.So,
+    # 'global_composition': fprop.z,
+    # 'mols': fprop.Nk,
+    # 'xkj': fprop.xkj,
+    # 'Vp': fprop.Vp,
+    'loop_array': loop_array
+})
+cumulative_compositional_datamanager.insert_data(compositional_data._data)
 compositional_data.export_to_npz()
 cumulative_compositional_datamanager.export()
 

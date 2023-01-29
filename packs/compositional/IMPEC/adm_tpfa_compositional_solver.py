@@ -628,7 +628,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
             fprop.P,
             restriction_list[0],
             prolongation_list[0],
-            res_tol=1e-18,
+            res_tol=1e-15,
             x_tol=1e-10,
             # wells_producer = wells_producer
             **kwargs
@@ -662,7 +662,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
 
         t2 = time.time()
-        local_solution = self.get_local_solution_serial(Ft_internal_faces_adm, all_coarse_intersect_faces, neumann_subds, T_noCC, params, solution, master_neumann, **kwargs)
+        # local_solution = self.get_local_solution_serial(Ft_internal_faces_adm, all_coarse_intersect_faces, neumann_subds, T_noCC, params, solution, master_neumann, **kwargs)
+        local_solution = solution
         t3 = time.time()
         print('######################################')
         print(f'\nLocal solution time: {t3 - t2} \n')
@@ -857,7 +858,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         return local_solution
 
     def get_basis_functions(self, OP_AMS, mlo: MultilevelOperators, T_advec, D, dual_subdomains, global_vector_update, diagonal_to_op, master_local_operator: MasterLocalOperator):
-
+        
         # OP_AMS, cfs  = mlo.run_paralel_2(
         #     T_advec,
         #     D,
@@ -885,19 +886,22 @@ class AdmTpfaCompositionalSolver(TPFASolver):
 
         #######################
         ## op serial
-        OP_AMS, cfs  = mlo.run_serial(
-            T_advec,
-            D,
-            dual_subdomains,
-            global_vector_update,
-            diagonal_to_op,
-            OP_AMS,
-            1,
-            master_local_operator
-        )
-        ########################
+        if global_vector_update.sum() > 0:
+            OP_AMS, cfs  = mlo.run_serial(
+                T_advec,
+                D,
+                dual_subdomains,
+                global_vector_update,
+                diagonal_to_op,
+                OP_AMS,
+                1,
+                master_local_operator
+            )
+            ########################
 
-        return OP_AMS, cfs
+            return OP_AMS, cfs
+        else:
+            return OP_AMS, np.zeros(OP_AMS.shape[0])
 
     
         

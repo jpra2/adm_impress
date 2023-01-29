@@ -7,7 +7,8 @@
 # name_file: input_cards/inputs_compositional_2k_Firoozabadi_ex1_80x80.yml
 # name_file: input_cards/inputs_compositional_biphasic_v_adm.yml
 # name_file: 'input_cards/inputs_compositional_adm.yml'
-# name_file: 'input_cards/inputs_compositional_biphasic_2D_80x80.yml'
-name_file: 'input_cards/inputs_compositional_3k_5000_adm.yml'
+name_file: 'input_cards/inputs_compositional_biphasic_2D_80x80.yml'
+# name_file: 'input_cards/inputs_compositional_3k_5000_adm.yml'
+# name_file: 'input_cards/80x80x1_ufce_3k.yml'
 variable_file: 'input_cards/variable_inputs_compositional.yml'
 simulation_type: 'compositional'
