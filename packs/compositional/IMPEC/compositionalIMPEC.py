@@ -43,7 +43,7 @@ class CompositionalFVM:
             #if any(np.isnan(fprop.P)): import pdb; pdb.set_trace()
 
             #5k example moshiri and manzari
-            '''Ft_internal = np.ones((1,ctes.n_internal_faces)) * 1/(24*60*60)
+            '''Ft_internal = np.ones((1,ctes.n_interself.oil_production_rate_RCnal_faces)) * 1/(24*60*60)
             q = np.zeros_like(fprop.Nk)
             frj = fprop.mobilities[:,...] / \
                 np.sum(fprop.mobilities[:,...], axis = 1)
@@ -69,7 +69,7 @@ class CompositionalFVM:
             q[:,wells['all_wells']] = np.sum(frj[:,:,wells['all_wells']] * fprop.Csi_j[:,:,wells['all_wells']]*\
                 np.array([[0, 1, 0],[0.29, 0.15, 0.56]]).T[:,np.newaxis,:] * \
                 Ft_internal[:,0], axis=1)
-            #wells['values_q'] = q[:,wells['ws_inj']]
+            #wells['values_q'] = q[:,wells['ws_inj']self.oil_production_rate_RC]
             q[:,-1] = -1*q[:,-1]
             fprop.q_phase = Ft_internal[:,0][:,np.newaxis] * np.ones((1,2))
             fprop.qk_prod = 1/(24*60*60) * np.array([[0.29, 0.15, 0.56]]).T
@@ -198,6 +198,7 @@ class CompositionalFVM:
 
 
             fprop.qk_prod = fprop.qk_molar[:,wells['ws_prod']]
+            if fprop.qk_prod.sum() ==0: import pdb; pdb.set_trace()
 
             Fk_vols_total, wave_velocity = compute_flux(M, fprop, wells, Ft_internal, \
                 P_old, Nk_old, Pot_hid, delta_t, t, G)
@@ -218,19 +219,21 @@ class CompositionalFVM:
                 Ft_internal, Fk_vols_total, delta_t, t)
 
         #if fprop.z[-1,0] > 0: import pdb; pdb.set_trace()
-        if any(fprop.Sg<0): import pdb; pdb.set_trace()
+        #if any(fprop.Sg<0): import pdb; pdb.set_trace()
         fprop.wave_velocity = wave_velocity
         fprop.Ft_internal = Ft_internal
         #fprop.Nk[(fprop.Nk<0)*(abs(fprop.Nk)<1e-300)] = 0
         #if fprop.P[0]<fprop.P[1]: import pdb; pdb.set_trace()
         #fprop.Nk[abs(fprop.Nk)<1e-300] = abs(fprop.Nk[abs(fprop.Nk)<1e-300])
-        if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
+        #if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
         #if any(fprop.Sw>1): import pdb; pdb.set_trace()
         #fprop.Nk[fprop.Nk<0] = 1e-30
         #if any(Ft_internal[0]<0): import pdb; pdb.set_trace()
-        if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
+        #if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
         #if any(Ft_internal.flatten()<-1e-6): import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         return delta_t
+
 
     def update_gravity_term(self, fprop):
         if any((ctes.z - ctes.z[0]) != 0):
@@ -264,7 +267,7 @@ class CompositionalFVM:
         if data_loaded['compositional_data']['component_data']['constant_K']:
             dVjdNk[:,:,:] = 1/fprop.Csi_j
             dVjdP[0,:,:] = 0
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         return dVjdNk, dVjdP
 
     def harmonic_average(self, Vl, prop):

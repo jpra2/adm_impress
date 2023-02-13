@@ -1,24 +1,33 @@
+Crs:
+  Cr1:
+  - 5
+  - 1
+  - 1
+  Cr2:
+  - 1
+  - 1
+  - 1
 Permeability:
   r1:
     type: all
     value:
-    - 9.869233e-13
+    - 1.9738466e-14
     - 0
     - 0
     - 0
-    - 9.869233e-13
+    - 1.9738466e-14
     - 0
     - 0
     - 0
-    - 9.869233e-13
+    - 1.9738466e-14
 Porosity:
   r1:
     type: all
-    value: 0.3
+    value: 0.2
 Pressure:
   r1:
     type: all
-    value: 6.205e6
+    value: 14e6
 Saturation:
   r1:
     type: all
@@ -26,49 +35,58 @@ Saturation:
 Temperature:
   r1:
     type: all
-    value: 305.372
+    value: 333
 Wells:
   P1:
-    injection_condition: reservoir
+    injection_condition: surface
+    nP_inj: 6
     p0:
     - 0.0
     - 0.0
     - 0
     p1:
-    - 0.2286
-    - 0.00762
-    - 0.00762
+    - 7.5
+    - 60
+    - 30
     prescription: Q
+    t_max: 8640000
     type: Injector
     type_region: box
-    value: 3.6870894e-10
+    value: 1.0e-05
+    value_a: 1.0e-05
+    value_co2: 1.0e-05
     value_type: volumetric
     z:
+    - 0
     - 0.0
     - 0.0
     - 0.0
+    - 1
+    za:
+    - 1
     - 0.0
     - 0.0
     - 0.0
+    - 0
+    zco2:
+    - 0
     - 0.0
     - 0.0
     - 0.0
-    - 0.0
-    - 1.0
-    - 0.0
+    - 1
   P2:
     p0:
-    - 18.0594
+    - 142.5
     - 0.0
     - 0
     p1:
-    - 18.288
-    - 0.00762
-    - 0.00762
+    - 150
+    - 60
+    - 30
     prescription: P
     type: Producer
     type_region: box
-    value: 6.205e6
+    value: 14e6
 compositional: true
 compositional_data:
   CFL: 0.9
@@ -88,293 +106,102 @@ compositional_data:
   capillary_pressure: Chang
   component_data:
     Bin:
-    - - 0.0
-      - 0.003
-      - 0.009
-      - 0.015
-      - 0.021
-      - 0.025
-      - 0.041
-      - 0.073
-      - 0.095
-      - 0.125
+    - - 0
       - 0.103
-      - 0.491
-    - - 0.003
-      - 0.0
-      - 0.002
-      - 0.005
-      - 0.009
-      - 0.012
-      - 0.023
-      - 0.049
-      - 0.068
-      - 0.095
       - 0.13
-      - 0.491
-    - - 0.009
-      - 0.002
-      - 0.0
-      - 0.001
-      - 0.003
-      - 0.005
-      - 0.013
-      - 0.033
-      - 0.05
-      - 0.073
-      - 0.135
-      - 0.547
-    - - 0.015
-      - 0.005
-      - 0.001
-      - 0.0
-      - 0.001
-      - 0.001
-      - 0.007
-      - 0.024
-      - 0.038
-      - 0.059
-      - 0.13
-      - 0.508
-    - - 0.021
-      - 0.009
-      - 0.003
-      - 0.001
-      - 0.0
-      - 0.0
-      - 0.004
-      - 0.017
-      - 0.03
-      - 0.049
-      - 0.125
-      - 0.5
-    - - 0.025
-      - 0.012
-      - 0.005
-      - 0.001
-      - 0.0
-      - 0.0
-      - 0.002
-      - 0.014
-      - 0.025
-      - 0.043
-      - 0.125
-      - 0.45
-    - - 0.041
-      - 0.023
-      - 0.013
-      - 0.07
-      - 0.004
-      - 0.002
-      - 0.0
-      - 0.005
-      - 0.013
-      - 0.027
-      - 0.13
-      - 0.45
-    - - 0.073
-      - 0.049
-      - 0.033
-      - 0.024
-      - 0.017
-      - 0.014
-      - 0.005
-      - 0.0
-      - 0.002
-      - 0.009
-      - 0.13
-      - 0.45
-    - - 0.095
-      - 0.068
-      - 0.05
-      - 0.038
-      - 0.03
-      - 0.025
-      - 0.013
-      - 0.002
-      - 0.0
-      - 0.003
-      - 0.13
-      - 0.45
-    - - 0.125
-      - 0.095
-      - 0.073
-      - 0.059
-      - 0.049
-      - 0.043
-      - 0.027
-      - 0.009
-      - 0.003
-      - 0.0
-      - 0.13
-      - 0.45
+      - 0.11
     - - 0.103
-      - 0.13
-      - 0.135
-      - 0.13
-      - 0.125
-      - 0.125
-      - 0.13
-      - 0.13
-      - 0.13
-      - 0.13
-      - 0.0
-      - 0.2
-    - - 0.491
-      - 0.491
-      - 0.547
-      - 0.508
-      - 0.5
-      - 0.45
-      - 0.45
-      - 0.45
-      - 0.45
-      - 0.45
-      - 0.2
-      - 0.0
+      - 0
+      - 0
+      - 0
+    - - 0.13
+      - 0
+      - 0
+      - 0
+    - - 0.11
+      - 0
+      - 0
+      - 0
     Mw:
-    - 0.016043
-    - 0.03007
-    - 0.044097
-    - 0.058124
-    - 0.072151
-    - 0.086178
-    - 0.12596
-    - 0.22786
-    - 0.32556
-    - 0.4847
     - 0.04401
-    - 0.018015
+    - 0.016043
+    - 0.058124
+    - 0.142286
     Pb_guess: 2e6
     Pc:
-    - 4600154.487
-    - 4883864.7863
-    - 4245517.8192
-    - 3799687.6441
-    - 3374122.5397
-    - 3289009.5189
-    - 2651675.392
-    - 1711379.4236
-    - 1250350.446
-    - 806547.32918
-    - 7376459.5113
-    - 22048330.66
+    - 7376460
+    - 4600155
+    - 3799688
+    - 2107560
     Pv:
     - 8e6
     - 0.0
     - 0.0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
+    - 0.0
     Tc:
-    - 190.6
-    - 305.4
-    - 369.8
-    - 425.2
-    - 469.6
-    - 507.5
-    - 606.5
-    - 740
-    - 823.6
-    - 925.9
     - 304.2
-    - 647.3
+    - 190.6
+    - 425.2
+    - 617.6
     constant_K: false
     vc:
-    - 9.900169341948182e-05
-    - 0.0001480025233789881
-    - 0.00020300342948538882
-    - 0.0002550043599463029
-    - 0.00030400518990580916
-    - 0.00034400584321701323
-    - 0.0004890083909505147
-    - 0.0008520143088247986
-    - 0.0011810202738143788
-    - 0.0017620298115412878
-    - 9.40015883450961e-05
-    - 5.600412343285934e-05
+    - 9.4e-05
+    - 9.9e-05
+    - 0.000255
+    - 0.000603
     vshift_parameter:
     - 0.0
     - 0.0
     - 0.0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    w:
-    - 0.008
-    - 0.098
-    - 0.152
-    - 0.193
-    - 0.251
-    - 0.2637
-    - 0.3912
-    - 0.63
-    - 0.8804
-    - 1.2457
-    - 0.225
-    - 0.344
-    z:
-    - 0.0616219
-    - 0.02137143
-    - 0.01750394
-    - 0.00693282
-    - 0.00982627
-    - 0.01031329
-    - 0.08594408
-    - 0.0305388
-    - 0.01581371
-    - 0.02730157
     - 0.0
-    - 0.71283219
+    w:
+    - 0.225
+    - 0.008
+    - 0.193
+    - 0.49
+    z:
+    - 0.05
+    - 0.15
+    - 0.2
+    - 0.6
   equation_of_state: PengRobinson
-  maximum_time: 86400
+  maximum_time: 8640000
   phase_viscosity: LorenzBrayClark
-  relative_permeability: BrooksAndCorey
+  relative_permeability: StoneII
   relative_permeability_data:
-    krg0: 0.278
-    kro0: 0.365
-    krw0: 0.574
-    n_g: 6.89
-    n_o: 3.0
-    n_w: 2.7
+    krg0: 1
+    krog0: 1
+    krow0: 1
+    krw0: 1.0e-05
+    n_g: 2.0
+    n_og: 2.0
+    n_ow: 2.0
+    n_w: 2.0
   residual_saturations:
-    Sgr: 0.0
-    Sorg: 0.0
-    Sorw: 0.16
+    Sgr: 0.15
+    Sorg: 0.2
+    Sorw: 0.2
     Swr: 0.2
   rock_compressibility: 0
   solver:
     IMPSAT: false
   time_data:
-    deltaNlim: 0.5
-    deltaPlim: 68.9476
-    deltaSlim: 0.2
-    deltaVlim: 0.1
-    delta_t_ini: 26
-    delta_tmax: 86400
-    delta_tmin: 8.64
+    deltaNlim: 0.1
+    deltaPlim: 0.5
+    deltaSlim: 0.1
+    deltaVlim: 0.0001
+    delta_t_ini: 1
+    delta_tmax: 864
+    delta_tmin: 0.00864
   time_integration:
     Euler: true
     RK3: false
   time_to_save:
-  - 86400
+  - 8640000
   vpis_para_gravar_vtk:
-  - 0.8
+  - 0.6
   - 1.2
   water_data:
-    Csw: 0
     Cw: 0
     Mw_w: 0.018015
     Pw: 10.34e6
@@ -391,14 +218,15 @@ load_compositional_data: false
 load_data: true
 load_multilevel_data: false
 load_operators: false
-mesh_name: 80x1x1_10k3ph.h5m
+mesh_name: 20x1x1_CO2_4k.h5m
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_10k3ph_WassonOil
+n_levels: 3
+name_save_file: results_4kCO2_finescale
 read_permeability: false
 set_permeability: true
 set_porosity: true
-use_vpi: true
+use_vpi: false
 water_component: true
-water_miscible: true
+water_miscible: false

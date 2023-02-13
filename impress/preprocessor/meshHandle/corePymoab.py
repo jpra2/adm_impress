@@ -1,13 +1,10 @@
 """
-Use of Pymoab methods to read and manage the input mesh
+Uses Pymoab methods to read and manage the input mesh
 """
 from pymoab import core, types, rng, topo_util
 from pymoab import skinner as sk
 import numpy as np
 import yaml
-import time
-
-
 
 class CoreMoab:
     def __init__(self, mesh_file=None, dim=3):
@@ -25,7 +22,6 @@ class CoreMoab:
         self.all_volumes = self.mb.get_entities_by_dimension(0, 3)
         self.all_nodes = self.mb.get_entities_by_dimension(0, 0)
         self.mtu.construct_aentities(self.all_nodes)
-        #self.mtu.construct_aentities(self.all_volumes)
         self.all_faces = self.mb.get_entities_by_dimension(0, 2)
         self.all_edges = self.mb.get_entities_by_dimension(0, 1)
         self.handleDic = {}
@@ -37,14 +33,7 @@ class CoreMoab:
         self.id_name = "GLOBAL_ID"
         self.father_id_name = self.id_name
         self.init_id()
-        #self.check_integrity()
-        # self.create_id_visualization()
-        # self.flag_dic = {}
         [self.flag_list, self.flag_dic] = self.read_flags()
-
-        # self.create_flag_visualization()
-
-        # swtich on/off
         self.parallel_meshset = self.create_parallel_meshset()
         self.create_parallel_tag()
 
@@ -63,6 +52,9 @@ class CoreMoab:
         self.skin = sk.Skinner(self.mb)
         print("Entering skinner test")
 
+        if self.all_volumes.empty() and self.dimension == 3:
+            raise ValueError("Empty volumes range for a tridimensional mesh.")
+
         if self.dimension == 3:
             faces_on_skin_handles = self.skin.find_skin(self.root_set, self.all_volumes)
             edges_on_skin_handles = self.mtu.get_bridge_adjacencies(faces_on_skin_handles, 2, 1)
@@ -76,7 +68,6 @@ class CoreMoab:
 
         print("Skinning Operation Successful")
         return [nodes_on_skin_handles, edges_on_skin_handles, faces_on_skin_handles, volumes_on_skin_handles]
-
 
     def check_integrity(self):
         # check if the mesh contains
@@ -111,13 +102,9 @@ class CoreMoab:
                 0, types.MBENTITYSET, np.array(
                 (parallel_tag,)), np.array((None,)))
             self.create_tag_handle("Parallel", data_size=1, data_text="int")
-            # partition_volumes = []
             for set_el in parallel_sets:
-                num_tag = self.read_data("PARALLEL_PARTITION", range_el=set_el)[0, 0]
-                # self.set_data("Parallel", np.ones(len(set_el))*num_tag,  range_el=set_el)
                 list_entity = [self.mb.get_entities_by_dimension(set_el, 0), self.mb.get_entities_by_dimension(set_el, 1),
                                self.mb.get_entities_by_dimension(set_el, 2), self.mb.get_entities_by_dimension(set_el, 3)]
-                # print([num_tag, list_entity])
                 partition_volumes.append(list_entity)
         return partition_volumes
 
@@ -128,7 +115,7 @@ class CoreMoab:
                 if len(dim) != 0:
                     self.set_data("Parallel", k * np.ones(len(dim)).astype(int), range_el=dim)
             k += 1
-
+    
     def read_flags(self):
         physical_tag = self.mb.tag_get_handle("MATERIAL_SET")
         physical_sets = self.mb.get_entities_by_type_and_tag(
@@ -145,28 +132,16 @@ class CoreMoab:
             flag_dic[bc_flag] = list_entity
         return np.sort(flag_list), flag_dic
 
-    # def access_meshset(self, handle):
-    #     # returns the entities contained inside a give meshset handle
-    #     # ie: for a meshset handle the entities inside are returned
-    #     temp_range = []
-    #     for el in range(self.dimension+1):
-    #         sub_el = (self.mb.get_entities_by_dimension(handle, el))
-    #         temp_range.append(sub_el)
-    #     temp_range.append(self.mb.get_entities_by_dimension(handle, 11))
-    #     return temp_range
-
-    # def access_handle(self,handle):
-    #     # input: range of handles of different dimensions
-    #     # returns all entities with d-1 dimension the comprises the given range
-    #     # ie: for a volume, the faces, for a face the edges and for an edge the points.
-    #     #
-    #     vecdim = self.check_range_by_dimm(handle)
-    #     # pdb.set_trace()
-    #     all_adj = np.array([np.array(self.mb.get_adjacencies(el_handle, dim-1)) for dim, el_handle in zip(vecdim,handle)])
-    #     #unique_adj = np.unique(np.ma.concatenate(all_adj)).astype("uint64")
-    #     # print(handle,all_adj)
-    #     unique_adj = np.unique(np.concatenate(all_adj)).astype("uint64")
-    #     return rng.Range(unique_adj)
+    def access_handle(self,handle):
+        # input: range of handles of different dimensions
+        # returns all entities with d-1 dimension the comprises the given range
+        # ie: for a volume, the faces, for a face the edges and for an edge the points.
+        #
+        vecdim = self.check_range_by_dimm(handle)
+        all_adj = np.array([np.array(self.mb.get_adjacencies(el_handle, dim-1)) 
+            for dim, el_handle in zip(vecdim,handle)])
+        unique_adj = np.unique(np.concatenate(all_adj)).astype("uint64")
+        return rng.Range(unique_adj)
 
     def create_tag_handle(self, name_tag, data_size, data_text="float", data_density="dense"):
         if data_density == "dense":
@@ -199,16 +174,6 @@ class CoreMoab:
             return self.mb.tag_get_data(handle_tag, range_el)
         except KeyError:
             print("Tag not found")
-
-    # def range_index(self, vec_index, range_handle=None):
-    #     if range_handle is None:
-    #         range_handle = self.all_volumes
-    #     if vec_index.dtype == "bool":
-    #         vec = np.where(vec_index)[0]
-    #     else:
-    #         vec = vec_index.astype("uint")
-    #     handles = np.asarray(range_handle)[vec.astype("uint")].astype("uint")
-    #     return rng.Range(handles)
 
     def set_data(self, name_tag, data, index_vec=np.array([]), range_el=None):
         if range_el is None:
@@ -257,18 +222,11 @@ class CoreMoab:
         test_elem = np.array([*args])
         return rng.Range(handle_int[np.isin(vec_classification,test_elem)])
 
-    @staticmethod
-    def range_merge(*args):
-        range_merged = rng.Range()
-        for arg in args:
-                range_merged.merge(arg)
-        return range_merged
-
-    def print(self, folder=None, file=None, extension=".h5m", case = None,  config_input="input_cards/print_settings.yml"):
+    def print(self, file=None, extension=".h5m", case = None, config_input="input_cards/print_settings.yml"):
         if case is None:
             case = ''
         text =  file
-        # folder = "results/" + case
+        folder = "results/" + case
         with open(config_input, 'r') as f:
             data = yaml.safe_load(f)
         nodes = data['nodes']
