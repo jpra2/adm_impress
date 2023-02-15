@@ -1,3 +1,3 @@
-name_file: 'input_cards/inputs_compositional_6k_200_0_0.yml'
+name_file: 'input_cards/inputs_compositional_biphasic_1024_0_0.yml'
 variable_file: 'input_cards/variable_inputs_compositional.yml'
 simulation_type: 'compositional'
