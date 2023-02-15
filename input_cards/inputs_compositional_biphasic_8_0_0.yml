@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 8x1x1_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_8_FI_ADIMENSIONALIZADO_e4_POCONEW'
+name_save_file: 'results_Buckley_Leverett_case_8_FI'
 
 compositional: True
 hidrocarbon_components: True
@@ -26,7 +26,7 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.7
+  CFL: 2.0
 
   solver:
     IMPSAT: false

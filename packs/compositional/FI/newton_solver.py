@@ -190,6 +190,16 @@ class NewtonSolver:
         dVjdNk, dVjdP = self.dVt_derivatives(fprop)
         self.dVtP = dVjdP.sum(axis=1)[0]
         self.dVtk = dVjdNk.sum(axis=1)
+        wp = wells['ws_p']
+        transmissibility = self.transmissibility_FI(fprop)
+        Pot_hidj_new = fprop.P[ctes.v0[:,0]]
+        Pot_hidj_up_new = fprop.P[ctes.v0[:,1]]
+        z = ctes.z[ctes.v0[:,0]]
+        z_up = ctes.z[ctes.v0[:,1]]
+        d_Pot_hid_new = Pot_hidj_up_new - Pot_hidj_new - ctes.g * fprop.rho_j_internal_faces * (z_up - z)
+        flux_new = transmissibility * d_Pot_hid_new
+        Fk_internal_faces_new = flux_new.sum(axis = 1)
+        Fk_vols_total_new = self.component_flux_volumes(Fk_internal_faces_new)
 
         well_term = ((ctes.Vbulk[wp] * ctes.porosity[wp] * ctes.Cf - self.dVtP[wp]) * (fprop.P[wp] - P_old[wp]) + \
                         (fprop.Vp[wp] - fprop.Vt[wp]))/delta_t - (self.dVtk[:,wp] * Fk_vols_total_new[:,wp]).sum(axis=0)

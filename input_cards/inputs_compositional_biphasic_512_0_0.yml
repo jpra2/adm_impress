@@ -25,7 +25,7 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: 0.7
+  CFL: 2.0
 
   solver:
     IMPSAT: false
