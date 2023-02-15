@@ -13,6 +13,7 @@ if data_loaded['compositional_data']['solver']['IMPSAT']:
     from packs.compositional.IMPSAT.compositionalIMPSAT import CompositionalFVM
     from packs.compositional.IMPSAT.properties_calculation import PropertiesCalc
 elif data_loaded['compositional_data']['solver']['FI']:
+    # Chave add para o FI
     from packs.compositional.FI.compositionalFI import CompositionalFVM
     from packs.compositional.FI.properties_calculation import PropertiesCalc
 else:
@@ -177,7 +178,7 @@ class run_simulation:
 
         self.t += self.delta_t
 
-        # Nao precisa no FI
+        # No FI, o flash é realizado dentro da função 'newton_solver'
         if not data_loaded['compositional_data']['solver']['FI']:
             '----------------- Perform Phase stability test and flash -------------'
             #if fprop.Sg[0]<1: import pdb; pdb.set_trace()
@@ -223,7 +224,8 @@ class run_simulation:
 
         '-------------------- Advance in time and save results ----------------'
         #self.prod_rate_SC(fprop, wells)
-        # Comentar linha acima no FI
+        """Comentar linha acima no FI.
+           Não atualizei essa para de cálculo de produção acumulada."""
         self.update_vpi(fprop, wells)
 
         self.update_loop()
@@ -240,7 +242,8 @@ class run_simulation:
 
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         #if len(wells['ws_prod'])>0: self.update_production(fprop, wells)
-        # Comentar linha acima no FI
+        """Comentar linha acima no FI.
+           Não atualizei essa para de cálculo de produção acumulada."""
         #import pdb; pdb.set_trace()
 
     def prod_rate_SC(self, fprop, wells):

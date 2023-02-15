@@ -1,6 +1,6 @@
 #2-phase problem with 2 components - hotei and firoozabadi
 mesh_name: 40x20x1_Hoteit_Firoozabadi.msh
-name_save_file: 'results_Hoteit_Firoo_2k_ex5a_40x20_FI_VPI0_45_dtmin_864'
+name_save_file: 'results_Hoteit_Firoo_2k_ex5a_40x20_FI_VPI0_43_PLOT'
 
 compositional: True
 hidrocarbon_components: True
@@ -52,7 +52,7 @@ compositional_data:
     Euler: true
     RK3: false
 
-  vpis_para_gravar_vtk: [0.41, 0.42, 0.43, 0.44, 0.45]
+  vpis_para_gravar_vtk: [0.43]
   time_to_save: [1021342]
   maximum_time: 1021342
   phase_viscosity: LorenzBrayClark

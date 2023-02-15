@@ -11,7 +11,10 @@ from scipy.sparse.linalg import gmres
 from scipy.sparse.linalg import cg
 from packs.directories import data_loaded
 
-
+"""
+Arquivo totalmente bagunçado. Provavelmente deveria ser segmentado
+em outros arquivos pelo volume de informações.
+"""
 class NewtonSolver:
     def __init__(self, fprop):
 
@@ -25,21 +28,17 @@ class NewtonSolver:
                             data_loaded['compositional_data']['residual_saturations'].values()
 
     def solver(self, wells, fprop, delta_t, Nk_old, G, StabilityCheck, p1, M, face_properties, phase_densities, dVjdNk, dVjdP, P_old):
-        t0 = time.time()
-        dt_flash = 0
-        dt_solve = 0
-        dt_jacobiana = 0
-
         self.well_term(wells)
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
-        stop_criteria = 1e-6 # TESTAR
+        stop_criteria = 1e-6
         contador = 0
-        contador_global = 0
         wp = wells['ws_p']
 
+        # Cálculo do resíduo da Eq de conservação de massa e Eq de restrição de volume poroso
         residuo = self.residual_calculation(fprop, Pot_hid, wells, Nk_old, delta_t)
 
-        # Adimensionalização dos residuos
+        # Adimensionalização dos residuos.
+        # Em alguns casos estava dando problema, então estava usando sem isso
         residuo_adm = residuo.copy()
         """bool_inds = np.ones_like(residuo,dtype=bool)
         bool_inds[0:len(residuo):ctes.n_components+1] = False
@@ -50,31 +49,28 @@ class NewtonSolver:
         residuo_adm[~bool_inds] = residuo[~bool_inds] / fprop.Vp"""
 
         while np.max(abs(residuo_adm)) > stop_criteria:
+            # Loop do solver de Newton-Raphson
 
-            ''' Rever para usar matriz esparsa '''
-            t0_jacobiana = time.time()
+            # Cálculo da matriz Jacobiana
             jacobiana = self.jacobian_calculation(fprop, Pot_hid, delta_t, wells)
 
             '---------------------- Solução do sistema --------------------------'
+            # Aplicação das condições de contorno
             jacobiana_boundary = jacobiana.copy()
             jacobiana_boundary[(ctes.n_components + 1) * wp , :] = 0.0
-            #jacobiana_boundary[(ctes.n_components + 1) * ctes.bhp_ind , :] = 0.0
             jacobiana_boundary[(ctes.n_components + 1) * wp , (ctes.n_components + 1) * wp] = 1.0
-            #jacobiana_boundary[(ctes.n_components + 1) * ctes.bhp_ind , (ctes.n_components + 1) * ctes.bhp_ind] = 1.0
 
             residuo_boundary = residuo.copy()
             residuo_boundary[(ctes.n_components + 1) * wp] = 0.0
-            #residuo_boundary[(ctes.n_components + 1) * ctes.bhp_ind] = 0.0
-            t1_jacobiana = time.time()
-            dt_jacobiana += t1_jacobiana - t0_jacobiana
 
-            t0_solve = time.time()
             Jb = sparse.csr_matrix(jacobiana_boundary)
             delta_x = spsolve(Jb, -residuo_boundary)
-            t1_solve = time.time()
-            dt_solve += t1_solve - t0_solve
 
-            '----------------- Pre condicionador de Jacobi ----------------------'
+
+            '----------------- Pré-condicionador de Jacobi ----------------------'
+            # Teste feito com o pré-condicionador para acelerar o código,
+            # mas por estar usando um solucionador direto do Python, não é necessário.
+            # Para o MPFA, o pré-condicionador pode ser algo necessário
             """
             Jacobi_PC = np.zeros_like(jacobiana_boundary)
             for i in range(ctes.n_volumes):
@@ -97,14 +93,9 @@ class NewtonSolver:
 
             '--------------------- Atualização das variáveis ---------------------'
             detla_x_new = np.reshape(delta_x, (ctes.n_volumes, ctes.n_components + 1)).T
-            # Gambiarra
-            #detla_x_new[0] = detla_x_new[0]/2
+            #detla_x_new[0] = detla_x_new[0]/2 # Gambiarra para tentar acelerar a convergência em alguns casos
 
-
-            detla_x_new[1:, wp] = 0.0 # Considerar que:
-            # Para a hipotese de considerar o bloco de P prescrita calculado separadamente
-            # Para o caso 6K, usar essa lógica
-            # Para o caso do BL = comentar
+            detla_x_new[1:, wp] = 0.0
 
             fprop.P += detla_x_new[0]
             fprop.Nk += detla_x_new[1:]
@@ -112,9 +103,10 @@ class NewtonSolver:
             fprop.Nk[fprop.Nk < 1e-20] = 0.0
             if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
             if ctes.load_k: fprop.z = fprop.Nk[0:ctes.Nc,:] / fprop.Nk[0:ctes.Nc,:].sum(axis=0)
-            t0_flash = time.time()
 
             '----------------- Perform Phase stability test and flash -------------'
+            # Mesmo Flash da formulação IMPEC
+
             #if fprop.Sg[0]<1: import pdb; pdb.set_trace()
             if any(fprop.Sg>1): import pdb; pdb.set_trace()
             if ctes.load_k and ctes.compressible_k:
@@ -138,7 +130,6 @@ class NewtonSolver:
                         p_well.run_init(fprop.P[wells['ws_inj']],z[0:ctes.Nc])
 
                         """
-                        # Nao sei se precisa disso!
                         if any(injP_bool):
                             qk_molar = fprop.qk_molar[:,injP]
                             #wells['values_q_vol'] = np.zeros_like((ctes.n_components,len(injP)))
@@ -156,8 +147,6 @@ class NewtonSolver:
 
             #if any(fprop.L!=0): import pdb; pdb.set_trace()
 
-            t1_flash = time.time()
-            dt_flash += t1_flash - t0_flash
             '----------------------- Update fluid properties ----------------------'
             p1.run_inside_loop(M, fprop)
             G = self.update_gravity_term(fprop)
@@ -166,34 +155,12 @@ class NewtonSolver:
             phase_densities(fprop)
 
 
-            '----- Calcular termo de poço com pressão prescrita caso nao adote o bloco separado----'
-            wp = wells['ws_p']
-            transmissibility = self.transmissibility_FI(fprop)
-            Pot_hidj_new = fprop.P[ctes.v0[:,0]]
-            Pot_hidj_up_new = fprop.P[ctes.v0[:,1]]
-            z = ctes.z[ctes.v0[:,0]]
-            z_up = ctes.z[ctes.v0[:,1]]
-            d_Pot_hid_new = Pot_hidj_up_new - Pot_hidj_new - ctes.g * fprop.rho_j_internal_faces * (z_up - z)
-            flux_new = transmissibility * d_Pot_hid_new
-            Fk_internal_faces_new = flux_new.sum(axis = 1)
-            Fk_vols_total_new = self.component_flux_volumes(Fk_internal_faces_new)
-
-            mob_ratio = fprop.mobilities[:,:,wp] / np.sum(fprop.mobilities[:,:,wp], axis = 1)
-            q_term = fprop.xkj[:,:,wp] * mob_ratio * fprop.Csi_j[:,:,wp]
-            well_term = -(fprop.Vt[wp] - fprop.Vp[wp])/delta_t
-
-            #self.q[:,wp] += np.sum(q_term * well_term, axis = 1)
-            #self.q[:,wp] = - Fk_vols_total_new[:,wp]
-            # Fica comentado caso o bloco de P prescrita calculado separadamente
-            # Para o caso 6K, comentar
-            # Para o caso do BL, calcular dessa forma
-
-
             contador += 1
-
+            # Atualização dos resíduo
             residuo = self.residual_calculation(fprop, Pot_hid, wells, Nk_old, delta_t)
 
-            # Adimensionalização dos residuos
+            # Adimensionalização dos residuos.
+            # Em alguns casos estava dando problema, então estava usando sem isso
             residuo_adm = residuo.copy()
             """bool_inds = np.ones_like(residuo,dtype=bool)
             bool_inds[0:len(residuo):ctes.n_components+1] = False
@@ -204,35 +171,28 @@ class NewtonSolver:
             residuo_adm[~bool_inds] = residuo[~bool_inds] / fprop.Vp"""
 
 
+            """
+            Para os blocos de pressão prescrita na condição de contorno,
+            é tratado após a convergência dos demais bloco.
+            """
             residuo_adm[(ctes.n_components + 1) * wp] = 0.0 # Considerar que:
-            #residuo_adm[(ctes.n_components + 1) * ctes.bhp_ind] = 0.0 # Considerar que:
             for j in wp:
-                it = int((ctes.n_components + 1) * j) # Considerar que:
-                #it = int((ctes.n_components + 1) * ctes.bhp_ind) # Considerar que:
-                residuo_adm[it:it + (ctes.n_components + 1)] = 0.0 # Considerar que:
-            # Para a hipotese de considerar o bloco de P prescrita calculado separadamente
-            # Para o caso 6K, usar essa lógica
-            # Para o caso do BL = comentar
+                it = int((ctes.n_components + 1) * j)
+                residuo_adm[it:it + (ctes.n_components + 1)] = 0.0
 
-            t1 = time.time()
-            if contador > 1000:
+            if contador > 100:
                 import pdb; pdb.set_trace()
 
         print(f'{contador} iterações de Newton')
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
 
-        '----- Calcular termo de poço com pressão prescrita caso o bloco seja separado----'
+        '---------- Calcular termo de poço com pressão prescrita ---------'
         dVjdNk, dVjdP = self.dVt_derivatives(fprop)
         self.dVtP = dVjdP.sum(axis=1)[0]
         self.dVtk = dVjdNk.sum(axis=1)
 
-        #well_term = -(fprop.Vt[wp] - fprop.Vp[wp])/delta_t # terceira alternativa ao calculo do poço
         well_term = ((ctes.Vbulk[wp] * ctes.porosity[wp] * ctes.Cf - self.dVtP[wp]) * (fprop.P[wp] - P_old[wp]) + \
                         (fprop.Vp[wp] - fprop.Vt[wp]))/delta_t - (self.dVtk[:,wp] * Fk_vols_total_new[:,wp]).sum(axis=0)
-
-        """if (len(wp)>1) and (well_term[0]<0):
-            well_term = -well_term
-            import pdb; pdb.set_trace()"""
 
 
         mob_ratio = fprop.mobilities[:,:,wp] / np.sum(fprop.mobilities[:,:,wp], axis = 1)
@@ -294,8 +254,7 @@ class NewtonSolver:
         Pot_hid = fprop.P + fprop.Pcap - G[0,:,:]
         face_properties(fprop, G)
         phase_densities(fprop)
-        '--------------------------- FIM do termo de poço --------------------------'
-
+        '------ FIM da atualização do termo de poço com pressão prescrita -----'
 
 
         # Retornar termos que são necessários para o cálculo do CFL
@@ -326,26 +285,17 @@ class NewtonSolver:
         flux = transmissibility * d_Pot_hid
         Fk_internal_faces = flux.sum(axis = 1)
         Fk_vols_total = self.component_flux_volumes(Fk_internal_faces)
-        '''Eduarda considera fluxo saindo negativo e entrando positivo'''
 
         residuo_massa = (fprop.Nk - Nk_old) - delta_t * (Fk_vols_total + self.q)
 
         # Restricao de volume poroso
         aux = fprop.Nj / fprop.Csi_j
-        residuo_poroso_varavei = aux.sum(axis = 1) / fprop.Vp - 1.0
+        #residuo_poroso_varavei = aux.sum(axis = 1) / fprop.Vp - 1.0
         residuo_poroso_bruno = aux.sum(axis = 1) - fprop.Vp
-        #residuo_poroso_bruno = fprop.Vt - fprop.Vp
-        # Preferencia: Bruno
+        # Teste feito com 2 formulações. Optar pela do Bruno Fernandes
 
         # Residuo total
         residuo = np.zeros([ctes.n_volumes*(ctes.n_components + 1),1])
-        """
-        for i in range(ctes.n_volumes):
-            residuo_local = np.zeros([ctes.n_components + 1, 1])
-            residuo_local[0] = residuo_poroso_bruno[:,i]
-            residuo_local[1:] = residuo_massa[...,i][:,np.newaxis]
-            residuo[i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1)] = residuo_local
-        """
         bool_inds = np.ones_like(residuo,dtype=bool)
         bool_inds[0:len(residuo):ctes.n_components+1] = False
         residuo[bool_inds] = residuo_massa.T.flatten()
@@ -353,6 +303,7 @@ class NewtonSolver:
         return residuo
 
     def transmissibility_FI(self, fprop):
+        # Calculo da transmissibilidade das faces
         self.t0_internal_faces_prod = fprop.xkj_internal_faces * \
                                       fprop.Csi_j_internal_faces * \
                                       fprop.mobilities_internal_faces
@@ -363,7 +314,7 @@ class NewtonSolver:
         t0 = t0 * ctes.pretransmissibility_internal_faces
         return t0
 
-    def well_term(self, wells): # Preciso para calcular os termos de poço
+    def well_term(self, wells):
         self.q = np.zeros([ctes.n_components, ctes.n_volumes])
         if len(wells['ws_q']) > 0:
             self.q[:,wells['ws_q']] =  wells['values_q']
@@ -381,12 +332,31 @@ class NewtonSolver:
 
     def jacobian_calculation(self, fprop, Pot_hid, delta_t, wells):
         # Calculo da matriz jacobiana
+
         d_residuoporoso_dP = self.d_residuoporoso_dP(fprop)
         d_residuoporoso_dNk = self.d_residuoporoso_dNk(fprop)
+        """
+        Derivada da Eq de Restricao de volume poroso em relação à Pressao e
+        em relação ao numero de mols. Essa equação não depende dos
+        blocos vizinhos, apenas do próprio bloco avaliado
+        """
         d_consvmassa_dP_P, d_consvmassa_dP_E, d_consvmassa_dP_W, d_consvmassa_dNk_P, \
-            d_consvmassa_dNk_E, d_consvmassa_dNk_W = self.d_consvmassa_dP_dNk(fprop, Pot_hid, delta_t, wells)
+            d_consvmassa_dNk_E, d_consvmassa_dNk_W = self.d_consvmassa_dP_dNk(fprop, Pot_hid, delta_t, wells) # Derivada da Eq de conservação da massa em relação à Pressão e ao numero de mols dos bloco
+        """
+        Derivada da Eq de conservação da massa dos componentes em relação
+        à Pressao e ao numero de mols. Essa equação depende dos blocos
+        vizinhos. Nessa notação, 'P' seria o bloco central (onde
+        está sendo calculado os resíduos), 'E' representa os blocos à direita
+        de 'P' e 'W' os blocos à esquerda de 'P'.
 
-        ''' Lógica só funciona para 1D - Fazer no Scipy e de maneira geral '''
+        Logo, o 'dP_P' e 'dNk_P' se referem à derivada das Eqs do bloco P
+        em relação às incognitas do mesmo bloco 'P'. 'dP_E' e 'dNk_E' se
+        referem à derivada das Eqs do bloco P em relação às incognitas do
+        vizinho 'E'. 'dP_W' e 'dNk_W' se referem à derivada das Eqs do
+        bloco P em relação às incognitas do vizinho 'W'
+        """
+
+        # Montagem da matriz jacobiana global. Pensar em uma forma de vetorizar
         jacobian = np.zeros([ctes.n_volumes*(ctes.n_components + 1), ctes.n_volumes*(ctes.n_components + 1)])
         for i in range(ctes.n_volumes):
             J_local = np.zeros([ctes.n_components + 1, ctes.n_components + 1])
@@ -425,71 +395,7 @@ class NewtonSolver:
                          (j)*(ctes.n_components + 1) : (j+1)*(ctes.n_components + 1)] = J_local_W
 
 
-            """
-            if i != 0:
-                J_local_W = np.zeros([ctes.n_components + 1, ctes.n_components + 1])
-                J_local_W[1:,0] = d_consvmassa_dP_W[...,i]
-                J_local_W[1:,1:] = d_consvmassa_dNk_W[...,i]
-
-                jacobian[i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1), \
-                         (i-1)*(ctes.n_components + 1) : (i)*(ctes.n_components + 1)] = J_local_W
-
-            if i != ctes.n_volumes - 1:
-                J_local_E = np.zeros([ctes.n_components + 1, ctes.n_components + 1])
-                J_local_E[1:,0] = d_consvmassa_dP_E[...,i]
-                J_local_E[1:,1:] = d_consvmassa_dNk_E[...,i]
-
-                jacobian[i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1), \
-                         (i+1)*(ctes.n_components + 1) : (i+2)*(ctes.n_components + 1)] = J_local_E
-            """
         if any(np.isnan(jacobian).flatten()): import pdb; pdb.set_trace()
-
-        """
-        #import pdb; pdb.set_trace()
-        '''------------------------ Teste ----------------------'''
-        #Teste = sp.csr_matrix((ctes.n_volumes*(ctes.n_components + 1), ctes.n_volumes*(ctes.n_components + 1)))
-        Teste = np.zeros([ctes.n_volumes*(ctes.n_components + 1), ctes.n_volumes*(ctes.n_components + 1)])
-        J_local = np.zeros([ctes.n_components + 1, ctes.n_components + 1])
-        J_local_W = np.zeros([ctes.n_components + 1, ctes.n_components + 1])
-        J_local_E = np.zeros([ctes.n_components + 1, ctes.n_components + 1])
-        for i in range(ctes.n_volumes):
-            J_local[0,0] = d_residuoporoso_dP[i]
-            J_local[0,1:] = d_residuoporoso_dNk[...,i]
-            J_local[1:,0] = d_consvmassa_dP_P[...,i]
-            J_local[1:,1:] = d_consvmassa_dNk_P[...,i]
-
-            J_local_W[1:,0] = d_consvmassa_dP_W[...,i]
-            J_local_W[1:,1:] = d_consvmassa_dNk_W[...,i]
-
-            J_local_E[1:,0] = d_consvmassa_dP_E[...,i]
-            J_local_E[1:,1:] = d_consvmassa_dNk_E[...,i]
-
-            index_right = ctes.v0[:, 1][ctes.v0[:, 0] == i]
-            index_left = ctes.v0[:, 0][ctes.v0[:, 1] == i]
-
-
-            #import pdb; pdb.set_trace()
-            Teste[i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1), \
-                i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1)] = J_local
-
-            if len(index_left) > 0:
-                index_left = int(index_left)
-                Teste[i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1), \
-                     index_left*(ctes.n_components + 1) : (index_left+1)*(ctes.n_components + 1)] = J_local_W
-
-            if len(index_right) > 0:
-                index_right = int(index_right)
-                Teste[i*(ctes.n_components + 1) : (i+1)*(ctes.n_components + 1), \
-                     index_right*(ctes.n_components + 1) : (index_right+1)*(ctes.n_components + 1)] = J_local_E
-
-
-
-            #lines = np.array([ctes.v0[:, 0], ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
-            #cols = np.array([ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
-            #data = np.array([-t0[i,:], -t0[i,:], +t0[i,:], +t0[i,:]]).flatten()
-
-        import pdb; pdb.set_trace()
-        """
         return jacobian
 
     def d_residuoporoso_dP(self, fprop):
@@ -518,7 +424,7 @@ class NewtonSolver:
         dnwdP = np.zeros(ctes.n_volumes)
 
         if ctes.load_w: dVw_dP = -ctes.Cw * fprop.Csi_W0 / (fprop.Csi_W ** 2)
-        #dVw_dP = -ctes.Cw * fprop.Csi_W0 / (fprop.Csi_W ** 2)
+
         if ctes.load_k:
             dVl_dP = ctes.R * T * (P * dZldP_parcial - Zl) / (P**2)
             dVv_dP = ctes.R * T * (P * dZvdP_parcial - Zv) / (P**2)
@@ -537,27 +443,9 @@ class NewtonSolver:
 
 
     def d_residuoporoso_dNk(self, fprop):
-        # Essa funcao passará por mudanças para a inclusão do térmico. Ver item C.1 da Tese do Varavei
         dRv_dNk = np.zeros_like(fprop.Nk)
         if ctes.load_w: dRv_dNk[-1] = (1 / fprop.Csi_W) # agua
 
-        # Formulação do Varavei
-        '''NkT = np.sum(fprop.Nk[0:ctes.Nc,:], axis = 0) # quando incluir a agua no termico, vai mudar esse calculo
-        dZl_dx, dZv_dy = self.EOS.dZ_dxij(fprop)
-        dx_dP, dy_dP, dnildP, dnivdP, dnldP, dnvdP, dnildNk, dnivdNk, dnldNk, dnvdNk = \
-                    self.EOS.dxkj_dnij_dP(fprop)
-        dx_dNk, dy_dNk = self.dxij_dNk(fprop, NkT, dnildNk, dnivdNk, dnldNk, dnvdNk)
-        #dZodNk, dZvdNk = self.dZ_dNk(dZl_dx, dZv_dy, dx_dNk, dy_dNk)
-        self.dZ_dNk(dZl_dx, dZv_dy, dx_dNk, dy_dNk)
-        dRR_dNk = self.d_RachfordRice_d_Nk(fprop, NkT)
-        dRR_dV = self.d_RachfordRice_d_vapour_fraction(fprop)
-
-        dRv_dNk[:-1] = ((ctes.R*fprop.T*NkT / fprop.P)*(fprop.L*self.dZldNk + \
-                fprop.V*self.dZvdNk) + (1/fprop.Csi_j[0,0])*fprop.L + \
-                (1/fprop.Csi_j[0,1])*fprop.V + NkT*((1/fprop.Csi_j[0,1]) - \
-                (1/fprop.Csi_j[0,0])) * (dRR_dNk / dRR_dV))'''
-
-        # Formulação do Bruno
         if ctes.load_k:
             x = fprop.xkj[0:ctes.Nc,0,:]
             y = fprop.xkj[0:ctes.Nc,1,:]
@@ -587,61 +475,29 @@ class NewtonSolver:
 
         return dRv_dNk
 
-    def d_RachfordRice_d_vapour_fraction(self, fprop):
-        K_aux = fprop.xkj[:,1]/fprop.xkj[:,0]
-        K = K_aux[:-1]
-        dRR_dV = - np.sum((K - 1) ** 2 * fprop.z / (1 + fprop.V * (K - 1)) ** 2, axis = 0)
-        return dRR_dV
-
-    def d_RachfordRice_d_Nk(self, fprop, NkT):
-        K_aux = fprop.xkj[:,1]/fprop.xkj[:,0]
-        K = K_aux[:-1]
-        RR = np.sum((K - 1) * fprop.z / (1 + fprop.V * (K - 1)), axis = 0)
-        dRR_dNk = (1/NkT) * ((K-1)/(1 + fprop.V*(K-1)) - RR)
-        return dRR_dNk
-
     def dxij_dNk(self, fprop, NkT, dnildNk, dnivdNk, dnldNk, dnvdNk):
         x = fprop.xkj[0:ctes.Nc,0,:]
         y = fprop.xkj[0:ctes.Nc,1,:]
         K = y/x
 
-        # Formulação do Varavei:
-        '''
-        dx_dNk = np.zeros([ctes.Nc, ctes.Nc, ctes.n_volumes])
-        dy_dNk = np.zeros([ctes.Nc, ctes.Nc, ctes.n_volumes])
-        for i in range(ctes.Nc):
-            dx_dNk[i,] = (1 / (1 + fprop.V*(K[i] - 1))) * (( - fprop.z[i]) / NkT)
-            dx_dNk[i,i] = (1 / (1 + fprop.V*(K[i] - 1))) * ((1 - fprop.z[i]) / NkT)
-            dy_dNk[i,] = dx_dNk[i,] * K[i]
-
-        # Ajustar isso - fazer pelo menos mais 2 testes
-        T = (1 / (1 + fprop.V*(K - 1))) / NkT
-        TT = T[:,np.newaxis,:] * np.ones([ctes.Nc, ctes.Nc, ctes.n_volumes])
-        I = np.identity(ctes.Nc)[...,np.newaxis] * np.ones([ctes.Nc, ctes.Nc, ctes.n_volumes])
-        z_aux = fprop.z[:,np.newaxis] * np.ones([ctes.Nc, ctes.Nc, ctes.n_volumes])
-        dx_dNk_teste = (I - z_aux) * TT
-        '''
-        # Formulação do Bruno:
         dx_dNk = (1 / fprop.Nj[0,0]) * (dnildNk - x[:,np.newaxis]*dnldNk)
         dx_dNk[:,:,fprop.L==0] = 0.0
         dy_dNk = (1 / fprop.Nj[0,1]) * (dnivdNk - y[:,np.newaxis]*dnvdNk)
         dy_dNk[:,:,fprop.V==0] = 0.0
         return dx_dNk, dy_dNk
 
-    def dZ_dNk(self, dZl_dx, dZv_dy, dx_dNk, dy_dNk):
-
-        self.dZldNk = (dZl_dx[:,np.newaxis] * dx_dNk[np.newaxis,:,:]).sum(axis=1)
-        self.dZvdNk = (dZv_dy[:,np.newaxis] * dy_dNk[np.newaxis,:,:]).sum(axis=1)
-        #return dZodNk, dZvdNk
-
     def d_consvmassa_dP_dNk(self, fprop, Pot_hid, delta_t, wells):
         dCsi_j_dP, dCsi_j_dnij = self.dCsi_j_dP_dnij(fprop)
+        # Derivada da densidade molar
+
         if ctes.load_k:
             dx_dP, dy_dP, dnildP, dnivdP, dnldP, dnvdP, dnildNk, dnivdNk, dnldNk, dnvdNk = \
                     self.EOS.dxkj_dnij_dP(fprop)
-            NkT = np.sum(fprop.Nk[0:ctes.Nc,:], axis = 0) # quando incluir a agua no termico, vai mudar esse calculo
+            NkT = np.sum(fprop.Nk[0:ctes.Nc,:], axis = 0)
             dx_dNk, dy_dNk = self.dxij_dNk(fprop, NkT, dnildNk, dnivdNk, dnldNk, dnvdNk) #[[dx1/dN1, dx1/dN2, ..., dx1/dNnc], [dx2/dN1, dx2/dN2, ..., dx2/dNnc], ..., [dxnc/dN1, dxnc/dN2, ..., dxnc/dNnc]] para cada bloco da malha
             drho_dP, drho_dNk = self.drho_dP_dNk(fprop, dx_dP, dy_dP, dCsi_j_dP, dx_dNk, dy_dNk)
+            # Derivada da densidade mássica
+
         if not ctes.load_k and ctes.load_w:
             dx_dP, dy_dP, dx_dNk, dy_dNk = [], [], [], []
             drho_dP, drho_dNk = self.drho_dP_dNk(fprop, dx_dP, dy_dP, dCsi_j_dP, dx_dNk, dy_dNk)
@@ -673,9 +529,13 @@ class NewtonSolver:
         if ctes.load_k:
             phase_viscosity = self.phase_viscosity_class(fprop, fprop.Csi_j.copy())
             dmi_dP, dmi_dNk = phase_viscosity.derivative_phase_viscosity_dP_dNk(fprop, dx_dP, dy_dP, dCsi_j_dP, dx_dnij, dy_dnij, dCsi_j_dnij, dnildP, dnivdP, dnildNk, dnivdNk)
-            'Problema do BL a viscosidade é constante. derivada fica igual a 0'
+            # Derivada da viscosidade
+
+            '''Para o problema de Buckley-Leverett a viscosidade é constante.
+            Logo, a derivada fica igual a 0'''
             #dmi_dP = np.zeros_like(dmi_dP)
             #dmi_dNk = np.zeros_like(dmi_dNk)
+
         if not ctes.load_k and ctes.load_w:
             dmi_dP = np.zeros([1, ctes.n_volumes])
             dmi_dNk = np.zeros([1, ctes.n_volumes])
@@ -690,9 +550,9 @@ class NewtonSolver:
         # Derivada em funcao de Nk
         dmobilities_dNk = (fprop.mis * dkrj_dNk - \
             relative_permeability[np.newaxis] * dmi_dNk)/(fprop.mis**2)
-
         dtransmissibility_dNk = np.zeros([ctes.n_components, ctes.n_components, ctes.n_phases, ctes.n_volumes])
         aux = np.zeros([ctes.n_components, ctes.n_components, ctes.n_volumes])
+
         if ctes.load_k:
             # Só referente a fase óleo:
             aux[0:ctes.Nc, 0:ctes.Nc] = dx_dNk * fprop.Csi_j[0,0] * fprop.mobilities[0,0]
@@ -711,6 +571,7 @@ class NewtonSolver:
                     fprop.xkj[:,2][:,np.newaxis] * self.dCsi_j_dNk[:,2] * fprop.mobilities[0,2] +\
                     fprop.xkj[:,2][:,np.newaxis] * fprop.Csi_j[0,2] * dmobilities_dNk[:,2]
         # dtransmissibility_dNk.shape = (Nc1, Nc2, ..., Nci); (dNc1, dNc2, ..., dNci); fases; blocos
+
         if not ctes.load_k and ctes.load_w:
             aux[0,0] = 0 * fprop.Csi_j[0,0] * fprop.mobilities[0,0]
             dtransmissibility_dNk[:,:,0,:] = aux + \
@@ -720,7 +581,8 @@ class NewtonSolver:
         self.dPot_hid_dP(drho_dP, drho_dNk, Pot_hid, fprop)
         transmissibility = self.transmissibility_FI(fprop)
 
-        '''Logica testada para 1D'''
+        # Derivada da transmissibilidade das faces à direita (faceup)
+        # e esquerda (facedown), em relação à pressão do bloco P
         dtransmissibility_faceup_dP_P = dtransmissibility_dP[:,:,ctes.v0[:,0]]
         dtransmissibility_facedown_dP_P = dtransmissibility_dP[:,:,ctes.v0[:,1]]
         bool = Pot_hid[:,ctes.v0[:,0]] <= Pot_hid[:,ctes.v0[:,1]]
@@ -753,7 +615,9 @@ class NewtonSolver:
         # Derivada da eq. de cons. da massa em relação a pressão do bloco (diagonal principal)
         d_consvmassa_dP_P = - delta_t * (dflux_dP_P.sum(axis=1) + dwell_dP_P)
 
-        # Blocos vizinhos
+
+        # Derivada da transmissibilidade das faces à direita (faceup)
+        # e esquerda (facedown), em relação à pressão dos blocos vizinhos
         dtransmissibility_faceup_dP_E = dtransmissibility_dP[:,:,ctes.v0[:,1]]
         dtransmissibility_facedown_dP_W = dtransmissibility_dP[:,:,ctes.v0[:,0]]
         bool = Pot_hid[:,ctes.v0[:,0]] <= Pot_hid[:,ctes.v0[:,1]]
@@ -770,28 +634,19 @@ class NewtonSolver:
         dfluxo_faceup_dP_W = np.zeros_like(dfluxo_facedown_dP_W)
 
         # Derivada do termo de fluxo em relação a pressão - blocos vizinhos (E e W)
-        'Fazer esse balanço é errado'
-        """
-        dflux_dP_E = np.zeros([ctes.n_components, ctes.n_phases, ctes.n_volumes])
-        dflux_dP_W = np.zeros([ctes.n_components, ctes.n_phases, ctes.n_volumes])
-
-        for i in range(ctes.n_components):
-            data_E = np.array([dfluxo_faceup_dP_E[i], - dfluxo_facedown_dP_E[i]]).flatten()
-            data_W = np.array([dfluxo_faceup_dP_W[i], - dfluxo_facedown_dP_W[i]]).flatten()
-            dflux_dP_E[i] = sp.csc_matrix((data_E, (lines, cols)), shape = (ctes.n_phases, ctes.n_volumes)).toarray()
-            dflux_dP_W[i] = sp.csc_matrix((data_W, (lines, cols)), shape = (ctes.n_phases, ctes.n_volumes)).toarray()
-        """
         dflux_dP_E = dfluxo_faceup_dP_E - dfluxo_facedown_dP_E
         dflux_dP_W = dfluxo_faceup_dP_W - dfluxo_facedown_dP_W
 
-        # Derivada da eq. de cons. da massa em relação a pressão do bloco vizinho (fora da diagonal principal)
+        # Derivada da eq. de cons. da massa em relação a pressão do bloco vizinho (fora da diagonal principal da matriz global)
         dwell_dP_E = 0.0 # Caso use modelo de poço, aqui muda
         dwell_dP_W = 0.0 # Caso use modelo de poço, aqui muda
         d_consvmassa_dP_E = - delta_t * (dflux_dP_E.sum(axis=1) + dwell_dP_E)
         d_consvmassa_dP_W = - delta_t * (dflux_dP_W.sum(axis=1) + dwell_dP_P)
 
-        '''Logica testada para 1D'''
-        # Derivada em função da composição - diagonal principal
+
+        # Derivada da transmissibilidade das faces à direita (faceup)
+        # e esquerda (facedown), em relação à composição do bloco P
+        # Diagonal principal da matriz global
         dtransmissibility_faceup_dNk_P = dtransmissibility_dNk[:,:,:,ctes.v0[:,0]]
         dtransmissibility_facedown_dNk_P = dtransmissibility_dNk[:,:,:,ctes.v0[:,1]]
         bool = Pot_hid[:,ctes.v0[:,0]] <= Pot_hid[:,ctes.v0[:,1]]
@@ -806,7 +661,6 @@ class NewtonSolver:
                 transmissibility[:,np.newaxis] * self.dPot_hid_facedown_dNk_P
         # dfluxo_faceup_dNk_P.shape = (Nc1, Nc2, ..., Nci); (dNc1, dNc2, ..., dNci); fases; faces
 
-        # Derivada do termo de fluxo em relação a composição - diagonal principal
         cx = np.arange(ctes.n_phases)
         lines = np.array([np.repeat(cx,len(ctes.v0[:,0])), np.repeat(cx,len(ctes.v0[:,1]))]).astype(int).flatten()
         cols = np.array([np.tile(ctes.v0[:,0],ctes.n_phases), np.tile(ctes.v0[:,1], ctes.n_phases)]).flatten()
@@ -816,6 +670,7 @@ class NewtonSolver:
                 data = np.array([dfluxo_faceup_dNk_P[i,k], - dfluxo_facedown_dNk_P[i,k]]).flatten()
                 dflux_dNk_P[i,k] = sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_phases, ctes.n_volumes)).toarray()
 
+
         # Derivada da eq. de cons. da massa em relação a pressão do bloco (diagonal principal)
         dwell_dNk_P = 0.0 # Caso use modelo de poço, aqui muda
         dacumulation_dNk = np.identity(ctes.n_components)[...,np.newaxis] * np.ones([ctes.n_volumes])
@@ -823,7 +678,9 @@ class NewtonSolver:
         d_consvmassa_dNk_P = dacumulation_dNk - delta_t * (dflux_dNk_P.sum(axis=2) + dwell_dNk_P)
         #[[dRc1/dN1, dRc1/dN2, ..., dRc1/dNnc], [dRc2/dN1, dRc2/dN2, ..., dRc2/dNnc], ..., [dRcnc/dN1, dRcnc/dN2, ..., dRcnc/dNnc]] para cada bloco da malha
 
-        # Blocos vizinhos
+        # Derivada da transmissibilidade das faces à direita (faceup)
+        # e esquerda (facedown), em relação à composição dos blocos vizinhos
+        # Fora da diagonal principal na matriz global
         dtransmissibility_faceup_dNk_E = dtransmissibility_dNk[:,:,:,ctes.v0[:,1]]
         dtransmissibility_facedown_dNk_W = dtransmissibility_dNk[:,:,:,ctes.v0[:,0]]
         dtransmissibility_faceup_dNk_E[:,:,~bool] = 0.0
@@ -839,18 +696,6 @@ class NewtonSolver:
         dfluxo_faceup_dNk_W = np.zeros_like(dfluxo_facedown_dNk_W)
 
         # Derivada do termo de fluxo em relação a composição - blocos vizinhos (E e W)
-        'Fazer esse balanço é errado'
-        """
-        dflux_dNk_E = np.zeros([ctes.n_components, ctes.n_components, ctes.n_phases, ctes.n_volumes])
-        dflux_dNk_W = np.zeros([ctes.n_components, ctes.n_components, ctes.n_phases, ctes.n_volumes])
-
-        for i in range(ctes.n_components):
-            for k in range(ctes.n_components):
-                data_E = np.array([dfluxo_faceup_dNk_E[i,k], - dfluxo_facedown_dNk_E[i,k]]).flatten()
-                data_W = np.array([dfluxo_faceup_dNk_W[i,k], - dfluxo_facedown_dNk_W[i,k]]).flatten()
-                dflux_dNk_E[i,k] = sp.csc_matrix((data_E, (lines, cols)), shape = (ctes.n_phases, ctes.n_volumes)).toarray()
-                dflux_dNk_W[i,k] = sp.csc_matrix((data_W, (lines, cols)), shape = (ctes.n_phases, ctes.n_volumes)).toarray()
-        """
         dflux_dNk_E = dfluxo_faceup_dNk_E - dfluxo_facedown_dNk_E
         dflux_dNk_W = dfluxo_faceup_dNk_W - dfluxo_facedown_dNk_W
 
@@ -865,6 +710,7 @@ class NewtonSolver:
                 d_consvmassa_dNk_E, d_consvmassa_dNk_W
 
     def dCsi_j_dP_dnij(self, fprop):
+        # Derivada da densidade molar em relação à pressão e ao numero de mols
         if ctes.load_k:
             x = fprop.xkj[0:ctes.Nc,0,:]
             y = fprop.xkj[0:ctes.Nc,1,:]
@@ -883,7 +729,6 @@ class NewtonSolver:
                 dZvdP_parcial, dZldnij_parcial, dZvdnij_parcial, dnildP,
                 dnivdP, dnildNk, dnivdNk)
 
-        # Minhas deduções
         dCsi_j_dP = np.zeros_like(fprop.Csi_j)
 
         if ctes.load_k:
@@ -896,17 +741,6 @@ class NewtonSolver:
         if not ctes.load_k and ctes.load_w:
             dCsi_j_dP[0,0] = fprop.Csi_W0 * ctes.Cw
 
-        """
-        # Formulação do Bruno - resultados diferentes!!
-        dCsi_j_dP = np.zeros_like(fprop.Csi_j)
-        dCsi_j_dP[:,0,fprop.L!=0] = - (fprop.Csi_j[0,0,fprop.L!=0] ** 2) * ((ctes.R*T)/P[fprop.L!=0]) * \
-                (np.sum(dZldnij_parcial[:,:,fprop.L!=0] * dnildP[:,fprop.L!=0], axis = 1) + \
-                 (1/P[fprop.L!=0])*(P[fprop.L!=0]*dZldP_parcial[fprop.L!=0] - Zl[fprop.L!=0]))
-        dCsi_j_dP[:,1,fprop.V!=0] = - (fprop.Csi_j[0,1,fprop.V!=0] ** 2) * ((ctes.R*T)/P[fprop.V!=0]) * \
-                (np.sum(dZvdnij_parcial[:,:,fprop.V!=0] * dnivdP[:,fprop.V!=0], axis = 1) + \
-                 (1/P[fprop.V!=0])*(P[fprop.V!=0]*dZvdP_parcial[fprop.V!=0] - Zv[fprop.V!=0]))
-        if ctes.load_w: dCsi_j_dP[0,2][ctes.load_w] = fprop.Csi_W0[ctes.load_w] * ctes.Cw
-        """
 
         if ctes.load_k:
             dCsi_j_dnij = np.zeros([ctes.Nc, ctes.n_phases, ctes.n_volumes])
@@ -923,19 +757,10 @@ class NewtonSolver:
                 -P[fprop.V!=0]/(ctes.R*T*(Zv[fprop.V!=0]**2)) * dZvdNk[:,fprop.V!=0]
 
 
-        """
-        # Formulação do Bruno - mesmo resultado
-        self.dCsi_j_dNk = np.zeros([ctes.n_components, ctes.n_phases, ctes.n_volumes])
-        d_molar_volume_dnij_oil = ((ctes.R*T)/P) * dZldnij_parcial
-        d_molar_volume_dnij_gas = ((ctes.R*T)/P) * dZvdnij_parcial
-        self.dCsi_j_dNk[0:ctes.Nc,0] = -(fprop.Csi_j[0,0] ** 2) * \
-                            np.sum(d_molar_volume_dnij_oil[:,:,np.newaxis] * dnildNk, axis=1)
-        self.dCsi_j_dNk[0:ctes.Nc,1] = -(fprop.Csi_j[0,1] ** 2) * \
-                            np.sum(d_molar_volume_dnij_gas[:,:,np.newaxis] * dnivdNk, axis=1)
-        """
         return dCsi_j_dP, dCsi_j_dnij
 
     def drho_dP_dNk(self, fprop, dx_dP, dy_dP, dCsi_j_dP, dx_dNk, dy_dNk):
+        # Derivada da densidade mássica em relação à pressão e ao numero de mols
         if ctes.load_k:
             x = fprop.xkj[0:ctes.Nc,0,:]
             y = fprop.xkj[0:ctes.Nc,1,:]
@@ -971,6 +796,7 @@ class NewtonSolver:
         return drho_dP, drho_dNk
 
     def dkrs_dSj(self, fprop):
+        # Derivada da permeabilidade relativa em relação à saturação
         self.relative_permeability_class = getattr(relative_permeability2,
         data_loaded['compositional_data']['relative_permeability'])
         self.relative_permeability = self.relative_permeability_class()
@@ -996,7 +822,7 @@ class NewtonSolver:
         return dkrsdSj, kro, krg, krw
 
     def dSj_dP_dNk(self, fprop, dCsi_j_dP, dnldP, dnvdP, dnldNk, dnvdNk):
-
+        # Derivada da Saturação em relação à pressão e ao numero de mols
         if ctes.load_w:
             dSw_dP = (- 1 / ((fprop.Vp * fprop.Csi_W)**2)) * (fprop.Nj[0,-1]*fprop.Vp * \
                 dCsi_j_dP[0,-1] + fprop.Nj[0,-1]*fprop.Csi_W*ctes.Vbulk*ctes.porosity*ctes.Cf)
@@ -1017,24 +843,7 @@ class NewtonSolver:
             dlnfivdP, dlnfivdnij, dZvdP_parcial, dZvdnij_parcial, Zv = \
                 self.EOS.get_phase_derivatives(P, T, y, Nv, np.zeros(ctes.n_volumes))
 
-        '''
-        # Formulação do Varavei:
-        dSo_dP = (ctes.R * fprop.T * NkT / fprop.P)*fprop.L * (dZodP_parcial - Zo/fprop.P)
-        dSv_dP = (ctes.R * fprop.T * NkT / fprop.P)*fprop.V * (dZvdP_parcial - Zv/fprop.P)
 
-        dNoCsio_dP = (dnldP * fprop.Csi_j[0,0] - fprop.Nj[0,0] * dCsi_j_dP[0,0]) / \
-                        (fprop.Csi_j[0,0]**2)
-        dNvCsio_dP = (dnvdP * fprop.Csi_j[0,1] - fprop.Nj[0,1] * dCsi_j_dP[0,1]) / \
-                        (fprop.Csi_j[0,1]**2)
-        beta = np.sum(fprop.Nj / fprop.Csi_j, axis = 1)
-
-        dSo_dP = (dNoCsio_dP*beta - (fprop.Nj[0,0]/fprop.Csi_j[0,0]) * \
-                  (dNoCsio_dP + dNvCsio_dP)) / (beta**2)
-        dSv_dP = (dNvCsio_dP*beta - (fprop.Nj[0,1]/fprop.Csi_j[0,1]) * \
-                  (dNoCsio_dP + dNvCsio_dP)) / (beta**2)
-        '''
-
-        # Formulação do Bruno:
         if ctes.load_k and ctes.load_w:
             NjT = np.sum(fprop.Nj[:,0:ctes.n_phases-1,:], axis = 1)
         else:
@@ -1072,9 +881,7 @@ class NewtonSolver:
         if ctes.load_w:
             dSj_dNk[-1,-1] = (1 / (fprop.Csi_j[:,-1] * fprop.Vp)) - \
                             (fprop.Nj[0,-1]/(fprop.Vp*(fprop.Csi_j[:,-1]**2)))*self.dCsi_j_dNk[-1,-1]
-        #else:
-            #dSw_dNk = np.zeros([ctes.n_components, 1, ctes.n_volumes])
-            #dSj_dNk = np.append(dSj_dNk, dSw_dNk, axis = 1)
+
         if ctes.load_k:
             dSj_dNk[0:ctes.Nc,0] = (1 - fprop.Sw) * ((dLCsi_dNk * (fprop.L / fprop.Csi_j[0,0] + \
                 fprop.V / fprop.Csi_j[0,1]) - (fprop.L / fprop.Csi_j[0,0])*(dLCsi_dNk + dVCsi_dNk)) / \
@@ -1087,11 +894,11 @@ class NewtonSolver:
         return dSj_dP, dSj_dNk
 
     def dkrj_dP_dNk_corey(self, dkrs_dSj, dSj_dP, dSj_dNk):
+        # Derivada da permeabilidade relativa em relação à pressao e ao numero de mols,
+        # para o modelo de Corey
         dkrj_dP = np.zeros_like(dSj_dP)
         dkrj_dNk = np.zeros_like(dSj_dNk)
 
-        # Formulação do Varavei:
-        'PARA O MODELO DE BROOKS E COREY'
         if ctes.load_k and ctes.load_w:
             dkrj_dP[0,0] = dkrs_dSj[:,0,1,:] * dSj_dP[0,1,:] + dkrs_dSj[:,0,2,:] * dSj_dP[0,2,:]
             dkrj_dP[0,1] = dkrs_dSj[:,1,1,:] * dSj_dP[0,1,:]
@@ -1110,20 +917,14 @@ class NewtonSolver:
             dkrj_dP = dkrs_dSj[:,2,2,:] * dSj_dP
             dkrj_dNk = dkrs_dSj[:,2,2,:] * dSj_dNk
 
-        '''
-        # Formulação do Bruno:
-        dkrj_dP[0,0] = dkrs_dSj[0,0,:]*dSj_dP[0,0,:] + dkrs_dSj[0,1,:]*dSj_dP[0,1,:] + dkrs_dSj[0,2,:]*dSj_dP[0,2,:]
-        dkrj_dP[0,1] = dkrs_dSj[1,0,:]*dSj_dP[0,0,:] + dkrs_dSj[1,1,:]*dSj_dP[0,1,:] + dkrs_dSj[1,2,:]*dSj_dP[0,2,:]
-        dkrj_dP[0,2] = dkrs_dSj[2,0,:]*dSj_dP[0,0,:] + dkrs_dSj[2,1,:]*dSj_dP[0,1,:] + dkrs_dSj[2,2,:]*dSj_dP[0,2,:]
-        '''
         return dkrj_dP, dkrj_dNk
 
     def dkrj_dP_dNk_stone(self, dkrs_dSj, dSj_dP, dSj_dNk, fprop, relative_permeability):
+        # Derivada da permeabilidade relativa em relação à pressao e ao numero de mols,
+        # para o modelo de Stone II modificado
         dkrj_dP = np.zeros_like(dSj_dP)
         dkrj_dNk = np.zeros_like(dSj_dNk)
 
-        # Formulação do Varavei:
-        'PARA O MODELO DE STONE'
         dkrj_dP[0,1] = dkrs_dSj[np.newaxis][:,1,1,:] * dSj_dP[0,1,:]
         dkrj_dP[0,2] = dkrs_dSj[np.newaxis][:,2,2,:] * dSj_dP[0,2,:]
 
@@ -1150,12 +951,6 @@ class NewtonSolver:
                 (krow/self.krow0 + relative_permeability[2])*((1/self.krow0)*dkrog_dNk + dkrj_dNk[:,1]) - \
                 (dkrj_dNk[:,2] + dkrj_dNk[:,1]))
 
-        '''
-        # Formulação do Bruno:
-        dkrj_dP[0,0] = dkrs_dSj[0,0,:]*dSj_dP[0,0,:] + dkrs_dSj[0,1,:]*dSj_dP[0,1,:] + dkrs_dSj[0,2,:]*dSj_dP[0,2,:]
-        dkrj_dP[0,1] = dkrs_dSj[1,0,:]*dSj_dP[0,0,:] + dkrs_dSj[1,1,:]*dSj_dP[0,1,:] + dkrs_dSj[1,2,:]*dSj_dP[0,2,:]
-        dkrj_dP[0,2] = dkrs_dSj[2,0,:]*dSj_dP[0,0,:] + dkrs_dSj[2,1,:]*dSj_dP[0,1,:] + dkrs_dSj[2,2,:]*dSj_dP[0,2,:]
-        '''
         return dkrj_dP, dkrj_dNk
 
     def dx_dy_dnij(self, fprop):
@@ -1174,58 +969,59 @@ class NewtonSolver:
         return dx_dnij, dy_dnij
 
     def dPot_hid_dP(self, drho_dP, drho_dNk, Pot_hid, fprop):
-        '''Testado para 1D'''
+        # Derivada do potencial hidraulico em relação a pressao
         ones = np.ones_like(drho_dP[:,:,ctes.v0[:,0]])
         z = ctes.z[ctes.v0[:,0]]
         z_up = ctes.z[ctes.v0[:,1]]
         dVp_dP_P = ctes.Vbulk * ctes.porosity * ctes.Cf
+        # derivada do volume poroso
 
+        # Derivada da densidade mássica na face à direita, em relação a pressao do bloco central 'P'
         drho_faceup_dP_P = ((dVp_dP_P[ctes.v0[:,0]] * fprop.rho_j[:,:,ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,0]] * \
                 drho_dP[:,:,ctes.v0[:,0]]) * (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]]) - \
                 (fprop.Vp[ctes.v0[:,0]] * fprop.rho_j[:,:,ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]] * \
                 fprop.rho_j[:,:,ctes.v0[:,1]])*dVp_dP_P[ctes.v0[:,0]]) / ((fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]]) ** 2)
 
         self.dPot_hid_faceup_dP_P = - ones - ctes.g * (z_up - z) * drho_faceup_dP_P
-        """self.dPot_hid_faceup_dP_P = - ones - ctes.g * (z_up - z) * (fprop.Vp[ctes.v0[:,0]] \
-            / (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])) * drho_dP[:,:,ctes.v0[:,0]]"""
 
+
+        # Derivada da densidade mássica na face à esquerda, em relação a pressao do bloco central 'P'
         drho_facedown_dP_P = ((dVp_dP_P[ctes.v0[:,1]] * fprop.rho_j[:,:,ctes.v0[:,1]] + fprop.Vp[ctes.v0[:,1]] * \
                 drho_dP[:,:,ctes.v0[:,1]]) * (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]]) - \
                 (fprop.Vp[ctes.v0[:,0]] * fprop.rho_j[:,:,ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]] * \
                 fprop.rho_j[:,:,ctes.v0[:,1]])*dVp_dP_P[ctes.v0[:,1]]) / ((fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]]) ** 2)
 
         self.dPot_hid_facedown_dP_P = ones - ctes.g * (z_up - z) * drho_facedown_dP_P
-        """self.dPot_hid_facedown_dP_P = ones - ctes.g * (z_up - z) * (fprop.Vp[ctes.v0[:,1]] \
-            / (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])) * drho_dP[:,:,ctes.v0[:,1]]"""
 
+        # Derivada da densidade mássica na face à direita, em relação a pressao do bloco vizinho 'E'
         drho_faceup_dP_E = ((dVp_dP_P[ctes.v0[:,1]] * fprop.rho_j[:,:,ctes.v0[:,1]] + fprop.Vp[ctes.v0[:,1]] * \
                 drho_dP[:,:,ctes.v0[:,1]]) * (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]]) - \
                 (fprop.Vp[ctes.v0[:,0]] * fprop.rho_j[:,:,ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]] * \
                 fprop.rho_j[:,:,ctes.v0[:,1]])*dVp_dP_P[ctes.v0[:,1]]) / ((fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]]) ** 2)
 
         self.dPot_hid_faceup_dP_E = ones - ctes.g * (z_up - z) * drho_faceup_dP_E
-        """self.dPot_hid_faceup_dP_E = ones - ctes.g * (z_up - z) * (fprop.Vp[ctes.v0[:,1]] \
-            / (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])) * drho_dP[:,:,ctes.v0[:,1]]"""
 
+        # Derivada da densidade mássica na face à esquerda, em relação a pressao do bloco vizinho 'W'
         drho_facedown_dP_W = ((dVp_dP_P[ctes.v0[:,0]] * fprop.rho_j[:,:,ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,0]] * \
                 drho_dP[:,:,ctes.v0[:,0]]) * (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]]) - \
                 (fprop.Vp[ctes.v0[:,0]] * fprop.rho_j[:,:,ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]] * \
                 fprop.rho_j[:,:,ctes.v0[:,1]])*dVp_dP_P[ctes.v0[:,0]]) / ((fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]]) ** 2)
 
         self.dPot_hid_facedown_dP_W = - ones - ctes.g *(z_up - z) * drho_facedown_dP_W
-        """self.dPot_hid_facedown_dP_W = - ones - ctes.g *(z_up - z) *(fprop.Vp[ctes.v0[:,0]] \
-            / (fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])) * drho_dP[:,:,ctes.v0[:,0]]"""
 
-
+        # Derivada da densidade mássica na face à direita, em relação ao numero de mols do bloco central 'P'
         self.dPot_hid_faceup_dNk_P = - ctes.g * (z_up - z) * (fprop.Vp[ctes.v0[:,0]] \
             /(fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])) * drho_dNk[:,:,ctes.v0[:,0]]
 
+        # Derivada da densidade mássica na face à esquerda, em relação ao numero de mols do bloco central 'P'
         self.dPot_hid_facedown_dNk_P = - ctes.g * (z_up - z) * (fprop.Vp[ctes.v0[:,1]] \
             /(fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])) *drho_dNk[:,:,ctes.v0[:,1]]
 
+        # Derivada da densidade mássica na face à direita, em relação ao numero de mols do bloco vizinho 'E'
         self.dPot_hid_faceup_dNk_E = - ctes.g * (z_up - z) * (fprop.Vp[ctes.v0[:,1]] \
             /(fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])) *drho_dNk[:,:,ctes.v0[:,1]]
 
+        # Derivada da densidade mássica na face à esquerda, em relação ao numero de mols do bloco vizinho 'W'
         self.dPot_hid_facedown_dNk_W = - ctes.g * (z_up - z) * (fprop.Vp[ctes.v0[:,0]] \
             /(fprop.Vp[ctes.v0[:,0]] + fprop.Vp[ctes.v0[:,1]])) *drho_dNk[:,:,ctes.v0[:,0]]
 

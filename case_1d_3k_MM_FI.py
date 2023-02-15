@@ -110,6 +110,7 @@ for  arq in arquivos:
             xkj_FI_500[:,0,So_FI_500==0] = 0
             t_FI_500 = data[2]
 
+
         """
         datas = np.load('flying/3k_MM/results_case2_Moshiri_Manzari_3k_500_FI_TESTE_W_796.npy', allow_pickle=True)
         for data in datas[datas.shape[0]-1:]:
@@ -220,7 +221,7 @@ for  arq in arquivos:
 
 
 
-
+        import pdb; pdb.set_trace()
         plt.figure(1)
         #plt.plot(x_200, xkj_IMPEC_200[0,0], 'r')
         plt.plot(x_200, xkj_FI_200[0,0], '--b')

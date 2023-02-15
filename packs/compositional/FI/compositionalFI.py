@@ -18,6 +18,7 @@ class CompositionalFVM:
             self.get_faces_properties_weighted_average(fprop, G)
         else: self.get_faces_properties_upwind(fprop, G)'''
         self.get_faces_properties_upwind(fprop, G)
+        'Toda a formulação do FI foi feita considerando o upwind de primeira ordem'
         #self.get_faces_properties_weighted_average(fprop, G)
         self.get_phase_densities_internal_faces(fprop)
         face_properties = self.get_faces_properties_upwind
@@ -26,22 +27,16 @@ class CompositionalFVM:
 
         r = 0.8 # enter the while loop
 
-        dVjdNk, dVjdP = self.dVt_derivatives(fprop) # muda -----------------------------------------
-        #psolve = TPFASolver(dVjdNk, dVjdP) # muda --------------------------------------------------
+        dVjdNk, dVjdP = self.dVt_derivatives(fprop)
+        # Aproveitamento desse calculo do IMPEC para entrada no solver de Newton
 
         P_old = np.copy(fprop.P)
         Nk_old = np.copy(fprop.Nk)
         if ctes.load_k: z_old = np.copy(fprop.z)
         #if ctes.FR: Nk_SP_old = np.copy(fprop.Nk_SP)
         while (r!=1.):
-            #fprop.Nk = np.copy(Nk_old)
-            #import pdb; pdb.set_trace()
-            #fprop_aux = copy.deepcopy(fprop)
 
-            #solve = NewtonSolver(fprop_aux)
-            #Fk_vols_total, wave_velocity, total_flux_internal_faces = \
-                #solve.solver(wells, fprop_aux, delta_t, Nk_old, G, StabilityCheck, p1, M)
-
+            # Com o solver de Newton, todas as variáveis primárias e secundárias são atualizadas
             solve = NewtonSolver(fprop)
             Fk_vols_total, wave_velocity, total_flux_internal_faces = \
                 solve.solver(wells, fprop, delta_t, Nk_old, G, StabilityCheck, p1, M, face_properties, phase_densities, dVjdNk, dVjdP, P_old)
