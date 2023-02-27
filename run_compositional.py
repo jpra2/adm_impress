@@ -228,11 +228,11 @@ class run_simulation:
             if wells['z'][0][-1]== 0:
                 wells['z'] = wells['za']
                 wells['values_q'] = wells['values_qa']
-                self.get_well_inj_properties(M, fprop, wells)
+
             else:
                 wells['z'] = wells['zco2']
                 wells['values_q'] = wells['values_qco2']
-
+            self.get_well_inj_properties(M, fprop, wells)
             wells['DT'] = wells['DT'][1:]
             #import pdb; pdb.set_trace()
 
