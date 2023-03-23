@@ -76,7 +76,7 @@ class run_simulation:
         return M, data_impress, wells, fprop, load
 
     def get_well_inj_properties(self, M, fprop, wells):
-        #import pdb; pdb.set_trace()
+
         z = (wells['z']).T
         if (wells['ws_p']!=wells['ws_inj']):
             wells['inj_p_term'] = []
@@ -152,11 +152,10 @@ class run_simulation:
                 fprop.Csi_W0 = fprop.Csi_j[0,-1,:]
                 fprop.rho_W = fprop.Csi_j[0,-1,:]
 
-            self.P_SC = np.ones_like(wells['ws_prod'])*ctes.P_SC
-
-            p_well = StabilityCheck(self.P_SC, ctes.T_SC)
+            ctes.P_SC *= np.ones_like(wells['ws_prod'])
+            p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
             L, V, A, xkj, Csi_j, rho_j =  \
-                p_well.run_init(self.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']], \
+                p_well.run_init(ctes.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']], \
                 ksi_W = fprop.Csi_W[wells['ws_prod']], rho_W = fprop.rho_W[wells['ws_prod']])
 
         else: fprop.xkj = []; fprop.L = []; fprop.V = []; wells['inj_term'] = []
@@ -202,7 +201,7 @@ class run_simulation:
 
         '-------------------- Advance in time and save results ----------------'
         self.oil_production_rate_SC_t, self.gas_production_rate_SC_t = \
-            self.prod_rate_RCorSC(fprop, wells, self.P_SC)
+            self.prod_rate_RCorSC(fprop, wells, ctes.P_SC)
         self.oil_production_rate_RC_t, self.gas_production_rate_RC_t = \
             self.prod_rate_RCorSC(fprop, wells, fprop.P[wells['ws_prod']])
 
@@ -222,22 +221,19 @@ class run_simulation:
 
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         if len(wells['ws_prod'])>0: self.update_production()
+
         '''Condições da WAG'''
 
         if any(self.t >= wells['DT']):
-            #import pdb; pdb.set_trace()
             if wells['z'][0][-1]== 0:
-                wells['z'] = wells['za']
-                wells['values_q'] = wells['values_qa']
+                wells['z'] = wells['za'].copy()
+                wells['values_q'] = wells['values_qa'].copy()
                 #self.get_well_inj_properties(M, fprop, wells)
             else:
-                #import pdb; pdb.set_trace()
-                wells['z'] = wells['zco2']
-                wells['values_q'] = wells['values_qco2']
-            #import pdb; pdb.set_trace()
+                wells['z'] = wells['zco2'].copy()
+                wells['values_q'] = wells['values_qco2'].copy()
             self.get_well_inj_properties(M, fprop, wells)
             wells['DT'] = wells['DT'][1:]
-
             #import pdb; pdb.set_trace()
 
     def update_well_inj_rate(self, fprop, wells):

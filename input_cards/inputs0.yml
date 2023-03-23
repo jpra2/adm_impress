@@ -52,9 +52,9 @@ Wells:
     t_max: 8640000
     type: Injector
     type_region: box
-    value: 1.0e-05
-    value_a: 1.0e-05
-    value_co2: 1.0e-05
+    value: 0.0520833333333
+    value_a: 0.00012
+    value_co2: 0.0520833333333
     value_type: volumetric
     z:
     - 1
@@ -63,11 +63,11 @@ Wells:
     - 0.0
     - 0
     za:
-    - 1
-    - 0.0
-    - 0.0
-    - 0.0
     - 0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1
     zco2:
     - 1
     - 0.0

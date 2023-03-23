@@ -57,7 +57,6 @@ class WellsCompositional(Wells):
                     t_cicle = t_max/nP_inj
                     DT = np.linspace(t_cicle, t_max, num = nP_inj)
                     DT *= nv
-                    #import pdb; pdb.set_trace()
                     z.append(well['z'])
                     z *= nv
                     za.append(well['za'])
@@ -73,6 +72,7 @@ class WellsCompositional(Wells):
                     val_a = value_a/nv * np.array(well['za'])
                     val_co2 = value_co2/nv * np.array(well['zco2'])
 
+
                     if tipo == 'Producer':
                         val *= -1
 
@@ -82,10 +82,12 @@ class WellsCompositional(Wells):
                     values_a = val_a
                     values_co2 = val_co2
 
+
                     '''if value_type == 'volumetric':
                         if inj_cond[-1] == 'surface':
                             values = (1 - well['z'][-1]) * well['ksi_total'] * val
                             values[-1] = val[-1] * well['ksi_total']'''
+
                     values_q_vol.append(val.tolist())
                     values_q_vol *= nv
 
@@ -114,7 +116,6 @@ class WellsCompositional(Wells):
                     if len(values_qa)>0:
                         vals_a = (vals_a).reshape((len(well['za']),nv))
                         values_qa = np.concatenate((values_qa,vals_a), axis=1)
-
                         if inj_cond == 'surface':
                             values_qa = (vals_a).sum(axis=0)
                             values_qa = np.concatenate((values_qa, values_qa), axis=1)
@@ -127,7 +128,6 @@ class WellsCompositional(Wells):
                     if len(values_qco2)>0:
                         vals_co2 = (vals_co2).reshape((len(well['zco2']),nv))
                         values_qco2 = np.concatenate((values_qco2,vals_co2), axis=1)
-
                         if inj_cond == 'surface':
                             values_qco2 = (vals_co2).sum(axis=0)
                             values_qco2 = np.concatenate((values_qco2, values_qco2), axis=1)
@@ -151,7 +151,10 @@ class WellsCompositional(Wells):
         ws_p = np.array(ws_p).flatten()
         values_p = np.array(values_p).flatten()
         values_q = np.array(values_q)#.flatten()
+        values_qa = np.array(values_qa)#.flatten()
+        values_qco2 = np.array(values_qco2)#.flatten()
         ws_inj = np.array(ws_inj).flatten()
+        #import pdb; pdb.set_trace()
         ws_prod = np.array(ws_prod).flatten()
         self['ws_p'] = ws_p.astype(int)
         self['ws_q'] = ws_q.astype(int)

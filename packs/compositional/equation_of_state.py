@@ -61,11 +61,20 @@ class PengRobinson:
         'if any Z<0'
 
         aux_neg = np.zeros(Z.shape,dtype=bool)
+        #import pdb; pdb.set_trace()
+        #B = B.flatten()
+        # try:
+        #     aux_neg[Z<B[:,np.newaxis]]
+        # except:
+        #     import pdb; pdb.set_trace()
+
         aux_neg[Z<B[:,np.newaxis]] = True
         aux_neg_sum = aux_neg.sum(axis=1)
         lines_Zneg1 = (aux_neg_sum == 1).astype(bool)
         lines_Zneg2 = (aux_neg_sum == 2).astype(bool)
         Zneg1 = Z[lines_Zneg1]
+        #import pdb; pdb.set_trace()
+
         Zneg1[Zneg1<B[lines_Zneg1,np.newaxis]] = np.max(Z[lines_Zneg1],axis=1, initial=0)
         Z[lines_Zneg1] = Zneg1
         Zneg2 = Z[lines_Zneg2]
@@ -73,19 +82,58 @@ class PengRobinson:
         Z[lines_Zneg2] = Zneg2
         return Z
 
+        # coef = np.empty([4,len(B.ravel())])
+        # coef[0,:] = 1
+        # coef[1,:] = -(1 - B)
+        # coef[2,:] = (A - 2*B - 3*B**2)
+        # coef[3,:] = -(A*B - B**2 - B**3)
+        # Z = CubicRoots().run(coef)
+        # root = np.isreal(Z)
+        # n_reais = np.sum(root*1, axis = 1)
+        #
+        # 'if n_reais == 2'
+        # aux_reais = (n_reais==2)
+        # Z_reais_n2 = np.reshape(Z[aux_reais][root[aux_reais]],(len(aux_reais[aux_reais]),2))
+        # Z_aux_reais = Z[aux_reais]
+        # Z_aux_reais[~root[aux_reais]] = np.max(Z_reais_n2,axis=1, initial=0)
+        # Z[aux_reais] = Z_aux_reais
+        #
+        # 'if n_reais==1'
+        # Z[~root[n_reais==1]] = np.repeat(Z[root[n_reais == 1]], 2)
+        #
+        # 'if any Z<0'
+        # aux_neg = np.zeros(Z.shape,dtype=bool)
+        # aux_neg[Z<0] = True
+        # lines_Zneg1 = (aux_neg.sum(axis=1)==1).astype(bool)
+        # lines_Zneg2 = (aux_neg.sum(axis=1)==2).astype(bool)
+        # Zneg1 = Z[lines_Zneg1]
+        # Zneg1[Zneg1<0] = np.max(Z[lines_Zneg1],axis=1, initial=0)
+        # Z[lines_Zneg1] = Zneg1
+        # Zneg2 = Z[lines_Zneg2]
+        # Zneg2[Zneg2<0] = np.repeat(np.max(Z[lines_Zneg2],axis=1, initial=0),2)
+        # Z[lines_Zneg2] = Zneg2
+        #
+        # # Zz = np.min(Z, axis = 1) * ph + np.max(Z, axis = 1) * (1 - ph)
+        # # Z_ = np.real(Zz)
+        # return Z
+
     def getZ_by_phase(self, Z, ph):
         Z = np.min(Z, axis = 1) * ph + np.max(Z, axis = 1) * (1 - ph)
         Z = np.real(Z)
         return Z
 
     def lnphi_Z_deltaG(self, xkj, P, ph):
+        # import pdb; pdb.set_trace()
         A, B = self.coefficients_cubic_EOS_vectorized(xkj, P)
+        # if B.ndim == 2:
+        #     import pdb; pdb.set_trace()
+
         Z_all = self.Z_vectorized(A, B)
         Z_ph1 = self.getZ_by_phase(Z_all, ph)
         Z_ph2 = self.getZ_by_phase(Z_all, 1-ph)
         Z = np.concatenate((Z_ph1[:,np.newaxis],Z_ph2[:,np.newaxis]),axis=-1)
         lnphi = self.lnphi_calculation_deltaG(A, B, Z)
-        return lnphi, Z
+        return lnphi , Z
 
     def lnphi(self, xkj, P, ph):
         A, B = self.coefficients_cubic_EOS_vectorized(xkj, P)

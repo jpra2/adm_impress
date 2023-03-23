@@ -274,9 +274,15 @@ class StabilityCheck:
         # test phase ph is lnphi[...,0], the other phase is lnphi[...,1]
         deltaG_molar = np.sum(xkj * (lnphi[...,1] - lnphi[...,0]), axis = 0)
 
+
         dG_neg = deltaG_molar<0
 
-        ph[dG_neg] = 1 - ph[dG_neg]
+        # print(dG_neg.shape)
+        # import pdb; pdb.set_trace()
+        # try:
+        #     ph[dG_neg] = 1 - ph[dG_neg]
+        # except:
+        #     import pdb; pdb.set_trace()
 
         lnphi_out = np.copy(lnphi[...,0])
         lnphi_out[:,dG_neg] = lnphi[:,dG_neg,1]
