@@ -10,7 +10,7 @@ entities_lv0_0 = direc_impress.entities_lv0_0
 names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeability', 'Crs',
                          'Saturation', 'set_permeability', 'set_porosity', 'Porosity']
 
-names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
+names_data_loaded_lv2 = ['type', 'value', 'value_a', 'p0', 'p1']
 
 types_region_data_loaded = ['all', 'box', 'ring']
 types_region_for_saturation = ['all', 'wells', 'box']

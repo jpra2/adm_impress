@@ -25,7 +25,7 @@ def initial_mesh (mesh, load=False, convert=False):
             Preprocess0(M, elements_lv0)
 
         wells = WellsCompositional(M, elements_lv0, load = load)
-        
+        #import pdb; pdb.set_trace()
         set_saturation_regions(M, wells)
         #fluid_properties = FluidProperties()
 

@@ -17,6 +17,7 @@ class StabilityCheck:
     def __init__(self, P, T):
         # this is called once
         P = np.copy(P)
+        #P[:] = 6.95e6
         self.EOS = ctes.EOS_class(T) #só para os casos isotérmicos - non isothermal entrariam em run (eu acho)
         self.ph_L = np.ones(len(P), dtype = bool)
         self.ph_V = np.zeros(len(P), dtype = bool)
@@ -29,9 +30,13 @@ class StabilityCheck:
         self.y = np.empty_like(self.x)
         self.L = np.empty(len(P))
         self.V = np.empty(len(P))
+        self.xkj = np.empty([ctes.n_components, ctes.n_phases, len(P)])
+        self.Csi_j =  np.empty([1, ctes.n_phases, len(P)])
+        self.rho_j =  np.empty([1, ctes.n_phases, len(P)])
 
-    def run_init(self, P, z, pflash = True, ponteiro_flash = []):
+    def run_init(self, P, z, pflash = True, ponteiro_flash = [], ksi_W=[], rho_W=[]):
         #self.K = self.equilibrium_ratio_Wilson(P)
+
         P = np.copy(P)
         if np.sum(pflash,dtype=bool)==True:
             ponteiro_flash = np.ones(len(P), dtype = bool)
@@ -56,19 +61,45 @@ class StabilityCheck:
         #self.check_phase_nc_1()
         Kini = np.copy(self.K)
         if ctes.Nc==1:
-            ksi_L, ksi_V, rho_L, rho_V = self.check_phase_nc_1()
-        else: ksi_L, ksi_V, rho_L, rho_V = self.molar_properties(np.copy(ponteiro_flash)) #perform the actual flash
-        #ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties()
-        return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
+            Zl, Zv = self.check_phase_nc_1()
+        else:
+            Zl, Zv = self.molar_properties(np.copy(ponteiro_flash)) #perform the actual flash
 
-    def run(self, P, z, wells):
+        ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
+        self.organize_outputs(ksi_W, ksi_L, ksi_V, rho_W, rho_L, rho_V)
+
+        A = np.zeros_like(self.L)
+        #import pdb; pdb.set_trace()
+        return self.L, self.V, A, self.xkj, self.Csi_j, self.rho_j
+
+
+    def organize_outputs(self, ksi_W, ksi_L, ksi_V, rho_W, rho_L, rho_V):
+        self.xkj[ctes.n_components-1,:,:] = 0
+        self.xkj[0:ctes.Nc,ctes.n_phases-1,:] = 0
+        self.xkj[ctes.n_components-1,ctes.n_phases-1,:] = 1
+        self.xkj[0:ctes.Nc,0,:] = self.x
+        self.xkj[0:ctes.Nc,1,:] = self.y
+
+        self.Csi_j[:,ctes.n_phases-1,:] = ksi_W
+        self.Csi_j[:,0,:]  = ksi_L
+        self.Csi_j[:,1,:]  = ksi_V
+
+        self.rho_j[:,ctes.n_phases-1,:] = rho_W
+        self.rho_j[:,0,:]  = rho_L
+        self.rho_j[:,1,:]  = rho_V
+
+    def run(self, P, z, wells, ksi_W, rho_W):
         ponteiro_flash = self.skip_phase_stability_test(P, z)
         #ponteiro_flash = np.ones(len(P), dtype = bool)
         self.use_previous_K(P, z, ponteiro_flash)
         #ponteiro_flash[wells['all_wells']] = True
         #ponteiro_flash[((self.V==0) + (self.L==0))*(P > self.P)] = False
-        self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V = self.run_init(P, z, False, ponteiro_flash)
-        return self.L, self.V, self.x, self.y, ksi_L, ksi_V, rho_L, rho_V
+        self.L, self.V, A, xkj, Csi_j, rho_j = self.run_init(P, z, False, \
+            ponteiro_flash, ksi_W = ksi_W, rho_W = rho_W)
+        #self.organize_outputs(ksi_W, ksi_L, ksi_V, rho_W, rho_L, rho_V)
+        #A = np.zeros_like(self.L)
+        return self.L, self.V, A, xkj, Csi_j, rho_j
+
 
     def check_phase_nc_1(self):
         Pv = self.vapor_pressure_pure_substancies()
@@ -79,14 +110,14 @@ class StabilityCheck:
         self.L[self.P > Pv[self.z==1]] = 1
         self.L[self.P < Pv[self.z==1]] = 0.
 
+
         self.V = 1. - self.L
         self.K = self.y/self.x
         self.K[self.x==0] = 1
 
         lnphil, Zl = self.lnphi_Z_based_on_deltaG(self.x, self.P, self.ph_L)
         lnphiv, Zv = self.lnphi_Z_based_on_deltaG(self.y, self.P, self.ph_V)
-        ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
-        return ksi_L, ksi_V, rho_L, rho_V
+        return Zl, Zv
 
     def use_previous_K(self, P_new, z_new, ponteiro_flash):
         'Reference: Rezaveisi dissertation'
@@ -186,7 +217,7 @@ class StabilityCheck:
 
             i+=1
             if i>100:
-                print('SP1 loop')
+                #print('SP1 loop')
                 ponteiro[ponteiro] = False
         K_sp1 = (self.z/y)[:,ponteiro_stab_check]
 
@@ -212,7 +243,7 @@ class StabilityCheck:
             ponteiro[ponteiro] = ponteiro_aux
             i+=1
             if i>100:
-                print('SP2 loop')
+                #print('SP2 loop')
                 ponteiro[ponteiro] = False
         K_sp2 = (y/self.z)[:,ponteiro_stab_check]
 
@@ -233,9 +264,9 @@ class StabilityCheck:
     """-------------------- Biphasic flash calculations ---------------------"""
 
     def molar_properties(self, ponteiro):
-        ksi_L, ksi_V, rho_L, rho_V = self.molar_properties_Whitson(ponteiro)
+        Zl, Zv = self.molar_properties_Whitson(ponteiro)
         #ksi_L, ksi_V, rho_L, rho_V = self.molar_properties_Yinghui(ponteiro)
-        return ksi_L, ksi_V, rho_L, rho_V
+        return Zl, Zv
 
     def lnphi_Z_based_on_deltaG(self, xkj, P, ph):
         lnphi, Z = self.EOS.lnphi_Z_deltaG(xkj, P, ph)
@@ -243,9 +274,15 @@ class StabilityCheck:
         # test phase ph is lnphi[...,0], the other phase is lnphi[...,1]
         deltaG_molar = np.sum(xkj * (lnphi[...,1] - lnphi[...,0]), axis = 0)
 
+
         dG_neg = deltaG_molar<0
 
-        ph[dG_neg] = 1 - ph[dG_neg]
+        # print(dG_neg.shape)
+        # import pdb; pdb.set_trace()
+        # try:
+        #     ph[dG_neg] = 1 - ph[dG_neg]
+        # except:
+        #     import pdb; pdb.set_trace()
 
         lnphi_out = np.copy(lnphi[...,0])
         lnphi_out[:,dG_neg] = lnphi[:,dG_neg,1]
@@ -506,6 +543,7 @@ class StabilityCheck:
         x[:,ponteiro_inf+ponteiro_nan] = z[:,ponteiro_nan+ponteiro_inf]
         y = K * x
         #self.y[self.y==0] = self.z[self.y==0]
+        #import pdb; pdb.set_trace()
         return V, x, y
 
     def molar_properties_Whitson(self, ponteiro):
@@ -542,13 +580,15 @@ class StabilityCheck:
             fv = np.exp(lnphiv) * (self.y[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
             fl = np.exp(lnphil) * (self.x[:,ponteiro] * self.P[ponteiro][np.newaxis,:])
 
-            fv[(abs(fl)<1e-300) + (abs(fv)<1e-300)] = fl[(abs(fl)<1e-300) + (abs(fv)<1e-300)]
+            fv[(abs(fl)<1e-200) + (abs(fv)<1e-200)] = fl[(abs(fl)<1e-200) + (abs(fv)<1e-200)]
             fv[fv == 0] = 1e-30
+            fl[(fv == 1e-30) + (fl==0)] = 1e-30
             razao[:,ponteiro] = fl/fv
+
             if any(np.isnan(razao).flatten()):
                 if razao.shape[1]<300:
                     print('nan')
-                    import pdb; pdb.set_trace()
+
             razao[np.isnan(razao)] = 1
             razao[np.isinf(razao)] = 1
 
@@ -559,9 +599,8 @@ class StabilityCheck:
             ponteiro_aux[(stop_criteria < 1e-11)] = False
             ponteiro[ponteiro] = ponteiro_aux
             #ponteiro[(abs(self.V)>1e300)] = False
-            if i>200:
+            if i>300:
                 print('Floop')
-                #import pdb; pdb.set_trace()
                 ponteiro[ponteiro] = False
 
         t1 = time.time()
@@ -570,6 +609,7 @@ class StabilityCheck:
         self.z[self.z==1e-30] = 0
         self.x[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
         self.y[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
+        #import pdb; pdb.set_trace()
         self.V[self.V<0] = 0
         self.V[self.V>1] = 1
         self.L = 1 - self.V
@@ -579,9 +619,7 @@ class StabilityCheck:
         ponteiro_1phase[~ponteiro_save] = True
         lnphil, Zl[ponteiro_1phase] = self.lnphi_Z_based_on_deltaG(self.x[:,ponteiro_1phase], self.P[ponteiro_1phase], self.ph_L[ponteiro_1phase])
         lnphiv, Zv[ponteiro_1phase] = self.lnphi_Z_based_on_deltaG(self.y[:,ponteiro_1phase], self.P[ponteiro_1phase], self.ph_V[ponteiro_1phase])
-
-        ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
-        return ksi_L, ksi_V, rho_L, rho_V
+        return Zl, Zv
 
     def get_dlnphidP(self, T, xij, P, ph):
         A, B = self.EOS.coefficients_cubic_EOS_vectorized(xij, P)
@@ -646,7 +684,7 @@ class StabilityCheck:
             ponteiro_aux[stop_criteria <= .5*6894.757] = False
             ponteiro[ponteiro] = ponteiro_aux
 
-        import pdb; pdb.set_trace()
+
         L = self.L[ponteiro_save]
         V = self.V[ponteiro_save]
         L[self.P[ponteiro_save] > Pb[ponteiro_save]] = 1
@@ -669,37 +707,3 @@ class StabilityCheck:
         Mw_phase = np.sum(xkj * ctes.Mw[:,np.newaxis], axis = 0)
         rho_phase = ksi_phase * Mw_phase
         return ksi_phase, rho_phase
-
-    '''def TPD(self, z): #ainda não sei onde usar isso
-        x = np.zeros(self.Nc)
-
-        #**********************Tangent Plane distance plot*********************#
-        t = np.linspace(0.01, 0.99, 0.9 / 0.002) #vetor auxiliar
-        TPD = np.zeros(len(t)) ##F
-
-        for i in range(0, len(t)):
-            aux = 0;
-            lnphiz = self.lnphi(z, 1) #original phase
-
-            #x = np.array([1-t[i],t[i]]) #new phase composition (1-t e t) - apenas válido para Nc=2 acredito eu.
-            for k in range(0, ctes.Nc- 1):
-                x[k] = (1 - t[i]) / (ctes.Nc- 1)
-                x[ctes.Nc- 1] = t[i]
-
-            ''''''O modo que x varia implica no formato de TPD. No presente exemplo,
-            a fração molar do segundo componente de x varia direto com t, que é a
-            variável de plotagem. Logo, a distancia dos planos tangentes será
-            zero em z[Nc-1]. O contrário ocorreria''''''
-            lnphix = self.lnphi(x, 0); #new phase (vapor- ph=2)
-            for j in range(0,self.Nc):
-                fix = math.exp(lnphix[j]) * x[j] * self.P
-                fiz = math.exp(lnphiz[j]) * z[j] * self.P
-                aux = aux + x[j] * ctes.R* self.T * (math.log(fix / fiz))
-                TPD[i] = aux
-
-        plt.figure(0)
-        plt.plot(t, TPD)
-        plt.xlabel('x')
-        plt.ylabel('TPD')
-        plt.show()
-        return TPD'''

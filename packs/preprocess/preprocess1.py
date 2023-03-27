@@ -15,6 +15,7 @@ def set_saturation_regions(M, wells):
         tipo = d0['type']
         value = d0['value']
 
+
         if tipo == direc.types_region_for_saturation[0]:
             tamanho_variavel = len(M.data[M.data.variables_impress['saturation']])
             data = np.repeat(value, tamanho_variavel)
@@ -26,10 +27,8 @@ def set_saturation_regions(M, wells):
             limites = np.array([p0, p1])
             vols = get_box(centroids, limites)
             nv = len(vols)
-            # data[nv0:(nv+nv0)] = np.repeat(value, nv)
-            data[vols] = np.repeat(value, nv)
-            nv0 = nv
-            M.data[M.data.variables_impress['saturation']] = data
+            data[nv0:(nv+nv0)] = np.repeat(value, nv)
+            nv0 += nv
 
         elif tipo == direc.types_region_for_saturation[1]:
             type1 = d0['type1_well']
@@ -59,12 +58,5 @@ def set_saturation_regions(M, wells):
             all_values = np.repeat(value, len(all_wells))
             M.data[M.data.variables_impress['saturation']][all_wells] = all_values
 
-        elif tipo == 'box':
-            p0 = d0['p0']
-            p1 = d0['p1']
-            points = np.array([np.array(p0), np.array(p1)])
-            indices = get_box(centroids, points)
-            M.data[M.data.variables_impress['saturation']][indices] = np.repeat(value, len(indices))
-
-        else:
-            raise NameError("Tipo não suportado, disponíveis: all, box, wells, ")
+    M.data[M.data.variables_impress['saturation']] = data
+    

@@ -1,6 +1,6 @@
 #Buckley Leverett's horizontal case
 mesh_name: 500x1x1_b.msh
-name_save_file: 'results_Buckley_Leverett_case_FR3'
+name_save_file: 'results_Buckley_Leverett_case_FR4'
 
 compositional: True
 hidrocarbon_components: True
@@ -41,20 +41,27 @@ compositional_data:
   CFL: 0.7
 
   solver:
-    IMPSAT: true
+    IMPSAT: false
 
   MUSCL:
     set: false
+    minmod: false
+    VanAlbada1: false
+    VanLeer: false
 
   FR:
-    set: false
-    order: 3
+    set: true
+    order: 4
 
   RiemannSolver:
     ROE: false
-    LLF: false
+    LLF: true
     MDW: false
     DW: false
+
+  time_integration:
+    Euler: false
+    RK3: true
 
   vpis_para_gravar_vtk: [0.20]
   time_to_save: [0.0]

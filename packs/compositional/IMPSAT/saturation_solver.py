@@ -146,9 +146,9 @@ class saturation:
                 krs = np.concatenate((krs,np.zeros((1,1,ctes.n_volumes))), axis=1)
 
             dkrsdSj = PropertiesCalc().relative_permeability_derivative_call(krs[:,:,wp], Sj[:,wp])
-            import pdb; pdb.set_trace()
+
             if not ctes.load_w: dkrsdSj = dkrsdSj[:,:-1,:-1,:]
-            import pdb; pdb.set_trace()
+
             dfrj_new = (1/self.mis[:,:,np.newaxis,wp] * dkrsdSj *
                     np.sum(mobilities_new[...,wp], axis=1)[0] -
                     (mobilities_new[:,:,np.newaxis,wp] *
@@ -282,7 +282,7 @@ class saturation:
         Sj_old = np.copy(Sj_new) * 1e100
         j=0
 
-        while np.max(abs(Sj_new-Sj_old))>1e-5:
+        while np.max(abs(Sj_new-Sj_old))>1e-9:
             j+=1
             Sj_old = np.copy(Sj_new)
             krs_new = self.update_relative_perm(fprop, np.copy(Sj_old))
