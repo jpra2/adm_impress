@@ -207,53 +207,46 @@ class CalculateGlsWeight2D:
             map_faces_adj = np.repeat(-1, faces_adj.max() + 3)
             map_faces_adj[faces_adj] = np.arange(faces_adj.shape[0])
 
-            mfaces = self.mfaces(
-                faces_adj.shape[0],
-                centroids_faces_adj,
-                centroid_node
-            )
-
-            mnodes = self.get_bmnodes(
-                local_internal_nodes.shape[0],
-                faces_adj.shape[0],
-                local_internal_nodes,
-                edges_adj,
-                centroid_node,
-                self.nodes_centroids,
-                map_faces_adj,
-                self.adjacencies,
-                nodes_adj
-            )
-
-            mnormalperm = self.get_bnormalperm(
-                edges_adj.shape[0],
-                faces_adj.shape[0],
-                edges_adj,
-                self.adjacencies,
-                map_faces_adj,
-                self.unitary_normal_edges,
-                self.permeability
-            )
-
-            M = self.get_bM(
+            M = self.bM(
                 faces_adj.shape[0], 
                 local_internal_nodes.shape[0], 
                 edges_adj.shape[0],
-                mfaces,
-                mnodes,
-                mnormalperm
+                self.mfaces(
+                    faces_adj.shape[0],
+                    centroids_faces_adj,
+                    centroid_node
+                ),
+                self.bmnodes(
+                    local_internal_nodes.shape[0],
+                    faces_adj.shape[0],
+                    local_internal_nodes,
+                    edges_adj,
+                    centroid_node,
+                    self.nodes_centroids,
+                    map_faces_adj,
+                    self.adjacencies,
+                    nodes_adj
+                ),
+                self.bnormalperm(
+                    edges_adj.shape[0],
+                    faces_adj.shape[0],
+                    edges_adj,
+                    self.adjacencies,
+                    map_faces_adj,
+                    self.unitary_normal_edges,
+                    self.permeability
+                )
             )
 
-            N = self.get_bN(
+            N = self.bN(
                 faces_adj.shape[0],
                 local_internal_nodes.shape[0], 
                 edges_adj.shape[0]
             )
 
             weights = self.eT(faces_adj.shape[0]).dot(np.linalg.inv(M.T.dot(M)).dot(M.T).dot(N))
-            nw = len(weights)
 
-            nodes_ids.append(np.repeat(node, nw))
+            nodes_ids.append(np.repeat(node, weights.shape[0]))
             faces_ids.append(faces_adj)
             all_weight.append(weights)
         
@@ -263,7 +256,7 @@ class CalculateGlsWeight2D:
 
         return nodes_ids, faces_ids, all_weight
             
-    def get_bmnodes(self, n_nodes, n_faces, internal_nodes_adj, edges_adj, centroid_node, nodes_centroids, map_faces_adj, adjacencies, nodes_adj):
+    def bmnodes(self, n_nodes, n_faces, internal_nodes_adj, edges_adj, centroid_node, nodes_centroids, map_faces_adj, adjacencies, nodes_adj):
         
         if n_nodes == 0:
             return np.array([])
@@ -285,7 +278,7 @@ class CalculateGlsWeight2D:
         
         return mnodes
 
-    def get_bnormalperm(self, n_edges, n_faces, edges_adj, adjacencies, map_faces_adj, unitary_normal_edges, permeability):
+    def bnormalperm(self, n_edges, n_faces, edges_adj, adjacencies, map_faces_adj, unitary_normal_edges, permeability):
         mnormalperm = np.zeros((n_edges, 2*n_faces))
 
         for i, edge in enumerate(edges_adj):
@@ -306,7 +299,7 @@ class CalculateGlsWeight2D:
         
         return mnormalperm
 
-    def get_bM(self, n_faces, n_nodes, n_edges, mfaces, mnodes, mnormalperm):
+    def bM(self, n_faces, n_nodes, n_edges, mfaces, mnodes, mnormalperm):
         M = np.zeros((n_faces+n_nodes+n_edges, 2*n_faces + 1))
         M[0:n_faces,0:2*n_faces] = mfaces
         M[0:n_faces,-1] = 1
@@ -315,7 +308,7 @@ class CalculateGlsWeight2D:
 
         return M
 
-    def get_bN(self, n_faces, n_nodes, n_edges):
+    def bN(self, n_faces, n_nodes, n_edges):
         N = np.zeros((n_faces+n_nodes+n_edges, n_faces))
         vec = np.arange(n_faces)
         N[vec, vec] = 1
