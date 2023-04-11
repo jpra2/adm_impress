@@ -52,7 +52,6 @@ class CalculateGlsWeight2D:
         faces_ids = []
         all_weight = []
 
-        weights = []
         for node in self.nodes[self.bool_internal_nodes]:
             nodes_adj = self.nodes_of_nodes[node]
             edges_adj = self.edges_of_nodes[node]
@@ -188,3 +187,76 @@ class CalculateGlsWeight2D:
     
     def weights(self, eT, M):
         return eT.dot(M)
+    
+    def get_weights_bnodes(self):
+        dtype = [('node_id', int), ('face_id', int), ('weight', float)]
+        
+        nodes_ids = []
+        faces_ids = []
+        all_weight = []
+
+        internal_nodes = self.nodes[self.bool_internal_nodes]
+
+        for node in self.nodes[self.bool_boundary_nodes]:
+            nodes_adj = self.nodes_of_nodes[node]
+            edges_adj = self.edges_of_nodes[node]
+            faces_adj = self.faces_of_nodes[node]
+            local_internal_nodes = np.intersect1d(internal_nodes, nodes_adj)
+            centroid_node = self.nodes_centroids[node]
+            centroids_faces_adj = self.faces_centroids[faces_adj]
+            map_faces_adj = np.repeat(-1, faces_adj.max() + 3)
+            map_faces_adj[faces_adj] = np.arange(faces_adj.shape[0])
+
+            mfaces = self.mfaces(
+                faces_adj.shape[0],
+                centroids_faces_adj,
+                centroid_node
+            )
+
+            mnodes = self.get_bmnodes(
+                local_internal_nodes.shape[0],
+                faces_adj.shape[0],
+                local_internal_nodes,
+                edges_adj,
+                centroid_node,
+                self.nodes_centroids,
+                map_faces_adj,
+                self.adjacencies,
+                nodes_adj
+            )
+
+            mnormalperm = self.get_bnormalperm(
+                edges_adj.shape[0],
+                faces_adj.shape[0]
+            )
+
+            import pdb; pdb.set_trace()
+            
+    def get_bmnodes(self, n_nodes, n_faces, internal_nodes_adj, edges_adj, centroid_node, nodes_centroids, map_faces_adj, adjacencies, nodes_adj):
+        
+        if n_nodes == 0:
+            return np.array([])
+        mnodes = np.zeros((n_nodes, 2*n_faces))
+        for i, node_adj in enumerate(internal_nodes_adj):
+            centroid_node_adj = nodes_centroids[node_adj]
+            node_dist_v = centroid_node_adj - centroid_node
+            edge_corresp = edges_adj[nodes_adj == node_adj][0]
+            faces_of_edge_corresp = adjacencies[edge_corresp]
+            
+            face_r = map_faces_adj[faces_of_edge_corresp[1]]
+            face_l = map_faces_adj[faces_of_edge_corresp[0]]
+            if map_faces_adj[faces_of_edge_corresp[1]] > map_faces_adj[faces_of_edge_corresp[0]]:
+                face_r = map_faces_adj[faces_of_edge_corresp[0]]
+                face_l = map_faces_adj[faces_of_edge_corresp[1]]
+            
+            mnodes[i, 2*face_r:2*face_r+2] = -node_dist_v
+            mnodes[i, 2*face_l:2*face_l+2] = node_dist_v
+        
+        return mnodes
+
+    def get_bnormalperm(self, n_edges, n_faces):
+        mnormalperm = np.zeros((n_edges, 2*n_faces))
+
+
+        import pdb; pdb.set_trace()
+

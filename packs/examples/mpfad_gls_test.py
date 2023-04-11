@@ -79,6 +79,7 @@ weight.insert_name(name=weight_name)
 
 calculate_weight = CalculateGlsWeight2D(**mesh_properties.get_all_data())
 nodes_weights = calculate_weight.get_weights_internal_nodes()
+bnodes_weight = calculate_weight.get_weights_bnodes()
 import pdb; pdb.set_trace()
 ##################################333
 
