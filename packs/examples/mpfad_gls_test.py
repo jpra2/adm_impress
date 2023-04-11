@@ -4,7 +4,7 @@ from packs.manager.mesh_data import MeshData
 import packs.defpaths as defpaths
 import numpy as np
 import pandas as pd
-from packs.mpfa_methods.weight_interpolation.gls_weight_2d import CalculateGlsWeight2D
+from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 from packs.manager.generic_data import VerticesWeight
 from packs.utils import calculate_face_properties
 
@@ -41,7 +41,7 @@ weight_name = 'weights_gls_test'
 # import pdb; pdb.set_trace()
 #################################################
 
-###################################################
+# ##################################################
 # mesh_properties = load_mesh_properties(mesh_name)
 
 # norma, unitary_normal_edges = calculate_face_properties.create_unitary_normal_edges_xy_plane(
@@ -58,7 +58,7 @@ weight_name = 'weights_gls_test'
 
 # mesh_properties.export_data()
 # import pdb; pdb.set_trace()
-######################################
+# #####################################
 
 ########################################
 # mesh_properties = load_mesh_properties(mesh_name)
@@ -77,11 +77,10 @@ mesh_properties = load_mesh_properties(mesh_name)
 weight = VerticesWeight()
 weight.insert_name(name=weight_name)
 
-calculate_weight = CalculateGlsWeight2D(**mesh_properties.get_all_data())
-nodes_weights = calculate_weight.get_weights_internal_nodes()
-bnodes_weight = calculate_weight.get_weights_bnodes()
+nodes_weights = get_gls_nodes_weights(**mesh_properties.get_all_data())
+
 import pdb; pdb.set_trace()
-##################################333
+##########################################
 
 
 print(mesh_properties)

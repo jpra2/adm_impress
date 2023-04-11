@@ -11,6 +11,8 @@ class CalculateGlsWeight2D:
             
             doi: 10.1002/fld.5031
 
+            tese de tulio: nos no contorno
+
         @param kwargs: dict with the keys:
             adjacencies: faces adjacencies of edges,
             faces: global ids of faces,
@@ -27,6 +29,7 @@ class CalculateGlsWeight2D:
             permeability: mesh permeability
             unitary_normal_edges: unitary normal vector of edges
         """
+        # TODO ainda falta implementar os pesos para a condicao de fluxo prescrito
 
         self.adjacencies = kwargs.get('adjacencies')
         self.faces = kwargs.get('faces')
@@ -45,8 +48,6 @@ class CalculateGlsWeight2D:
         self.unitary_normal_edges = kwargs.get('unitary_normal_edges')
 
     def get_weights_internal_nodes(self):
-        
-        dtype = [('node_id', int), ('face_id', int), ('weight', float)]
         
         nodes_ids = []
         faces_ids = []
@@ -189,7 +190,6 @@ class CalculateGlsWeight2D:
         return eT.dot(M)
     
     def get_weights_bnodes(self):
-        dtype = [('node_id', int), ('face_id', int), ('weight', float)]
         
         nodes_ids = []
         faces_ids = []
@@ -227,10 +227,41 @@ class CalculateGlsWeight2D:
 
             mnormalperm = self.get_bnormalperm(
                 edges_adj.shape[0],
-                faces_adj.shape[0]
+                faces_adj.shape[0],
+                edges_adj,
+                self.adjacencies,
+                map_faces_adj,
+                self.unitary_normal_edges,
+                self.permeability
             )
 
-            import pdb; pdb.set_trace()
+            M = self.get_bM(
+                faces_adj.shape[0], 
+                local_internal_nodes.shape[0], 
+                edges_adj.shape[0],
+                mfaces,
+                mnodes,
+                mnormalperm
+            )
+
+            N = self.get_bN(
+                faces_adj.shape[0],
+                local_internal_nodes.shape[0], 
+                edges_adj.shape[0]
+            )
+
+            weights = self.eT(faces_adj.shape[0]).dot(np.linalg.inv(M.T.dot(M)).dot(M.T).dot(N))
+            nw = len(weights)
+
+            nodes_ids.append(np.repeat(node, nw))
+            faces_ids.append(faces_adj)
+            all_weight.append(weights)
+        
+        nodes_ids = np.concatenate(nodes_ids)
+        faces_ids = np.concatenate(faces_ids)
+        all_weight = np.concatenate(all_weight)
+
+        return nodes_ids, faces_ids, all_weight
             
     def get_bmnodes(self, n_nodes, n_faces, internal_nodes_adj, edges_adj, centroid_node, nodes_centroids, map_faces_adj, adjacencies, nodes_adj):
         
@@ -245,18 +276,98 @@ class CalculateGlsWeight2D:
             
             face_r = map_faces_adj[faces_of_edge_corresp[1]]
             face_l = map_faces_adj[faces_of_edge_corresp[0]]
-            if map_faces_adj[faces_of_edge_corresp[1]] > map_faces_adj[faces_of_edge_corresp[0]]:
-                face_r = map_faces_adj[faces_of_edge_corresp[0]]
-                face_l = map_faces_adj[faces_of_edge_corresp[1]]
+            # if map_faces_adj[faces_of_edge_corresp[1]] > map_faces_adj[faces_of_edge_corresp[0]]:
+            #     face_r = map_faces_adj[faces_of_edge_corresp[0]]
+            #     face_l = map_faces_adj[faces_of_edge_corresp[1]]
             
             mnodes[i, 2*face_r:2*face_r+2] = -node_dist_v
             mnodes[i, 2*face_l:2*face_l+2] = node_dist_v
         
         return mnodes
 
-    def get_bnormalperm(self, n_edges, n_faces):
+    def get_bnormalperm(self, n_edges, n_faces, edges_adj, adjacencies, map_faces_adj, unitary_normal_edges, permeability):
         mnormalperm = np.zeros((n_edges, 2*n_faces))
 
+        for i, edge in enumerate(edges_adj):
+            faces_edge = adjacencies[edge]
+            unitary_normal_edge = unitary_normal_edges[edge]
+            id_local_faces_edge = map_faces_adj[faces_edge]
 
-        import pdb; pdb.set_trace()
+            value_l = np.dot(unitary_normal_edge, permeability[faces_edge[0]])
+
+            mnormalperm[i, 2*id_local_faces_edge[0]:2*id_local_faces_edge[0]+2] = value_l
+
+            if faces_edge[1] == -1:
+                continue
+
+            value_r = np.dot(unitary_normal_edge, permeability[faces_edge[1]])
+            mnormalperm[i, 2*id_local_faces_edge[1]:2*id_local_faces_edge[1]+2] = -value_r
+
+        
+        return mnormalperm
+
+    def get_bM(self, n_faces, n_nodes, n_edges, mfaces, mnodes, mnormalperm):
+        M = np.zeros((n_faces+n_nodes+n_edges, 2*n_faces + 1))
+        M[0:n_faces,0:2*n_faces] = mfaces
+        M[0:n_faces,-1] = 1
+        M[n_faces:n_faces+n_nodes, 0:2*n_faces] = mnodes
+        M[n_faces+n_nodes:n_faces+n_nodes+n_edges, 0:2*n_faces] = mnormalperm
+
+        return M
+
+    def get_bN(self, n_faces, n_nodes, n_edges):
+        N = np.zeros((n_faces+n_nodes+n_edges, n_faces))
+        vec = np.arange(n_faces)
+        N[vec, vec] = 1
+
+        return N
+
+    def get_nodes_weights(self):
+
+        dtype = [('node_id', int), ('face_id', int), ('weight', float)]
+
+        nodes_ids, faces_ids, weights = self.get_weights_internal_nodes()
+        nodes_ids2, faces_ids2, weights2 = self.get_weights_bnodes()
+
+        nodes_ids = np.concatenate([nodes_ids, nodes_ids2])
+        faces_ids = np.concatenate([faces_ids, faces_ids2])
+        weights = np.concatenate([weights, weights2])
+
+        nodes_weights = np.zeros(len(nodes_ids), dtype=dtype)
+        nodes_weights['node_id'] = nodes_ids
+        nodes_weights['face_id'] = faces_ids
+        nodes_weights['weight'] = weights
+
+        return nodes_weights
+
+
+def get_gls_nodes_weights(**kwargs):
+
+    """
+        @param kwargs: dict with the keys:
+            adjacencies: faces adjacencies of edges,
+            faces: global ids of faces,
+            nodes_of_nodes: nodes adjacencies of nodes
+            edges_of_nodes: edges adjacencies of nodes
+            nodes_of_edges: nodes adjacencies of edges
+            faces_of_nodes: faces adjacencies of nodes
+            nodes_centroids: centroids of mesh nodes,
+            edges: global ids of mesh edges,
+            bool_boundary_edges: bool vector of len(edges) with true in boundary edges,
+            bool_boundary_nodes: bool vector of len(nodes) with true in boundary nodes
+            nodes: global id of mesh nodes
+            faces_centroids: centroids of faces
+            permeability: mesh permeability
+            unitary_normal_edges: unitary normal vector of edges
+    """
+
+    calculate_weights = CalculateGlsWeight2D(**kwargs)
+    nodes_weights = calculate_weights.get_nodes_weights()
+
+    return nodes_weights
+
+
+
+
+
 
