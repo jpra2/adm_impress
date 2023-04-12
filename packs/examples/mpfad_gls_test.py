@@ -77,7 +77,12 @@ mesh_properties = load_mesh_properties(mesh_name)
 weight = VerticesWeight()
 weight.insert_name(name=weight_name)
 
-nodes_weights = get_gls_nodes_weights(**mesh_properties.get_all_data())
+data = mesh_properties.get_all_data()
+data.update({
+    'nodes_to_calculate': data['nodes']
+})
+
+nodes_weights = get_gls_nodes_weights(**data)
 
 import pdb; pdb.set_trace()
 ##########################################
