@@ -2,6 +2,15 @@ from packs.manager.arraydatamanager import SuperArrayManager
 import numpy as np
 
 class CalculateGlsWeight2D:
+    """ Calulate vertices weights from gls method
+
+    paper: A least squares based diamond scheme for anisotropic
+            diffusion problems on polygonal meshes
+            
+            doi: 10.1002/fld.5031
+
+            tese de tulio: vertice no contorno
+    """
 
     def get_weights_internal_nodes(
             self, 
@@ -15,6 +24,7 @@ class CalculateGlsWeight2D:
             adjacencies,
             unitary_normal_edges,
             permeability,
+            nodes_to_calculate,
             **kwargs
         ):
         
@@ -22,8 +32,9 @@ class CalculateGlsWeight2D:
         faces_ids = []
         all_weight = []
         bool_internal_nodes = ~bool_boundary_nodes
+        nodes_to_iterate = np.intersect1d(nodes[bool_internal_nodes], nodes_to_calculate)
 
-        for node in nodes[bool_internal_nodes]:
+        for node in nodes_to_iterate:
             nodes_adj = nodes_of_nodes[node]
             edges_adj = edges_of_nodes[node]
             centroid_node = nodes_centroids[node]
@@ -43,7 +54,6 @@ class CalculateGlsWeight2D:
                 self.Nv(n)
             )
 
-            
             weights = self.eT(n).dot(M)
 
             nodes_ids.append(np.repeat(node, n))
@@ -165,6 +175,7 @@ class CalculateGlsWeight2D:
             adjacencies,
             unitary_normal_edges,
             permeability,
+            nodes_to_calculate,
             **kwargs
         ):
         
@@ -174,8 +185,9 @@ class CalculateGlsWeight2D:
 
         bool_internal_nodes = ~bool_boundary_nodes
         internal_nodes = nodes[bool_internal_nodes]
+        nodes_to_iterate = np.intersect1d(nodes[bool_boundary_nodes], nodes_to_calculate)
 
-        for node in nodes[bool_boundary_nodes]:
+        for node in nodes_to_iterate:
             nodes_adj = nodes_of_nodes[node]
             edges_adj = edges_of_nodes[node]
             faces_adj = faces_of_nodes[node]
@@ -292,6 +304,33 @@ class CalculateGlsWeight2D:
 
     def get_nodes_weights(self, **kwargs):
 
+        """
+            paper: A least squares based diamond scheme for anisotropic
+                diffusion problems on polygonal meshes
+                
+                doi: 10.1002/fld.5031
+
+                tese de tulio: vertice no contorno
+
+            @param kwargs: dict with the keys:
+                adjacencies: faces adjacencies of edges,
+                faces: global ids of faces,
+                nodes_of_nodes: nodes adjacencies of nodes
+                edges_of_nodes: edges adjacencies of nodes
+                nodes_of_edges: nodes adjacencies of edges
+                faces_of_nodes: faces adjacencies of nodes
+                nodes_centroids: centroids of mesh nodes,
+                edges: global ids of mesh edges,
+                bool_boundary_edges: bool vector of len(edges) with true in boundary edges,
+                bool_boundary_nodes: bool vector of len(nodes) with true in boundary nodes
+                nodes: global id of mesh nodes
+                faces_centroids: centroids of faces
+                permeability: mesh permeability
+                unitary_normal_edges: unitary normal vector of edges. this vector point 
+                                      to outward of left face from adjacencies vector
+                nodes_to_calculate: nodes for weight calculation
+        """
+
         dtype = [('node_id', int), ('face_id', int), ('weight', float)]
 
         nodes_ids, faces_ids, weights = self.get_weights_internal_nodes(**kwargs)
@@ -334,6 +373,7 @@ def get_gls_nodes_weights(**kwargs):
             faces_centroids: centroids of faces
             permeability: mesh permeability
             unitary_normal_edges: unitary normal vector of edges. this vector point to outward of left face from adjacencies vector 
+            nodes_to_calculate: nodes for weight calculation
     """
 
     calculate_weights = CalculateGlsWeight2D()
