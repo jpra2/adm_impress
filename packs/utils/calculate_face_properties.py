@@ -36,7 +36,7 @@ def sort_radial_sweep(vs, indices):
     returns the vertex indices in order around that poly.
     """
     # indices = np.arange(len(vs))
-    assert len(vs) >= 3
+    assert len(vs) >= 2
     
     # Centroid of verts
     # cent = Vector()
@@ -275,6 +275,7 @@ def ordenate_edges_and_nodes_of_nodes_xy_plane(nodes, edges, nodes_adj_by_nodes,
         edges_adj = edges_adj_by_nodes[node]
         
         centroids_nodes_adj = nodes_centroids[nodes_adj]
+        # import pdb; pdb.set_trace()
         index_sorted = sort_radial_sweep(centroids_nodes_adj, np.arange(len(centroids_nodes_adj)))
         
         nodes_adj[:] = nodes_adj[index_sorted]

@@ -14,14 +14,13 @@ class createMesh:
         self.mesh_data['block_size'] = np.array(self.mesh_data['block_size'])
         self.mesh_data['mesh_size'] = np.array(self.mesh_data['block_size'])*np.array(self.mesh_data['block_number'])
         self.mesh_data['starting_point'] = np.array(self.mesh_data['starting_point'])
-        self.init_params()
 
         self.mb = core.Core()
         self.root_set = self.mb.get_root_set()
         self.mtu = topo_util.MeshTopoUtil(self.mb)
 
     def init_params(self):
-        starting_point = self.mesh_data['starting_point']
+        
         block_size = self.mesh_data['block_size']
         mesh_size = self.mesh_data['mesh_size']
 
@@ -52,16 +51,17 @@ class createMesh:
         self.verts = self.mb.create_vertices(coords.flatten())
 
     def _create_hexa(self, i, j, k):
-        hexa = [self.verts[(i)+(j*(self.params['nblocks'][0]+1))+(k*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1)))],  # (i, j, k)
-                self.verts[(i+1)+(j*(self.params['nblocks'][0]+1))+(k*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1)))],  # (i+1, j, k)
-                self.verts[(i+1)+(j+1)*(self.params['nblocks'][0])+(j+1)+(k*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1)))],  # (i+1, j+1, k)
-                self.verts[(i)+(j+1)*(self.params['nblocks'][0])+(j+1)+(k*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1)))],  # (i, j+1, k)
+    
+        hexa = [self.verts[int((i)+(j*(self.params['nblocks'][0]+1))+(k*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1))))],  # (i, j, k)
+                self.verts[int((i+1)+(j*(self.params['nblocks'][0]+1))+(k*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1))))],  # (i+1, j, k)
+                self.verts[int((i+1)+(j+1)*(self.params['nblocks'][0])+(j+1)+(k*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1))))],  # (i+1, j+1, k)
+                self.verts[int((i)+(j+1)*(self.params['nblocks'][0])+(j+1)+(k*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1))))],  # (i, j+1, k)
 
-                self.verts[(i)+(j*(self.params['nblocks'][0]+1))+((k+1)*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1)))],  # (i, j, k+1)
-                self.verts[(i+1)+(j*(self.params['nblocks'][0]+1))+((k+1)*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1)))],  # (i+1, j, k+1)
-                self.verts[(i+1)+(j+1)*(self.params['nblocks'][0])+(j+1)+((k+1)*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1)))],  # (i+1, j+1, k+1)
-                self.verts[(i)+(j+1)*(self.params['nblocks'][0])+(j+1)+((k+1)*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1)))]]  # (i, j+1, k+1)
-
+                self.verts[int((i)+(j*(self.params['nblocks'][0]+1))+((k+1)*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1))))],  # (i, j, k+1)
+                self.verts[int((i+1)+(j*(self.params['nblocks'][0]+1))+((k+1)*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1))))],  # (i+1, j, k+1)
+                self.verts[int((i+1)+(j+1)*(self.params['nblocks'][0])+(j+1)+((k+1)*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1))))],  # (i+1, j+1, k+1)
+                self.verts[int((i)+(j+1)*(self.params['nblocks'][0])+(j+1)+((k+1)*((self.params['nblocks'][0]+1)*(self.params['nblocks'][1]+1))))]]  # (i, j+1, k+1)
+        
         return hexa
 
     def create_elements(self):
