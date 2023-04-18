@@ -372,7 +372,7 @@ def get_gls_nodes_weights(**kwargs):
         @param kwargs: dict with the keys:
             adjacencies: faces adjacencies of edges,
             faces: global ids of faces,
-            nodes_of_nodes: nodes adjacencies of nodes
+            nodes_of_nodes: nodes adjacencies of nodes by edges
             edges_of_nodes: edges adjacencies of nodes
             nodes_of_edges: nodes adjacencies of edges
             faces_of_nodes: faces adjacencies of nodes
