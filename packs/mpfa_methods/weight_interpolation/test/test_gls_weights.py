@@ -80,7 +80,8 @@ def linear_verify(weights_matrix, mesh_properties):
     nodes_linear_solution_interpolated = np.dot(weights_matrix, linear_faces_solution)
     nodes_linear_solution = linear_function(mesh_properties.nodes_centroids[:, 0])
     erro = np.absolute(nodes_linear_solution - nodes_linear_solution_interpolated) > tolerance
-    # TODO terminar
+    erro = erro[~mesh_properties.bool_boundary_nodes]
+    assert erro.sum() == 0
 
 def quadratic_function(x):
     return np.power(x, 2)
@@ -91,7 +92,6 @@ def quadratic_verify(weights_matrix, mesh_properties):
     nodes_q_solution_interpolated = np.dot(weights_matrix, q_faces_solution)
     nodes_q_solution = quadratic_function(mesh_properties.nodes_centroids[:, 0])
     erro = np.absolute(nodes_q_solution - nodes_q_solution_interpolated) > tolerance
-    import pdb; pdb.set_trace()
     # TODO terminar
 
 
