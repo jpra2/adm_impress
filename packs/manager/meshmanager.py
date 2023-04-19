@@ -160,12 +160,12 @@ class MeshProperty:
         if self.exists():
             pass
         else:
-            raise FileNotFoundError
+            raise FileExistsError
         manager = ArrayDataManager(self.class_path)
         self.insert_data(manager.get_data_from_load())
 
     def get_all_data(self):
-        return copy.deepcopy(self.__dict__)
+        return self.__dict__
 
     def rename_data(self, datas_to_rename: dict):
         """ Update the data name

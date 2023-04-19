@@ -9,7 +9,7 @@ def mount_S_alpha_sigma(mesh_properties: MeshProperty):
 
     lsds_flux = LsdsFluxCalculation()
 
-    lsds_flux.S_alpha_sigma(**mesh_properties.get_all_data())
+    lsds_flux.get_Skl(**mesh_properties.get_all_data())
 
     pass
 

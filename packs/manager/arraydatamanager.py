@@ -94,7 +94,7 @@ class SuperArrayManager:
         if self.exists():
             pass
         else:
-            raise FileNotFoundError
+            raise FileExistsError
         
         manager = ArrayDataManager(self.class_path)
         self.insert_data(manager.get_data_from_load())
