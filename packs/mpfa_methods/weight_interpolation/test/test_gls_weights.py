@@ -75,12 +75,20 @@ def linear_function(x):
     return x
 
 def linear_verify(weights_matrix, mesh_properties):
-    tolerance = 0.000001
+    tolerance = 1e-12
     linear_faces_solution = linear_function(mesh_properties.faces_centroids[:, 0])
     nodes_linear_solution_interpolated = np.dot(weights_matrix, linear_faces_solution)
+    x_min_faces = mesh_properties.faces_centroids[:,0].min()
+    nodes_x_min = mesh_properties.nodes[mesh_properties.nodes_centroids[:,0] < x_min_faces]
+    result_nodes_x_min = linear_function(mesh_properties.nodes_centroids[:,0][nodes_x_min])
+    nodes_linear_solution_interpolated[nodes_x_min] = result_nodes_x_min
+    x_max_faces = mesh_properties.faces_centroids[:,0].max()
+    nodes_x_max = mesh_properties.nodes[mesh_properties.nodes_centroids[:,0] > x_max_faces]
+    result_nodes_x_max = linear_function(mesh_properties.nodes_centroids[:,0][nodes_x_max])
+    nodes_linear_solution_interpolated[nodes_x_max] = result_nodes_x_max
     nodes_linear_solution = linear_function(mesh_properties.nodes_centroids[:, 0])
     erro = np.absolute(nodes_linear_solution - nodes_linear_solution_interpolated) > tolerance
-    erro = erro[~mesh_properties.bool_boundary_nodes]
+    
     assert erro.sum() == 0
 
 def quadratic_function(x):
@@ -116,14 +124,3 @@ def test_weights():
     constant_verify(weights_matrix, mesh_properties)
     linear_verify(weights_matrix, mesh_properties)
     quadratic_verify(weights_matrix, mesh_properties)
-    
-    
-
-
-
-
-
-
-
-
-    import pdb; pdb.set_trace()
