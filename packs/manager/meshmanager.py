@@ -107,7 +107,7 @@ class MeshInit:
 class MeshProperty:
     
     def insert_mesh_name(self, name=''):
-        self.__dict__['mesh_name'] = name
+        self.__dict__['mesh_name'] = np.array([name])
         
     
     def insert_data(self, data: dict):
@@ -146,7 +146,10 @@ class MeshProperty:
     
     @property
     def class_path(self):
-        return os.path.join(defpaths.flying, 'mesh_property_' + self.mesh_name[0] + '.npz')
+        try:
+            return os.path.join(defpaths.flying, 'mesh_property_' + self.mesh_name[0] + '.npz')
+        except:
+            import pdb; pdb.set_trace()
     
     def export_data(self):
         manager = ArrayDataManager(self.class_path)
@@ -154,6 +157,10 @@ class MeshProperty:
         manager.export()
 
     def load_data(self):
+        if self.exists():
+            pass
+        else:
+            raise FileNotFoundError
         manager = ArrayDataManager(self.class_path)
         self.insert_data(manager.get_data_from_load())
 
@@ -191,7 +198,11 @@ class MeshProperty:
         
         self.insert_data(new_data)
         
-        
+    def exists(self):
+        return os.path.exists(self.class_path)
+    
+    def keys(self):
+        return self.__dict__.keys()
             
             
 
@@ -472,7 +483,7 @@ def create_initial_mesh_properties(mesh_path, mesh_name):
 
 def load_mesh_properties(mesh_name):
     mesh_properties = MeshProperty()
-    mesh_properties.insert_mesh_name([mesh_name])
+    mesh_properties.insert_mesh_name(mesh_name)
     mesh_properties.load_data()
     return mesh_properties
 

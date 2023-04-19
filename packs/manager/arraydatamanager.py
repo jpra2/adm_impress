@@ -91,6 +91,11 @@ class SuperArrayManager:
         manager.export()
 
     def load_data(self):
+        if self.exists():
+            pass
+        else:
+            raise FileNotFoundError
+        
         manager = ArrayDataManager(self.class_path)
         self.insert_data(manager.get_data_from_load())
 
@@ -130,3 +135,9 @@ class SuperArrayManager:
             del self.__dict__[name]
         
         self.insert_data(new_data)
+    
+    def exists(self):
+        return os.path.exists(self.class_path)
+    
+    def keys(self):
+        return self.__dict__.keys()

@@ -44,7 +44,8 @@ def create_properties(mesh_name, mesh_properties_name):
     )
 
     mesh_properties.insert_data({
-        'unitary_normal_edges': unitary_normal_edges
+        'unitary_normal_edges': unitary_normal_edges,
+        'edges_dim': norma
     })
 
     permeability = np.zeros((len(mesh_properties.faces), 2, 2))
@@ -58,10 +59,18 @@ def mount_weight_matrix(nodes_weights):
     n_nodes = nodes_weights['node_id'].max() + 1
     mweight = np.zeros((n_nodes, n_faces))
 
+    lines = np.array([], dtype=int)
+    cols = lines.copy()
+    data = np.array([], dtype=np.float64)
+
     for node in np.unique(nodes_weights['node_id']):
         faces = nodes_weights['face_id'][nodes_weights['node_id'] == node]
         weights = nodes_weights['weight'][nodes_weights['node_id'] == node]
-        mweight[node, faces] = weights
+        lines = np.append(lines, np.repeat(node, faces.shape[0]))
+        cols = np.append(cols, faces)
+        data = np.append(data, weights)
+    
+    mweight[lines, cols] = data
     
     return mweight
 
@@ -102,23 +111,28 @@ def quadratic_verify(weights_matrix, mesh_properties):
     erro = np.absolute(nodes_q_solution - nodes_q_solution_interpolated) > tolerance
     # TODO terminar
 
-
+def create_properties_if_not_exists(mesh_name, mesh_properties_name):
+    mesh_properties = MeshProperty()
+    mesh_properties.insert_mesh_name(mesh_properties_name)
+    if mesh_properties.exists():
+        mesh_properties.load_data()
+        return mesh_properties
+    else:
+        create_properties(mesh_name, mesh_properties_name)
+        return load_mesh_properties(mesh_properties_name)
     
-
 def test_weights():
     ## verify if exists the mesh test
-    mesh_test_name_export = '2d_unstructured.msh'
-    mesh_properties_name = 'gls_test_weights'
-    mesh_verify(mesh_test_name_export)
-    create_properties(mesh_test_name_export, mesh_properties_name)
-    mesh_properties: MeshProperty = load_mesh_properties(mesh_properties_name)
+    mesh_test_name = defpaths.mpfad_test_mesh
+    mesh_properties_name = defpaths.mpfad_mesh_properties_name
+    mesh_verify(mesh_test_name)
+    mesh_properties = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
     data = mesh_properties.get_all_data()
     data.update({
         'nodes_to_calculate': data['nodes']
     })
 
     nodes_weights = get_gls_nodes_weights(**data)
-
     weights_matrix = mount_weight_matrix(nodes_weights)
 
     constant_verify(weights_matrix, mesh_properties)
