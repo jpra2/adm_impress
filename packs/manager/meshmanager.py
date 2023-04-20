@@ -203,6 +203,11 @@ class MeshProperty:
     
     def keys(self):
         return self.__dict__.keys()
+    
+    def remove_datas(self, names):
+        for name in names:
+            del self.__dict__[name]
+
             
             
 
@@ -263,11 +268,11 @@ class CreateMeshProperties(MeshInit):
         nodes_of_faces = np.array(nodes_of_faces)
         faces_of_volumes = np.array(faces_of_volumes)
         nodes_of_volumes = np.array(nodes_of_volumes)
-        volumes_adj_by_nodes = np.array(volumes_adj_by_nodes)
+        volumes_adj_by_nodes = np.array(volumes_adj_by_nodes, dtype='O')
         
-        bool_internal_faces = test
+        bool_boundary_faces = test
 
-        return bool_internal_faces, volumes_adj_by_faces, nodes_of_faces, faces_of_volumes, nodes_of_volumes, volumes_adj_by_nodes
+        return bool_boundary_faces, volumes_adj_by_faces, nodes_of_faces, faces_of_volumes, nodes_of_volumes, volumes_adj_by_nodes
     
     def _init_2d_properties(self, faces, edges, nodes, nodes_centroids):
         n_edges = len(edges)
@@ -382,7 +387,7 @@ class CreateMeshProperties(MeshInit):
         faces = np.arange(len(self.all_faces), dtype=int)
         edges = np.arange(len(self.all_edges), dtype=int)
         nodes = np.arange(len(self.all_nodes), dtype=int)
-        bool_internal_faces, volumes_adj_by_faces, nodes_of_faces, faces_of_volumes, nodes_of_volumes, volumes_adj_by_nodes =  self._init_3d_properties(faces, volumes, nodes)
+        bool_boundary_faces, volumes_adj_by_faces, nodes_of_faces, faces_of_volumes, nodes_of_volumes, volumes_adj_by_nodes =  self._init_3d_properties(faces, volumes, nodes)
 
         nodes_centroids = np.array([self.mb.get_coords(node) for node in self.all_nodes])
 
@@ -394,7 +399,7 @@ class CreateMeshProperties(MeshInit):
         self.data['faces'] = faces
         self.data['edges'] = edges
         self.data['nodes'] = nodes
-        self.data['bool_internal_faces'] = bool_internal_faces
+        self.data['bool_boundary_faces'] = bool_boundary_faces
         self.data['volumes_adj_by_faces'] = volumes_adj_by_faces
         self.data['volumes_adj_by_nodes'] = volumes_adj_by_nodes
         self.data['nodes_of_faces'] = nodes_of_faces
@@ -485,6 +490,13 @@ def load_mesh_properties(mesh_name):
     mesh_properties = MeshProperty()
     mesh_properties.insert_mesh_name(mesh_name)
     mesh_properties.load_data()
+    return mesh_properties
+
+
+def create_initial_3D_mesh_prperties(mesh_path, mesh_name):
+    mesh_create = CreateMeshProperties()
+    mesh_create.initialize(mesh_path=mesh_path, mesh_name=mesh_name)
+    mesh_properties: MeshProperty = mesh_create.create_3d_mesh_data()
     return mesh_properties
 
 
