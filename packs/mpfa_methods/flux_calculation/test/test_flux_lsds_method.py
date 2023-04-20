@@ -5,13 +5,24 @@ from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 
 
 
-def mount_S_alpha_sigma(mesh_properties: MeshProperty):
+def Skl_func(mesh_properties: MeshProperty):
 
     lsds_flux = LsdsFluxCalculation()
 
-    lsds_flux.get_Skl(**mesh_properties.get_all_data())
+    Skl = lsds_flux.get_Skl(**mesh_properties.get_all_data())
 
-    pass
+def x_and_y_k_sigma_func(mesh_properties: MeshProperty):
+    lsds = LsdsFluxCalculation()
+    x_and_y_k_sigma = lsds.get_x_and_y_k_sigma(**mesh_properties.get_all_data())
+
+def Q_and_R_func(mesh_properties: MeshProperty):
+    lsds = LsdsFluxCalculation()
+    Q_and_R = lsds.get_Q_and_R(**mesh_properties.get_all_data())
+
+
+
+
+
 
 def test_lsds_flux():
     mesh_properties_name = defpaths.mpfad_mesh_properties_name
@@ -19,9 +30,10 @@ def test_lsds_flux():
     mesh_verify(mesh_name)
     mesh_properties = create_properties_if_not_exists(mesh_name, mesh_properties_name)
 
+    Skl_func(mesh_properties)
+    x_and_y_k_sigma_func(mesh_properties)
+    Q_and_R_func(mesh_properties)
 
-
-    mount_S_alpha_sigma(mesh_properties)
 
 
 
