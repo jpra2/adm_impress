@@ -15,13 +15,9 @@ def x_and_y_k_sigma_func(mesh_properties: MeshProperty):
     lsds = LsdsFluxCalculation()
     x_and_y_k_sigma = lsds.get_x_and_y_k_sigma(**mesh_properties.get_all_data())
 
-def Q_and_R_func(mesh_properties: MeshProperty):
+def D_and_mi_func(mesh_properties: MeshProperty):
     lsds = LsdsFluxCalculation()
-    Q_and_R = lsds.get_Q_and_R(**mesh_properties.get_all_data())
-
-
-
-
+    D_and_mi = lsds.get_D_and_mi(**mesh_properties.get_all_data())
 
 
 def test_lsds_flux():
@@ -32,15 +28,5 @@ def test_lsds_flux():
 
     Skl_func(mesh_properties)
     x_and_y_k_sigma_func(mesh_properties)
-    Q_and_R_func(mesh_properties)
+    D_and_mi_func(mesh_properties)
 
-
-
-
-
-
-
-
-
-
-    pass

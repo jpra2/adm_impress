@@ -101,7 +101,7 @@ class LsdsFluxCalculation:
         
         return x_and_y_k_sigma
 
-    def get_Q_and_R(
+    def get_D_and_mi(
             self,
             adjacencies,
             nodes_centroids,
@@ -126,12 +126,18 @@ class LsdsFluxCalculation:
         Qyy = np.power(y, 2).sum(axis=1)
         Qxy = np.diag(np.dot(x, y.T))
 
-        import pdb; pdb.set_trace()
+        D = 4*(Qxx*Qyy - np.power(Qxy, 2)) + Rx*(Qxy*Ry - Qyy*Rx) + Ry*(Qxy*Rx - Qxx*Ry)
+        mi_xx = 4*Qxx - np.power(Rx, 2)
+        mi_xy = Rx*Ry - 4*Qxy
+        mi_yy = 4*Qyy - np.power(Ry, 2)
+        mi_x = Qxy*Rx - Qxx*Ry
+        mi_y = Qxy*Ry - Qyy*Rx 
 
         return {
-            'Rx': Rx,
-            'Ry': Ry,
-            'Qxx': Qxx,
-            'Qyy': Qyy,
-            'Qxy': Qxy
+            'D': D,
+            'mi_xx': mi_xx,
+            'mi_xy': mi_xy,
+            'mi_yy': mi_yy,
+            'mi_x': mi_x,
+            'mi_y': mi_y
         }
