@@ -133,11 +133,50 @@ class LsdsFluxCalculation:
         mi_x = Qxy*Rx - Qxx*Ry
         mi_y = Qxy*Ry - Qyy*Rx 
 
-        return {
+        result = {
             'D': D,
             'mi_xx': mi_xx,
             'mi_xy': mi_xy,
             'mi_yy': mi_yy,
             'mi_x': mi_x,
-            'mi_y': mi_y
+            'mi_y': mi_y,
+            'xk': xk,
+            'yk': yk,
+            'xA': xA,
+            'yA': yA,
+            'xB': xB,
+            'yB': yB
         }
+
+        resp = np.vstack([x for x in list(result.values())]).T
+        dtype = [(x, np.float64) for x in list(result.keys())]
+        # import pdb; pdb.set_trace()
+
+        # resp = np.array(tuple(x) for x in resp, dtype=dtype)
+
+
+        import pdb; pdb.set_trace()
+
+        
+
+        return result
+    
+    def get_epsilon_alpha(
+            self,
+            adjacencies,
+            nodes_centroids,
+            faces_centroids,
+            nodes_of_edges,
+            edges,
+            **kwargs
+    ):
+        
+        D_and_mi = self.get_D_and_mi(
+            adjacencies,
+            nodes_centroids,
+            faces_centroids,
+            nodes_of_edges,
+            edges,
+        )
+
+
