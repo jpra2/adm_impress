@@ -139,13 +139,7 @@ class LsdsFluxCalculation:
             'mi_xy': mi_xy,
             'mi_yy': mi_yy,
             'mi_x': mi_x,
-            'mi_y': mi_y,
-            'xk': xk,
-            'yk': yk,
-            'xA': xA,
-            'yA': yA,
-            'xB': xB,
-            'yB': yB
+            'mi_y': mi_y
         }
 
         dtype = [(x, np.float64) for x in list(result.keys())]
@@ -153,10 +147,20 @@ class LsdsFluxCalculation:
         resp = np.zeros(len(result['D']), dtype=dtype)
         for i in list(result.keys()):
             resp[i] = result[i]
+        
+        dtype_x_alpha = [('xk', np.float64), ('xA', np.float64), ('xB', np.float64)]
+        dtype_y_alpha = [('yk', np.float64), ('yA', np.float64), ('yB', np.float64)]
 
-        return resp
+        x_alpha = np.zeros(x.shape[0], dtype=dtype_x_alpha)
+        y_alpha = np.zeros(y.shape[0], dtype=dtype_y_alpha)
+
+        for i in range(3):
+            x_alpha[dtype_x_alpha[i][0]][:] = x[:, i]
+            y_alpha[dtype_y_alpha[i][0]][:] = y[:, i]
+        
+        return resp, x_alpha, y_alpha
     
-    def get_epsilon_alpha(
+    def get_xi_alpha(
             self,
             adjacencies,
             nodes_centroids,
@@ -169,7 +173,7 @@ class LsdsFluxCalculation:
             **kwargs
     ):
         
-        D_and_mi = self.get_D_and_mi(
+        D_and_mi, x_alpha, y_alpha = self.get_D_and_mi(
             adjacencies,
             nodes_centroids,
             faces_centroids,
@@ -177,7 +181,7 @@ class LsdsFluxCalculation:
             edges,
         )
 
-        x_and_y_k_sigma = self.get_x_and_y_k_sigma(
+        xy_k_sigma = self.get_x_and_y_k_sigma(
             edges,
             edges_dim,
             unitary_normal_edges,
@@ -185,12 +189,36 @@ class LsdsFluxCalculation:
             adjacencies
         )
 
-        # x_and_y_k_sigma = x_and_y_k_sigma.reshape(x_and_y_k_sigma.shape[0], x_and_y_k_sigma.shape[1], 1)
+        epsilon_alpha = np.zeros((len(D_and_mi['D']), 3))
 
+        dtype_x_alpha = x_alpha.dtype.names
+        dtype_y_alpha = y_alpha.dtype.names
+        xy_alpha_local = np.zeros(3)
+        xy_alpha_local[2] = 1
+        m = np.zeros((2, 3))
 
-
-
-
-        import pdb; pdb.set_trace()
-
+        for edge in edges:
+            
+            data = D_and_mi[edge]
+            m[:] = np.array([
+                [data['mi_yy'], data['mi_xy'], data['mi_y']],
+                [data['mi_xy'], data['mi_xx'], data['mi_x']]
+            ])
+            D = data['D']
+            xksigma = xy_k_sigma[edge]
+            
+            for alpha in range(3):
+                alpha_x = dtype_x_alpha[alpha]
+                alpha_y = dtype_y_alpha[alpha]
+                xy_alpha_local[0:2] = [x_alpha[alpha_x][edge], y_alpha[alpha_y][edge]]
+                value = (1/D)*xksigma.dot(m.dot(xy_alpha_local))
+                epsilon_alpha[edge,alpha] = value
+        
+        dtype_epsilon_alpha = [('k', np.float64), ('A', np.float64), ('B', np.float64)]
+        resp = np.zeros(epsilon_alpha.shape[0], dtype=dtype_epsilon_alpha)
+        for i in range(3):
+            alpha = dtype_epsilon_alpha[i][0]
+            resp[alpha] = epsilon_alpha[:,i]
+        
+        return resp
 
