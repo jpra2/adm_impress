@@ -148,18 +148,13 @@ class LsdsFluxCalculation:
             'yB': yB
         }
 
-        resp = np.vstack([x for x in list(result.values())]).T
         dtype = [(x, np.float64) for x in list(result.keys())]
-        # import pdb; pdb.set_trace()
-
-        # resp = np.array(tuple(x) for x in resp, dtype=dtype)
-
-
-        import pdb; pdb.set_trace()
-
         
+        resp = np.zeros(len(result['D']), dtype=dtype)
+        for i in list(result.keys()):
+            resp[i] = result[i]
 
-        return result
+        return resp
     
     def get_epsilon_alpha(
             self,
@@ -168,6 +163,9 @@ class LsdsFluxCalculation:
             faces_centroids,
             nodes_of_edges,
             edges,
+            edges_dim,
+            unitary_normal_edges,
+            permeability,
             **kwargs
     ):
         
@@ -178,5 +176,21 @@ class LsdsFluxCalculation:
             nodes_of_edges,
             edges,
         )
+
+        x_and_y_k_sigma = self.get_x_and_y_k_sigma(
+            edges,
+            edges_dim,
+            unitary_normal_edges,
+            permeability,
+            adjacencies
+        )
+
+        # x_and_y_k_sigma = x_and_y_k_sigma.reshape(x_and_y_k_sigma.shape[0], x_and_y_k_sigma.shape[1], 1)
+
+
+
+
+
+        import pdb; pdb.set_trace()
 
 

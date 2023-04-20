@@ -8,7 +8,6 @@ from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 def Skl_func(mesh_properties: MeshProperty):
 
     lsds_flux = LsdsFluxCalculation()
-
     Skl = lsds_flux.get_Skl(**mesh_properties.get_all_data())
 
 def x_and_y_k_sigma_func(mesh_properties: MeshProperty):
@@ -18,6 +17,10 @@ def x_and_y_k_sigma_func(mesh_properties: MeshProperty):
 def D_and_mi_func(mesh_properties: MeshProperty):
     lsds = LsdsFluxCalculation()
     D_and_mi = lsds.get_D_and_mi(**mesh_properties.get_all_data())
+
+def epsilon_alpha_func(mesh_properties: MeshProperty):
+    lsds = LsdsFluxCalculation()
+    epsilon_alpha = lsds.get_epsilon_alpha(**mesh_properties.get_all_data())
 
 
 def test_lsds_flux():
@@ -29,4 +32,5 @@ def test_lsds_flux():
     Skl_func(mesh_properties)
     x_and_y_k_sigma_func(mesh_properties)
     D_and_mi_func(mesh_properties)
+    epsilon_alpha_func(mesh_properties)
 
