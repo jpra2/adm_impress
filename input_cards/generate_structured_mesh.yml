@@ -3,14 +3,14 @@
 starting_point: [0.0, 0.0, 0.0]
 
 # tamanho de cada bloco da malha fina
-block_size: [20, 10, 2]
+block_size: [1, 1, 1]
 
 # tamanho total da malha
-block_number: [60, 220, 1]
+block_number: [10, 1, 1]
 
 # mesh_size: [9.0, 1.0, 9.0]
 
 
 # nome da malha para salvar
 #mesh_name: '54x216x1_L_37_unit.h5m'
-mesh_name: '60x220x1.h5m'
+mesh_name: '10x1x1.h5m'

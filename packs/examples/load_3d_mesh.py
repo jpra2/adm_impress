@@ -4,8 +4,9 @@ import os
 import numpy as np
 import scipy.io as io
 
-mesh_properties_name = 'exemplo_estruturado_3d'
-mesh_name = 'cube_structured.msh'
+mesh_properties_name = 'exemplo_20x1x1'
+# mesh_name = 'cube_structured.msh'
+mesh_name = '20x1x1.h5m'
 mesh_path = os.path.join(defpaths.mesh, mesh_name)
 
 def define_p1(mesh_properties: MeshProperty):
@@ -15,8 +16,43 @@ def define_p1(mesh_properties: MeshProperty):
     dia = np.arange(3)
     permeability[:, dia, dia] = 1
 
+    xyzmin = mesh_properties.volumes_centroids.min(axis=0)
+    xyzmax = mesh_properties.volumes_centroids.max(axis=0)
+
+    xp1 = mesh_properties.volumes[mesh_properties.volumes_centroids[:,0] <= xyzmin[0] + 0.01]
+    xp0 = mesh_properties.volumes[mesh_properties.volumes_centroids[:,0] >= xyzmax[0] - 0.01]
+
+    values_p1 = np.repeat(1, len(xp1))
+    values_p0 = np.repeat(0, len(xp0))
+
+    saturations1 = np.repeat(1, len(xp1))
+
+    volumes_pressure_defined = np.concatenate([xp1, xp0])
+    pressure_defined_values = np.concatenate([values_p1, values_p0])
+
+    volumes_saturation_defined = xp1
+    saturation_defined_values = saturations1
+
+    porosity = np.repeat(0.2, n)
+
+    bool_internal_faces = ~mesh_properties.bool_boundary_faces
+    adj_internal_faces = mesh_properties.volumes_adj_by_faces[bool_internal_faces].copy()
+    upwind = np.full(adj_internal_faces.shape, False, dtype=bool)
+    test = np.isin(adj_internal_faces, xp1)
+    test1 = (test[:,0] == True) & (test[:,1] == True)
+    upwind[test1, 0] = True
+    test2 = ~test1
+    upwind[test2,0] = True
+    assert upwind.sum() == upwind.shape[0] 
+    
     mesh_properties.insert_data({
-        'volumes_perm': permeability
+        'volumes_perm': permeability,
+        'porosity': porosity,
+        'volumes_pressure_defined': volumes_pressure_defined + 1,
+        'pressure_defined_values': pressure_defined_values,
+        'volumes_saturation_defined': volumes_saturation_defined + 1,
+        'saturation_defined_values': saturation_defined_values,
+        'upwind': upwind
     })
 
 
@@ -38,9 +74,37 @@ def calculate_volumes_structured(mesh_properties: MeshProperty):
     
     return volume_of_volumes, volumes_centroids
 
-def calculate_areas(mesh_properties):
-    for face in mesh_properties.faces:
-        pass
+def calculate_areas(mesh_properties: MeshProperty):
+    bool_internal_faces = ~mesh_properties.bool_boundary_faces
+    areas = np.zeros(bool_internal_faces.sum())
+    unitary_vector_internal = np.zeros((bool_internal_faces.sum(), 3))
+    for i, face in enumerate(mesh_properties.faces[bool_internal_faces]):
+        faces_nodes = mesh_properties.nodes_of_faces[face]
+        nodes_points = mesh_properties.nodes_centroids[faces_nodes]
+        centroid = np.mean(nodes_points, axis=0)
+        minp = nodes_points.min(axis=0)
+        maxp = nodes_points.max(axis=0)
+        diag = np.linalg.norm(maxp - minp)
+        area = (diag/np.sqrt(2))**2
+        areas[i] = area
+        v1 = centroid - nodes_points[0]
+        v2 = centroid - nodes_points[1]
+        normal = np.cross(v1, v2)
+        unormal = normal/np.linalg.norm(normal)
+        volumes_adj = mesh_properties.volumes_adj_by_faces[face]
+        vtest = mesh_properties.volumes_centroids[volumes_adj[1]] - centroid
+        test = np.dot(unormal, vtest)
+        if test > 0:
+            pass
+        else:
+            unormal = -1*unormal
+        unitary_vector_internal[i,:] = unormal
+
+    
+    mesh_properties.insert_data({
+        'internal_areas': areas,
+        'unitary_vector_internal': unitary_vector_internal
+    })
 
 def update_properties(mesh_properties: MeshProperty):
 
@@ -61,6 +125,9 @@ def update_properties(mesh_properties: MeshProperty):
         c0 = mesh_properties.volumes_centroids[volumes_adj[0]]
         h_dist[i, 0] = np.linalg.norm(centroid_face - c0)
         h_dist[i, 1] = np.linalg.norm(centroid_face - c1)
+
+    # ifaces = mesh_properties.faces[~mesh_properties.bool_boundary_faces]
+    # bool_ifaces_per_volume = np.isin(mesh_properties.faces_of_volumes, ifaces)
     
     mesh_properties.remove_datas(
         [
@@ -71,18 +138,28 @@ def update_properties(mesh_properties: MeshProperty):
             'volumes_adj_by_nodes',
             'nodes_of_faces',
             'nodes_centroids',
-            'nodes_of_volumes'
+            'nodes_of_volumes',
+            'nodes',
+            'faces_of_volumes'
         ]
     )
 
+    mesh_properties.update_data({
+        'volumes': mesh_properties.volumes + 1
+    })
 
-
+    internal_faces_remap = internal_faces_remap + 1
+    adj_internal_faces = adj_internal_faces + 1
+    
     mesh_properties.insert_data({
         'internal_faces': internal_faces_remap,
         'adjacencies': adj_internal_faces,
         'centroids_internal_faces': centroids_internal_faces,
         'h_dist': h_dist
+        # 'bool_ifaces_per_volume': bool_ifaces_per_volume
     })
+
+    
 
 
 def first_func():
@@ -96,8 +173,8 @@ def second_func():
     mesh_properties.insert_data({
         'vol_volumes': vol_volumes,
         'volumes_centroids': volumes_centroids
-
     })
+    calculate_areas(mesh_properties)
     mesh_properties.export_data()
 
 def thr_func():
@@ -110,7 +187,7 @@ def thr_func():
 def save_mat_file():
     
     mesh_properties: MeshProperty = load_mesh_properties(mesh_properties_name)
-    matlab_data_path = os.path.join(defpaths.flying, 'variables_p1.mat')
+    matlab_data_path = os.path.join(defpaths.flying, 'variables_p2.mat')
     io.savemat(matlab_data_path, mesh_properties.get_all_data())
 
 
