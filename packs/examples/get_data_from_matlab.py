@@ -5,18 +5,52 @@ import scipy.io  as sio
 import numpy as np
 import matplotlib.pyplot as plt
 
-mesh_name = '20x1x1.h5m'
+# #######################################################
+# mesh_name = '20x1x1.h5m'
+# mesh_path = os.path.join(defpaths.mesh, mesh_name)
+
+# data_path = os.path.join(defpaths.flying, 'resp_p1.mat')
+# mdata = sio.loadmat(data_path)
+
+# folder_to_export = 'p1_mat'
+# problem_name = '_p1_'
+# vpi_name = 'vpi_'
+# name_export = os.path.join(folder_to_export, 'p1_')
+# #######################################################
+
+
+#######################################################
+mesh_name = '30x30x1.h5m'
 mesh_path = os.path.join(defpaths.mesh, mesh_name)
 
-data_path = os.path.join(defpaths.flying, 'resp_p1.mat')
+data_path = os.path.join(defpaths.flying, 'pressure.mat')
 mdata = sio.loadmat(data_path)
+data_path_perm = os.path.join(defpaths.flying, 'perms.mat')
+mdata_perm = sio.loadmat(data_path_perm)
 
-folder_to_export = 'p1_mat'
-problem_name = '_p1_'
+
+
+folder_to_export = 'p2_mat'
+problem_name = '_p2_'
 vpi_name = 'vpi_'
-name_export = os.path.join(folder_to_export, 'p1_')
+name_export = os.path.join(folder_to_export, 'p2_')
+#######################################################
+
 
 mesh_data = MeshData(dim=3, mesh_path=mesh_path)
+
+mesh_data.create_tag('pressure')
+pressure = mdata['pressure'].flatten()
+mesh_data.insert_tag_data('pressure', pressure, 'volumes', np.arange(len(pressure)))
+permeabilityx = mdata_perm['vperm'][:,1,1]
+mesh_data.create_tag('permeabilityx', data_size=1)
+mesh_data.insert_tag_data('permeabilityx', permeabilityx, 'volumes', np.arange(len(pressure)))
+mesh_data.export_all_elements_type_to_vtk('pressure_test', 'volumes')
+import pdb; pdb.set_trace()
+
+
+
+
 
 tags = ['pressure', 'saturation']
 for tag in tags:
