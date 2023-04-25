@@ -81,7 +81,7 @@ def define_p2(mesh_properties: MeshProperty):
     xp1 = mesh_properties.volumes[mesh_properties.volumes_centroids[:,0] <= xyzmin[0] + 0.01]
     xp0 = mesh_properties.volumes[mesh_properties.volumes_centroids[:,0] >= xyzmax[0] - 0.01]
 
-    values_p1 = np.repeat(1, len(xp1))
+    values_p1 = np.repeat(100, len(xp1))
     values_p0 = np.repeat(0, len(xp0))
 
     saturations1 = np.repeat(1, len(xp1))
@@ -91,6 +91,9 @@ def define_p2(mesh_properties: MeshProperty):
 
     volumes_saturation_defined = xp1
     saturation_defined_values = saturations1
+
+    injectors = xp1
+    producers = xp0
 
     porosity = np.repeat(0.2, n)
 
@@ -111,9 +114,10 @@ def define_p2(mesh_properties: MeshProperty):
         'pressure_defined_values': pressure_defined_values,
         'volumes_saturation_defined': volumes_saturation_defined + 1,
         'saturation_defined_values': saturation_defined_values,
-        'upwind': upwind
+        'upwind': upwind,
+        'injectors': injectors+1,
+        'producers': producers+1
     })
-    pass
 
 def calculate_volumes_structured(mesh_properties: MeshProperty):
     
