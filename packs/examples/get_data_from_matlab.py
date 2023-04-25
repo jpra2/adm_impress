@@ -12,6 +12,8 @@ data_path = os.path.join(defpaths.flying, 'resp_p1.mat')
 mdata = sio.loadmat(data_path)
 
 folder_to_export = 'p1_mat'
+problem_name = '_p1_'
+vpi_name = 'vpi_'
 name_export = os.path.join(folder_to_export, 'p1_')
 
 mesh_data = MeshData(dim=3, mesh_path=mesh_path)
@@ -23,12 +25,20 @@ for tag in tags:
 n_pressure = len(mdata['all_pressures'])
 n_volumes = len(mdata['all_pressures'][0])
 volumes = np.arange(n_volumes)
+
+permeabilityx = mdata['perm'][:,1,1]
+mesh_data.create_tag('permeabilityx', data_size=1)
+mesh_data.insert_tag_data('permeabilityx', permeabilityx, 'volumes', volumes)
+
+all_vpis = np.around(mdata['all_vpi'].flatten(), decimals=3)
 for i in range(n_pressure):
     pressure = mdata['all_pressures'][i]
     saturation = mdata['all_saturations'][i]
+    vpi_str = np.format_float_positional(all_vpis[i], precision=3)
     mesh_data.insert_tag_data('pressure', pressure, 'volumes', volumes)
     mesh_data.insert_tag_data('saturation', saturation, 'volumes', volumes)
-    to_export_name = name_export + str(i)
+    name = problem_name + str(i)
+    to_export_name = os.path.join(folder_to_export, name)
     mesh_data.export_all_elements_type_to_vtk(to_export_name, 'volumes')
 
 

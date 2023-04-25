@@ -251,7 +251,7 @@ def thr_func():
 def save_mat_file():
     
     mesh_properties: MeshProperty = load_mesh_properties(mesh_properties_name)
-    matlab_data_path = os.path.join(defpaths.flying, 'variables_p2.mat')
+    matlab_data_path = os.path.join(defpaths.flying, 'variables_p1.mat')
     io.savemat(matlab_data_path, mesh_properties.get_all_data())
 
 
