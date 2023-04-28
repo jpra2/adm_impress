@@ -8,8 +8,11 @@ from packs.utils.utils_old import get_box
 # mesh_properties_name = 'exemplo_20x1x1'
 # mesh_name = '20x1x1.h5m'
 
-mesh_properties_name = 'exemplo_30x30x1'
-mesh_name = '30x30x1.h5m'
+# mesh_properties_name = 'exemplo_30x30x1'
+# mesh_name = '30x30x1.h5m'
+
+mesh_properties_name = 'exemplo_21x21x1'
+mesh_name = '21x21x1.h5m'
 
 
 mesh_path = os.path.join(defpaths.mesh, mesh_name)
@@ -195,6 +198,77 @@ def define_p3(mesh_properties: MeshProperty):
         'producers': producers+1
     })
 
+def define_pp2(mesh_properties: MeshProperty):
+    """
+        malha 21x21x1.h5m
+    """
+
+    n = len(mesh_properties.volumes)
+    permeability = np.zeros((n , 3, 3))
+    dia = np.arange(3)
+    permeability[:, dia, dia] = 1
+
+    limites = np.array([
+        [7, 7, 0],
+        [14, 14, 1]
+    ])
+
+    indexes = get_box(mesh_properties.volumes_centroids, limites)
+    for index in indexes:
+        permeability[index, dia, dia] = 0.001
+
+    limites_xp1 = np.array([
+        [0, 0, 0],
+        [1, 1, 1]
+    ])
+    
+    indexes_xp1 = get_box(mesh_properties.volumes_centroids, limites_xp1)
+    xp1 = mesh_properties.volumes[indexes_xp1]
+
+    limites_xp0 = np.array([
+        [20, 20, 0],
+        [21, 21, 1]
+    ])
+    indexes_xp0 = get_box(mesh_properties.volumes_centroids, limites_xp0)
+    xp0 = mesh_properties.volumes[indexes_xp0]
+
+    values_p1 = np.repeat(100, len(xp1))
+    values_p0 = np.repeat(0, len(xp0))
+
+    saturations1 = np.repeat(0.8, len(xp1))
+
+    volumes_pressure_defined = np.concatenate([xp1, xp0])
+    pressure_defined_values = np.concatenate([values_p1, values_p0])
+
+    volumes_saturation_defined = xp1
+    saturation_defined_values = saturations1
+
+    injectors = xp1
+    producers = xp0
+
+    porosity = np.repeat(0.2, n)
+
+    bool_internal_faces = ~mesh_properties.bool_boundary_faces
+    adj_internal_faces = mesh_properties.volumes_adj_by_faces[bool_internal_faces].copy()
+    upwind = np.full(adj_internal_faces.shape, False, dtype=bool)
+    test = np.isin(adj_internal_faces, xp1)
+    test1 = (test[:,0] == True) & (test[:,1] == True)
+    upwind[test1, 0] = True
+    test2 = ~test1
+    upwind[test2,0] = True
+    assert upwind.sum() == upwind.shape[0] 
+    
+    mesh_properties.insert_data({
+        'volumes_perm': permeability,
+        'porosity': porosity,
+        'volumes_pressure_defined': volumes_pressure_defined + 1,
+        'pressure_defined_values': pressure_defined_values,
+        'volumes_saturation_defined': volumes_saturation_defined + 1,
+        'saturation_defined_values': saturation_defined_values,
+        'upwind': upwind,
+        'injectors': injectors+1,
+        'producers': producers+1
+    })
 
 def calculate_volumes_structured(mesh_properties: MeshProperty):
     
@@ -321,7 +395,8 @@ def thr_func():
     mesh_properties: MeshProperty = load_mesh_properties(mesh_properties_name)
     # define_p1(mesh_properties)
     # define_p2(mesh_properties)
-    define_p3(mesh_properties)
+    # define_p3(mesh_properties)
+    define_pp2(mesh_properties)
     update_properties(mesh_properties)
     mesh_properties.export_data()
 
