@@ -6,11 +6,8 @@ import numpy as np
 
 
 def xi_verify(xi_alpha, mesh_properties: MeshProperty):
-    test = np.array(xi_alpha.tolist())[~mesh_properties.bool_boundary_edges]
-    # TODO verificar porque a soma dos pesos xi nao esta dando zero nos edges do contorno
-    pass
-
-
+    bool_internal_edges = ~mesh_properties.bool_boundary_edges
+    test = np.array(xi_alpha.tolist())[bool_internal_edges]
 
 
 def Skl_func(mesh_properties: MeshProperty):
@@ -28,8 +25,27 @@ def D_and_mi_func(mesh_properties: MeshProperty):
 
 def xi_alpha_func(mesh_properties: MeshProperty):
     lsds = LsdsFluxCalculation()
-    xi_alpha = lsds.get_xi_alpha(**mesh_properties.get_all_data())
+    xi_alpha = lsds.get_xi_alpha_internal_edges(**mesh_properties.get_all_data())
     xi_verify(xi_alpha, mesh_properties)
+
+def M_matrix_func(mesh_properties: MeshProperty):
+    lsds = LsdsFluxCalculation()
+    M_matrix = lsds.get_M_matrix(**mesh_properties.get_all_data())
+
+def get_internal_edges_flux_params(mesh_properties: MeshProperty):
+    lsds = LsdsFluxCalculation()
+    internal_flux_params = lsds.get_internal_edges_flux_params(**mesh_properties.get_all_data())
+
+def xi_params_test(mesh_properties: MeshProperty):
+    lsds = LsdsFluxCalculation()
+    xi_alpha = lsds.get_xi_alpha_internal_edges(**mesh_properties.get_all_data())
+    internal_flux_params = lsds.get_internal_edges_flux_params(**mesh_properties.get_all_data())
+
+    bool_internal_edges = ~mesh_properties.bool_boundary_edges
+    test1 = np.array(xi_alpha.tolist())[bool_internal_edges]
+    test2 = internal_flux_params[bool_internal_edges]
+
+    import pdb; pdb.set_trace()
 
 
 def test_lsds_flux():
@@ -37,9 +53,17 @@ def test_lsds_flux():
     mesh_name = defpaths.mpfad_test_mesh
     mesh_verify(mesh_name)
     mesh_properties = create_properties_if_not_exists(mesh_name, mesh_properties_name)
+    
+    lsds = LsdsFluxCalculation()
+    nodes_of_edges_reordenated = lsds.define_A_B_points_of_edges(**mesh_properties.get_all_data())
+    mesh_properties.update_data({'nodes_of_edges': nodes_of_edges_reordenated})
 
-    Skl_func(mesh_properties)
-    x_and_y_k_sigma_func(mesh_properties)
-    D_and_mi_func(mesh_properties)
-    xi_alpha_func(mesh_properties)
+    # Skl_func(mesh_properties)
+    # x_and_y_k_sigma_func(mesh_properties)
+    # D_and_mi_func(mesh_properties)
+    # xi_alpha_func(mesh_properties)
+    # M_matrix_func(mesh_properties)
+    # get_internal_edges_flux_params(mesh_properties)
+    xi_params_test(mesh_properties)
+
 
