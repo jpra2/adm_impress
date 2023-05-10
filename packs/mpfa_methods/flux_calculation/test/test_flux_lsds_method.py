@@ -9,7 +9,6 @@ def xi_verify(xi_alpha, mesh_properties: MeshProperty):
     bool_internal_edges = ~mesh_properties.bool_boundary_edges
     test = np.array(xi_alpha.tolist())[bool_internal_edges]
 
-
 def Skl_func(mesh_properties: MeshProperty):
 
     lsds_flux = LsdsFluxCalculation()
@@ -47,6 +46,9 @@ def xi_params_test(mesh_properties: MeshProperty):
 
     import pdb; pdb.set_trace()
 
+def get_boundary_weights_func(mesh_properties: MeshProperty):
+    lsds = LsdsFluxCalculation()
+    internal_weights = lsds.get_boundary_edges_flux_params(**mesh_properties.get_all_data())
 
 def test_lsds_flux():
     mesh_properties_name = defpaths.mpfad_mesh_properties_name
@@ -64,6 +66,8 @@ def test_lsds_flux():
     # xi_alpha_func(mesh_properties)
     # M_matrix_func(mesh_properties)
     # get_internal_edges_flux_params(mesh_properties)
-    xi_params_test(mesh_properties)
+    # xi_params_test(mesh_properties)
+    get_boundary_weights_func(mesh_properties)
+
 
 

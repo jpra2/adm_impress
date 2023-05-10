@@ -70,8 +70,7 @@ class LsdsFluxCalculation:
     ):
         
         bool_internal_edges = ~bool_boundary_edges
-        S_alpha_sigma = np.zeros((2, 3, 3))
-        S_alpha_sigma[:, [0,1], [2]] = 1
+        S_alpha_sigma = self.get_local_S_alpha_sigma()
         Skl = np.zeros((edges.shape[0], 3, 3))
 
         for edge in edges[bool_internal_edges]:
@@ -95,6 +94,35 @@ class LsdsFluxCalculation:
             **kwargs
     ):
         
+        # nk_k = np.dot(unitary_normal_edge, faces_permeabilities[0])
+        # nk_l = np.dot(unitary_normal_edge, faces_permeabilities[1])
+        # A_centroid = edge_nodes_centroids[1]
+        # B_centroid = edge_nodes_centroids[0]
+
+        # S_alpha_sigma[:, 0, 0:2] = A_centroid
+        # S_alpha_sigma[:, 1, 0:2] = B_centroid
+        # S_alpha_sigma[0, 2, 0:2] = nk_k
+        # S_alpha_sigma[1, 2, 0:2] = nk_l
+        
+        self.update_local_S_alpha_sigma(
+            S_alpha_sigma,
+            unitary_normal_edge,
+            faces_permeabilities,
+            edge_nodes_centroids
+        )
+
+        Skl = np.linalg.inv(S_alpha_sigma[1]).dot(S_alpha_sigma[0])
+        
+        return Skl
+    
+    def update_local_S_alpha_sigma(
+            self,
+            S_alpha_sigma,
+            unitary_normal_edge,
+            faces_permeabilities,
+            edge_nodes_centroids
+    ):
+        
         nk_k = np.dot(unitary_normal_edge, faces_permeabilities[0])
         nk_l = np.dot(unitary_normal_edge, faces_permeabilities[1])
         A_centroid = edge_nodes_centroids[1]
@@ -104,30 +132,13 @@ class LsdsFluxCalculation:
         S_alpha_sigma[:, 1, 0:2] = B_centroid
         S_alpha_sigma[0, 2, 0:2] = nk_k
         S_alpha_sigma[1, 2, 0:2] = nk_l
-        Skl = np.linalg.inv(S_alpha_sigma[1]).dot(S_alpha_sigma[0])
         
-        return Skl
+    def get_local_S_alpha_sigma(self):
 
-    def get_x_L_barra(
-            self,
-            adjacencies,
-            edges,
-            bool_boundary_edges,
-            faces_centroids,
-            Skl,
-            **kwargs
+        S_alpha_sigma = np.zeros((2, 3, 3))
+        S_alpha_sigma[:, [0,1], [2]] = 1
+        return S_alpha_sigma
 
-    ):
-        
-        bool_internal_edges = ~bool_boundary_edges
-        faces_L = adjacencies[bool_internal_edges][:, 1]
-        centroids_faces_L = faces_centroids[faces_L]
-        Skl_internal_edges = Skl[bool_internal_edges]
-        xl_barra = np.zeros()
-
-        for xl, Skl_local in zip(centroids_faces_L, Skl_internal_edges):
-            pass
-    
     def get_x_and_y_k_sigma(
             self,
             edges,
@@ -387,3 +398,62 @@ class LsdsFluxCalculation:
             k_params[edge] = params
         
         return k_params
+
+    def get_boundary_edges_flux_params(
+            self,
+            edges,
+            edges_dim,
+            unitary_normal_edges,
+            permeability,
+            adjacencies,
+            bool_boundary_edges,
+            nodes_of_edges,
+            nodes_centroids,
+            faces_centroids,
+            **kwargs
+    ):
+        
+        xy_k_sigma = self.get_x_and_y_k_sigma(
+            edges,
+            edges_dim,
+            unitary_normal_edges,
+            permeability,
+            adjacencies
+        )
+
+        boundary_weights = np.zeros((bool_boundary_edges.sum(), 4))
+
+        for edge in edges[bool_boundary_edges]:
+            xy_k_sigma_edge = xy_k_sigma[edge]
+            edge_nodes = nodes_of_edges[edge]
+            faces_adj = adjacencies[edge]
+            A_centroid = nodes_centroids[edge_nodes[1]]
+            B_centroid = nodes_centroids[edge_nodes[0]]
+            K_centroid = faces_centroids[faces_adj[0]]
+            
+            ak = K_centroid - A_centroid
+            bk = K_centroid - B_centroid
+            ab = B_centroid - A_centroid
+
+            S_k_sigma_2 = np.linalg.det(np.array([ak, bk]).T)
+
+            mi_k = (1/S_k_sigma_2)*np.dot(xy_k_sigma_edge, np.array([-ab[1], ab[0]]))
+            mi_A = (1/S_k_sigma_2)*np.dot(xy_k_sigma_edge, np.array([-bk[1], bk[0]]))
+            mi_B = (1/S_k_sigma_2)*np.dot(xy_k_sigma_edge, np.array([ak[1], -ak[0]]))
+
+            internal_weights[edge,:] = [mi_k, 0, mi_A, mi_B]
+        
+        return boundary_weights
+
+
+
+
+
+
+
+
+
+
+        
+
+        
