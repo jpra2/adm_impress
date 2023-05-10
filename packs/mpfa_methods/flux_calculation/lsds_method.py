@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.sparse as sp
 
 class LsdsFluxCalculation:
     """
@@ -10,6 +11,27 @@ class LsdsFluxCalculation:
                 doi: 10.1002/fld.5031
     
     """
+    def preprocess(
+            self,
+            nodes_centroids,
+            unitary_normal_edges,
+            nodes_of_edges,
+            edges,
+            **kwargs
+    ):
+        resp = dict()
+
+        resp.update(
+            self.define_A_B_points_of_edges(
+                nodes_centroids,
+                unitary_normal_edges,
+                nodes_of_edges,
+                edges
+            )
+        )
+
+        return resp
+        
     def define_A_B_points_of_edges(
             self,
             nodes_centroids,
@@ -55,7 +77,7 @@ class LsdsFluxCalculation:
             else:
                 resp[edge,:] = [A, B]
         
-        return resp
+        return {'nodes_of_edges': resp}
 
     def get_Skl(
             self,
@@ -445,7 +467,101 @@ class LsdsFluxCalculation:
         
         return boundary_weights
 
+    def get_all_edges_flux_params(
+            self,
+            faces_centroids,
+            bool_boundary_edges,
+            nodes_centroids,
+            nodes_of_edges,
+            adjacencies,
+            faces,
+            edges,
+            unitary_normal_edges,
+            permeability,
+            edges_dim,
+            **kwargs
+    ):
+        """Returns the xi_params for all aldges 
+            includes the xi_alpha (internal edges) and mi_alpha (boundary edges)
+        
+        Args:
+            faces_centroids (_type_): _description_
+            bool_boundary_edges (_type_): _description_
+            nodes_centroids (_type_): _description_
+            nodes_of_edges (_type_): _description_
+            adjacencies (_type_): _description_
+            faces (_type_): _description_
+            edges (_type_): _description_
+            unitary_normal_edges (_type_): _description_
+            permeability (_type_): _description_
+            edges_dim (_type_): _description_
 
+        Returns:
+            _type_: _description_
+        """
+        
+
+        internal_edges_params = self.get_internal_edges_flux_params(
+            faces_centroids,
+            bool_boundary_edges,
+            nodes_centroids,
+            nodes_of_edges,
+            adjacencies,
+            faces,
+            edges,
+            unitary_normal_edges,
+            permeability,
+            edges_dim
+        )
+
+        boundary_edges_params = self.get_boundary_edges_flux_params(
+            edges,
+            edges_dim,
+            unitary_normal_edges,
+            permeability,
+            adjacencies,
+            bool_boundary_edges,
+            nodes_of_edges,
+            nodes_centroids,
+            faces_centroids
+        )
+
+        internal_edges_params[bool_boundary_edges] = boundary_edges_params[bool_boundary_edges]
+
+        return internal_edges_params
+
+    def mount_problem(
+            self,
+            nodes_weights,
+            xi_params,
+            faces,
+            edges,
+            bool_boundary_edges,
+            adjacencies,
+            boundary_conditions,
+            **kwargs
+    ):
+        """ Returns the dict with transmissibility matrix and source term
+
+        Args:
+            nodes_weights (_type_): _description_
+            xi_params (_type_): _description_
+            faces (_type_): _description_
+            edges (_type_): _description_
+            bool_boundary_edges (_type_): _description_
+            adjacencies (_type_): _description_
+            boundary_conditions (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+
+
+
+        resp = dict()
+        
+        
+        return resp
 
 
 

@@ -1,4 +1,4 @@
 from packs.manager.arraydatamanager import SuperArrayManager
 
-class VerticesWeight(SuperArrayManager):
+class BoundaryConditions(SuperArrayManager):
     pass

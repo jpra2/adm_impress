@@ -136,6 +136,10 @@ class SuperArrayManager:
         
         self.insert_data(new_data)
     
+    def remove_data(self, data_name: list):
+        for name in data_name:
+            del self.__dict__[name]
+
     def exists(self):
         return os.path.exists(self.class_path)
     

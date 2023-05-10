@@ -183,7 +183,7 @@ class MeshProperty:
 
         self.insert_data(new_data)
     
-    def update_data(self, datas_to_update):
+    def update_data(self, datas_to_update: dict):
         
         my_datas_name = list(self.__dict__.keys())
         
@@ -197,7 +197,11 @@ class MeshProperty:
             del self.__dict__[name]
         
         self.insert_data(new_data)
-        
+    
+    def remove_data(self, data_name: list):
+        for name in data_name:
+            del self.__dict__[name]
+
     def exists(self):
         return os.path.exists(self.class_path)
     

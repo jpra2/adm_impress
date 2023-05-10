@@ -3,7 +3,7 @@ from packs import defpaths
 from packs.utils import calculate_face_properties
 import numpy as np
 from packs.manager.meshmanager import MeshProperty, create_initial_mesh_properties, load_mesh_properties
-from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
+from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights, mount_weight_matrix
 
 def mesh_verify(mesh_name):
     mesh_path = os.path.join(defpaths.mesh, mesh_name)
@@ -53,26 +53,6 @@ def create_properties(mesh_name, mesh_properties_name):
     mesh_properties.insert_data({'permeability': permeability})
 
     mesh_properties.export_data()
-
-def mount_weight_matrix(nodes_weights):
-    n_faces = nodes_weights['face_id'].max() + 1
-    n_nodes = nodes_weights['node_id'].max() + 1
-    mweight = np.zeros((n_nodes, n_faces))
-
-    lines = np.array([], dtype=int)
-    cols = lines.copy()
-    data = np.array([], dtype=np.float64)
-
-    for node in np.unique(nodes_weights['node_id']):
-        faces = nodes_weights['face_id'][nodes_weights['node_id'] == node]
-        weights = nodes_weights['weight'][nodes_weights['node_id'] == node]
-        lines = np.append(lines, np.repeat(node, faces.shape[0]))
-        cols = np.append(cols, faces)
-        data = np.append(data, weights)
-    
-    mweight[lines, cols] = data
-    
-    return mweight
 
 def constant_verify(weights_matrix, mesh_properties):
     const_faces_solution = constant_function(mesh_properties.faces_centroids[:, 0])
