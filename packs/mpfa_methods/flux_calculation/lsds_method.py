@@ -443,7 +443,7 @@ class LsdsFluxCalculation:
             adjacencies
         )
 
-        boundary_weights = np.zeros((bool_boundary_edges.sum(), 4))
+        boundary_weights = np.zeros((len(edges), 4))
 
         for edge in edges[bool_boundary_edges]:
             xy_k_sigma_edge = xy_k_sigma[edge]
@@ -463,7 +463,7 @@ class LsdsFluxCalculation:
             mi_A = (1/S_k_sigma_2)*np.dot(xy_k_sigma_edge, np.array([-bk[1], bk[0]]))
             mi_B = (1/S_k_sigma_2)*np.dot(xy_k_sigma_edge, np.array([ak[1], -ak[0]]))
 
-            internal_weights[edge,:] = [mi_k, 0, mi_A, mi_B]
+            boundary_weights[edge,:] = [mi_k, 0, mi_A, mi_B]
         
         return boundary_weights
 
