@@ -7,29 +7,10 @@ from packs.utils import constants as ctes
 from packs.directories import data_loaded
 import scipy.sparse as sp
 import numpy as np
-
 import matplotlib.pyplot as plt
+from .FR_CPR import FR as FR1D
 
-class FR:
-
-    def __init__(self):
-        'Enviroment for the FR/CPR method - vai ser 1D por enquanto'
-        'OBS: O Fk que vai entrar é em mol*m/s, ou seja, \
-        a pretransmissibilidade n pode ter dx \
-        dividindo'
-        '1. Obtain Nk at the SP'
-        '2. Compute Fk with the mobility, xkj, rho and csi approximation from \
-        volume-weigthed arithmetic average'
-        '3. Transform Fk for the SP by using RTo'
-        '4. Use a Riemann Solver for computing flux at the interfaces, and it will \
-        be used for the continuous flux approximation (This can be done previously'
-        '5. Approximate Fk and Nk in the reference domain by using Lagranges \
-        polynomial. Where Fk = Fk^D + Fk^C, where Fk^D and Fk^C are also obtained \
-        by using Lagranges polynomial with its value from the SP.'
-        '6. Obtain Nk for the next time step by the third order RungeKutta'
-        '7. Project the Nk solution at the Pspace back to the CV using Gaussian \
-        integration'
-        'Legend: n_points - number of SP per control volume'
+class FR(FR1D):
 
     def run(self, M, fprop, wells, Ft_internal, Nk_SP_old, P_old, delta_t, t):
         Nk_SP = np.copy(Nk_SP_old)
@@ -37,12 +18,12 @@ class FR:
         q_SP = fprop.qk_molar[:,:,np.newaxis] * np.ones_like(Nk_SP)
         #q_SP[:] = 0 #BASTIAN
 
-        self.P_faces = np.sum(P_old[ctes_FR.v0],axis=-1)*0.5
-        self.P_SP = self.get_pressure_SP(wells, P_old)
+        self.P_faces = np.sum(P_old[ctes.v0],axis=-1)*0.5
+        self.P_SP = self.get_pressure_SP_2D(wells, P_old)
         #self.Nk_SP_old = Nk_SP_old
         self.delta_t = delta_t
 
-        self.Ft_SP = self.total_flux_SP(fprop, wells, Ft_internal)
+        self.Ft_SP = self.total_flux_SP_2D(M, fprop, wells, Ft_internal)
 
         #t_solver = getattr(self,ctes.time_integration)
 
@@ -93,32 +74,15 @@ class FR:
         #FOR THE BURGERS PROBLEM
         #Fk_SP = (Nk_SP**2/2)/(1/ctes.n_volumes)
 
-        #FOR THE BASTIAN PROBLEM
-        '''Csi_j_SP = fprop.Csi_j[:,:,:,np.newaxis]*np.ones((1,ctes.n_phases,ctes.n_volumes,ctes_FR.n_points))
-        Sw_SP = Nk_SP[-1] * (1/Csi_j_SP[0,-1]) / fprop.Vp[0]
-        mobilities = np.empty_like(Csi_j_SP)
-        xkj = np.zeros((ctes.n_components,ctes.n_phases,ctes.n_volumes,ctes_FR.n_points))
-        xkj[0:-1,0:-1,:] = 1
-        xkj[-1,-1,:] = 1
-        L_face = np.ones_like(Sw_SP)
-        V_face = 1 - L_face
-        So_SP = np.empty_like(Sw_SP)
-        Sg_SP = np.empty_like(Sw_SP)
-        So_SP, Sg_SP =  PropertiesCalc().update_saturations(Sw_SP,
-            Csi_j_SP, L_face, V_face)
-        for i in range(ctes_FR.n_points):
-            mobilities[:,:,:,i] = PropertiesCalc().update_mobilities(fprop, So_SP[:,i], Sg_SP[:,i],
-                Sw_SP[:,i], Csi_j_SP[:,:,:,i], xkj[:,:,:,i])
-        f = mobilities[0,...]/(np.sum(mobilities[0,...],axis=0))
-        Fj_SP = f * Ft_internal[0,0] #self.Flux_SP(fprop, wells, M, Fk_faces)
-        Fk_SP = np.sum(xkj * Csi_j_SP * Fj_SP, axis = 1)'''
-
-        Fk_faces, Fk_vols_RS_neig, wave_velocity = self.Riemann_Solver(M, fprop, wells, Nk_SP,
+        Fk_faces_RS_FPs, Fk_vols_RS_neig, alpha_wv_FPs = self.Riemann_Solver(M, fprop, wells, Nk_SP,
             Fk_SP, P_old, Ft_internal)
 
-        Fk_D = np.sum(Fk_SP[:,:,:,np.newaxis] * ctes_FR.L[np.newaxis,np.newaxis,:], axis=2)
-        dFk_D = np.sum(Fk_SP[:,:,:,np.newaxis] * ctes_FR.dL[np.newaxis,np.newaxis,:], axis=2)
-        dFk_C = self.dFlux_Continuous(Fk_SP, Fk_vols_RS_neig)
+        import pdb; pdb.set_trace()
+        Fk_SP_matrix = Fk_SP[:,:,ctes_FR.reshape_to_points_matrix]
+
+        Fk_D_matrix = np.sum(Fk_SP_matrix[...,np.newaxis] * ctes_FR.L[np.newaxis,np.newaxis,:], axis=3)
+        dFk_D = np.sum(Fk_SP_matrix[...,np.newaxis] * ctes_FR.dL[np.newaxis,np.newaxis,:], axis=3)
+        dFk_C = self.dFlux_Continuous(Fk_SP_matrix, Fk_vols_RS_neig)
         dFk_Pspace = (dFk_C + dFk_D)
         #dFk_Pspace[:,-1,1:-1] = dFk_D[:,-1,1:-1]
 
@@ -140,20 +104,23 @@ class FR:
         #import pdb; pdb.set_trace()
         return dFk_SP, wave_velocity
 
-
-    def total_flux_SP(self, fprop, wells, Ft_internal):
+    def total_flux_SP_2D(self, M, fprop, wells, Ft_internal):
         'RTo'
-        Ft_face_phi = (Ft_internal_vec[:,:,np.newaxis,np.newaxis] * ctes_FR.phi[np.newaxis,np.newaxis,:])
+
+        Ft_internal_vec = Ft_internal[:,:,np.newaxis] * M.data['faces_normals'][M.faces.internal][:,:-1]
+        Ft_face_phi = (Ft_internal_vec[:,:,np.newaxis,:,np.newaxis] * ctes_FR.phi[np.newaxis,np.newaxis,:])
 
         'Look for a faster way to do that'
-        Ft_SP_reshaped = np.empty((1,ctes.n_volumes,ctes_FR.n_points))
-        contours = np.array([0,ctes_FR.n_points-1])
-        for i in range(ctes_FR.n_points):
-            lines = np.array([np.zeros_like(ctes_FR.v0[:,0]), np.zeros_like(ctes_FR.v0[:,1])]).astype(int).flatten()
-            cols = np.array([ctes_FR.v0[:,0], ctes_FR.v0[:,1]]).flatten()
-            data = np.array([Ft_face_phi[:,:,i,0], Ft_face_phi[:,:,i,1]]).flatten()
-            Ft_SP_reshaped[:,:,i] = sp.csc_matrix((data, (lines, cols)), shape = (1, ctes.n_volumes)).toarray()
-        Ft_SP = 2 * Ft_SP_reshaped #np.concatenate(np.dsplit(Ft_SP_reshaped, ctes_FR.n_points), axis = 2)
+        Ft_SP_reshaped = np.empty((1,ctes.n_volumes,ctes_FR.n_points, 2))
+        #contours = np.array([0,ctes_FR.n_points-1])
+        for dir in range(2):
+            for i in range(ctes_FR.n_points):
+                lines = np.array([np.zeros_like(ctes.v0[:,0]), np.zeros_like(ctes.v0[:,1])]).astype(int).flatten()
+                cols = np.array([ctes.v0[:,0], ctes.v0[:,1]]).flatten()
+                data = np.array([Ft_face_phi[:,:,i,dir,0], Ft_face_phi[:,:,i,dir,1]]).flatten()
+                Ft_SP_reshaped[:,:,i,dir] = sp.csc_matrix((data, (lines, cols)), shape = (1, ctes.n_volumes)).toarray()
+        Ft_SP_vec = 2 * Ft_SP_reshaped #np.concatenate(np.dsplit(Ft_SP_reshaped, ctes_FR.n_points), axis = 2)
+        Ft_SP = np.sqrt((Ft_SP_vec**2).sum(axis=-1))
 
         #Ft_SP[0,wells['all_wells'],:] = 0 #((Ft_internal[0,ctes_FR.vols_vec][wells['all_wells']]).sum(axis=-1)/2)[:,np.newaxis]
         #Ft_SP[:,[0,-1],:] = 0
@@ -168,7 +135,7 @@ class FR:
 
         return Ft_SP
 
-    def get_pressure_SP(self, wells, Pold):
+    def get_pressure_SP_2D(self, wells, Pold):
         #P_SP = np.empty((ctes.n_volumes,ctes_FR.n_points))
         #P_SP[:,[0,-1]] = self.P_faces[ctes_FR.vols_vec]
         x_0 = np.copy(ctes_FR.points)
@@ -234,7 +201,7 @@ class FR:
 
         P_f = fprop.P[ctes.v0].sum(axis=-1)/2
         dP_SP = np.empty((ctes.n_volumes,ctes_FR.n_points))
-        dP_SP[:,[0,-1]] = (fprop.P[ctes_FR.v0[:,1]] - fprop.P[ctes_FR.v0[:,0]])[ctes_FR.vols_vec]
+        dP_SP[:,[0,-1]] = (fprop.P[ctes.v0[:,1]] - fprop.P[ctes.v0[:,0]])[ctes_FR.vols_vec]
         if ctes_FR.n_points==3:
             dP_SP[:,1] = P_f[ctes_FR.vols_vec[:,1]] - P_f[ctes_FR.vols_vec[:,0]]
             dP_SP[0,1] = dP_SP[0,-1]
@@ -254,52 +221,76 @@ class FR:
         Fk_SP = np.concatenate(np.hsplit(Fk[:,:,np.newaxis], ctes_FR.n_points), axis = 2)
         return Fk_SP
 
+    def SPs_to_FPs_on_faces(self, prop_SP):
+        prop_faces_SPs = prop_SP[:,ctes.v0]
+        prop_faces_FPs_fl = prop_faces_SPs[:,ctes_FR.v0_SPs]
+        prop_faces_FPs_fl2 = np.split(prop_faces_FPs_fl[:,:,np.newaxis],ctes.n_internal_faces,axis=1)
+        prop_faces_FPs_2 = np.concatenate(prop_faces_FPs_fl2,axis=2).transpose(0,2,1)
+        prop_faces_FPs_3 = np.split(prop_faces_FPs_2[...,np.newaxis],2,axis=2)
+        prop_faces_FPs = np.concatenate(prop_faces_FPs_3,axis=-1).transpose(0,1,3,2)
+        prop_faces_FPs_spl = np.split(prop_faces_FPs, ctes_FR.nFPs, axis=-1)
+        prop_faces_FPs_concat = np.concatenate(prop_faces_FPs_spl, axis=1)[...,0]
+        return prop_faces_FPs_concat
+
     def Riemann_Solver(self, M, fprop, wells, Nk_SP, Fk_SP, Pold, Ft_internal):
-        Nk_faces = np.empty((ctes.n_components, ctes.n_internal_faces, 2))
-        Nk_faces[:,:,1] = Nk_SP[:,ctes_FR.v0[:,1],0] #Nk faces a esquerda dos volumes
-        Nk_faces[:,:,0] = Nk_SP[:,ctes_FR.v0[:,0],-1] #Nk nas faces a direita
+
+        Nk_faces_FPs_concat = self.SPs_to_FPs_on_faces(Nk_SP)
 
         P_face = np.concatenate((self.P_faces[:,np.newaxis],self.P_faces[:,np.newaxis]),axis=1)
-        #P_face = Pold[ctes.v0]#
+        P_face_FPs_concat = np.repeat(P_face,ctes_FR.nFPs,axis=0)
+        Ft_internal_FPs_concat = np.repeat(Ft_internal,ctes_FR.nFPs,axis=1)
 
-        Fk_faces = np.empty_like(Nk_faces)
-        Fk_faces[:,:,1] = Fk_SP[:,ctes_FR.v0[:,1],0]
-        Fk_faces[:,:,0] = Fk_SP[:,ctes_FR.v0[:,0],-1]
+        Fk_faces_FPs_concat = self.SPs_to_FPs_on_faces(Fk_SP)
 
-        #FOR THE BURGERS PROBLEM AND BASTIAN
-        '''Nk_face_contour = np.empty((ctes.n_components,1,2))
-        Nk_face_contour[:,0,1] = Nk_SP[:,0,0]
-        Nk_face_contour[:,0,0] = Nk_SP[:,-1,-1]
-        #Nk_face_contour[-1,0,0] = 1*fprop.Csi_j[0,-1,0]*fprop.Vp[0] #BASTIAN
-        Vp_face_contour = fprop.Vp[:2]
-        RS_contour = RiemannSolvers(np.array([ctes.n_volumes-1,0])[np.newaxis], np.array([ctes.pretransmissibility_internal_faces[0]]))
-        Fk_faces_contour = (Nk_face_contour**2)/2*(1/ctes.n_volumes)
-        #Fk_faces_contour = RS_contour.get_Fk_face(fprop, M, Nk_face_contour, \
-        #    P_face[np.newaxis,0], Vp_face_contour, Ft_internal[:,0][:,np.newaxis])
-        Fk_face_contour_RS, alpha_wv =  RS_contour.LLF(M, fprop, Nk_face_contour, P_face[np.newaxis,0],
-            Ft_internal[:,0][:,np.newaxis], Fk_faces_contour, np.ones(1,dtype=bool))'''
-
-        RS = RiemannSolvers(ctes_FR.v0, ctes.pretransmissibility_internal_faces)
+        RS = RiemannSolvers(ctes.v0, ctes.pretransmissibility_internal_faces)
         solver = getattr(RS, ctes.RS)
-        Fk_face_RS, alpha_wv =  solver(M, fprop, Nk_faces, P_face, Ft_internal, Fk_faces, \
-            np.ones_like(Ft_internal[0],dtype=bool))
+
+        Fk_faces_RS_FPs = np.empty((ctes.n_components,ctes.n_internal_faces,ctes_FR.nFPs))
+        alpha_wv_FPs = np.empty((ctes.n_internal_faces,3,ctes_FR.nFPs))
+        #for i in range(ctes_FR.nFPs):
+        #    Fk_faces_RS_FPs[...,i], alpha_wv_FPs[...,i] =  solver(M, fprop, Nk_faces_FPs[...,i], \
+        #        P_face, Ft_internal, Fk_faces_FPs[...,i], np.ones_like(Ft_internal[0],dtype=bool))
+
+        """teste:"""
+        prtr = np.repeat(ctes.pretransmissibility_internal_faces,ctes_FR.nFPs)
+        v0_c = np.repeat(ctes.v0,ctes_FR.nFPs,axis=0)
+        RS = RiemannSolvers(v0_c, prtr)
+        solver = getattr(RS, ctes.RS)
+
+        Fk_faces_RS_FPs_concat, alpha_wv_FPs_concat =  solver(M, fprop, Nk_faces_FPs_concat, \
+            P_face_FPs_concat, Ft_internal_FPs_concat, Fk_faces_FPs_concat, np.ones_like(Ft_internal_FPs_concat[0],dtype=bool))
 
         #ponteiro = np.zeros_like(Ft_internal[0], dtype=bool)
         #ponteiro[[0,1]] = True
         #Fk_face_RS[:,ponteiro] = MUSCL().update_flux_upwind(fprop.P[np.newaxis,:], Fk_faces[:,ponteiro], ponteiro)
 
-        Fk_face_RS[:,0] = Fk_faces[:,0,0] #comment for burgers
-        Fk_face_RS[:,1] = Fk_faces[:,1,0] #comment for burgers
+        #on the faces that share a contour volume
+        ponteiro = np.zeros_like(Fk_faces_RS_FPs[0,:,0], dtype=bool)
+        ponteiro[M.data['internal_faces_contour']] = True
+        ponteiro_concat = np.repeat(ponteiro,ctes_FR.nFPs)
+        P_concat = np.repeat(fprop.P,ctes_FR.nFPs)[np.newaxis,:]
+        Fk_faces_RS_FPs_concat[:,ponteiro_concat]= MUSCL().update_flux_upwind(P_concat, \
+            Fk_faces_FPs_concat[:,ponteiro_concat], v0_c, ponteiro_concat)
+
+        'Reshape Fk and alpha:'
+        Fk_faces_RS_FPs_spl = np.split(Fk_faces_RS_FPs_concat[...,np.newaxis],ctes_FR.nFPs,axis=1)
+        Fk_faces_RS_FPs = np.concatenate(Fk_faces_RS_FPs_spl,axis=2)
+
+        alpha_wv_FPs_spl = np.split(alpha_wv_FPs_concat[...,np.newaxis],ctes_FR.nFPs,axis=1)
+        alpha_wv_FPs = np.concatenate(alpha_wv_FPs_spl,axis=2)
+
+        #Fk_face_RS[:,0] = Fk_faces[:,0,0] #comment for burgers
+        #Fk_face_RS[:,1] = Fk_faces[:,1,0] #comment for burgers
 
         'Obtaining Flux at each CV side - by finding faces that compounds the CV \
         this only works for 1D problems'
-        Fk_vols_RS_neig = Fk_face_RS[:,ctes_FR.vols_vec]
-        Fk_vols_RS_neig[:,ctes_FR.vols_vec<0] = 0 #Fk_face_contour_RS #FOR THE BURGERS
+        Fk_vols_RS_neig = Fk_faces_RS_FPs[:,ctes_FR.vols_vec]
+        #Fk_vols_RS_neig[:,self.vols_vec<0] = 0 #Fk_face_contour_RS #FOR THE BURGERS
 
         #For the bastian
         #Fk_vols_RS_neig[-1,-1] = 0
         #Fk_vols_RS_neig[0,-1,-1] = 2 * Fk_vols_RS_neig[0,-1,-1]
-        return Fk_faces, Fk_vols_RS_neig, alpha_wv
+        return Fk_faces_RS_FPs, Fk_vols_RS_neig, alpha_wv_FPs
 
     def dFlux_Continuous(self, Fk_SP, Fk_vols_RS_neig):
         Fk_D_l = Fk_SP[...,0]#Fk_D @ x_left
@@ -462,13 +453,13 @@ class FR:
         'Neigboring vertex points values'
         Nk_faces = np.empty((ctes.n_components,ctes.n_internal_faces,2))
 
-        Nk_faces[:,:,1] = Nk_SP[:,ctes_FR.v0[:,1], 0]
-        Nk_faces[:,:,0] = Nk_SP[:,ctes_FR.v0[:,0], -1]
+        Nk_faces[:,:,1] = Nk_SP[:,ctes.v0[:,1], 0]
+        Nk_faces[:,:,0] = Nk_SP[:,ctes.v0[:,0], -1]
 
         Nk_neig = np.empty((ctes.n_components,ctes.n_internal_faces,2))
 
-        Nk_neig[:,:,0] = Nk_P0_vertex[:,ctes_FR.v0[:,0],0]
-        Nk_neig[:,:,1] = Nk_P0_vertex[:,ctes_FR.v0[:,1],0]
+        Nk_neig[:,:,0] = Nk_P0_vertex[:,ctes.v0[:,0],0]
+        Nk_neig[:,:,1] = Nk_P0_vertex[:,ctes.v0[:,1],0]
 
         Phi_P1 = self.P1_limiter(Nk_P0_vertex, Nk_P1_vertex, Nk_neig, fprop.Vp)
 
@@ -501,13 +492,13 @@ class FR:
                 'Neigboring vertex points values'
                 Nk_faces2 = np.empty((ctes.n_components,ctes.n_internal_faces,2))
 
-                Nk_faces2[:,:,1] = Nk_P2[:,ctes_FR.v0[:,1], 0]
-                Nk_faces2[:,:,0] = Nk_P2[:,ctes_FR.v0[:,0], -1]
+                Nk_faces2[:,:,1] = Nk_P2[:,ctes.v0[:,1], 0]
+                Nk_faces2[:,:,0] = Nk_P2[:,ctes.v0[:,0], -1]
 
                 Nk_neig2 = np.empty((ctes.n_components,ctes.n_internal_faces,2))
 
-                Nk_neig2[:,:,0] = Nk_P0_vertex2[:,ctes_FR.v0[:,0],0]
-                Nk_neig2[:,:,1] = Nk_P0_vertex2[:,ctes_FR.v0[:,1],0]
+                Nk_neig2[:,:,0] = Nk_P0_vertex2[:,ctes.v0[:,0],0]
+                Nk_neig2[:,:,1] = Nk_P0_vertex2[:,ctes.v0[:,1],0]
 
                 phi_P2 = self.troubled_cell_marker(M, fprop, Nk_P1_vertex2, \
                     Nk_P0_vertex2, Nk_P2, Nk_neig2, Nk_faces2)
@@ -606,7 +597,7 @@ class FR:
 
     def MLP_u1_mod(self, Nk_neig, Nk_P0_vertex, Linear_term):
         """ You and Kim paper page 27 of pdf"""
-        Nk_avg_vertex = Nk_P0_vertex[:,ctes_FR.v0,0].sum(axis=-1)/2
+        Nk_avg_vertex = Nk_P0_vertex[:,ctes.v0,0].sum(axis=-1)/2
         Nk_avg_vertex_vols = Nk_avg_vertex[:,ctes_FR.vols_vec]
         #Nk_avg_vertex_vols[:,self.vols_vec<0] = Nk_P0_vertex[:,self.vols_vec<0]
         f_min = Nk_avg_vertex_vols + np.heaviside(Nk_avg_vertex_vols - Nk_P0_vertex, np.ones_like(Nk_P0_vertex)) * \

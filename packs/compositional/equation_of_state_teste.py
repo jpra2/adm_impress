@@ -283,15 +283,15 @@ class PengRobinson:
         B2 = dlnfivdP[:,aux] - dlnfiwdP[:,aux]
 
         ''' Montagem do sistema three-phase'''
-        A_3ph = np.empty((1, 2*len(B1), 2*len(B1)))
-        B_3ph = np.empty((2*len(B1),1))
+        A_3ph = np.empty((A11.shape[0], 2*len(B1), 2*len(B1)))
+        B_3ph = np.empty((2*len(B1),B1.shape[-1]))
 
         B_3ph[0:len(B1),:] = B1
         #import pdb; pdb.set_trace()
 
         B_3ph[(len(B1)):(2*len(B1)),:] = B2
         #ver = np.shape(B1)
-        #import pdb; pdb.set_trace()
+
         A_3ph[:, 0:len(B1), 0:len(B1)] = A11
         A_3ph[:,len(B1):2*len(B1),0:len(B1)] = A21
         A_3ph[:,0:len(B1),len(B1):2*len(B1)] = A12

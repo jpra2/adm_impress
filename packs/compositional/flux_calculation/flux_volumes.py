@@ -11,13 +11,15 @@ class Flux:
     def update_flux(self, M, fprop, Ft_internal_faces, rho_j_internal_faces,
         mobilities_internal_faces):
         ''' Main function that calls others '''
+
         self.Nk = fprop.Nk
+
         Fj_internal_faces = self.update_Fj_internal_faces(Ft_internal_faces,
             rho_j_internal_faces, mobilities_internal_faces, fprop.Pcap[:,ctes.v0],
             ctes.z[ctes.v0], ctes.pretransmissibility_internal_faces)
         Fk_internal_faces = self.update_Fk_internal_faces(
             fprop.xkj_internal_faces, fprop.Csi_j_internal_faces, Fj_internal_faces)
-        Fk_vols_total = self.update_flux_volumes(Fk_internal_faces)
+        Fk_vols_total = self.update_flux_volumes(M, Fk_internal_faces)
         return Fk_vols_total
 
     def update_Fj_internal_faces(self, Ft_internal_faces, rho_j_internal_faces,
@@ -42,14 +44,21 @@ class Flux:
             Fj_internal_faces, axis = 1)
         return Fk_internal_faces
 
-    def update_flux_volumes(self, Fk_internal_faces):
+    def update_flux_volumes(self, M, Fk_internal_faces):
         ''' Function to compute component molar flux balance through the control \
         volume interfaces '''
         cx = np.arange(ctes.n_components)
-        lines = np.array([np.repeat(cx,len(ctes.v0[:,0])), np.repeat(cx,len(ctes.v0[:,1]))]).astype(int).flatten()
-        cols = np.array([np.tile(ctes.v0[:,0],ctes.n_components), np.tile(ctes.v0[:,1], ctes.n_components)]).flatten()
+
+        Fk_internal_faces *= ctes.N_sign
+        lines = np.array([np.repeat(cx,len(ctes.in_vols_pairs[:,0])), np.repeat(cx,len(ctes.in_vols_pairs[:,1]))]).astype(int).flatten()
+        cols = np.array([np.tile(ctes.in_vols_pairs[:,0],ctes.n_components), np.tile(ctes.in_vols_pairs[:,1], ctes.n_components)]).flatten()
         data = np.array([-Fk_internal_faces, Fk_internal_faces]).flatten()
         Fk_vols_total = sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_components, ctes.n_volumes)).toarray()
+
+        #lines = np.array([np.repeat(cx,len(ctes.v0[:,0])), np.repeat(cx,len(ctes.v0[:,1]))]).astype(int).flatten()
+        #cols = np.array([np.tile(ctes.v0[:,0],ctes.n_components), np.tile(ctes.v0[:,1], ctes.n_components)]).flatten()
+        #data = np.array([-Fk_internal_faces, Fk_internal_faces]).flatten()
+        #Fk_vols_total = sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_components, ctes.n_volumes)).toarray()
 
         '''
         inds = np.array([0,-1])

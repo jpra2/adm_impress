@@ -121,10 +121,23 @@ class PreprocessUnfied(Preprocess0):
         #print(t1-t0)
         #import pdb; pdb.set_trace()
 
+    def get_internal_faces_contour(self,M):
+        vols_neig_internal_faces = M.faces.bridge_adjacencies(M.faces.internal,2,3)
+        faces_vols = M.volumes.bridge_adjacencies(M.volumes.all,3,2)
+        vols_faces_internal_bool = np.isin(faces_vols,M.faces.internal)
+        vols_n_external_faces = (~vols_faces_internal_bool).sum(axis=-1)
+        contour_vols = vols_n_external_faces > np.min(vols_n_external_faces)
+        vols = M.volumes.all
+        vols_contour = vols[contour_vols]
+        internal_faces_contour = np.isin(vols_neig_internal_faces,vols_contour).sum(axis=-1,dtype=bool)
+        internal_faces_contour_IDs = M.faces.internal[internal_faces_contour]
+        M.data['internal_faces_contour'] = internal_faces_contour
+        M.data['vols_contour'] = vols_contour
 
     def run(self, M):
         self.update_centroids_and_unormal(M)
         self.set_permeability_and_phi(M)
+        self.get_internal_faces_contour(M)
 
         #ajeitar isso para funcionar sem o if talvez
         if self.check_struct(M):

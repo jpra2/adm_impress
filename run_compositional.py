@@ -323,8 +323,9 @@ class run_simulation:
         else: Nk = fprop.Nk
 
         self.current_compositional_results = np.array([self.loop, self.vpi, self.sim_time,
-            self.t, fprop.P, fprop.Sw, fprop.So, fprop.Sg, self.oil_production,
-            self.gas_production, fprop.z, M.data['centroid_volumes'], Nk, fprop.xkj,
+            self.t, fprop.P, fprop.Sw, fprop.So, fprop.Sg, self.oil_production_RC,
+            self.gas_production_RC, self.oil_production_SC, self.gas_production_SC,
+            fprop.z, M.data['centroid_volumes'], Nk, fprop.xkj,
             self.oil_production_rate_RC, self.gas_production_rate_RC, self.cum_oil_prod_RC,
             self.oil_production_rate_SC, self.gas_production_rate_SC, self.cum_oil_prod_SC,
             self.vector_time],dtype=object)

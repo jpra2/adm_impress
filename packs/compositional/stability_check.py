@@ -36,17 +36,12 @@ class StabilityCheck:
 
     def run_init(self, P, z, pflash = True, ponteiro_flash = [], ksi_W=[], rho_W=[]):
         #self.K = self.equilibrium_ratio_Wilson(P)
-        
-        P = np.copy(P)
+
+        self.P = np.copy(P)
         if np.sum(pflash,dtype=bool)==True:
             ponteiro_flash = np.ones(len(P), dtype = bool)
             '-------------------- Get new time-step parameters --------------------'
-        self.P = P
         self.z = np.copy(z)
-        #ponteiro_flash[np.sum(self.z==0, dtype=bool)] = True
-        #import pdb; pdb.set_trace()
-        #ponteiro_nc1 = np.zeros_like(ponteiro_flash_aux)
-        #ponteiro_nc1[]
         self.z[self.z<=0] = 1e-30
 
         '''if not pflash and any(~ponteiro_flash) and ctes.Nc>1:
@@ -68,6 +63,7 @@ class StabilityCheck:
         ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
         self.organize_outputs(ksi_W, ksi_L, ksi_V, rho_W, rho_L, rho_V)
         A = np.zeros_like(self.L)
+
         return self.L, self.V, A, self.xkj, self.Csi_j, self.rho_j
 
     def organize_outputs(self, ksi_W, ksi_L, ksi_V, rho_W, rho_L, rho_V):

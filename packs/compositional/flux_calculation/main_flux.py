@@ -11,13 +11,16 @@ else:
 
 def compute_flux(M, fprop, wells, ft_internal, P_old, Nk_old, Pot_hid, \
     delta_t, t, G):
+    "pensar numa forma de colocar esses ifs no loop externo pra chamar só uma vez"
+    "usando o getattr pode funcionar, mas tenho que padronizar os parametros de \
+    entrada das funcoes de run()"
 
     if ctes.MUSCL['set']:
         from .MUSCL import MUSCL
         wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
             Nk_old, ft_internal, Pot_hid) #trocar ordem da saida
     elif ctes.FR:
-        from .FR_CPR import FR
+        from .FR_CPR_2D import FR
         wave_velocity, fprop.Nk, fprop.z, fprop.Nk_SP, Fk_vols_total = FR().run(M, fprop, wells,
             ft_internal, Nk_old, P_old, delta_t, t)
     else:
