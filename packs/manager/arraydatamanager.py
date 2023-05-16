@@ -52,7 +52,7 @@ class SuperArrayManager:
     def class_name(cls):
         return cls.__name__
     
-    def insert_data(self, data: dict):
+    def insert_data(self, data: dict, load=False):
         """data is a dictionary with str keys and np.ndarray values
 
         Args:
@@ -60,6 +60,13 @@ class SuperArrayManager:
         """
         names = list(data.keys())
         values = list(data.values())
+        
+        if load is True:
+            indexes = np.arange(len(names))
+            index_name = [i for i in indexes if names[i] == 'name']
+            for i in index_name:
+                names.pop(i)
+                values.pop(i)
         
         a = [test_array_instance(_) for _ in values]
         a = [test_str_instance(_) for _ in names]
@@ -73,7 +80,7 @@ class SuperArrayManager:
         test = names_series.isin(names_data_self)
         if test.any().values[0]:
             names_in = names_series[test.values].values.flatten()
-            raise errors.NameExistsError(f'The names: - {names_in} - exists in mesh properties')
+            raise errors.NameExistsError(f'The names: - {names_in} - exists in {self.class_name()}')
         
         
         self.__dict__.update(data)
@@ -97,7 +104,7 @@ class SuperArrayManager:
             raise FileExistsError
         
         manager = ArrayDataManager(self.class_path)
-        self.insert_data(manager.get_data_from_load())
+        self.insert_data(manager.get_data_from_load(), load=True)
 
     def __getitem__(self, key):
         return self.__dict__[key]

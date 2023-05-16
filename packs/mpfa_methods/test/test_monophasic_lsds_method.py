@@ -40,6 +40,37 @@ def setup1():
     bc = BoundaryConditions()
     bc.insert_name(problem_name)
 
+    # left_value = 100
+    # right_value = 0
+
+    # vcentroids = mesh_properties.nodes_centroids
+
+    # delta = 1e-5
+    # x_left = vcentroids[:,0].min()
+    # x_right = vcentroids[:,0].max()
+
+    # nodes_left = mesh_properties.nodes[vcentroids[:,0] < x_left + delta]
+    # nodes_right = mesh_properties.nodes[vcentroids[:,0] > x_right - delta]
+
+    # pressure_left = np.repeat(left_value, len(nodes_left))
+    # pressure_right = np.repeat(right_value, len(nodes_right))
+
+    # nodes_bc = np.concatenate([nodes_left, nodes_right])
+    # pressures_bc = np.concatenate([pressure_left, pressure_right])
+
+    # dtype_bc_array = [('node_id', np.uint64), ('value', np.float64)]
+    # bc_array = np.zeros(len(nodes_bc), dtype=dtype_bc_array)
+    # bc_array['node_id'][:] = nodes_bc
+    # bc_array['value'][:] = pressures_bc
+
+    # bc.insert_data({'nodes_pressures': bc_array})
+
+    # bc.export_data()
+    bc.load_data()
+
+    import pdb; pdb.set_trace()
+
+
 
 
 

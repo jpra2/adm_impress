@@ -1,6 +1,6 @@
 from packs.manager.arraydatamanager import SuperArrayManager
 
-bc_data = ['nodes_pressure_defined', 'nodes_pressure_values']
+bc_data = ['nodes_pressures']
 
 
 class BoundaryConditions(SuperArrayManager):
