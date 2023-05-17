@@ -1,5 +1,7 @@
 import numpy as np
 import scipy.sparse as sp
+from packs.manager.boundary_conditions import BoundaryConditions
+from packs import defnames
 
 class LsdsFluxCalculation:
     """
@@ -538,7 +540,10 @@ class LsdsFluxCalculation:
             edges,
             bool_boundary_edges,
             adjacencies,
-            boundary_conditions,
+            boundary_conditions: BoundaryConditions,
+            nodes,
+            bool_boundary_nodes,
+            nodes_of_edges,
             **kwargs
     ):
         """ Returns the dict with transmissibility matrix and source term
@@ -556,10 +561,88 @@ class LsdsFluxCalculation:
             _type_: _description_
         """
 
-
-
         resp = dict()
+        bool_internal_edges = ~bool_boundary_edges
+        source = np.zeros(faces.shape[0])
+        T = sp.lil_matrix((faces.shape[0], faces.shape[0]))
+             
+        #verify pressure prescription of nodes in boundary
+        nodes_pressure_prescription = defnames.nodes_pressure_prescription_name
+        node_press = boundary_conditions[nodes_pressure_prescription]
+        ids_node_press = node_press['id']
+        values = node_press['value']
         
+        for edge in edges[bool_boundary_edges]:
+            face_adj = adjacencies[edge,0]
+            xi_params_edge = xi_params[edge]
+            edge_nodes = nodes_of_edges[edge]
+            B_node = edge_nodes[0]
+            A_node = edge_nodes[1]
+            xi_B = xi_params_edge[3]
+            xi_A = xi_params_edge[2]
+            xi_K = xi_params_edge[0]
+            
+            if np.any(np.isin(ids_node_press, [B_node])):
+                source[face_adj] += -xi_B*values[ids_node_press == B_node][0]
+            else:
+                test = nodes_weights['node_id'] == B_node
+                faces_node = nodes_weights['face_id'][test]
+                weights_node = nodes_weights['weight'][test]
+                T[face_adj, faces_node] += xi_B*weights_node 
+                
+            if np.any(np.isin(ids_node_press, [A_node])):
+                source[face_adj] += -xi_A*values[ids_node_press == A_node][0]
+            else:
+                test = nodes_weights['node_id'] == A_node
+                faces_node = nodes_weights['face_id'][test]
+                weights_node = nodes_weights['weight'][test]
+                T[face_adj, faces_node] += xi_A*weights_node
+            
+            T[face_adj, face_adj] += xi_K
+        
+        for edge in edges[bool_internal_edges]:
+            faces_adj = adjacencies[edge]
+            xi_params_edge = xi_params[edge]
+            edge_nodes = nodes_of_edges[edge]
+            B_node = edge_nodes[0]
+            A_node = edge_nodes[1]
+            xi_B = xi_params_edge[3]
+            xi_A = xi_params_edge[2]
+            xi_L = xi_params_edge[1]
+            xi_K = xi_params_edge[0]
+            
+            face_adj = faces_adj[0] ## face K
+            face_adj_L = faces_adj[1] ## face L
+            
+            if np.any(np.isin(ids_node_press, [B_node])):
+                source[face_adj] += -xi_B*values[ids_node_press == B_node][0]
+                source[face_adj_L] += xi_B*values[ids_node_press == B_node][0]
+            else:
+                test = nodes_weights['node_id'] == B_node
+                faces_node = nodes_weights['face_id'][test]
+                weights_node = nodes_weights['weight'][test]
+                T[face_adj, faces_node] += xi_B*weights_node
+                T[face_adj_L, faces_node] += -xi_B*weights_node
+                
+            if np.any(np.isin(ids_node_press, [A_node])):
+                source[face_adj] += -xi_A*values[ids_node_press == A_node][0]
+                source[face_adj_L] += xi_A*values[ids_node_press == A_node][0]
+            else:
+                test = nodes_weights['node_id'] == A_node
+                faces_node = nodes_weights['face_id'][test]
+                weights_node = nodes_weights['weight'][test]
+                T[face_adj, faces_node] += xi_A*weights_node
+                T[face_adj_L, faces_node] += -xi_A*weights_node
+            
+            T[face_adj, face_adj] += xi_K
+            T[face_adj, face_adj_L] += xi_L
+            T[face_adj_L, face_adj] += -xi_K
+            T[face_adj_L, face_adj_L] += -xi_L
+            
+        resp.update({
+            'transmissibility': T,
+            'source': source
+        })       
         
         return resp
 

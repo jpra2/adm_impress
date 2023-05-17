@@ -7,6 +7,9 @@ from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import create
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.utils.utils_old import get_box
+from scipy.sparse.linalg import spsolve
+from packs.manager.mesh_data import MeshData
+import os
 
 def setup1():
     """Define monophasic problem with pressure presciption only
@@ -58,35 +61,37 @@ def setup1():
     # nodes_bc = np.concatenate([nodes_left, nodes_right])
     # pressures_bc = np.concatenate([pressure_left, pressure_right])
 
-    # dtype_bc_array = [('node_id', np.uint64), ('value', np.float64)]
+    # dtype_bc_array = [('id', np.uint64), ('value', np.float64)]
     # bc_array = np.zeros(len(nodes_bc), dtype=dtype_bc_array)
-    # bc_array['node_id'][:] = nodes_bc
+    # bc_array['id'][:] = nodes_bc
     # bc_array['value'][:] = pressures_bc
-
+    
     # bc.insert_data({'nodes_pressures': bc_array})
 
     # bc.export_data()
     bc.load_data()
-
-    import pdb; pdb.set_trace()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    import pdb; pdb.set_trace()
+    
+    
+    lsds = LsdsFluxCalculation()
+    resp = lsds.mount_problem(
+        mesh_properties.nodes_weights,
+        mesh_properties.xi_params,
+        mesh_properties.faces,
+        mesh_properties.edges,
+        mesh_properties.bool_boundary_edges,
+        mesh_properties.adjacencies,
+        bc,
+        mesh_properties.nodes,
+        mesh_properties.bool_boundary_nodes,
+        mesh_properties.nodes_of_edges
+    )
+    
+    pressure = spsolve(resp['transmissibility'], resp['source'])
+    mesh_path = os.path.join(defpaths.mesh, defpaths.mpfad_test_mesh)
+    mesh_data = MeshData(mesh_path=mesh_path)
+    mesh_data.create_tag('pressure')
+    mesh_data.insert_tag_data('pressure', pressure, 'faces', mesh_properties.faces)
+    mesh_data.export_all_elements_type_to_vtk('test_pressure', 'faces')
 
 
 def test_monophasic_problem_with_pressure_prescription():
@@ -95,7 +100,7 @@ def test_monophasic_problem_with_pressure_prescription():
     """
 
     setup1()
-
+    import pdb; pdb.set_trace()
 
 
 

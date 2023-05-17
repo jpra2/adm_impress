@@ -45,6 +45,15 @@ class ArrayDataManager:
 
 class SuperArrayManager:
     
+    @classmethod
+    def test_names(cls, names):
+        """This function must be updated from the child class
+
+        Args:
+            names (_type_): _description_
+        """
+        pass
+    
     def insert_name(self, name=''):
         self.__dict__['name'] = np.array([name])
     
@@ -58,8 +67,11 @@ class SuperArrayManager:
         Args:
             data (_type_): dict
         """
+        
         names = list(data.keys())
         values = list(data.values())
+        
+        self.test_names(names)
         
         if load is True:
             indexes = np.arange(len(names))
