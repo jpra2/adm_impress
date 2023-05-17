@@ -2,6 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 from packs.manager.boundary_conditions import BoundaryConditions
 from packs import defnames
+from packs.mpfa_methods.weight_interpolation.gls_weight_2d import mount_sparse_weight_matrix
 
 class LsdsFluxCalculation:
     """
@@ -541,8 +542,6 @@ class LsdsFluxCalculation:
             bool_boundary_edges,
             adjacencies,
             boundary_conditions: BoundaryConditions,
-            nodes,
-            bool_boundary_nodes,
             nodes_of_edges,
             **kwargs
     ):
@@ -646,8 +645,80 @@ class LsdsFluxCalculation:
         
         return resp
 
+    def get_edges_flux(
+        self,
+        xi_alpha,
+        nodes_weights,
+        nodes_of_edges,
+        faces_pressures,
+        adjacencies,
+        boundary_conditions: BoundaryConditions,
+        **kwargs
+    ):
+        
+        nodes_pressure_prescription = defnames.nodes_pressure_prescription_name
+        node_press = boundary_conditions[nodes_pressure_prescription]
+        ids_node_press = node_press['id']
+        values = node_press['value']
+        
+        nodes_weight_matrix = mount_sparse_weight_matrix(nodes_weights)
+        K_faces = adjacencies[:, 0]
+        L_faces = adjacencies[:, 1]
+        
+        B_nodes = nodes_of_edges[:, 0]
+        A_nodes = nodes_of_edges[:, 1]
+        
+        K_pressure = faces_pressures[K_faces]
+        L_pressure = faces_pressures[L_faces]
+        L_pressure[L_faces == -1] = 0
+        
+        nodes_pressures = nodes_weight_matrix.dot(faces_pressures)
+        nodes_pressures[ids_node_press] = values
+        
+        B_pressure = nodes_pressures[B_nodes]
+        A_pressure = nodes_pressures[A_nodes]
+        
+        Fk_sigma = xi_alpha[:, 0]*K_pressure + xi_alpha[:, 1]*L_pressure + xi_alpha[:, 2]*A_pressure + xi_alpha[:, 3]*B_pressure
+        
+        return Fk_sigma
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        xi_K = sp.lil_matrix(())
+        
+        
+        
+        pass
 
-
+    def get_faces_flux(
+        self,
+        edges_flux,
+        adjacencies,
+        bool_boundary_edges,
+        **kwargs
+    ):
+        bool_internal_edges = ~bool_boundary_edges
+        K_faces = adjacencies[:,0]
+        L_faces = adjacencies[:,1]
+        
+        index_faces = K_faces
+        value_flux = edges_flux
+        
+        index_faces = np.concatenate([index_faces, L_faces[bool_internal_edges]])
+        value_flux = np.concatenate([value_flux, -edges_flux[bool_internal_edges]])
+        
+        faces_flux = np.bincount(index_faces, weights=value_flux)
+        return faces_flux
+        
 
 
 

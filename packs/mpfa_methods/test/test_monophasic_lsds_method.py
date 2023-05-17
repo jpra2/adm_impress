@@ -81,17 +81,33 @@ def setup1():
         mesh_properties.bool_boundary_edges,
         mesh_properties.adjacencies,
         bc,
-        mesh_properties.nodes,
-        mesh_properties.bool_boundary_nodes,
         mesh_properties.nodes_of_edges
     )
     
     pressure = spsolve(resp['transmissibility'], resp['source'])
+    edges_flux = lsds.get_edges_flux(
+        mesh_properties.xi_params,
+        mesh_properties.nodes_weights,
+        mesh_properties.nodes_of_edges,
+        pressure,
+        mesh_properties.adjacencies,
+        bc        
+    )
+    faces_flux = lsds.get_faces_flux(
+        edges_flux,
+        mesh_properties.adjacencies,
+        mesh_properties.bool_boundary_edges
+    )
+    
+    
     mesh_path = os.path.join(defpaths.mesh, defpaths.mpfad_test_mesh)
     mesh_data = MeshData(mesh_path=mesh_path)
     mesh_data.create_tag('pressure')
     mesh_data.insert_tag_data('pressure', pressure, 'faces', mesh_properties.faces)
+    mesh_data.create_tag('faces_flux')
+    mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces', mesh_properties.faces)
     mesh_data.export_all_elements_type_to_vtk('test_pressure', 'faces')
+    import pdb; pdb.set_trace()
 
 
 def test_monophasic_problem_with_pressure_prescription():
