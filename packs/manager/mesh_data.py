@@ -89,6 +89,16 @@ class MeshData(MeshInit):
         
         self.mb.write_file(name, [meshset])
     
+    def export_only_the_elements(self, export_name, element_type, elements_array):
+        
+        name = os.path.join(defpaths.results, export_name + '.vtk')
+        all_elements = self.get_all_elements(element_type)
+        to_elements = np.array(all_elements).astype(np.uint64)[elements_array]
+        meshset = self.mb.create_meshset()
+        self.mb.add_entities(meshset, to_elements)
+        
+        self.mb.write_file(name, [meshset])
+    
     def get_data_type(self, data_type):
         
         if data_type == 'float':
