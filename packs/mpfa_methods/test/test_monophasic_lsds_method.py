@@ -399,7 +399,195 @@ def setup3():
     mesh_data.export_only_the_elements('test_6_nodes_pressure_boundary', 'nodes', nodes_bc)
     import pdb; pdb.set_trace()
     
+def setup4():
+    """test 6 (oblique drain) of paper:
     
+    Benchmark on Discretization Schemes for 
+    Anisotropic Diffusion Problems on General Grids
+
+    Returns:
+        _type_: _description_
+    """
+    mesh_test_name = defpaths.oblique_quad_mesh
+    mesh_properties_name = defpaths.mesh_prop_test7
+    mesh_verify(mesh_test_name)
+    mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
+    
+    # define nodes to calculate_weights
+    mesh_properties.insert_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
+    
+    ## create weights and xi params for flux calculation
+    lsds = LsdsFluxCalculation()
+    mesh_properties.update_data(
+        lsds.preprocess(**mesh_properties.get_all_data())
+    )
+
+    mesh_properties.insert_data({
+        'nodes_weights': get_gls_nodes_weights(**mesh_properties.get_all_data()),
+        'xi_params': lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
+    })
+    
+    mesh_properties.remove_data(['nodes_to_calculate'])
+    
+    def exact_solution(centroids, delta):
+        x = centroids[:, 0]
+        y = centroids[:, 1]
+        return -x -delta*y
+    
+    def fi_1(centroids, delta):
+        x = centroids[:, 0]
+        y = centroids[:, 1]
+        return y - delta*(x - 0.5) - 0.475 
+    
+    def fi_2(centroids, delta): 
+        return fi_1(centroids, delta) - 0.05
+    
+    def omega1(centroids, delta):
+        return fi_1(centroids, delta) < 0
+    
+    def omega2(centroids, delta):
+        return (fi_1(centroids, delta) > 0) & (fi_2(centroids, delta) < 0)
+    
+    def omega3(centroids, delta):
+        return fi_2(centroids, delta) > 0
+    
+    def get_permeability_obl(centroids, delta):
+        alpha1, beta1 = 100, 10
+        alpha2, beta2 = 1, 0.1
+        theta = np.arctan(delta)
+        
+        R = np.array([
+            [np.cos(theta), -np.sin(theta)],
+            [np.sin(theta), np.cos(theta)] 
+        ])
+        
+        R_inv = np.linalg.inv(R)
+        
+        K1 = np.array([
+            [alpha1, 0],
+            [0, beta1]
+        ])
+        
+        K2 = np.array([
+            [alpha2, 0],
+            [0, beta2]
+        ])
+        
+        K1 = R.dot(K1).dot(R_inv)
+        K2 = R.dot(K2).dot(R_inv)
+        
+        permeability = np.zeros((len(centroids), 2, 2))
+        om1 = omega1(centroids, delta)
+        om2 = omega2(centroids, delta)
+        om3 = omega3(centroids, delta)
+        
+        permeability[om2, :] = K1
+        permeability[(om1 | om3), :] = K2
+        
+        return {'permeability': permeability}
+    
+    
+    
+    ## define permeability
+    delta = 0.2
+    mesh_properties.update_data(
+        get_permeability_obl(
+            mesh_properties.faces_centroids[:, 0:2],
+            delta
+        )
+    )
+    
+    #define boundary conditions    
+    problem_name = 'monophasic_oblique_test7'
+    bc = BoundaryConditions()
+    bc.insert_name(problem_name)
+    
+    xmin, ymin = mesh_properties.faces_centroids[:, 0:2].min(axis=0)
+    xmax, ymax = mesh_properties.faces_centroids[:, 0:2].max(axis=0)
+    
+    mesh_delta = 1e-7
+    nodes_xmin = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 0] < xmin + mesh_delta
+    ]
+    nodes_xmax = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 0] > xmax - mesh_delta
+    ]
+    nodes_ymin = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 1] < ymin + mesh_delta
+    ]
+    nodes_ymax = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 1] > ymax - mesh_delta
+    ]
+    
+    nodes_bc = np.unique(np.concatenate([
+        nodes_xmin, nodes_xmax, nodes_ymin, nodes_ymax
+    ])).astype(np.uint64)
+    
+    centroids_nodes_bc = mesh_properties.nodes_centroids[nodes_bc, 0:2]
+    pressures_bc = exact_solution(centroids_nodes_bc, delta)
+    
+    bc.set_boundary('nodes_pressures', nodes_bc, pressures_bc)
+    
+    lsds = LsdsFluxCalculation()
+    resp = lsds.mount_problem(
+        mesh_properties.nodes_weights,
+        mesh_properties.xi_params,
+        mesh_properties.faces,
+        mesh_properties.edges,
+        mesh_properties.bool_boundary_edges,
+        mesh_properties.adjacencies,
+        bc,
+        mesh_properties.nodes_of_edges
+    )
+    
+    pressure = spsolve(resp['transmissibility'], resp['source'])
+    edges_flux = lsds.get_edges_flux(
+        mesh_properties.xi_params,
+        mesh_properties.nodes_weights,
+        mesh_properties.nodes_of_edges,
+        pressure,
+        mesh_properties.adjacencies,
+        bc        
+    )
+    
+    faces_flux = lsds.get_faces_flux(
+        edges_flux,
+        mesh_properties.adjacencies,
+        mesh_properties.bool_boundary_edges
+    )
+    
+    p_exact = exact_solution(mesh_properties.faces_centroids[:, 0:2], delta)
+    
+    error = np.absolute((pressure - p_exact))
+    
+    mesh_path = os.path.join(defpaths.mesh, defpaths.oblique_quad_mesh)
+    mesh_data = MeshData(mesh_path=mesh_path)
+    mesh_data.create_tag('pressure')
+    mesh_data.insert_tag_data('pressure', pressure, 'faces', mesh_properties.faces)
+    mesh_data.create_tag('permeability', data_size=4)
+    perm = mesh_properties.permeability.reshape((len(mesh_properties.faces), 4))
+    mesh_data.insert_tag_data('permeability', perm, 'faces', mesh_properties.faces)
+    mesh_data.create_tag('faces_flux')
+    mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces', mesh_properties.faces)
+    mesh_data.create_tag('nodes_pressure_presc')
+    mesh_data.insert_tag_data('nodes_pressure_presc', pressures_bc, 'nodes', nodes_bc)
+    mesh_data.create_tag('pressure_error')
+    mesh_data.insert_tag_data('pressure_error', error, 'faces', mesh_properties.faces)
+    mesh_data.export_all_elements_type_to_vtk('test_7_nodes', 'nodes')
+    mesh_data.export_all_elements_type_to_vtk('test_7_faces', 'faces')
+    mesh_data.export_only_the_elements('test_7_nodes_pressure_boundary', 'nodes', nodes_bc)
+    import pdb; pdb.set_trace()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+     
+        
     
     
     
@@ -416,7 +604,8 @@ def test_monophasic_problem_with_pressure_prescription():
 
     # setup1()
     # setup2()
-    setup3()
+    # setup3()
+    setup4()
     import pdb; pdb.set_trace()
 
 

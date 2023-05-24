@@ -299,12 +299,14 @@ class CalculateGlsWeight2D:
 
     @staticmethod
     def bM(n_faces, n_nodes, n_edges, mfaces, mnodes, mnormalperm):
+        
         M = np.zeros((n_faces + n_nodes + n_edges, 2 * n_faces + 1))
         M[0:n_faces, 0:2 * n_faces] = mfaces
         M[0:n_faces, -1] = 1
-        M[n_faces:n_faces + n_nodes, 0:2 * n_faces] = mnodes
+        if n_nodes > 0:
+            M[n_faces:n_faces + n_nodes, 0:2 * n_faces] = mnodes
         M[n_faces + n_nodes:n_faces + n_nodes + n_edges, 0:2 * n_faces] = mnormalperm
-
+            
         return M
 
     @staticmethod

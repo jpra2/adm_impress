@@ -2,6 +2,7 @@ from packs.manager.arraydatamanager import SuperArrayManager
 from copy import deepcopy
 from packs.errors import err
 from packs import defnames
+import numpy as np
 
 
 class BoundaryConditions(SuperArrayManager):
@@ -25,6 +26,7 @@ class BoundaryConditions(SuperArrayManager):
     """
     
     boundary_names = [defnames.nodes_pressure_prescription_name]
+    dtype_bc_array = [('id', np.uint64), ('value', np.float64)]
     
     @classmethod
     def test_names(cls, names):
@@ -38,3 +40,12 @@ class BoundaryConditions(SuperArrayManager):
         for name in names2:
             if name not in cls.boundary_names:
                 raise err.NameExistsError(f'the name {name} not in {cls.boundary_names}')
+
+    def set_boundary(self, bc_type, ids, values):
+        self.test_names([bc_type])
+        
+        bc_array = np.zeros(len(ids), dtype=self.dtype_bc_array)
+        bc_array['id'][:] = ids
+        bc_array['value'][:] = values
+        
+        self.insert_data({bc_type: bc_array})
