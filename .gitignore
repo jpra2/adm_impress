@@ -13,6 +13,7 @@
 !cube_unstructured.msh
 !cube_structured.msh
 !2d_unstructured.msh
+!oblique_quadrilateral_test1.msh
 
 *.geo
 !2d_square.geo
