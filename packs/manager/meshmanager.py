@@ -157,10 +157,8 @@ class MeshProperty:
         manager.export()
 
     def load_data(self):
-        if self.exists():
-            pass
-        else:
-            raise FileExistsError
+        self.verify_if_exists()
+        
         manager = ArrayDataManager(self.class_path)
         self.insert_data(manager.get_data_from_load())
 
@@ -185,7 +183,7 @@ class MeshProperty:
     
     def update_data(self, datas_to_update: dict):
         
-        my_datas_name = list(self.__dict__.keys())
+        my_datas_name = self.data_names
         
         new_data = dict()
         for name in datas_to_update:
@@ -198,6 +196,15 @@ class MeshProperty:
         
         self.insert_data(new_data)
     
+    def insert_or_update_data(self, datas: dict):
+        
+        data_names = list(datas.keys())
+        names_in = self.verify_names_in_data_names(data_names)
+        names_out = self.verify_names_out_data_names(data_names)
+        
+        self.insert_data({name: datas[name] for name in names_out})
+        self.update_data({name: datas[name] for name in names_in})
+        
     def remove_data(self, data_name: list):
         for name in data_name:
             del self.__dict__[name]
@@ -205,11 +212,43 @@ class MeshProperty:
     def exists(self):
         return os.path.exists(self.class_path)
     
+    def verify_if_exists(self):
+        if self.exists():
+            pass
+        else:
+            raise FileExistsError
+    
     def keys(self):
         return self.__dict__.keys()
-            
-            
-
+    
+    @property        
+    def data_names(self):
+        return list(self.keys())
+    
+    def verify_names_in_data_names(self, names: list):
+        names_series = pd.DataFrame({
+            'names': names
+        })
+        
+        names_data_self = np.array(self.data_names)
+        test = names_series.isin(names_data_self)
+        test = test.values
+        names_in = names_series[test].values.flatten()
+        return names_in
+    
+    def verify_names_out_data_names(self, names:list):
+        names_series = pd.DataFrame({
+            'names': names
+        })
+        
+        names_data_self = np.array(self.data_names)
+        test = names_series.isin(names_data_self)
+        test = ~test.values
+        names_out = names_series[test].values.flatten()
+        return names_out
+        
+        
+        
 
         
     
