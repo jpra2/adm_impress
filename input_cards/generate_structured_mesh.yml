@@ -1,0 +1,12 @@
+
+# starting point
+starting_point: [0.0, 0.0, 0.0]
+
+# tamanho de cada bloco da malha fina
+block_size: [13.656, 10.67, -10]
+
+# tamanho total da malha
+block_number: [200, 1, 1]
+
+# nome da malha para salvar
+mesh_name: '200x1x1_ed_zneg.h5m'

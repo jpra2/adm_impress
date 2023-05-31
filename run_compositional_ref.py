@@ -45,10 +45,6 @@ class run_simulation:
         self.cum_gas_prod_RC = []
         self.cum_oil_prod_SC = []
         self.cum_gas_prod_SC = []
-        self.FR_oil = 0
-        self.cum_FR_oil = []
-        self.pressure_well = []
-        self.oil_prod_rate_SC = []
 
         self.vector_time = []
         self.use_vpi = data_loaded['use_vpi']
@@ -80,9 +76,9 @@ class run_simulation:
         return M, data_impress, wells, fprop, load
 
     def get_well_inj_properties(self, M, fprop, wells):
-        #import pdb; pdb.set_trace()
+
         z = (wells['z']).T
-        if any(wells['ws_p']!=wells['ws_inj']):
+        if (wells['ws_p']!=wells['ws_inj']):
             wells['inj_p_term'] = []
         #q_wells = wells['ws_inj']#[wells['inj_cond']=='reservoir']
 
@@ -156,11 +152,10 @@ class run_simulation:
                 fprop.Csi_W0 = fprop.Csi_j[0,-1,:]
                 fprop.rho_W = fprop.Csi_j[0,-1,:]
 
-            self.P_SC = np.ones_like(wells['ws_prod'])*ctes.P_SC
-
-            p_well = StabilityCheck(self.P_SC, ctes.T_SC)
+            ctes.P_SC *= np.ones_like(wells['ws_prod'])
+            p_well = StabilityCheck(ctes.P_SC, ctes.T_SC)
             L, V, A, xkj, Csi_j, rho_j =  \
-                p_well.run_init(self.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']], \
+                p_well.run_init(ctes.P_SC, fprop.z[0:ctes.Nc,wells['ws_prod']], \
                 ksi_W = fprop.Csi_W[wells['ws_prod']], rho_W = fprop.rho_W[wells['ws_prod']])
 
         else: fprop.xkj = []; fprop.L = []; fprop.V = []; wells['inj_term'] = []
@@ -173,21 +168,16 @@ class run_simulation:
     def run(self, M, wells, fprop, load):
         ''' Function created to compute reservoir and fluid properties at each \
         time step '''
-        V_res = data_loaded['compositional_data']['water_data']['V_res']
-        So_ini = data_loaded['compositional_data']['water_data']['So_ini']
-        poro = data_loaded['compositional_data']['water_data']['poro']
-        self.HCVP = V_res*fprop.So[-1]*poro
 
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
-        #import pdb; pdb.set_trace()
+
         '---- Get pressure field and new time step (if the past time step does \
         not obey the CFL condition) -------------------------------------------'
 
         self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t)
 
         self.t += self.delta_t
-        #import pdb; pdb.set_trace()
         '----------------- Perform Phase stability test and flash -------------'
 
         if ctes.load_k and ctes.compressible_k:
@@ -209,9 +199,9 @@ class run_simulation:
 
 
         '-------------------- Advance in time and save results ----------------'
-        self.oil_production_rate_SC_t, self.gas_production_rate_SC_t, self.pressure_ = \
-            self.prod_rate_RCorSC(fprop, wells, self.P_SC)
-        self.oil_production_rate_RC_t, self.gas_production_rate_RC_t, self.pressure_ = \
+        self.oil_production_rate_SC_t, self.gas_production_rate_SC_t = \
+            self.prod_rate_RCorSC(fprop, wells, ctes.P_SC)
+        self.oil_production_rate_RC_t, self.gas_production_rate_RC_t = \
             self.prod_rate_RCorSC(fprop, wells, fprop.P[wells['ws_prod']])
 
         self.update_vpi(fprop, wells)
@@ -230,23 +220,18 @@ class run_simulation:
 
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         if len(wells['ws_prod'])>0: self.update_production()
-        '''Condições da WAG'''
-        #import pdb; pdb.set_trace()
+
+        # '''Condições da WAG'''
         if any(self.t >= wells['DT']):
-            #import pdb; pdb.set_trace()
             if wells['z'][0][-1]== 0:
                 wells['z'] = wells['za']
                 wells['values_q'] = wells['values_qa']
-                #self.get_well_inj_properties(M, fprop, wells)
             else:
-                #import pdb; pdb.set_trace()
                 wells['z'] = wells['zco2']
                 wells['values_q'] = wells['values_qco2']
-            #import pdb; pdb.set_trace()
+
             self.get_well_inj_properties(M, fprop, wells)
             wells['DT'] = wells['DT'][1:]
-
-            #import pdb; pdb.set_trace()
 
     def update_well_inj_rate(self, fprop, wells):
         # Update wells injection rate if injection condition is the reservoir one
@@ -289,12 +274,10 @@ class run_simulation:
             q_molar_prod = np.sum(fprop.qk_prod[0:ctes.Nc],axis=0)
             oil_production_rate_t = abs(np.sum(L * q_molar_prod / Csi_j[:,0]))
             gas_production_rate_t = abs(np.sum(V * q_molar_prod / Csi_j[:,1]))
-            pressure_ = fprop.P[0]
             if abs(q_molar_prod)>1e3: import pdb; pdb.set_trace()
 
         else: oil_production_rate_t =[]; gas_production_rate_t =[]
-        #import pdb; pdb.set_trace()
-        return oil_production_rate_t, gas_production_rate_t, pressure_
+        return oil_production_rate_t, gas_production_rate_t
 
     def update_loop(self):
         ''' Function to count how many loops it has been since the simulation \
@@ -328,10 +311,7 @@ class run_simulation:
         if ctes.load_k:
             self.oil_production_RC +=  abs(self.oil_production_rate_RC_t)*self.delta_t
             self.gas_production_RC +=  abs(self.gas_production_rate_RC_t)*self.delta_t
-            self.FR_oil = self.oil_production_RC/self.HCVP
-            self.oil_product_rate_SC = self.oil_production_rate_RC_t / 1.15 #1.26482488
 
-            self.oil_prod_rate_SC.append(self.oil_product_rate_SC)
             self.oil_production_rate_RC.append(self.oil_production_rate_RC_t)
             self.gas_production_rate_RC.append(self.gas_production_rate_RC_t)
             self.cum_oil_prod_RC.append(self.oil_production_RC)
@@ -344,10 +324,8 @@ class run_simulation:
             self.gas_production_rate_SC.append(self.gas_production_rate_SC_t)
             self.cum_oil_prod_SC.append(self.oil_production_SC)
             self.cum_gas_prod_SC.append(self.gas_production_SC)
-            self.vector_time.append(self.t)
 
-            self.cum_FR_oil.append(self.FR_oil)
-            self.pressure_well.append(self.pressure_)
+            self.vector_time.append(self.t)
 
     def update_current_compositional_results(self, M, wells, fprop):
         #total_flux_internal_faces = fprop.total_flux_internal_faces.ravel() #* M.faces.normal[M.faces.internal]
@@ -358,11 +336,11 @@ class run_simulation:
 
         self.current_compositional_results = np.array([self.loop, self.vpi, self.sim_time,
             self.t, fprop.P, fprop.Sw, fprop.So, fprop.Sg, self.oil_production_RC,
-            self.gas_production_RC, self.oil_production_SC, self.gas_production_SC, fprop.z,
-            M.data['centroid_volumes'], Nk, fprop.xkj,
-            self.oil_production_rate_RC, self.gas_production_rate_RC, self.cum_oil_prod_RC, self.cum_gas_prod_RC,
+            self.gas_production_RC, self.oil_production_SC, self.gas_production_SC,
+            fprop.z, M.data['centroid_volumes'], Nk, fprop.xkj,
+            self.oil_production_rate_RC, self.gas_production_rate_RC, self.cum_oil_prod_RC,
             self.oil_production_rate_SC, self.gas_production_rate_SC, self.cum_oil_prod_SC,
-            self.vector_time, self.cum_FR_oil, self.pressure_well, self.oil_prod_rate_SC], dtype=object)
+            self.vector_time],dtype=object)
         self.all_results.append(self.current_compositional_results)
         M.data['saturation'][:] = fprop.Sw
         M.data['So'][:] = fprop.So

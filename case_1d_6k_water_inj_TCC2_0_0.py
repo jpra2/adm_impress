@@ -26,8 +26,9 @@ for arq in arquivos:
         Sg_CMG = [float(line.rstrip('\n\r')) for line in fSg]
 
         #datas = np.load('flying/results_water_inj_6k_modified_case_upw_4326.npy', allow_pickle=True)
-        datas = np.load('flying/results_water_inj_6k_200_FOU_modified_case_17445.npy', allow_pickle=True)
-
+        #datas = np.load('flying/results_water_inj_6k_200_FOU_modified_case_17445.npy', allow_pickle=True)
+        datas = np.load('flying/results_water_inj_6k_200_upw_teste_777.npy', allow_pickle=True)
+        
         for data in datas[2:]:
             Sw = data[5]
             So = data[6]

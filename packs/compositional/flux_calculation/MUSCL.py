@@ -125,11 +125,11 @@ class MUSCL:
         ponteiro_LLF = ponteiro_LLF.sum(axis=0,dtype=bool)
         return ponteiro_LLF'''
 
-    def update_flux_upwind(self, Pot_hid, Fk_face_upwind_all, ponteiro):
+    def update_flux_upwind(self, Pot_hid, Fk_face_upwind_all, v0, ponteiro):
         Fk_face_upwind = np.empty_like(Fk_face_upwind_all[:,:,0])
-
-        Pot_hidj = Pot_hid[0,ctes.v0[:,0]][ponteiro] #- G[0,:,:,0]
-        Pot_hidj_up = Pot_hid[0,ctes.v0[:,1]][ponteiro] #- G[0,:,:,1]
+    
+        Pot_hidj = Pot_hid[0,v0[:,0]][ponteiro] #- G[0,:,:,0]
+        Pot_hidj_up = Pot_hid[0,v0[:,1]][ponteiro] #- G[0,:,:,1]
 
         Fk_face_upwind[:,Pot_hidj_up <= Pot_hidj] = \
             Fk_face_upwind_all[:,Pot_hidj_up <= Pot_hidj, 0]
@@ -169,12 +169,12 @@ class MUSCL:
         Fk_face_contour_RS, alpha_wv2 =  RS_contour.LLF(M, fprop, Nk_face_contour, P_face[np.newaxis,0],
             ftotal[:,0][:,np.newaxis], Fk_faces_contour, np.ones(1,dtype=bool))
         '''
-        #ponteiro[ctes_MUSCL.faces_contour] = True
-        #Fk_internal_faces[:,ponteiro] = self.update_flux_upwind(fprop.P[np.newaxis,:], \
-        #    Fk_face[:,ponteiro], ponteiro)
+        ponteiro[ctes_MUSCL.faces_contour] = True
+        Fk_internal_faces[:,ponteiro] = self.update_flux_upwind(fprop.P[np.newaxis,:], \
+            Fk_face[:,ponteiro], ctes.v0, ponteiro)
 
-        Fk_internal_faces[:,0] = Fk_face[:,0,0] #comment for burgers
-        Fk_internal_faces[:,1] = Fk_face[:,1,0] #comment for burgers
+        #Fk_internal_faces[:,0] = Fk_face[:,0,0] #comment for burgers
+        #Fk_internal_faces[:,1] = Fk_face[:,1,0] #comment for burgers
         '-------- Perform volume balance to obtain flux through volumes -------'
         Fk_vols_total = Flux().update_flux_volumes(Fk_internal_faces)
 

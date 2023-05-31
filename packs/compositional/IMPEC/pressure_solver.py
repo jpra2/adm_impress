@@ -15,7 +15,6 @@ class TPFASolver:
         Pnew = self.update_pressure(T, D)
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop, Pnew)
         self.update_flux_wells(fprop, Pnew, wells, delta_t)
-        #import pdb; pdb.set_trace()
         return Pnew, Ft_internal_faces, self.q
 
     def dVt_derivatives(self, dVjdNk, dVjdP):
@@ -39,7 +38,7 @@ class TPFASolver:
 
             Ta = (sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_volumes, ctes.n_volumes)))#.toarray()
             T += Ta.multiply(self.dVtk[i, :, np.newaxis])
-        #import pdb; pdb.set_trace()
+
         T *= delta_t
         ''' Transmissibility diagonal term '''
         #diag = np.diag((ctes.Vbulk * ctes.porosity * ctes.Cf - self.dVtP))
@@ -89,7 +88,6 @@ class TPFASolver:
 
     def volume_discrepancy_independent_term(self, fprop):
         volume_discrepancy_term = fprop.Vp - fprop.Vt
-        #volume_discrepancy_term[:,] = 1e-20
         if np.max(abs(volume_discrepancy_term)) > 5e-4:
             #import pdb; pdb.set_trace()
             print('hit: ', np.max(abs(volume_discrepancy_term)))
@@ -154,5 +152,4 @@ class TPFASolver:
 
             self.q[:,wp] = np.sum(q_term * well_term, axis = 1)
             fprop.qk_prod = self.q[:,wells['ws_prod']]
-            #import pdb; pdb.set_trace()
             fprop.q_phase = mob_ratio * well_term

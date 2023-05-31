@@ -17,7 +17,6 @@ else: stop_criteria = data_loaded['compositional_data']['maximum_time']
 loop_max = 1000
 run_criteria = 0
 loop = 0
-test_t = 0
 """ ----------------------------- RUN CODE --------------------------------- """
 
 load = data_loaded['load_data']
@@ -51,18 +50,15 @@ while run_criteria < stop_criteria:# and loop < loop_max:
         'If the current simulation time plus the computed time-step is bigger \
         than the final simulation time, correct the time-step so the current \
         simulation time plus delta_t is equal to the final time'
-        #import pdb; pdb.set_trace()
         if sim.t + sim.delta_t > t_next:
             sim.delta_t = t_next - sim.t
 
         print('progress... {}[%]'.format(np.round(sim.t/sim.time_save[-1]*100,4)))
     loop = sim.loop
-    test_t = sim.t
-    #import pdb; pdb.set_trace()
-
     #print('dt: ', sim.delta_t)
 
+
 tf = time.time()
-print('Total computational time: ', tf-t) #total simulation time
+#print('Total computational time: ', tf-t) #total simulation time
 print('Loops: ', sim.loop)
 sim.save_infos(data_impress, M) #Save data to file

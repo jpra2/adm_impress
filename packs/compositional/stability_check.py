@@ -37,16 +37,11 @@ class StabilityCheck:
     def run_init(self, P, z, pflash = True, ponteiro_flash = [], ksi_W=[], rho_W=[]):
         #self.K = self.equilibrium_ratio_Wilson(P)
 
-        P = np.copy(P)
+        self.P = np.copy(P)
         if np.sum(pflash,dtype=bool)==True:
             ponteiro_flash = np.ones(len(P), dtype = bool)
             '-------------------- Get new time-step parameters --------------------'
-        self.P = P
         self.z = np.copy(z)
-        #ponteiro_flash[np.sum(self.z==0, dtype=bool)] = True
-        #import pdb; pdb.set_trace()
-        #ponteiro_nc1 = np.zeros_like(ponteiro_flash_aux)
-        #ponteiro_nc1[]
         self.z[self.z<=0] = 1e-30
 
         '''if not pflash and any(~ponteiro_flash) and ctes.Nc>1:
@@ -67,11 +62,9 @@ class StabilityCheck:
 
         ksi_L, ksi_V, rho_L, rho_V = self.update_EOS_dependent_properties(Zl, Zv)
         self.organize_outputs(ksi_W, ksi_L, ksi_V, rho_W, rho_L, rho_V)
-
         A = np.zeros_like(self.L)
-        #import pdb; pdb.set_trace()
-        return self.L, self.V, A, self.xkj, self.Csi_j, self.rho_j
 
+        return self.L, self.V, A, self.xkj, self.Csi_j, self.rho_j
 
     def organize_outputs(self, ksi_W, ksi_L, ksi_V, rho_W, rho_L, rho_V):
         self.xkj[ctes.n_components-1,:,:] = 0
@@ -100,7 +93,6 @@ class StabilityCheck:
         #A = np.zeros_like(self.L)
         return self.L, self.V, A, xkj, Csi_j, rho_j
 
-
     def check_phase_nc_1(self):
         Pv = self.vapor_pressure_pure_substancies()
         Pv = Pv[:,np.newaxis] * np.ones_like(self.z)
@@ -109,7 +101,6 @@ class StabilityCheck:
 
         self.L[self.P > Pv[self.z==1]] = 1
         self.L[self.P < Pv[self.z==1]] = 0.
-
 
         self.V = 1. - self.L
         self.K = self.y/self.x
@@ -274,15 +265,9 @@ class StabilityCheck:
         # test phase ph is lnphi[...,0], the other phase is lnphi[...,1]
         deltaG_molar = np.sum(xkj * (lnphi[...,1] - lnphi[...,0]), axis = 0)
 
-
         dG_neg = deltaG_molar<0
 
-        # print(dG_neg.shape)
-        # import pdb; pdb.set_trace()
-        # try:
-        #     ph[dG_neg] = 1 - ph[dG_neg]
-        # except:
-        #     import pdb; pdb.set_trace()
+        ph[dG_neg] = 1 - ph[dG_neg]
 
         lnphi_out = np.copy(lnphi[...,0])
         lnphi_out[:,dG_neg] = lnphi[:,dG_neg,1]
@@ -543,7 +528,6 @@ class StabilityCheck:
         x[:,ponteiro_inf+ponteiro_nan] = z[:,ponteiro_nan+ponteiro_inf]
         y = K * x
         #self.y[self.y==0] = self.z[self.y==0]
-        #import pdb; pdb.set_trace()
         return V, x, y
 
     def molar_properties_Whitson(self, ponteiro):
@@ -609,7 +593,6 @@ class StabilityCheck:
         self.z[self.z==1e-30] = 0
         self.x[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
         self.y[:,((self.V)<=0) + ((self.V)>=1)] = self.z[:,((self.V)<=0) + ((self.V)>=1)]
-        #import pdb; pdb.set_trace()
         self.V[self.V<0] = 0
         self.V[self.V>1] = 1
         self.L = 1 - self.V

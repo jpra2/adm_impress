@@ -1,14 +1,15 @@
-#Compressive Oil case with 1 component in 1-D reservoir
-mesh_name: 50x1x1_6k_SchmallNEW.msh
-name_save_file: 'results_6k_SchmallNEW_50_IMPEC_MUSCL_ROE_VL_RK3'
+ #Compressive Oil case with 1 component in 1-D reservoir
+mesh_name: malha_c3_ed.msh
+name_save_file: 'results_6k_200_teste_ed_c3'
 
 compositional: True
 hidrocarbon_components: True
 compressible_oil: True
 water_component: True
-water_miscible: false
+water_miscible: False
 use_vpi: False
 mesh_type: 'structured'
+
 
 load_compositional_data: False
 load_data: False
@@ -27,34 +28,33 @@ monophasic_data:
 # Case 3 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
-  CFL: .9
-
+  CFL: 0.7
   solver:
     IMPSAT: false
 
   MUSCL:
-    set: true
+    set: false
     minmod: false
     VanAlbada1: false
-    VanLeer: true
+    VanLeer: false
 
   FR:
     set: false
-    order: 4
+    order: 2
 
   RiemannSolver:
-    ROE: true
+    ROE: false
     LLF: false
     MDW: false
     DW: false
 
   time_integration:
-    Euler: false
-    RK3: true
+    Euler: true
+    RK3: false
 
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
-  time_to_save: [1728000]
-  maximum_time: 1728000
+  time_to_save: [8640000, 17280000]
+  maximum_time: 17280000
   phase_viscosity: LorenzBrayClark
   relative_permeability: StoneII
   capillary_pressure: Chang
@@ -68,15 +68,18 @@ compositional_data:
   Epc: 2
 
   time_data:
-    deltaPlim: 68.9476
-    deltaNlim: 1
-    deltaSlim: 0.5
-    deltaVlim: 1 #MUSCL: 0.01
-    delta_t_ini: .0864
+    deltaPlim: .689476
+    deltaNlim: 0.1
+    deltaSlim: 0.3
+    deltaVlim: 0.0001
+    delta_t_ini: 0.0864
     delta_tmax: 86400
-    delta_tmin: .000864
+    delta_tmin: 8.64
 
   water_data:
+    V_res: 291384.9 # volume do reservatório
+    poro: 0.35  # Porosidade
+    So_ini: 0.7 # Saturação de óleo inicial
     mi_W: 1e-3
     rho_W: 1000.73
     Mw_w: 18.015e-3
@@ -104,11 +107,11 @@ compositional_data:
 #  C1 C3 C6 C10 C15 C20
   component_data:
     z: [0.5, 0.03, 0.07, 0.2, 0.15, 0.05]
-    Tc: [190.56, 369.83, 507.6, 617.7, 708, 768]
-    Pc: [4599000, 4248000, 3025000, 2110000, 1.48e6, 1.16e6]
-    vc: [9.86e-5, 2e-4, 3.71e-4, 6.e-4, 8.89e-4, 1.17e-3]
-    Mw: [16.043e-3, 44.096e-3, 86.177e-3, 142.285e-3, 212.419e-3, 282.553e-3]
-    w: [0.0115, 0.1523, 0.3013, 0.489, 0.6863, 0.9069]
+    Tc: [190.6, 369.8, 507.4, 617.6, 708, 768]
+    Pc: [4600155, 4245517.5, 2968822.5, 2107560.0, 1.47e6, 1.17e6]
+    vc: [0.000099, 0.000203, 0.00037, 0.000603, 0.000895, 0.00169]
+    Mw: [16.042e-3, 44.1e-3, 86.178e-3, 142.276e-3, 212.41e-3, 282.5e-3]
+    w: [0.008, 0.152, 0.299, 0.489, 0.685, 0.912]
     Bin: [[0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.], [0.,0.,.0,0.,0.,0.]]
     Pv: [8e6, 0., 0., 0., 0., 0.]
     vshift_parameter: [0.0, 0.0, 0.0, 0., 0., 0.]
@@ -145,20 +148,26 @@ Temperature:
 
 Wells:
   P1:
-    p0: [0.0, 0.0, 0]
-    p1: [1, 1, 1]
+    p0: [0.0, 0.0, -10]
+    p1: [13.656, 10.66875, 0.0]
     prescription: Q
     type: Injector
     type_region: box
-    value: 0.0000041377314814814814
-    z: [0., 0., 0., 0., 0., 0, 1.]
-    ksi_total: 55549.8
+    value: 0.00041377314814814814
+    value_a: 0.00041377314814814814 #m3/s
+    value_co2: 0.001
+      # C1  C3  C6 C10 C15 C20
+    z: [0, 0., 0., 0., 0., 0., 1]
+    za: [0., 0., 0., 0., 0., 0., 1.]
+    zco2: [1, 0., 0., 0., 0., 0., 0]
+    nP_inj: 1
+    t_max: 17280000
     value_type: volumetric
     injection_condition: surface
 
   P2:
-    p0: [49, 0.0, 0]
-    p1: [50, 1, 1]
+    p0: [2717.544, 0.0, -10]
+    p1: [2731.2, 10.66875, 0.0]
     prescription: P
     type: Producer
     type_region: box
