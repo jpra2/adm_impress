@@ -11,9 +11,8 @@ from packs.utils.utils_old import get_box
 # mesh_properties_name = 'exemplo_30x30x1'
 # mesh_name = '30x30x1.h5m'
 
-mesh_properties_name = 'exemplo_21x21x1'
-mesh_name = '21x21x1.h5m'
-
+mesh_properties_name = 'sim_80x1x1'
+mesh_name = '80x1x1.h5m'
 
 mesh_path = os.path.join(defpaths.mesh, mesh_name)
 
@@ -432,6 +431,57 @@ def define_pp4(mesh_properties: MeshProperty):
         'producers': producers+1
     })
 
+def define_p1_sim(mesh_properties: MeshProperty):
+    n = len(mesh_properties.volumes)
+    permeability = np.zeros((n , 3, 3))
+    dia = np.arange(3)
+    permeability[:, dia, dia] = 1
+
+    xyzmin = mesh_properties.volumes_centroids.min(axis=0)
+    xyzmax = mesh_properties.volumes_centroids.max(axis=0)
+
+    xp1 = mesh_properties.volumes[mesh_properties.volumes_centroids[:,0] <= xyzmin[0] + 0.00001]
+    xp0 = mesh_properties.volumes[mesh_properties.volumes_centroids[:,0] >= xyzmax[0] - 0.00001]
+    
+    injectors = xp1
+    producers = xp0
+
+    values_p1 = np.repeat(1, len(xp1))
+    values_p0 = np.repeat(0, len(xp0))
+
+    saturations1 = np.repeat(1, len(xp1))
+
+    volumes_pressure_defined = np.concatenate([xp1, xp0])
+    pressure_defined_values = np.concatenate([values_p1, values_p0])
+
+    volumes_saturation_defined = xp1
+    saturation_defined_values = saturations1
+
+    porosity = np.repeat(0.2, n)
+
+    bool_internal_faces = ~mesh_properties.bool_boundary_faces
+    adj_internal_faces = mesh_properties.volumes_adj_by_faces[bool_internal_faces].copy()
+    upwind = np.full(adj_internal_faces.shape, False, dtype=bool)
+    test = np.isin(adj_internal_faces, xp1)
+    test1 = (test[:,0] == True) & (test[:,1] == True)
+    upwind[test1, 0] = True
+    test2 = ~test1
+    upwind[test2,0] = True
+    assert upwind.sum() == upwind.shape[0] 
+    
+    mesh_properties.insert_data({
+        'volumes_perm': permeability,
+        'porosity': porosity,
+        'volumes_pressure_defined': volumes_pressure_defined + 1,
+        'pressure_defined_values': pressure_defined_values,
+        'volumes_saturation_defined': volumes_saturation_defined + 1,
+        'saturation_defined_values': saturation_defined_values,
+        'upwind': upwind,
+        'injectors': injectors+1,
+        'producers': producers+1
+    })
+
+
 def calculate_volumes_structured(mesh_properties: MeshProperty):
     
     volume_of_volumes = np.zeros(len(mesh_properties.volumes))
@@ -560,7 +610,8 @@ def thr_func():
     # define_p3(mesh_properties)
     # define_pp2(mesh_properties)
     # define_pp3(mesh_properties)
-    define_pp4(mesh_properties)
+    # define_pp4(mesh_properties)
+    define_p1_sim(mesh_properties)
     update_properties(mesh_properties)
     mesh_properties.export_data()
 
@@ -570,7 +621,10 @@ def save_mat_file():
     # matlab_data_path = os.path.join(defpaths.flying, 'variables_p1.mat')
     # matlab_data_path = os.path.join(defpaths.flying, 'variables_p2.mat')
     # matlab_data_path = os.path.join(defpaths.flying, 'variables_p3.mat')
-    matlab_data_path = os.path.join(defpaths.flying, 'variables_p4.mat')
+    # matlab_data_path = os.path.join(defpaths.flying, 'variables_p4.mat')
+    # matlab_data_path = os.path.join(defpaths.flying, 'variables_p1_sim.mat')
+    # matlab_data_path = os.path.join(defpaths.flying, 'variables_p2_sim.mat')
+    matlab_data_path = os.path.join(defpaths.flying, 'variables_p3_sim.mat')
     io.savemat(matlab_data_path, mesh_properties.get_all_data())
 
 
