@@ -59,7 +59,6 @@ class RiemannSolvers:
 
     def LLF(self, M, fprop, Nk_face, P_face, ftotal, Fk_face, ponteiro_LLF):
         ponteiro = np.ones_like(ftotal[0],dtype=bool)
-
         #dNk_small = abs(Nk_face[:,:,0]-Nk_face[:,:,1])<1e-25
         #dNkmax_small = np.max(abs(Nk_face[:,:,0]-Nk_face[:,:,1]),axis=0)<1e-20
         #ponteiro[dNkmax_small] = False

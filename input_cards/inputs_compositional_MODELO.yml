@@ -4,11 +4,11 @@ name_save_file: 'results_6k_SchmallNEW_50_IMPEC_MUSCL_ROE_VL_RK3'
 
 compositional: True
 hidrocarbon_components: True
-compressible_fluid: True
+compressible_oil: True
 water_component: True
 water_miscible: false
 use_vpi: False
-
+mesh_type: 'structured'
 
 load_compositional_data: False
 load_data: False

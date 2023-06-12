@@ -178,7 +178,6 @@ class run_simulation:
         self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t)
 
         self.t += self.delta_t
-        #import pdb; pdb.set_trace()
         '----------------- Perform Phase stability test and flash -------------'
 
         if ctes.load_k and ctes.compressible_k:
@@ -222,19 +221,17 @@ class run_simulation:
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         if len(wells['ws_prod'])>0: self.update_production()
 
-        '''Condições da WAG'''
-
+        # '''Condições da WAG'''
         if any(self.t >= wells['DT']):
             if wells['z'][0][-1]== 0:
-                wells['z'] = wells['za'].copy()
-                wells['values_q'] = wells['values_qa'].copy()
-                #self.get_well_inj_properties(M, fprop, wells)
+                wells['z'] = wells['za']
+                wells['values_q'] = wells['values_qa']
             else:
-                wells['z'] = wells['zco2'].copy()
-                wells['values_q'] = wells['values_qco2'].copy()
+                wells['z'] = wells['zco2']
+                wells['values_q'] = wells['values_qco2']
+
             self.get_well_inj_properties(M, fprop, wells)
             wells['DT'] = wells['DT'][1:]
-            #import pdb; pdb.set_trace()
 
     def update_well_inj_rate(self, fprop, wells):
         # Update wells injection rate if injection condition is the reservoir one
@@ -339,8 +336,8 @@ class run_simulation:
 
         self.current_compositional_results = np.array([self.loop, self.vpi, self.sim_time,
             self.t, fprop.P, fprop.Sw, fprop.So, fprop.Sg, self.oil_production_RC,
-            self.gas_production_RC, self.oil_production_SC, self.gas_production_SC, fprop.z,
-            M.data['centroid_volumes'], Nk, fprop.xkj,
+            self.gas_production_RC, self.oil_production_SC, self.gas_production_SC,
+            fprop.z, M.data['centroid_volumes'], Nk, fprop.xkj,
             self.oil_production_rate_RC, self.gas_production_rate_RC, self.cum_oil_prod_RC,
             self.oil_production_rate_SC, self.gas_production_rate_SC, self.cum_oil_prod_SC,
             self.vector_time],dtype=object)

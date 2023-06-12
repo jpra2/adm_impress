@@ -25,6 +25,7 @@ class WellsCompositional(Wells):
         values_q_vol =[] ## valor da vazao prescrita em m3/s
         inj_cond = []
         z = []
+        delta_t = []
         for p in data_wells:
 
             well = data_wells[p]
@@ -40,14 +41,14 @@ class WellsCompositional(Wells):
                 p1 = well['p1']
                 limites = np.array([p0, p1])
                 vols = get_box(centroids, limites)
-
                 nv = len(vols)
                 if tipo == 'Injector':
                     z.append(well['z'])
                     z *= nv
+
                     inj_cond.append(well['injection_condition'])
                     inj_cond*=nv
-                    #import pdb; pdb.set_trace()
+
                 if prescription == 'Q':
                     val = value/nv * np.array(well['z'])
                     if tipo == 'Producer':
@@ -87,7 +88,6 @@ class WellsCompositional(Wells):
                 elif tipo == 'Producer':
                     ws_prod.append(vols)
 
-
         ws_q = np.array(ws_q).flatten()
         ws_p = np.array(ws_p).flatten()
         values_p = np.array(values_p).flatten()
@@ -106,3 +106,4 @@ class WellsCompositional(Wells):
         self['values_q_vol'] = np.array(values_q_vol).T
         self['inj_cond'] = np.array(inj_cond).flatten()
         self['z'] = np.array(z)
+        

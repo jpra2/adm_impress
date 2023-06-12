@@ -130,7 +130,6 @@ class PropertiesCalc:
     def update_porous_volume(self, P):
         #fprop.porosity = ctes.porosity * (1 + ctes.Cf * (fprop.P - ctes.Pf))
         Vp = ctes.porosity * ctes.Vbulk * (1 + ctes.Cf*(P - ctes.Pf))
-
         #FOR THE BURGERS PROBLEM ONLY
         #Vp = (1/ctes.n_volumes) * np.ones(len(P))
         return Vp

@@ -1,12 +1,3 @@
-Crs:
-  Cr1:
-  - 5
-  - 1
-  - 1
-  Cr2:
-  - 1
-  - 1
-  - 1
 Permeability:
   r1:
     type: all
@@ -42,14 +33,14 @@ Wells:
     nP_inj: 6
     p0:
     - 0.0
-    - 0.60198
-    - -0.03048
+    - 0.0
+    - -30
     p1:
     - 7.5
     - 60
-    - 30
+    - 0
     prescription: Q
-    t_max: 8640000
+    t_max: 77760000
     type: Injector
     type_region: box
     value: 0.0520833333333
@@ -58,7 +49,7 @@ Wells:
     value_type: volumetric
     z:
     - 1
-    - 0.0
+    - 0
     - 0.0
     - 0.0
     - 0
@@ -78,11 +69,11 @@ Wells:
     p0:
     - 142.5
     - 0.0
-    - -0.03048
+    - -30
     p1:
     - 150
     - 60
-    - 30
+    - 0
     prescription: P
     type: Producer
     type_region: box
@@ -93,9 +84,12 @@ compositional_data:
   Cpc: 62052.84
   Epc: 2
   FR:
-    order: 3
+    order: 2
     set: false
   MUSCL:
+    VanAlbada1: false
+    VanLeer: false
+    minmod: false
     set: false
   Pf: 13.79E6
   RiemannSolver:
@@ -127,7 +121,7 @@ compositional_data:
     - 0.016043
     - 0.058124
     - 0.142286
-    Pb_guess: 2e6
+    Pb_guess: 12e6
     Pc:
     - 7376460
     - 4600155
@@ -164,7 +158,7 @@ compositional_data:
     - 0.2
     - 0.6
   equation_of_state: PengRobinson
-  maximum_time: 8640000
+  maximum_time: 77760000
   phase_viscosity: LorenzBrayClark
   relative_permeability: StoneII
   relative_permeability_data:
@@ -185,44 +179,45 @@ compositional_data:
   solver:
     IMPSAT: false
   time_data:
-    deltaNlim: 0.1
+    deltaNlim: 0.2
     deltaPlim: 0.5
     deltaSlim: 0.1
-    deltaVlim: 0.0001
-    delta_t_ini: 1
-    delta_tmax: 864
-    delta_tmin: 0.00864
+    deltaVlim: 0.1
+    delta_t_ini: 864
+    delta_tmax: 8640
+    delta_tmin: 0.864
   time_integration:
     Euler: true
     RK3: false
   time_to_save:
-  - 8640000
+  - 77760000
   vpis_para_gravar_vtk:
   - 0.6
   - 1.2
   water_data:
     Cw: 0
     Mw_w: 0.018015
-    Pw: 13.789514E6
+    Pw: 10.34e6
+    So_ini: 0.8
+    V_res: 270000
     mi_W: 1e-3
-    mobility: true
-    rho_W: 999.55
-compressible_fluid: true
+    mobility: false
+    poro: 0.2
+    rho_W: 1000.73
+compressible_oil: true
 convert_english_to_SI: false
 deletar_results: false
-get_correction_term: false
 gravity: false
 hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
-load_multilevel_data: false
 load_operators: false
-mesh_name: 20x1x1_CO2_4k.h5m
+mesh_name: malha_c2_obel.msh
+mesh_type: structured
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-n_levels: 3
-name_save_file: results_4kCO2_finescale
+name_save_file: results_c2_obel_finescale
 read_permeability: false
 set_permeability: true
 set_porosity: true

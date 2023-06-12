@@ -5,6 +5,9 @@ from ..compositional import equation_of_state, equation_of_state_teste
 def init(M, wells):
     global n_volumes
     global v0
+    global in_vols_pairs
+    global Ns_int_faces
+    global N_sign
     global internal_faces
     global n_internal_faces
     global g
@@ -27,6 +30,7 @@ def init(M, wells):
     global n_points
     global time_integration
     global hyperbolic_method
+
 
     P_SC = 101325
     T_SC = 288.706
@@ -85,10 +89,15 @@ def init(M, wells):
     v00 = M.faces.bridge_adjacencies(M.faces.internal,2,3)
     c_int = M.faces.center(M.faces.internal)
     c_vols = M.volumes.center(M.volumes.all)
-    pos = (c_int[:,np.newaxis,:] - c_vols[v00]).sum(axis=2)
-    v0 = np.copy(v00)
-    v0[:,0] = v00[pos>0]
-    v0[:,1] = v00[pos<0]
+    try:
+        pos = (c_int[:,np.newaxis,:] - c_vols[v00]).sum(axis=2)
+        v0 = np.copy(v00)
+        v0[:,0] = v00[pos>=0]
+        v0[:,1] = v00[pos<0]
+    except:
+        v0 = v00
+
+    in_vols_pairs, Ns_int_faces, N_sign = correct_ctev0(M)
 
     porosity = M.data['poro']
     Vbulk = M.data['volume']
@@ -134,7 +143,7 @@ def component_properties():
 
     load_k = data_loaded['hidrocarbon_components']
     load_w = data_loaded['water_component']
-    compressible_k = data_loaded['compressible_fluid']
+    compressible_k = data_loaded['compressible_oil']
     miscible_w = data_loaded['water_miscible']
     n_phases = 2 * load_k + 1 * load_w
 
@@ -156,3 +165,62 @@ def component_properties():
         Mw_w = data_loaded['compositional_data']['water_data']['Mw_w'] #* np.ones(n_volumes)
     else: Cw = 0
     n_components = Nc + 1 * load_w * (1-miscible_w)
+
+
+def correct_ctev0(M):
+
+
+    internal_faces = M.faces.internal[:]
+
+    # Retrieve the points that form the components of the normal vectors.
+    internal_faces_nodes = M.data['faces_nodes']
+
+    I_idx = internal_faces_nodes[:, 0]
+    J_idx = internal_faces_nodes[:, 1]
+    K_idx = internal_faces_nodes[:, 2]
+
+    I = M.nodes.coords[I_idx]
+    J = M.nodes.coords[J_idx]
+    K = M.nodes.coords[K_idx]
+    #I[...,-1] = abs(I[...,-1])
+    #J[...,-1] = abs(J[...,-1])
+    #K[...,-1] = abs(K[...,-1])
+
+    internal_faces = M.faces.internal[:]
+    in_vols_pairs = M.faces.bridge_adjacencies(
+        internal_faces, 2, 3)
+
+    n_vols_pairs = len(internal_faces)
+    internal_volumes_centers_flat = M.volumes.center[in_vols_pairs.flatten(
+    )]
+    internal_volumes_centers = internal_volumes_centers_flat.reshape((
+        n_vols_pairs, 2, 3))
+
+    '''LJ  = J-internal_volumes_centers[:, 0]
+
+    # Set the normal vectors.
+    Ns = 0.5 * np.cross(I-J,K-J)
+    Ns_norm = np.linalg.norm(Ns, axis=1)
+    Ns /= Ns_norm[:,np.newaxis]
+    import pdb; pdb.set_trace()
+
+    N_sign = np.sign(np.einsum("ij,ij->i", LJ, Ns))
+
+    (in_vols_pairs[N_sign < 0, 0],
+     in_vols_pairs[N_sign < 0, 1]) = (in_vols_pairs[N_sign < 0, 1],
+                                           in_vols_pairs[N_sign < 0, 0])
+    import pdb; pdb.set_trace()'''
+
+    #teste meu - Duda - ver se pode funcionar
+
+    Ns = M.data['faces_normals']
+    #Ns_norm = np.linalg.norm(Ns, axis=1)
+    #Ns /= Ns_norm[:,np.newaxis]
+
+    LJ = M.faces.center(M.faces.internal) -internal_volumes_centers[:, 0]
+    N_sign = np.sign(np.einsum("ij,ij->i", LJ, Ns[internal_faces]))
+    (in_vols_pairs[N_sign < 0, 0],
+     in_vols_pairs[N_sign < 0, 1]) = (in_vols_pairs[N_sign < 0, 1],
+                                           in_vols_pairs[N_sign < 0, 0])
+
+    return in_vols_pairs, Ns, N_sign

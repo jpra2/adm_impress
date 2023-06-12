@@ -1,0 +1,184 @@
+ #Compressive Oil case with 1 component in 1-D reservoir
+mesh_name: malha_c5_ed.msh
+name_save_file: 'results_ed_c5'
+
+compositional: True
+hidrocarbon_components: True
+compressible_oil: True
+water_component: True
+water_miscible: False
+use_vpi: False
+mesh_type: 'structured'
+
+
+load_compositional_data: False
+load_data: False
+convert_english_to_SI: False
+set_porosity: true
+gravity: false
+deletar_results: false
+load_operators: false
+read_permeability: false
+monophasic_data: false
+set_permeability: True
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+
+# Case 3 of Li M.Sc. Thesis with case studies
+compositional_data:
+  #  Pensar em um jeito de reorganizar isso
+  CFL: 0.7
+  solver:
+    IMPSAT: false
+
+  MUSCL:
+    set: false
+    minmod: false
+    VanAlbada1: false
+    VanLeer: false
+
+  FR:
+    set: false
+    order: 2
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
+    DW: false
+
+  time_integration:
+    Euler: true
+    RK3: false
+
+  vpis_para_gravar_vtk: [0.2]
+  time_to_save: [21772800]
+  maximum_time: 21772800
+  phase_viscosity: LorenzBrayClark
+  relative_permeability: BrooksAndCorey #BrooksAndCorey #StoneII
+  capillary_pressure: Chang
+  equation_of_state: PengRobinson
+
+  rock_compressibility: 0 #1.45e-10
+  Pf: 101325
+
+  #capillary pressure data - not ok with this
+  Cpc: 62052.84
+  Epc: 2
+
+  time_data:
+    deltaPlim: 68.9476
+    deltaNlim: .5
+    deltaSlim: .2
+    deltaVlim: .1
+    delta_t_ini: 864
+    delta_tmax: 86400
+    delta_tmin: .864
+
+  water_data:
+    V_res: 2500 # volume do reservatório
+    poro: 0.2  # Porosidade
+    So_ini: 1 # Saturação de óleo inicial
+    mi_W: 1e-3
+    rho_W: 1000.73
+    Mw_w: 18.015e-3
+    Cw: 0 #4.35e-10
+    Pw: 10.34e6
+    mobility: false
+
+  residual_saturations:
+    Sorw: 0
+    Sorg: 0
+    Swr: 0
+    Sgr: 0.
+
+  # relative_permeability_data:
+  #   krw0: 0
+  #   krow0: 0
+  #   krog0: 1
+  #   krg0: 1
+  #
+  #   n_og: 1
+  #   n_ow: 0
+  #   n_w: 0
+  #   n_g: 1
+
+  # Se BrooksAndCorey:
+  relative_permeability_data:
+    krw0: 0
+    krg0: 1
+    kro0: 1
+
+    n_o: 1
+    n_g: 1
+    n_w: 0
+
+#  C1 C3 C6 C10 C15 C20
+  component_data:
+    z: [0.0, 1.0]
+    Tc: [304.14, 369.83]
+    Pc: [7.375e6, 4248000]
+    vc: [9.416e-05, 2.0e-04]
+    Mw: [44e-3, 44.096e-3]
+    w: [0.239, 0.153]
+    Bin: [[0.,0.15], [0.15,0.]]
+    Pv: [8e6, 0.]
+    vshift_parameter: [0.0, 0.]
+    Pb_guess: 12e6
+    constant_K: False
+
+#water saturation data
+Saturation:
+  r1:
+    type: all
+    value: 0
+
+Porosity:
+  r1:
+    type: all
+    value: 0.2
+
+#Permeability in m^2
+Permeability:
+  r1:
+    type: all
+    value: [1e-16, 0, 0, 0, 1e-16, 0, 0, 0, 1e-16]
+
+
+Pressure:
+  r1:
+    type: all
+    value: 5e6
+
+Temperature:
+  r1:
+    type: all
+    value: 397
+
+Wells:
+  P1:
+    p0: [0.0, 0.0, -1.0]
+    p1: [1.25, 1.25, 0.0]
+    type_region: box
+    type: Injector
+    prescription: Q
+    value: 0.000492 #
+    value_a: 0.000492 #m3/s
+    value_co2: 0.000492
+      # C1  C3  C6 C10 C15 C20
+    z: [1.0, 0.0, 0]
+    za: [1.0, 0.0, 0]
+    zco2: [1.0, 0.0, 0]
+    nP_inj: 1
+    t_max: 21772800
+    value_type: volumetric
+    injection_condition: reservoir
+
+  P2:
+    p0: [48.75, 48.75, -1.0]
+    p1: [50.0, 50.0, 0.0]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 5e6

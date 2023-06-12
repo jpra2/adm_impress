@@ -1,13 +1,14 @@
-mesh_name: '20x1x1_CO2_4k.h5m'
+mesh_name: '20x1x1_CO2_4k.msh'
 #mesh_name: '20x1x1_4ph.h5m'
 name_save_file: 'results_4kCO2_finescale' #150683
 
 compositional: True
 hidrocarbon_components: True
-compressible_fluid: True
+compressible_oil: True
 water_component: true
 water_miscible: False
 use_vpi: False
+mesh_type: 'structured'
 
 ###############################
 ## Multilevel infos
@@ -68,8 +69,8 @@ compositional_data:
     RK3: false
 
   vpis_para_gravar_vtk: [0.6, 1.2]
-  time_to_save:  [8640000] #[103680000] #[155520000] #1800 dias
-  maximum_time: 8640000 #103680000 #155520000 #1800 dias
+  time_to_save: [8640000] #[155520000] #1800 dias
+  maximum_time: 8640000 #155520000 #1800 dias
   phase_viscosity: LorenzBrayClark
   relative_permeability: StoneII #Pode ser StoneII ou BrooksAndCorey
   capillary_pressure: Chang
@@ -92,7 +93,7 @@ compositional_data:
     delta_tmin: 0.00864
 
   water_data:
-    mi_W: 1e-3
+    mi_W: 5e-4
     rho_W: 1000.73
     Mw_w: 18.015e-3
     Cw: 0 #4.35e-10
@@ -106,7 +107,7 @@ compositional_data:
     Sgr: 0.15
 
   relative_permeability_data:
-    krw0: 0.00001
+    krw0: 1
     krow0: 1
     krog0: 1
     krg0: 1
@@ -167,21 +168,14 @@ Wells:
     prescription: Q
     type: Injector
     z: [1, 0.0, 0.0, 0.0, 0]
-    za: [0, 0.0, 0.0, 0.0, 1]
-    zco2: [1, 0.0, 0.0, 0.0, 0]
-    nP_inj: 6
-    t_max: 8640000
-    #value: 0.0520833333333 #m3/s
-    value: 0.0520833333333 #0.01 #m3/s
-    value_a: 0.00012 #0.0000003 #m3/s
-    value_co2: 0.0520833333333  #m3/sltw111111
+    value: 0.0520833333333 #m3/s
     injection_condition: surface
     value_type: volumetric
 
   P2:
-    #p0: [17.8308, 0.0, 0] #coordenadas do vetor inicial do poco produtor(60ft/20)
     p0: [142.5, 0.0, 0] #coordenadas do vetor inicial do poco produtor(60ft/20)
     p1: [150, 60, 30] #coordenadas do vetor final do poco produtor(60ft/20)
+
     prescription: P
     type: Producer
     type_region: box

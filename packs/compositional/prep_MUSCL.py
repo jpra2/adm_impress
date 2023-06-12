@@ -7,6 +7,8 @@ import numpy as np
 def get_neiboring_properties_to_reconstruction(M):
     neig_vols = M.volumes.bridge_adjacencies(M.volumes.all,2,3)
 
+    #Não sei se isso vai funcionar para malhas não estruturadas
+    #trocar o v0 por in_vols_pairs
     lines = np.array([ctes.v0[:, 0], ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
     cols = np.array([ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
     data = np.array([np.ones(len(ctes.v0[:, 0])), np.ones(len(ctes.v0[:, 0])),

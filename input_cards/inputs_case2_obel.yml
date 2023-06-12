@@ -1,0 +1,177 @@
+mesh_name: malha_c2_obel.msh
+name_save_file: 'results_c2_obel_finescale'
+
+compositional: True
+hidrocarbon_components: True
+compressible_oil: True
+water_component: True
+water_miscible: False
+use_vpi: False
+mesh_type: 'structured'
+
+#############################
+
+load_compositional_data: False
+load_data: False
+convert_english_to_SI: False
+set_porosity: true
+gravity: false
+deletar_results: false
+load_operators: false
+read_permeability: false
+monophasic_data: false
+set_permeability: True
+monophasic_data:
+  gama: 10000.0
+  mi: 1.0
+
+# Case 3 of Li M.Sc. Thesis with case studies
+# Case 3 of Li M.Sc. Thesis with case studies
+compositional_data:
+  #  Pensar em um jeito de reorganizar isso
+  CFL: 0.9
+  solver:
+    IMPSAT: false
+
+  MUSCL:
+    set: false
+    minmod: false
+    VanAlbada1: false
+    VanLeer: false
+
+  FR:
+    set: false
+    order: 2
+
+  RiemannSolver:
+    ROE: false
+    LLF: false
+    MDW: false
+    DW: false
+
+  time_integration:
+    Euler: true
+    RK3: false
+
+  vpis_para_gravar_vtk: [0.6, 1.2]
+  time_to_save:  [77760000] #[103680000] #[155520000] #1800 dias
+  maximum_time: 77760000 #103680000 #155520000 #1800 dias
+  phase_viscosity: LorenzBrayClark
+  relative_permeability: StoneII #Pode ser StoneII ou BrooksAndCorey
+  capillary_pressure: Chang
+  equation_of_state: PengRobinson
+
+  rock_compressibility: 0 #1.45e-10
+  Pf: 101325
+
+  #capillary pressure data - not ok with this
+  Cpc: 62052.84
+  Epc: 2
+
+  time_data:
+    deltaPlim: .5
+    deltaNlim: .2
+    deltaSlim: .1
+    deltaVlim: .1
+    delta_t_ini: 864
+    delta_tmax: 8640
+    delta_tmin: 0.864
+
+  water_data:
+    V_res: 270000 # volume do reservatório
+    poro: 0.2  # Porosidade
+    So_ini: 0.8 # Saturação de óleo inicial
+    mi_W: 1e-3
+    rho_W: 1000.73
+    Mw_w: 18.015e-3
+    Cw: 0 #4.35e-10
+    Pw: 10.34e6
+    mobility: False
+
+  residual_saturations:
+    Sorw: 0.2
+    Sorg: 0.2
+    Swr: 0.2
+    Sgr: 0.15
+
+  relative_permeability_data:
+    krw0: 0.00001
+    krow0: 1
+    krog0: 1
+    krg0: 1
+
+    n_og: 2.
+    n_ow: 2.
+    n_w: 2.
+    n_g: 2.
+
+#  C1 C2 C3
+  component_data:
+    #   CO2    C1   nC4  nC10
+    z: [0.05, 0.15, 0.2, 0.6]
+    Tc: [304.2, 190.6, 425.2, 617.6] # K
+    Pc: [7376460, 4600155, 3799688, 2107560] # Pa
+    vc: [9.4e-05, 9.9e-05, 25.5e-05, 60.3e-05] # m3/mol normal
+    Mw: [44.01e-3, 16.043e-3, 58.124e-3, 142.286e-3] # Kg/g-mol
+    w: [0.225, 0.008, 0.193, 0.49]
+    Bin: [[0, 0.103, 0.13, 0.11], [0.103, 0, 0, 0], [0.13, 0, 0, 0], [0.11, 0, 0, 0]]
+    Pv: [8e6, 0., 0., 0.]
+    vshift_parameter: [0.0, 0., 0., 0.]
+    Pb_guess: 12e6
+    constant_K: False
+
+#water saturation data
+Saturation:
+  r1:
+    type: all
+    value: 0.2
+
+Porosity:
+  r1:
+    type: all
+    value: 0.2
+
+#Permeability in m^2
+Permeability:
+  r1:
+    type: all
+    value: [1.9738466e-14, 0, 0, 0, 1.9738466e-14, 0, 0, 0, 1.9738466e-14]
+
+
+Pressure:
+  r1:
+    type: all
+    value: 14e6
+
+Temperature:
+  r1:
+    type: all
+    value: 333
+
+Wells:
+  P1:
+    p0: [0.0, 0.0, -30] #coordenadas do vetor inicial do poco injetor
+    p1: [7.5, 60, 0] #coordenadas do vetor final do poco injetor(60ft/20)
+    type_region: box
+    prescription: Q
+    type: Injector
+    z: [1, 0, 0.0, 0.0, 0]
+    za: [0, 0.0, 0.0, 0.0, 1]
+    zco2: [1, 0.0, 0.0, 0.0, 0]
+    nP_inj: 6
+    t_max: 77760000
+    #value: 0.0520833333333 #m3/s
+    value: 0.0520833333333 #0.01 #m3/s
+    value_a: 0.00012 #0.0000003 #m3/s
+    value_co2: 0.0520833333333  #m3/s
+    injection_condition: surface
+    value_type: volumetric
+
+  P2:
+    #p0: [17.8308, 0.0, 0] #coordenadas do vetor inicial do poco produtor(60ft/20)
+    p0: [142.5, 0.0, -30] #coordenadas do vetor inicial do poco produtor(60ft/20)
+    p1: [150, 60, 0] #coordenadas do vetor final do poco produtor(60ft/20)
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 14e6

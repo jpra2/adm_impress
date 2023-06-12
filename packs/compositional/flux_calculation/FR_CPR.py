@@ -14,8 +14,8 @@ class FR:
 
     def __init__(self):
         'Enviroment for the FR/CPR method - vai ser 1D por enquanto'
-        'OBS: O Fk que vai entrar aqui provavelmente, se não interpretei errado \
-        tem que ser em mol*m/s, ou seja, a pretransmissibilidade n pode ter dx \
+        'OBS: O Fk que vai entrar é em mol*m/s, ou seja, \
+        a pretransmissibilidade n pode ter dx \
         dividindo'
         '1. Obtain Nk at the SP'
         '2. Compute Fk with the mobility, xkj, rho and csi approximation from \
@@ -140,13 +140,10 @@ class FR:
         #import pdb; pdb.set_trace()
         return dFk_SP, wave_velocity
 
+
     def total_flux_SP(self, fprop, wells, Ft_internal):
         'RTo'
-        phi = np.empty((len(ctes_FR.points),2))
-        phi[:,0] = 1 / 4 * (1 + ctes_FR.points)
-        phi[:,1] = 1 / 4 * (1 - ctes_FR.points)
-
-        Ft_face_phi = (Ft_internal[:,:,np.newaxis,np.newaxis] * phi[np.newaxis,np.newaxis,:])
+        Ft_face_phi = (Ft_internal_vec[:,:,np.newaxis,np.newaxis] * ctes_FR.phi[np.newaxis,np.newaxis,:])
 
         'Look for a faster way to do that'
         Ft_SP_reshaped = np.empty((1,ctes.n_volumes,ctes_FR.n_points))
@@ -296,12 +293,8 @@ class FR:
 
         'Obtaining Flux at each CV side - by finding faces that compounds the CV \
         this only works for 1D problems'
-        self.vols_vec = -np.ones((ctes.n_volumes,2),dtype=int)
-        lines = np.arange(ctes.n_internal_faces)
-        self.vols_vec[ctes_FR.v0[:,0],1] = lines
-        self.vols_vec[ctes_FR.v0[:,1],0] = lines
         Fk_vols_RS_neig = Fk_face_RS[:,ctes_FR.vols_vec]
-        Fk_vols_RS_neig[:,self.vols_vec<0] = 0 #Fk_face_contour_RS #FOR THE BURGERS
+        Fk_vols_RS_neig[:,ctes_FR.vols_vec<0] = 0 #Fk_face_contour_RS #FOR THE BURGERS
 
         #For the bastian
         #Fk_vols_RS_neig[-1,-1] = 0
