@@ -22,6 +22,14 @@ centroid_edges:
   level: 0
 
 # Faces
+internal_faces_contour:
+  type: faces
+  data size: 1
+  data type: bool
+  sparse: True
+  level: 0
+
+# Faces
 flux:
   type: faces
   data size: 3

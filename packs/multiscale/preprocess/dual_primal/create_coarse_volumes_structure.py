@@ -47,7 +47,7 @@ def get_cents_tuple(centroids_nodes: np.ndarray, **kwargs):
     return cents_tuple
 
 def get_all_coarse_nodes_reordenated(all_coarse_nodes):
-    dtype_org = [('x', np.float), ('y', np.float), ('z', np.float)]
+    dtype_org = [('x', np.float64), ('y', np.float64), ('z', np.float64)]
     
     all_coarse_nodes_org = np.zeros(len(all_coarse_nodes), dtype=dtype_org)
     all_coarse_nodes_org['x'] = all_coarse_nodes[:,0]

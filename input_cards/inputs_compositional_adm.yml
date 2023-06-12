@@ -4,9 +4,10 @@ name_save_file: 'results_compressive_oil_case_upw'
 
 compositional: True
 hidrocarbon_components: True
-compressible_fluid: True
 water_component: True
+water_miscible: False
 use_vpi: False
+compressible_oil: True
 
 ###############################
 ## Multilevel infos
@@ -55,6 +56,10 @@ compositional_data:
     LLF: false
     MDW: false
     DW: false
+  
+  time_integration:
+    Euler: true
+    RK3: false
 
   vpis_para_gravar_vtk: [0.1, 0.3, 0.5]
   time_to_save: [274752] #, 432000., 589248.0, 745632., 902880, 1059264.0, 1216512., 1372896.0, 1530144.0]

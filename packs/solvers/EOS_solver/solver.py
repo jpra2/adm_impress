@@ -28,9 +28,9 @@ class CubicRoots:
         return omegas
 
     def get_model_roots(self, omegas, Q, delta):
-        xs_args = np.empty([2,len(Q)], dtype=np.complex)
+        xs_args = np.empty([2,len(Q)], dtype=np.cdouble)
 
-        aux = np.ones(len(Q), dtype=np.complex) #creating for errors that was having in sqrt numpy function
+        aux = np.ones(len(Q), dtype=np.cdouble) #creating for errors that was having in sqrt numpy function
         aux[delta < 0] = 1j
         delta[delta < 0] = -delta[delta < 0]
 

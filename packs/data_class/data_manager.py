@@ -35,7 +35,12 @@ class DataManager(CommonDataManager):
             self.load_from_npz()
 
     def export_to_npz(self):
-
+        
+        for name in list(self._data.keys()):
+            print(name)
+            print(self._data[name])
+            print(self._data[name].dtype)
+            import pdb; pdb.set_trace()
         np.savez(self.name, **self._data)
 
         print(f'\n{self.name} saved\n')

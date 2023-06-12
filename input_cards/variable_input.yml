@@ -232,6 +232,12 @@ initial_diag:
   level: 0
   sparse: true
   type: volumes
+internal_faces_contour:
+  data size: 1
+  data type: bool
+  level: 0
+  sparse: true
+  type: faces
 k_harm:
   data size: 1
   data type: float

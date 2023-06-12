@@ -560,8 +560,8 @@ class MultilevelData(DataManager):
 
                 # cont += 1
 
-            coarse_faces = np.array(coarse_faces)
-            coarse_internal_faces = np.array(coarse_internal_faces)
+            coarse_faces = np.array(coarse_faces, dtype='O')
+            coarse_internal_faces = np.array(coarse_internal_faces, dtype='O')
             coarse_intersect_faces = np.array(coarse_intersect_faces, dtype='O')
             coarse_internal_boundary_volumes = np.array(coarse_internal_boundary_volumes, dtype='O')
             self._data[self.internal_boundary_fine_volumes+str(level)] = coarse_internal_boundary_volumes

@@ -22,7 +22,6 @@ n_levels = data_loaded['n_levels']
 get_correction_term = data_loaded['get_correction_term']
 load_operators = data_loaded['load_operators']
 load_multilevel_data = data_loaded['load_multilevel_data']
-
 # description = 'case1_finescale_'
 description = 'case2_adm_'
 compositional_data = CompositionalData(description=description)
@@ -70,7 +69,7 @@ ml_data = MultilevelData(data_impress, M, load=load_multilevel_data, n_levels=n_
 
 ml_data.run()
 data_impress.update_variables_to_mesh()
-
+import pdb; pdb.set_trace()
 mlo = MultilevelOperators(n_levels, data_impress, elements_lv0, ml_data, load=load_operators, get_correction_term=get_correction_term)
 neumann_subds = NeumannSubdomains(elements_lv0, ml_data, data_impress, wells)
 adm = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)

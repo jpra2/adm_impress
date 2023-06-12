@@ -1,4 +1,5 @@
-mesh_name: malha_c2_obel.msh
+# mesh_name: malha_c2_obel.msh
+mesh_name: 100x1x1.msh
 name_save_file: 'results_c2_obel_finescale'
 
 compositional: True
