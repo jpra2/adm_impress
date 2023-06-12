@@ -69,12 +69,10 @@ ml_data = MultilevelData(data_impress, M, load=load_multilevel_data, n_levels=n_
 
 ml_data.run()
 data_impress.update_variables_to_mesh()
-import pdb; pdb.set_trace()
 mlo = MultilevelOperators(n_levels, data_impress, elements_lv0, ml_data, load=load_operators, get_correction_term=get_correction_term)
 neumann_subds = NeumannSubdomains(elements_lv0, ml_data, data_impress, wells)
 adm = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
 # ml_data.load_tags()
-# import pdb; pdb.set_trace()
 dual_subdomains = create_dual_subdomains(ml_data['dual_structure_level_1'], ml_data['fine_dual_id_level_1'], ml_data['fine_primal_id_level_1'])
 global_vector_update = np.full(ctes.n_volumes, True, dtype=bool)
 ncoarse_ids = len(np.unique(data_impress['GID_1']))
@@ -128,7 +126,6 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['z'] = fprop.z
     params['porous_volume'] = fprop.Vp
     params['total_volume'] = fprop.Vt
-    
     global_vector_update[:] = True # update the prolongation operator in all dual volumes
 
     sim.run(M, wells, fprop, load, 

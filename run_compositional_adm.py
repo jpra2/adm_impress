@@ -37,6 +37,11 @@ class RunSimulationAdm(run_simulation):
         if ctes.FR:
             from packs.compositional import prep_FR as ctes_FR
             ctes_FR.run(M)
+        
+        if ctes.MUSCL['set']:
+            from packs.compositional import prep_MUSCL as ctes_MUSCL
+            ctes_MUSCL.run(M)
+
         fprop = self.get_initial_properties(M, wells)        
 
         return M, data_impress, wells, fprop, load, elements_lv0
