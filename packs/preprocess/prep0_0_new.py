@@ -6,6 +6,7 @@ from math import pi
 import numpy as np
 from .prep0_0 import Preprocess0
 # from .preprocess1 import set_saturation_regions
+from impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
 
 class PreprocessUnfied(Preprocess0):
     '''
@@ -76,7 +77,7 @@ class PreprocessUnfied(Preprocess0):
         #faces_hs[~faces_quadr,expr]=-1 #não sei para que vai ser util ainda...
         return normals
 
-    def set_area_unstruct(self,M):
+    def set_area_unstruct(self,M: FineScaleMesh):
         faces = M.faces.all
         n_faces = len(faces)
         areas = M.faces.area(faces)
@@ -111,7 +112,8 @@ class PreprocessUnfied(Preprocess0):
 
         M.data[M.data.variables_impress['area']] = areas
         M.data[M.data.variables_impress['dist_cent']] = dist_between_centers
-        M.data[M.data.variables_impress['volume']] = M.volumes.volume(M.volumes.all)
+        volume = np.array([M.volumes.volume([i]) for i in M.volumes.all])
+        M.data[M.data.variables_impress['volume']] = volume
         M.data[M.data.variables_impress['NODES']] = M.nodes.center(M.nodes.all)
         M.data['h_face_cent_vol'] = dist_cent #util para o MPFA-D
         M.data['faces_nodes'] = faces_nodes

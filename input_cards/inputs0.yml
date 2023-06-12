@@ -129,8 +129,11 @@ compositional_data:
     Cw: 0
     Mw_w: 0.018015
     Pw: 13.79e6
+    So_ini: 0.8
+    V_res: 5663.3693183999985
     mi_W: 1e-3
     mobility: false
+    poro: 0.2
     rho_W: 999.6
 compressible_oil: true
 convert_english_to_SI: false

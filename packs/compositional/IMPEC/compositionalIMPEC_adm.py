@@ -31,7 +31,7 @@ class CompositionalFvmADM(CompositionalFVM):
             self.get_faces_properties_weighted_average(fprop, G)
         else: self.get_faces_properties_upwind(fprop, G)'''
         self.get_faces_properties_upwind(fprop, G)
-        self.get_phase_densities_internal_faces(fprop)
+        self.get_phase_densities_internal_faces(fprop, G)
 
         r = 0.8 # enter the while loop
 

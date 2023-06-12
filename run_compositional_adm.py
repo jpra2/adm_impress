@@ -61,10 +61,10 @@ class RunSimulationAdm(run_simulation):
         '---- Get pressure field and new time step (if the past time step does \
         not obey the CFL condition) -------------------------------------------'
 
-        # kwargs['delta_t'] = self.delta_t
+        kwargs['delta_t'] = self.delta_t
         params['delta_t'] = self.delta_t
         # self.delta_t = CompositionalFvmADM()(M, wells, fprop, **kwargs)
-        self.delta_t = CompositionalFvmADM()(M, wells, fprop, delta_t=self.delta_t, t=self.t, params=params, **kwargs)
+        self.delta_t = CompositionalFvmADM()(M, wells, fprop, t=self.t, params=params, **kwargs)
 
         self.t += self.delta_t
         

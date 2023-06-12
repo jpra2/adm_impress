@@ -86,6 +86,9 @@ compositional_data:
     delta_tmin: 100
 
   water_data:
+    V_res: 5663.3693183999985
+    poro: 0.2
+    So_ini: 0.8 # Saturação de óleo inicial
     mi_W: 1e-3
     rho_W: 999.6
     Mw_w: 18.015e-3

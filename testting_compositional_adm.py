@@ -65,7 +65,6 @@ ml_data = MultilevelData(data_impress, M, load=load_multilevel_data, n_levels=n_
 
 
 
-
 ml_data.run()
 data_impress.update_variables_to_mesh()
 mlo = MultilevelOperators(n_levels, data_impress, elements_lv0, ml_data, load=load_operators, get_correction_term=get_correction_term)
@@ -79,6 +78,19 @@ OP_AMS = sp.lil_matrix((ctes.n_volumes, ncoarse_ids)).tocsc()
 
 params['area'] = data_impress['area']
 params['pretransmissibility'] = data_impress['pretransmissibility']
+params['level0_negative_composition'] = np.full(len(elements_lv0['volumes']), False, dtype=bool)
+params['adm_method'] = adm
+params['neumann_subds'] = neumann_subds
+params['data_impress'] = data_impress
+params['multilevel_data'] = ml_data
+all_coarse_intersect_faces_level_1 = np.concatenate(ml_data['coarse_intersect_faces_level_1'])
+params['all_coarse_intersect_faces_level_1'] = all_coarse_intersect_faces_level_1
+params['multilevel_operators'] = mlo
+params['dual_subdomains'] = dual_subdomains
+params['global_vector_update'] = global_vector_update
+params['OP_AMS'] = OP_AMS
+
+
 
 local_problem_params = {
     'Vbulk': ctes.Vbulk,
@@ -115,6 +127,7 @@ local_problem_params = {
     'adm_solver': 'tams',
 }
 
+
 while run_criteria < stop_criteria:# and loop < loop_max:
     params['pressure'] = fprop.P
     params['mobilities'] = fprop.mobilities
@@ -126,7 +139,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
     params['z'] = fprop.z
     params['porous_volume'] = fprop.Vp
     params['total_volume'] = fprop.Vt
-    global_vector_update[:] = True # update the prolongation operator in all dual volumes
+     # update the prolongation operator in all dual volumes
 
     sim.run(M, wells, fprop, load, 
             multilevel_data=ml_data, 
@@ -137,7 +150,7 @@ while run_criteria < stop_criteria:# and loop < loop_max:
             data_impress=data_impress,
             elements_lv0=elements_lv0,
             **local_problem_params)
-
+    import pdb; pdb.set_trace()
     if data_loaded['use_vpi']:
         'If using time-step unit as vpi'
         run_criteria = sim.vpi
