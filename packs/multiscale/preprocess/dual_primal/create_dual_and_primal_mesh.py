@@ -85,7 +85,7 @@ class MultilevelData(DataManager):
             M.faces.internal[:],
             np.arange(3)
         )
-        dual_structure.export_to_npz()
+        # dual_structure.export_to_npz()
 
 
 
