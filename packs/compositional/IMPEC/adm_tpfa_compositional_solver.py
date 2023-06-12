@@ -538,7 +538,7 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         if adm_solver == 'tams':
             return self.get_pressure_adm_tams(M, wells, fprop, Pold, delta_t, params, **kwargs)
         elif adm_solver == 'iterative-finescale':
-            return self.get_pressure_adm_ms_direct(M, wells, fprop, Pold, delta_t, **kwargs)
+            return self.get_pressure_adm_iterative_finescale(M, wells, fprop, Pold, delta_t, **kwargs)
         else:
             raise ValueError('adm_solver error')
 
@@ -662,8 +662,8 @@ class AdmTpfaCompositionalSolver(TPFASolver):
         Ft_internal_faces[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]] = Ft_internal_faces_adm[:, elements_lv0['remaped_internal_faces'][all_coarse_intersect_faces]]
 
         t2 = time.time()
-        # local_solution = self.get_local_solution_serial(Ft_internal_faces_adm, all_coarse_intersect_faces, neumann_subds, T_noCC, params, solution, master_neumann, **kwargs)
-        local_solution = solution
+        local_solution = self.get_local_solution_serial(Ft_internal_faces_adm, all_coarse_intersect_faces, neumann_subds, T_noCC, params, solution, master_neumann, **kwargs)
+        # local_solution = solution
         t3 = time.time()
         print('######################################')
         print(f'\nLocal solution time: {t3 - t2} \n')

@@ -220,7 +220,8 @@ class run_simulation:
         t1 = time.time()
         dt = t1 - t0
         self.sim_time += dt
-        #import pdb; pdb.set_trace()
+
+
         if self.use_vpi:
             if np.round(self.vpi,2) in self.vpi_save:
                 self.update_current_compositional_results(M, wells, fprop) #ver quem vou salvar

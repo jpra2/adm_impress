@@ -52,7 +52,6 @@ M, data_impress, wells, fprop, load, elements_lv0 = sim.initialize(load, convert
 # import pdb; pdb.set_trace()
 # load_multilevel_data = False
 
-
 ml_data = MultilevelData(data_impress, M, load=load_multilevel_data, n_levels=n_levels)
 
 # import pdb; pdb.set_trace()
@@ -112,7 +111,8 @@ local_problem_params = {
     'm_object': M,
     'global_vector_update': global_vector_update,
     'OP_AMS': OP_AMS,
-    'dual_subdomains': dual_subdomains
+    'dual_subdomains': dual_subdomains,
+    'adm_solver': 'tams',
 }
 
 while run_criteria < stop_criteria:# and loop < loop_max:

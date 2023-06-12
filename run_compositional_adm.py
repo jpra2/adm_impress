@@ -49,6 +49,10 @@ class RunSimulationAdm(run_simulation):
     def run(self, M, wells, fprop, load, params, **kwargs):
         ''' Function created to compute reservoir and fluid properties at each \
         time step '''
+        V_res = data_loaded['compositional_data']['water_data']['V_res']
+        So_ini = data_loaded['compositional_data']['water_data']['So_ini']
+        poro = data_loaded['compositional_data']['water_data']['poro']
+        self.HCVP = V_res * fprop.So[-1] * poro
 
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
@@ -71,45 +75,31 @@ class RunSimulationAdm(run_simulation):
         if ctes.load_k and ctes.compressible_k:
             #if self.z
 
-            self.p2 = StabilityCheck(fprop.P, fprop.T)
-            fprop.L, fprop.V, fprop.xkj[0:ctes.Nc, 0, :], \
-            fprop.xkj[0:ctes.Nc, 1, :], fprop.Csi_j[:,0,:], \
-            fprop.Csi_j[:,1,:], fprop.rho_j[:,0,:], fprop.rho_j[:,1,:]  =  \
-            self.p2.run_init(fprop.P, np.copy(fprop.z))#, wells)
+            if ctes.load_k and ctes.compressible_k:
+                self.p2 = StabilityCheck(fprop.P, fprop.T)
 
-            if len(wells['ws_inj'])>0 and not self.p2.constant_K:
+                fprop.L, fprop.V, fprop.A, fprop.xkj, fprop.Csi_j, fprop.rho_j = \
+                    self.p2.run_init(fprop.P, np.copy(fprop.z), wells, \
+                                     ksi_W=fprop.Csi_W, rho_W=fprop.rho_W)
 
-                if any(wells['inj_cond']=='reservoir'):
-                    injP_bool = wells['ws_p'] == wells['ws_inj']
-                    injP = wells['ws_p'][injP_bool]
+                if ctes.miscible_w:
+                    fprop.Csi_W = fprop.Csi_j[0, -1, :]
+                    fprop.Csi_W0 = fprop.Csi_j[0, -1, :]
+                    fprop.rho_W = fprop.Csi_j[0, -1, :]
 
-                    z = (wells['z']).T
+            self.update_well_inj_rate(fprop, wells)
 
-                    p_well = StabilityCheck(fprop.P[wells['ws_inj']], fprop.T)
-                    L, V, x, y, Csi_L, Csi_V, rho_L, rho_V  =  \
-                    p_well.run_init(fprop.P[wells['ws_inj']],z[0:ctes.Nc])
 
-                    if any(injP_bool):
-                        qk_molar = fprop.qk_molar[:,injP]
-                        #wells['values_q_vol'] = np.zeros_like((ctes.n_components,len(injP)))
-                        wells['values_q_vol'] = qk_molar / \
-                            ((Csi_V * V + Csi_L * L))#[wells['inj_cond']=='reservoir']
-                    else:
-                        wells['values_q'][:,wells['inj_cond']=='reservoir'] = (Csi_V * V + Csi_L * L) * self.q_vol
-                    #wells['values_q_vol'][:,wells['inj_cond']=='reservoir'] = self.q_vol
-                #else:
-                    #wells['inj_p_term'] = []
-                    #qk_molar = wells['values_q'][:,wells['inj_cond']=='surface']
-                    #wells['values_q_vol'][:,wells['inj_cond']=='surface'] = qk_molar / \
-                    #    ((Csi_V * V + Csi_L * L))[wells['inj_cond']=='surface']
-
-        #if any(fprop.L!=0): import pdb; pdb.set_trace()
         '----------------------- Update fluid properties ----------------------'
         self.p1.run_inside_loop(M, fprop)
 
 
         '-------------------- Advance in time and save results ----------------'
-        self.prod_rate_SC(fprop, wells)
+        self.oil_production_rate_SC_t, self.gas_production_rate_SC_t, self.pressure_ = \
+            self.prod_rate_RCorSC(fprop, wells, self.P_SC)
+        self.oil_production_rate_RC_t, self.gas_production_rate_RC_t, self.pressure_ = \
+            self.prod_rate_RCorSC(fprop, wells, fprop.P[wells['ws_prod']])
+
         self.update_vpi(fprop, wells)
 
         self.update_loop()
@@ -125,4 +115,21 @@ class RunSimulationAdm(run_simulation):
                 self.update_current_compositional_results(M, wells, fprop)
 
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
-        if len(wells['ws_prod'])>0: self.update_production(fprop, wells)
+        if len(wells['ws_prod'])>0: self.update_production()
+        '''Condições da WAG'''
+        # import pdb; pdb.set_trace()
+        if any(self.t >= wells['DT']):
+            # import pdb; pdb.set_trace()
+            if wells['z'][0][-1] == 0:
+                wells['z'] = wells['za']
+                wells['values_q'] = wells['values_qa']
+                # self.get_well_inj_properties(M, fprop, wells)
+            else:
+                # import pdb; pdb.set_trace()
+                wells['z'] = wells['zco2']
+                wells['values_q'] = wells['values_qco2']
+            # import pdb; pdb.set_trace()
+            self.get_well_inj_properties(M, fprop, wells)
+            wells['DT'] = wells['DT'][1:]
+
+            # import pdb; pdb.set_trace()

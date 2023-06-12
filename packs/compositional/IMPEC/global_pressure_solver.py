@@ -276,7 +276,7 @@ class GlobalIMPECPressureSolver:
         ws_q = well_volumes_flux_prescription
 
         if len(ws_q) > 0:
-            _q[:, ws_q] = values_flux_prescription
+            _q[:, ws_q] = values_flux_prescription #mol/s
             well_term[ws_q] = np.sum(dVtdk[:, ws_q] * _q[:, ws_q], axis=0)
         return well_term
 
