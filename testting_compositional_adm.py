@@ -13,6 +13,9 @@ import scipy.sparse as sp
 from packs.data_class.acumulate_compositional_array import CumulativeCompositionalDataArray
 from packs.data_class.compositional_data import CompositionalData
 from packs.data_class.compositional_cumulative_datamanager import CumulativeCompositionalDataManager
+from packs.multiscale.operators.prolongation.AMS.paralell2.paralel_ams_new_2 import MasterLocalOperator
+from packs.multiscale.neuman_local_problems.master_local_solver import MasterLocalSolver
+
 """ ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
 
 name_current = 'current_compositional_results_'
@@ -89,8 +92,10 @@ params['multilevel_operators'] = mlo
 params['dual_subdomains'] = dual_subdomains
 params['global_vector_update'] = global_vector_update
 params['OP_AMS'] = OP_AMS
-
-
+master_local_operator = MasterLocalOperator(dual_subdomains, len(elements_lv0['volumes']), update_FC=False)
+master_neumann = MasterLocalSolver(neumann_subds.neumann_subds, len(elements_lv0['volumes']))
+params['master_local_operator'] = master_local_operator
+params['master_neumann'] = master_neumann
 
 local_problem_params = {
     'Vbulk': ctes.Vbulk,

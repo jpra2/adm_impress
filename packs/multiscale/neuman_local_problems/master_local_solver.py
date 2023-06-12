@@ -8,6 +8,7 @@ from ctypes import c_bool
 import queue
 from packs.multiscale.neuman_local_problems.local_solver import LocalSolver1, run_thing, LocalSolver2
 from packs.compositional.IMPEC.global_pressure_solver import GlobalIMPECPressureSolver as Gips
+from packs.multiscale.preprocess.prep_neumann import NeumannSubdomains
 
 class CommonMasterMethods:
     
@@ -71,7 +72,7 @@ class MasterLocalSolver(CommonMasterMethods):
         if self.n_cpu <= 0:
             self.n_cpu = 1
         self.n_volumes = n_volumes
-        self.problems_list = problems_list
+        self.problems_list: NeumannSubdomains = problems_list
         n_problems = len(problems_list)
         n_problems_per_cpu = self.count_problems(n_problems, self.n_cpu)
         self.problems_per_cpu = self.get_problems_per_cpu(n_problems_per_cpu, problems_list)
