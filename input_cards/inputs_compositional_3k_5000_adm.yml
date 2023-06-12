@@ -156,9 +156,9 @@ Wells:
     value: 7e6
     z: [0.9, 0.1, 0.0]
     injection_condition: reservoir
-    #value: 1.9675925925925925e-06
-    #ksi_total: 3099.342953950803
-    #value_type: volumetric
+    value: 1.9675925925925925e-06
+    ksi_total: 3099.342953950803
+    value_type: volumetric
 
   P2:
     p0: [49.99, 0.0, 0]
