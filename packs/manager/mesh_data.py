@@ -42,9 +42,12 @@ class MeshData(MeshInit):
         
         self.tags.update({tag_name: tag})
     
-    def insert_tag_data(self, tag_name, data, elements_type, elements_array):
+    def insert_tag_data(self, tag_name, data, elements_type, elements_array=''):
         
         all_elements = self.get_all_elements(elements_type)
+
+        if elements_array == '':
+            elements_array = np.arange(len(all_elements))
         
         to_elements = np.array(all_elements).astype(np.uint64)[elements_array]
         

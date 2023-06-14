@@ -11,8 +11,8 @@ from packs.utils.utils_old import get_box
 # mesh_properties_name = 'exemplo_30x30x1'
 # mesh_name = '30x30x1.h5m'
 
-mesh_properties_name = 'sim_80x1x1'
-mesh_name = '80x1x1.h5m'
+mesh_properties_name = '9x9x1_sim'
+mesh_name = '9x9x1_sim.h5m'
 
 mesh_path = os.path.join(defpaths.mesh, mesh_name)
 
@@ -587,11 +587,11 @@ def update_properties(mesh_properties: MeshProperty):
     
 
 
-def first_func():
+def first_func(mesh_path, mesh_properties_name):
     mesh_properties = create_initial_3D_mesh_prperties(mesh_path, mesh_properties_name)
     mesh_properties.export_data()
 
-def second_func():
+def second_func(mesh_properties_name):
 
     mesh_properties = load_mesh_properties(mesh_properties_name)
     vol_volumes, volumes_centroids = calculate_volumes_structured(mesh_properties)
@@ -628,12 +628,12 @@ def save_mat_file():
     io.savemat(matlab_data_path, mesh_properties.get_all_data())
 
 
-first_func()
-second_func()
-thr_func()
-save_mat_file()
+# first_func(mesh_path, mesh_properties_name)
+# second_func(mesh_properties_name)
+# thr_func()
+# save_mat_file()
 
 
-mesh_properties = load_mesh_properties(mesh_properties_name)
-import pdb; pdb.set_trace()
-print(mesh_properties)
+# mesh_properties = load_mesh_properties(mesh_properties_name)
+# import pdb; pdb.set_trace()
+# print(mesh_properties)

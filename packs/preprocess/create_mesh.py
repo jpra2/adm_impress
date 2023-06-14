@@ -36,18 +36,33 @@ class createMesh:
 
     def create_fine_vertices(self):
 
+        dz = np.array([0, -30])
+
+        dx1 = np.arange(5)*160
+        dx2 = np.array([dx1[-1] + 80])
+        dx3 = dx2[0] + dx1[1:]
+        dx = np.concatenate([dx1, dx2, dx3])
+        dy = dx.copy()
+
+        # coords = np.array([(i, j, k)
+        #                    for k in (
+        #                        np.arange(
+        #                            self.params['nblocks'][2]+1, dtype='float64') *self.mesh_data['block_size'][2])
+        #                    for j in (
+        #                        np.arange(
+        #                            self.params['nblocks'][1]+1, dtype='float64') *self.mesh_data['block_size'][1])
+        #                    for i in (
+        #                        np.arange(
+        #                            self.params['nblocks'][0]+1, dtype='float64') *self.mesh_data['block_size'][0])
+        #                    ], dtype='float64')
+        
         coords = np.array([(i, j, k)
-                           for k in (
-                               np.arange(
-                                   self.params['nblocks'][2]+1, dtype='float64') *self.mesh_data['block_size'][2])
-                           for j in (
-                               np.arange(
-                                   self.params['nblocks'][1]+1, dtype='float64') *self.mesh_data['block_size'][1])
-                           for i in (
-                               np.arange(
-                                   self.params['nblocks'][0]+1, dtype='float64') *self.mesh_data['block_size'][0])
-                           ], dtype='float64')
-        coords+=self.mesh_data['starting_point']
+                           for k in dz
+                           for j in dy
+                           for i in dx
+        ], dtype='float64')
+
+        # coords+=self.mesh_data['starting_point']
         self.verts = self.mb.create_vertices(coords.flatten())
 
     def _create_hexa(self, i, j, k):

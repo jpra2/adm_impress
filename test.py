@@ -12,6 +12,9 @@
 # from packs.mpfa_methods.flux_calculation.test.test_flux_lsds_method import test_lsds_flux
 # test_lsds_flux()
 
-from packs.examples.load_3d_mesh import mesh_properties
+# from packs.examples.load_3d_mesh import mesh_properties
 
 # from packs.examples.get_data_from_matlab import mesh_data
+
+from packs.examples.get_data_sim import mesh_data
+import pdb; pdb.set_trace()
