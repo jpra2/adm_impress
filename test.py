@@ -16,5 +16,5 @@
 
 # from packs.examples.get_data_from_matlab import mesh_data
 
-from packs.examples.get_data_sim import mesh_data
+from packs.examples.get_data_sim import mesh_properties
 # import pdb; pdb.set_trace()
