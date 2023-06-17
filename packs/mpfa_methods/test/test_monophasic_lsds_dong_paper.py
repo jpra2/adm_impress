@@ -25,21 +25,16 @@ def get_permeability_p1(n_elements):
     ])
     permeability[:,:] = K
     return {'permeability': permeability}
-    
 
-def testp1_by_meshtype(mesh_type, ns):
-    pr_name = 'problem1'
+def run(pr_name, mesh_type, ns, n):
     
-    all_l1_error = []
-    all_l2_error = []
-    all_n_faces = []
+    mesh_test_name = defpaths.load_mpfad_meshtest_by_type_and_number(mesh_type, ns[n])
+    mesh_properties_name = pr_name + '_' + mesh_type + '_' + str(ns[n])
+    mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
+    pressure_tag = 'pressure'
+    keys_prop = list(mesh_properties.keys())
     
-    for n in range(len(ns)):
-        
-        mesh_test_name = defpaths.load_mpfad_meshtest_by_type_and_number(mesh_type, ns[n])
-        mesh_properties_name = pr_name + defpaths.mesh_properties_mesh1_test + str(ns[n])
-        mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
-        
+    if pressure_tag not in keys_prop:
         # define nodes to calculate_weights
         mesh_properties.insert_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
         ## create weights and xi params for flux calculation
@@ -66,7 +61,7 @@ def testp1_by_meshtype(mesh_type, ns):
         xmin, ymin = mesh_properties.faces_centroids[:, 0:2].min(axis=0)
         xmax, ymax = mesh_properties.faces_centroids[:, 0:2].max(axis=0)
         
-        mesh_delta = 1e-7
+        mesh_delta = 1e-10
         nodes_xmin = mesh_properties.nodes[
             mesh_properties.nodes_centroids[:, 0] < xmin + mesh_delta
         ]
@@ -120,43 +115,69 @@ def testp1_by_meshtype(mesh_type, ns):
         p_exact = exact_solution_p1(mesh_properties.faces_centroids[:, 0:2])
         
         error = np.absolute((pressure - p_exact))
-        relative_error = error/np.absolute(p_exact)
         
-        l1_norm = error.max()
-        l2_norm = np.linalg.norm(error)
+        mesh_properties.insert_data({
+            pressure_tag: pressure,
+            'edges_flux': edges_flux,
+            'faces_flux': faces_flux,
+            'p_exact': p_exact,
+            'error': error
+        })
+        mesh_properties.export_data()
+    
+    l1_norm = mesh_properties.error.max()
+    l2_norm = np.linalg.norm(mesh_properties.error)
+    
+    
+    
+    # mesh_path = os.path.join(defpaths.mesh, mesh_test_name)
+    # # mesh_path = mesh_test_name
+    # mesh_data = MeshData(mesh_path=mesh_path)
+    
+    # mesh_data.create_tag('pressure')
+    # mesh_data.insert_tag_data('pressure', pressure, 'faces', mesh_properties.faces)
+    # mesh_data.create_tag('permeability', data_size=4)
+    # perm = mesh_properties.permeability.reshape((len(mesh_properties.faces), 4))
+    # mesh_data.insert_tag_data('permeability', perm, 'faces', mesh_properties.faces)
+    # mesh_data.create_tag('faces_flux')
+    # mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces', mesh_properties.faces)
+    # mesh_data.create_tag('nodes_pressure_presc')
+    # mesh_data.insert_tag_data('nodes_pressure_presc', pressures_bc, 'nodes', nodes_bc)
+    # mesh_data.create_tag('pressure_abs_error')
+    # mesh_data.insert_tag_data('pressure_abs_error', error, 'faces', mesh_properties.faces)
+    # to_export_name = pr_name + mesh_type + str(ns[n])
+    # mesh_data.export_all_elements_type_to_vtk(to_export_name + 'nodes', 'nodes')
+    # mesh_data.export_all_elements_type_to_vtk(to_export_name + 'faces', 'faces')
+    # mesh_data.export_only_the_elements('test_7_nodes_pressure_boundary', 'nodes', nodes_bc)
+    
+    return l1_norm, l2_norm, len(mesh_properties.faces)
+
+    
         
+
+def testp1_by_meshtype(mesh_type, ns):
+    pr_name = 'problem1'
+    
+    all_l1_error = []
+    all_l2_error = []
+    all_n_faces = []
+    
+    for n in range(len(ns)):
+        l1_norm, l2_norm, n_faces = run(pr_name, mesh_type, ns, n)
+
         all_l1_error.append(l1_norm)
         all_l2_error.append(l2_norm)
-        all_n_faces.append(len(mesh_properties.faces))
-        
-        mesh_path = os.path.join(defpaths.mesh, mesh_test_name)
-        # mesh_path = mesh_test_name
-        import pdb; pdb.set_trace()
-        mesh_data = MeshData(mesh_path=mesh_path)
-        
-        mesh_data.create_tag('pressure')
-        mesh_data.insert_tag_data('pressure', pressure, 'faces', mesh_properties.faces)
-        mesh_data.create_tag('permeability', data_size=4)
-        perm = mesh_properties.permeability.reshape((len(mesh_properties.faces), 4))
-        mesh_data.insert_tag_data('permeability', perm, 'faces', mesh_properties.faces)
-        mesh_data.create_tag('faces_flux')
-        mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces', mesh_properties.faces)
-        mesh_data.create_tag('nodes_pressure_presc')
-        mesh_data.insert_tag_data('nodes_pressure_presc', pressures_bc, 'nodes', nodes_bc)
-        mesh_data.create_tag('pressure_abs_error')
-        mesh_data.insert_tag_data('pressure_abs_error', error, 'faces', mesh_properties.faces)
-        to_export_name = pr_name + mesh_type + str(ns[n])
-        mesh_data.export_all_elements_type_to_vtk(to_export_name + 'nodes', 'nodes')
-        mesh_data.export_all_elements_type_to_vtk(to_export_name + 'faces', 'faces')
-        # mesh_data.export_only_the_elements('test_7_nodes_pressure_boundary', 'nodes', nodes_bc)
-    
-    
+        all_n_faces.append(n_faces)
     
     return {
         'l1_norm': all_l1_error,
         'l2_norm': all_l2_error,
         'n_faces': all_n_faces
     }
+
+        
+        
+        
     
 def plot_errors():
     
@@ -173,7 +194,6 @@ def plot_errors():
     mesh_types = list(mesh_types_dict.keys())
     for mesh_type in mesh_types:
         resp = testp1_by_meshtype(mesh_type, mesh_types_dict[mesh_type])
-        import pdb; pdb.set_trace()
         ax1.plot(resp['n_faces'], np.log10(resp['l1_norm']), label=mesh_type)
         ax2.plot(resp['n_faces'], np.log10(resp['l1_norm']), label=mesh_type)
     

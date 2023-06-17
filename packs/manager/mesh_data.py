@@ -12,7 +12,6 @@ class MeshData(MeshInit):
     
     def __init__(self, dim=2, mesh_path=''):
         self.tags = dict()
-        import pdb; pdb.set_trace()
         self.initialize(mesh_path=mesh_path)
         self.init_mesh()
         
