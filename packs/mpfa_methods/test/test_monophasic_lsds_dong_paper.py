@@ -164,6 +164,7 @@ def testp1_by_meshtype(mesh_type, ns):
     
     for n in range(len(ns)):
         l1_norm, l2_norm, n_faces = run(pr_name, mesh_type, ns, n)
+        import pdb; pdb.set_trace()
 
         all_l1_error.append(l1_norm)
         all_l2_error.append(l2_norm)
@@ -180,6 +181,7 @@ def testp1_by_meshtype(mesh_type, ns):
         
     
 def plot_errors():
+    # 'mesh1': [8, 32, 64, 128]
     
     mesh_types_dict = {
         'mesh1': [8, 32, 64, 128],
@@ -195,7 +197,7 @@ def plot_errors():
     for mesh_type in mesh_types:
         resp = testp1_by_meshtype(mesh_type, mesh_types_dict[mesh_type])
         ax1.plot(resp['n_faces'], np.log10(resp['l1_norm']), label=mesh_type)
-        ax2.plot(resp['n_faces'], np.log10(resp['l1_norm']), label=mesh_type)
+        ax2.plot(resp['n_faces'], np.log10(resp['l2_norm']), label=mesh_type)
     
     ax1.set_xlabel('N faces')
     ax1.set_ylabel('Log10 L1 norm')

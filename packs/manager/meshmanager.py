@@ -33,7 +33,10 @@ class MeshInit:
         mb = core.Core()
         scd = ScdInterface(mb)
         mtu = topo_util.MeshTopoUtil(mb)
-        mb.load_file(self.mesh_path)
+        try:
+            mb.load_file(self.mesh_path)
+        except OSError:
+            raise OSError(f'Erro na leitura da malha: {self.mesh_path}')
         root_set = mb.get_root_set()
         return mb, mtu, root_set
 
