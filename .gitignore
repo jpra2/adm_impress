@@ -9,11 +9,12 @@
 *.su2
 *_rm.py
 
-*.msh
-!cube_unstructured.msh
-!cube_structured.msh
-!2d_unstructured.msh
-!oblique_quadrilateral_test1.msh
+# *.msh
+# !cube_unstructured.msh
+# !cube_structured.msh
+# !2d_unstructured.msh
+# !oblique_quadrilateral_test1.msh
+# !mpfad_mesh_tests
 
 *.geo
 !2d_square.geo
