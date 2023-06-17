@@ -190,26 +190,30 @@ def plot_errors():
         'mesh6': [1, 2, 3, 4]  
     }   
     
-    fig1, ax1 = plt.subplots(1)
-    fig2, ax2 = plt.subplots(1)
+    # fig1, ax1 = plt.subplots(1)
+    # fig2, ax2 = plt.subplots(1)
+    
+    all_resps = []
     
     mesh_types = list(mesh_types_dict.keys())
     for mesh_type in mesh_types:
         resp = testp1_by_meshtype(mesh_type, mesh_types_dict[mesh_type])
-        ax1.plot(resp['n_faces'], np.log10(resp['l1_norm']), label=mesh_type)
-        ax2.plot(resp['n_faces'], np.log10(resp['l2_norm']), label=mesh_type)
+        all_resps.append(resp.update({'mesh_type': mesh_type}))
+    #     all_resps.append(resp.update{'mesh_type': mesh_type})
+    #     ax1.plot(resp['n_faces'], np.log10(resp['l1_norm']), label=mesh_type)
+    #     ax2.plot(resp['n_faces'], np.log10(resp['l2_norm']), label=mesh_type)
     
-    ax1.set_xlabel('N faces')
-    ax1.set_ylabel('Log10 L1 norm')
-    ax2.set_xlabel('N faces')
-    ax2.set_ylabel('Log10 L2 norm')
-    ax1.set_title('L1 Norm')
-    ax2.set_title('L2 Norm')
-    ax1.legend()
-    ax2.legend()
+    # ax1.set_xlabel('N faces')
+    # ax1.set_ylabel('Log10 L1 norm')
+    # ax2.set_xlabel('N faces')
+    # ax2.set_ylabel('Log10 L2 norm')
+    # ax1.set_title('L1 Norm')
+    # ax2.set_title('L2 Norm')
+    # ax1.legend()
+    # ax2.legend()
     
-    fig1.savefig('L1 Norm.svg', format='svg')
-    fig2.savefig('L1 Norm.svg', format='svg')
+    # fig1.savefig('L1 Norm.svg', format='svg')
+    # fig2.savefig('L1 Norm.svg', format='svg')
 
     
 
