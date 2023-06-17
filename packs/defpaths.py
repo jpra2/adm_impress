@@ -35,9 +35,9 @@ def load_mpfad_meshs() -> pd.DataFrame:
 def load_mpfad_meshtest_by_type_and_number(mesh_type: str, n: int):
     meshs_df = load_mpfad_meshs()
     meshs_df = meshs_df[meshs_df['mesh_type'] == mesh_type]
-    mesh_paths = meshs_df['mesh_path'].values
-    assert n <= len(mesh_paths)
-    return mesh_paths[n]
+    meshs_df = meshs_df[meshs_df['mesh_path'].str.contains('_' + str(n))]
+    mesh_path = meshs_df['mesh_path'].values[0]
+    return mesh_path
     
 
 
@@ -50,3 +50,4 @@ mesh_properties_2d_test_6_name = 'test6_mpfad'
 
 oblique_quad_mesh = os.path.join(mesh, 'oblique_quadrilateral_test1.msh')
 mesh_prop_test7 = 'test_oblique_7_mpfad'
+mesh_properties_mesh1_test = 'mpfad_lsds_mesh1'
