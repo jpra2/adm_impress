@@ -10,7 +10,6 @@ import pandas as pd
 from packs import defpaths
 from shutil import rmtree
 
-
 def load_from_arr(cases: list):
     files = np.array(os.listdir(defpaths.flying))
     df_files = pd.Series(files)
@@ -48,6 +47,7 @@ def export_database_from_case(case, dfs, mesh_path):
     if os.path.exists(folder):
         rmtree(folder)
     os.makedirs(folder)
+    os.makedirs(os.path.join(folder, 'gifs'))
      
     remove_loop = ['day', 'case']
     
@@ -95,20 +95,62 @@ def export_data_arr_from_cases1(cases, mesh_properties, mesh_path):
         export_database_from_case(case, dfs, mesh_path)
 
 
+def create_gif(case):
     
+    import glob
+    import contextlib
+    from PIL import Image
+    
+    gif_path = os.path.join(defpaths.results, case)
+    gif_path = os.path.join(gif_path, 'gifs')
+
+    # filepaths
+    fp_in = gif_path
+    fp_out = os.path.join(gif_path, 'movie.gif')
+
+    # use exit stack to automatically close opened images
+    with contextlib.ExitStack() as stack:
+        all_dirs = os.listdir(fp_in)
+        all_dirs = [os.path.join(fp_in, i) for i in all_dirs]
+
+        # lazily load images
+        imgs = (stack.enter_context(Image.open(f))
+                for f in sorted(all_dirs))
+
+        # extract  first image from iterator
+        img = next(imgs)
+
+        # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#gif
+        img.save(fp=fp_out, format='GIF', append_images=imgs,
+                save_all=True, duration=200, loop=0)
+    
+    
+    # files = os.listdir(gif_path)
+    # images = []
+    # for filename in files:
+    #     file_img = os.path.join(gif_path, filename)
+    #     images.append(imageio.imread(file_img))
+    
+    # gif_path = os.path.join(gif_path, 'movie.gif')
+    # imageio.mimsave(gif_path, images)
+            
+
     
 
-#######################################################
-mesh_name = '9x9x1_sim.h5m'
-mesh_path = os.path.join(defpaths.mesh, mesh_name)
+# #######################################################
+# mesh_name = '9x9x1_sim.h5m'
+# mesh_path = os.path.join(defpaths.mesh, mesh_name)
 mesh_properties_name = '9x9x1_sim'
 
 # first_func(mesh_path, mesh_properties_name)
 # second_func(mesh_properties_name)
 mesh_properties = load_mesh_properties(mesh_properties_name)
 
-cases = ['base12', 'base13', 'base14', 'base15', 'base16', 'base17']
-export_data_arr_from_cases1(cases, mesh_properties, mesh_path)
+# cases = ['base12', 'base13', 'base14', 'base15', 'base16', 'base17']
+# export_data_arr_from_cases1(cases, mesh_properties, mesh_path)
+
+case = 'base12'
+create_gif(case)
 print(mesh_properties)
 
 
