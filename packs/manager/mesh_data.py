@@ -50,8 +50,10 @@ class MeshData(MeshInit):
             elements_array = np.arange(len(all_elements))
         
         to_elements = np.array(all_elements).astype(np.uint64)[elements_array]
-        
-        self.mb.tag_set_data(self.tags[tag_name], to_elements, data)
+        try:
+            self.mb.tag_set_data(self.tags[tag_name], to_elements, data)
+        except AssertionError:
+            import pdb; pdb.set_trace()
     
     def get_all_elements(self, elements_type):
         
