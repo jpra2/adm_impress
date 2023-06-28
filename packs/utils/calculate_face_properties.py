@@ -211,8 +211,16 @@ def create_unitary_normal_edges_xy_plane(nodes_of_edges, centroids_of_nodes, fac
     normal_edges = np.matmul(vector_edges, R_matrix)
     norm = np.linalg.norm(normal_edges, axis=1)
     unitary_normal_edges = normal_edges/norm.reshape((norm.shape[0], 1))
+
+    proj = []
+
+    for i in range(len(unitary_normal_edges)):
+        proj1 = np.dot(unitary_normal_edges[i], faces_direction_vector[i])
+        proj.append(proj1)
     
-    proj = np.diag(np.tensordot(unitary_normal_edges, faces_direction_vector, axes=((1), (1))))
+    proj = np.array(proj)
+    
+    # proj = np.diag(np.tensordot(unitary_normal_edges, faces_direction_vector, axes=((1), (1))))
     
     test = proj < 0
     unitary_normal_edges[test] = -1*unitary_normal_edges[test]
