@@ -1,5 +1,5 @@
 import copy
-from tkinter import ALL
+# from tkinter import ALL
 from impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
 
 from packs.directories import data_loaded
