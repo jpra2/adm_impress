@@ -1,4 +1,5 @@
 # name_file: 'input_cards/inputs_case2_obel.yml'
-name_file: 'input_cards/inputs_compositional_adm.yml'
+# name_file: 'input_cards/inputs_compositional_adm.yml'
+name_file: 'input_cards/inputs_compositional_biphasic_2D_80x80.yml'
 variable_file: 'input_cards/variable_inputs_compositional.yml'
 simulation_type: 'compositional'
