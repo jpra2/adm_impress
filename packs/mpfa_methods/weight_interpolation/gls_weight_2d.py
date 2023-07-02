@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
+from packs.manager.boundary_conditions import BoundaryConditions
 
 
 class CalculateGlsWeight2D:
@@ -185,6 +186,8 @@ class CalculateGlsWeight2D:
             unitary_normal_edges,
             permeability,
             nodes_to_calculate,
+            neumann_edges = np.array([]),
+            neumann_edges_value = np.array([]),
             **kwargs
     ):
 
@@ -195,6 +198,9 @@ class CalculateGlsWeight2D:
         bool_internal_nodes = ~bool_boundary_nodes
         internal_nodes = nodes[bool_internal_nodes]
         nodes_to_iterate = np.intersect1d(nodes[bool_boundary_nodes], nodes_to_calculate)
+        
+        all_neumann_weights = []
+        
 
         for node in nodes_to_iterate:
             nodes_adj = nodes_of_nodes[node]
@@ -241,10 +247,25 @@ class CalculateGlsWeight2D:
                 faces_adj.shape[0],
                 local_internal_nodes.shape[0],
                 edges_adj.shape[0]
-            )
+            )    
 
             weights = self.eT(faces_adj.shape[0]).dot(np.linalg.inv(M.T.dot(M)).dot(M.T).dot(N))
-
+            
+            neummann_edges_node = np.intersect1d(neumann_edges, edges_adj)
+            if neummann_edges_node.shape[0] > 0:
+                n_faces = faces_adj.shape[0]
+                n_nodes = local_internal_nodes.shape[0]
+                n_edges = edges_adj.shape[0]
+                F = np.zeros((n_faces + n_nodes + n_edges, 1))
+                local_map_edges_node = np.arange(n_faces+n_nodes, n_faces+n_nodes+n_edges)
+                
+                for edge in neummann_edges_node:
+                    loc = edges_adj == edge
+                    F[local_map_edges_node[loc]] = neumann_edges_value[neumann_edges == edge]
+                
+                neumann_weight = self.eT(faces_adj.shape[0]).dot(np.linalg.inv(M.T.dot(M)).dot(M.T).dot(F))
+                all_neumann_weights.append([node, neumann_weight[0]])
+                
             nodes_ids.append(np.repeat(node, weights.shape[0]))
             faces_ids.append(faces_adj)
             all_weight.append(weights)
@@ -252,8 +273,9 @@ class CalculateGlsWeight2D:
         nodes_ids = np.concatenate(nodes_ids)
         faces_ids = np.concatenate(faces_ids)
         all_weight = np.concatenate(all_weight)
+        all_neumann_weights = np.array(all_neumann_weights)
 
-        return nodes_ids, faces_ids, all_weight
+        return nodes_ids, faces_ids, all_weight, all_neumann_weights
 
     @staticmethod
     def bmnodes(n_nodes, n_faces, internal_nodes_adj, edges_adj, centroid_node, nodes_centroids, map_faces_adj,
@@ -316,7 +338,8 @@ class CalculateGlsWeight2D:
         N[vec, vec] = 1
 
         return N
-
+        
+    
     def get_nodes_weights(self, **kwargs):
 
         """
@@ -340,16 +363,19 @@ class CalculateGlsWeight2D:
                 bool_boundary_nodes: bool vector of len(nodes) with true in boundary nodes
                 nodes: global id of mesh nodes
                 faces_centroids: centroids of faces
-                permeability: mesh permeability
+                permeability: mesh faces permeability
                 unitary_normal_edges: unitary normal vector of edges. this vector point 
                                       to outward of left face from adjacencies vector
                 nodes_to_calculate: nodes for weight calculation
+                neumann_edges: edges to set neumann boundary conditions (set [] if not exists)
+                neumann_edges_value: value of neumann boundary condition (set [] if not exists) 
         """
 
         dtype = [('node_id', int), ('face_id', int), ('weight', float)]
+        neumann_dtype = [('node_id', int), ('nweight', float)]
 
         nodes_ids, faces_ids, weights = self.get_weights_internal_nodes(**kwargs)
-        nodes_ids2, faces_ids2, weights2 = self.get_weights_bnodes(**kwargs)
+        nodes_ids2, faces_ids2, weights2, all_neumann_weights = self.get_weights_bnodes(**kwargs)
 
         nodes_ids = np.concatenate([nodes_ids, nodes_ids2])
         faces_ids = np.concatenate([faces_ids, faces_ids2])
@@ -359,9 +385,23 @@ class CalculateGlsWeight2D:
         nodes_weights['node_id'] = nodes_ids
         nodes_weights['face_id'] = faces_ids
         nodes_weights['weight'] = weights
-
-        return nodes_weights
-
+        
+        neumann_weights = np.zeros(len(all_neumann_weights), dtype=neumann_dtype)
+        neumann_weights['node_id'] = all_neumann_weights[:, 0]
+        neumann_weights['nweight'] = all_neumann_weights[:, 1]
+        
+        resp = {
+            'nodes_weights': nodes_weights,
+            'neumann_nodes_weights': neumann_weights
+        }
+        
+        return resp
+        
+        
+        
+        
+        
+    
 def mount_weight_matrix(nodes_weights):
     n_faces = len(np.unique(nodes_weights['face_id']))
     n_nodes = len(np.unique(nodes_weights['node_id']))
@@ -424,10 +464,12 @@ def get_gls_nodes_weights(**kwargs):
             bool_boundary_nodes: bool vector of len(nodes) with true in boundary nodes
             nodes: global id of mesh nodes
             faces_centroids: centroids of faces
-            permeability: mesh permeability
+            permeability: mesh faces permeability
             unitary_normal_edges: unitary normal vector of edges.
                                   this vector point to outward of left face from adjacencies vector
             nodes_to_calculate: nodes for weight calculation
+            neumann_edges: edges to set neumann boundary conditions (set [] if not exists)
+            neumann_edges_value: value of neumann boundary condition (set [] if not exists) 
     """
 
     calculate_weights = CalculateGlsWeight2D()

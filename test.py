@@ -15,6 +15,9 @@
 # from packs.mpfa_methods.test.test_monophasic_lsds_method import test_monophasic_problem_with_pressure_prescription
 # test_monophasic_problem_with_pressure_prescription()
 
-from packs.mpfa_methods.test.test_monophasic_lsds_dong_paper import plot_errors
-plot_errors()
+from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import test_neumann_weights
+test_neumann_weights()
+
+# from packs.mpfa_methods.test.test_monophasic_lsds_dong_paper import plot_errors
+# plot_errors()
 
