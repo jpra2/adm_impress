@@ -387,8 +387,10 @@ class CalculateGlsWeight2D:
         nodes_weights['weight'] = weights
         
         neumann_weights = np.zeros(len(all_neumann_weights), dtype=neumann_dtype)
-        neumann_weights['node_id'] = all_neumann_weights[:, 0]
-        neumann_weights['nweight'] = all_neumann_weights[:, 1]
+        if len(all_neumann_weights) > 0:
+            
+            neumann_weights['node_id'] = all_neumann_weights[:, 0]
+            neumann_weights['nweight'] = all_neumann_weights[:, 1]
         
         resp = {
             'nodes_weights': nodes_weights,

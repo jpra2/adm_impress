@@ -685,6 +685,10 @@ class LsdsFluxCalculation:
         L_pressure[L_faces == -1] = 0
         
         nodes_pressures = nodes_weight_matrix.dot(faces_pressures)
+        neumann_vector = np.zeros(len(nodes_pressures))
+        if len(neumann_weights['node_id'] > 0):
+            neumann_vector[neumann_weights['node_id']] = neumann_weights['nweight']
+        nodes_pressures = nodes_pressures + neumann_vector
         nodes_pressures[ids_node_press] = values
         
         B_pressure = nodes_pressures[B_nodes]
