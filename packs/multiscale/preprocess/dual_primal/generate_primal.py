@@ -22,7 +22,7 @@ def create_dual_and_primal(centroids_volumes: np.ndarray, volumes_dimension: np.
     # ###########
     
     dimension_for_dual, axis_dim = get_dimension_of_problem(centroids_volumes2)
-    dimension = 3
+    dimension = dimension_for_dual
     L = get_l_total(centroids_nodes)
     primal_coarse_ids, all_separated = create_primal(centroids_volumes2, volumes_dimension, cr, dimension)
     

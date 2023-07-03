@@ -163,8 +163,12 @@ Wells:
     value: 3.2774128e-8
     z: [0., 1.]
     ksi_total: 55484.31862337
+    value_a: 0.00012 #0.0000003 #m3/s
+    value_co2: 0.0520833333333  #m3/s
     injection_condition: 'surface'
     value_type: volumetric
+    t_max: 77760000
+    nP_inj: 6
 
   P2:
     p0: [0.60198, 0.0, -0.03048]

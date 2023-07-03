@@ -10,6 +10,20 @@ water_miscible: False
 use_vpi: False
 mesh_type: 'structured'
 
+###############################
+## Multilevel infos
+n_levels: 2
+Crs:
+  # Cr1: [3, 3, 1]
+  # Cr2: [9, 9, 1]
+  Cr1: [3, 11, 1]
+  # Cr1: [5, 5, 1]
+  Cr2: [3, 3, 1]
+get_correction_term: false
+load_operators: false
+load_multilevel_data: false
+#############################
+
 #############################
 
 load_compositional_data: False
