@@ -229,7 +229,7 @@ mesh_type: structured
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-n_levels: 2
+n_levels: 3
 name_save_file: results_c2_obel_finescale
 read_permeability: false
 set_permeability: true
