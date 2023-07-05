@@ -16,7 +16,6 @@
 # !oblique_quadrilateral_test1.msh
 # !mpfad_mesh_tests
 
-*.geo
 !2d_square.geo
 
 *.txt

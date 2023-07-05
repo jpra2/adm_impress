@@ -39,7 +39,20 @@ def load_mpfad_meshtest_by_type_and_number(mesh_type: str, n: int):
     mesh_path = meshs_df['mesh_path'].values[0]
     return mesh_path
     
-
+def load_su_mesh_paths():
+    mesh_test_su_mpfa = 'mesh_su'
+    global mesh, mpfad_mesh_folder
+    folder = os.path.join(mesh, mpfad_mesh_folder)
+    file_names = os.listdir(folder)
+    names_df = pd.Series(data=file_names)
+    su_meshs = names_df[names_df.str.contains(mesh_test_su_mpfa)].values
+    su_meshs = [os.path.join(mpfad_mesh_folder, mesh_path) for mesh_path in su_meshs]
+    return su_meshs
+    
+    
+    
+     
+     
 
 
 mpfad_test_mesh = '2d_unstructured.msh'
