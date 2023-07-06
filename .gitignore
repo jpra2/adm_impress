@@ -23,7 +23,6 @@
 !requirements.txt
 
 *.csv
-*.png
 *_tt.py
 *.pyc
 *.cpython-36.pyc

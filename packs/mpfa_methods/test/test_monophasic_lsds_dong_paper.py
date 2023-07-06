@@ -68,6 +68,7 @@ def exact_solution_p4(centroids):
     y2 = np.pi*y
     
     resp = np.sin(x2)*np.sin(y2)
+    return resp
     
 def exact_solution_p5(centroids):
     """5.6 Anisotropy of Righi-Leduc type
@@ -155,41 +156,50 @@ def run(pr_name, mesh_type, ns, n):
     
     
     mesh_test_name = defpaths.load_mpfad_meshtest_by_type_and_number(mesh_type, ns[n])
-    mesh_properties_name = pr_name + '_' + mesh_type + '_' + str(ns[n])
+    mesh_properties_name = mesh_type + '_' + str(ns[n])
     mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
-    pressure_tag = 'pressure'
+    pressure_tag = 'pressure_' + pr_name
     keys_prop = list(mesh_properties.keys())
     
+    lsds = LsdsFluxCalculation()
     
-    if pressure_tag not in keys_prop:
+    centroids_nodes = mesh_properties.nodes_centroids
+    z_centroids = np.zeros((len(centroids_nodes), 1))
+    centroids_nodes = np.hstack([centroids_nodes, z_centroids])
+    nodes_of_faces = mesh_properties.nodes_of_faces
+    cnodes_faces = centroids_nodes[nodes_of_faces]
+    n_faces = len(mesh_properties.faces)
+    
+    if 'areas' not in keys_prop:
         # define nodes to calculate_weights
         mesh_properties.insert_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
         ## create weights and xi params for flux calculation
-        centroids_nodes = mesh_properties.nodes_centroids
-        z_centroids = np.zeros((len(centroids_nodes), 1))
-        centroids_nodes = np.hstack([centroids_nodes, z_centroids])
-        nodes_of_faces = mesh_properties.nodes_of_faces
-        cnodes_faces = centroids_nodes[nodes_of_faces]
-        n_faces = len(mesh_properties.faces)        
         areas = np.zeros(n_faces)
         for i in range(n_faces):
             areas[i] = calculate_face_properties.polygon_area(cnodes_faces[i])
         mesh_properties.insert_data({'areas': areas})
-        
-        lsds = LsdsFluxCalculation()
+    
+    
         mesh_properties.update_data(
             lsds.preprocess(**mesh_properties.get_all_data())
         )
-        
+    
         mesh_properties.insert_data(
             get_gls_nodes_weights(**mesh_properties.get_all_data())
         )
-        
+    
         mesh_properties.insert_data(
             lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
         )
-        
+    
         mesh_properties.remove_data(['nodes_to_calculate'])
+        
+        mesh_properties.export_data()
+    
+    
+    
+    
+    if pressure_tag not in keys_prop:        
         
         #define boundary conditions    
         problem_name = pr_name
@@ -234,6 +244,16 @@ def run(pr_name, mesh_type, ns, n):
                 get_permeability_p3(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
             )
             exact_solution = exact_solution_p3
+        elif pr_name == all_pr_names[3]:
+            mesh_properties.update_data(
+                get_permeability_p4(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
+            )
+            exact_solution = exact_solution_p4
+        elif pr_name == all_pr_names[4]:
+            mesh_properties.update_data(
+                get_permeability_p5(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
+            )
+            exact_solution = exact_solution_p5
         else:
             raise NameError
         
@@ -279,17 +299,18 @@ def run(pr_name, mesh_type, ns, n):
         
         mesh_properties.insert_data({
             pressure_tag: pressure,
-            'edges_flux': edges_flux,
-            'faces_flux': faces_flux,
-            'p_exact': p_exact,
-            'error': error,
-            'error2': error2
+            'edges_flux_' + pr_name: edges_flux,
+            'faces_flux_' + pr_name: faces_flux,
+            'p_exact_' + pr_name: p_exact,
+            'error_' + pr_name: error,
+            'error2_' + pr_name: error2
         })
         mesh_properties.export_data()
-    l1_norm = mesh_properties.error.max()
+    
+    l1_norm = mesh_properties['error_' + pr_name].max()
     # Eu = np.sqrt(np.dot(mesh_properties.areas, mesh_properties.error2))
     # l1_norm = Eu
-    l2_norm = np.linalg.norm(mesh_properties.error)
+    l2_norm = np.linalg.norm(l1_norm)
     
     
     # mesh_path = os.path.join(defpaths.mesh, mesh_test_name)
@@ -525,7 +546,7 @@ def testp1_by_meshtype(mesh_type, ns, pr_name):
 def plot_errors():
     # 'mesh1': [8, 32, 64, 128]
     global all_pr_names
-    pr_name = all_pr_names[0]
+    pr_name = all_pr_names[3]
     
     mesh_types_dict = {
         'mesh1': [8, 32, 64, 128],
