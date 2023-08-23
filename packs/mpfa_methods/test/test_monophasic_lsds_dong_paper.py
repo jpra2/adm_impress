@@ -151,12 +151,55 @@ def get_permeability_p1(n_elements, centroids=0):
     permeability[:,:] = K
     return {'permeability': permeability}
 
+def get_Eu(absolute_error, areas):
+    error_2 = np.power(absolute_error, 2)
+    resp = areas*error_2
+    resp = np.sqrt(resp.sum())
+    return resp
+
+def get_Eq(edges_dim, absolute_error, adjacencies, nodes_of_edges, nodes_centroids, faces_centroids, bool_boundary_edges, edges_of_faces):
+    ### get d_sigma
+
+    d_k_sigma = np.zeros(adjacencies.shape)
+    bool_internal_edges = ~bool_boundary_edges
+
+    centroids_nodes_of_edges = nodes_centroids[nodes_of_edges]
+    edges_centroid = np.mean(centroids_nodes_of_edges, axis=1)
+
+    d_k_sigma[:, 0] = np.linalg.norm(
+        faces_centroids[adjacencies[:, 0]] - edges_centroid,
+        axis=1
+    )
+
+    d_k_sigma[:, 1] = np.linalg.norm(
+        faces_centroids[adjacencies[:, 1]] - edges_centroid,
+        axis=1
+    )
+
+    d_k_sigma[bool_boundary_edges, 1] = 0
+
+    d_sigma = d_k_sigma.sum()
+
+    term1 = absolute_error[adjacencies]
+    term1[bool_boundary_edges, 1] = 0
+    term1 = np.power(term1[:, 0] - term1[:, 1], 2)
+    term1 = term1*edges_dim
+
+    faces_term = term1[edges_of_faces]
+    faces_term = faces_term.sum(axis=1).sum()
+    resp = np.sqrt(faces_term/d_sigma)
+
+    return resp
+
 def run(pr_name, mesh_type, ns, n):
     global all_pr_names
     
     
     mesh_test_name = defpaths.load_mpfad_meshtest_by_type_and_number(mesh_type, ns[n])
-    mesh_properties_name = mesh_type + '_' + str(ns[n])
+    # mesh_properties_name = mesh_type + '_' + str(ns[n])
+    prop_name = os.path.split(mesh_test_name)[1]
+    prop_name = os.path.splitext(prop_name)[0]
+    mesh_properties_name = prop_name
     mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
     pressure_tag = 'pressure_' + pr_name
     keys_prop = list(mesh_properties.keys())
@@ -178,7 +221,25 @@ def run(pr_name, mesh_type, ns, n):
         for i in range(n_faces):
             areas[i] = calculate_face_properties.polygon_area(cnodes_faces[i])
         mesh_properties.insert_data({'areas': areas})
-    
+
+        h_dist = calculate_face_properties.create_face_to_edge_distances(
+            mesh_properties.faces_centroids,
+            mesh_properties.adjacencies,
+            mesh_properties.nodes_of_edges,
+            mesh_properties.edges,
+            mesh_properties.nodes_centroids,
+            mesh_properties.bool_boundary_edges
+        )
+        mesh_properties.insert_data({'h_dist': h_dist})
+
+        bedges = mesh_properties.bool_boundary_edges
+        iedges = ~bedges
+
+        m1 = np.mean(h_dist[iedges, 0])
+        m2 = np.mean(h_dist[iedges, 1])
+        m3 = np.mean(h_dist[bedges, 0])
+        m_hdist = np.mean([m1, m2, m3])
+        mesh_properties.insert_data({'m_hdist': np.array([m_hdist])})
     
         mesh_properties.update_data(
             lsds.preprocess(**mesh_properties.get_all_data())
@@ -195,8 +256,7 @@ def run(pr_name, mesh_type, ns, n):
         mesh_properties.remove_data(['nodes_to_calculate'])
         
         mesh_properties.export_data()
-    
-    
+        del iedges, bedges, m1, m2, m3, m_hdist, areas  
     
     
     if pressure_tag not in keys_prop:        
@@ -274,7 +334,7 @@ def run(pr_name, mesh_type, ns, n):
             mesh_properties.neumann_nodes_weights
         )
         
-        pressure = spsolve(resp['transmissibility'], resp['source'])
+        pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
         edges_flux = lsds.get_edges_flux(
             mesh_properties.xi_params,
             mesh_properties.nodes_weights,
@@ -307,11 +367,28 @@ def run(pr_name, mesh_type, ns, n):
         })
         mesh_properties.export_data()
     
+    
+    eq = get_Eq(
+        mesh_properties['edges_dim'],
+        mesh_properties['error_' + pr_name],
+        mesh_properties['adjacencies'],
+        mesh_properties['nodes_of_edges'],
+        mesh_properties['nodes_centroids'],
+        mesh_properties['faces_centroids'],
+        mesh_properties.bool_boundary_edges,
+        mesh_properties['edges_of_faces']  
+    )
+
+    eu = get_Eu(
+        mesh_properties['error_' + pr_name],
+        mesh_properties['areas']
+    )
+
     l1_norm = mesh_properties['error_' + pr_name].max()
+    
     # Eu = np.sqrt(np.dot(mesh_properties.areas, mesh_properties.error2))
     # l1_norm = Eu
-    l2_norm = np.linalg.norm(l1_norm)
-    
+    l2_norm = np.linalg.norm(mesh_properties['error_' + pr_name])
     
     # mesh_path = os.path.join(defpaths.mesh, mesh_test_name)
     # # mesh_path = mesh_test_name
@@ -332,8 +409,8 @@ def run(pr_name, mesh_type, ns, n):
     # mesh_data.export_all_elements_type_to_vtk(to_export_name + 'nodes', 'nodes')
     # mesh_data.export_all_elements_type_to_vtk(to_export_name + 'faces', 'faces')
     # mesh_data.export_only_the_elements('test_7_nodes_pressure_boundary', 'nodes', nodes_bc)
-    
-    return l1_norm, l2_norm, len(mesh_properties.faces)
+
+    return l1_norm, l2_norm, len(mesh_properties.faces), mesh_properties.m_hdist[0], eu, eq
 
 def get_tag_prefix(pr_name, weight_interpolation_name):
     return pr_name + '_' + weight_interpolation_name + '_'
@@ -527,26 +604,35 @@ def testp1_by_meshtype(mesh_type, ns, pr_name):
     all_l1_error = []
     all_l2_error = []
     all_n_faces = []
+    all_m_hdist = []
+    all_eu = []
+    all_eq = []
     
     for n in range(len(ns)):
-        l1_norm, l2_norm, n_faces = run(pr_name, mesh_type, ns, n)
+        l1_norm, l2_norm, n_faces, m_hdist, eu, eq = run(pr_name, mesh_type, ns, n)
         # import pdb; pdb.set_trace()
 
         all_l1_error.append(l1_norm)
         all_l2_error.append(l2_norm)
         all_n_faces.append(n_faces)
+        all_m_hdist.append(m_hdist)
+        all_eu.append(eu)
+        all_eq.append(eq)
     
     return {
         'l1_norm': all_l1_error,
         'l2_norm': all_l2_error,
-        'n_faces': all_n_faces
+        'n_faces': all_n_faces, 
+        'm_hdist': all_m_hdist,
+        'eu': all_eu,
+        'eq': all_eq
     }     
         
     
 def plot_errors():
     # 'mesh1': [8, 32, 64, 128]
     global all_pr_names
-    pr_name = all_pr_names[3]
+    pr_name = all_pr_names[4]
     
     mesh_types_dict = {
         'mesh1': [8, 32, 64, 128],
@@ -557,6 +643,8 @@ def plot_errors():
     
     fig1, ax1 = plt.subplots(1)
     fig2, ax2 = plt.subplots(1)
+    fig3, ax3 = plt.subplots(1)
+    fig4, ax4 = plt.subplots(1)
     
     all_resps = []
     
@@ -565,20 +653,37 @@ def plot_errors():
         resp = testp1_by_meshtype(mesh_type, mesh_types_dict[mesh_type], pr_name)
         all_resps.append(resp.update({'mesh_type': mesh_type}))
         all_resps.append(resp.update({'mesh_type': mesh_type}))
-        ax1.plot(np.log10(resp['n_faces']), np.log10(resp['l1_norm']), label=mesh_type)
-        ax2.plot(np.log10(resp['n_faces']), np.log10(resp['l2_norm']), label=mesh_type)
+        ax1.plot(np.log10(resp['m_hdist']), np.log10(resp['l1_norm']), label=mesh_type)
+        ax2.plot(np.log10(resp['m_hdist']), np.log10(resp['l2_norm']), label=mesh_type)
+        ax3.plot(np.log10(resp['m_hdist']), np.log10(resp['eu']), label=mesh_type)
+        ax4.plot(np.log10(resp['m_hdist']), np.log10(resp['eq']), label=mesh_type)
+
+        
     
-    ax1.set_xlabel('N faces')
+    ax1.set_xlabel('Log10 H medio')
     ax1.set_ylabel('Log10 Linf norm')
-    ax2.set_xlabel('Log 10 N faces')
-    ax2.set_ylabel('Log10 L2 norm')
     ax1.set_title(pr_name)
-    ax2.set_title(pr_name)
     ax1.legend()
+    
+    ax2.set_xlabel('Log10 H medio')
+    ax2.set_ylabel('Log10 L2 norm')
+    ax2.set_title(pr_name)
     ax2.legend()
+
+    ax3.set_xlabel('Log10 H medio')
+    ax3.set_ylabel('Log10 Eu')
+    ax3.set_title(pr_name)
+    ax3.legend()
+
+    ax4.set_xlabel('Log10 H medio')
+    ax4.set_ylabel('Log10 Eq')
+    ax4.set_title(pr_name)
+    ax4.legend()
     
     fig1.savefig(os.path.join('results', pr_name + '_' + 'L1_Norm.svg'), format='svg')
     fig2.savefig(os.path.join('results', pr_name + '_' + 'L2_Norm.svg'), format='svg')
+    fig3.savefig(os.path.join('results', pr_name + '_' + 'Eu.svg'), format='svg')
+    fig4.savefig(os.path.join('results', pr_name + '_' + 'Eq.svg'), format='svg')
 
     
 

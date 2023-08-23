@@ -29,7 +29,6 @@
 *.imp
 *.zip
 *.pdf
-*.svg
 *.sh
 *_testcases.py
 
@@ -38,6 +37,7 @@ impress_new/
 impress(copia)/
 .idea/
 venv/
+env/
 *__pycache__/
 *_0_0.yml
 *_0_0.py
