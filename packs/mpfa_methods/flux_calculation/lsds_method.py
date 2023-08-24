@@ -530,8 +530,12 @@ class LsdsFluxCalculation:
         )
 
         internal_edges_params[bool_boundary_edges] = boundary_edges_params[bool_boundary_edges]
+        
+        resp = {
+            'xi_params': internal_edges_params
+        }
 
-        return internal_edges_params
+        return resp
 
     def mount_problem(
             self,
@@ -543,6 +547,7 @@ class LsdsFluxCalculation:
             adjacencies,
             boundary_conditions: BoundaryConditions,
             nodes_of_edges,
+            neumann_weights,
             **kwargs
     ):
         """ Returns the dict with transmissibility matrix and source term
@@ -587,7 +592,10 @@ class LsdsFluxCalculation:
                 test = nodes_weights['node_id'] == B_node
                 faces_node = nodes_weights['face_id'][test]
                 weights_node = nodes_weights['weight'][test]
-                T[face_adj, faces_node] += xi_B*weights_node 
+                T[face_adj, faces_node] += xi_B*weights_node
+            
+            if np.any(np.isin(neumann_weights['node_id'], [B_node])):
+                source[face_adj] += -xi_B*neumann_weights['nweight'][neumann_weights['node_id'] == B_node]
                 
             if np.any(np.isin(ids_node_press, [A_node])):
                 source[face_adj] += -xi_A*values[ids_node_press == A_node][0]
@@ -597,6 +605,9 @@ class LsdsFluxCalculation:
                 weights_node = nodes_weights['weight'][test]
                 T[face_adj, faces_node] += xi_A*weights_node
             
+            if np.any(np.isin(neumann_weights['node_id'], [A_node])):
+                source[face_adj] += -xi_A*neumann_weights['nweight'][neumann_weights['node_id'] == A_node]
+             
             T[face_adj, face_adj] += xi_K
         
         for edge in edges[bool_internal_edges]:
@@ -653,6 +664,7 @@ class LsdsFluxCalculation:
         faces_pressures,
         adjacencies,
         boundary_conditions: BoundaryConditions,
+        neumann_weights,
         **kwargs
     ):
         
@@ -673,6 +685,10 @@ class LsdsFluxCalculation:
         L_pressure[L_faces == -1] = 0
         
         nodes_pressures = nodes_weight_matrix.dot(faces_pressures)
+        neumann_vector = np.zeros(len(nodes_pressures))
+        if len(neumann_weights['node_id'] > 0):
+            neumann_vector[neumann_weights['node_id']] = neumann_weights['nweight']
+        nodes_pressures = nodes_pressures + neumann_vector
         nodes_pressures[ids_node_press] = values
         
         B_pressure = nodes_pressures[B_nodes]

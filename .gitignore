@@ -9,13 +9,13 @@
 *.su2
 *_rm.py
 
-*.msh
-!cube_unstructured.msh
-!cube_structured.msh
-!2d_unstructured.msh
-!oblique_quadrilateral_test1.msh
+# *.msh
+# !cube_unstructured.msh
+# !cube_structured.msh
+# !2d_unstructured.msh
+# !oblique_quadrilateral_test1.msh
+# !mpfad_mesh_tests
 
-*.geo
 !2d_square.geo
 
 *.txt
@@ -23,14 +23,12 @@
 !requirements.txt
 
 *.csv
-*.png
 *_tt.py
 *.pyc
 *.cpython-36.pyc
 *.imp
 *.zip
 *.pdf
-*.svg
 *.sh
 *_testcases.py
 
@@ -39,6 +37,7 @@ impress_new/
 impress(copia)/
 .idea/
 venv/
+env/
 *__pycache__/
 *_0_0.yml
 *_0_0.py

@@ -25,7 +25,7 @@ class BoundaryConditions(SuperArrayManager):
         err.NameExistsError: _description_
     """
     
-    boundary_names = [defnames.nodes_pressure_prescription_name]
+    boundary_names = defnames.mpfa_boundary_names
     dtype_bc_array = [('id', np.uint64), ('value', np.float64)]
     
     @classmethod

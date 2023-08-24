@@ -4,6 +4,10 @@ from packs.utils import calculate_face_properties
 import numpy as np
 from packs.manager.meshmanager import MeshProperty, create_initial_mesh_properties, load_mesh_properties
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights, mount_weight_matrix
+from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
+from packs.manager.boundary_conditions import BoundaryConditions
+from scipy.sparse.linalg import spsolve
+from packs.manager.mesh_data import MeshData
 
 def mesh_verify(mesh_name):
     mesh_path = os.path.join(defpaths.mesh, mesh_name)
@@ -118,3 +122,127 @@ def test_weights():
     constant_verify(weights_matrix, mesh_properties)
     linear_verify(weights_matrix, mesh_properties)
     quadratic_verify(weights_matrix, mesh_properties)
+
+def test_neumann_weights():
+    problem_name = 'mpfad_test_neumman_weights'
+    mesh_test_name = defpaths.mpfad_test_mesh
+    mesh_properties_name = defpaths.mpfad_mesh_properties_neumann_name
+    mesh_verify(mesh_test_name)
+    mesh_properties = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
+    data = mesh_properties.get_all_data()
+    data.update({
+        'nodes_to_calculate': data['nodes']
+    })
+    
+    lsds = LsdsFluxCalculation()
+    
+    mesh_properties.update_data(
+            lsds.preprocess(**mesh_properties.get_all_data())
+        )
+    
+    mesh_properties.remove_data(['nodes_to_calculate'])
+    
+    bc = BoundaryConditions()
+    bc.insert_name(problem_name)
+    
+    xmin, ymin = mesh_properties.faces_centroids[:, 0:2].min(axis=0)
+    xmax, ymax = mesh_properties.faces_centroids[:, 0:2].max(axis=0)
+    
+    mesh_delta = 1e-13
+    nodes_xmin = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 0] < xmin + mesh_delta
+    ]
+    nodes_xmax = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 0] > xmax - mesh_delta
+    ]
+    nodes_ymin = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 1] < ymin + mesh_delta
+    ]
+    nodes_ymax = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 1] > ymax - mesh_delta
+    ]
+    
+    nodes_bc = nodes_xmax.astype(np.uint64)
+    # nodes_bc = np.concatenate([nodes_xmin, nodes_xmax]).astype(np.uint64)
+    centroids_nodes_bc = mesh_properties.nodes_centroids[nodes_bc, 0:2]
+    pressures_bc = linear_function(centroids_nodes_bc[:, 0])
+    bc.set_boundary('nodes_pressures', nodes_bc, pressures_bc)
+    
+    nodes_of_edges = mesh_properties.nodes_of_edges
+    edges_centroids = np.mean(mesh_properties.nodes_centroids[nodes_of_edges], axis=1)
+    
+    edges_x_min = mesh_properties.edges[
+        edges_centroids[:,0] < xmin + mesh_delta
+    ]
+    
+    values_neumann_edges_x_min = np.repeat(10.0, len(edges_x_min))
+    
+    bc.set_boundary('neumann_edges', edges_x_min, values_neumann_edges_x_min)
+    # bc.set_boundary('neumann_edges', np.array([]), np.array([]))
+    
+    mesh_properties.insert_data({
+        'neumann_edges': bc.neumann_edges['id'],
+        'neumann_edges_value': bc.neumann_edges['value'],
+        'nodes_to_calculate': mesh_properties.nodes[:]
+    })
+    # import pdb; pdb.set_trace()
+    
+    
+    mesh_properties.insert_data(
+        get_gls_nodes_weights(**mesh_properties.get_all_data())
+    )
+    mesh_properties.insert_data(
+        lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
+    )
+    
+    
+    resp = lsds.mount_problem(
+        mesh_properties.nodes_weights,
+        mesh_properties.xi_params,
+        mesh_properties.faces,
+        mesh_properties.edges,
+        mesh_properties.bool_boundary_edges,
+        mesh_properties.adjacencies,
+        bc,
+        mesh_properties.nodes_of_edges,
+        mesh_properties.neumann_nodes_weights
+    )
+    
+    pressure = spsolve(resp['transmissibility'], resp['source'])
+    edges_flux = lsds.get_edges_flux(
+        mesh_properties.xi_params,
+        mesh_properties.nodes_weights,
+        mesh_properties.nodes_of_edges,
+        pressure,
+        mesh_properties.adjacencies,
+        bc,
+        mesh_properties.neumann_nodes_weights    
+    )
+    
+    faces_flux = lsds.get_faces_flux(
+        edges_flux,
+        mesh_properties.adjacencies,
+        mesh_properties.bool_boundary_edges
+    )
+    
+    _mesh_path = os.path.join(defpaths.mesh, defpaths.mpfad_test_mesh)
+    mesh_data = MeshData(mesh_path=_mesh_path)
+    mesh_data.create_tag('pressure')
+    mesh_data.insert_tag_data('pressure', pressure, 'faces', mesh_properties.faces)
+    mesh_data.create_tag('faces_flux')
+    mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces', mesh_properties.faces)
+    mesh_data.export_all_elements_type_to_vtk('testglsneumann', 'faces')
+    
+    # print(mesh_properties.keys())
+    # print(bc.keys())
+    
+    
+    
+    import pdb; pdb.set_trace()
+    
+    
+    
+    
+
+    
+    
