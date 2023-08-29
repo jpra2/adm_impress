@@ -1,7 +1,7 @@
-from packs import defpaths
+from packs import defpaths, defnames
 from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import create_properties_if_not_exists, mesh_verify, create_properties
 from packs.manager.meshmanager import MeshProperty
-from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
+from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights, mount_sparse_weight_matrix
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.manager.boundary_conditions import BoundaryConditions
 import numpy as np
@@ -151,6 +151,29 @@ def get_permeability_p1(n_elements, centroids=0):
     permeability[:,:] = K
     return {'permeability': permeability}
 
+def get_permeability_and_exact_solution_func(pr_name):
+    global all_pr_names
+    
+    if pr_name == all_pr_names[0]:
+        get_permeability = get_permeability_p1
+        exact_solution = exact_solution_p1
+    elif pr_name == all_pr_names[1]:
+        get_permeability = get_permeability_p2
+        exact_solution = exact_solution_p2
+    elif pr_name == all_pr_names[2]:
+        get_permeability = get_permeability_p3
+        exact_solution = exact_solution_p3
+    elif pr_name == all_pr_names[3]:
+        get_permeability = get_permeability_p4
+        exact_solution = exact_solution_p4
+    elif pr_name == all_pr_names[4]:
+        get_permeability = get_permeability_p5
+        exact_solution = exact_solution_p5
+    else:
+        raise NameError
+    
+    return get_permeability, exact_solution
+
 def get_Eu(absolute_error, areas):
     error_2 = np.power(absolute_error, 2)
     resp = areas*error_2
@@ -191,9 +214,28 @@ def get_Eq(edges_dim, absolute_error, adjacencies, nodes_of_edges, nodes_centroi
 
     return resp
 
-def run(pr_name, mesh_type, ns, n):
-    global all_pr_names
+def nodes_weights_test(mesh_properties: MeshProperty, exact_solution_func):
+    tag_test = pr_name + defnames.tag_node_weight_test_sufix
     
+    exact_solution_faces = exact_solution_func(mesh_properties.faces_centroids[:, 0:2])
+    exact_solution_nodes = exact_solution_func(mesh_properties.nodes_centroids[:, 0:2])
+    bnodes = mesh_properties.bool_boundary_nodes
+    
+    nodes_weight_matrix = mount_sparse_weight_matrix(mesh_properties.nodes_weights)
+    weighted_nodes_pressures = nodes_weight_matrix.dot(exact_solution_faces)
+    
+    weighted_nodes_pressures[bnodes] = exact_solution_nodes[bnodes]
+    
+    error = np.absolute(weighted_nodes_pressures - exact_solution_nodes)
+    
+    mesh_properties.insert_or_update_data(
+        {tag_test: error}
+    )
+    
+    
+       
+
+def run(pr_name, mesh_type, ns, n):    
     
     mesh_test_name = defpaths.load_mpfad_meshtest_by_type_and_number(mesh_type, ns[n])
     # mesh_properties_name = mesh_type + '_' + str(ns[n])
@@ -212,6 +254,8 @@ def run(pr_name, mesh_type, ns, n):
     nodes_of_faces = mesh_properties.nodes_of_faces
     cnodes_faces = centroids_nodes[nodes_of_faces]
     n_faces = len(mesh_properties.faces)
+    
+    get_permeability, exact_solution = get_permeability_and_exact_solution_func(pr_name)
     
     if 'areas' not in keys_prop:
         # define nodes to calculate_weights
@@ -259,7 +303,12 @@ def run(pr_name, mesh_type, ns, n):
         del iedges, bedges, m1, m2, m3, m_hdist, areas  
     
     
-    if pressure_tag not in keys_prop:        
+    if pressure_tag not in keys_prop:   
+        
+           
+        mesh_properties.update_data(
+            get_permeability(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
+        )
         
         #define boundary conditions    
         problem_name = pr_name
@@ -288,34 +337,6 @@ def run(pr_name, mesh_type, ns, n):
         ])).astype(np.uint64)
         
         centroids_nodes_bc = mesh_properties.nodes_centroids[nodes_bc, 0:2]
-        
-        if pr_name == all_pr_names[0]:
-            mesh_properties.update_data(
-                get_permeability_p1(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
-            )
-            exact_solution = exact_solution_p1
-        elif pr_name == all_pr_names[1]:
-            mesh_properties.update_data(
-                get_permeability_p2(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
-            )
-            exact_solution = exact_solution_p2
-        elif pr_name == all_pr_names[2]:
-            mesh_properties.update_data(
-                get_permeability_p3(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
-            )
-            exact_solution = exact_solution_p3
-        elif pr_name == all_pr_names[3]:
-            mesh_properties.update_data(
-                get_permeability_p4(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
-            )
-            exact_solution = exact_solution_p4
-        elif pr_name == all_pr_names[4]:
-            mesh_properties.update_data(
-                get_permeability_p5(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
-            )
-            exact_solution = exact_solution_p5
-        else:
-            raise NameError
         
         pressures_bc = exact_solution(centroids_nodes_bc)
         
@@ -367,6 +388,13 @@ def run(pr_name, mesh_type, ns, n):
         })
         mesh_properties.export_data()
     
+    nodes_weights_test(mesh_properties, exact_solution_func=exact_solution)
+    tag_weight_test = pr_name + defnames.tag_node_weight_test_sufix
+    
+    error_weighted_node_pressure_abs = np.absolute(mesh_properties[tag_weight_test])
+    
+    l1_weighted_error = error_weighted_node_pressure_abs.max()
+    l2_weighted_error = np.linalg.norm(error_weighted_node_pressure_abs)
     
     eq = get_Eq(
         mesh_properties['edges_dim'],
@@ -390,6 +418,8 @@ def run(pr_name, mesh_type, ns, n):
     # l1_norm = Eu
     l2_norm = np.linalg.norm(mesh_properties['error_' + pr_name])
     
+    
+    
     # mesh_path = os.path.join(defpaths.mesh, mesh_test_name)
     # # mesh_path = mesh_test_name
     # mesh_data = MeshData(mesh_path=mesh_path)
@@ -410,7 +440,7 @@ def run(pr_name, mesh_type, ns, n):
     # mesh_data.export_all_elements_type_to_vtk(to_export_name + 'faces', 'faces')
     # mesh_data.export_only_the_elements('test_7_nodes_pressure_boundary', 'nodes', nodes_bc)
 
-    return l1_norm, l2_norm, len(mesh_properties.faces), mesh_properties.m_hdist[0], eu, eq
+    return l1_norm, l2_norm, len(mesh_properties.faces), mesh_properties.m_hdist[0], eu, eq, l1_weighted_error, l2_weighted_error
 
 def get_tag_prefix(pr_name, weight_interpolation_name):
     return pr_name + '_' + weight_interpolation_name + '_'
@@ -607,9 +637,12 @@ def testp1_by_meshtype(mesh_type, ns, pr_name):
     all_m_hdist = []
     all_eu = []
     all_eq = []
+    all_l1_weighted_error = []
+    all_l2_weighted_error = []
+    
     
     for n in range(len(ns)):
-        l1_norm, l2_norm, n_faces, m_hdist, eu, eq = run(pr_name, mesh_type, ns, n)
+        l1_norm, l2_norm, n_faces, m_hdist, eu, eq, l1_weighted_error, l2_weighted_error = run(pr_name, mesh_type, ns, n)
         # import pdb; pdb.set_trace()
 
         all_l1_error.append(l1_norm)
@@ -618,6 +651,8 @@ def testp1_by_meshtype(mesh_type, ns, pr_name):
         all_m_hdist.append(m_hdist)
         all_eu.append(eu)
         all_eq.append(eq)
+        all_l1_weighted_error.append(l1_weighted_error)
+        all_l2_weighted_error.append(l2_weighted_error)
     
     return {
         'l1_norm': all_l1_error,
@@ -625,7 +660,9 @@ def testp1_by_meshtype(mesh_type, ns, pr_name):
         'n_faces': all_n_faces, 
         'm_hdist': all_m_hdist,
         'eu': all_eu,
-        'eq': all_eq
+        'eq': all_eq,
+        'l1_weighted': all_l1_weighted_error,
+        'l2_weighted': all_l2_weighted_error
     }     
         
     
@@ -645,6 +682,10 @@ def plot_errors():
     fig2, ax2 = plt.subplots(1)
     fig3, ax3 = plt.subplots(1)
     fig4, ax4 = plt.subplots(1)
+    fig5, ax5 = plt.subplots(1)
+    fig6, ax6 = plt.subplots(1)
+    
+    
     
     all_resps = []
     
@@ -657,6 +698,9 @@ def plot_errors():
         ax2.plot(np.log10(resp['m_hdist']), np.log10(resp['l2_norm']), label=mesh_type)
         ax3.plot(np.log10(resp['m_hdist']), np.log10(resp['eu']), label=mesh_type)
         ax4.plot(np.log10(resp['m_hdist']), np.log10(resp['eq']), label=mesh_type)
+        ax5.plot(np.log10(resp['m_hdist']), np.log10(resp['l1_weighted']), label=mesh_type)
+        ax6.plot(np.log10(resp['m_hdist']), np.log10(resp['l2_weighted']), label=mesh_type)
+        
 
         
     
@@ -680,10 +724,24 @@ def plot_errors():
     ax4.set_title(pr_name)
     ax4.legend()
     
-    fig1.savefig(os.path.join('results', pr_name + '_' + 'L1_Norm.svg'), format='svg')
-    fig2.savefig(os.path.join('results', pr_name + '_' + 'L2_Norm.svg'), format='svg')
-    fig3.savefig(os.path.join('results', pr_name + '_' + 'Eu.svg'), format='svg')
-    fig4.savefig(os.path.join('results', pr_name + '_' + 'Eq.svg'), format='svg')
+    ax5.set_xlabel('Log10 H medio')
+    ax5.set_ylabel('Log10 L1 Weight test')
+    ax5.set_title(pr_name)
+    ax5.legend()
+    
+    ax6.set_xlabel('Log10 H medio')
+    ax6.set_ylabel('Log10 L2 Weight test')
+    ax6.set_title(pr_name)
+    ax6.legend()
+    
+    ext = 'svg'
+    
+    fig1.savefig(os.path.join('results', pr_name + '_' + 'L1_Norm.' + ext), format=ext)
+    fig2.savefig(os.path.join('results', pr_name + '_' + 'L2_Norm.' + ext), format=ext)
+    fig3.savefig(os.path.join('results', pr_name + '_' + 'Eu.' + ext), format=ext)
+    fig4.savefig(os.path.join('results', pr_name + '_' + 'Eq.' + ext), format=ext)
+    fig5.savefig(os.path.join('results', pr_name + '_' + 'L1_weight_test.' + ext), format=ext)
+    fig6.savefig(os.path.join('results', pr_name + '_' + 'L2_weight_test.' + ext), format=ext)
 
     
 
