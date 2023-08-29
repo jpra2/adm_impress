@@ -34,9 +34,9 @@ class LsdsFluxCalculation:
         )
 
         return resp
-        
+
+    @staticmethod    
     def define_A_B_points_of_edges(
-            self,
             nodes_centroids,
             unitary_normal_edges,
             nodes_of_edges,
@@ -44,7 +44,7 @@ class LsdsFluxCalculation:
             **kwargs
     ):
         """define os pontos A e B de cada edge da malha
-            o ponto B deve esta a esquerda do vetor normal do edge
+            o ponto B deve estar a esquerda do vetor normal do edge
             e o ponto A deve estar a direita
             de modo que:
                 nodes_of_edges[edge, 0] = B
