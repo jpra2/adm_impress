@@ -214,7 +214,7 @@ def get_Eq(edges_dim, absolute_error, adjacencies, nodes_of_edges, nodes_centroi
 
     return resp
 
-def nodes_weights_test(mesh_properties: MeshProperty, exact_solution_func):
+def nodes_weights_test(mesh_properties: MeshProperty, exact_solution_func, pr_name):
     tag_test = pr_name + defnames.tag_node_weight_test_sufix
     
     exact_solution_faces = exact_solution_func(mesh_properties.faces_centroids[:, 0:2])
@@ -233,8 +233,6 @@ def nodes_weights_test(mesh_properties: MeshProperty, exact_solution_func):
     )
     
     
-       
-
 def run(pr_name, mesh_type, ns, n):    
     
     mesh_test_name = defpaths.load_mpfad_meshtest_by_type_and_number(mesh_type, ns[n])
@@ -388,7 +386,7 @@ def run(pr_name, mesh_type, ns, n):
         })
         mesh_properties.export_data()
     
-    nodes_weights_test(mesh_properties, exact_solution_func=exact_solution)
+    nodes_weights_test(mesh_properties, exact_solution, pr_name)
     tag_weight_test = pr_name + defnames.tag_node_weight_test_sufix
     
     error_weighted_node_pressure_abs = np.absolute(mesh_properties[tag_weight_test])
@@ -669,7 +667,7 @@ def testp1_by_meshtype(mesh_type, ns, pr_name):
 def plot_errors():
     # 'mesh1': [8, 32, 64, 128]
     global all_pr_names
-    pr_name = all_pr_names[4]
+    pr_name = all_pr_names[1]
     
     mesh_types_dict = {
         'mesh1': [8, 32, 64, 128],
@@ -700,8 +698,6 @@ def plot_errors():
         ax4.plot(np.log10(resp['m_hdist']), np.log10(resp['eq']), label=mesh_type)
         ax5.plot(np.log10(resp['m_hdist']), np.log10(resp['l1_weighted']), label=mesh_type)
         ax6.plot(np.log10(resp['m_hdist']), np.log10(resp['l2_weighted']), label=mesh_type)
-        
-
         
     
     ax1.set_xlabel('Log10 H medio')
