@@ -55,7 +55,12 @@ def create_knt_vef():
     global mesh_properties_name
     lpew = LpewWeight()
     mesh_properties: MeshProperty = load_mesh_properties(mesh_properties_name)
-    resp = lpew.create_neta(**mesh_properties.get_all_data())
+    resp = lpew.create_knt_barra_vef(**mesh_properties.get_all_data())
+    mesh_properties.insert_data(resp)
+    mesh_properties.export_data()
+    print(mesh_properties.keys())
+    import pdb; pdb.set_trace()
+    
 
 
 def sequence():
@@ -63,7 +68,7 @@ def sequence():
     # preprocess_lpew2()
     # create_Tk()
     # create_neta()
-    # create_knt_vef()
+    create_knt_vef()
 
 
 

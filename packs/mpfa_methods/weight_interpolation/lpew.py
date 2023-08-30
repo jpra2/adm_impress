@@ -126,22 +126,210 @@ class LpewWeight:
 
         return {'neta': str_array}
 
+    def cosin_law(self, a, b, c):
+        """
+        Retorna o angulo oposto ao lado c em radianos 
+        do triangulo de lados consecutivos abc
 
+        Args:
+            a (_type_): comprimento do lado a
+            b (_type_): comprimento do lado b
+            c (_type_): comprimento do lado c
+        Returns:
+            float: angulo em radianos
+        """
 
+        cosC = -(c**2 - (a**2 + b**2))/(2*a*b)
+        C = np.arccos(cosC)
+        return C
 
-
-    def create_knt_vef(self, tk_points, nodes_centroids, faces_centroids, permeability, edges_of_nodes, nodes_of_edges, nodes, edges, adjacencies, **kwargs):
+    def create_knt_barra_vef(self, tk_points, nodes_centroids, faces_centroids, permeability, edges_of_nodes, nodes_of_edges, nodes, edges, faces, adjacencies, faces_of_nodes, bool_boundary_nodes, **kwargs):
 
         R_matrix = self.get_Rmatrix()
 
-        all_face_id = []
-        all_vertice_id = []
-        all_edge_id = []
+        ## ids kn and kt
+        all_kface_id = []
+        all_kedge_id1 = []
+        all_kedge_id2 = []
+        all_knode_id = []
         all_kn = []
         all_kt = []
 
-        for edge in edges:
-            nodes_edge = nodes_of_edges[edge]
+        ## ids of angle v (v angle is build by triangle: node[idv], edge[idv0], edge[idv1])
+        all_node_idv = []
+        all_edge_idv0 = []
+        all_edge_idv1 = []
+        all_v_angle = []
+
+        inodes = ~bool_boundary_nodes
+        
+        for node in nodes[inodes]:
+            faces_node = faces_of_nodes[node]
+            edges_node = edges_of_nodes[node]
+            local_edge_sort_index = np.repeat(-1, edges_node.max()+1)
+            local_edge_sort_index[edges_node] = np.arange(len(edges_node))
+            node_centroid = nodes_centroids[node]
+
+            for face in faces_node:
+                perm_face = permeability[face]
+                edges_selected = edges[(adjacencies[:, 0] == face) | (adjacencies[:, 1] == face)]
+                edges_selected = np.intersect1d(edges_node, edges_selected)
+                
+                if (local_edge_sort_index[edges_selected[0]] == 0) & (local_edge_sort_index[edges_selected[1]] == local_edge_sort_index.max()):
+                    edges_selected[:] = edges_selected[::-1]
+                elif local_edge_sort_index[edges_selected[0]] > local_edge_sort_index[edges_selected[1]]:
+                    edges_selected[:] = edges_selected[::-1]
+                
+                tk_points_edges_selected = tk_points[edges_selected]
+                nodes_edges_selected = nodes_of_edges[edges_selected]
+                tk_points_node_edges_selected = tk_points_edges_selected[nodes_edges_selected==node]
+                
+                tk_vector = tk_points_node_edges_selected[1] - tk_points_node_edges_selected[0]
+                norm_tk = np.linalg.norm(tk_vector)
+                v1 = R_matrix.dot(tk_vector).reshape((2,1))
+
+                ## set kn and kt
+                kn = v1.T.dot(perm_face).dot(v1).flatten()[0]/(norm_tk**2)
+                kt = v1.T.dot(perm_face).dot(tk_vector).flatten()[0]/(norm_tk**2)
+                
+                all_kface_id.append(face)
+                all_kedge_id1.append(edges_selected[0])
+                all_kedge_id2.append(edges_selected[1])
+                all_knode_id.append(node)
+                all_kn.append(kn)
+                all_kt.append(kt)
+
+                ## set vangles
+                q0_tk1 = np.linalg.norm(tk_points_node_edges_selected[1] - node_centroid)
+                q0_tk0 = np.linalg.norm(tk_points_node_edges_selected[0] - node_centroid)
+
+                vangle1 = self.cosin_law(norm_tk, q0_tk1, q0_tk0)
+                vangle0 = self.cosin_law(q0_tk0, norm_tk, q0_tk1)
+                
+                all_node_idv.append(node)
+                all_edge_idv0.append(edges_selected[0])
+                all_edge_idv1.append(edges_selected[1])
+                all_v_angle.append(vangle0)
+
+                all_node_idv.append(node)
+                all_edge_idv0.append(edges_selected[1])
+                all_edge_idv1.append(edges_selected[0])
+                all_v_angle.append(vangle1)
+        
+        for node in nodes[bool_boundary_nodes]:
+            faces_node = faces_of_nodes[node]
+            edges_node = edges_of_nodes[node]
+            local_edge_sort_index = np.repeat(-1, edges_node.max()+1)
+            local_edge_sort_index[edges_node] = np.arange(len(edges_node))
+            node_centroid = nodes_centroids[node]
+
+            for face in faces_node:
+                perm_face = permeability[face]
+                edges_selected = edges[(adjacencies[:, 0] == face) | (adjacencies[:, 1] == face)]
+                edges_selected = np.intersect1d(edges_node, edges_selected)
+                
+                if local_edge_sort_index[edges_selected[0]] > local_edge_sort_index[edges_selected[1]]:
+                    edges_selected[:] = edges_selected[::-1]
+                
+                tk_points_edges_selected = tk_points[edges_selected]
+                nodes_edges_selected = nodes_of_edges[edges_selected]
+                tk_points_node_edges_selected = tk_points_edges_selected[nodes_edges_selected==node]
+                
+                tk_vector = tk_points_node_edges_selected[1] - tk_points_node_edges_selected[0]
+                norm_tk = np.linalg.norm(tk_vector)
+                v1 = R_matrix.dot(tk_vector).reshape((2,1))
+
+                ## set kn and kt
+                kn = v1.T.dot(perm_face).dot(v1).flatten()[0]/(norm_tk**2)
+                kt = v1.T.dot(perm_face).dot(tk_vector).flatten()[0]/(norm_tk**2)
+                
+                all_kface_id.append(face)
+                all_kedge_id1.append(edges_selected[0])
+                all_kedge_id2.append(edges_selected[1])
+                all_knode_id.append(node)
+                all_kn.append(kn)
+                all_kt.append(kt)
+
+                ## set vangles
+                q0_tk1 = np.linalg.norm(tk_points_node_edges_selected[1] - node_centroid)
+                q0_tk0 = np.linalg.norm(tk_points_node_edges_selected[0] - node_centroid)
+
+                vangle1 = self.cosin_law(norm_tk, q0_tk1, q0_tk0)
+                vangle0 = self.cosin_law(q0_tk0, norm_tk, q0_tk1)
+                
+                all_node_idv.append(node)
+                all_edge_idv0.append(edges_selected[0])
+                all_edge_idv1.append(edges_selected[1])
+                all_v_angle.append(vangle0)
+
+                all_node_idv.append(node)
+                all_edge_idv0.append(edges_selected[1])
+                all_edge_idv1.append(edges_selected[0])
+                all_v_angle.append(vangle1)
+
+        all_kface_id = np.array(all_kface_id)
+        all_kedge_id1 = np.array(all_kedge_id1)
+        all_kedge_id2 = np.array(all_kedge_id2)
+        all_knode_id = np.array(all_knode_id)
+        all_kn = np.array(all_kn)
+        all_kt = np.array(all_kt)
+
+        dtype1 = [
+            ('face_id', np.int),
+            ('edge_id0', np.int),
+            ('edge_id1', np.int),
+            ('node_id', np.int),
+            ('kn', np.float64),
+            ('kt', np.float64)
+        ]
+        array1 = np.zeros(len(all_kface_id), dtype=dtype1)
+        array1['face_id'][:] = all_kface_id
+        array1['edge_id0'][:] = all_kedge_id1
+        array1['edge_id1'][:] = all_kedge_id2
+        array1['node_id'][:] = all_knode_id
+        array1['kn'][:] = all_kn
+        array1['kt'][:] = all_kt
+
+        
+        all_node_idv = np.array(all_node_idv)
+        all_edge_idv0 = np.array(all_edge_idv0)
+        all_edge_idv1 = np.array(all_edge_idv1)
+        all_v_angle = np.array(all_v_angle)
+
+        dtype2 = [
+            ('edge_id0', np.int),
+            ('edge_id1', np.int),
+            ('node_id', np.int),
+            ('v_angle', np.float64)
+        ]
+
+        array2 = np.zeros(len(all_node_idv), dtype=dtype2)
+        array2['node_id'][:] = all_node_idv
+        array2['edge_id1'][:] = all_edge_idv1
+        array2['edge_id0'][:] = all_edge_idv0
+        array2['v_angle'][:] = all_v_angle
+
+        resp = {
+            'kn_kt_barra': array1,
+            'v_angle': array2
+        }
+
+        return resp
+
+
+
+
+
+
+
+
+        import pdb; pdb.set_trace()
+
+
+
+
+
+
 
 
 
