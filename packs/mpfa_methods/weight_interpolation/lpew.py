@@ -143,7 +143,7 @@ class LpewWeight:
         C = np.arccos(cosC)
         return C
 
-    def create_knt_barra_vef(self, tk_points, nodes_centroids, permeability, edges_of_nodes, nodes_of_edges, nodes, edges, adjacencies, faces_of_nodes, bool_boundary_nodes, **kwargs):
+    def create_knt_barra_vef(self, tk_points, nodes_centroids, permeability, edges_of_nodes, nodes_of_edges, nodes, edges, adjacencies, faces_of_nodes, bool_boundary_nodes, faces_centroids, **kwargs):
 
         R_matrix = self.get_Rmatrix()
 
@@ -167,6 +167,8 @@ class LpewWeight:
         alln_face_id = []
         alln_kn = []
         alln_kt = []
+        all_theta = []
+        all_phi = []
 
 
         inodes = ~bool_boundary_nodes
@@ -180,6 +182,7 @@ class LpewWeight:
 
             for face in faces_node:
                 perm_face = permeability[face]
+                face_centroid = faces_centroids[face]
                 edges_selected = edges[(adjacencies[:, 0] == face) | (adjacencies[:, 1] == face)]
                 edges_selected = np.intersect1d(edges_node, edges_selected)
                 
@@ -227,27 +230,44 @@ class LpewWeight:
                 all_edge_idv1.append(edges_selected[0])
                 all_v_angle.append(vangle1)
 
-                ## set kn and kt (k normal)
+                ## set kn and kt (k normal), theta and phi angles
                 v2 = R_matrix.dot(q0_tk1).reshape((2,1))
                 v3 = R_matrix.dot(q0_tk0).reshape((2,1))
 
                 knn_tk1 = v2.T.dot(perm_face).dot(v2).flatten()[0]/(q0_tk1n**2)
                 ktn_tk1 = v2.T.dot(perm_face).dot(q0_tk1).flatten()[0]/(q0_tk1n**2)
+                
+                knn_tk0 = v3.T.dot(perm_face).dot(v3).flatten()[0]/(q0_tk0n**2)
+                ktn_tk0 = v3.T.dot(perm_face).dot(q0_tk0).flatten()[0]/(q0_tk0n**2)
+
+                # theta and phi
+                q0_okn = np.linalg.norm(face_centroid - node_centroid)
+                tk1_okn = np.linalg.norm(face_centroid - tk_points_node_edges_selected[1])
+                tk0_okn = np.linalg.norm(face_centroid - tk_points_node_edges_selected[0])
+                
+                theta_tk0 = self.cosin_law(q0_okn, q0_tk0n, tk0_okn)
+                phi_tk0 = self.cosin_law(tk0_okn, q0_okn, q0_tk0n)
+                theta_tk1 = self.cosin_law(q0_tk1n, q0_okn, tk1_okn)
+                phi_tk1 = self.cosin_law(q0_okn, tk1_okn, q0_tk1n)
 
                 alln_node_id.append(node)
                 alln_edge_id.append(edges_selected[1])
                 alln_face_id.append(face)
                 alln_kn.append(knn_tk1)
                 alln_kt.append(ktn_tk1)
-
-                knn_tk0 = v3.T.dot(perm_face).dot(v3).flatten()[0]/(q0_tk0n**2)
-                ktn_tk0 = v3.T.dot(perm_face).dot(q0_tk0).flatten()[0]/(q0_tk0n**2)
+                all_theta.append(theta_tk1)                
+                all_phi.append(phi_tk1)                
 
                 alln_node_id.append(node)
                 alln_edge_id.append(edges_selected[0])
                 alln_face_id.append(face)
                 alln_kn.append(knn_tk0)
                 alln_kt.append(ktn_tk0)
+                all_theta.append(theta_tk0)                
+                all_phi.append(phi_tk0)
+
+
+
 
         for node in nodes[bool_boundary_nodes]:
             faces_node = faces_of_nodes[node]
@@ -300,27 +320,42 @@ class LpewWeight:
                 all_edge_idv1.append(edges_selected[0])
                 all_v_angle.append(vangle1)
 
-                ## set kn and kt (k normal)
+                ## set kn and kt (k normal), theta and phi angles
                 v2 = R_matrix.dot(q0_tk1).reshape((2,1))
                 v3 = R_matrix.dot(q0_tk0).reshape((2,1))
 
                 knn_tk1 = v2.T.dot(perm_face).dot(v2).flatten()[0]/(q0_tk1n**2)
                 ktn_tk1 = v2.T.dot(perm_face).dot(q0_tk1).flatten()[0]/(q0_tk1n**2)
+                
+                knn_tk0 = v3.T.dot(perm_face).dot(v3).flatten()[0]/(q0_tk0n**2)
+                ktn_tk0 = v3.T.dot(perm_face).dot(q0_tk0).flatten()[0]/(q0_tk0n**2)
+
+                # theta and phi
+                q0_okn = np.linalg.norm(face_centroid - node_centroid)
+                tk1_okn = np.linalg.norm(face_centroid - tk_points_node_edges_selected[1])
+                tk0_okn = np.linalg.norm(face_centroid - tk_points_node_edges_selected[0])
+                
+                theta_tk0 = self.cosin_law(q0_okn, q0_tk0n, tk0_okn)
+                phi_tk0 = self.cosin_law(tk0_okn, q0_okn, q0_tk0n)
+                theta_tk1 = self.cosin_law(q0_tk1n, q0_okn, tk1_okn)
+                phi_tk1 = self.cosin_law(q0_okn, tk1_okn, q0_tk1n)
 
                 alln_node_id.append(node)
                 alln_edge_id.append(edges_selected[1])
                 alln_face_id.append(face)
                 alln_kn.append(knn_tk1)
                 alln_kt.append(ktn_tk1)
-
-                knn_tk0 = v3.T.dot(perm_face).dot(v3).flatten()[0]/(q0_tk0n**2)
-                ktn_tk0 = v3.T.dot(perm_face).dot(q0_tk0).flatten()[0]/(q0_tk0n**2)
+                all_theta.append(theta_tk1)                
+                all_phi.append(phi_tk1)                
 
                 alln_node_id.append(node)
                 alln_edge_id.append(edges_selected[0])
                 alln_face_id.append(face)
                 alln_kn.append(knn_tk0)
                 alln_kt.append(ktn_tk0)
+                all_theta.append(theta_tk0)                
+                all_phi.append(phi_tk0)
+
 
         all_kface_id = np.array(all_kface_id)
         all_kedge_id1 = np.array(all_kedge_id1)
@@ -365,23 +400,30 @@ class LpewWeight:
         alln_face_id = np.array(alln_face_id)
         alln_kn = np.array(alln_kn)
         alln_kt = np.array(alln_kt)
+        alln_theta = np.array(alln_theta)
+        alln_phi = np.array(alln_phi)
         dtype3 = [
             ('edge_id', np.int),
             ('face_id', np.int),
             ('node_id', np.int),
             ('kn', np.float64),
-            ('kt', np.float64)
+            ('kt', np.float64),
+            ('theta', np.float64),
+            ('phi', np.float64)
         ]
         array3 = np.zeros(len(alln_node_id), dtype=dtype3)
         array3['node_id'][:] = alln_node_id
         array3['edge_id'][:] = alln_edge_id
+        array3['face_id'][:] = alln_face_id
         array3['kn'][:] = alln_kn
         array3['kt'][:] = alln_kt
+        array3['theta'][:] = all_theta
+        array3['phi'][:] = all_phi
 
         resp = {
             'kn_kt_barra': array1,
             'v_angle': array2,
-            'kn_kt': array3
+            'kn_kt_theta_phi': array3
         }
 
         return resp
