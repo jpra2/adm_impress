@@ -143,11 +143,11 @@ class LpewWeight:
         C = np.arccos(cosC)
         return C
 
-    def create_knt_barra_vef(self, tk_points, nodes_centroids, faces_centroids, permeability, edges_of_nodes, nodes_of_edges, nodes, edges, faces, adjacencies, faces_of_nodes, bool_boundary_nodes, **kwargs):
+    def create_knt_barra_vef(self, tk_points, nodes_centroids, permeability, edges_of_nodes, nodes_of_edges, nodes, edges, adjacencies, faces_of_nodes, bool_boundary_nodes, **kwargs):
 
         R_matrix = self.get_Rmatrix()
 
-        ## ids kn and kt
+        ## ids kn and kt (k_barra)
         all_kface_id = []
         all_kedge_id1 = []
         all_kedge_id2 = []
@@ -160,6 +160,14 @@ class LpewWeight:
         all_edge_idv0 = []
         all_edge_idv1 = []
         all_v_angle = []
+
+        ## ids of kn and kt (k normal)
+        alln_node_id = []
+        alln_edge_id = []
+        alln_face_id = []
+        alln_kn = []
+        alln_kt = []
+
 
         inodes = ~bool_boundary_nodes
         
@@ -188,7 +196,7 @@ class LpewWeight:
                 norm_tk = np.linalg.norm(tk_vector)
                 v1 = R_matrix.dot(tk_vector).reshape((2,1))
 
-                ## set kn and kt
+                ## set kn and kt barra
                 kn = v1.T.dot(perm_face).dot(v1).flatten()[0]/(norm_tk**2)
                 kt = v1.T.dot(perm_face).dot(tk_vector).flatten()[0]/(norm_tk**2)
                 
@@ -200,11 +208,14 @@ class LpewWeight:
                 all_kt.append(kt)
 
                 ## set vangles
-                q0_tk1 = np.linalg.norm(tk_points_node_edges_selected[1] - node_centroid)
-                q0_tk0 = np.linalg.norm(tk_points_node_edges_selected[0] - node_centroid)
+                q0_tk1 = tk_points_node_edges_selected[1] - node_centroid
+                q0_tk0 = tk_points_node_edges_selected[0] - node_centroid
 
-                vangle1 = self.cosin_law(norm_tk, q0_tk1, q0_tk0)
-                vangle0 = self.cosin_law(q0_tk0, norm_tk, q0_tk1)
+                q0_tk1n = np.linalg.norm(q0_tk1)
+                q0_tk0n = np.linalg.norm(q0_tk0)
+
+                vangle1 = self.cosin_law(norm_tk, q0_tk1n, q0_tk0n)
+                vangle0 = self.cosin_law(q0_tk0n, norm_tk, q0_tk1n)
                 
                 all_node_idv.append(node)
                 all_edge_idv0.append(edges_selected[0])
@@ -215,7 +226,29 @@ class LpewWeight:
                 all_edge_idv0.append(edges_selected[1])
                 all_edge_idv1.append(edges_selected[0])
                 all_v_angle.append(vangle1)
-        
+
+                ## set kn and kt (k normal)
+                v2 = R_matrix.dot(q0_tk1).reshape((2,1))
+                v3 = R_matrix.dot(q0_tk0).reshape((2,1))
+
+                knn_tk1 = v2.T.dot(perm_face).dot(v2).flatten()[0]/(q0_tk1n**2)
+                ktn_tk1 = v2.T.dot(perm_face).dot(q0_tk1).flatten()[0]/(q0_tk1n**2)
+
+                alln_node_id.append(node)
+                alln_edge_id.append(edges_selected[1])
+                alln_face_id.append(face)
+                alln_kn.append(knn_tk1)
+                alln_kt.append(ktn_tk1)
+
+                knn_tk0 = v3.T.dot(perm_face).dot(v3).flatten()[0]/(q0_tk0n**2)
+                ktn_tk0 = v3.T.dot(perm_face).dot(q0_tk0).flatten()[0]/(q0_tk0n**2)
+
+                alln_node_id.append(node)
+                alln_edge_id.append(edges_selected[0])
+                alln_face_id.append(face)
+                alln_kn.append(knn_tk0)
+                alln_kt.append(ktn_tk0)
+
         for node in nodes[bool_boundary_nodes]:
             faces_node = faces_of_nodes[node]
             edges_node = edges_of_nodes[node]
@@ -267,13 +300,34 @@ class LpewWeight:
                 all_edge_idv1.append(edges_selected[0])
                 all_v_angle.append(vangle1)
 
+                ## set kn and kt (k normal)
+                v2 = R_matrix.dot(q0_tk1).reshape((2,1))
+                v3 = R_matrix.dot(q0_tk0).reshape((2,1))
+
+                knn_tk1 = v2.T.dot(perm_face).dot(v2).flatten()[0]/(q0_tk1n**2)
+                ktn_tk1 = v2.T.dot(perm_face).dot(q0_tk1).flatten()[0]/(q0_tk1n**2)
+
+                alln_node_id.append(node)
+                alln_edge_id.append(edges_selected[1])
+                alln_face_id.append(face)
+                alln_kn.append(knn_tk1)
+                alln_kt.append(ktn_tk1)
+
+                knn_tk0 = v3.T.dot(perm_face).dot(v3).flatten()[0]/(q0_tk0n**2)
+                ktn_tk0 = v3.T.dot(perm_face).dot(q0_tk0).flatten()[0]/(q0_tk0n**2)
+
+                alln_node_id.append(node)
+                alln_edge_id.append(edges_selected[0])
+                alln_face_id.append(face)
+                alln_kn.append(knn_tk0)
+                alln_kt.append(ktn_tk0)
+
         all_kface_id = np.array(all_kface_id)
         all_kedge_id1 = np.array(all_kedge_id1)
         all_kedge_id2 = np.array(all_kedge_id2)
         all_knode_id = np.array(all_knode_id)
         all_kn = np.array(all_kn)
         all_kt = np.array(all_kt)
-
         dtype1 = [
             ('face_id', np.int),
             ('edge_id0', np.int),
@@ -290,40 +344,47 @@ class LpewWeight:
         array1['kn'][:] = all_kn
         array1['kt'][:] = all_kt
 
-        
         all_node_idv = np.array(all_node_idv)
         all_edge_idv0 = np.array(all_edge_idv0)
         all_edge_idv1 = np.array(all_edge_idv1)
         all_v_angle = np.array(all_v_angle)
-
         dtype2 = [
             ('edge_id0', np.int),
             ('edge_id1', np.int),
             ('node_id', np.int),
             ('v_angle', np.float64)
         ]
-
         array2 = np.zeros(len(all_node_idv), dtype=dtype2)
         array2['node_id'][:] = all_node_idv
         array2['edge_id1'][:] = all_edge_idv1
         array2['edge_id0'][:] = all_edge_idv0
         array2['v_angle'][:] = all_v_angle
 
+        alln_node_id = np.array(alln_node_id)
+        alln_edge_id = np.array(alln_edge_id)
+        alln_face_id = np.array(alln_face_id)
+        alln_kn = np.array(alln_kn)
+        alln_kt = np.array(alln_kt)
+        dtype3 = [
+            ('edge_id', np.int),
+            ('face_id', np.int),
+            ('node_id', np.int),
+            ('kn', np.float64),
+            ('kt', np.float64)
+        ]
+        array3 = np.zeros(len(alln_node_id), dtype=dtype3)
+        array3['node_id'][:] = alln_node_id
+        array3['edge_id'][:] = alln_edge_id
+        array3['kn'][:] = alln_kn
+        array3['kt'][:] = alln_kt
+
         resp = {
             'kn_kt_barra': array1,
-            'v_angle': array2
+            'v_angle': array2,
+            'kn_kt': array3
         }
 
         return resp
-
-
-
-
-
-
-
-
-        import pdb; pdb.set_trace()
 
 
 
