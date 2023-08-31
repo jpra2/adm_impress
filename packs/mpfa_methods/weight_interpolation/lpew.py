@@ -438,13 +438,6 @@ class LpewWeight:
             return self.Ok_values[0]
         else:
             raise ValueError
-        
-
-
-        
-        
-
-        import pdb; pdb.set_trace()
 
     def get_zeta_face_terms(self, kn_kt_barra, kn_kt_theta_phi_vangle, node, face, edge_reference, edge_face, **kwargs):
         terms = np.zeros(6)
@@ -661,7 +654,31 @@ class LpewWeight:
 
         return {'zeta': array}
             
-            
+    def create_lambda_barra(self, kn_kt_theta_phi_vangle, neta, zeta, nodes, faces_of_nodes, adjacencies, edges_of_nodes, edges, **kwargs):
+
+        all_lambda = []
+        all_node_id = []
+        all_face_id = []
+
+        for node in nodes:
+            faces_node = faces_of_nodes[node]
+            edges_node = edges_of_nodes[node]
+            for face in faces_node:
+                edges_face = edges[(adjacencies[:, 0] == face) | (adjacencies[:, 1] == face)]
+                edges_face = np.intersect1d(edges_face, edges_node)
+
+                kn1 = kn_kt_theta_phi_vangle['kn'][
+                    kn_kt_theta_phi_vangle['node_id']==node,
+                    kn_kt_theta_phi_vangle['edge_id']==edges_face[0],
+                    kn_kt_theta_phi_vangle['face_id']==face,
+                ]
+
+                neta1 = neta['neta'][
+                    neta['node_id']==node
+                ]
+                
+
+
             
             
             
