@@ -35,7 +35,7 @@ class LpewWeight:
 
         return R
 
-    def create_Tk_points(self, nodes_centroids, nodes_of_edges, tau=0.5):
+    def create_Tk_points(self, nodes_centroids, nodes_of_edges, tau=0.5, **kwargs):
         """create tk_points
 
         Args:
@@ -304,11 +304,14 @@ class LpewWeight:
                 all_kt.append(kt)
 
                 ## set vangles
-                q0_tk1 = np.linalg.norm(tk_points_node_edges_selected[1] - node_centroid)
-                q0_tk0 = np.linalg.norm(tk_points_node_edges_selected[0] - node_centroid)
+                q0_tk1 = tk_points_node_edges_selected[1] - node_centroid
+                q0_tk0 = tk_points_node_edges_selected[0] - node_centroid
 
-                vangle1 = self.cosin_law(norm_tk, q0_tk1, q0_tk0)
-                vangle0 = self.cosin_law(q0_tk0, norm_tk, q0_tk1)
+                q0_tk1n = np.linalg.norm(q0_tk1)
+                q0_tk0n = np.linalg.norm(q0_tk0)
+
+                vangle1 = self.cosin_law(norm_tk, q0_tk1n, q0_tk0n)
+                vangle0 = self.cosin_law(q0_tk0n, norm_tk, q0_tk1n)
                 
                 all_node_idv.append(node)
                 all_edge_idv0.append(edges_selected[0])
@@ -400,8 +403,8 @@ class LpewWeight:
         alln_face_id = np.array(alln_face_id)
         alln_kn = np.array(alln_kn)
         alln_kt = np.array(alln_kt)
-        alln_theta = np.array(alln_theta)
-        alln_phi = np.array(alln_phi)
+        all_theta = np.array(all_theta)
+        all_phi = np.array(all_phi)
         dtype3 = [
             ('edge_id', np.int),
             ('face_id', np.int),
@@ -428,8 +431,49 @@ class LpewWeight:
 
         return resp
 
-
-
+    def create_zeta(self, kn_kt_barra, v_angle, kn_kt_theta_phi, adjacencies, edges, nodes_of_edges, bool_boundary_edges, neta, bool_boundary_nodes, nodes, edges_of_nodes, **kwargs):
+        
+        terms = np.zeros(12)
+        l_terms = np.array([3, 4, 6, 9, 10, 12]) - 1
+        r_terms = np.array([1, 2, 5, 7, 8, 11]) - 1
+        
+        all_zeta = []
+        all_node_id = []
+        all_edge_id = []
+        
+        biedges = ~bool_boundary_edges
+        binodes = ~bool_boundary_nodes
+        
+        bound_edges = edges[bool_boundary_edges]
+        
+        for node in nodes:
+            edges_node = edges_of_nodes[node]
+            local_edge_sort_index = np.arange(len(edges_node))
+            # local_edge_sort_index[edges_node] = np.arange(len(edges_node))
+            
+            local_bedges = np.intersect1d(edges_node, bound_edges)
+            local_iedges = np.setdiff1d(edges_node, local_bedges)
+            
+            for edge in local_bedges:
+                pass
+            
+            for edge in local_iedges:
+                index_edge = local_edge_sort_index[edges_node==edge][0]
+                edge0 = edges_node[local_edge_sort_index == index_edge-1]
+                edge1 = edges_node[local_edge_sort_index == index_edge+1]
+                
+                
+            
+                import pdb; pdb.set_trace()
+            
+            
+            
+            
+            
+            
+            
+            
+            
 
 
 

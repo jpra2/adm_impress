@@ -11,6 +11,7 @@ def initialize_mesh():
     global mesh_properties_name
     mesh_name = os.path.join(defpaths.mpfad_mesh_folder, 'mesh1_8_8.msh')
     mesh_properties = create_properties_if_not_exists(mesh_name, mesh_properties_name)
+    mesh_properties.export_data()
 
 def preprocess_lpew2():
     global mesh_properties_name
@@ -60,15 +61,25 @@ def create_knt_vef():
     mesh_properties.export_data()
     print(mesh_properties.keys())
     import pdb; pdb.set_trace()
+
+def create_zeta():
+    global mesh_properties_name
+    lpew = LpewWeight()
+    mesh_properties: MeshProperty = load_mesh_properties(mesh_properties_name)
+    resp = lpew.create_zeta(**mesh_properties.get_all_data())
     
+    mesh_properties.export_data()
+    print(mesh_properties.keys())
+    import pdb; pdb.set_trace()
 
 
 def sequence():
-    # initialize_mesh()
-    # preprocess_lpew2()
-    # create_Tk()
-    # create_neta()
+    initialize_mesh()
+    preprocess_lpew2()
+    create_Tk()
+    create_neta()
     create_knt_vef()
+    # create_zeta()
 
 
 
