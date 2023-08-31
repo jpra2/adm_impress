@@ -57,10 +57,8 @@ def create_knt_vef():
     lpew = LpewWeight()
     mesh_properties: MeshProperty = load_mesh_properties(mesh_properties_name)
     resp = lpew.create_knt_barra_vef(**mesh_properties.get_all_data())
-    mesh_properties.insert_data(resp)
+    mesh_properties.insert_or_update_data(resp)
     mesh_properties.export_data()
-    print(mesh_properties.keys())
-    import pdb; pdb.set_trace()
 
 def create_zeta():
     global mesh_properties_name
@@ -74,12 +72,12 @@ def create_zeta():
 
 
 def sequence():
-    initialize_mesh()
-    preprocess_lpew2()
-    create_Tk()
-    create_neta()
+    # initialize_mesh()
+    # preprocess_lpew2()
+    # create_Tk()
+    # create_neta()
     create_knt_vef()
-    # create_zeta()
+    create_zeta()
 
 
 

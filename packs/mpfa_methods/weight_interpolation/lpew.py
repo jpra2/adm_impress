@@ -155,13 +155,7 @@ class LpewWeight:
         all_kn = []
         all_kt = []
 
-        ## ids of angle v (v angle is build by triangle: node[idv], edge[idv0], edge[idv1])
-        all_node_idv = []
-        all_edge_idv0 = []
-        all_edge_idv1 = []
-        all_v_angle = []
-
-        ## ids of kn and kt (k normal)
+        ## ids of kn and kt (k normal), theta, phi, v_angle
         alln_node_id = []
         alln_edge_id = []
         alln_face_id = []
@@ -169,6 +163,7 @@ class LpewWeight:
         alln_kt = []
         all_theta = []
         all_phi = []
+        all_v_angle = []
 
 
         inodes = ~bool_boundary_nodes
@@ -219,16 +214,6 @@ class LpewWeight:
 
                 vangle1 = self.cosin_law(norm_tk, q0_tk1n, q0_tk0n)
                 vangle0 = self.cosin_law(q0_tk0n, norm_tk, q0_tk1n)
-                
-                all_node_idv.append(node)
-                all_edge_idv0.append(edges_selected[0])
-                all_edge_idv1.append(edges_selected[1])
-                all_v_angle.append(vangle0)
-
-                all_node_idv.append(node)
-                all_edge_idv0.append(edges_selected[1])
-                all_edge_idv1.append(edges_selected[0])
-                all_v_angle.append(vangle1)
 
                 ## set kn and kt (k normal), theta and phi angles
                 v2 = R_matrix.dot(q0_tk1).reshape((2,1))
@@ -256,7 +241,8 @@ class LpewWeight:
                 alln_kn.append(knn_tk1)
                 alln_kt.append(ktn_tk1)
                 all_theta.append(theta_tk1)                
-                all_phi.append(phi_tk1)                
+                all_phi.append(phi_tk1)
+                all_v_angle.append(vangle1)             
 
                 alln_node_id.append(node)
                 alln_edge_id.append(edges_selected[0])
@@ -265,9 +251,7 @@ class LpewWeight:
                 alln_kt.append(ktn_tk0)
                 all_theta.append(theta_tk0)                
                 all_phi.append(phi_tk0)
-
-
-
+                all_v_angle.append(vangle0)
 
         for node in nodes[bool_boundary_nodes]:
             faces_node = faces_of_nodes[node]
@@ -312,16 +296,6 @@ class LpewWeight:
 
                 vangle1 = self.cosin_law(norm_tk, q0_tk1n, q0_tk0n)
                 vangle0 = self.cosin_law(q0_tk0n, norm_tk, q0_tk1n)
-                
-                all_node_idv.append(node)
-                all_edge_idv0.append(edges_selected[0])
-                all_edge_idv1.append(edges_selected[1])
-                all_v_angle.append(vangle0)
-
-                all_node_idv.append(node)
-                all_edge_idv0.append(edges_selected[1])
-                all_edge_idv1.append(edges_selected[0])
-                all_v_angle.append(vangle1)
 
                 ## set kn and kt (k normal), theta and phi angles
                 v2 = R_matrix.dot(q0_tk1).reshape((2,1))
@@ -349,7 +323,8 @@ class LpewWeight:
                 alln_kn.append(knn_tk1)
                 alln_kt.append(ktn_tk1)
                 all_theta.append(theta_tk1)                
-                all_phi.append(phi_tk1)                
+                all_phi.append(phi_tk1)
+                all_v_angle.append(vangle1)              
 
                 alln_node_id.append(node)
                 alln_edge_id.append(edges_selected[0])
@@ -358,7 +333,7 @@ class LpewWeight:
                 alln_kt.append(ktn_tk0)
                 all_theta.append(theta_tk0)                
                 all_phi.append(phi_tk0)
-
+                all_v_angle.append(vangle0)
 
         all_kface_id = np.array(all_kface_id)
         all_kedge_id1 = np.array(all_kedge_id1)
@@ -382,22 +357,6 @@ class LpewWeight:
         array1['kn'][:] = all_kn
         array1['kt'][:] = all_kt
 
-        all_node_idv = np.array(all_node_idv)
-        all_edge_idv0 = np.array(all_edge_idv0)
-        all_edge_idv1 = np.array(all_edge_idv1)
-        all_v_angle = np.array(all_v_angle)
-        dtype2 = [
-            ('edge_id0', np.int),
-            ('edge_id1', np.int),
-            ('node_id', np.int),
-            ('v_angle', np.float64)
-        ]
-        array2 = np.zeros(len(all_node_idv), dtype=dtype2)
-        array2['node_id'][:] = all_node_idv
-        array2['edge_id1'][:] = all_edge_idv1
-        array2['edge_id0'][:] = all_edge_idv0
-        array2['v_angle'][:] = all_v_angle
-
         alln_node_id = np.array(alln_node_id)
         alln_edge_id = np.array(alln_edge_id)
         alln_face_id = np.array(alln_face_id)
@@ -405,6 +364,7 @@ class LpewWeight:
         alln_kt = np.array(alln_kt)
         all_theta = np.array(all_theta)
         all_phi = np.array(all_phi)
+        all_v_angle = np.array(all_v_angle)
         dtype3 = [
             ('edge_id', np.int),
             ('face_id', np.int),
@@ -412,7 +372,8 @@ class LpewWeight:
             ('kn', np.float64),
             ('kt', np.float64),
             ('theta', np.float64),
-            ('phi', np.float64)
+            ('phi', np.float64),
+            ('v_angle', np.float64)
         ]
         array3 = np.zeros(len(alln_node_id), dtype=dtype3)
         array3['node_id'][:] = alln_node_id
@@ -422,16 +383,16 @@ class LpewWeight:
         array3['kt'][:] = alln_kt
         array3['theta'][:] = all_theta
         array3['phi'][:] = all_phi
+        array3['v_angle'][:] = all_v_angle
 
         resp = {
             'kn_kt_barra': array1,
-            'v_angle': array2,
-            'kn_kt_theta_phi': array3
+            'kn_kt_theta_phi_vangle': array3
         }
 
         return resp
 
-    def create_zeta(self, kn_kt_barra, v_angle, kn_kt_theta_phi, adjacencies, edges, nodes_of_edges, bool_boundary_edges, neta, bool_boundary_nodes, nodes, edges_of_nodes, **kwargs):
+    def create_zeta(self, kn_kt_barra, v_angle, kn_kt_theta_phi_vangle, adjacencies, edges, nodes_of_edges, bool_boundary_edges, neta, bool_boundary_nodes, nodes, edges_of_nodes, **kwargs):
         
         terms = np.zeros(12)
         l_terms = np.array([3, 4, 6, 9, 10, 12]) - 1
@@ -447,20 +408,64 @@ class LpewWeight:
         bound_edges = edges[bool_boundary_edges]
         
         for node in nodes:
+            
             edges_node = edges_of_nodes[node]
             local_edge_sort_index = np.arange(len(edges_node))
             # local_edge_sort_index[edges_node] = np.arange(len(edges_node))
             
             local_bedges = np.intersect1d(edges_node, bound_edges)
             local_iedges = np.setdiff1d(edges_node, local_bedges)
+
             
             for edge in local_bedges:
+                terms[:] = 0
                 pass
             
             for edge in local_iedges:
+                terms[:] = 0
+                
+                faces_adj = adjacencies[edge]
+
+                edges_face0 = edges[(adjacencies[:, 0] == faces_adj[0]) | (adjacencies[:, 1] == faces_adj[0])]
+                edges_face1 = edges[(adjacencies[:, 0] == faces_adj[1]) | (adjacencies[:, 1] == faces_adj[1])]
+
+                edge_face0 = np.intersect1d(edges_node, edges_face0)
+                edge_face0 = edge_face0[edge_face0 != edge][0]
+                edge_face1 = np.intersect1d(edges_node, edges_face1)
+                edge_face1 = edge_face1[edge_face1 != edge][0]
+                edges_faces = [edge_face0, edge_face1]
+                
                 index_edge = local_edge_sort_index[edges_node==edge][0]
-                edge0 = edges_node[local_edge_sort_index == index_edge-1]
-                edge1 = edges_node[local_edge_sort_index == index_edge+1]
+                edge0 = edges_node[local_edge_sort_index[index_edge-1]]
+                edge1 = edges_node[local_edge_sort_index[index_edge+1]]
+
+                terms[1-1] = kn_kt_barra['kn'][
+                    (kn_kt_barra['node_id']==node) & 
+                    (kn_kt_barra['face_id']==faces_adj[edges_faces==edge0])
+                ]
+
+                terms[5-1] = kn_kt_barra['kt'][
+                    (kn_kt_barra['node_id']==node) & 
+                    (kn_kt_barra['face_id']==faces_adj[edges_faces==edge0])
+                ]
+
+                terms[3-1] = kn_kt_barra['kn'][
+                    (kn_kt_barra['node_id']==node) & 
+                    (kn_kt_barra['face_id']==faces_adj[edges_faces==edge1])
+                ]
+
+                terms[6-1] = kn_kt_barra['kt'][
+                    (kn_kt_barra['node_id']==node) & 
+                    (kn_kt_barra['face_id']==faces_adj[edges_faces==edge1])
+                ]
+
+                # terms[2-1] = v_angle['v_angle'][
+
+                # ]
+
+
+
+
                 
                 
             
