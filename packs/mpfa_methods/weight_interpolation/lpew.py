@@ -493,7 +493,6 @@ class LpewWeight:
             
             edges_node = edges_of_nodes[node]
             local_edge_sort_index = np.arange(len(edges_node))
-            # local_edge_sort_index[edges_node] = np.arange(len(edges_node))
             
             local_bedges = np.intersect1d(edges_node, bound_edges)
             local_iedges = np.setdiff1d(edges_node, local_bedges)
@@ -603,7 +602,28 @@ class LpewWeight:
         array['edge_id'] = all_edge_id
 
         return {'zeta': array}
-            
+    
+    def get_lambda_barra_terms(self, kn_kt_theta_phi_vangle, neta, zeta, node, face, edge):
+        
+        kn1 = kn_kt_theta_phi_vangle['kn'][
+            (kn_kt_theta_phi_vangle['node_id']==node) &
+            (kn_kt_theta_phi_vangle['edge_id']==edge) &
+            (kn_kt_theta_phi_vangle['face_id']==face)
+        ]
+
+        neta1 = neta['neta'][
+            (neta['node_id']==node) &
+            (neta['face_id']==face) &
+            (neta['edge_id']==edge)
+        ]
+        
+        zeta_edge1 = zeta['zeta'][
+            (zeta['node_id']==node) &
+            (zeta['edge_id']==edge)
+        ]
+        
+        return kn1*neta1*zeta_edge1
+    
     def create_lambda_barra(self, kn_kt_theta_phi_vangle, neta, zeta, nodes, faces_of_nodes, adjacencies, edges_of_nodes, edges, **kwargs):
 
         all_lambda = []
@@ -616,16 +636,45 @@ class LpewWeight:
             for face in faces_node:
                 edges_face = edges[(adjacencies[:, 0] == face) | (adjacencies[:, 1] == face)]
                 edges_face = np.intersect1d(edges_face, edges_node)
-
-                kn1 = kn_kt_theta_phi_vangle['kn'][
-                    kn_kt_theta_phi_vangle['node_id']==node,
-                    kn_kt_theta_phi_vangle['edge_id']==edges_face[0],
-                    kn_kt_theta_phi_vangle['face_id']==face,
-                ]
-
-                neta1 = neta['neta'][
-                    neta['node_id']==node
-                ]
+                
+                term1 = self.get_lambda_barra_terms(
+                    kn_kt_theta_phi_vangle,
+                    neta,
+                    zeta,
+                    node,
+                    face,
+                    edges_face[0]
+                )
+                
+                term2 = self.get_lambda_barra_terms(
+                    kn_kt_theta_phi_vangle,
+                    neta,
+                    zeta,
+                    node,
+                    face,
+                    edges_face[1]
+                )
+                
+                all_lambda.append(term1+term2)
+                all_node_id.append(node)
+                all_face_id.append(face)
+        
+        all_lambda = np.array(all_lambda).flatten()
+        all_node_id = np.array(all_node_id)
+        all_face_id = np.array(all_face_id)
+        
+        dtype = [
+            ('node_id', np.int),
+            ('face_id', np.int),
+            ('lambda_barra', np.float64)
+        ]
+        
+        array = np.zeros(len(all_lambda), dtype=dtype)
+        array['node_id'] = all_node_id
+        array['face_id'] = all_face_id
+        array['lambda_barra'] = all_lambda
+        
+        return {'lambda_barra': array}
                 
 
 
