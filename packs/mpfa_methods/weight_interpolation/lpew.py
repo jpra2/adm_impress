@@ -564,74 +564,24 @@ class LpewWeight:
                     edge1 = edges_node[local_edge_sort_index[index_edge+1]]
                 except IndexError:
                     edge1 = edges_node[0]
-
-                terms[1-1] = kn_kt_barra['kn'][
-                    (kn_kt_barra['node_id']==node) & 
-                    (kn_kt_barra['face_id']==faces_adj[edges_faces==edge0])
-                ]
-
-                terms[2-1] = self.cot(kn_kt_theta_phi_vangle['v_angle'][
-                    (kn_kt_theta_phi_vangle['node_id']==node) & 
-                    (kn_kt_theta_phi_vangle['face_id']==faces_adj[0]) &
-                    (kn_kt_theta_phi_vangle['edge_id']==edges_faces[0])
-                ])
-
-                terms[3-1] = kn_kt_barra['kn'][
-                    (kn_kt_barra['node_id']==node) & 
-                    (kn_kt_barra['face_id']==faces_adj[edges_faces==edge1])
-                ]
-
-                terms[4-1] = self.cot(kn_kt_theta_phi_vangle['v_angle'][
-                    (kn_kt_theta_phi_vangle['node_id']==node) & 
-                    (kn_kt_theta_phi_vangle['face_id']==faces_adj[1]) &
-                    (kn_kt_theta_phi_vangle['edge_id']==edges_faces[1])
-                ])
-
-                terms[5-1] = kn_kt_barra['kt'][
-                    (kn_kt_barra['node_id']==node) & 
-                    (kn_kt_barra['face_id']==faces_adj[edges_faces==edge0])
-                ]
-
-                terms[6-1] = kn_kt_barra['kt'][
-                    (kn_kt_barra['node_id']==node) & 
-                    (kn_kt_barra['face_id']==faces_adj[edges_faces==edge1])
-                ]
-
-                terms[7-1] = kn_kt_theta_phi_vangle['kn'][
-                    (kn_kt_theta_phi_vangle['node_id']==node) & 
-                    (kn_kt_theta_phi_vangle['face_id']==faces_adj[0]) &
-                    (kn_kt_theta_phi_vangle['edge_id']==edge)
-                ]
-
-                terms[8-1] = self.cot(kn_kt_theta_phi_vangle['theta'][
-                    (kn_kt_theta_phi_vangle['node_id']==node) & 
-                    (kn_kt_theta_phi_vangle['face_id']==faces_adj[0]) &
-                    (kn_kt_theta_phi_vangle['edge_id']==edge)
-                ])
-
-                terms[9-1] = kn_kt_theta_phi_vangle['kn'][
-                    (kn_kt_theta_phi_vangle['node_id']==node) & 
-                    (kn_kt_theta_phi_vangle['face_id']==faces_adj[1]) &
-                    (kn_kt_theta_phi_vangle['edge_id']==edge)
-                ]
-
-                terms[10-1] = self.cot(kn_kt_theta_phi_vangle['theta'][
-                    (kn_kt_theta_phi_vangle['node_id']==node) & 
-                    (kn_kt_theta_phi_vangle['face_id']==faces_adj[1]) &
-                    (kn_kt_theta_phi_vangle['edge_id']==edge)
-                ])
-
-                terms[11-1] = kn_kt_theta_phi_vangle['kt'][
-                    (kn_kt_theta_phi_vangle['node_id']==node) & 
-                    (kn_kt_theta_phi_vangle['face_id']==faces_adj[0]) &
-                    (kn_kt_theta_phi_vangle['edge_id']==edge)
-                ]
-
-                terms[12-1] = kn_kt_theta_phi_vangle['kt'][
-                    (kn_kt_theta_phi_vangle['node_id']==node) & 
-                    (kn_kt_theta_phi_vangle['face_id']==faces_adj[1]) &
-                    (kn_kt_theta_phi_vangle['edge_id']==edge)
-                ]
+                
+                terms[l_terms] = self.get_zeta_face_terms(
+                    kn_kt_barra,
+                    kn_kt_theta_phi_vangle,
+                    node,
+                    faces_adj[edges_faces==edge1],
+                    edge,
+                    edge1
+                )
+                
+                terms[r_terms] = self.get_zeta_face_terms(
+                    kn_kt_barra,
+                    kn_kt_theta_phi_vangle,
+                    node,
+                    faces_adj[edges_faces==edge0],
+                    edge,
+                    edge0
+                )
                 
                 all_zeta.append(self.get_zeta_from_terms(terms))
                 all_edge_id.append(edge)

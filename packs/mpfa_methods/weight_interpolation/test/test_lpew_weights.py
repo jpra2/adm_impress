@@ -84,8 +84,8 @@ def sequence():
     # create_Tk()
     # create_neta()
     # create_knt_vef()
-    # create_zeta()
-    create_lambda_barra()
+    create_zeta()
+    # create_lambda_barra()
 
 
 
