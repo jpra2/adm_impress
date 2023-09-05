@@ -675,19 +675,29 @@ class LpewWeight:
         array['lambda_barra'] = all_lambda
         
         return {'lambda_barra': array}
-                
 
+    def create_lpew2_weights(self, lambda_barra: np.ndarray, nodes, **kwargs):
 
-            
-            
-            
-            
-            
-            
-            
+        all_lpew2_weights = []
 
+        for node in nodes:
+            lambdas_faces = lambda_barra['lambda_barra'][
+                    lambda_barra['node_id']==node
+                ]
+            weights = lambdas_faces/lambdas_faces.sum()
+            all_lpew2_weights.append(weights)
+        
+        all_lpew2_weights = np.concatenate(np.array(all_lpew2_weights, dtype='O').flatten())
+        
+        dtype = [
+            ('node_id', np.int),
+            ('face_id', np.int),
+            ('weight', np.float64)
+        ]
+        array = np.zeros(dtype=dtype)
+        array['node_id'] = lambda_barra['node_id']
+        array['face_id'] = lambda_barra['face_id']
+        array['weight'] = all_lpew2_weights
 
-
-
-
-
+        return {'nodes_weights': array}
+    

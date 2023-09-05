@@ -75,6 +75,14 @@ def create_lambda_barra():
     resp = lpew.create_lambda_barra(**mesh_properties.get_all_data())
     mesh_properties.insert_data(resp)
     mesh_properties.export_data()
+
+def create_lpew2_weights():
+    global mesh_properties_name
+    lpew = LpewWeight()
+    mesh_properties: MeshProperty = load_mesh_properties(mesh_properties_name)
+    resp = lpew.create_lpew2_weights(**mesh_properties.get_all_data())
+    mesh_properties.insert_data(resp)
+    mesh_properties.export_data()
     print(mesh_properties.keys())
 
 def sequence():
@@ -84,7 +92,12 @@ def sequence():
     # create_neta()
     # create_knt_vef()
     # create_zeta()
-    create_lambda_barra()
+    # create_lambda_barra()
+    create_lpew2_weights()
+
+
+
+
 
 
 
