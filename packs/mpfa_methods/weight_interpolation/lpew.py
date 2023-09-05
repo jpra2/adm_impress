@@ -1,5 +1,6 @@
 import numpy as np
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
+import pandas as pd
 
 class LpewWeight:
     """A LINEARITY PRESERVING CELL-CENTERED
@@ -676,28 +677,27 @@ class LpewWeight:
         
         return {'lambda_barra': array}
 
-    def create_lpew2_weights(self, lambda_barra: np.ndarray, nodes, **kwargs):
+    def create_lpew2_weights(self, lambda_barra: np.ndarray, **kwargs):
 
-        all_lpew2_weights = []
+        df = pd.DataFrame({
+            'node_id': lambda_barra['node_id'],
+            'face_id': lambda_barra['face_id'],
+            'lambda_barra': lambda_barra['lambda_barra']
+        })
 
-        for node in nodes:
-            lambdas_faces = lambda_barra['lambda_barra'][
-                    lambda_barra['node_id']==node
-                ]
-            weights = lambdas_faces/lambdas_faces.sum()
-            all_lpew2_weights.append(weights)
+        df2 = df.groupby(['node_id']).sum()['lambda_barra']
         
-        all_lpew2_weights = np.concatenate(np.array(all_lpew2_weights, dtype='O').flatten())
-        
+        df['weight'] = df.apply(lambda row: row['lambda_barra']/df2[df2.index==row['node_id']].values[0],axis=1)
+    
         dtype = [
             ('node_id', np.int),
             ('face_id', np.int),
             ('weight', np.float64)
         ]
-        array = np.zeros(dtype=dtype)
-        array['node_id'] = lambda_barra['node_id']
-        array['face_id'] = lambda_barra['face_id']
-        array['weight'] = all_lpew2_weights
+        array = np.zeros(df.shape[0], dtype=dtype)
+        array['node_id'] = df['node_id'].values
+        array['face_id'] = df['face_id'].values
+        array['weight'] = df['weight'].values
 
         return {'nodes_weights': array}
     
