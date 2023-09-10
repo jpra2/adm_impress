@@ -5,6 +5,7 @@ flying = 'flying'
 results = 'results'
 mesh = 'mesh'
 mpfad_mesh_folder = 'mpfad_mesh_tests'
+lpew2_mesh_folder = 'lpew2_mesh_test'
 
 def load_mpfad_meshs_by_name(mesh_name: str, folder: str) -> pd.DataFrame:
     file_names = os.listdir(folder)

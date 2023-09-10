@@ -157,6 +157,124 @@ class LpewWeight:
         C = np.arccos(cosC)
         return C
 
+    def insert_knt_barra_vef_data(
+            self,
+            R_matrix,
+            tk_points,
+            edges_selected,
+            nodes_of_edges,
+            node,
+            face,
+            perm_face,
+            node_centroid,
+            face_centroid,
+            all_kface_id,
+            all_kedge_id1,
+            all_kedge_id2,
+            all_knode_id,
+            all_kn,
+            all_kt,
+            alln_node_id,
+            alln_face_id,
+            alln_edge_id,
+            alln_kn,
+            alln_kt,
+            all_theta,
+            all_phi,
+            all_v_angle,
+            **kwargs            
+    ):
+
+        tk_points_edges_selected = tk_points[edges_selected]
+        nodes_edges_selected = nodes_of_edges[edges_selected]
+        tk_points_node_edges_selected = tk_points_edges_selected[nodes_edges_selected==node]
+        
+        tk_vector = tk_points_node_edges_selected[1] - tk_points_node_edges_selected[0]
+        norm_tk = np.linalg.norm(tk_vector)
+        v1 = R_matrix.dot(tk_vector).reshape((2,1))
+
+        ## set kn and kt barra
+        kn = v1.T.dot(perm_face).dot(v1).flatten()[0]/(norm_tk**2)
+        kt = v1.T.dot(perm_face).dot(tk_vector).flatten()[0]/(norm_tk**2)
+        
+        all_kface_id.append(face)
+        all_kedge_id1.append(edges_selected[0])
+        all_kedge_id2.append(edges_selected[1])
+        all_knode_id.append(node)
+        all_kn.append(kn)
+        all_kt.append(kt)
+
+        ## set vangles
+        q0_tk1 = tk_points_node_edges_selected[1] - node_centroid
+        q0_tk0 = tk_points_node_edges_selected[0] - node_centroid
+
+        q0_tk1n = np.linalg.norm(q0_tk1)
+        q0_tk0n = np.linalg.norm(q0_tk0)
+
+        vangle1 = self.cosin_law(norm_tk, q0_tk1n, q0_tk0n)
+        vangle0 = self.cosin_law(q0_tk0n, norm_tk, q0_tk1n)
+
+        # vangle1 = np.arccos(
+        #     (np.dot(-q0_tk1, -tk0_tk1))/(q0_tk1n*norm_tk)
+        # )
+        # vangle0 = np.arccos(
+        #     (np.dot(-q0_tk0, tk0_tk1))/(q0_tk0n*norm_tk)
+        # )
+
+        ## set kn and kt (k normal), theta and phi angles
+        v2 = R_matrix.dot(q0_tk1).reshape((2,1))
+        v3 = R_matrix.dot(q0_tk0).reshape((2,1))
+
+        knn_tk1 = v2.T.dot(perm_face).dot(v2).flatten()[0]/(q0_tk1n**2)
+        ktn_tk1 = v2.T.dot(perm_face).dot(q0_tk1).flatten()[0]/(q0_tk1n**2)
+        
+        knn_tk0 = v3.T.dot(perm_face).dot(v3).flatten()[0]/(q0_tk0n**2)
+        ktn_tk0 = v3.T.dot(perm_face).dot(q0_tk0).flatten()[0]/(q0_tk0n**2)
+
+        # theta and phi
+        q0_ok = face_centroid - node_centroid
+        tk1_ok = face_centroid - tk_points_node_edges_selected[1]
+        tk0_ok = face_centroid - tk_points_node_edges_selected[0]
+        q0_okn = np.linalg.norm(q0_ok)
+        tk1_okn = np.linalg.norm(tk1_ok)
+        tk0_okn = np.linalg.norm(tk0_ok)
+        
+        theta_tk0 = self.cosin_law(q0_okn, q0_tk0n, tk0_okn)
+        phi_tk0 = self.cosin_law(tk0_okn, q0_okn, q0_tk0n)
+        theta_tk1 = self.cosin_law(q0_tk1n, q0_okn, tk1_okn)
+        phi_tk1 = self.cosin_law(q0_okn, tk1_okn, q0_tk1n)
+
+        # theta_tk02 = np.arccos(
+        #     (np.dot(q0_ok, q0_tk0))/(q0_okn*q0_tk0n)
+        # )
+        # phi_tk02 = np.arccos(
+        #     (np.dot(-q0_ok, -tk0_ok))/(q0_okn*tk0_okn)
+        # )
+        # theta_tk12 = np.arccos(
+        #     (np.dot(q0_ok, q0_tk1))/(q0_okn*q0_tk1n)
+        # )
+        # phi_tk12 = np.arccos(
+        #     (np.dot(-q0_ok, -tk1_ok))/(q0_okn*tk1_okn)
+        # )
+
+        alln_node_id.append(node)
+        alln_edge_id.append(edges_selected[1])
+        alln_face_id.append(face)
+        alln_kn.append(knn_tk1)
+        alln_kt.append(ktn_tk1)
+        all_theta.append(theta_tk1)                
+        all_phi.append(phi_tk1)
+        all_v_angle.append(vangle1)             
+
+        alln_node_id.append(node)
+        alln_edge_id.append(edges_selected[0])
+        alln_face_id.append(face)
+        alln_kn.append(knn_tk0)
+        alln_kt.append(ktn_tk0)
+        all_theta.append(theta_tk0)                
+        all_phi.append(phi_tk0)
+        all_v_angle.append(vangle0)
+
     def create_knt_barra_vef(self, tk_points, nodes_centroids, permeability, edges_of_nodes, nodes_of_edges, nodes, edges, adjacencies, faces_of_nodes, bool_boundary_nodes, faces_centroids, **kwargs):
 
         R_matrix = self.get_Rmatrix()
@@ -179,7 +297,6 @@ class LpewWeight:
         all_phi = []
         all_v_angle = []
 
-
         inodes = ~bool_boundary_nodes
         
         for node in nodes[inodes]:
@@ -199,73 +316,123 @@ class LpewWeight:
                     edges_selected[:] = edges_selected[::-1]
                 elif local_edge_sort_index[edges_selected[0]] > local_edge_sort_index[edges_selected[1]]:
                     edges_selected[:] = edges_selected[::-1]
+
+                self.insert_knt_barra_vef_data(
+                    R_matrix,
+                    tk_points,
+                    edges_selected,
+                    nodes_of_edges,
+                    node,
+                    face,
+                    perm_face,
+                    node_centroid,
+                    face_centroid,
+                    all_kface_id,
+                    all_kedge_id1,
+                    all_kedge_id2,
+                    all_knode_id,
+                    all_kn,
+                    all_kt,
+                    alln_node_id,
+                    alln_face_id,
+                    alln_edge_id,
+                    alln_kn,
+                    alln_kt,
+                    all_theta,
+                    all_phi,
+                    all_v_angle
+                )
                 
-                tk_points_edges_selected = tk_points[edges_selected]
-                nodes_edges_selected = nodes_of_edges[edges_selected]
-                tk_points_node_edges_selected = tk_points_edges_selected[nodes_edges_selected==node]
+                # tk_points_edges_selected = tk_points[edges_selected]
+                # nodes_edges_selected = nodes_of_edges[edges_selected]
+                # tk_points_node_edges_selected = tk_points_edges_selected[nodes_edges_selected==node]
                 
-                tk_vector = tk_points_node_edges_selected[1] - tk_points_node_edges_selected[0]
-                norm_tk = np.linalg.norm(tk_vector)
-                v1 = R_matrix.dot(tk_vector).reshape((2,1))
+                # tk_vector = tk_points_node_edges_selected[1] - tk_points_node_edges_selected[0]
+                # tk0_tk1 = tk_vector
+                # norm_tk = np.linalg.norm(tk_vector)
+                # v1 = R_matrix.dot(tk_vector).reshape((2,1))
 
-                ## set kn and kt barra
-                kn = v1.T.dot(perm_face).dot(v1).flatten()[0]/(norm_tk**2)
-                kt = v1.T.dot(perm_face).dot(tk_vector).flatten()[0]/(norm_tk**2)
+                # ## set kn and kt barra
+                # kn = v1.T.dot(perm_face).dot(v1).flatten()[0]/(norm_tk**2)
+                # kt = v1.T.dot(perm_face).dot(tk_vector).flatten()[0]/(norm_tk**2)
                 
-                all_kface_id.append(face)
-                all_kedge_id1.append(edges_selected[0])
-                all_kedge_id2.append(edges_selected[1])
-                all_knode_id.append(node)
-                all_kn.append(kn)
-                all_kt.append(kt)
+                # all_kface_id.append(face)
+                # all_kedge_id1.append(edges_selected[0])
+                # all_kedge_id2.append(edges_selected[1])
+                # all_knode_id.append(node)
+                # all_kn.append(kn)
+                # all_kt.append(kt)
 
-                ## set vangles
-                q0_tk1 = tk_points_node_edges_selected[1] - node_centroid
-                q0_tk0 = tk_points_node_edges_selected[0] - node_centroid
+                # ## set vangles
+                # q0_tk1 = tk_points_node_edges_selected[1] - node_centroid
+                # q0_tk0 = tk_points_node_edges_selected[0] - node_centroid
 
-                q0_tk1n = np.linalg.norm(q0_tk1)
-                q0_tk0n = np.linalg.norm(q0_tk0)
+                # q0_tk1n = np.linalg.norm(q0_tk1)
+                # q0_tk0n = np.linalg.norm(q0_tk0)
 
-                vangle1 = self.cosin_law(norm_tk, q0_tk1n, q0_tk0n)
-                vangle0 = self.cosin_law(q0_tk0n, norm_tk, q0_tk1n)
+                # vangle1 = self.cosin_law(norm_tk, q0_tk1n, q0_tk0n)
+                # vangle0 = self.cosin_law(q0_tk0n, norm_tk, q0_tk1n)
 
-                ## set kn and kt (k normal), theta and phi angles
-                v2 = R_matrix.dot(q0_tk1).reshape((2,1))
-                v3 = R_matrix.dot(q0_tk0).reshape((2,1))
+                # # vangle1 = np.arccos(
+                # #     (np.dot(-q0_tk1, -tk0_tk1))/(q0_tk1n*norm_tk)
+                # # )
+                # # vangle0 = np.arccos(
+                # #     (np.dot(-q0_tk0, tk0_tk1))/(q0_tk0n*norm_tk)
+                # # )
 
-                knn_tk1 = v2.T.dot(perm_face).dot(v2).flatten()[0]/(q0_tk1n**2)
-                ktn_tk1 = v2.T.dot(perm_face).dot(q0_tk1).flatten()[0]/(q0_tk1n**2)
+                # ## set kn and kt (k normal), theta and phi angles
+                # v2 = R_matrix.dot(q0_tk1).reshape((2,1))
+                # v3 = R_matrix.dot(q0_tk0).reshape((2,1))
+
+                # knn_tk1 = v2.T.dot(perm_face).dot(v2).flatten()[0]/(q0_tk1n**2)
+                # ktn_tk1 = v2.T.dot(perm_face).dot(q0_tk1).flatten()[0]/(q0_tk1n**2)
                 
-                knn_tk0 = v3.T.dot(perm_face).dot(v3).flatten()[0]/(q0_tk0n**2)
-                ktn_tk0 = v3.T.dot(perm_face).dot(q0_tk0).flatten()[0]/(q0_tk0n**2)
+                # knn_tk0 = v3.T.dot(perm_face).dot(v3).flatten()[0]/(q0_tk0n**2)
+                # ktn_tk0 = v3.T.dot(perm_face).dot(q0_tk0).flatten()[0]/(q0_tk0n**2)
 
-                # theta and phi
-                q0_okn = np.linalg.norm(face_centroid - node_centroid)
-                tk1_okn = np.linalg.norm(face_centroid - tk_points_node_edges_selected[1])
-                tk0_okn = np.linalg.norm(face_centroid - tk_points_node_edges_selected[0])
+                # # theta and phi
+                # q0_ok = face_centroid - node_centroid
+                # tk1_ok = face_centroid - tk_points_node_edges_selected[1]
+                # tk0_ok = face_centroid - tk_points_node_edges_selected[0]
+                # q0_okn = np.linalg.norm(q0_ok)
+                # tk1_okn = np.linalg.norm(tk1_ok)
+                # tk0_okn = np.linalg.norm(tk0_ok)
                 
-                theta_tk0 = self.cosin_law(q0_okn, q0_tk0n, tk0_okn)
-                phi_tk0 = self.cosin_law(tk0_okn, q0_okn, q0_tk0n)
-                theta_tk1 = self.cosin_law(q0_tk1n, q0_okn, tk1_okn)
-                phi_tk1 = self.cosin_law(q0_okn, tk1_okn, q0_tk1n)
+                # theta_tk0 = self.cosin_law(q0_okn, q0_tk0n, tk0_okn)
+                # phi_tk0 = self.cosin_law(tk0_okn, q0_okn, q0_tk0n)
+                # theta_tk1 = self.cosin_law(q0_tk1n, q0_okn, tk1_okn)
+                # phi_tk1 = self.cosin_law(q0_okn, tk1_okn, q0_tk1n)
 
-                alln_node_id.append(node)
-                alln_edge_id.append(edges_selected[1])
-                alln_face_id.append(face)
-                alln_kn.append(knn_tk1)
-                alln_kt.append(ktn_tk1)
-                all_theta.append(theta_tk1)                
-                all_phi.append(phi_tk1)
-                all_v_angle.append(vangle1)             
+                # # theta_tk02 = np.arccos(
+                # #     (np.dot(q0_ok, q0_tk0))/(q0_okn*q0_tk0n)
+                # # )
+                # # phi_tk02 = np.arccos(
+                # #     (np.dot(-q0_ok, -tk0_ok))/(q0_okn*tk0_okn)
+                # # )
+                # # theta_tk12 = np.arccos(
+                # #     (np.dot(q0_ok, q0_tk1))/(q0_okn*q0_tk1n)
+                # # )
+                # # phi_tk12 = np.arccos(
+                # #     (np.dot(-q0_ok, -tk1_ok))/(q0_okn*tk1_okn)
+                # # )
 
-                alln_node_id.append(node)
-                alln_edge_id.append(edges_selected[0])
-                alln_face_id.append(face)
-                alln_kn.append(knn_tk0)
-                alln_kt.append(ktn_tk0)
-                all_theta.append(theta_tk0)                
-                all_phi.append(phi_tk0)
-                all_v_angle.append(vangle0)
+                # alln_node_id.append(node)
+                # alln_edge_id.append(edges_selected[1])
+                # alln_face_id.append(face)
+                # alln_kn.append(knn_tk1)
+                # alln_kt.append(ktn_tk1)
+                # all_theta.append(theta_tk1)                
+                # all_phi.append(phi_tk1)
+                # all_v_angle.append(vangle1)             
+
+                # alln_node_id.append(node)
+                # alln_edge_id.append(edges_selected[0])
+                # alln_face_id.append(face)
+                # alln_kn.append(knn_tk0)
+                # alln_kt.append(ktn_tk0)
+                # all_theta.append(theta_tk0)                
+                # all_phi.append(phi_tk0)
+                # all_v_angle.append(vangle0)
 
         for node in nodes[bool_boundary_nodes]:
             faces_node = faces_of_nodes[node]
@@ -282,72 +449,102 @@ class LpewWeight:
                 if local_edge_sort_index[edges_selected[0]] > local_edge_sort_index[edges_selected[1]]:
                     edges_selected[:] = edges_selected[::-1]
                 
-                tk_points_edges_selected = tk_points[edges_selected]
-                nodes_edges_selected = nodes_of_edges[edges_selected]
-                tk_points_node_edges_selected = tk_points_edges_selected[nodes_edges_selected==node]
+                self.insert_knt_barra_vef_data(
+                    R_matrix,
+                    tk_points,
+                    edges_selected,
+                    nodes_of_edges,
+                    node,
+                    face,
+                    perm_face,
+                    node_centroid,
+                    face_centroid,
+                    all_kface_id,
+                    all_kedge_id1,
+                    all_kedge_id2,
+                    all_knode_id,
+                    all_kn,
+                    all_kt,
+                    alln_node_id,
+                    alln_face_id,
+                    alln_edge_id,
+                    alln_kn,
+                    alln_kt,
+                    all_theta,
+                    all_phi,
+                    all_v_angle
+                )
+
+
+                # tk_points_edges_selected = tk_points[edges_selected]
+                # nodes_edges_selected = nodes_of_edges[edges_selected]
+                # tk_points_node_edges_selected = tk_points_edges_selected[nodes_edges_selected==node]
                 
-                tk_vector = tk_points_node_edges_selected[1] - tk_points_node_edges_selected[0]
-                norm_tk = np.linalg.norm(tk_vector)
-                v1 = R_matrix.dot(tk_vector).reshape((2,1))
+                # tk_vector = tk_points_node_edges_selected[1] - tk_points_node_edges_selected[0]
+                # norm_tk = np.linalg.norm(tk_vector)
+                # v1 = R_matrix.dot(tk_vector).reshape((2,1))
 
-                ## set kn and kt
-                kn = v1.T.dot(perm_face).dot(v1).flatten()[0]/(norm_tk**2)
-                kt = v1.T.dot(perm_face).dot(tk_vector).flatten()[0]/(norm_tk**2)
+                # ## set kn and kt
+                # kn = v1.T.dot(perm_face).dot(v1).flatten()[0]/(norm_tk**2)
+                # kt = v1.T.dot(perm_face).dot(tk_vector).flatten()[0]/(norm_tk**2)
                 
-                all_kface_id.append(face)
-                all_kedge_id1.append(edges_selected[0])
-                all_kedge_id2.append(edges_selected[1])
-                all_knode_id.append(node)
-                all_kn.append(kn)
-                all_kt.append(kt)
+                # all_kface_id.append(face)
+                # all_kedge_id1.append(edges_selected[0])
+                # all_kedge_id2.append(edges_selected[1])
+                # all_knode_id.append(node)
+                # all_kn.append(kn)
+                # all_kt.append(kt)
 
-                ## set vangles
-                q0_tk1 = tk_points_node_edges_selected[1] - node_centroid
-                q0_tk0 = tk_points_node_edges_selected[0] - node_centroid
+                # ## set vangles
+                # q0_tk1 = tk_points_node_edges_selected[1] - node_centroid
+                # q0_tk0 = tk_points_node_edges_selected[0] - node_centroid
 
-                q0_tk1n = np.linalg.norm(q0_tk1)
-                q0_tk0n = np.linalg.norm(q0_tk0)
+                # q0_tk1n = np.linalg.norm(q0_tk1)
+                # q0_tk0n = np.linalg.norm(q0_tk0)
 
-                vangle1 = self.cosin_law(norm_tk, q0_tk1n, q0_tk0n)
-                vangle0 = self.cosin_law(q0_tk0n, norm_tk, q0_tk1n)
+                # vangle1 = self.cosin_law(norm_tk, q0_tk1n, q0_tk0n)
+                # vangle0 = self.cosin_law(q0_tk0n, norm_tk, q0_tk1n)
 
-                ## set kn and kt (k normal), theta and phi angles
-                v2 = R_matrix.dot(q0_tk1).reshape((2,1))
-                v3 = R_matrix.dot(q0_tk0).reshape((2,1))
+                # ## set kn and kt (k normal), theta and phi angles
+                # v2 = R_matrix.dot(q0_tk1).reshape((2,1))
+                # v3 = R_matrix.dot(q0_tk0).reshape((2,1))
 
-                knn_tk1 = v2.T.dot(perm_face).dot(v2).flatten()[0]/(q0_tk1n**2)
-                ktn_tk1 = v2.T.dot(perm_face).dot(q0_tk1).flatten()[0]/(q0_tk1n**2)
+                # knn_tk1 = v2.T.dot(perm_face).dot(v2).flatten()[0]/(q0_tk1n**2)
+                # ktn_tk1 = v2.T.dot(perm_face).dot(q0_tk1).flatten()[0]/(q0_tk1n**2)
                 
-                knn_tk0 = v3.T.dot(perm_face).dot(v3).flatten()[0]/(q0_tk0n**2)
-                ktn_tk0 = v3.T.dot(perm_face).dot(q0_tk0).flatten()[0]/(q0_tk0n**2)
+                # knn_tk0 = v3.T.dot(perm_face).dot(v3).flatten()[0]/(q0_tk0n**2)
+                # ktn_tk0 = v3.T.dot(perm_face).dot(q0_tk0).flatten()[0]/(q0_tk0n**2)
 
-                # theta and phi
-                q0_okn = np.linalg.norm(face_centroid - node_centroid)
-                tk1_okn = np.linalg.norm(face_centroid - tk_points_node_edges_selected[1])
-                tk0_okn = np.linalg.norm(face_centroid - tk_points_node_edges_selected[0])
-                
-                theta_tk0 = self.cosin_law(q0_okn, q0_tk0n, tk0_okn)
-                phi_tk0 = self.cosin_law(tk0_okn, q0_okn, q0_tk0n)
-                theta_tk1 = self.cosin_law(q0_tk1n, q0_okn, tk1_okn)
-                phi_tk1 = self.cosin_law(q0_okn, tk1_okn, q0_tk1n)
+                # # theta and phi
+                # q0_ok = face_centroid - node_centroid
+                # tk1_ok = face_centroid - tk_points_node_edges_selected[1]
+                # tk0_ok = face_centroid - tk_points_node_edges_selected[0]
+                # q0_okn = np.linalg.norm(q0_ok)
+                # tk1_okn = np.linalg.norm(tk1_ok)
+                # tk0_okn = np.linalg.norm(tk0_ok)
+  
+                # theta_tk0 = self.cosin_law(q0_okn, q0_tk0n, tk0_okn)
+                # phi_tk0 = self.cosin_law(tk0_okn, q0_okn, q0_tk0n)
+                # theta_tk1 = self.cosin_law(q0_tk1n, q0_okn, tk1_okn)
+                # phi_tk1 = self.cosin_law(q0_okn, tk1_okn, q0_tk1n)
 
-                alln_node_id.append(node)
-                alln_edge_id.append(edges_selected[1])
-                alln_face_id.append(face)
-                alln_kn.append(knn_tk1)
-                alln_kt.append(ktn_tk1)
-                all_theta.append(theta_tk1)                
-                all_phi.append(phi_tk1)
-                all_v_angle.append(vangle1)              
+                # alln_node_id.append(node)
+                # alln_edge_id.append(edges_selected[1])
+                # alln_face_id.append(face)
+                # alln_kn.append(knn_tk1)
+                # alln_kt.append(ktn_tk1)
+                # all_theta.append(theta_tk1)                
+                # all_phi.append(phi_tk1)
+                # all_v_angle.append(vangle1)              
 
-                alln_node_id.append(node)
-                alln_edge_id.append(edges_selected[0])
-                alln_face_id.append(face)
-                alln_kn.append(knn_tk0)
-                alln_kt.append(ktn_tk0)
-                all_theta.append(theta_tk0)                
-                all_phi.append(phi_tk0)
-                all_v_angle.append(vangle0)
+                # alln_node_id.append(node)
+                # alln_edge_id.append(edges_selected[0])
+                # alln_face_id.append(face)
+                # alln_kn.append(knn_tk0)
+                # alln_kt.append(ktn_tk0)
+                # all_theta.append(theta_tk0)                
+                # all_phi.append(phi_tk0)
+                # all_v_angle.append(vangle0)
 
         all_kface_id = np.array(all_kface_id)
         all_kedge_id1 = np.array(all_kedge_id1)
@@ -412,7 +609,9 @@ class LpewWeight:
         return t1/t2
 
     def get_Ok_value_by_edge(self, reference_edge, reference_node, edge_face, nodes_of_edges, nodes_centroids, **kwargs):
-        
+        """
+            verificar se o edge da face esta a esquerda ou direita do edge de referencia
+        """
         z_direction = np.array([0, 0, 1])
         nodes_edge_reference = (nodes_of_edges[reference_edge]).copy()
         nodes_edge_face = (nodes_of_edges[edge_face]).copy()
@@ -482,8 +681,8 @@ class LpewWeight:
     def create_zeta(self, kn_kt_barra, kn_kt_theta_phi_vangle, adjacencies, edges, bool_boundary_edges, nodes, edges_of_nodes, nodes_centroids, nodes_of_edges, **kwargs):
         
         terms = np.zeros(12)
-        l_terms = np.array([3, 4, 6, 9, 10, 12]) - 1
-        r_terms = np.array([1, 2, 5, 7, 8, 11]) - 1
+        l_terms = np.array([3, 4, 6, 9, 10, 12]) - 1 # left terms
+        r_terms = np.array([1, 2, 5, 7, 8, 11]) - 1 # right terms
         
         all_zeta = []
         all_node_id = []
@@ -684,6 +883,14 @@ class LpewWeight:
             'face_id': lambda_barra['face_id'],
             'lambda_barra': lambda_barra['lambda_barra']
         })
+
+        # for node in pd.unique(df['node_id']):
+        #     lambdas_node = df['lambda_barra'][df['node_id']==node]
+        #     faces_node = df['face_id'][df['node_id']==node]
+
+        #     print(f'lambdas node: {lambdas_node.values}\n')
+        #     print(f'faces_node: {faces_node.values} \n\n')
+        #     import pdb; pdb.set_trace()
 
         df2 = df.groupby(['node_id']).sum()['lambda_barra']
         
