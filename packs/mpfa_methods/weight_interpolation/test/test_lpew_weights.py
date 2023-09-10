@@ -218,11 +218,7 @@ def test_all_weights(mdata, mesh_properties: MeshProperty):
         test = (mesh_properties_weights['node_id']==node_mdata) & \
         (mesh_properties_weights['face_id']==face_mdata)
 
-        mesh_weight = mesh_properties_weights['weight'][test]
         wtest[test] = weight
-        print(f'mesh_prop weights: {mesh_weight}\n')
-        print(f'mdata weights: {weight}\n')
-        import pdb; pdb.set_trace()
     
     
     weights_error = np.abs(wtest - mesh_properties_weights['weight'])
@@ -230,44 +226,18 @@ def test_all_weights(mdata, mesh_properties: MeshProperty):
     delta = 1e-10
 
     v1 = weights_error <= delta
-    print(v1.sum()) 
 
-    import pdb; pdb.set_trace()
+    assert v1.sum() - len(mdata_weights) == 0 
 
     
-
-        
-
-
 def test_weights_prof_fernando():
 
     filenames = get_filenames()
     mdata = get_data_from_matfile(**filenames)
     sequence(**filenames)
     mesh_properties: MeshProperty = load_mesh_properties(filenames['mesh_properties_name'])
-    # preprocess_mdata(mdata, mesh_properties)
-    # test_all_weights(mdata, mesh_properties)
-    verify_values(mesh_properties)
-
-
-
-
-
-    import pdb; pdb.set_trace()
-
-
-    import pdb; pdb.set_trace()
-    import pdb; pdb.set_trace()
-
-
-
-"""
-    perguntar a pedro
-    esurn1 esurn2 coord nsurn1 nsurn2 elem
-    kmap,N,gravrate,gravelem
-
-"""
-
+    preprocess_mdata(mdata, mesh_properties)
+    test_all_weights(mdata, mesh_properties)
 
 
 

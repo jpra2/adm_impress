@@ -352,6 +352,7 @@ class LpewWeight:
 
             for face in faces_node:
                 perm_face = permeability[face]
+                face_centroid = faces_centroids[face]
                 edges_selected = (edges[(adjacencies[:, 0] == face) | (adjacencies[:, 1] == face)]).copy()
                 edges_selected = np.intersect1d(edges_node, edges_selected)
                 
@@ -382,7 +383,7 @@ class LpewWeight:
                     all_theta,
                     all_phi,
                     all_v_angle
-                )
+                )                
 
         all_kface_id = np.array(all_kface_id)
         all_kedge_id1 = np.array(all_kedge_id1)
@@ -721,14 +722,6 @@ class LpewWeight:
             'face_id': lambda_barra['face_id'],
             'lambda_barra': lambda_barra['lambda_barra']
         })
-
-        # for node in pd.unique(df['node_id']):
-        #     lambdas_node = df['lambda_barra'][df['node_id']==node]
-        #     faces_node = df['face_id'][df['node_id']==node]
-
-        #     print(f'lambdas node: {lambdas_node.values}\n')
-        #     print(f'faces_node: {faces_node.values} \n\n')
-        #     import pdb; pdb.set_trace()
 
         df2 = df.groupby(['node_id']).sum()['lambda_barra']
         
