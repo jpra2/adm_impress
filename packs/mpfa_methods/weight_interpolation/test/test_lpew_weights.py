@@ -1,4 +1,4 @@
-from packs.mpfa_methods.weight_interpolation.lpew import LpewWeight
+from packs.mpfa_methods.weight_interpolation.lpew import LpewWeight, get_lpew2_weights
 from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import create_properties_if_not_exists
 from packs import defpaths, defnames
 from packs.manager.meshmanager import MeshProperty, load_mesh_properties
@@ -8,7 +8,7 @@ from files_to_test.lpew2_test_weights.info_test1 import get_filenames
 import scipy.io as sio
 import numpy as np
 
-def initialize_mesh(mesh_properties_name, mesh_name):
+def initialize_mesh(mesh_properties_name, mesh_name, **kwargs):
         
     mesh_properties = create_properties_if_not_exists(mesh_name, mesh_properties_name)
     mesh_properties.export_data()
@@ -168,7 +168,6 @@ def verify_values(mesh_properties: MeshProperty):
 
             import pdb; pdb.set_trace()
 
-
 def get_data_from_matfile(matfile, **kwargs):
     mdata = sio.loadmat(matfile)
     return mdata
@@ -234,8 +233,14 @@ def test_weights_prof_fernando():
 
     filenames = get_filenames()
     mdata = get_data_from_matfile(**filenames)
-    sequence(**filenames)
+    initialize_mesh(**filenames)
     mesh_properties: MeshProperty = load_mesh_properties(filenames['mesh_properties_name'])
+    get_lpew2_weights(mesh_properties)
+
+
+
+    # sequence(**filenames)
+    # mesh_properties: MeshProperty = load_mesh_properties(filenames['mesh_properties_name'])
     preprocess_mdata(mdata, mesh_properties)
     test_all_weights(mdata, mesh_properties)
 

@@ -1,6 +1,8 @@
 import numpy as np
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 import pandas as pd
+from packs.manager.meshmanager import MeshProperty
+from packs.utils import calculate_face_properties
 
 class LpewWeight:
     """A LINEARITY PRESERVING CELL-CENTERED
@@ -9,6 +11,11 @@ class LpewWeight:
         GENERAL MESHES
 
     """
+
+    datas_to_remove = ['tk_points', 'neta', 'kn_kt_barra', 'kn_kt_theta_phi_vangle',
+                       'zeta', 'lambda_barra']
+    
+    data_weights = ['nodes_weights']
 
     @property
     def Ok_values(self):
@@ -738,4 +745,89 @@ class LpewWeight:
         array['weight'] = df['weight'].values
 
         return {'nodes_weights': array}
+
+
+def intermediate(mesh_properties: MeshProperty):
+    pass
+
+def preprocess(mesh_properties: MeshProperty):
+
+    lpew2 = LpewWeight()
+    resp = lpew2.preprocess(**mesh_properties.get_all_data())
+
+    h_dist = calculate_face_properties.create_face_to_edge_distances(
+            mesh_properties.faces_centroids,
+            mesh_properties.adjacencies,
+            mesh_properties.nodes_of_edges,
+            mesh_properties.edges,
+            mesh_properties.nodes_centroids,
+            mesh_properties.bool_boundary_edges
+        )
+
+
+    mesh_properties.insert_or_update_data(resp)
+    mesh_properties.insert_data({'h_dist': h_dist})
+    intermediate(mesh_properties)
+
+def create_Tk(mesh_properties: MeshProperty):
+    """criar k normal e tangente
+    """
+    lpew = LpewWeight()
+    resp = lpew.create_Tk_points(
+        mesh_properties['nodes_centroids'],
+        mesh_properties['nodes_of_edges']
+    )
+    mesh_properties.insert_data(resp)
+    intermediate(mesh_properties)
+
+def create_neta(mesh_properties: MeshProperty):
     
+    lpew = LpewWeight()
+    resp = lpew.create_neta(**mesh_properties.get_all_data())
+    mesh_properties.insert_data(resp)
+    intermediate(mesh_properties)
+
+def create_knt_vef(mesh_properties: MeshProperty):
+    
+    lpew = LpewWeight()
+    resp = lpew.create_knt_barra_vef(**mesh_properties.get_all_data())
+    mesh_properties.insert_data(resp)
+    intermediate(mesh_properties)
+
+def create_zeta(mesh_properties: MeshProperty):
+    
+    lpew = LpewWeight()
+    resp = lpew.create_zeta(**mesh_properties.get_all_data())
+    mesh_properties.insert_data(resp)
+    intermediate(mesh_properties)
+
+def create_lambda_barra(mesh_properties: MeshProperty):
+    
+    lpew = LpewWeight()
+    resp = lpew.create_lambda_barra(**mesh_properties.get_all_data())
+    mesh_properties.insert_data(resp)
+    intermediate(mesh_properties)
+
+def create_lpew2_weights(mesh_properties: MeshProperty):
+    
+    lpew = LpewWeight()
+    resp = lpew.create_lpew2_weights(**mesh_properties.get_all_data())
+    mesh_properties.insert_data(resp)
+    intermediate(mesh_properties)
+
+def get_lpew2_weights(mesh_properties: MeshProperty):
+
+    preprocess(mesh_properties)
+    create_Tk(mesh_properties)
+    create_neta(mesh_properties)
+    create_knt_vef(mesh_properties)
+    create_zeta(mesh_properties)
+    create_lambda_barra(mesh_properties)
+    create_lpew2_weights(mesh_properties)
+
+
+
+
+    
+
+
