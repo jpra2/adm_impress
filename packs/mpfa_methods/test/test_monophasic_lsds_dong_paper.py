@@ -2,6 +2,7 @@ from packs import defpaths, defnames
 from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import create_properties_if_not_exists, mesh_verify, create_properties
 from packs.manager.meshmanager import MeshProperty
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights, mount_sparse_weight_matrix
+from packs.mpfa_methods.weight_interpolation.lpew import get_lpew2_weights
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.manager.boundary_conditions import BoundaryConditions
 import numpy as np
@@ -287,9 +288,16 @@ def run(pr_name, mesh_type, ns, n):
             lsds.preprocess(**mesh_properties.get_all_data())
         )
     
-        mesh_properties.insert_data(
-            get_gls_nodes_weights(**mesh_properties.get_all_data())
-        )
+        # mesh_properties.insert_data(
+        #     get_gls_nodes_weights(**mesh_properties.get_all_data())
+        # )
+        
+        dtype_neumann = [('node_id', np.int), ('nweight', np.float)]
+        zero_neumann = np.zeros(len([]), dtype=dtype_neumann)
+        get_lpew2_weights(mesh_properties)
+        mesh_properties.insert_data({
+            'neumann_nodes_weights': zero_neumann
+        })
     
         mesh_properties.insert_data(
             lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
@@ -667,10 +675,11 @@ def testp1_by_meshtype(mesh_type, ns, pr_name):
 def plot_errors():
     # 'mesh1': [8, 32, 64, 128]
     global all_pr_names
-    pr_name = all_pr_names[1]
+    pr_name = all_pr_names[0]
     
     mesh_types_dict = {
         'mesh1': [8, 32, 64, 128],
+        # 'mesh1': [8, 32, 64],
         'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
         'mesh5': [12, 24, 48, 96, 192, 384],
         'mesh6': [1, 2, 3, 4]   

@@ -26,9 +26,33 @@ class LpewWeight:
         nodes_centroids,
         unitary_normal_edges,
         nodes_of_edges,
-        edges, 
+        edges,
+        nodes,
+        nodes_of_nodes,
+        edges_of_nodes,
+        faces_centroids,
+        faces_of_nodes,
         **kwargs
     ):
+        
+        nodes_centroids2 = np.zeros((len(nodes_centroids), 3))
+        nodes_centroids2[:, 0:2] = nodes_centroids
+        faces_centroids2 = np.zeros((len(faces_centroids), 3))
+        faces_centroids2[:, 0:2] = faces_centroids
+        
+        calculate_face_properties.ordenate_edges_and_nodes_of_nodes_xy_plane(
+            nodes,
+            edges,
+            nodes_of_nodes,
+            edges_of_nodes,
+            nodes_centroids2
+        )
+
+        calculate_face_properties.ordenate_faces_of_nodes_xy_plane(
+            faces_centroids2,
+            faces_of_nodes,
+            nodes_centroids2
+        )
 
         return LsdsFluxCalculation.define_A_B_points_of_edges(
             nodes_centroids,
@@ -487,11 +511,13 @@ class LpewWeight:
 
     def get_zeta_face_terms(self, kn_kt_barra, kn_kt_theta_phi_vangle, node, face, edge_reference, edge_face, **kwargs):
         terms = np.zeros(6)
-
-        terms[0] = kn_kt_barra['kn'][
-            (kn_kt_barra['node_id']==node) & 
-            (kn_kt_barra['face_id']==face)
-        ]
+        try:
+            terms[0] = kn_kt_barra['kn'][
+                (kn_kt_barra['node_id']==node) & 
+                (kn_kt_barra['face_id']==face)
+            ]
+        except:
+            import pdb; pdb.set_trace()
 
         terms[1] = self.cot(kn_kt_theta_phi_vangle['v_angle'][
             (kn_kt_theta_phi_vangle['node_id']==node) & 
@@ -610,6 +636,13 @@ class LpewWeight:
                 except IndexError:
                     edge1 = edges_node[0]
                 
+                if len(faces_adj[edges_faces==edge1]) == 0:
+                    import pdb; pdb.set_trace()
+                elif len(faces_adj[edges_faces==edge0]) == 0:
+                    import pdb; pdb.set_trace()
+                
+            
+
                 terms[l_terms] = self.get_zeta_face_terms(
                     kn_kt_barra,
                     kn_kt_theta_phi_vangle,
@@ -754,19 +787,7 @@ def preprocess(mesh_properties: MeshProperty):
 
     lpew2 = LpewWeight()
     resp = lpew2.preprocess(**mesh_properties.get_all_data())
-
-    h_dist = calculate_face_properties.create_face_to_edge_distances(
-            mesh_properties.faces_centroids,
-            mesh_properties.adjacencies,
-            mesh_properties.nodes_of_edges,
-            mesh_properties.edges,
-            mesh_properties.nodes_centroids,
-            mesh_properties.bool_boundary_edges
-        )
-
-
     mesh_properties.insert_or_update_data(resp)
-    mesh_properties.insert_data({'h_dist': h_dist})
     intermediate(mesh_properties)
 
 def create_Tk(mesh_properties: MeshProperty):
@@ -815,7 +836,7 @@ def create_lpew2_weights(mesh_properties: MeshProperty):
     mesh_properties.insert_data(resp)
     intermediate(mesh_properties)
 
-def get_lpew2_weights(mesh_properties: MeshProperty):
+def get_lpew2_weights(mesh_properties: MeshProperty, **kwargs):
 
     preprocess(mesh_properties)
     create_Tk(mesh_properties)

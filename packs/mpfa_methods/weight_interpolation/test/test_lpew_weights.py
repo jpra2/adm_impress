@@ -11,6 +11,16 @@ import numpy as np
 def initialize_mesh(mesh_properties_name, mesh_name, **kwargs):
         
     mesh_properties = create_properties_if_not_exists(mesh_name, mesh_properties_name)
+    h_dist = calculate_face_properties.create_face_to_edge_distances(
+            mesh_properties.faces_centroids,
+            mesh_properties.adjacencies,
+            mesh_properties.nodes_of_edges,
+            mesh_properties.edges,
+            mesh_properties.nodes_centroids,
+            mesh_properties.bool_boundary_edges
+        )
+    mesh_properties.insert_or_update_data({'h_dist': h_dist})
+
     mesh_properties.export_data()
 
 def preprocess_lpew2(mesh_properties_name):

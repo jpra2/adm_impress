@@ -24,6 +24,9 @@
 # from packs.mpfa_methods.test.test_inverse_distance_weights import test_1
 # test_1()
 
-from packs.mpfa_methods.weight_interpolation.test.test_lpew_weights import test_weights_prof_fernando, sequence
-test_weights_prof_fernando()
+# from packs.mpfa_methods.weight_interpolation.test.test_lpew_weights import test_weights_prof_fernando, sequence
+# test_weights_prof_fernando()
+
+from packs.mpfa_methods.test.test_monophasic_lsds_dong_paper import plot_errors
+plot_errors()
 
