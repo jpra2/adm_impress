@@ -12,8 +12,8 @@ class LpewWeight:
 
     """
 
-    datas_to_remove = ['tk_points', 'neta', 'kn_kt_barra', 'kn_kt_theta_phi_vangle',
-                       'zeta', 'lambda_barra']
+    datas = ['tk_points', 'neta', 'kn_kt_barra', 'kn_kt_theta_phi_vangle',
+             'zeta', 'lambda_barra']
     
     data_weights = ['nodes_weights']
 
@@ -35,30 +35,18 @@ class LpewWeight:
         **kwargs
     ):
         
-        nodes_centroids2 = np.zeros((len(nodes_centroids), 3))
-        nodes_centroids2[:, 0:2] = nodes_centroids
-        faces_centroids2 = np.zeros((len(faces_centroids), 3))
-        faces_centroids2[:, 0:2] = faces_centroids
-        
-        calculate_face_properties.ordenate_edges_and_nodes_of_nodes_xy_plane(
-            nodes,
-            edges,
-            nodes_of_nodes,
-            edges_of_nodes,
-            nodes_centroids2
-        )
+        lsds = LsdsFluxCalculation()
 
-        calculate_face_properties.ordenate_faces_of_nodes_xy_plane(
-            faces_centroids2,
-            faces_of_nodes,
-            nodes_centroids2
-        )
-
-        return LsdsFluxCalculation.define_A_B_points_of_edges(
+        return lsds.preprocess(
             nodes_centroids,
             unitary_normal_edges,
             nodes_of_edges,
-            edges
+            edges,
+            nodes,
+            nodes_of_nodes,
+            edges_of_nodes,
+            faces_centroids,
+            faces_of_nodes
         )
     
     def cot(self, theta):
@@ -781,7 +769,7 @@ class LpewWeight:
 
 
 def intermediate(mesh_properties: MeshProperty):
-    pass
+    mesh_properties.export_data()
 
 def preprocess(mesh_properties: MeshProperty):
 
@@ -793,7 +781,10 @@ def preprocess(mesh_properties: MeshProperty):
 def create_Tk(mesh_properties: MeshProperty):
     """criar k normal e tangente
     """
+    k = 0
     lpew = LpewWeight()
+    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
+        return   
     resp = lpew.create_Tk_points(
         mesh_properties['nodes_centroids'],
         mesh_properties['nodes_of_edges']
@@ -803,42 +794,56 @@ def create_Tk(mesh_properties: MeshProperty):
 
 def create_neta(mesh_properties: MeshProperty):
     
+    k = 1
     lpew = LpewWeight()
+    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
+        return 
     resp = lpew.create_neta(**mesh_properties.get_all_data())
     mesh_properties.insert_data(resp)
     intermediate(mesh_properties)
 
 def create_knt_vef(mesh_properties: MeshProperty):
     
+    k = 2
     lpew = LpewWeight()
+    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
+        return 
     resp = lpew.create_knt_barra_vef(**mesh_properties.get_all_data())
     mesh_properties.insert_data(resp)
     intermediate(mesh_properties)
 
 def create_zeta(mesh_properties: MeshProperty):
     
+    k = 4
     lpew = LpewWeight()
+    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
+        return 
     resp = lpew.create_zeta(**mesh_properties.get_all_data())
     mesh_properties.insert_data(resp)
     intermediate(mesh_properties)
 
 def create_lambda_barra(mesh_properties: MeshProperty):
     
+    k = 5
     lpew = LpewWeight()
+    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
+        return 
     resp = lpew.create_lambda_barra(**mesh_properties.get_all_data())
     mesh_properties.insert_data(resp)
     intermediate(mesh_properties)
 
 def create_lpew2_weights(mesh_properties: MeshProperty):
     
+    k = 0
     lpew = LpewWeight()
+    if mesh_properties.verify_name_in_data_names(lpew.data_weights[k]):
+        return 
     resp = lpew.create_lpew2_weights(**mesh_properties.get_all_data())
     mesh_properties.insert_data(resp)
     intermediate(mesh_properties)
 
 def get_lpew2_weights(mesh_properties: MeshProperty, **kwargs):
 
-    preprocess(mesh_properties)
     create_Tk(mesh_properties)
     create_neta(mesh_properties)
     create_knt_vef(mesh_properties)

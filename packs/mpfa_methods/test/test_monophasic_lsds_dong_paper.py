@@ -257,14 +257,15 @@ def run(pr_name, mesh_type, ns, n):
     get_permeability, exact_solution = get_permeability_and_exact_solution_func(pr_name)
     
     if 'areas' not in keys_prop:
-        # define nodes to calculate_weights
-        mesh_properties.insert_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
-        ## create weights and xi params for flux calculation
         areas = np.zeros(n_faces)
         for i in range(n_faces):
             areas[i] = calculate_face_properties.polygon_area(cnodes_faces[i])
         mesh_properties.insert_data({'areas': areas})
-
+        mesh_properties.export_data()
+    
+    if mesh_properties.verify_name_in_data_names('h_dist'):
+        pass
+    else:
         h_dist = calculate_face_properties.create_face_to_edge_distances(
             mesh_properties.faces_centroids,
             mesh_properties.adjacencies,
@@ -283,7 +284,15 @@ def run(pr_name, mesh_type, ns, n):
         m3 = np.mean(h_dist[bedges, 0])
         m_hdist = np.mean([m1, m2, m3])
         mesh_properties.insert_data({'m_hdist': np.array([m_hdist])})
+        mesh_properties.export_data()
     
+    if mesh_properties.verify_name_in_data_names('nodes_weights'):
+        pass
+    else:
+        # define nodes to calculate_weights
+        mesh_properties.insert_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
+        
+        ## create weights and xi params for flux calculation
         mesh_properties.update_data(
             lsds.preprocess(**mesh_properties.get_all_data())
         )

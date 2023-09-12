@@ -177,6 +177,8 @@ class MeshProperty:
         new_data = dict()
 
         for name in list(datas_to_rename.keys()):
+            self.verify_name_in_data_names_or_raise_error(name)
+            self.verify_name_not_in_data_names_or_raise_error(datas_to_rename[name])
             data = copy.deepcopy(self[name])
             new_name = datas_to_rename[name]
             del self.__dict__[name]
@@ -186,12 +188,9 @@ class MeshProperty:
     
     def update_data(self, datas_to_update: dict):
         
-        my_datas_name = self.data_names
-        
         new_data = dict()
         for name in datas_to_update:
-            if name not in my_datas_name:
-                raise errors.NameExistsError
+            self.verify_name_in_data_names_or_raise_error(name)
             new_data.update({
                 name: datas_to_update[name]   
             })
@@ -211,6 +210,24 @@ class MeshProperty:
     def remove_data(self, data_name: list):
         for name in data_name:
             del self.__dict__[name]
+
+    def backup_data(self, from_name: str, to_name: str):
+        
+        self.verify_name_in_data_names_or_raise_error(from_name)
+        self.verify_name_not_in_data_names_or_raise_error(to_name)
+        data = self[from_name].copy()
+        self.insert_data({
+            to_name: data
+        })
+    
+    def backup_datas(self, backup_datas_name: dict):
+
+        """
+        backup_datas_name = {from_name1: to_name1, from_name2: to_name2 ...}
+        """
+
+        for name in backup_datas_name:
+            self.backup_data(name, backup_datas_name[name])
 
     def exists(self):
         return os.path.exists(self.class_path)
@@ -249,9 +266,19 @@ class MeshProperty:
         test = ~test.values
         names_out = names_series[test].values.flatten()
         return names_out
-        
-        
-        
+
+    def verify_name_in_data_names(self, name: str):
+        return name in self.data_names   
+
+    def verify_name_in_data_names_or_raise_error(self, name: str):
+        if self.verify_name_in_data_names(name):
+            pass
+        else:
+            raise errors.NameExistsError(f'The name: - {name} - does not exists in mesh properties')
+    
+    def verify_name_not_in_data_names_or_raise_error(self, name: str):
+        if self.verify_name_in_data_names(name):
+            raise errors.NameExistsError(f'The name: - {name} - exists in mesh properties')
 
         
     

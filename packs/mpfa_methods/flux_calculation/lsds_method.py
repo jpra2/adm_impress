@@ -3,6 +3,7 @@ import scipy.sparse as sp
 from packs.manager.boundary_conditions import BoundaryConditions
 from packs import defnames
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import mount_sparse_weight_matrix
+from packs.utils import calculate_face_properties
 
 class LsdsFluxCalculation:
     """
@@ -14,14 +15,42 @@ class LsdsFluxCalculation:
                 doi: 10.1002/fld.5031
     
     """
+
+    datas = ['xi_params']
+    
     def preprocess(
-            self,
-            nodes_centroids,
-            unitary_normal_edges,
-            nodes_of_edges,
-            edges,
-            **kwargs
+        self,
+        nodes_centroids,
+        unitary_normal_edges,
+        nodes_of_edges,
+        edges,
+        nodes,
+        nodes_of_nodes,
+        edges_of_nodes,
+        faces_centroids,
+        faces_of_nodes,
+        **kwargs
     ):
+        
+        nodes_centroids2 = np.zeros((len(nodes_centroids), 3))
+        nodes_centroids2[:, 0:2] = nodes_centroids
+        faces_centroids2 = np.zeros((len(faces_centroids), 3))
+        faces_centroids2[:, 0:2] = faces_centroids
+        
+        calculate_face_properties.ordenate_edges_and_nodes_of_nodes_xy_plane(
+            nodes,
+            edges,
+            nodes_of_nodes,
+            edges_of_nodes,
+            nodes_centroids2
+        )
+
+        calculate_face_properties.ordenate_faces_of_nodes_xy_plane(
+            faces_centroids2,
+            faces_of_nodes,
+            nodes_centroids2
+        )
+
         resp = dict()
 
         resp.update(
