@@ -232,8 +232,42 @@ def nodes_weights_test(mesh_properties: MeshProperty, exact_solution_func, pr_na
     mesh_properties.insert_or_update_data(
         {tag_test: error}
     )
+
+def get_tags(pr_name, sufix=''):
+    tags = ['pressure_' + pr_name + sufix,
+    'edges_flux_' + pr_name + sufix,
+    'faces_flux_' + pr_name + sufix,
+    'p_exact_' + pr_name + sufix,
+    'error_' + pr_name + sufix,
+    'error2_' + pr_name + sufix]
+
+    return tags
+
+def backup_tags_process(mesh_properties: MeshProperty, pr_name: str, sufix: str):
+    tags = get_tags(pr_name)
+    tags_backup = get_tags(pr_name, sufix=sufix)
+    dict_tags = dict(zip(tags, tags_backup))
+    mesh_properties.backup_datas(dict_tags)
+    mesh_properties.export_data()
+
+
+def remove_process_tags(mesh_properties: MeshProperty, pr_name: str):
+    tags = get_tags(pr_name)
+    mesh_properties.remove_data(tags)
+
+def backup_weights(mesh_properties: MeshProperty, sufix_name: str):
+    tags = ['nodes_weights', 'neumann_nodes_weights']
+    for tag in tags:
+        mesh_properties.backup_data(tag, tag+sufix_name)
     
-    
+    mesh_properties.export_data()
+
+
+
+
+
+
+   
 def run(pr_name, mesh_type, ns, n):    
     
     mesh_test_name = defpaths.load_mpfad_meshtest_by_type_and_number(mesh_type, ns[n])
@@ -244,6 +278,10 @@ def run(pr_name, mesh_type, ns, n):
     mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
     pressure_tag = 'pressure_' + pr_name
     keys_prop = list(mesh_properties.keys())
+
+    # mesh_properties.remove_data(['nodes_weights', 'neumann_nodes_weights'])
+    mesh_properties.remove_data(get_tags(pr_name))
+
     
     lsds = LsdsFluxCalculation()
     
@@ -293,33 +331,36 @@ def run(pr_name, mesh_type, ns, n):
         mesh_properties.insert_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
         
         ## create weights and xi params for flux calculation
-        mesh_properties.update_data(
-            lsds.preprocess(**mesh_properties.get_all_data())
+        mesh_properties.insert_or_update_data(
+            lsds.preprocess(mesh_properties)
         )
-    
-        # mesh_properties.insert_data(
-        #     get_gls_nodes_weights(**mesh_properties.get_all_data())
-        # )
-        
-        dtype_neumann = [('node_id', np.int), ('nweight', np.float)]
-        zero_neumann = np.zeros(len([]), dtype=dtype_neumann)
-        get_lpew2_weights(mesh_properties)
-        mesh_properties.insert_data({
-            'neumann_nodes_weights': zero_neumann
-        })
     
         mesh_properties.insert_data(
-            lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
+            get_gls_nodes_weights(**mesh_properties.get_all_data())
         )
+        
+        # dtype_neumann = [('node_id', np.int), ('nweight', np.float)]
+        # zero_neumann = np.zeros(len([]), dtype=dtype_neumann)
+        # get_lpew2_weights(mesh_properties)
+        # mesh_properties.insert_data({
+        #     'neumann_nodes_weights': zero_neumann
+        # })
+
+        if mesh_properties.verify_name_in_data_names('xi_params'):
+            pass
+        else:
+            mesh_properties.insert_data(
+                lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
+            )
     
         mesh_properties.remove_data(['nodes_to_calculate'])
+
+        # backup_weights(mesh_properties, 'gls')
         
-        mesh_properties.export_data()
-        del iedges, bedges, m1, m2, m3, m_hdist, areas  
+        mesh_properties.export_data()  
     
     
-    if pressure_tag not in keys_prop:   
-        
+    if not mesh_properties.verify_name_in_data_names(pressure_tag):
            
         mesh_properties.update_data(
             get_permeability(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
@@ -454,7 +495,7 @@ def run(pr_name, mesh_type, ns, n):
     # mesh_data.export_all_elements_type_to_vtk(to_export_name + 'nodes', 'nodes')
     # mesh_data.export_all_elements_type_to_vtk(to_export_name + 'faces', 'faces')
     # mesh_data.export_only_the_elements('test_7_nodes_pressure_boundary', 'nodes', nodes_bc)
-
+    backup_tags_process(mesh_properties, pr_name, 'glsweight')
     return l1_norm, l2_norm, len(mesh_properties.faces), mesh_properties.m_hdist[0], eu, eq, l1_weighted_error, l2_weighted_error
 
 def get_tag_prefix(pr_name, weight_interpolation_name):
@@ -684,14 +725,14 @@ def testp1_by_meshtype(mesh_type, ns, pr_name):
 def plot_errors():
     # 'mesh1': [8, 32, 64, 128]
     global all_pr_names
-    pr_name = all_pr_names[0]
+    pr_name = all_pr_names[4]
     
     mesh_types_dict = {
         'mesh1': [8, 32, 64, 128],
         # 'mesh1': [8, 32, 64],
-        'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
-        'mesh5': [12, 24, 48, 96, 192, 384],
-        'mesh6': [1, 2, 3, 4]   
+        # 'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
+        # 'mesh5': [12, 24, 48, 96, 192, 384],
+        # 'mesh6': [1, 2, 3, 4]   
     }
     
     fig1, ax1 = plt.subplots(1)

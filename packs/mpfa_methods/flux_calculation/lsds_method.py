@@ -4,6 +4,7 @@ from packs.manager.boundary_conditions import BoundaryConditions
 from packs import defnames
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import mount_sparse_weight_matrix
 from packs.utils import calculate_face_properties
+from packs.manager.meshmanager import MeshProperty
 
 class LsdsFluxCalculation:
     """
@@ -16,51 +17,50 @@ class LsdsFluxCalculation:
     
     """
 
-    datas = ['xi_params']
+    datas = ['xi_params', 'lsds_preprocess']
     
     def preprocess(
         self,
-        nodes_centroids,
-        unitary_normal_edges,
-        nodes_of_edges,
-        edges,
-        nodes,
-        nodes_of_nodes,
-        edges_of_nodes,
-        faces_centroids,
-        faces_of_nodes,
+        mesh_properties: MeshProperty,
         **kwargs
     ):
         
-        nodes_centroids2 = np.zeros((len(nodes_centroids), 3))
-        nodes_centroids2[:, 0:2] = nodes_centroids
-        faces_centroids2 = np.zeros((len(faces_centroids), 3))
-        faces_centroids2[:, 0:2] = faces_centroids
-        
-        calculate_face_properties.ordenate_edges_and_nodes_of_nodes_xy_plane(
-            nodes,
-            edges,
-            nodes_of_nodes,
-            edges_of_nodes,
-            nodes_centroids2
-        )
-
-        calculate_face_properties.ordenate_faces_of_nodes_xy_plane(
-            faces_centroids2,
-            faces_of_nodes,
-            nodes_centroids2
-        )
-
         resp = dict()
 
-        resp.update(
-            self.define_A_B_points_of_edges(
-                nodes_centroids,
-                unitary_normal_edges,
-                nodes_of_edges,
-                edges
+        if mesh_properties.verify_name_in_data_names(self.datas[1]):
+            pass
+        else:
+            nodes_centroids2 = np.zeros((len(mesh_properties.nodes_centroids), 3))
+            nodes_centroids2[:, 0:2] = mesh_properties.nodes_centroids
+            faces_centroids2 = np.zeros((len(mesh_properties.faces_centroids), 3))
+            faces_centroids2[:, 0:2] = mesh_properties.faces_centroids
+            
+            calculate_face_properties.ordenate_edges_and_nodes_of_nodes_xy_plane(
+                mesh_properties.nodes,
+                mesh_properties.edges,
+                mesh_properties.nodes_of_nodes,
+                mesh_properties.edges_of_nodes,
+                nodes_centroids2
             )
-        )
+
+            calculate_face_properties.ordenate_faces_of_nodes_xy_plane(
+                faces_centroids2,
+                mesh_properties.faces_of_nodes,
+                nodes_centroids2
+            )
+
+            resp.update(
+                self.define_A_B_points_of_edges(
+                    mesh_properties.nodes_centroids,
+                    mesh_properties.unitary_normal_edges,
+                    mesh_properties.nodes_of_edges,
+                    mesh_properties.edges
+                )
+            )
+
+            resp.update({
+                'lsds_preprocess': np.array([True])
+            })
 
         return resp
 

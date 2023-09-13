@@ -209,14 +209,14 @@ class MeshProperty:
         
     def remove_data(self, data_name: list):
         for name in data_name:
-            del self.__dict__[name]
+            if self.verify_name_in_data_names(name):
+                del self.__dict__[name]
 
     def backup_data(self, from_name: str, to_name: str):
         
         self.verify_name_in_data_names_or_raise_error(from_name)
-        self.verify_name_not_in_data_names_or_raise_error(to_name)
         data = self[from_name].copy()
-        self.insert_data({
+        self.insert_or_update_data({
             to_name: data
         })
     
