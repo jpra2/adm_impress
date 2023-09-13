@@ -694,6 +694,119 @@ class LsdsFluxCalculation:
         })       
         
         return resp
+    
+    def insert_prescription_in_source(
+            self,
+            values_nodes_presc,
+            ids_node_presc,
+            edges_of_nodes,
+            nodes_of_edges,
+            adjacencies,
+            xi_params,
+            source,
+            **kwargs
+    ):
+        for node in ids_node_presc:
+            value_node = values_nodes_presc[ids_node_press==node]
+            edges_node = edges_of_nodes[node]
+            nodes_edges_node = nodes_of_edges[edges_node]
+            adjacencies_edges_node = adjacencies[edges_node]
+            xi_params_edges_node = xi_params[edges_node]
+            A_node = nodes_edges_node[:, 1] == node
+            B_node = nodes_edges_node[:, 0] == node
+            
+            K_faces = adjacencies_edges_node[:, 0]
+            L_faces = adjacencies_edges_node[:, 1]
+            test_l_faces = L_faces != -1
+            xi_A = xi_params_edges_node[:, 2]
+            xi_B = xi_params_edges_node[:, 3]
+
+            source[K_faces[A_node]] += -xi_A[A_node]*value_node
+            source[K_faces[B_node]] += -xi_B[B_node]*value_node
+            source[L_faces[test_l_faces]] += xi_A[A_node[test_l_faces]]*value_node
+            source[L_faces[test_l_faces]] += xi_B[B_node[test_l_faces]]*value_node
+
+    def mount_problem_v2(
+        self,
+        nodes_weights,
+        xi_params,
+        faces,
+        edges,
+        nodes,
+        bool_boundary_edges,
+        adjacencies,
+        boundary_conditions: BoundaryConditions,
+        nodes_of_edges,
+        neumann_weights,
+        bool_boundary_nodes,
+        edges_of_nodes,
+        **kwargs 
+    ):
+        resp = dict()
+        bool_internal_edges = ~bool_boundary_edges
+        source = np.zeros(faces.shape[0])
+        T = sp.lil_matrix((faces.shape[0], faces.shape[0]))
+
+        #verify pressure prescription of nodes in boundary
+        nodes_pressure_prescription = defnames.nodes_pressure_prescription_name
+        node_press = boundary_conditions[nodes_pressure_prescription]
+        ids_node_press = node_press['id']
+        values_nodes_press = node_press['value']
+
+        ## verify neumann prescription of nodes
+        neumann_nodes = neumann_weights['node_id']
+        neumann_values = neumann_weights['nweight']
+
+        self.insert_prescription_in_source(
+            values_nodes_press,
+            ids_node_press,
+            edges_of_nodes,
+            nodes_of_edges,
+            adjacencies,
+            xi_params,
+            source
+        )
+
+        self.insert_prescription_in_source(
+            neumann_values,
+            neumann_nodes,
+            edges_of_nodes,
+            nodes_of_edges,
+            adjacencies,
+            xi_params,
+            source
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def get_edges_flux(
         self,
