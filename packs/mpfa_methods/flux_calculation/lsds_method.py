@@ -616,6 +616,7 @@ class LsdsFluxCalculation:
             xi_K = xi_params_edge[0]
             
             if np.any(np.isin(ids_node_press, [B_node])):
+                ### se estiver no contorno de Dirichlet
                 source[face_adj] += -xi_B*values[ids_node_press == B_node][0]
             else:
                 test = nodes_weights['node_id'] == B_node
@@ -627,6 +628,7 @@ class LsdsFluxCalculation:
                 source[face_adj] += -xi_B*neumann_weights['nweight'][neumann_weights['node_id'] == B_node]
                 
             if np.any(np.isin(ids_node_press, [A_node])):
+                ### se estiver no contorno de Dirichlet
                 source[face_adj] += -xi_A*values[ids_node_press == A_node][0]
             else:
                 test = nodes_weights['node_id'] == A_node
@@ -662,7 +664,11 @@ class LsdsFluxCalculation:
                 weights_node = nodes_weights['weight'][test]
                 T[face_adj, faces_node] += xi_B*weights_node
                 T[face_adj_L, faces_node] += -xi_B*weights_node
-                
+            
+            if np.any(np.isin(neumann_weights['node_id'], [B_node])):
+                source[face_adj] += -xi_B*neumann_weights['nweight'][neumann_weights['node_id'] == B_node]
+                source[face_adj_L] += xi_B*neumann_weights['nweight'][neumann_weights['node_id'] == B_node]
+                                                                     
             if np.any(np.isin(ids_node_press, [A_node])):
                 source[face_adj] += -xi_A*values[ids_node_press == A_node][0]
                 source[face_adj_L] += xi_A*values[ids_node_press == A_node][0]
@@ -672,6 +678,10 @@ class LsdsFluxCalculation:
                 weights_node = nodes_weights['weight'][test]
                 T[face_adj, faces_node] += xi_A*weights_node
                 T[face_adj_L, faces_node] += -xi_A*weights_node
+            
+            if np.any(np.isin(neumann_weights['node_id'], [A_node])):
+                source[face_adj] += -xi_A*neumann_weights['nweight'][neumann_weights['node_id'] == A_node]
+                source[face_adj_L] += xi_A*neumann_weights['nweight'][neumann_weights['node_id'] == A_node]
             
             T[face_adj, face_adj] += xi_K
             T[face_adj, face_adj_L] += xi_L
@@ -726,23 +736,6 @@ class LsdsFluxCalculation:
         Fk_sigma = xi_alpha[:, 0]*K_pressure + xi_alpha[:, 1]*L_pressure + xi_alpha[:, 2]*A_pressure + xi_alpha[:, 3]*B_pressure
         
         return Fk_sigma
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        xi_K = sp.lil_matrix(())
-        
-        
-        
-        pass
 
     def get_faces_flux(
         self,
