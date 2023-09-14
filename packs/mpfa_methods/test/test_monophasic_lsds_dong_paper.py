@@ -455,6 +455,7 @@ def run(pr_name, mesh_type, ns, n):
             'error_' + pr_name: error,
             'error2_' + pr_name: error2
         })
+        backup_tags_process(mesh_properties, pr_name, '_lpew2')
         mesh_properties.export_data()
     
     nodes_weights_test(mesh_properties, exact_solution, pr_name)
@@ -508,7 +509,7 @@ def run(pr_name, mesh_type, ns, n):
     # mesh_data.export_all_elements_type_to_vtk(to_export_name + 'nodes', 'nodes')
     # mesh_data.export_all_elements_type_to_vtk(to_export_name + 'faces', 'faces')
     # mesh_data.export_only_the_elements('test_7_nodes_pressure_boundary', 'nodes', nodes_bc)
-    backup_tags_process(mesh_properties, pr_name, '_gls')
+    
     return l1_norm, l2_norm, len(mesh_properties.faces), mesh_properties.m_hdist[0], eu, eq, l1_weighted_error, l2_weighted_error
 
 def get_tag_prefix(pr_name, weight_interpolation_name):
@@ -743,9 +744,9 @@ def plot_errors():
     mesh_types_dict = {
         'mesh1': [8, 32, 64, 128],
         # 'mesh1': [8, 32, 64],
-        # 'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
-        # 'mesh5':  [12, 24, 48, 96, 192, 384],
-        # 'mesh6': [1, 2, 3, 4]   
+        'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
+        'mesh5':  [12, 24, 48, 96, 192, 384],
+        'mesh6': [1, 2, 3, 4]   
     }
     
     fig1, ax1 = plt.subplots(1)

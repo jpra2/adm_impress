@@ -812,7 +812,11 @@ class LsdsFluxCalculation:
             test_l_faces = L_faces != -1
             xi_A = xi_params_edges_node[:, 2]
             xi_B = xi_params_edges_node[:, 3]
+            nA = A_node.sum()
+            nB = B_node.sum()
             import pdb; pdb.set_trace()
+
+            v1 = np.repeat(K_faces, nA, axis=1)
 
             T[K_faces, faces_node[A_node]] += xi_A[A_node]*weights_node[A_node]
             T[K_faces, faces_node[B_node]] += xi_B[B_node]*weights_node[B_node]

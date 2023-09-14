@@ -497,52 +497,54 @@ class LpewWeight:
         else:
             raise ValueError
 
-    def get_zeta_face_terms(self, kn_kt_barra, kn_kt_theta_phi_vangle, node, face, edge_reference, edge_face, **kwargs):
-        terms = np.zeros(6)
+    def get_zeta_face_terms(self, kn_kt_barra, kn_kt_theta_phi_vangle, node, face, edge_reference, edge_face, local_terms_zeta, **kwargs):
+        local_terms_zeta[:] = 0
         try:
-            terms[0] = kn_kt_barra['kn'][
+            local_terms_zeta[0] = kn_kt_barra['kn'][
                 (kn_kt_barra['node_id']==node) & 
                 (kn_kt_barra['face_id']==face)
             ]
-        except:
+        except ValueError:
             import pdb; pdb.set_trace()
+        
 
-        terms[1] = self.cot(kn_kt_theta_phi_vangle['v_angle'][
+        local_terms_zeta[1] = self.cot(kn_kt_theta_phi_vangle['v_angle'][
             (kn_kt_theta_phi_vangle['node_id']==node) & 
             (kn_kt_theta_phi_vangle['face_id']==face) &
             (kn_kt_theta_phi_vangle['edge_id']==edge_face)
         ])
 
-        terms[2] = kn_kt_barra['kt'][
+        local_terms_zeta[2] = kn_kt_barra['kt'][
             (kn_kt_barra['node_id']==node) & 
             (kn_kt_barra['face_id']==face)
         ]
         
-        terms[3] = kn_kt_theta_phi_vangle['kn'][
+        local_terms_zeta[3] = kn_kt_theta_phi_vangle['kn'][
             (kn_kt_theta_phi_vangle['node_id']==node) & 
             (kn_kt_theta_phi_vangle['face_id']==face) &
             (kn_kt_theta_phi_vangle['edge_id']==edge_reference)
         ]
 
-        terms[4] = self.cot(kn_kt_theta_phi_vangle['theta'][
+        local_terms_zeta[4] = self.cot(kn_kt_theta_phi_vangle['theta'][
             (kn_kt_theta_phi_vangle['node_id']==node) & 
             (kn_kt_theta_phi_vangle['face_id']==face) &
             (kn_kt_theta_phi_vangle['edge_id']==edge_reference)
         ])
 
-        terms[5] = kn_kt_theta_phi_vangle['kt'][
+        local_terms_zeta[5] = kn_kt_theta_phi_vangle['kt'][
             (kn_kt_theta_phi_vangle['node_id']==node) & 
             (kn_kt_theta_phi_vangle['face_id']==face) &
             (kn_kt_theta_phi_vangle['edge_id']==edge_reference)
         ]
-        
-        return terms
+
+        return local_terms_zeta
 
     def create_zeta(self, kn_kt_barra, kn_kt_theta_phi_vangle, adjacencies, edges, bool_boundary_edges, nodes, edges_of_nodes, nodes_centroids, nodes_of_edges, **kwargs):
         
         terms = np.zeros(12)
         l_terms = np.array([3, 4, 6, 9, 10, 12]) - 1 # left terms
         r_terms = np.array([1, 2, 5, 7, 8, 11]) - 1 # right terms
+        local_terms_zeta = np.zeros(len(l_terms))
         
         all_zeta = []
         all_node_id = []
@@ -552,14 +554,12 @@ class LpewWeight:
         for node in nodes:
             
             edges_node = edges_of_nodes[node]
-            local_edge_sort_index = np.arange(len(edges_node))
             
             local_bedges = np.intersect1d(edges_node, bound_edges)
             local_iedges = np.setdiff1d(edges_node, local_bedges)
 
             for edge in local_bedges:
                 terms[:] = 0
-                index_edge = local_edge_sort_index[edges_node==edge][0]
                 faces_adj = adjacencies[edge]
 
                 for face in faces_adj:
@@ -584,7 +584,8 @@ class LpewWeight:
                             node,
                             face,
                             edge,
-                            edge_face
+                            edge_face,
+                            local_terms_zeta
                         )
                     
                     elif Ok == self.Ok_values[1]: ## face k+1
@@ -594,7 +595,8 @@ class LpewWeight:
                             node,
                             face,
                             edge,
-                            edge_face
+                            edge_face,
+                            local_terms_zeta
                         )
                     else:
                         raise ValueError
@@ -609,45 +611,62 @@ class LpewWeight:
                 faces_adj = adjacencies[edge]
 
                 edges_face0 = edges[(adjacencies[:, 0] == faces_adj[0]) | (adjacencies[:, 1] == faces_adj[0])]
-                edges_face1 = edges[(adjacencies[:, 0] == faces_adj[1]) | (adjacencies[:, 1] == faces_adj[1])]
-
                 edge_face0 = np.intersect1d(edges_node, edges_face0)
                 edge_face0 = edge_face0[edge_face0 != edge][0]
+
+                edges_face1 = edges[(adjacencies[:, 0] == faces_adj[1]) | (adjacencies[:, 1] == faces_adj[1])]
                 edge_face1 = np.intersect1d(edges_node, edges_face1)
                 edge_face1 = edge_face1[edge_face1 != edge][0]
-                edges_faces = [edge_face0, edge_face1]
-                
-                index_edge = local_edge_sort_index[edges_node==edge][0]
-                edge0 = edges_node[local_edge_sort_index[index_edge-1]]
-                try:
-                    edge1 = edges_node[local_edge_sort_index[index_edge+1]]
-                except IndexError:
-                    edge1 = edges_node[0]
-                
-                if len(faces_adj[edges_faces==edge1]) == 0:
-                    import pdb; pdb.set_trace()
-                elif len(faces_adj[edges_faces==edge0]) == 0:
-                    import pdb; pdb.set_trace()
-                
-            
 
-                terms[l_terms] = self.get_zeta_face_terms(
-                    kn_kt_barra,
-                    kn_kt_theta_phi_vangle,
-                    node,
-                    faces_adj[edges_faces==edge1],
+                Ok_edge0 = self.get_Ok_value_by_edge(
                     edge,
-                    edge1
-                )
-                
-                terms[r_terms] = self.get_zeta_face_terms(
-                    kn_kt_barra,
-                    kn_kt_theta_phi_vangle,
                     node,
-                    faces_adj[edges_faces==edge0],
-                    edge,
-                    edge0
+                    edge_face0,
+                    nodes_of_edges,
+                    nodes_centroids
                 )
+
+                if Ok_edge0 == self.Ok_values[0]: ## face k
+                    terms[r_terms] = self.get_zeta_face_terms(
+                        kn_kt_barra,
+                        kn_kt_theta_phi_vangle,
+                        node,
+                        faces_adj[0],
+                        edge,
+                        edge_face0,
+                        local_terms_zeta
+                    )
+                    terms[l_terms] = self.get_zeta_face_terms(
+                        kn_kt_barra,
+                        kn_kt_theta_phi_vangle,
+                        node,
+                        faces_adj[1],
+                        edge,
+                        edge_face1,
+                        local_terms_zeta
+                    )
+                    
+                elif Ok_edge0 == self.Ok_values[1]: ## face k+1
+                    terms[l_terms] = self.get_zeta_face_terms(
+                        kn_kt_barra,
+                        kn_kt_theta_phi_vangle,
+                        node,
+                        faces_adj[0],
+                        edge,
+                        edge_face0,
+                        local_terms_zeta
+                    )
+                    terms[r_terms] = self.get_zeta_face_terms(
+                        kn_kt_barra,
+                        kn_kt_theta_phi_vangle,
+                        node,
+                        faces_adj[1],
+                        edge,
+                        edge_face1,
+                        local_terms_zeta
+                    )
+                else:
+                    raise ValueError
                 
                 all_zeta.append(self.get_zeta_from_terms(terms))
                 all_edge_id.append(edge)
