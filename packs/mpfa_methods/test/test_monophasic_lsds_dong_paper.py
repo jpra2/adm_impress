@@ -7,6 +7,7 @@ from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.manager.boundary_conditions import BoundaryConditions
 import numpy as np
 from scipy.sparse.linalg import spsolve
+import scipy.sparse as sp
 import os
 from packs.manager.mesh_data import MeshData
 import matplotlib.pyplot as plt
@@ -396,33 +397,19 @@ def run(pr_name, mesh_type, ns, n):
         pressures_bc = exact_solution(centroids_nodes_bc)
         
         bc.set_boundary('nodes_pressures', nodes_bc, pressures_bc)
-        
-        resp = lsds.mount_problem(
+
+        resp = lsds.mount_problem_v2(
             mesh_properties.nodes_weights,
             mesh_properties.xi_params,
             mesh_properties.faces,
-            mesh_properties.edges,
+            mesh_properties.nodes,
             mesh_properties.bool_boundary_edges,
             mesh_properties.adjacencies,
             bc,
             mesh_properties.nodes_of_edges,
-            mesh_properties.neumann_nodes_weights
+            mesh_properties.neumann_nodes_weights,
+            mesh_properties.edges_of_nodes
         )
-
-        # resp = lsds.mount_problem_v2(
-        #     mesh_properties.nodes_weights,
-        #     mesh_properties.xi_params,
-        #     mesh_properties.faces,
-        #     mesh_properties.edges,
-        #     mesh_properties.nodes,
-        #     mesh_properties.bool_boundary_edges,
-        #     mesh_properties.adjacencies,
-        #     bc,
-        #     mesh_properties.nodes_of_edges,
-        #     mesh_properties.neumann_nodes_weights,
-        #     mesh_properties.bool_boundary_nodes,
-        #     mesh_properties.edges_of_nodes
-        # )
         
         pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
         edges_flux = lsds.get_edges_flux(
@@ -742,10 +729,10 @@ def plot_errors():
     pr_name = all_pr_names[0]
     
     mesh_types_dict = {
-        'mesh1': [8, 32, 64, 128],
-        # 'mesh1': [8, 32, 64],
-        'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
-        'mesh5':  [12, 24, 48, 96, 192, 384],
+        # 'mesh1': [8, 32, 64, 128],
+        # # 'mesh1': [8, 32, 64],
+        # 'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
+        # 'mesh5':  [12, 24, 48, 96, 192, 384],
         'mesh6': [1, 2, 3, 4]   
     }
     

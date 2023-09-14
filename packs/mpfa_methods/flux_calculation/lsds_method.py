@@ -706,6 +706,10 @@ class LsdsFluxCalculation:
             source,
             **kwargs
     ):
+        
+        if len(ids_node_presc) == 0:
+            return
+        
         ids = []
         values = []
         
@@ -736,33 +740,123 @@ class LsdsFluxCalculation:
                 xi_A[(test_l_faces) & (A_node)]*value_node, 
                 xi_B[(test_l_faces) & (B_node)]*value_node
             ])
-        
+
         ids = np.concatenate(ids)
         values = np.concatenate(values)
 
         resp = np.bincount(ids, weights=values)
         source[0: len(resp)] += resp 
 
+    def update_transmissibility(
+            self,
+            K_faces,
+            A_node,
+            faces_node,
+            B_node,
+            xi_A,
+            xi_B,
+            weights_node,
+            test_k_faces,
+            lines:[],
+            cols:[],
+            data:[],
+            signal=1,
+            **kwargs
+    ):
+        A_test = (A_node) & (test_k_faces)
+        B_test = (B_node) & (test_k_faces)
+        
+        k_faces_A_node = np.repeat(K_faces[A_test], len(faces_node), axis=0)
+        k_faces_B_node = np.repeat(K_faces[B_test], len(faces_node), axis=0)
+        faces_node_A_node = np.tile(faces_node, len(K_faces[A_test]))
+        faces_node_B_node = np.tile(faces_node, len(K_faces[B_test]))
+        xi_A_node = np.repeat(xi_A[A_test], len(faces_node), axis=0)
+        xi_B_node = np.repeat(xi_B[B_test], len(faces_node), axis=0)
+        weights_node_A_node = np.tile(weights_node, len(K_faces[A_test]))
+        weights_node_B_node = np.tile(weights_node, len(K_faces[B_test]))
+
+        lines.extend([k_faces_A_node, k_faces_B_node])
+        cols.extend([faces_node_A_node, faces_node_B_node])
+        data.extend([signal*xi_A_node*weights_node_A_node, signal*xi_B_node*weights_node_B_node])
+
+    def update_transmissibility_from_nodes(
+            self,
+            other_nodes,
+            edges_of_nodes,
+            nodes_of_edges,
+            nodes_weights,
+            adjacencies,
+            xi_params,
+            lines:[],
+            cols:[],
+            data:[],
+            **kwargs
+    ):
+        for node in other_nodes:
+            edges_node = edges_of_nodes[node]
+            nodes_edges_node = nodes_of_edges[edges_node]
+            faces_node = nodes_weights['face_id'][nodes_weights['node_id']==node]
+            weights_node = nodes_weights['weight'][nodes_weights['node_id']==node]
+            adjacencies_edges_node = adjacencies[edges_node]
+            xi_params_edges_node = xi_params[edges_node]
+            
+            A_node = nodes_edges_node[:, 1] == node
+            B_node = nodes_edges_node[:, 0] == node
+            
+            K_faces = adjacencies_edges_node[:, 0]
+            L_faces = adjacencies_edges_node[:, 1]
+            test_l_faces = L_faces != -1
+            test_k_faces = K_faces != -1
+            xi_A = xi_params_edges_node[:, 2]
+            xi_B = xi_params_edges_node[:, 3]
+
+            self.update_transmissibility(
+                K_faces,
+                A_node,
+                faces_node,
+                B_node,
+                xi_A,
+                xi_B,
+                weights_node,
+                test_k_faces,
+                lines,
+                cols,
+                data,
+                signal=1,
+            )
+
+            self.update_transmissibility(
+                L_faces,
+                A_node,
+                faces_node,
+                B_node,
+                xi_A,
+                xi_B,
+                weights_node,
+                test_l_faces,
+                lines,
+                cols,
+                data,
+                signal=-1
+            )
+
     def mount_problem_v2(
         self,
         nodes_weights,
         xi_params,
         faces,
-        edges,
         nodes,
         bool_boundary_edges,
         adjacencies,
         boundary_conditions: BoundaryConditions,
         nodes_of_edges,
         neumann_weights,
-        bool_boundary_nodes,
         edges_of_nodes,
         **kwargs 
     ):
+        
         resp = dict()
-        bool_internal_edges = ~bool_boundary_edges
         source = np.zeros(faces.shape[0])
-        T = sp.lil_matrix((faces.shape[0], faces.shape[0]))
 
         #verify pressure prescription of nodes in boundary
         nodes_pressure_prescription = defnames.nodes_pressure_prescription_name
@@ -775,6 +869,10 @@ class LsdsFluxCalculation:
         neumann_values = neumann_weights['nweight']
 
         other_nodes = np.setdiff1d(nodes, ids_node_press)
+
+        lines = []
+        cols = []
+        data = []
 
         self.insert_prescription_in_source(
             values_nodes_press,
@@ -796,35 +894,38 @@ class LsdsFluxCalculation:
             source
         )
 
-        for node in other_nodes:
-            edges_node = edges_of_nodes[node]
-            nodes_edges_node = nodes_of_edges[edges_node]
-            faces_node = nodes_weights['face_id'][nodes_weights['node_id']==node]
-            weights_node = nodes_weights['weight'][nodes_weights['node_id']==node]
-            adjacencies_edges_node = adjacencies[edges_node]
-            xi_params_edges_node = xi_params[edges_node]
-            
-            A_node = nodes_edges_node[:, 1] == node
-            B_node = nodes_edges_node[:, 0] == node
-            
-            K_faces = adjacencies_edges_node[:, 0]
-            L_faces = adjacencies_edges_node[:, 1]
-            test_l_faces = L_faces != -1
-            xi_A = xi_params_edges_node[:, 2]
-            xi_B = xi_params_edges_node[:, 3]
-            nA = A_node.sum()
-            nB = B_node.sum()
-            import pdb; pdb.set_trace()
+        self.update_transmissibility_from_nodes(
+            other_nodes,
+            edges_of_nodes,
+            nodes_of_edges,
+            nodes_weights,
+            adjacencies,
+            xi_params,
+            lines,
+            cols,
+            data
+        )
 
-            v1 = np.repeat(K_faces, nA, axis=1)
+        biedges = ~bool_boundary_edges   
+        lines.extend([adjacencies[:, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1]])
+        cols.extend([adjacencies[:, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
+        data.extend([xi_params[:, 0], xi_params[biedges, 1], -xi_params[biedges, 1], -xi_params[biedges, 0]])
 
-            T[K_faces, faces_node[A_node]] += xi_A[A_node]*weights_node[A_node]
-            T[K_faces, faces_node[B_node]] += xi_B[B_node]*weights_node[B_node]
+        lines = np.concatenate(lines)
+        cols = np.concatenate(cols)
+        data = np.concatenate(data)
 
-            source[K_faces[A_node]] += -xi_A[A_node]*value_node
-            source[K_faces[B_node]] += -xi_B[B_node]*value_node
-            source[L_faces[test_l_faces]] += xi_A[A_node[test_l_faces]]*value_node
-            source[L_faces[test_l_faces]] += xi_B[B_node[test_l_faces]]*value_node
+        T = sp.csr_matrix((data,(lines,cols)), shape=(faces.shape[0],faces.shape[0]))
+
+        resp.update({
+            'transmissibility': T,
+            'source': source
+        })   
+        
+        return resp
+
+
+
 
 
         
