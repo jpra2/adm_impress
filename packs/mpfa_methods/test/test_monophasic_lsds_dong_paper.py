@@ -270,7 +270,7 @@ def calculate_areas(mesh_properties: MeshProperty):
     cnodes_faces = centroids_nodes[nodes_of_faces]
     n_faces = len(mesh_properties.faces)
 
-    if not mesh_properties.verify_names_in_data_names('areas'):
+    if not mesh_properties.verify_name_in_data_names('areas'):
         areas = np.zeros(n_faces)
         for i in range(n_faces):
             areas[i] = calculate_face_properties.polygon_area(cnodes_faces[i])
@@ -327,7 +327,7 @@ def run(pr_name, mesh_type, ns, n):
     if  not mesh_properties.verify_name_in_data_names('nodes_weights'):
         
         # define nodes to calculate_weights
-        mesh_properties.insert_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
+        mesh_properties.insert_or_update_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
         
         ## create weights and xi params for flux calculation
         mesh_properties.insert_or_update_data(
@@ -408,6 +408,21 @@ def run(pr_name, mesh_type, ns, n):
             mesh_properties.nodes_of_edges,
             mesh_properties.neumann_nodes_weights
         )
+
+        # resp = lsds.mount_problem_v2(
+        #     mesh_properties.nodes_weights,
+        #     mesh_properties.xi_params,
+        #     mesh_properties.faces,
+        #     mesh_properties.edges,
+        #     mesh_properties.nodes,
+        #     mesh_properties.bool_boundary_edges,
+        #     mesh_properties.adjacencies,
+        #     bc,
+        #     mesh_properties.nodes_of_edges,
+        #     mesh_properties.neumann_nodes_weights,
+        #     mesh_properties.bool_boundary_nodes,
+        #     mesh_properties.edges_of_nodes
+        # )
         
         pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
         edges_flux = lsds.get_edges_flux(
@@ -728,9 +743,9 @@ def plot_errors():
     mesh_types_dict = {
         'mesh1': [8, 32, 64, 128],
         # 'mesh1': [8, 32, 64],
-        'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
-        'mesh5': [12, 24, 48, 96, 192, 384],
-        'mesh6': [1, 2, 3, 4]   
+        # 'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
+        # 'mesh5':  [12, 24, 48, 96, 192, 384],
+        # 'mesh6': [1, 2, 3, 4]   
     }
     
     fig1, ax1 = plt.subplots(1)

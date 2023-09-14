@@ -706,8 +706,11 @@ class LsdsFluxCalculation:
             source,
             **kwargs
     ):
+        ids = []
+        values = []
+        
         for node in ids_node_presc:
-            value_node = values_nodes_presc[ids_node_press==node]
+            value_node = values_nodes_presc[ids_node_presc==node]
             edges_node = edges_of_nodes[node]
             nodes_edges_node = nodes_of_edges[edges_node]
             adjacencies_edges_node = adjacencies[edges_node]
@@ -721,10 +724,24 @@ class LsdsFluxCalculation:
             xi_A = xi_params_edges_node[:, 2]
             xi_B = xi_params_edges_node[:, 3]
 
-            source[K_faces[A_node]] += -xi_A[A_node]*value_node
-            source[K_faces[B_node]] += -xi_B[B_node]*value_node
-            source[L_faces[test_l_faces]] += xi_A[A_node[test_l_faces]]*value_node
-            source[L_faces[test_l_faces]] += xi_B[B_node[test_l_faces]]*value_node
+            ids.extend([
+                K_faces[A_node], 
+                K_faces[B_node], 
+                L_faces[(test_l_faces) & (A_node)], 
+                L_faces[(test_l_faces) & (B_node)]
+            ])
+            values.extend([
+                -xi_A[A_node]*value_node, 
+                -xi_B[B_node]*value_node, 
+                xi_A[(test_l_faces) & (A_node)]*value_node, 
+                xi_B[(test_l_faces) & (B_node)]*value_node
+            ])
+        
+        ids = np.concatenate(ids)
+        values = np.concatenate(values)
+
+        resp = np.bincount(ids, weights=values)
+        source[0: len(resp)] += resp 
 
     def mount_problem_v2(
         self,
@@ -757,6 +774,8 @@ class LsdsFluxCalculation:
         neumann_nodes = neumann_weights['node_id']
         neumann_values = neumann_weights['nweight']
 
+        other_nodes = np.setdiff1d(nodes, ids_node_press)
+
         self.insert_prescription_in_source(
             values_nodes_press,
             ids_node_press,
@@ -776,6 +795,35 @@ class LsdsFluxCalculation:
             xi_params,
             source
         )
+
+        for node in other_nodes:
+            edges_node = edges_of_nodes[node]
+            nodes_edges_node = nodes_of_edges[edges_node]
+            faces_node = nodes_weights['face_id'][nodes_weights['node_id']==node]
+            weights_node = nodes_weights['weight'][nodes_weights['node_id']==node]
+            adjacencies_edges_node = adjacencies[edges_node]
+            xi_params_edges_node = xi_params[edges_node]
+            
+            A_node = nodes_edges_node[:, 1] == node
+            B_node = nodes_edges_node[:, 0] == node
+            
+            K_faces = adjacencies_edges_node[:, 0]
+            L_faces = adjacencies_edges_node[:, 1]
+            test_l_faces = L_faces != -1
+            xi_A = xi_params_edges_node[:, 2]
+            xi_B = xi_params_edges_node[:, 3]
+            import pdb; pdb.set_trace()
+
+            T[K_faces, faces_node[A_node]] += xi_A[A_node]*weights_node[A_node]
+            T[K_faces, faces_node[B_node]] += xi_B[B_node]*weights_node[B_node]
+
+            source[K_faces[A_node]] += -xi_A[A_node]*value_node
+            source[K_faces[B_node]] += -xi_B[B_node]*value_node
+            source[L_faces[test_l_faces]] += xi_A[A_node[test_l_faces]]*value_node
+            source[L_faces[test_l_faces]] += xi_B[B_node[test_l_faces]]*value_node
+
+
+        
 
 
 
