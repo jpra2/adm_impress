@@ -27,6 +27,7 @@ class CalculateGlsWeight2D:
             unitary_normal_edges,
             permeability,
             nodes_to_calculate,
+            nodes_of_edges,
             **kwargs
     ):
 
@@ -37,14 +38,70 @@ class CalculateGlsWeight2D:
         nodes_to_iterate = np.intersect1d(nodes[bool_internal_nodes], nodes_to_calculate)
 
         for node in nodes_to_iterate:
-            nodes_adj = nodes_of_nodes[node]
+            # nodes_adj = nodes_of_nodes[node]
             edges_adj = edges_of_nodes[node]
+            nodes_edges_adj = nodes_of_edges[edges_adj]
+            nodes_adj = nodes_edges_adj[nodes_edges_adj!=node]
             centroid_node = nodes_centroids[node]
             centroids_nodes_adj = nodes_centroids[nodes_adj]
             faces_adj = faces_of_nodes[node]
             centroids_faces_adj = faces_centroids[faces_adj]
 
             n = len(faces_adj)
+            n_nos = len(nodes_adj)
+            n_edges = len(edges_adj)
+            n_faces = n
+
+            local_index_nos = np.arange(n_nos)
+            local_index_faces = np.arange(n_faces)
+            local_index_edges = np.arange(n_edges)
+
+            mfaces = np.zeros((n_faces, 2 * n_faces))
+            f_dists = centroids_faces_adj - centroid_node
+            for i in range(n_faces):
+                mfaces[i, 2 * i:2 * i + 2] = f_dists[i]
+            
+            mnodes = np.zeros((n_nodes, 2*n_faces))
+            mnormal_perm = np.zeros((n_edges, 2*n_faces))
+
+            for i in range(n_edges):
+                edge = edges_adj[i]
+                node_adj = nodes_adj[i]
+                unitary_normal_edge = unitary_normal_edges[edge]
+                id_edge = local_index_edges[edges_adj==edge]
+                id_node = id_edge
+                faces_adj_edge = adjacencies[edge]
+                tau = nodes_centroids[node_adj] - centroid_node
+                id_face0 = local_index_faces[faces_adj == faces_adj_edge[0]]
+                id_face1 = local_index_faces[faces_adj == faces_adj_edge[1]]
+
+                mnodes[id_node, 2*id_face0: 2*id_face0+2] = +tau
+                mnodes[id_node, 2*id_face1: 2*id_face1+2] = -tau
+
+                mnormal_perm[id_edge, 2*id_face0: 2*id_face0+2] = np.dot(unitary_normal_edge, permeability[faces_adj_edge[0]])
+                mnormal_perm[id_edge, 2*id_face1: 2*id_face1+2] = np.dot(-unitary_normal_edge, permeability[faces_adj_edge[1]])
+            
+            import pdb; pdb.set_trace()
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+
+
+
+
+
+
 
             M = self.M(
                 self.Mv(
