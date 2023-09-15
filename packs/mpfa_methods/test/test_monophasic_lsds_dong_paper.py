@@ -335,16 +335,16 @@ def run(pr_name, mesh_type, ns, n):
             lsds.preprocess(mesh_properties)
         )
     
-        # mesh_properties.insert_data(
-        #     get_gls_nodes_weights(**mesh_properties.get_all_data())
-        # )
+        mesh_properties.insert_data(
+            get_gls_nodes_weights(**mesh_properties.get_all_data())
+        )
         
-        dtype_neumann = [('node_id', np.int), ('nweight', np.float)]
-        zero_neumann = np.zeros(len([]), dtype=dtype_neumann)
-        get_lpew2_weights(mesh_properties)
-        mesh_properties.insert_data({
-            'neumann_nodes_weights': zero_neumann
-        })
+        # dtype_neumann = [('node_id', np.int), ('nweight', np.float)]
+        # zero_neumann = np.zeros(len([]), dtype=dtype_neumann)
+        # get_lpew2_weights(mesh_properties)
+        # mesh_properties.insert_data({
+        #     'neumann_nodes_weights': zero_neumann
+        # })
 
         if not mesh_properties.verify_name_in_data_names('xi_params'):
            
