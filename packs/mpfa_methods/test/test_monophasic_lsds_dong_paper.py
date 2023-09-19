@@ -331,20 +331,19 @@ def run(pr_name, mesh_type, ns, n):
         mesh_properties.insert_or_update_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
         
         ## create weights and xi params for flux calculation
-        mesh_properties.insert_or_update_data(
-            lsds.preprocess(mesh_properties)
-        )
+        resp = lsds.preprocess(mesh_properties)
+        mesh_properties.insert_or_update_data(resp)
     
-        # mesh_properties.insert_data(
-        #     get_gls_nodes_weights(**mesh_properties.get_all_data())
-        # )
+        mesh_properties.insert_data(
+            get_gls_nodes_weights(**mesh_properties.get_all_data())
+        )
         
-        dtype_neumann = [('node_id', np.int), ('nweight', np.float)]
-        zero_neumann = np.zeros(len([]), dtype=dtype_neumann)
-        get_lpew2_weights(mesh_properties)
-        mesh_properties.insert_data({
-            'neumann_nodes_weights': zero_neumann
-        })
+        # dtype_neumann = [('node_id', np.int), ('nweight', np.float)]
+        # zero_neumann = np.zeros(len([]), dtype=dtype_neumann)
+        # get_lpew2_weights(mesh_properties)
+        # mesh_properties.insert_data({
+        #     'neumann_nodes_weights': zero_neumann
+        # })
 
         if not mesh_properties.verify_name_in_data_names('xi_params'):
            
@@ -354,8 +353,8 @@ def run(pr_name, mesh_type, ns, n):
     
         mesh_properties.remove_data(['nodes_to_calculate'])
 
-        backup_weights(mesh_properties, '_lpew2')
-        # backup_weights(mesh_properties, '_gls')
+        # backup_weights(mesh_properties, '_lpew2')
+        backup_weights(mesh_properties, '_gls')
         
         mesh_properties.export_data()  
     
@@ -442,7 +441,8 @@ def run(pr_name, mesh_type, ns, n):
             'error_' + pr_name: error,
             'error2_' + pr_name: error2
         })
-        backup_tags_process(mesh_properties, pr_name, '_lpew2')
+        # backup_tags_process(mesh_properties, pr_name, '_lpew2')
+        backup_tags_process(mesh_properties, pr_name, '_gls')
         mesh_properties.export_data()
     
     nodes_weights_test(mesh_properties, exact_solution, pr_name)
