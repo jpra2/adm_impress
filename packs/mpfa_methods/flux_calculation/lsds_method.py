@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 from packs.manager.boundary_conditions import BoundaryConditions
 from packs import defnames
-from packs.mpfa_methods.weight_interpolation.gls_weight_2d import mount_sparse_weight_matrix
+from packs.mpfa_methods.weight_interpolation.gls_weight_2d import mount_sparse_weight_matrix, mount_sparse_matrix_from_structure
 from packs.utils import calculate_face_properties
 from packs.manager.meshmanager import MeshProperty
 
@@ -964,12 +964,14 @@ class LsdsFluxCalculation:
     def get_edges_flux(
         self,
         xi_alpha,
-        nodes_weights,
         nodes_of_edges,
         faces_pressures,
         adjacencies,
         boundary_conditions: BoundaryConditions,
         neumann_weights,
+        nodes_weights_matrix_structure,
+        nodes,
+        faces,
         **kwargs
     ):
         
@@ -978,7 +980,8 @@ class LsdsFluxCalculation:
         ids_node_press = node_press['id']
         values = node_press['value']
         
-        nodes_weight_matrix = mount_sparse_weight_matrix(nodes_weights)
+        # nodes_weight_matrix = mount_sparse_weight_matrix(nodes_weights)
+        nodes_weight_matrix = mount_sparse_matrix_from_structure(nodes_weights_matrix_structure, nodes.shape[0], faces.shape[0])
         K_faces = adjacencies[:, 0]
         L_faces = adjacencies[:, 1]
         

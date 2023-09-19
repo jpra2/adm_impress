@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.sparse as sp
 from packs.manager.boundary_conditions import BoundaryConditions
+from packs import defnames
+
 
 
 class CalculateGlsWeight2D:
@@ -451,7 +453,8 @@ class CalculateGlsWeight2D:
         
         
         
-        
+
+
     
 def mount_weight_matrix(nodes_weights):
     n_faces = len(np.unique(nodes_weights['face_id']))
@@ -492,6 +495,25 @@ def mount_sparse_weight_matrix(nodes_weights):
     
     return mweight
 
+def get_weight_matrix_structure(nodes_weights):
+    weights_matrix = mount_sparse_weight_matrix(nodes_weights)
+    structure = sp.find(weights_matrix)
+    n = len(structure[0])
+    dtype = [('row', np.int), ('col', np.int), ('data', np.float64)]
+    array = np.zeros(n, dtype=dtype)
+    array['row'] = structure[0]
+    array['col'] = structure[1]
+    array['data'] = structure[2]
+
+    return {defnames.nodes_weights_matrix_structure: array}
+    
+def mount_sparse_matrix_from_structure(nodes_weights_matrix_structure, n_nodes, n_faces):
+    row = nodes_weights_matrix_structure['row']
+    col = nodes_weights_matrix_structure['col']
+    data = nodes_weights_matrix_structure['data']
+
+    M = sp.csr_matrix((data, (row, col)), shape=(n_nodes, n_faces))
+    return M
 
 def get_gls_nodes_weights(**kwargs):
     """
