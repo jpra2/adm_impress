@@ -28,5 +28,9 @@
 # test_weights_prof_fernando()
 
 from packs.mpfa_methods.test.test_monophasic_lsds_dong_paper import plot_errors
-plot_errors()
+list_problems = [0, 1, 2, 3, 4]
+for problem in list_problems[2:]:
+    print(f'Runing problem: {problem} \n')
+    plot_errors(problem)
+    print(f'Finish problem: {problem} \n')
 

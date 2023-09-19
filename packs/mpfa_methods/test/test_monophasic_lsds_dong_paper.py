@@ -723,16 +723,16 @@ def testp1_by_meshtype(mesh_type, ns, pr_name):
     }     
         
     
-def plot_errors():
+def plot_errors(problem = 0):
     # 'mesh1': [8, 32, 64, 128]
     global all_pr_names
-    pr_name = all_pr_names[0]
+    pr_name = all_pr_names[problem]
     
     mesh_types_dict = {
-        # 'mesh1': [8, 32, 64, 128],
-        # # 'mesh1': [8, 32, 64],
-        # 'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
-        # 'mesh5':  [12, 24, 48, 96, 192, 384],
+        'mesh1': [8, 32, 64, 128],
+        # 'mesh1': [8, 32, 64],
+        'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
+        'mesh5':  [12, 24, 48, 96, 192, 384],
         'mesh6': [1, 2, 3, 4]   
     }
     
