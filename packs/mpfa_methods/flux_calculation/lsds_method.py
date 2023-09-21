@@ -964,14 +964,12 @@ class LsdsFluxCalculation:
     def get_edges_flux(
         self,
         xi_alpha,
+        nodes_weights,
         nodes_of_edges,
         faces_pressures,
         adjacencies,
         boundary_conditions: BoundaryConditions,
         neumann_weights,
-        nodes_weights_matrix_structure,
-        nodes,
-        faces,
         **kwargs
     ):
         
@@ -980,8 +978,7 @@ class LsdsFluxCalculation:
         ids_node_press = node_press['id']
         values = node_press['value']
         
-        # nodes_weight_matrix = mount_sparse_weight_matrix(nodes_weights)
-        nodes_weight_matrix = mount_sparse_matrix_from_structure(nodes_weights_matrix_structure, nodes.shape[0], faces.shape[0])
+        nodes_weight_matrix = mount_sparse_weight_matrix(nodes_weights)
         K_faces = adjacencies[:, 0]
         L_faces = adjacencies[:, 1]
         

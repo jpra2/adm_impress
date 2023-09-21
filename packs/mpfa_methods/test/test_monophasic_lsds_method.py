@@ -115,13 +115,17 @@ def setup2():
     """
 
     # create mesh
-    mesh_test_name = defpaths.mpfad_test_mesh
-    mesh_properties_name = defpaths.mpfad_mesh_properties_name
+    # mesh_test_name = defpaths.mpfad_test_mesh
+    # mesh_properties_name = defpaths.mpfad_mesh_properties_name
+    mesh_test_name = defpaths.linear_2k_test
+    mesh_properties_name = defpaths.mesh_prop_linear_2k
+
     mesh_verify(mesh_test_name)
     mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
     permeability = mesh_properties.permeability.copy()
-    x_limit = 10
-    test = mesh_properties.faces_centroids[:, 0] > x_limit - 1e-5
+    x_limit = 0.5
+    # test = mesh_properties.faces_centroids[:, 0] >= x_limit - 1e-5
+    test = mesh_properties.faces_centroids[:, 0] >= x_limit
     permeability[test, 0, 0] = 0.01
     permeability[test, 1, 1] = 0.01
     mesh_properties.update_data({'permeability': permeability})
@@ -132,14 +136,17 @@ def setup2():
 
     ## create weights and xi params for flux calculation
     lsds = LsdsFluxCalculation()
-    mesh_properties.update_data(
-        lsds.preprocess(**mesh_properties.get_all_data())
+    mesh_properties.insert_or_update_data(
+        lsds.preprocess(mesh_properties)
     )
 
-    mesh_properties.update_data({
-        'nodes_weights': get_gls_nodes_weights(**mesh_properties.get_all_data()),
-        'xi_params': lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
-    })
+    mesh_properties.insert_or_update_data(
+        get_gls_nodes_weights(**mesh_properties.get_all_data())
+    )
+
+    mesh_properties.insert_or_update_data(
+        lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
+    )
 
     mesh_properties.remove_data(['nodes_to_calculate'])
     # mesh_properties.export_data()    
@@ -149,8 +156,8 @@ def setup2():
     bc = BoundaryConditions()
     bc.insert_name(problem_name)
 
-    left_value = 100
-    right_value = 0
+    left_value = 1000
+    right_value = 1
 
     vcentroids = mesh_properties.nodes_centroids
 
@@ -179,15 +186,29 @@ def setup2():
     
     
     lsds = LsdsFluxCalculation()
-    resp = lsds.mount_problem(
+    # resp = lsds.mount_problem(
+    #     mesh_properties.nodes_weights,
+    #     mesh_properties.xi_params,
+    #     mesh_properties.faces,
+    #     mesh_properties.edges,
+    #     mesh_properties.bool_boundary_edges,
+    #     mesh_properties.adjacencies,
+    #     bc,
+    #     mesh_properties.nodes_of_edges,
+    #     mesh_properties.neumann_weights
+    # )
+
+    resp = lsds.mount_problem_v2(
         mesh_properties.nodes_weights,
         mesh_properties.xi_params,
         mesh_properties.faces,
-        mesh_properties.edges,
+        mesh_properties.nodes,
         mesh_properties.bool_boundary_edges,
         mesh_properties.adjacencies,
         bc,
-        mesh_properties.nodes_of_edges
+        mesh_properties.nodes_of_edges,
+        mesh_properties.neumann_weights,
+        mesh_properties.edges_of_nodes
     )
     
     pressure = spsolve(resp['transmissibility'], resp['source'])
@@ -197,7 +218,8 @@ def setup2():
         mesh_properties.nodes_of_edges,
         pressure,
         mesh_properties.adjacencies,
-        bc        
+        bc,
+        mesh_properties.neumann_weights 
     )
     
     faces_flux = lsds.get_faces_flux(
@@ -206,7 +228,7 @@ def setup2():
         mesh_properties.bool_boundary_edges
     )
     
-    mesh_path = os.path.join(defpaths.mesh, defpaths.mpfad_test_mesh)
+    mesh_path = os.path.join(defpaths.mesh, mesh_test_name)
     mesh_data = MeshData(mesh_path=mesh_path)
     mesh_data.create_tag('pressure')
     mesh_data.insert_tag_data('pressure', pressure, 'faces', mesh_properties.faces)
@@ -418,14 +440,17 @@ def setup4():
     
     ## create weights and xi params for flux calculation
     lsds = LsdsFluxCalculation()
-    mesh_properties.update_data(
-        lsds.preprocess(**mesh_properties.get_all_data())
+    mesh_properties.insert_or_update_data(
+        lsds.preprocess(mesh_properties)
     )
 
-    mesh_properties.insert_data({
-        'nodes_weights': get_gls_nodes_weights(**mesh_properties.get_all_data()),
-        'xi_params': lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
-    })
+    mesh_properties.insert_data(
+        get_gls_nodes_weights(**mesh_properties.get_all_data())
+    )
+
+    mesh_properties.insert_data(
+        lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
+    )
     
     mesh_properties.remove_data(['nodes_to_calculate'])
     
@@ -487,7 +512,6 @@ def setup4():
         return {'permeability': permeability}
     
     
-    
     ## define permeability
     delta = 0.2
     mesh_properties.update_data(
@@ -529,15 +553,18 @@ def setup4():
     bc.set_boundary('nodes_pressures', nodes_bc, pressures_bc)
     
     lsds = LsdsFluxCalculation()
-    resp = lsds.mount_problem(
+    
+    resp = lsds.mount_problem_v2(
         mesh_properties.nodes_weights,
         mesh_properties.xi_params,
         mesh_properties.faces,
-        mesh_properties.edges,
+        mesh_properties.nodes,
         mesh_properties.bool_boundary_edges,
         mesh_properties.adjacencies,
         bc,
-        mesh_properties.nodes_of_edges
+        mesh_properties.nodes_of_edges,
+        mesh_properties.neumann_weights,
+        mesh_properties.edges_of_nodes
     )
     
     pressure = spsolve(resp['transmissibility'], resp['source'])
@@ -547,7 +574,8 @@ def setup4():
         mesh_properties.nodes_of_edges,
         pressure,
         mesh_properties.adjacencies,
-        bc        
+        bc,
+        mesh_properties.neumann_weights        
     )
     
     faces_flux = lsds.get_faces_flux(
@@ -579,7 +607,155 @@ def setup4():
     import pdb; pdb.set_trace()
     
     
+def setup5():
+    mesh_test_name = defpaths.linear_2k_test
+    mesh_properties_name = defpaths.mesh_prop_linear_2k
+    mesh_verify(mesh_test_name)
+    mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
+    # define nodes to calculate_weights
+    mesh_properties.insert_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
+
+    def get_permeability_linear(centroids):
+        x = centroids[:, 0]
+        n = len(x)
+
+        k1 = 100
+        k2 = 1
+
+        test = x <= 0.5
+        test2 = ~test
+
+        permeability = np.zeros((n, 2, 2))
+        permeability[:, 0, 0] = 1
+        permeability[:, 1, 1] = 1
+
+        permeability[test] = permeability[test]*k1
+        permeability[test2] = permeability[test2]*k2
+
+        return {'permeability': permeability}
+
+    mesh_properties.insert_or_update_data(
+        get_permeability_linear(
+            mesh_properties.faces_centroids[:, 0:2]
+        )
+    )
     
+    ## create weights and xi params for flux calculation
+    lsds = LsdsFluxCalculation()
+    mesh_properties.insert_or_update_data(
+        lsds.preprocess(mesh_properties)
+    )
+
+    mesh_properties.insert_data(
+        get_gls_nodes_weights(**mesh_properties.get_all_data())
+    )
+
+    mesh_properties.insert_or_update_data(
+        lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
+    )
+    
+    mesh_properties.remove_data(['nodes_to_calculate'])
+
+    
+
+    
+    
+    #define boundary conditions    
+    problem_name = 'linear_2k_test'
+    bc = BoundaryConditions()
+    bc.insert_name(problem_name)
+    
+    xmin, ymin = mesh_properties.faces_centroids[:, 0:2].min(axis=0)
+    xmax, ymax = mesh_properties.faces_centroids[:, 0:2].max(axis=0)
+    
+    mesh_delta = 1e-7
+    nodes_xmin = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 0] < xmin + mesh_delta
+    ]
+    nodes_xmax = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 0] > xmax - mesh_delta
+    ]
+    # nodes_ymin = mesh_properties.nodes[
+    #     mesh_properties.nodes_centroids[:, 1] < ymin + mesh_delta
+    # ]
+    # nodes_ymax = mesh_properties.nodes[
+    #     mesh_properties.nodes_centroids[:, 1] > ymax - mesh_delta
+    # ]
+    
+    nodes_bc = np.concatenate([
+        nodes_xmin, nodes_xmax
+    ]).astype(np.uint64)
+
+    pressures_xmin = np.repeat(100.0, len(nodes_xmin))
+    pressures_xmax = np.repeat(1.0, len(nodes_xmax))
+    
+    pressures_bc = np.concatenate([pressures_xmin, pressures_xmax])
+    
+    bc.set_boundary('nodes_pressures', nodes_bc, pressures_bc)
+    
+    lsds = LsdsFluxCalculation()
+    
+
+
+    # resp = lsds.mount_problem(
+    #     mesh_properties.nodes_weights,
+    #     mesh_properties.xi_params,
+    #     mesh_properties.faces,
+    #     mesh_properties.edges,
+    #     mesh_properties.bool_boundary_edges,
+    #     mesh_properties.adjacencies,
+    #     bc,
+    #     mesh_properties.nodes_of_edges,
+    #     mesh_properties.neumann_weights
+    # )
+
+    resp = lsds.mount_problem_v2(
+        mesh_properties.nodes_weights,
+        mesh_properties.xi_params,
+        mesh_properties.faces,
+        mesh_properties.nodes,
+        mesh_properties.bool_boundary_edges,
+        mesh_properties.adjacencies,
+        bc,
+        mesh_properties.nodes_of_edges,
+        mesh_properties.neumann_weights,
+        mesh_properties.edges_of_nodes
+    )
+    
+    pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+    edges_flux = lsds.get_edges_flux(
+        mesh_properties.xi_params,
+        mesh_properties.nodes_weights,
+        mesh_properties.nodes_of_edges,
+        pressure,
+        mesh_properties.adjacencies,
+        bc,
+        mesh_properties.neumann_weights        
+    )
+    
+    faces_flux = lsds.get_faces_flux(
+        edges_flux,
+        mesh_properties.adjacencies,
+        mesh_properties.bool_boundary_edges
+    )
+    
+    mesh_path = os.path.join(defpaths.mesh, mesh_test_name)
+    mesh_data = MeshData(mesh_path=mesh_path)
+    mesh_data.create_tag('pressure')
+    mesh_data.insert_tag_data('pressure', pressure, 'faces', mesh_properties.faces)
+    mesh_data.create_tag('permeability')
+    perm = mesh_properties.permeability.reshape((len(mesh_properties.faces), 4))
+    mesh_data.insert_tag_data('permeability', perm[:, 0], 'faces', mesh_properties.faces)
+    mesh_data.create_tag('faces_flux')
+    mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces', mesh_properties.faces)
+    mesh_data.create_tag('nodes_pressure_presc')
+    mesh_data.insert_tag_data('nodes_pressure_presc', pressures_bc, 'nodes', nodes_bc)
+    # mesh_data.create_tag('pressure_error')
+    # mesh_data.insert_tag_data('pressure_error', error, 'faces', mesh_properties.faces)
+    mesh_data.export_all_elements_type_to_vtk('linear_test_nodes', 'nodes')
+    mesh_data.export_all_elements_type_to_vtk('linear_test_faces', 'faces')
+    mesh_data.export_only_the_elements('linear_test_nodes_pressure_boundary', 'nodes', nodes_bc)
+    import pdb; pdb.set_trace()
     
     
     
@@ -605,7 +781,8 @@ def test_monophasic_problem_with_pressure_prescription():
     # setup1()
     # setup2()
     # setup3()
-    setup4()
+    # setup4()
+    setup5()
     import pdb; pdb.set_trace()
 
 

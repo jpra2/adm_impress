@@ -445,7 +445,7 @@ class CalculateGlsWeight2D:
         
         resp = {
             'nodes_weights': nodes_weights,
-            'neumann_nodes_weights': neumann_weights
+            'neumann_weights': neumann_weights
         }
         
         return resp
@@ -480,16 +480,16 @@ def mount_sparse_weight_matrix(nodes_weights):
     n_faces = len(np.unique(nodes_weights['face_id']))
     n_nodes = len(np.unique(nodes_weights['node_id']))
 
-    lines = np.array([], dtype=int)
-    cols = lines.copy()
-    data = np.array([], dtype=np.float64)
+    lines = nodes_weights['node_id']
+    cols = nodes_weights['face_id']
+    data = nodes_weights['weight']
 
-    for node in np.unique(nodes_weights['node_id']):
-        faces = nodes_weights['face_id'][nodes_weights['node_id'] == node]
-        weights = nodes_weights['weight'][nodes_weights['node_id'] == node]
-        lines = np.append(lines, np.repeat(node, faces.shape[0]))
-        cols = np.append(cols, faces)
-        data = np.append(data, weights)
+    # for node in np.unique(nodes_weights['node_id']):
+    #     faces = nodes_weights['face_id'][nodes_weights['node_id'] == node]
+    #     weights = nodes_weights['weight'][nodes_weights['node_id'] == node]
+    #     lines = np.append(lines, np.repeat(node, faces.shape[0]))
+    #     cols = np.append(cols, faces)
+    #     data = np.append(data, weights)
     
     mweight = sp.csr_matrix((data, (lines, cols)), shape=(n_nodes, n_faces))
     
