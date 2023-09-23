@@ -58,7 +58,8 @@ class LpewWeight:
 
         return (np.cos(theta)/np.sin(theta))
 
-    def get_Rmatrix(self):
+    @staticmethod
+    def get_Rmatrix():
         theta = np.pi/2
 
         R = np.array([
@@ -790,10 +791,13 @@ class LpewWeight:
 def intermediate(mesh_properties: MeshProperty):
     mesh_properties.export_data()
 
+
+
 def preprocess(mesh_properties: MeshProperty):
 
-    lpew2 = LpewWeight()
-    resp = lpew2.preprocess(**mesh_properties.get_all_data())
+    # lpew2 = LpewWeight()
+    lsds = LsdsFluxCalculation()
+    resp = lsds.preprocess(mesh_properties)
     mesh_properties.insert_or_update_data(resp)
     intermediate(mesh_properties)
 

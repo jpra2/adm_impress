@@ -10,7 +10,8 @@ import numpy as np
 
 def initialize_mesh(mesh_properties_name, mesh_name, **kwargs):
         
-    mesh_properties = create_properties_if_not_exists(mesh_name, mesh_properties_name)
+    mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_name, mesh_properties_name)
+    
     h_dist = calculate_face_properties.create_face_to_edge_distances(
             mesh_properties.faces_centroids,
             mesh_properties.adjacencies,
