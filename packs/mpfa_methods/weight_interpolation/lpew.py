@@ -13,7 +13,7 @@ class LpewWeight:
     """
 
     datas = ['tk_points', 'neta', 'kn_kt_barra', 'kn_kt_theta_phi_vangle',
-             'zeta', 'lambda_barra']
+             'zeta', 'lambda_barra', 'neumann_weights']
     
     data_weights = ['nodes_weights']
 
@@ -787,11 +787,54 @@ class LpewWeight:
 
         return {'nodes_weights': array}
 
+    def create_lpew2_neumann_weights(self, edges_neumann: np.ndarray, neumann_values: np.ndarray, zeta, nodes_of_edges, nodes_centroids, tk_points, lambda_barra, **kwargs):
+        """
+            If not exists neumann edges set:
+            edges_neumann = []
+            neumann_values = []
+        """
+        neumann_nodes = []
+        neumann_nodes_values = []
+
+        for i, edge in enumerate(edges_neumann):
+            neumann_value = neumann_values[i]
+            nodes_edge = nodes_of_edges[edge]
+            tk_nodes = tk_points[edge]
+            for node in nodes_edge:
+                tk_point = tk_nodes[nodes_edge==node]
+                cnode = nodes_centroids[node]
+                zeta_node = zeta['zeta'][(zeta['edge_id']==edge) & (zeta['node_id']==node)]
+                q0tkn = np.linalg.norm(tk_point - cnode)
+                value = (1 + zeta_node)*q0tkn*neumann_value
+                neumann_nodes.append(node)
+                neumann_nodes_values.append(value)
+        
+        neumann_nodes = np.array(neumann_nodes)
+        neumann_nodes_values = np.array(neumann_nodes_values)
+
+        values_neumann_weights = -np.bincount(neumann_nodes, weights=neumann_nodes_values)
+
+        neumann_nodes = np.unique(neumann_nodes)
+        neumann_weights = values_neumann_weights[neumann_nodes]
+
+        for i, node in enumerate(neumann_nodes):
+            lambda_barra_node_sum = (lambda_barra['lambda_barra'][lambda_barra['node_id']==node]).sum()
+            neumann_weights[i] = neumann_nodes/lambda_barra_node_sum
+
+        dtype = [('node_id', np.int), ('nweight', np.float64)]
+        array = np.zeros(len(neumann_weights), dtype=dtype)
+        array['node_id'][:] = neumann_nodes
+        array['nweight'][:] = neumann_weights
+
+        return {'neumann_weights': array}
+
+
+
+
+
 
 def intermediate(mesh_properties: MeshProperty):
     mesh_properties.export_data()
-
-
 
 def preprocess(mesh_properties: MeshProperty):
 
@@ -865,6 +908,18 @@ def create_lpew2_weights(mesh_properties: MeshProperty):
     mesh_properties.insert_data(resp)
     intermediate(mesh_properties)
 
+def create_lpew2_neumann_weights(mesh_properties: MeshProperty):
+
+    k = 6
+    lpew = LpewWeight()
+    if mesh_properties.verify_name_in_data_names(lpew.data_weights[k]):
+        return 
+    resp = lpew.create_lpew2_neumann_weights(**mesh_properties.get_all_data())
+    mesh_properties.insert_data(resp)
+    intermediate(mesh_properties)
+    
+
+
 def get_lpew2_weights(mesh_properties: MeshProperty, **kwargs):
 
     create_Tk(mesh_properties)
@@ -873,6 +928,8 @@ def get_lpew2_weights(mesh_properties: MeshProperty, **kwargs):
     create_zeta(mesh_properties)
     create_lambda_barra(mesh_properties)
     create_lpew2_weights(mesh_properties)
+    create_lpew2_neumann_weights(mesh_properties)
+
 
 
 
