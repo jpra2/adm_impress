@@ -487,7 +487,7 @@ class CreateMeshProperties(MeshInit):
         
         nodes_adj_by_nodes, edges_adj_by_nodes, faces_adj_by_nodes = self.get_nodes_and_edges_and_faces_adjacencies_by_nodes(nodes, edges, nodes_of_edges, faces)
         
-        calculate_face_properties.ordenate_edges_and_nodes_of_nodes_xy_plane(
+        nodes_adj_by_nodes, edges_adj_by_nodes = calculate_face_properties.ordenate_edges_and_nodes_of_nodes_xy_plane(
             nodes,
             edges, 
             nodes_adj_by_nodes,
@@ -495,7 +495,7 @@ class CreateMeshProperties(MeshInit):
             nodes_centroids
         )
         
-        calculate_face_properties.ordenate_faces_of_nodes_xy_plane(faces_centroids, faces_adj_by_nodes, nodes_centroids)
+        faces_adj_by_nodes = calculate_face_properties.ordenate_faces_of_nodes_xy_plane(faces_centroids, faces_adj_by_nodes, nodes_centroids)
         
         bool_boundary_nodes = calculate_face_properties.define_bool_boundary_nodes(bool_boundary_edges, nodes_of_edges, nodes)
         

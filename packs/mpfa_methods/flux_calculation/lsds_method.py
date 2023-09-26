@@ -35,7 +35,7 @@ class LsdsFluxCalculation:
             faces_centroids2 = np.zeros((len(mesh_properties.faces_centroids), 3))
             faces_centroids2[:, 0:2] = mesh_properties.faces_centroids
             
-            calculate_face_properties.ordenate_edges_and_nodes_of_nodes_xy_plane(
+            nodes_of_nodes, edges_of_nodes = calculate_face_properties.ordenate_edges_and_nodes_of_nodes_xy_plane(
                 mesh_properties.nodes,
                 mesh_properties.edges,
                 mesh_properties.nodes_of_nodes,
@@ -43,11 +43,17 @@ class LsdsFluxCalculation:
                 nodes_centroids2
             )
 
-            calculate_face_properties.ordenate_faces_of_nodes_xy_plane(
+            faces_of_nodes = calculate_face_properties.ordenate_faces_of_nodes_xy_plane(
                 faces_centroids2,
                 mesh_properties.faces_of_nodes,
                 nodes_centroids2
             )
+
+            resp.update({
+                'nodes_of_nodes': nodes_of_nodes,
+                'edges_of_nodes': edges_of_nodes,
+                'faces_of_nodes': faces_of_nodes
+            })
 
             resp.update(
                 self.define_A_B_points_of_edges(
@@ -104,7 +110,7 @@ class LsdsFluxCalculation:
             AB = nodes_centroids[B] - nodes_centroids[A]
             unitary_normal_vector_rotated = R.dot(unitary_normal_edges[edge])
             proj = AB.dot(unitary_normal_vector_rotated)
-            if proj > 0:
+            if proj >= 0:
                 pass
             else:
                 resp[edge,:] = [A, B]

@@ -209,7 +209,7 @@ def create_xi_param_dsflux(mesh_properties: MeshProperty):
         mesh_properties.insert_data(resp)
         mesh_properties.export_data()
 
-def get_xi_params_lpew_flux(mesh_properties: MeshProperty):
+def get_xi_params_ds_flux(mesh_properties: MeshProperty):
     """
     Na etapa de preprocessamento:
     O no B2 esta a esquerda da normal do edge e o no B1 a direita

@@ -278,6 +278,9 @@ def ordenate_nodes_of_edges(edges, faces_adj_by_edges, nodes_of_faces, nodes_of_
         
 def ordenate_edges_and_nodes_of_nodes_xy_plane(nodes, edges, nodes_adj_by_nodes, edges_adj_by_nodes, nodes_centroids):
     
+    nodes_adj_by_nodes_2 = nodes_adj_by_nodes.copy()
+    edges_adj_by_nodes_2 = edges_adj_by_nodes.copy()
+
     for node in nodes:
         nodes_adj = nodes_adj_by_nodes[node]
         edges_adj = edges_adj_by_nodes[node]
@@ -295,11 +298,15 @@ def ordenate_edges_and_nodes_of_nodes_xy_plane(nodes, edges, nodes_adj_by_nodes,
         nodes_adj[:] = nodes_adj[new_index]
         edges_adj[:] = edges_adj[new_index]       
         
-        nodes_adj_by_nodes[node][:] = nodes_adj
-        edges_adj_by_nodes[node][:] = edges_adj
+        nodes_adj_by_nodes_2[node][:] = nodes_adj
+        edges_adj_by_nodes_2[node][:] = edges_adj
+    
+    return nodes_adj_by_nodes_2, edges_adj_by_nodes_2
         
 def ordenate_faces_of_nodes_xy_plane(faces_centroids, faces_adj_by_nodes, nodes_centroids):
     
+    faces_adj_by_nodes_2 = faces_adj_by_nodes_2.copy()
+
     for i, faces in enumerate(faces_adj_by_nodes):
         centroid_faces = faces_centroids[faces][:]
         
@@ -320,7 +327,9 @@ def ordenate_faces_of_nodes_xy_plane(faces_centroids, faces_adj_by_nodes, nodes_
             continue
         
         centroid_faces[:] = centroid_faces[new_index]
-        faces_adj_by_nodes[i][:] = faces2[new_index]
+        faces_adj_by_nodes_2[i][:] = faces2[new_index]
+
+    return faces_adj_by_nodes_2
 
 def define_bool_boundary_nodes(bool_boundary_edges, nodes_of_edges, nodes):
     

@@ -76,4 +76,6 @@ def test_lsds_flux():
     get_all_edges_flux_params_func(mesh_properties)
 
 
+def test_lsds_flux_2():
+    pass
 

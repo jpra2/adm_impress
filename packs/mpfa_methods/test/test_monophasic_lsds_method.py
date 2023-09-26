@@ -11,6 +11,7 @@ from scipy.sparse.linalg import spsolve
 from packs.manager.mesh_data import MeshData
 import os
 from packs.mpfa_methods.generate_mesh_tests.mesh2_i import generate
+import matplotlib.pyplot as plt
 
 def setup1():
     """Define monophasic problem with pressure presciption only
@@ -619,7 +620,7 @@ def setup5():
         x = centroids[:, 0]
         n = len(x)
 
-        k1 = 100
+        k1 = 10
         k2 = 1
 
         test = x <= 0.5
@@ -755,6 +756,20 @@ def setup5():
     mesh_data.export_all_elements_type_to_vtk('linear_test_nodes', 'nodes')
     mesh_data.export_all_elements_type_to_vtk('linear_test_faces', 'faces')
     mesh_data.export_only_the_elements('linear_test_nodes_pressure_boundary', 'nodes', nodes_bc)
+    
+    plt.clf()
+    fig1, ax1 = plt.subplots(1)
+    ax1.plot(mesh_properties.faces_centroids[:, 0], pressure)
+
+    ax1.set_xlabel('X position')
+    ax1.set_ylabel('Presssure')
+    ax1.set_title('Pressure x position')
+    # ax1.legend()
+
+    ext = 'svg'
+    fig1.savefig(os.path.join('results', 'LinearTest.' + ext), format=ext)
+
+    
     import pdb; pdb.set_trace()
     
     

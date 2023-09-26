@@ -12,8 +12,8 @@
 # from packs.mpfa_methods.flux_calculation.test.test_flux_lsds_method import test_lsds_flux
 # test_lsds_flux()
 
-# from packs.mpfa_methods.test.test_monophasic_lsds_method import test_monophasic_problem_with_pressure_prescription
-# test_monophasic_problem_with_pressure_prescription()
+from packs.mpfa_methods.test.test_monophasic_lsds_method import test_monophasic_problem_with_pressure_prescription
+test_monophasic_problem_with_pressure_prescription()
 
 # from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import test_neumann_weights
 # test_neumann_weights()
@@ -34,5 +34,5 @@
 #     plot_errors(problem)
 #     print(f'Finish problem: {problem} \n')
 
-from packs.mpfa_methods.flux_calculation.test.test_flux_lpew_method import test_xi_params_lpew
-test_xi_params_lpew()
+# from packs.mpfa_methods.flux_calculation.test.test_flux_diamond_method import test_xi_params_ds
+# test_xi_params_ds()
