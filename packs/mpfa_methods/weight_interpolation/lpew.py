@@ -809,8 +809,8 @@ class LpewWeight:
                 neumann_nodes.append(node)
                 neumann_nodes_values.append(value)
         
-        neumann_nodes = np.array(neumann_nodes)
-        neumann_nodes_values = np.array(neumann_nodes_values)
+        neumann_nodes = np.array(neumann_nodes).astype(np.int)
+        neumann_nodes_values = np.concatenate(neumann_nodes_values)
 
         values_neumann_weights = -np.bincount(neumann_nodes, weights=neumann_nodes_values)
 
@@ -819,7 +819,7 @@ class LpewWeight:
 
         for i, node in enumerate(neumann_nodes):
             lambda_barra_node_sum = (lambda_barra['lambda_barra'][lambda_barra['node_id']==node]).sum()
-            neumann_weights[i] = neumann_nodes/lambda_barra_node_sum
+            neumann_weights[i] = neumann_weights[i]/lambda_barra_node_sum
 
         dtype = [('node_id', np.int), ('nweight', np.float64)]
         array = np.zeros(len(neumann_weights), dtype=dtype)
@@ -928,7 +928,6 @@ def get_lpew2_weights(mesh_properties: MeshProperty, **kwargs):
     create_zeta(mesh_properties)
     create_lambda_barra(mesh_properties)
     create_lpew2_weights(mesh_properties)
-    create_lpew2_neumann_weights(mesh_properties)
 
 
 

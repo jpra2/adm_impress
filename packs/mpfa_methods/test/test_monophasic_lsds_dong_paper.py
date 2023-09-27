@@ -12,6 +12,7 @@ import os
 from packs.manager.mesh_data import MeshData
 import matplotlib.pyplot as plt
 from packs.utils import calculate_face_properties
+from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess
 
 all_pr_names = ['problem1', 'problem2', 'problem3', 'problem4', 'problem5']
 all_weight_interpolation_names = ['gls', 'inverse_distance']
@@ -264,47 +265,13 @@ def backup_weights(mesh_properties: MeshProperty, sufix_name: str):
     mesh_properties.export_data()
 
 def calculate_areas(mesh_properties: MeshProperty):
-    centroids_nodes = mesh_properties.nodes_centroids
-    z_centroids = np.zeros((len(centroids_nodes), 1))
-    centroids_nodes = np.hstack([centroids_nodes, z_centroids])
-    nodes_of_faces = mesh_properties.nodes_of_faces
-    cnodes_faces = centroids_nodes[nodes_of_faces]
-    n_faces = len(mesh_properties.faces)
-
-    if not mesh_properties.verify_name_in_data_names('areas'):
-        areas = np.zeros(n_faces)
-        for i in range(n_faces):
-            areas[i] = calculate_face_properties.polygon_area(cnodes_faces[i])
-        mesh_properties.insert_data({'areas': areas})
-        mesh_properties.export_data()
+    mpfa_preprocess = MpfaPreprocess()
+    mpfa_preprocess.calculate_areas(mesh_properties)
 
 def calculate_h_dist(mesh_properties: MeshProperty):
-    if not mesh_properties.verify_name_in_data_names('h_dist'):
-        
-        h_dist = calculate_face_properties.create_face_to_edge_distances(
-            mesh_properties.faces_centroids,
-            mesh_properties.adjacencies,
-            mesh_properties.nodes_of_edges,
-            mesh_properties.edges,
-            mesh_properties.nodes_centroids,
-            mesh_properties.bool_boundary_edges
-        )
-        mesh_properties.insert_data({'h_dist': h_dist})
+    mpfa_preprocess = MpfaPreprocess()
+    mpfa_preprocess.calculate_h_dist(mesh_properties)
 
-        bedges = mesh_properties.bool_boundary_edges
-        iedges = ~bedges
-
-        m1 = np.mean(h_dist[iedges, 0])
-        m2 = np.mean(h_dist[iedges, 1])
-        m3 = np.mean(h_dist[bedges, 0])
-        m_hdist = np.mean([m1, m2, m3])
-        mesh_properties.insert_data({'m_hdist': np.array([m_hdist])})
-        mesh_properties.export_data()
-
-
-
-
-   
 def run(pr_name, mesh_type, ns, n):    
     
     mesh_test_name = defpaths.load_mpfad_meshtest_by_type_and_number(mesh_type, ns[n])

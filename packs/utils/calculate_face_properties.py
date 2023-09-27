@@ -305,7 +305,7 @@ def ordenate_edges_and_nodes_of_nodes_xy_plane(nodes, edges, nodes_adj_by_nodes,
         
 def ordenate_faces_of_nodes_xy_plane(faces_centroids, faces_adj_by_nodes, nodes_centroids):
     
-    faces_adj_by_nodes_2 = faces_adj_by_nodes_2.copy()
+    faces_adj_by_nodes_2 = faces_adj_by_nodes.copy()
 
     for i, faces in enumerate(faces_adj_by_nodes):
         centroid_faces = faces_centroids[faces][:]

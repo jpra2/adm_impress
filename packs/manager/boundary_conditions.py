@@ -49,3 +49,5 @@ class BoundaryConditions(SuperArrayManager):
         bc_array['value'][:] = values
         
         self.insert_data({bc_type: bc_array})
+    
+    

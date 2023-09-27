@@ -280,6 +280,18 @@ class MeshProperty:
         if self.verify_name_in_data_names(name):
             raise errors.NameExistsError(f'The name: - {name} - exists in mesh properties')
 
+    @property
+    def edges_dim(self):
+        resp = np.linalg.norm(
+            self.nodes_centroids[self.nodes_of_edges[self.edges, 0]] - self.nodes_centroids[self.nodes_of_edges[self.edges, 1]],
+            axis=1
+        )
+        return resp
+    
+    @property
+    def edges_centroids(self):
+        resp = (self.nodes_centroids[self.nodes_of_edges[:, 1]] + self.nodes_centroids[self.nodes_of_edges[:, 0]])/2
+        return resp
         
     
 

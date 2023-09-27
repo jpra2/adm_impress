@@ -1,10 +1,52 @@
 from packs.manager.meshmanager import MeshProperty
 from packs.utils import calculate_face_properties
 from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import create_properties_if_not_exists
+import numpy as np
+from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 
 
 class MpfaPreprocess:
+    
+    def define_A_B_points_of_edges(self, mesh_properties: MeshProperty):
+        """define os pontos A e B de cada edge da malha
+            o ponto B deve estar a esquerda do vetor normal do edge
+            e o ponto A deve estar a direita
+            de modo que:
+                nodes_of_edges[edge, 0] = B
+                nodes_of_edges[edge, 1] = A
 
+        Args:
+            nodes_centroids (_type_): _description_
+            unitary_normal_edges (_type_): _description_
+            nodes_of_edges (_type_): _description_
+            edges (_type_): _description_
+
+        Returns:
+            nodes_of_edges reorganizado
+        """
+        
+        resp = mesh_properties.nodes_of_edges.copy()
+
+        theta = np.pi/2
+        cossin = np.array([np.cos(theta), np.sin(theta)])
+        R = np.array([
+            [cossin[0], -cossin[1]],
+            [cossin[1],  cossin[0]]
+        ])
+
+        for edge in mesh_properties.edges:
+            B = mesh_properties.nodes_of_edges[edge, 0]
+            A = mesh_properties.nodes_of_edges[edge, 1]
+            AB = mesh_properties.nodes_centroids[B] - mesh_properties.nodes_centroids[A]
+            unitary_normal_vector_rotated = R.dot(mesh_properties.unitary_normal_edges[edge])
+            proj = AB.dot(unitary_normal_vector_rotated)
+            if proj >= 0:
+                pass
+            else:
+                resp[edge,:] = [A, B]
+        
+        mesh_properties.insert_or_update_data({'nodes_of_edges': resp})
+        
     def calculate_areas(self, mesh_properties: MeshProperty):
         
 
@@ -50,7 +92,27 @@ class MpfaPreprocess:
         create_properties_if_not_exists(mesh_name, mesh_properties_name)
     
     def test_unitary_normal_edges(self, mesh_properties: MeshProperty):
-        pass
+        
+        faces_centroids = mesh_properties.faces_centroids
+        nodes_of_edges = mesh_properties.nodes_of_edges
+        nodes_centroids = mesh_properties.nodes_centroids
+        adjacencies = mesh_properties.adjacencies
+        edges = mesh_properties.edges
+        unitary_normal_edges = mesh_properties.unitary_normal_edges
+        
+        edges_centroids = (nodes_centroids[nodes_of_edges[:, 1]] + nodes_centroids[nodes_of_edges[:, 0]])/2 
+        # import pdb; pdb.set_trace()
+        for edge in edges:
+            unitary_normal = unitary_normal_edges[edge]
+            edge_centroid = edges_centroids[edge]
+            face_centroid = faces_centroids[adjacencies[edge, 0]]
+            direction = edge_centroid - face_centroid
+            test = np.dot(direction, unitary_normal)
+            if test >=0:
+                pass
+            else:
+                raise ValueError('Os vetores normais dos edges devem estar apontando da face da esquerda do vetor de adjacencias para o centroide do edge')
+            
 
 
 
