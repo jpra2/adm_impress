@@ -18,22 +18,22 @@ def get_edges_centroids(nodes_centroids, nodes_of_edges):
     resp = (nodes_centroids[nodes_of_edges[: 1]] + nodes_centroids[nodes_of_edges[: 0]])/2
     return resp
 
-def get_dirichlet_edges(edges, edges_centroids):
+def get_dirichlet_nodes(nodes, nodes_centroids):
     
     k1 = 100
     k2 = 1
     
     delta = 1e-10
-    edges1 = edges[edges_centroids[:, 0] <= 0 + delta] 
-    edges2 = edges[edges_centroids[:, 0] >= edges_centroids[:, 0].max() - delta] 
+    nodes1 = nodes[nodes_centroids[:, 0] <= 0 + delta] 
+    nodes2 = nodes[nodes_centroids[:, 0] >= nodes_centroids[:, 0].max() - delta] 
     
-    values1 = np.repeat(k1, len(edges1))
-    values2 = np.repeat(k2, len(edges2))
+    values1 = np.repeat(k1, len(nodes1))
+    values2 = np.repeat(k2, len(nodes2))
     
-    dr_edges = np.concatenate([edges1, edges2])
+    dr_nodes = np.concatenate([nodes1, nodes2])
     values_dirichlet = np.concatenate([values1, values2])
     
-    return dr_edges, values_dirichlet
+    return dr_nodes, values_dirichlet
 
 def get_neumann_edges(edges, edges_centroids):
     k1 = 0
@@ -62,10 +62,10 @@ def test_xi_params_ds():
     
     # edges_centroids = get_edges_centroids(mesh_properties.nodes_centroids, mesh_properties.nodes_of_edges)
     bc = BoundaryConditions()
-    dr_edges, values_dirichlet = get_dirichlet_edges(mesh_properties.edges, mesh_properties.edges_centroids)
+    dr_nodes, values_dirichlet = get_dirichlet_edges(mesh_properties.edges, mesh_properties.edges_centroids)
     neumann_edges, values_neumann = get_neumann_edges(mesh_properties.edges, mesh_properties.edges_centroids)
     
-    bc.set_boundary('dirichlet_edges', dr_edges, values_dirichlet)
+    bc.set_boundary('dirichlet_nodes', dr_nodes, values_dirichlet)
     bc.set_boundary('neumann_edges', neumann_edges, values_neumann)
     
     lpew2 = LpewWeight()

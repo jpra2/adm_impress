@@ -180,7 +180,9 @@ class DiamondFluxCalculation:
 
         pass
             
-    def mount_problem(self, edges_dim, boundary_conditions: BoundaryConditions, xi_params_dsflux, neumann_weights, nodes_weights, adjacencies, faces, nodes_of_edges, **kwargs):
+    def mount_problem(self, edges_dim, boundary_conditions: BoundaryConditions, xi_params_dsflux, neumann_weights, nodes_weights, adjacencies, faces, nodes_of_edges, edges, bool_boundary_edges, edges_of_nodes, **kwargs):
+        
+        
         n_faces = faces.shape[0]
         source = np.zeros(n_faces)
         
@@ -188,6 +190,18 @@ class DiamondFluxCalculation:
         cols = []
         data = []
         
+        dirichet_nodes = boundary_conditions['dirichlet_nodes']['id']
+        values_dirichlet = boundary_conditions['dirichlet_nodes']['value']
+        
+        edges_of_dirichlet_nodes = np.unique(np.concatenate(edges_of_nodes[dirichet_nodes]))
+        neumann_edges = boundary_conditions['neumann_edges']['id']
+        edges_of_dirichlet_nodes = np.setdiff1d(edges_of_dirichlet_nodes, neumann_edges)
+        
+        
+        
+        import pdb; pdb.set_trace()
+        
+        ## adicionando o fluxo prescrito nos edges
         for edge, value in zip(boundary_conditions['neumann_edges']['id'], boundary_conditions['neumann_edges']['value']):
             face_adj = adjacencies[edge, 0]
             edge_dim = edges_dim[edge]
@@ -196,7 +210,6 @@ class DiamondFluxCalculation:
         for edge, value in zip(boundary_conditions['dirichlet_edges']['id'], boundary_conditions['dirichlet_edges']['value']):
             nodes_edge = nodes_of_edges[edge]
             pass
-            
         
         
         
