@@ -6,6 +6,7 @@ from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess
 import numpy as np
 from packs.manager.boundary_conditions import BoundaryConditions
 from packs.mpfa_methods.weight_interpolation.lpew import LpewWeight, get_lpew2_weights
+from scipy.sparse.linalg import spsolve
 
 def get_permeability(faces):
     permeability = np.zeros((len(faces), 2, 2))
@@ -60,9 +61,9 @@ def test_xi_params_ds():
     get_lpew2_weights(mesh_properties)
     get_xi_params_ds_flux(mesh_properties)
     
-    # edges_centroids = get_edges_centroids(mesh_properties.nodes_centroids, mesh_properties.nodes_of_edges)
+    
     bc = BoundaryConditions()
-    dr_nodes, values_dirichlet = get_dirichlet_edges(mesh_properties.edges, mesh_properties.edges_centroids)
+    dr_nodes, values_dirichlet = get_dirichlet_nodes(mesh_properties.edges, mesh_properties.edges_centroids)
     neumann_edges, values_neumann = get_neumann_edges(mesh_properties.edges, mesh_properties.edges_centroids)
     
     bc.set_boundary('dirichlet_nodes', dr_nodes, values_dirichlet)
@@ -78,7 +79,10 @@ def test_xi_params_ds():
     mesh_properties.insert_or_update_data(neumann_weights)
     
     diamondflux = DiamondFluxCalculation()
-    diamondflux.mount_problem(mesh_properties.edges_dim, bc, **mesh_properties.get_all_data())
+    resp = diamondflux.mount_problem(bc, **mesh_properties.get_all_data())
+
+    pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+    
     
     
     

@@ -828,7 +828,7 @@ class LsdsFluxCalculation:
                 lines,
                 cols,
                 data,
-                signal=1,
+                signal=1
             )
 
             self.update_transmissibility(
@@ -845,6 +845,85 @@ class LsdsFluxCalculation:
                 data,
                 signal=-1
             )
+
+    def update_transmissibility_from_neumann_nodes(
+            self,
+            neumann_nodes,
+            edges_of_nodes,
+            nodes_of_edges,
+            nodes_weights,
+            adjacencies,
+            xi_params,
+            boundary_edges,
+            lines:[],
+            cols:[],
+            data:[],
+            **kwargs):
+        
+        for node in neumann_nodes:
+            edges_node = np.setdiff1d(edges_of_nodes[node], boundary_edges)
+            nodes_edges_node = nodes_of_edges[edges_node]
+            faces_node = nodes_weights['face_id'][nodes_weights['node_id']==node]
+            weights_node = nodes_weights['weight'][nodes_weights['node_id']==node]
+            adjacencies_edges_node = adjacencies[edges_node]
+            xi_params_edges_node = xi_params[edges_node]
+            
+            A_node = nodes_edges_node[:, 1] == node
+            B_node = nodes_edges_node[:, 0] == node
+            
+            K_faces = adjacencies_edges_node[:, 0]
+            L_faces = adjacencies_edges_node[:, 1]
+            test_l_faces = L_faces != -1
+            test_k_faces = K_faces != -1
+            xi_A = xi_params_edges_node[:, 2]
+            xi_B = xi_params_edges_node[:, 3]
+
+            self.update_transmissibility(
+                K_faces,
+                A_node,
+                faces_node,
+                B_node,
+                xi_A,
+                xi_B,
+                weights_node,
+                test_k_faces,
+                lines,
+                cols,
+                data,
+                signal=1
+            )
+
+            self.update_transmissibility(
+                L_faces,
+                A_node,
+                faces_node,
+                B_node,
+                xi_A,
+                xi_B,
+                weights_node,
+                test_l_faces,
+                lines,
+                cols,
+                data,
+                signal=-1
+            )
+
+    def update_transmissibility_from_internal_edges(self, bool_boundary_edges, adjacencies, xi_params, lines, cols, data, **kwargs):
+
+        biedges = ~bool_boundary_edges   
+        lines.extend([adjacencies[:, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1]])
+        cols.extend([adjacencies[:, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
+        data.extend([xi_params[:, 0], xi_params[biedges, 1], -xi_params[biedges, 1], -xi_params[biedges, 0]])
+
+    def get_transmissibility_from_data(self, lines, cols, data, faces, **kwargs):
+        lines = np.concatenate(lines)
+        cols = np.concatenate(cols)
+        data = np.concatenate(data)
+
+        T = sp.csr_matrix((data,(lines,cols)), shape=(faces.shape[0],faces.shape[0]))
+
+        return T
+
 
     def mount_problem_v2(
         self,
@@ -912,16 +991,16 @@ class LsdsFluxCalculation:
             data
         )
 
-        biedges = ~bool_boundary_edges   
-        lines.extend([adjacencies[:, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1]])
-        cols.extend([adjacencies[:, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
-        data.extend([xi_params[:, 0], xi_params[biedges, 1], -xi_params[biedges, 1], -xi_params[biedges, 0]])
+        self.update_transmissibility_from_internal_edges(
+            bool_boundary_edges,
+            adjacencies,
+            xi_params,
+            lines,
+            cols,
+            data
+        )
 
-        lines = np.concatenate(lines)
-        cols = np.concatenate(cols)
-        data = np.concatenate(data)
-
-        T = sp.csr_matrix((data,(lines,cols)), shape=(faces.shape[0],faces.shape[0]))
+        T = self.get_transmissibility_from_data(lines, cols, data, faces)
 
         resp.update({
             'transmissibility': T,
