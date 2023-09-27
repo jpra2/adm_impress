@@ -692,7 +692,13 @@ def setup5():
     
     pressures_bc = np.concatenate([pressures_xmin, pressures_xmax])
     
-    bc.set_boundary('nodes_pressures', nodes_bc, pressures_bc)
+    bc.set_boundary('dirichlet_nodes', nodes_bc, pressures_bc)
+
+    edges_centroids = mesh_properties.edges_centroids
+
+    edges_max = edges[edges_centroids[:, 1] >= edges_centroids[:, 1].max() - mesh_delta]
+
+
     
     lsds = LsdsFluxCalculation()
     
