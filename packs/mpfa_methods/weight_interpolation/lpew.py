@@ -787,7 +787,7 @@ class LpewWeight:
 
         return {'nodes_weights': array}
 
-    def create_lpew2_neumann_weights(self, edges_neumann: np.ndarray, neumann_values: np.ndarray, zeta, nodes_of_edges, nodes_centroids, tk_points, lambda_barra, **kwargs):
+    def create_lpew2_neumann_weights(self, neumann_edges: np.ndarray, neumann_edges_value: np.ndarray, zeta, nodes_of_edges, nodes_centroids, tk_points, lambda_barra, **kwargs):
         """
             If not exists neumann edges set:
             edges_neumann = []
@@ -795,6 +795,9 @@ class LpewWeight:
         """
         neumann_nodes = []
         neumann_nodes_values = []
+
+        edges_neumann = neumann_edges
+        neumann_values = neumann_edges_value
 
         for i, edge in enumerate(edges_neumann):
             neumann_value = neumann_values[i]
@@ -912,7 +915,7 @@ def create_lpew2_neumann_weights(mesh_properties: MeshProperty):
 
     k = 6
     lpew = LpewWeight()
-    if mesh_properties.verify_name_in_data_names(lpew.data_weights[k]):
+    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
         return 
     resp = lpew.create_lpew2_neumann_weights(**mesh_properties.get_all_data())
     mesh_properties.insert_data(resp)
@@ -928,6 +931,7 @@ def get_lpew2_weights(mesh_properties: MeshProperty, **kwargs):
     create_zeta(mesh_properties)
     create_lambda_barra(mesh_properties)
     create_lpew2_weights(mesh_properties)
+    create_lpew2_neumann_weights(mesh_properties)
 
 
 

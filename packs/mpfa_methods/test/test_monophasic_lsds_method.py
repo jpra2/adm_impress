@@ -612,7 +612,7 @@ def setup4():
     
 def setup5():
     mesh_test_name = defpaths.linear_2k_test
-    mesh_properties_name = defpaths.mesh_prop_linear_2k
+    mesh_properties_name = defpaths.mesh_prop_linear_2k + '_lsds'
     mesh_verify(mesh_test_name)
     mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
     
@@ -775,9 +775,9 @@ def setup5():
     mesh_data.insert_tag_data('nodes_pressure_presc', pressures_bc, 'nodes', nodes_bc)
     # mesh_data.create_tag('pressure_error')
     # mesh_data.insert_tag_data('pressure_error', error, 'faces', mesh_properties.faces)
-    mesh_data.export_all_elements_type_to_vtk('linear_test_nodes', 'nodes')
-    mesh_data.export_all_elements_type_to_vtk('linear_test_faces', 'faces')
-    mesh_data.export_only_the_elements('linear_test_nodes_pressure_boundary', 'nodes', nodes_bc)
+    mesh_data.export_all_elements_type_to_vtk('linear_test_nodes_lsds', 'nodes')
+    mesh_data.export_all_elements_type_to_vtk('linear_test_faces_lsds', 'faces')
+    mesh_data.export_only_the_elements('linear_test_nodes_pressure_boundary_lsds', 'nodes', nodes_bc)
     
     plt.clf()
     fig1, ax1 = plt.subplots(1)
@@ -792,7 +792,7 @@ def setup5():
     # ax1.legend()
 
     ext = 'svg'
-    fig1.savefig(os.path.join('results', 'LinearTest.' + ext), format=ext)
+    fig1.savefig(os.path.join('results', 'LinearTest_lsds.' + ext), format=ext)
 
     
     import pdb; pdb.set_trace()

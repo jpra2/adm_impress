@@ -5,6 +5,7 @@ from packs.mpfa_methods.weight_interpolation.lpew import LpewWeight
 import numpy as np
 from packs.manager.boundary_conditions import BoundaryConditions
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
+import scipy.sparse as sp
 
 class DiamondFluxCalculation:
 
@@ -141,7 +142,7 @@ class DiamondFluxCalculation:
             kappa = kappa_D_dsflux['kappa'][edge]
             D = kappa_D_dsflux['D'][edge]
             edge_dim = edges_dim[edge]
-            xi_B = +kappa*edge_dim
+            xi_B = kappa*edge_dim
             xi_A = -xi_B
             xi_B2 = xi_B*D
             xi_B1 = -xi_B2
@@ -154,8 +155,8 @@ class DiamondFluxCalculation:
             centroids_nodes_edge = nodes_centroids[nodes_of_edge]
             b1b2 = centroids_nodes_edge[0] - centroids_nodes_edge[1]
             b2b1 = -b1b2
-            b2Ob = faces_centroids[face] - centroids_nodes_edge[1]
-            b1Ob = faces_centroids[face] - centroids_nodes_edge[0]
+            b2Ob = faces_centroids[face] - centroids_nodes_edge[0]
+            b1Ob = faces_centroids[face] - centroids_nodes_edge[1]
             edge_dim = edges_dim[edge]
             Kbn = kn_kt_dsflux['kn'][(kn_kt_dsflux['edge_id']==edge) & (kn_kt_dsflux['face_id']==face)][0]
             Kbt = kn_kt_dsflux['kt'][(kn_kt_dsflux['edge_id']==edge) & (kn_kt_dsflux['face_id']==face)][0]
@@ -171,105 +172,74 @@ class DiamondFluxCalculation:
             
     def mount_problem(self, boundary_conditions: BoundaryConditions, edges_dim, xi_params_dsflux, neumann_weights, nodes_weights, adjacencies, faces, nodes_of_edges, edges, bool_boundary_edges, edges_of_nodes, nodes, bool_boundary_nodes, **kwargs):
         
-        resp = dict()
+        # xi_params = xi_params_dsflux
+        
+        # resp = dict()
+        # n_faces = faces.shape[0]
+        # T = sp.lil_matrix((n_faces, n_faces))
+        # source = np.zeros(faces.shape[0])
+
+        # dirichlet_nodes = boundary_conditions['dirichlet_nodes']['id']
+        # dirichlet_nodes_values = boundary_conditions['dirichlet_nodes']['value']
+
+        # neumann_edges = boundary_conditions['neumann_edges']['id']
+        # neumann_edges_values = boundary_conditions['neumann_edges']['value']
+        # neumann_nodes = boundary_conditions.get_neumann_nodes(nodes_of_edges)
+
+        # bool_dirichlet_edges = bool_boundary_edges.copy()
+        # bool_dirichlet_edges[neumann_edges] = False
+        # dirichlet_edges = edges[bool_dirichlet_edges]
+
+        # for i, edge in enumerate(neumann_edges):
+        #     face_adj = adjacencies[edge, 0]
+        #     source[face_adj] += neumann_edges_values[i]*edges_dim[edge]
+        # import pdb; pdb.set_trace()
+        # for node in dirichlet_nodes:
+        #     edges_node = edges_of_nodes[node]
+        #     value = dirichlet_nodes_values[dirichlet_nodes==node]
+        #     for edge in edges_node:
+        #         if edge in neumann_edges:
+        #             continue
+        #         nodes_edge = nodes_of_edges[edge]
+        #         faces_adj = adjacencies[edge]
+        #         xi_params_edge = xi_params[edge]
+        #         xi_A = xi_params_edge[2]
+        #         xi_B = xi_params_edge[3]
+        #         if node == nodes_edge[0]:
+        #             xi_node = xi_B
+        #         else:
+        #             xi_node = xi_A
+                
+        #         source[faces_adj[0]] += -xi_node*value
+        #         if faces_adj[1] != -1:
+        #             source[faces_adj[1]] += xi_node*value
+        # import pdb; pdb.set_trace()
+        # return resp
+        # # # # import pdb; pdb.set_trace()
+
         lsds = LsdsFluxCalculation()
-        
-        n_faces = faces.shape[0]
-        source = np.zeros(n_faces)
-        
-        lines = []
-        cols = []
-        data = []
-        
-        dirichet_nodes = boundary_conditions['dirichlet_nodes']['id']
-        values_dirichlet_nodes = boundary_conditions['dirichlet_nodes']['value']
-        
-        neumann_edges = boundary_conditions['neumann_edges']['id']
-        neumann_nodes = np.unique(np.concatenate(nodes_of_edges[neumann_edges]))
-        neumann_nodes = np.setdiff1d(neumann_nodes, dirichet_nodes)
-        
-        ## adicionando o fluxo prescrito nos edges de neumann
-        neumann_edges_values = boundary_conditions['neumann_edges']['value']
-        faces_adjacencies_neumann_edges = adjacencies[neumann_edges, 0]
-        dim_neumann_edges = edges_dim[neumann_edges]
-        source[faces_adjacencies_neumann_edges] += neumann_edges_values*dim_neumann_edges
-
-        ## adicionando a prescricao de dirichlet dos nos
-        lsds.insert_prescription_in_source(
-            values_dirichlet_nodes,
-            dirichet_nodes,
-            edges_of_nodes,
-            nodes_of_edges,
-            adjacencies,
-            xi_params_dsflux,
-            source
-        )
-
-        ## adicionando a prescricao de neumann dos nos
-        test = np.isin(neumann_weights['node_id'], neumann_nodes)
-        neumann_nodes_weights = neumann_weights['nweight'][test]
-
-        lsds.insert_prescription_in_source(
-            neumann_nodes_weights,
-            neumann_nodes,
-            edges_of_nodes,
-            nodes_of_edges,
-            adjacencies,
-            xi_params_dsflux,
-            source
-        )
-
-        ## montando a matriz de transmissibildade para os nos de neumann
-        lsds.update_transmissibility_from_neumann_nodes(
-            neumann_nodes,
-            edges_of_nodes,
-            nodes_of_edges,
+        return lsds.mount_problem_v4(
+            boundary_conditions,
             nodes_weights,
-            adjacencies,
             xi_params_dsflux,
-            edges[bool_boundary_edges],
-            lines,
-            cols,
-            data
-        )
-
-        ## montando a matriz de transmissibildade para os nos internos
-        bool_inodes = ~bool_boundary_nodes
-        lsds.update_transmissibility_from_nodes(
-            nodes[bool_inodes],
-            edges_of_nodes,
+            faces,
+            nodes,
+            bool_boundary_edges,
+            adjacencies,
             nodes_of_edges,
-            nodes_weights,
-            adjacencies,
-            xi_params_dsflux,
-            lines,
-            cols,
-            data
+            neumann_weights,
+            edges_of_nodes,
+            edges,
+            edges_dim,
+            bool_boundary_nodes
         )
-
-        T = lsds.get_transmissibility_from_data(lines, cols, data, faces)
-
-        resp.update({
-            'transmissibility': T,
-            'source': source
-        })   
         
-        return resp
+
 
 
 
-        
 
-        
 
-        
-
-        
-        
-        
-        
-        
-        
 
         
 
