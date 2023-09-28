@@ -745,8 +745,6 @@ def setup5():
     # resp = lsds.mount_problem_v3(bc, **mesh_properties.get_all_data())
     resp = lsds.mount_problem_v4(bc, **mesh_properties.get_all_data())
 
-
-    
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
     edges_flux = lsds.get_edges_flux(
         mesh_properties.xi_params,

@@ -1142,19 +1142,17 @@ class LsdsFluxCalculation:
         n_faces = faces.shape[0]
         T = sp.lil_matrix((n_faces, n_faces))
         source = np.zeros(faces.shape[0])
-        ss2 = source
 
         dirichlet_nodes = boundary_conditions['dirichlet_nodes']['id']
         dirichlet_nodes_values = boundary_conditions['dirichlet_nodes']['value']
 
         neumann_edges = boundary_conditions['neumann_edges']['id']
         neumann_edges_values = boundary_conditions['neumann_edges']['value']
-        neumann_nodes = np.setdiff1d(np.unique(nodes_of_edges[neumann_edges]), dirichlet_nodes)
+        neumann_nodes = boundary_conditions.get_neumann_nodes(nodes_of_edges)
 
         bool_dirichlet_edges = bool_boundary_edges.copy()
         bool_dirichlet_edges[neumann_edges] = False
         dirichlet_edges = edges[bool_dirichlet_edges]
-
 
         for i, edge in enumerate(neumann_edges):
             faces_adj = adjacencies[edge, 0]
@@ -1249,11 +1247,6 @@ class LsdsFluxCalculation:
         })
         return resp
 
-
-
-
-
-
     def get_edges_flux(
         self,
         xi_alpha,
@@ -1270,6 +1263,10 @@ class LsdsFluxCalculation:
         node_press = boundary_conditions[nodes_pressure_prescription]
         ids_node_press = node_press['id']
         values = node_press['value']
+
+        neumann_edges = boundary_conditions['neumann_edges']['id']
+        neumann_edges_values = boundary_conditions['neumann_edges']['value']
+        neumann_nodes = boundary_conditions.get_neumann_nodes(nodes_of_edges)
         
         nodes_weight_matrix = mount_sparse_weight_matrix(nodes_weights)
         K_faces = adjacencies[:, 0]
@@ -1284,8 +1281,9 @@ class LsdsFluxCalculation:
         
         nodes_pressures = nodes_weight_matrix.dot(faces_pressures)
         neumann_vector = np.zeros(len(nodes_pressures))
-        if len(neumann_weights['node_id'] > 0):
-            neumann_vector[neumann_weights['node_id']] = neumann_weights['nweight']
+        if len(neumann_nodes > 0):
+            test = np.isin(neumann_weights['node_id'], neumann_nodes)
+            neumann_vector[neumann_weights['node_id'][test]] = neumann_weights['nweight'][test]
         nodes_pressures = nodes_pressures + neumann_vector
         nodes_pressures[ids_node_press] = values
         
@@ -1293,6 +1291,7 @@ class LsdsFluxCalculation:
         A_pressure = nodes_pressures[A_nodes]
         
         Fk_sigma = xi_alpha[:, 0]*K_pressure + xi_alpha[:, 1]*L_pressure + xi_alpha[:, 2]*A_pressure + xi_alpha[:, 3]*B_pressure
+        Fk_sigma[neumann_edges] = neumann_edges_values
         
         return Fk_sigma
 
