@@ -172,51 +172,6 @@ class DiamondFluxCalculation:
             
     def mount_problem(self, boundary_conditions: BoundaryConditions, edges_dim, xi_params_dsflux, neumann_weights, nodes_weights, adjacencies, faces, nodes_of_edges, edges, bool_boundary_edges, edges_of_nodes, nodes, bool_boundary_nodes, **kwargs):
         
-        # xi_params = xi_params_dsflux
-        
-        # resp = dict()
-        # n_faces = faces.shape[0]
-        # T = sp.lil_matrix((n_faces, n_faces))
-        # source = np.zeros(faces.shape[0])
-
-        # dirichlet_nodes = boundary_conditions['dirichlet_nodes']['id']
-        # dirichlet_nodes_values = boundary_conditions['dirichlet_nodes']['value']
-
-        # neumann_edges = boundary_conditions['neumann_edges']['id']
-        # neumann_edges_values = boundary_conditions['neumann_edges']['value']
-        # neumann_nodes = boundary_conditions.get_neumann_nodes(nodes_of_edges)
-
-        # bool_dirichlet_edges = bool_boundary_edges.copy()
-        # bool_dirichlet_edges[neumann_edges] = False
-        # dirichlet_edges = edges[bool_dirichlet_edges]
-
-        # for i, edge in enumerate(neumann_edges):
-        #     face_adj = adjacencies[edge, 0]
-        #     source[face_adj] += neumann_edges_values[i]*edges_dim[edge]
-        # import pdb; pdb.set_trace()
-        # for node in dirichlet_nodes:
-        #     edges_node = edges_of_nodes[node]
-        #     value = dirichlet_nodes_values[dirichlet_nodes==node]
-        #     for edge in edges_node:
-        #         if edge in neumann_edges:
-        #             continue
-        #         nodes_edge = nodes_of_edges[edge]
-        #         faces_adj = adjacencies[edge]
-        #         xi_params_edge = xi_params[edge]
-        #         xi_A = xi_params_edge[2]
-        #         xi_B = xi_params_edge[3]
-        #         if node == nodes_edge[0]:
-        #             xi_node = xi_B
-        #         else:
-        #             xi_node = xi_A
-                
-        #         source[faces_adj[0]] += -xi_node*value
-        #         if faces_adj[1] != -1:
-        #             source[faces_adj[1]] += xi_node*value
-        # import pdb; pdb.set_trace()
-        # return resp
-        # # # # import pdb; pdb.set_trace()
-
         lsds = LsdsFluxCalculation()
         return lsds.mount_problem_v4(
             boundary_conditions,
