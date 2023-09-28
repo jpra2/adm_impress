@@ -46,6 +46,7 @@ class MpfaPreprocess:
                 resp[edge,:] = [A, B]
         
         mesh_properties.insert_or_update_data({'nodes_of_edges': resp})
+        mesh_properties.export_data()
         
     def calculate_areas(self, mesh_properties: MeshProperty):
         
@@ -101,7 +102,7 @@ class MpfaPreprocess:
         unitary_normal_edges = mesh_properties.unitary_normal_edges
         
         edges_centroids = (nodes_centroids[nodes_of_edges[:, 1]] + nodes_centroids[nodes_of_edges[:, 0]])/2 
-        # import pdb; pdb.set_trace()
+        
         for edge in edges:
             unitary_normal = unitary_normal_edges[edge]
             edge_centroid = edges_centroids[edge]

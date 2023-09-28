@@ -168,18 +168,6 @@ class DiamondFluxCalculation:
             xi_params_dsflux[edge][:] = [coef_B, 0, coef_B1, coef_B2]
         
         return {self.data_names[2]: xi_params_dsflux}
-
-
-
-
-
-
-
-
-
-
-
-        pass
             
     def mount_problem(self, boundary_conditions: BoundaryConditions, edges_dim, xi_params_dsflux, neumann_weights, nodes_weights, adjacencies, faces, nodes_of_edges, edges, bool_boundary_edges, edges_of_nodes, nodes, bool_boundary_nodes, **kwargs):
         
