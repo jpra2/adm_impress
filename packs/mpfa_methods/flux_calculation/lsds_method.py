@@ -1249,15 +1249,17 @@ class LsdsFluxCalculation:
 
     def get_edges_flux(
         self,
-        xi_alpha,
+        boundary_conditions: BoundaryConditions,
+        faces_pressures,
+        xi_params,
         nodes_weights,
         nodes_of_edges,
-        faces_pressures,
         adjacencies,
-        boundary_conditions: BoundaryConditions,
         neumann_weights,
         **kwargs
     ):
+        
+        xi_alpha = xi_params
         
         nodes_pressure_prescription = defnames.nodes_pressure_prescription_name
         node_press = boundary_conditions[nodes_pressure_prescription]

@@ -13,6 +13,7 @@ from packs.manager.mesh_data import MeshData
 import matplotlib.pyplot as plt
 from packs.utils import calculate_face_properties
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess
+from packs.mpfa_methods.flux_calculation.diamond_method import DiamondFluxCalculation, get_xi_params_ds_flux
 
 all_pr_names = ['problem1', 'problem2', 'problem3', 'problem4', 'problem5']
 all_weight_interpolation_names = ['gls', 'inverse_distance']
@@ -258,7 +259,7 @@ def remove_process_tags(mesh_properties: MeshProperty, pr_name: str):
     mesh_properties.remove_data(tags)
 
 def backup_weights(mesh_properties: MeshProperty, sufix_name: str):
-    tags = ['nodes_weights', 'neumann_nodes_weights', defnames.nodes_weights_matrix_structure]
+    tags = ['nodes_weights', 'neumann_weights', 'xi_params']
     for tag in tags:
         mesh_properties.backup_data(tag, tag+sufix_name)
     
@@ -281,17 +282,54 @@ def run(pr_name, mesh_type, ns, n):
     mesh_properties_name = prop_name
     mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
     pressure_tag = 'pressure_' + pr_name
+    # sufix = '_gls'
+    sufix = '_lpew2'
 
-    # mesh_properties.remove_data(['nodes_weights', 'neumann_nodes_weights'])
-    # mesh_properties.remove_data(get_tags(pr_name))
-
-    lsds = LsdsFluxCalculation()
-    
-    get_permeability, exact_solution = get_permeability_and_exact_solution_func(pr_name)
-    
     calculate_areas(mesh_properties)
     calculate_h_dist(mesh_properties)
+
+    lsds = LsdsFluxCalculation()
+    diamond_flux = DiamondFluxCalculation()
     
+    get_permeability, exact_solution = get_permeability_and_exact_solution_func(pr_name)
+
+    #define boundary conditions    
+    problem_name = pr_name
+    bc = BoundaryConditions()
+    bc.insert_name(problem_name)
+    
+    xmin, ymin = mesh_properties.faces_centroids[:, 0:2].min(axis=0)
+    xmax, ymax = mesh_properties.faces_centroids[:, 0:2].max(axis=0)
+    
+    mesh_delta = 1e-13
+    nodes_xmin = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 0] < xmin + mesh_delta
+    ]
+    nodes_xmax = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 0] > xmax - mesh_delta
+    ]
+    nodes_ymin = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 1] < ymin + mesh_delta
+    ]
+    nodes_ymax = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 1] > ymax - mesh_delta
+    ]
+    
+    nodes_bc = np.unique(np.concatenate([
+        nodes_xmin, nodes_xmax, nodes_ymin, nodes_ymax
+    ])).astype(np.uint64)
+    
+    centroids_nodes_bc = mesh_properties.nodes_centroids[nodes_bc, 0:2]
+    
+    pressures_bc = exact_solution(centroids_nodes_bc)
+    
+    bc.set_boundary('dirichlet_nodes', nodes_bc, pressures_bc)
+    bc.set_boundary('neumann_edges', np.array([]), np.array([]))
+    #####################
+
+    # mesh_properties.remove_data(['nodes_weights', 'neumann_weights', 'xi_params', pressure_tag])
+    mesh_properties.remove_data([pressure_tag])
+
     if  not mesh_properties.verify_name_in_data_names('nodes_weights'):
         
         # define nodes to calculate_weights
@@ -300,103 +338,49 @@ def run(pr_name, mesh_type, ns, n):
         ## create weights and xi params for flux calculation
         resp = lsds.preprocess(mesh_properties)
         mesh_properties.insert_or_update_data(resp)
-    
-        mesh_properties.insert_data(
-            get_gls_nodes_weights(**mesh_properties.get_all_data())
-        )
-        
-        # dtype_neumann = [('node_id', np.int), ('nweight', np.float)]
-        # zero_neumann = np.zeros(len([]), dtype=dtype_neumann)
-        # get_lpew2_weights(mesh_properties)
-        # mesh_properties.insert_data({
-        #     'neumann_nodes_weights': zero_neumann
-        # })
 
-        
+        mesh_properties.insert_or_update_data({
+            'neumann_edges': bc['neumann_edges']['id'],
+            'neumann_edges_value': bc['neumann_edges']['value']
+        })
 
-        if not mesh_properties.verify_name_in_data_names('xi_params'):
-           
-            mesh_properties.insert_data(
-                lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
+        if sufix == '_gls':
+            mesh_properties.insert_or_update_data(
+                get_gls_nodes_weights(**mesh_properties.get_all_data())
             )
-    
+
+        elif sufix == '_lpew2':
+            get_lpew2_weights(mesh_properties)
+
         mesh_properties.remove_data(['nodes_to_calculate'])
 
-        backup_weights(mesh_properties, '_lpew2')
-        # backup_weights(mesh_properties, '_gls')
-        
-        mesh_properties.export_data()
-    
-    if not mesh_properties.verify_name_in_data_names(defnames.nodes_weights_matrix_structure):
+        if not mesh_properties.verify_name_in_data_names('xi_params'):
 
-        mesh_properties.insert_or_update_data(
-                get_weight_matrix_structure(mesh_properties['nodes_weights'])
-            )
+            # mesh_properties.insert_data(
+            #     lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
+            # )
+
+            get_xi_params_ds_flux(mesh_properties)
+
+        backup_weights(mesh_properties, sufix)
         mesh_properties.export_data()
 
-    
-    
     if not mesh_properties.verify_name_in_data_names(pressure_tag):
            
         mesh_properties.update_data(
             get_permeability(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
-        )
-        
-        #define boundary conditions    
-        problem_name = pr_name
-        bc = BoundaryConditions()
-        bc.insert_name(problem_name)
-        
-        xmin, ymin = mesh_properties.faces_centroids[:, 0:2].min(axis=0)
-        xmax, ymax = mesh_properties.faces_centroids[:, 0:2].max(axis=0)
-        
-        mesh_delta = 1e-13
-        nodes_xmin = mesh_properties.nodes[
-            mesh_properties.nodes_centroids[:, 0] < xmin + mesh_delta
-        ]
-        nodes_xmax = mesh_properties.nodes[
-            mesh_properties.nodes_centroids[:, 0] > xmax - mesh_delta
-        ]
-        nodes_ymin = mesh_properties.nodes[
-            mesh_properties.nodes_centroids[:, 1] < ymin + mesh_delta
-        ]
-        nodes_ymax = mesh_properties.nodes[
-            mesh_properties.nodes_centroids[:, 1] > ymax - mesh_delta
-        ]
-        
-        nodes_bc = np.unique(np.concatenate([
-            nodes_xmin, nodes_xmax, nodes_ymin, nodes_ymax
-        ])).astype(np.uint64)
-        
-        centroids_nodes_bc = mesh_properties.nodes_centroids[nodes_bc, 0:2]
-        
-        pressures_bc = exact_solution(centroids_nodes_bc)
-        
-        bc.set_boundary('nodes_pressures', nodes_bc, pressures_bc)
+        )       
 
-        resp = lsds.mount_problem_v2(
-            mesh_properties.nodes_weights,
-            mesh_properties.xi_params,
-            mesh_properties.faces,
-            mesh_properties.nodes,
-            mesh_properties.bool_boundary_edges,
-            mesh_properties.adjacencies,
+        resp = lsds.mount_problem_v4(
             bc,
-            mesh_properties.nodes_of_edges,
-            mesh_properties.neumann_nodes_weights,
-            mesh_properties.edges_of_nodes
+            **mesh_properties.get_all_data()
         )
         
         pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
         edges_flux = lsds.get_edges_flux(
-            mesh_properties.xi_params,
-            mesh_properties.nodes_of_edges,
-            pressure,
-            mesh_properties.adjacencies,
-            bc,
-            mesh_properties.neumann_nodes_weights,
-            mesh_properties['nodes'],
-            mesh_properties['faces']
+            boundary_conditions=bc,
+            faces_pressures=pressure,
+            **mesh_properties.get_all_data()
         )
         
         faces_flux = lsds.get_faces_flux(
@@ -411,7 +395,7 @@ def run(pr_name, mesh_type, ns, n):
         
         error2 = np.power(error, 2)
         
-        mesh_properties.insert_data({
+        mesh_properties.insert_or_update_data({
             pressure_tag: pressure,
             'edges_flux_' + pr_name: edges_flux,
             'faces_flux_' + pr_name: faces_flux,
@@ -419,8 +403,7 @@ def run(pr_name, mesh_type, ns, n):
             'error_' + pr_name: error,
             'error2_' + pr_name: error2
         })
-        backup_tags_process(mesh_properties, pr_name, '_lpew2')
-        # backup_tags_process(mesh_properties, pr_name, '_gls')
+        backup_tags_process(mesh_properties, pr_name, sufix)
         mesh_properties.export_data()
     
     nodes_weights_test(mesh_properties, exact_solution, pr_name)
@@ -709,9 +692,9 @@ def plot_errors(problem = 0):
     mesh_types_dict = {
         'mesh1': [8, 32, 64, 128],
         # 'mesh1': [8, 32, 64],
-        'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
-        'mesh5':  [12, 24, 48, 96, 192, 384],
-        'mesh6': [1, 2, 3, 4]   
+        # 'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
+        # 'mesh5':  [12, 24, 48, 96, 192, 384],
+        # 'mesh6': [1, 2, 3, 4]   
     }
     
     fig1, ax1 = plt.subplots(1)

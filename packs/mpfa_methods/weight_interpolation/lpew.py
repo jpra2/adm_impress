@@ -793,6 +793,14 @@ class LpewWeight:
             edges_neumann = []
             neumann_values = []
         """
+        dtype = [('node_id', np.int), ('nweight', np.float64)]
+        if len(neumann_edges) == 0:
+            array = np.zeros(len(neumann_edges), dtype=dtype)
+            return {'neumann_weights': array}
+
+
+
+
         neumann_nodes = []
         neumann_nodes_values = []
 
@@ -824,7 +832,7 @@ class LpewWeight:
             lambda_barra_node_sum = (lambda_barra['lambda_barra'][lambda_barra['node_id']==node]).sum()
             neumann_weights[i] = neumann_weights[i]/lambda_barra_node_sum
 
-        dtype = [('node_id', np.int), ('nweight', np.float64)]
+        
         array = np.zeros(len(neumann_weights), dtype=dtype)
         array['node_id'][:] = neumann_nodes
         array['nweight'][:] = neumann_weights

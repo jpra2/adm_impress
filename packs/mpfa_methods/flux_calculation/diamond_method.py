@@ -1,6 +1,6 @@
 from packs.manager.meshmanager import MeshProperty
 from packs.mpfa_methods.weight_interpolation.lpew import preprocess
-from packs.mpfa_methods.test.test_monophasic_lsds_dong_paper import calculate_h_dist, calculate_areas
+from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess
 from packs.mpfa_methods.weight_interpolation.lpew import LpewWeight
 import numpy as np
 from packs.manager.boundary_conditions import BoundaryConditions
@@ -9,7 +9,7 @@ import scipy.sparse as sp
 
 class DiamondFluxCalculation:
 
-    data_names = ['kn_kt_dsflux', 'kappa_D_dsflux', 'xi_params_dsflux']
+    data_names = ['kn_kt_dsflux', 'kappa_D_dsflux', 'xi_params']
 
     @staticmethod
     def get_edges_dim(nodes_centroids, nodes_of_edges, edges, **kwargs):
@@ -26,8 +26,9 @@ class DiamondFluxCalculation:
          B2 - B; B1 - A;
         """
         preprocess(mesh_properties)
-        calculate_h_dist(mesh_properties)
-        calculate_areas(mesh_properties)
+        mpfaPreprocess = MpfaPreprocess()
+        mpfaPreprocess.calculate_h_dist(mesh_properties)
+        mpfaPreprocess.calculate_areas(mesh_properties)
     
     def create_kn_and_kt(
             self,
@@ -170,13 +171,13 @@ class DiamondFluxCalculation:
         
         return {self.data_names[2]: xi_params_dsflux}
             
-    def mount_problem(self, boundary_conditions: BoundaryConditions, edges_dim, xi_params_dsflux, neumann_weights, nodes_weights, adjacencies, faces, nodes_of_edges, edges, bool_boundary_edges, edges_of_nodes, nodes, bool_boundary_nodes, **kwargs):
+    def mount_problem(self, boundary_conditions: BoundaryConditions, edges_dim, xi_params, neumann_weights, nodes_weights, adjacencies, faces, nodes_of_edges, edges, bool_boundary_edges, edges_of_nodes, nodes, bool_boundary_nodes, **kwargs):
         
         lsds = LsdsFluxCalculation()
         return lsds.mount_problem_v4(
             boundary_conditions,
             nodes_weights,
-            xi_params_dsflux,
+            xi_params,
             faces,
             nodes,
             bool_boundary_edges,
