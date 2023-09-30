@@ -90,7 +90,8 @@ class MpfaPreprocess:
             mesh_properties.export_data()
 
     def create_properties_if_not_exists(self, mesh_name, mesh_properties_name):
-        create_properties_if_not_exists(mesh_name, mesh_properties_name)
+        mesh_properties = create_properties_if_not_exists(mesh_name, mesh_properties_name)
+        return mesh_properties
     
     def test_unitary_normal_edges(self, mesh_properties: MeshProperty):
         
@@ -114,7 +115,11 @@ class MpfaPreprocess:
             else:
                 raise ValueError('Os vetores normais dos edges devem estar apontando da face da esquerda do vetor de adjacencias para o centroide do edge')
             
-
+    def preprocess_data_lsds(self, mesh_properties: MeshProperty):
+        lsds = LsdsFluxCalculation()
+        resp = lsds.preprocess(mesh_properties)
+        mesh_properties.insert_or_update_data(resp)
+        mesh_properties.export_data()
 
 
 

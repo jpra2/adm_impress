@@ -190,7 +190,41 @@ class DiamondFluxCalculation:
             bool_boundary_nodes
         )
         
-
+    def get_edges_flux(
+        self,
+        boundary_conditions: BoundaryConditions,
+        faces_pressures,
+        xi_params,
+        nodes_weights,
+        nodes_of_edges,
+        adjacencies,
+        neumann_weights,
+        **kwargs):
+        
+        lsds = LsdsFluxCalculation()
+        return lsds.get_edges_flux(
+            boundary_conditions,
+            faces_pressures,
+            xi_params,
+            nodes_weights,
+            nodes_of_edges,
+            adjacencies,
+            neumann_weights
+        )
+    
+    def get_faces_flux(self,
+        edges_flux,
+        adjacencies,
+        bool_boundary_edges,
+        **kwargs
+    ):
+        
+        lsds = LsdsFluxCalculation()
+        return lsds.get_faces_flux(
+            edges_flux,
+            adjacencies,
+            bool_boundary_edges
+        )
 
 
 
