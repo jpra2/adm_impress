@@ -93,9 +93,21 @@ def get_Erms(pressure, exact_sol):
     n = len(pressure)
     return np.linalg.norm(dif/n)
 
+def get_L2(pressure, exact_sol):
+    dif = pressure - exact_sol
+    return np.linalg.norm(dif)
+
+def get_Eu(pressure, exact_sol, areas):
+    error = pressure - exact_sol
+    error_2 = np.power(error, 2)
+    resp = areas*error_2
+    resp = np.sqrt(resp.sum())
+    return resp
+
 def run_problem(mesh_name, mesh_properties_name, alpha):
 
-    dtype_E = [('Emax', np.float64), ('Erms', np.float64)]
+    dtype_E = [('Emax', np.float64), ('Erms', np.float64), ('L2', np.float64),
+               ('Eu', np.float64)]
 
     diamond_flux = DiamondFluxCalculation()
 
@@ -111,7 +123,9 @@ def run_problem(mesh_name, mesh_properties_name, alpha):
     get_lpew2_weights(mesh_properties)
     get_xi_params_ds_flux(mesh_properties)
 
-    if not mesh_properties.verify_name_in_data_names('error'):
+    error_tag = 'error_alpha_' + str(alpha)
+
+    if not mesh_properties.verify_name_in_data_names(error_tag):
 
         resp = diamond_flux.mount_problem(
             bc,
@@ -134,26 +148,29 @@ def run_problem(mesh_name, mesh_properties_name, alpha):
 
         exact_faces_solution = exact_solution(mesh_properties.faces_centroids, alpha)
 
-        Emax = get_Emax(pressure, exact_faces_solution)
-        Erms = get_Erms(pressure, exact_faces_solution)
-
         array = np.zeros(1, dtype=dtype_E)
-        array['Emax'] = Emax
-        array['Erms'] = Erms
-
-        print(f'Emax: {Emax}')
-        print(f'Erms: {Erms}')
+        array['Emax'] = get_Emax(pressure, exact_faces_solution)
+        array['Erms'] = get_Erms(pressure, exact_faces_solution)
+        array['L2'] = get_L2(pressure, exact_faces_solution)
+        array['Eu'] = get_Eu(pressure, exact_faces_solution, mesh_properties['areas'])
 
         mesh_properties.insert_or_update_data({
-            'error': array
+            error_tag: array
         })
         mesh_properties.export_data()
+        
+    print(f'MESH: {mesh_name}')
+    print(f'Emax: {mesh_properties[error_tag]["Emax"]}')
+    print(f'Erms: {mesh_properties[error_tag]["Erms"]}')
+    print(f'L2: {mesh_properties[error_tag]["L2"]}')
+    print(f'Eu: {mesh_properties[error_tag]["Eu"]}')
+    print()
 
 def test_problem1():
     mesh_prefix = 'str_trimesh_'
     mesh_sufix = '.msh'
     list_of_meshs = ['16x16', '32x32', '64x64', '128x128']
-    alpha = 1
+    alpha = 10
     for n_mesh in list_of_meshs:
         mesh_prop_name = mesh_prefix + n_mesh
         mesh_name = mesh_prop_name + mesh_sufix
