@@ -1247,6 +1247,46 @@ class LsdsFluxCalculation:
         })
         return resp
 
+    def mount_problem_v5(self,
+        boundary_conditions: BoundaryConditions,
+        nodes_weights,
+        xi_params,
+        faces,
+        nodes,
+        bool_boundary_edges,
+        adjacencies,
+        nodes_of_edges,
+        neumann_weights,
+        edges_of_nodes,
+        edges,
+        edges_dim,
+        bool_boundary_nodes,
+        **kwargs
+    ):
+        
+        resp = dict()
+        n_faces = faces.shape[0]
+        T = sp.lil_matrix((n_faces, n_faces))
+        source = np.zeros(faces.shape[0])
+
+        dirichlet_nodes = boundary_conditions['dirichlet_nodes']['id']
+        dirichlet_nodes_values = boundary_conditions['dirichlet_nodes']['value']
+
+        neumann_edges = boundary_conditions['neumann_edges']['id']
+        neumann_edges_values = boundary_conditions['neumann_edges']['value']
+        neumann_nodes = boundary_conditions.get_neumann_nodes(nodes_of_edges)
+
+        bool_dirichlet_edges = bool_boundary_edges.copy()
+        bool_dirichlet_edges[neumann_edges] = False
+        dirichlet_edges = edges[bool_dirichlet_edges]
+        
+        for edge in edges[bool_boundary_edges]:
+            pass
+
+
+
+
+
     def get_edges_flux(
         self,
         boundary_conditions: BoundaryConditions,

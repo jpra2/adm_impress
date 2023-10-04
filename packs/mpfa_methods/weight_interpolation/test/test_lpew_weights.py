@@ -183,7 +183,7 @@ def get_data_from_matfile(matfile, **kwargs):
     mdata = sio.loadmat(matfile)
     return mdata
 
-def preprocess_mdata(mdata, mesh_properties):
+def preprocess_mdata(mdata, mesh_properties: MeshProperty):
 
     nodes_centroids = mesh_properties['nodes_centroids']
     nodes = mesh_properties['nodes']
@@ -252,6 +252,18 @@ def preprocess_mdata(mdata, mesh_properties):
     mdata['rowM'] = mdata['rowM'].astype(np.int).flatten()
     mdata['colM'] = mdata['colM'].astype(np.int).flatten()
     mdata['dataM'] = mdata['dataM'].flatten()
+
+    edges_centroids = mesh_properties.edges_centroids
+    mdata_edge_ids = np.repeat(-1, len(edges_centroids))
+    edges = mesh_properties.edges
+    for i, edge_centroid in enumerate(mdata['edges_centroids']):
+        d1 = np.linalg.norm(edge_centroid - edges_centroids, axis=1)
+        test1 = d1 <= delta
+        edge_id = edges[test1][0]
+        mdata_edge_ids[i] = edge_id
+    
+    mdata['edges'] = mdata_edge_ids
+
 
 
 
