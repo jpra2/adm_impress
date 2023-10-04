@@ -1173,7 +1173,7 @@ class LsdsFluxCalculation:
                     xi_node = xi_B
                 else:
                     xi_node = xi_A
-                
+                    
                 source[faces_adj[0]] += -xi_node*value
                 if faces_adj[1] != -1:
                     source[faces_adj[1]] += xi_node*value

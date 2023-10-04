@@ -37,5 +37,8 @@
 # from packs.mpfa_methods.flux_calculation.test.test_flux_diamond_method import test_xi_params_ds
 # test_xi_params_ds()
 
-from packs.mpfa_methods.test.test1_lpew2_monophasic import test_problem1
-test_problem1()
+# from packs.mpfa_methods.test.test1_lpew2_monophasic import test_problem1
+# test_problem1()
+
+from packs.mpfa_methods.test.test2_lpew2_monophasic import run
+run()

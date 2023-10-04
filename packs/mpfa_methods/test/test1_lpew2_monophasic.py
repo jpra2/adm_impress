@@ -170,7 +170,7 @@ def test_problem1():
     mesh_prefix = 'str_trimesh_'
     mesh_sufix = '.msh'
     list_of_meshs = ['16x16', '32x32', '64x64', '128x128']
-    alpha = 10
+    alpha = 1
     for n_mesh in list_of_meshs:
         mesh_prop_name = mesh_prefix + n_mesh
         mesh_name = mesh_prop_name + mesh_sufix

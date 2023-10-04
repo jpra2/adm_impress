@@ -207,10 +207,53 @@ def preprocess_mdata(mdata, mesh_properties):
         test2 = d2 <= delta
         face_id = faces[test2]
         all_faces_id[i] = face_id
-
     
+    nodes_id_dirichlet = []
+    values_dirichlet = []
+    for data in mdata['dirichlet_nodes']:
+        coord_no = data[0:2]
+        d1 = np.linalg.norm(nodes_centroids - coord_no, axis=1)
+        test1 = d1 <= delta
+        no_id = nodes[test1][0]
+        if no_id in nodes_id_dirichlet:
+            continue
+        nodes_id_dirichlet.append(no_id)
+        values_dirichlet.append(data[2])
+    
+    nodes_id_dirichlet = np.array(nodes_id_dirichlet)
+    values_dirichlet = np.array(values_dirichlet)
+    mdata['nodes_id_dirichlet'] = nodes_id_dirichlet
+    mdata['values_dirichlet_nodes'] = values_dirichlet
+
     mdata['node_id'] = all_nodes_id
     mdata['face_id'] = all_faces_id
+
+    global_id_nodes = []
+    global_id_faces = []
+
+    for coord_no in mdata['coord']:
+        d1 = np.linalg.norm(nodes_centroids - coord_no[0:2], axis=1)
+        test1 = d1 <= delta
+        no_id = nodes[test1][0]
+        global_id_nodes.append(no_id)
+    
+    for coord_face in mdata['centelem']:
+        d2 = np.linalg.norm(faces_centroids - coord_face[0:2], axis=1)
+        test2 = d2 <= delta
+        face_id = faces[test2]
+        global_id_faces.append(face_id)
+    
+    global_id_nodes = np.array(global_id_nodes)
+    global_id_faces = np.array(global_id_faces).flatten()
+
+    mdata['global_id_nodes'] = global_id_nodes
+    mdata['global_id_faces'] = global_id_faces
+
+    mdata['rowM'] = mdata['rowM'].astype(np.int).flatten()
+    mdata['colM'] = mdata['colM'].astype(np.int).flatten()
+    mdata['dataM'] = mdata['dataM'].flatten()
+
+
 
 def test_all_weights(mdata, mesh_properties: MeshProperty):
 
