@@ -9,9 +9,12 @@ from packs.mpfa_methods.weight_interpolation.lpew import get_lpew2_weights
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess
 from packs.mpfa_methods.weight_interpolation.test.test_lpew_weights import test_all_weights
 
-def test_internal_faces(data_mdata, data_mesh, nodes, bool_boundary_nodes, nodes_of_nodes, edges_of_nodes, adjacencies, **kwargs):
+def test_internal_faces(Mdata_mdata, Mdata_mesh, nodes, bool_boundary_nodes, nodes_of_nodes, edges_of_nodes, adjacencies, **kwargs):
     
+    delta = 1e-7
     bnodes = nodes[bool_boundary_nodes]
+    data_mdata = Mdata_mdata
+    data_mesh = Mdata_mesh
     nodes_adj_bnodes = np.unique(np.concatenate(nodes_of_nodes[bnodes]))
     test = np.isin(nodes, nodes_adj_bnodes)
     test2 = ~test
@@ -27,20 +30,43 @@ def test_internal_faces(data_mdata, data_mesh, nodes, bool_boundary_nodes, nodes
 
             lines_mdata = data_mdata[0][test1]
             lines_mesh = data_mesh[0][test2]
+            n1 = np.linalg.norm(lines_mdata - lines_mesh)
 
             cols_mdata = data_mdata[1][test1]
             cols_mesh = data_mesh[1][test2]
+            n2 = np.linalg.norm(cols_mdata - cols_mesh)
 
             dataa_mdata = data_mdata[2][test1]
             dataa_mesh = data_mesh[2][test2]
+            n3 = np.linalg.norm(dataa_mdata - dataa_mesh)
+
+
+
+            print(f'lines_mdata: {lines_mdata}')
+            print(f'lines_mesh: {lines_mesh}')
+            print(f'error lines: {n1}')
+            print(f'cols_mdata: {cols_mdata}')
+            print(f'cols_mesh: {cols_mesh}')
+            print(f'error_cols: {n2}')
+            print(f'dataa_mdata: {dataa_mdata}')
+            print(f'dataa_mesh: {dataa_mesh}')
+            print(f'norm_dataa: {np.linalg.norm(dataa_mdata - dataa_mesh)}')
+            print(f'error data: {n3}')
+            print()
+
+            assert n1 < delta
+            assert n2 < delta
+            assert n3 < delta
+
+
+    import pdb; pdb.set_trace()
 
 def test_kn_bedges(mesh_properties: MeshProperty, mdata):
 
-    delta = 1e-8
+    delta = 1e-7
     kn_kt_mesh = mesh_properties['kn_kt_dsflux']
     kn_data = mdata['kn_data']
     edge_ids_data = mdata['edges']
-    edge_ids_mesh = mesh_properties.edges
     adjacencies = mesh_properties.adjacencies
     biedges = ~mesh_properties.bool_boundary_edges
     edges_dim = mesh_properties.edges_dim
@@ -60,16 +86,9 @@ def test_kn_bedges(mesh_properties: MeshProperty, mdata):
         kappa_mdata = np.abs(mdata['ked_data'][edge_ids_data==edge])
         D_mesh = abs(mesh_properties['kappa_D_dsflux']['D'][edge])
         D_mdata = np.abs(mdata['ded_data'][edge_ids_data==edge])
-        
-        try:
-            assert abs(kappa_mesh - kappa_mdata.flatten()[0]) <= delta
-            assert abs(D_mesh - D_mdata.flatten()[0]) <= delta
-        except:
-            import pdb; pdb.set_trace()
 
-
-    import pdb; pdb.set_trace()
-    pass
+        assert abs(kappa_mesh - kappa_mdata.flatten()[0]) <= delta
+        assert abs(D_mesh - D_mdata.flatten()[0]) <= delta
 
 
 
@@ -127,6 +146,8 @@ def run():
     
     v1 = sp.find(resp['transmissibility'])
     v2 = sp.find(M)
+
+    test_internal_faces(v2, v1, **mesh_properties.get_all_data())
 
 
 

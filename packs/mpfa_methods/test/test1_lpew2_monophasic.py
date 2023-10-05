@@ -3,6 +3,7 @@ import numpy as np
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess
 import os
 from packs.manager.meshmanager import MeshProperty
+from packs.manager.mesh_data import MeshData
 from packs.manager.boundary_conditions import BoundaryConditions
 from packs.mpfa_methods.weight_interpolation.lpew import get_lpew2_weights
 from packs.mpfa_methods.flux_calculation.diamond_method import DiamondFluxCalculation, get_xi_params_ds_flux
@@ -29,7 +30,7 @@ def exact_solution(centroids, alpha):
     resp = np.zeros(len(x))
 
     test = x <= 0
-    resp[test] = (2*np.sin(y[test]) + np.cos(y[test]))*alpha*x[test] + np.sin(y[test])
+    resp[test] = alpha*(2*np.sin(y[test]) + np.cos(y[test]))*x[test] + np.sin(y[test])
     test2 = ~test
     resp[test2] = np.exp(x[test2])*np.sin(y[test2])
 
@@ -55,13 +56,25 @@ def get_permeability(centroids, alpha):
 
     return {'permeability': permeability}
 
+def get_source(centroids, alpha):
+    x = centroids[:, 0]
+    y = centroids[:, 1]
+    source = np.zeros(len(x))
+
+    test = x <= 0
+    source[test] = alpha*(2*np.sin(x[test]) + np.cos(y[test]))*x[test] + np.sin(y[test])
+
+    test = ~test
+    source[test] = -2*alpha*np.exp(x[test])*np.cos(y[test])
+    return source
+
 def define_boundary_conditions(mesh_properties: MeshProperty, alpha):
     bc = BoundaryConditions()
 
     xmin, ymin = mesh_properties.faces_centroids[:, 0:2].min(axis=0)
     xmax, ymax = mesh_properties.faces_centroids[:, 0:2].max(axis=0)
     
-    mesh_delta = 1e-5
+    mesh_delta = 1e-7
     nodes_xmin = mesh_properties.nodes[
         mesh_properties.nodes_centroids[:, 0] < xmin + mesh_delta
     ]
@@ -104,6 +117,19 @@ def get_Eu(pressure, exact_sol, areas):
     resp = np.sqrt(resp.sum())
     return resp
 
+def show_results(mesh_properties: MeshProperty, alpha, mesh_path, tags_to_plot):
+    export_name = 'result_' + mesh_properties['mesh_name'][0] + '_' + str(alpha)
+    mesh_data = MeshData(mesh_path=mesh_path)
+    for tag in tags_to_plot:
+        mesh_data.create_tag(tag)
+        mesh_data.insert_tag_data(tag, mesh_properties[tag], elements_type='faces', elements_array=mesh_properties['faces'])
+    
+    mesh_data.export_all_elements_type_to_vtk(export_name, element_type='faces')
+
+
+
+
+
 def run_problem(mesh_name, mesh_properties_name, alpha):
 
     dtype_E = [('Emax', np.float64), ('Erms', np.float64), ('L2', np.float64),
@@ -124,6 +150,9 @@ def run_problem(mesh_name, mesh_properties_name, alpha):
     get_xi_params_ds_flux(mesh_properties)
 
     error_tag = 'error_alpha_' + str(alpha)
+    pressure_tag = 'pressure_alpha_' + str(alpha)
+    error_plot_tag = 'error_plot_' + str(alpha)
+    exact_solution_tag = 'exact_solution_' + str(alpha)
 
     if not mesh_properties.verify_name_in_data_names(error_tag):
 
@@ -155,7 +184,10 @@ def run_problem(mesh_name, mesh_properties_name, alpha):
         array['Eu'] = get_Eu(pressure, exact_faces_solution, mesh_properties['areas'])
 
         mesh_properties.insert_or_update_data({
-            error_tag: array
+            error_tag: array,
+            pressure_tag: pressure,
+            error_plot_tag: np.absolute(pressure - exact_faces_solution),
+            exact_solution_tag: exact_faces_solution
         })
         mesh_properties.export_data()
         
@@ -165,6 +197,8 @@ def run_problem(mesh_name, mesh_properties_name, alpha):
     print(f'L2: {mesh_properties[error_tag]["L2"]}')
     print(f'Eu: {mesh_properties[error_tag]["Eu"]}')
     print()
+
+    show_results(mesh_properties, alpha, mesh_name, [pressure_tag, error_plot_tag, exact_solution_tag])
 
 def test_problem1():
     mesh_prefix = 'str_trimesh_'
