@@ -171,7 +171,7 @@ class DiamondFluxCalculation:
         
         return {self.data_names[2]: xi_params_dsflux}
             
-    def mount_problem(self, boundary_conditions: BoundaryConditions, edges_dim, xi_params, neumann_weights, nodes_weights, adjacencies, faces, nodes_of_edges, edges, bool_boundary_edges, edges_of_nodes, nodes, bool_boundary_nodes, **kwargs):
+    def mount_problem(self, boundary_conditions: BoundaryConditions, edges_dim, xi_params, neumann_weights, nodes_weights, adjacencies, faces, nodes_of_edges, edges, bool_boundary_edges, edges_of_nodes, nodes, bool_boundary_nodes, nodes_centroids, **kwargs):
         
         lsds = LsdsFluxCalculation()
         return lsds.mount_problem_v6(
@@ -187,7 +187,8 @@ class DiamondFluxCalculation:
             edges_of_nodes,
             edges,
             edges_dim,
-            bool_boundary_nodes
+            bool_boundary_nodes,
+            nodes_centroids
         )
         
     def get_edges_flux(

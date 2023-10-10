@@ -1,0 +1,471 @@
+//--------------------------------------------------------------------
+//---------------- UNIVERSIDADE FEDERAL DE PERNAMBUCO ----------------
+//---------------- CENTRO DE TECNOLOGIA E GEOCIENCIAS ----------------
+//---------- PROGRAMA DE POS GRADUACAO EM ENGENHARIA CIVIL -----------
+//--------------------------------------------------------------------
+
+//Work developed by: Marcio Souza and Luiz E. Queiroz
+//Adviser Professors: Paulo Lyra & Darlan Carvalho
+//Create date: 13/12/2011
+
+//--------------------------------------------------------------------
+//----------- Parameters of initialization to preprecessor -----------
+//--------------------------------------------------------------------
+
+//Do you have a mesh file? [y] ==> "yes"; [n] ==> "no"
+
+y
+
+//If [y] write, immediately below, only the name of mesh file with 
+//extension *.msh:
+
+BenchHydraulic2.msh
+
+//OBS.: This file must be puted into folder together with *.m files 
+//or in a folder whose path will be declared immediately below:
+//IMPORTANT: if the file is puted into folder which contain the *.m
+//files, write in the statment below "no path".
+
+C:\Users\flc59\Documents\GitHub\codes_singlephase_2022
+
+//If [n] write, immediately below, the path which conduct to  
+//folder where the *.m files is:
+//IMPORTANT: gmsh.exe must be puted in this folder together with
+//the *.m files. Otherwise it does not work.
+
+C:\Users\flc59\Documents\GitHub\codes_singlephase_2022
+
+//write the name of BASE geometry file WITHOUT extension *.geo.
+//This file can serve to several simulations. Each one may have 
+//a different configuration. Therefore is a BASE file. 
+
+five_spot
+
+//Write either a number or other reference to feature the CAD above:
+//OBS.: If you do not want a complementar label, leave "0" below:
+
+0
+ 
+//IMPORTANT: The name of files *.msh, *.opt as well as of folder 
+//which will be created to guard this files will be a combination 
+//among the name of *.geo file written above and the number of 
+//simulation also written above.
+
+//For example: 
+//File name (*.geo): [Domain.geo]; number of simulation [01];
+//The name of folder created will be "Domain01". Inside it, there'll
+//the following files: Domain01.geo, Domain01.msh, Domain01.opt.
+
+//OBS.: Sometimes the CAD file (*.geo) receives changes, thus is 
+//necessary make a copy and guard it inside new folder created.     
+
+//--------------------------------------------------------------------
+//----------------- General options (configure gmsh) -----------------
+//--------------------------------------------------------------------
+
+//The name of file to be used to configure gmsh in the current
+//simulation (*.opt) will be the same attributed to *.geo.
+
+//OBS.: If the *.msh already exists this section is unecessary. 
+
+//--------------------------------------------------------------------
+//Type of mesh:
+
+//Is your mesh structured?  [y] ==> "yes"; [n] ==> "no"
+
+y
+
+//If [y] enter with the informations in the "STRUCTURED MESH": 
+//If [n] enter with the informations in the "UNSTRUCTURED MESH": 
+
+//--------------------------------------------------------------------
+//STRUCTURED MESH
+
+//Put below the follow sequence in both directions "x" and "y":   
+//1. The number of statments to be applyed in each direction; 
+//2. In other row put in sequence (same row) the number of points 
+//which will divide each direction, the growth rate and geometric 
+//tag which will receive this parameters:
+
+//Direction "x" (number of statments, number of points, growth rate 
+//and two geometric tag)
+
+1
+2 1 1 3
+
+//Direction "y" (number of statments, number of points, growth rate 
+//and two geometric tag)
+
+1
+2 1 2 4
+
+//IMPORTANT: In case where there are two or more properties to long
+//domain, the user must take care during attribution of parameters 
+//necessary to mesh generation. This avoids conformity conflicts in
+//the final generated mesh.
+
+//--------------------------------------------------------------------
+//UNSTRUCTURED MESH
+
+//The half size of mesh element. Write below the value you want.
+//[1] ==> "DEFAULT value"
+
+0.0313
+
+//The maximum mesh element size. Write below the value you want.
+//[1e22] ==> "DEFAULT Option" 
+
+1e22 
+
+//The minimum mesh element size. Write below the value you want.
+//[0] ==> "DEFAULT Option"
+
+0
+
+//--------------------------------------------------------------------
+//Type of element (applyed to both structured or unstructured):
+
+//Set the type of element which you want to use in either struct. 
+//or unstructured mesh
+//[0] ==> "Triangles"; [1] ==> "Quadrangles"; [2] ==> "Both"
+
+1
+
+//OBS.: 
+//The option "Both" does not work when the mesh is structured. 
+//In this case, the mesh may be constituted of either triangles 
+//[0] or quadrangles [1]. 
+
+//--------------------------------------------------------------------
+//Type of algorithm used to build the mesh: 
+
+//You can choose the following option to building the mesh:
+//[1] ==> "MeshAdapt"; [5] ==> "Delaunay"; [6] ==> "Frontal"
+
+5
+
+//--------------------------------------------------------------------
+//Parameters related to mesh refinement
+
+//You can choose the type of remeshing algorithm: 
+//[0] ==> "No split"; [1] ==> "Automatic"
+
+0
+
+//How many times do you want to refine, uniformily, your mesh?
+//[0] ==> "not refine"; [1] ==> "refine once"; [n] ==> "refine n times"
+
+0
+
+//Do you want to apply a scale factor in all element sizes?
+//If you want, write below the scale factor or leave "DEFAULT"
+//[1] ==> "DEFAULT Option"
+
+1
+
+//--------------------------------------------------------------------
+//View of mesh generated:
+
+//Do you want open the gmsh user interface after mesh genaration?
+//for example, choose "n" when mesh is created outside preprocessor
+//[y] ==> "yes"; [n] ==> "no"
+
+n
+
+//--------------------------------------------------------------------
+//---------------- Physical parameters (DARCY system) ----------------
+//--------------------------------------------------------------------
+
+//In this section density, viscosity permeability and porosity must 
+//be launchered. Thous value may be puted in present file (when it 
+//is appropriate). In other circumstance a path to a data file will 
+//be availabiled.
+
+//--------------------------------------------------------------------
+//Density of fluids considered (kg/stb):
+
+//Is DENSITY a function of pressure field?
+//[y] ==> "yes"; [n] ==> "no"
+
+n
+
+//If [y] a like-table file reporting DENSITY with pressure must 
+//be used. For two-phase flow, the first information available is 
+//that one associated to water DENSITY; after that other column 
+//may contain the report between oil DENSITY and pressure range. 
+
+//OBS.: in preference, a *.xls must be used with three columns:
+//1. pressure range; 2. water DENSITY; oil DENSITY.
+
+//The name of table file must be puted immediately below:
+
+densitytable.xls
+  
+//If [n] the variation of DENSITY in both water and oil does not
+//significant for engineering applications. Thus, the DENSITY is 
+//thought as a constant value.
+
+//In this case the values are puted below as following:
+//The first number is the amount of different fluids considered.
+//The other value(s) is(are) associed to DENSITY of fluid 1 and 2.
+//water and oil must be the order of DENSITY cast. 
+
+//IMPORTANT: The values of DENSITY must be puted in a row below.
+
+2 
+1 1      
+
+//--------------------------------------------------------------------
+//Viscosity of fluids considered (cP):
+
+//Is VISCOSITY a function of pressure field?
+//[y] ==> "yes"; [n] ==> "no"
+
+n
+
+//If [y] a like-table file reporting VISCOSITY with pressure must 
+//be used. For two-phase flow, the first information available is 
+//that one associated to water VISCOSITY; after that other column 
+//may contain the report between oil VISCOSITY and pressure range. 
+
+//OBS.: in preference, a *.xls must be used with three columns:
+//1. pressure range; 2. water VISCOSITY; oil VISCOSITY.
+
+//The name of table file must be puted immediately below:
+
+viscositytable.xls
+  
+//If [n] the variation of VISCOSITY in both water and oil does not
+//significant for engineering applications. Thus, the VISCOSITY is 
+//thought as a constant value.
+
+//In this case the values are puted below as following:
+//The first number is the amount of different fluids considered.
+//The other value(s) is(are) associed to VISCOSITY of fluid 1 and 2.
+//water and oil must be the order of VISCOSITY cast. 
+
+//IMPORTANT: The values of VISCOSITY must be puted in a row below.
+
+2 
+1 1
+
+//--------------------------------------------------------------------
+//Unredutible water sat. (Swr) and residual oil sat. (Sor):
+
+//This parameters are used in models which describes the relative 
+//permeability of evaluated fluid as a function of water saturation
+//(very commonly). Such parameters are without dimension.
+
+//Write below the value of unredutible water saturation (Swr) and,
+//in sequence, the value of residual oil saturation (Sor):
+
+0 0
+
+//OBS.: Once the phenomena is reported to only one-phase flow, the 
+//data above may be leave there (does not need erase them!) 
+
+//--------------------------------------------------------------------
+//Distribution of permeability tensor k (Darcy):
+
+//Is your media highly heterogeneous?
+//yes with random value ==> [r]; yes ==> [y]; no ==> [n]
+
+n
+
+//If [r] the matlab generate a randomic distribution with the 
+//component values variating among a minimum and maximum value. 
+//Once you chose [r] you have to write down below these values: 
+
+//OBS.:first the min and, after that, the max (use one row).
+
+1 100
+
+//If [y] each element has a permeability tensor. 
+//Its values will be read from a file like-table (*.xls or other) 
+//whose name is puted below:
+
+kmap.dat
+
+//If [n] each tensor will be associated with a layer considered
+//and constant to long it.
+//Its values will be read from distribution below: 
+
+//In first place, is necessary write below the amount of layers 
+//considered:
+
+1
+
+//In sequence, a number (1,2,...,n) is associated with the physical 
+//group where the permeability distribution is valid (for example: 1 
+//is related to first region, 2 is related with the second one, n is
+//related to nth region).
+//The four subsequent numbers are the cartesian components of a 
+//tensor written as a 2x2 matrix - (row1 xx xy; row2 yx yy).
+
+//OBS.: The number of layer will apear in "elem" matrix (5th column).
+
+//IMPORTANT: the order applyed to physical groups must be the same
+//used to "draw" the surfaces during CAD building. (*.geo).  
+//If exists more than one layer, the sequence of data follows:
+//one number - flag of permeability (1,2,...,n). Below that, write 
+//the four components of tensor; to another layer, the flag (n + 1) 
+//and below that, more four components and so on.    
+
+1
+1 0.1
+0.1 1
+
+//--------------------------------------------------------------------
+//Distribution of porosity:
+
+//Do you have a media with CONSTANT porosity (by layer)?
+//yes ==> [y]; no ==> [n]
+
+y
+
+//If [y] each layer will receive a constant value of porosity. These
+//are seted below such as follow:
+
+//1. In first row, is necessary to write the amount of layers which 
+//actualy, is associated with the number of porosity values;
+//2. In other row (right below), the sequence of porosity (each one 
+//associated with the type of layer, increasing reportad to physical 
+//group order) 
+
+//OBS.: The second row must store all porosity values in sequence. 
+
+1
+1
+
+//If [n], in principle, each element will has a porosity value. These
+//value will came of a external file. His name will be written below:
+
+porosity.dat   
+
+//--------------------------------------------------------------------
+//------------------------ Boundary condition ------------------------
+//--------------------------------------------------------------------
+
+//In this section the boundary conditions are associated with values 
+//where each one of them has a meaning. A table below reports a code 
+//with the value of boundary condition. Finaly, each point used into
+//geometry building must be associated to boundary condition code in 
+//order to avoid disagreement.
+
+//--------------------------------------------------------------------
+//Boundary condition distribution: 
+
+//Use the following nomenclature to clasify the type of bound. cond.:
+//[101 - 200] ==> "Dirichlet"; [201 to 300] ==> "Newmann"
+
+//For a general attribution, put the sequence below:
+//1. The amount of boundary condition statment;
+//2. In other row, the type of bound. condit. (Dirichlet or Newmann);
+//3. In the same row yet, put the algebric value of this bound. cond.  
+
+//IMPORTANT: Such as in the permeability section, each one boundary 
+//condition code will be associated with its respective physical 
+//group according the order of definition, that is the 1st physical 
+//group seted into "*.geo" file will be associated with the 1st code 
+//declared below and so on.
+
+2
+101 100
+201 0
+
+//--------------------------------------------------------------------
+//Tratment of boundary points
+
+//For to attribute boundary condition in each point of geometry you 
+//must to write below as follows: 
+//1. The amount of geometric POINT boundary condition statment;
+//2. In a row below, the sequence of codes to be associated with 
+//each point group. 
+
+//OBS.:Remember once more: the sequence of code distribution is the 
+//same used during the physical group seting. Thus, the 1st physical 
+//group reported to points will be associated with 1st code written
+//below.
+
+1
+101 
+
+//--------------------------------------------------------------------
+//----------------------- Convergence criteria -----------------------
+//--------------------------------------------------------------------
+
+//Some parameters must be seted in order to control the convergence 
+//procedure. The Courant number and the total simulation time are, 
+//for now, needed.
+
+//--------------------------------------------------------------------
+//Courant number
+
+//The Courant number will be used as a stability parameter of the 
+//hyperbolic saturation equation. Write below the Courant number:
+
+1
+
+//--------------------------------------------------------------------
+//Dimentional parameter used in time (two-phase simulation): 
+
+//Write [s] to dimentional time or [vpi] to admentional time. This 
+//will produces "0" to DIMENTIONAL parameter or "1" to ADMENTIONAL
+//parameter in the preprocessor out ("totaltime").
+
+vpi
+
+//--------------------------------------------------------------------
+//Total time of simulation (days) or VPI's value (adm)
+
+//This parameter denots either the time of simulation or the value 
+//of volume porous injected. This value Will be used in the unstead
+//state simulation (parameter of stop). Write down below the amount 
+//of days or the VPI's value intended:
+
+//OBS.: If you put VPI's value, it must be until "1" once it's an 
+//admentional parameter.
+
+1
+
+//--------------------------------------------------------------------
+//------------------------------- Wells ------------------------------
+//--------------------------------------------------------------------
+
+//The user must setup the wells as follows:
+//1. Enter with the amount of wells (just this information in the 
+//current row);
+//After that, put in the line immediately below (one row by well):
+//2. The surface's number where the well is located: put these in
+//an increasing order (1,1,1,2,2,...,n);
+//3. In sequence, the two coordinates x and y (for the time being);
+//4. The "influence ray" (well ray) of evaluated well (adm);
+
+//OBS.: All elements inside this influence ray will has a sourse 
+//term whose sign is associated to either "injector" or "productor".
+
+//5. A flag for saturation (injectors wells). The flag must vary
+//between [301 - 400]. If the well is producer, "0" must be put;
+
+//OBS.: If the well is productor the saturation flag receives "0".
+
+//6. The saturation's value. If is producer, "0" must be put;
+//7. The flag for pressure: 
+//For injector well, the flag must vary between [401 - 500]; 
+//For producer well, the falg must vary between [501 - 600];
+
+//8. The value of pressure in the well (injector or producer).
+//IMPORTANT: if "0" is put in last pressure flag, the value put in 
+//this column is associated with FLOW RATE in the well;
+//9. The type of well: [0] ==> point well (unstructured mesh);
+//[1] ==> point well (structured mesh); [2] ==> line well (struct.);
+//[3] ==> line well (unstructured mesh, just inside domain). 
+
+//IMPORTANT: If wells does not exist, replace the amount already 
+//written by "0";   
+//if you write down "0" replacing the number of wells, will be not 
+//necessary to erase the numbers below it. Keep it to reference.  
+
+0
+1 0 0 0.025 301 1  0  1 1
+1 1 1 0.025   0 0 501 0 1

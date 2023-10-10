@@ -42,17 +42,17 @@ def test_internal_faces(Mdata_mdata, Mdata_mesh, nodes, bool_boundary_nodes, nod
 
 
 
-            print(f'lines_mdata: {lines_mdata}')
-            print(f'lines_mesh: {lines_mesh}')
-            print(f'error lines: {n1}')
-            print(f'cols_mdata: {cols_mdata}')
-            print(f'cols_mesh: {cols_mesh}')
-            print(f'error_cols: {n2}')
-            print(f'dataa_mdata: {dataa_mdata}')
-            print(f'dataa_mesh: {dataa_mesh}')
-            print(f'norm_dataa: {np.linalg.norm(dataa_mdata - dataa_mesh)}')
-            print(f'error data: {n3}')
-            print()
+            # print(f'lines_mdata: {lines_mdata}')
+            # print(f'lines_mesh: {lines_mesh}')
+            # print(f'error lines: {n1}')
+            # print(f'cols_mdata: {cols_mdata}')
+            # print(f'cols_mesh: {cols_mesh}')
+            # print(f'error_cols: {n2}')
+            # print(f'dataa_mdata: {dataa_mdata}')
+            # print(f'dataa_mesh: {dataa_mesh}')
+            # print(f'norm_dataa: {np.linalg.norm(dataa_mdata - dataa_mesh)}')
+            # print(f'error data: {n3}')
+            # print()
 
             assert n1 < delta
             assert n2 < delta
@@ -89,17 +89,17 @@ def test_boundary_faces(Mdata_mdata, Mdata_mesh, nodes, bool_boundary_nodes, nod
 
 
 
-            print(f'lines_mdata: {lines_mdata}')
-            print(f'lines_mesh: {lines_mesh}')
-            print(f'error lines: {n1}')
-            print(f'cols_mdata: {cols_mdata}')
-            print(f'cols_mesh: {cols_mesh}')
-            print(f'error_cols: {n2}')
-            print(f'dataa_mdata: {dataa_mdata}')
-            print(f'dataa_mesh: {dataa_mesh}')
-            print(f'norm_dataa: {np.linalg.norm(dataa_mdata - dataa_mesh)}')
-            print(f'error data: {n3}')
-            print()
+            # print(f'lines_mdata: {lines_mdata}')
+            # print(f'lines_mesh: {lines_mesh}')
+            # print(f'error lines: {n1}')
+            # print(f'cols_mdata: {cols_mdata}')
+            # print(f'cols_mesh: {cols_mesh}')
+            # print(f'error_cols: {n2}')
+            # print(f'dataa_mdata: {dataa_mdata}')
+            # print(f'dataa_mesh: {dataa_mesh}')
+            # print(f'norm_dataa: {np.linalg.norm(dataa_mdata - dataa_mesh)}')
+            # print(f'error data: {n3}')
+            # print()
 
         # assert n1 < delta
         # assert n2 < delta
@@ -167,8 +167,8 @@ def run():
     bc.set_boundary('dirichlet_nodes', mdata['nodes_id_dirichlet'], mdata['values_dirichlet_nodes'])
     bc.set_boundary('neumann_edges', mdata['neumann_edges_ids'], mdata['neumann_edges_values'])
 
-    import pdb; pdb.set_trace()
-    print(mesh_properties.adjacencies[mdata['neumann_edges_ids'], 0])
+    # import pdb; pdb.set_trace()
+    # print(mesh_properties.adjacencies[mdata['neumann_edges_ids'], 0])
 
     permeability = mdata['kmap'][:, 1:5].reshape((n_faces, 2, 2))
     mesh_properties.insert_or_update_data({'permeability': permeability})

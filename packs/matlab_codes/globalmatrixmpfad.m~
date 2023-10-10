@@ -43,7 +43,7 @@ for ifacont=1:size(bedge,1)
     n2 = bedge(ifacont,2);
     
     if n1 == notest | n2 == notest
-        disp('');
+        disp
     end
     
     
@@ -160,13 +160,8 @@ for iface=1:size(inedge,1)
     
     %Se os n�s das arestas estiverem em fronteiras de Dirichlet, suas
     %contribui��es ser�o contabilizadas logo abaixo.
-    notest = 100;
     n1 = inedge(iface,1);
     n2 = inedge(iface,2);
-    if n1 == notest | n2 == notest
-        disp('');
-    end
-    
     
     if nflagno(inedge(iface,1),1)<200
         I(lef)=I(lef)-Kde(iface)*Ded(iface)*nflagno(inedge(iface,1),2);

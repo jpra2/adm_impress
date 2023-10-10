@@ -1297,6 +1297,7 @@ class LsdsFluxCalculation:
         edges,
         edges_dim,
         bool_boundary_nodes,
+        nodes_centroids,
         **kwargs
     ):
         resp = dict()
@@ -1355,8 +1356,8 @@ class LsdsFluxCalculation:
             K = faces_adj[0]
             L = faces_adj[1]
             
-            if K == 0 or L == 0:
-                import pdb; pdb.set_trace()
+            # if K == 0 or L == 0:
+            #     import pdb; pdb.set_trace()
             
             T[K, K] += xi_K
             T[K, L] += xi_L
