@@ -263,6 +263,22 @@ def preprocess_mdata(mdata, mesh_properties: MeshProperty):
         mdata_edge_ids[i] = edge_id
     
     mdata['edges'] = mdata_edge_ids
+    
+    mesh_edges_centroids = mesh_properties.edges_centroids
+    neumann_edges_ids = []
+    neumann_edges_values = []
+    for data in mdata['neumann_edges']:
+        coord_edge = data[0:2]
+        d1 = np.linalg.norm(mesh_edges_centroids - coord_edge, axis=1)
+        test1 = d1 <= delta
+        edge_id = edges[test1][0]
+        neumann_edges_ids.append(edge_id)
+        neumann_edges_values.append(data[2])
+    
+    mdata['neumann_edges_ids'] = np.array(neumann_edges_ids)
+    mdata['neumann_edges_values'] = np.array(neumann_edges_values)
+        
+        
 
 
 

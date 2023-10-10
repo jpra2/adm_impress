@@ -1283,7 +1283,127 @@ class LsdsFluxCalculation:
         for edge in edges[bool_boundary_edges]:
             pass
 
+    def mount_problem_v6(self,
+        boundary_conditions: BoundaryConditions,
+        nodes_weights,
+        xi_params,
+        faces,
+        nodes,
+        bool_boundary_edges,
+        adjacencies,
+        nodes_of_edges,
+        neumann_weights,
+        edges_of_nodes,
+        edges,
+        edges_dim,
+        bool_boundary_nodes,
+        **kwargs
+    ):
+        resp = dict()
+        n_faces = faces.shape[0]
+        T = sp.lil_matrix((n_faces, n_faces))
+        source = np.zeros(faces.shape[0])
+        ss2 = source
 
+        dirichlet_nodes = boundary_conditions['dirichlet_nodes']['id']
+        dirichlet_nodes_values = boundary_conditions['dirichlet_nodes']['value']
+
+        neumann_edges = boundary_conditions['neumann_edges']['id']
+        neumann_edges_values = boundary_conditions['neumann_edges']['value']
+        neumann_nodes = boundary_conditions.get_neumann_nodes(nodes_of_edges)
+        
+        for edge in edges[bool_boundary_edges]:
+            nodes_edge = nodes_of_edges[edge]
+            face_adj = adjacencies[edge, 0]
+            # if face_adj == 1:
+            #     import pdb; pdb.set_trace()
+            xi_params_edge = xi_params[edge]
+            test1 = np.isin(dirichlet_nodes, nodes_edge)
+            if test1.sum() == 2:
+                ## os dois nos sao de dirichlet
+                T[face_adj, face_adj] += xi_params_edge[0]                
+                for node in nodes_edge:
+                    value = dirichlet_nodes_values[dirichlet_nodes==node]
+                    xi_node = xi_params_edge[[3, 2]][nodes_edge==node]
+                    source[face_adj] += -xi_node*value
+            
+            # elif np.any(dirichlet_nodes==nodes_edge[0]):
+            #     ## o no nodes_edge[0] eh de dirichlet
+            #     value = dirichlet_nodes_values[dirichlet_nodes==nodes_edge[0]]
+            #     xi_node = xi_params_edge[[3, 2]][nodes_edge==nodes_edge[0]]
+            #     source[face_adj] += -xi_node*value
+            #     T[face_adj, face_adj] += xi_params_edge[0] + xi_node
+            
+            # elif np.any(dirichlet_nodes==nodes_edge[1]):
+            #     ## o no nodes_edge[1] eh de dirichlet
+            #     value = dirichlet_nodes_values[dirichlet_nodes==nodes_edge[1]]
+            #     xi_node = xi_params_edge[[3, 2]][nodes_edge==nodes_edge[1]]
+            #     source[face_adj] += -xi_node*value
+            #     T[face_adj, face_adj] += xi_params_edge[0] + xi_node
+            else:
+                ## edge de neumann
+                source[face_adj] += neumann_edges_values[neumann_edges==edge]*edges_dim[edge]
+        
+        biedges = ~bool_boundary_edges
+        for edge in edges[biedges]:
+            nodes_edge = nodes_of_edges[edge]
+            faces_adj = adjacencies[edge]
+            xi_params_edge = xi_params[edge]
+            
+            xi_K = xi_params_edge[0]
+            xi_L = xi_params_edge[1]
+            K = faces_adj[0]
+            L = faces_adj[1]
+            
+            if K == 0 or L == 0:
+                import pdb; pdb.set_trace()
+            
+            T[K, K] += xi_K
+            T[K, L] += xi_L
+            T[L, K] += -xi_K
+            T[L, L] += -xi_L
+            
+            for node in nodes_edge:
+                xi_node = xi_params_edge[[3, 2]][nodes_edge==node]
+                if np.any(dirichlet_nodes==node):
+                    ## o no nodes_edge[0] eh de dirichlet
+                    value = dirichlet_nodes_values[dirichlet_nodes==node]
+                    source[K] += -xi_node*value
+                    source[L] += xi_node*value
+                else:
+                    test = nodes_weights['node_id'] == node
+                    faces_node = nodes_weights['face_id'][test]
+                    weights = nodes_weights['weight'][test]
+                    T[K, faces_node] += xi_node*weights
+                    T[L, faces_node] += -xi_node*weights
+                    
+                    if np.any(neumann_nodes == node):
+                        value = neumann_weights['nweight'][neumann_weights['node_id']==node]
+                        source[K] += -xi_node*value
+                        source[L] += xi_node*value
+        
+        resp.update({
+            'transmissibility': T,
+            'source': source
+        })
+        return resp
+                    
+                    
+                
+                
+                
+            
+            
+            
+                
+                
+                
+                
+                
+                
+                    
+                
+        
 
 
 

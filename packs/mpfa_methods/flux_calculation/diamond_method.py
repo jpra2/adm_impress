@@ -174,7 +174,7 @@ class DiamondFluxCalculation:
     def mount_problem(self, boundary_conditions: BoundaryConditions, edges_dim, xi_params, neumann_weights, nodes_weights, adjacencies, faces, nodes_of_edges, edges, bool_boundary_edges, edges_of_nodes, nodes, bool_boundary_nodes, **kwargs):
         
         lsds = LsdsFluxCalculation()
-        return lsds.mount_problem_v4(
+        return lsds.mount_problem_v6(
             boundary_conditions,
             nodes_weights,
             xi_params,

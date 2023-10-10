@@ -58,7 +58,54 @@ def test_internal_faces(Mdata_mdata, Mdata_mesh, nodes, bool_boundary_nodes, nod
             assert n2 < delta
             assert n3 < delta
 
+def test_boundary_faces(Mdata_mdata, Mdata_mesh, nodes, bool_boundary_nodes, nodes_of_nodes, edges_of_nodes, adjacencies, bool_boundary_edges, **kwargs):
+    
+    delta = 1e-7
+    data_mdata = Mdata_mdata
+    data_mesh = Mdata_mesh
+    
+    faces_boundary = np.unique(adjacencies[bool_boundary_edges, 0])
+    
+    my_faces = []
 
+    for face in faces_boundary:
+        test1 = data_mdata[0] == face
+        test2 = data_mesh[0] == face
+
+        lines_mdata = data_mdata[0][test1]
+        lines_mesh = data_mesh[0][test2]
+        n1 = np.linalg.norm(lines_mdata - lines_mesh)
+
+        cols_mdata = data_mdata[1][test1]
+        cols_mesh = data_mesh[1][test2]
+        n2 = np.linalg.norm(cols_mdata - cols_mesh)
+
+        dataa_mdata = data_mdata[2][test1]
+        dataa_mesh = data_mesh[2][test2]
+        n3 = np.linalg.norm(dataa_mdata - dataa_mesh)
+        
+        if n3 > delta:
+            my_faces.append(face)
+
+
+
+            print(f'lines_mdata: {lines_mdata}')
+            print(f'lines_mesh: {lines_mesh}')
+            print(f'error lines: {n1}')
+            print(f'cols_mdata: {cols_mdata}')
+            print(f'cols_mesh: {cols_mesh}')
+            print(f'error_cols: {n2}')
+            print(f'dataa_mdata: {dataa_mdata}')
+            print(f'dataa_mesh: {dataa_mesh}')
+            print(f'norm_dataa: {np.linalg.norm(dataa_mdata - dataa_mesh)}')
+            print(f'error data: {n3}')
+            print()
+
+        # assert n1 < delta
+        # assert n2 < delta
+        # assert n3 < delta
+    
+    print(my_faces)
     import pdb; pdb.set_trace()
 
 def test_kn_bedges(mesh_properties: MeshProperty, mdata):
@@ -118,14 +165,17 @@ def run():
 
     bc = BoundaryConditions()
     bc.set_boundary('dirichlet_nodes', mdata['nodes_id_dirichlet'], mdata['values_dirichlet_nodes'])
-    bc.set_boundary('neumann_edges', np.array([]), np.array([]))
+    bc.set_boundary('neumann_edges', mdata['neumann_edges_ids'], mdata['neumann_edges_values'])
+
+    import pdb; pdb.set_trace()
+    print(mesh_properties.adjacencies[mdata['neumann_edges_ids'], 0])
 
     permeability = mdata['kmap'][:, 1:5].reshape((n_faces, 2, 2))
     mesh_properties.insert_or_update_data({'permeability': permeability})
     mesh_properties.insert_or_update_data(
         {
-            'neumann_edges': np.array([]),
-            'neumann_edges_value': np.array([])
+            'neumann_edges': bc['neumann_edges']['id'],
+            'neumann_edges_value': bc['neumann_edges']['value']
         }
     )
 
@@ -138,7 +188,7 @@ def run():
             bc,
             **mesh_properties.get_all_data()
         )
-    resp['source'] += fonte
+    # resp['source'] += fonte
 
     test_kn_bedges(mesh_properties, mdata)
 
@@ -148,6 +198,8 @@ def run():
     v2 = sp.find(M)
 
     test_internal_faces(v2, v1, **mesh_properties.get_all_data())
+    
+    test_boundary_faces(v2, v1, **mesh_properties.get_all_data())
 
 
 
