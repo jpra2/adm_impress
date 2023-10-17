@@ -86,9 +86,11 @@ typecorrection='firstcorrection'; % correcao utilizando express. simplif.
 %typecorrection='thirdcorrection'; % correcao utilizando metodo Kobaise
 %% digite segundo o benchmark
 % procure o teste que deseja rodar no arquivo "benchmarks.m"
-benchmark='shenyuan16';
+% benchmark='shenyuan16';
 %benchmark='gaowu5'; 
 %benchmark='starnonigrav1';
+% benchmark='crumpton'; % 4.5
+benchmark='crumptonhyman' % 4.4
 %% com termo gravitacional
 % com termo gravitacional 'yes' ou 'no'
 gravitational='no';

@@ -19,7 +19,7 @@ y
 //If [y] write, immediately below, only the name of mesh file with 
 //extension *.msh:
 
-BenchHydraulic2.msh
+malha_teste_uns_trimesh.msh
 
 //OBS.: This file must be puted into folder together with *.m files 
 //or in a folder whose path will be declared immediately below:
@@ -73,7 +73,7 @@ five_spot
 
 //Is your mesh structured?  [y] ==> "yes"; [n] ==> "no"
 
-y
+n
 
 //If [y] enter with the informations in the "STRUCTURED MESH": 
 //If [n] enter with the informations in the "UNSTRUCTURED MESH": 
@@ -129,7 +129,7 @@ y
 //or unstructured mesh
 //[0] ==> "Triangles"; [1] ==> "Quadrangles"; [2] ==> "Both"
 
-1
+0
 
 //OBS.: 
 //The option "Both" does not work when the mesh is structured. 
@@ -312,8 +312,8 @@ kmap.dat
 //and below that, more four components and so on.    
 
 1
-1 0.1
-0.1 1
+2 1
+1 2
 
 //--------------------------------------------------------------------
 //Distribution of porosity:
@@ -369,9 +369,8 @@ porosity.dat
 //group seted into "*.geo" file will be associated with the 1st code 
 //declared below and so on.
 
-2
+1
 101 100
-201 0
 
 //--------------------------------------------------------------------
 //Tratment of boundary points

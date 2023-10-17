@@ -2268,6 +2268,7 @@ for ielem = 1:nelem
             end  %End of IF (fill "inedge")
         end  %End of IF ("bedge" and "inedge")
     end  %End of FOR (swept the vertices in each element)
+disp('');
 end  %End of FOR (build "bedge" and "inedge")
 
 %--------------------------------------------------------------------------
