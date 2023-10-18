@@ -19,7 +19,7 @@ y
 //If [y] write, immediately below, only the name of mesh file with 
 //extension *.msh:
 
-malha_teste_uns_trimesh.msh
+uns_trimesh_16x16.msh
 
 //OBS.: This file must be puted into folder together with *.m files 
 //or in a folder whose path will be declared immediately below:

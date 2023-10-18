@@ -1,5 +1,5 @@
 % este codigo contem todas as informacoes dos diferentes casos, como por
-% exemplo: tensor de permeabilidade (kmap), pressão analitica (u), termos de fonte (fonte),
+% exemplo: tensor de permeabilidade (kmap), pressï¿½o analitica (u), termos de fonte (fonte),
 % velocidade analitica (vel),gravidade (grav)
 function[elem,kmap,normKmap,u,bedge,fonte,vel,grav,gravno,gravface,grav_elem_escalar]=benchmarks(kmap,elem,bedge)
 global centelem coord inedge normals elemarea bcflag benchmark
@@ -1171,7 +1171,7 @@ switch benchmark
         d2=-c2*(1/10);
         c1=(1/50)*(1/10)*f;
         d1=d2;
-        % calculo da solução exata, termo fonte e adequa o tensor de
+        % calculo da soluï¿½ï¿½o exata, termo fonte e adequa o tensor de
         % permeabilidade
         for ielem=1:size(elem,1)
             x=centelem(ielem,1);
@@ -1673,6 +1673,7 @@ switch benchmark
             elem(i,5)=1;
         end
         kmap=[1 2 1 1 2];
+        K = kmap;
     case 'gaowu3'
         alfa=1000;
         for i=1:size(elem,1)
@@ -2498,7 +2499,7 @@ switch benchmark
             u=0;
         end
     case 'pinchout'
-        % não de definimos porque tudo esta definido no start
+        % nï¿½o de definimos porque tudo esta definido no start
         elem=elem;
         K=kmap;
     case 'shuecv1'

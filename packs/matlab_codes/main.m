@@ -90,7 +90,7 @@ typecorrection='firstcorrection'; % correcao utilizando express. simplif.
 %benchmark='gaowu5'; 
 %benchmark='starnonigrav1';
 % benchmark='crumpton'; % 4.5
-benchmark='crumptonhyman' % 4.4
+benchmark='crumptonhyman'; % 4.4
 %% com termo gravitacional
 % com termo gravitacional 'yes' ou 'no'
 gravitational='no';
