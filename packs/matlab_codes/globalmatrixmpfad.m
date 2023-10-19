@@ -285,7 +285,5 @@ respp.ded_data = ded_data;
 
 
 I = I+fonte;
-save('results/resp.mat', '-struct', 'respp');
-disp('saved');
 end
 

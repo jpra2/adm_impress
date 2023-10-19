@@ -86,6 +86,13 @@ def get_source(centroids, alpha):
     source[test] = -2*alpha*np.exp(x[test])*np.cos(y[test])
     return source
 
+def get_source_2(centroids, alpha):
+    x = centroids[:, 0]
+    y = centroids[:, 1]
+
+    source = -2*np.exp(x*y)*(1 + np.power(y, 2) + np.power(x, 2) + x*y)
+    return source
+
 def define_boundary_conditions(mesh_properties: MeshProperty, alpha):
     bc = BoundaryConditions()
 
@@ -357,6 +364,9 @@ def run_problem_2(mesh_name, mesh_properties_name, alpha):
             bc,
             **mesh_properties.get_all_data()
         )
+        resp['source'] += get_source_2(mesh_properties['faces_centroids'], 1)
+
+        # import pdb; pdb.set_trace()
 
         pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
@@ -394,6 +404,7 @@ def run_problem_2(mesh_name, mesh_properties_name, alpha):
     print(f'L2: {mesh_properties[error_tag]["L2"]}')
     print(f'Eu: {mesh_properties[error_tag]["Eu"]}')
     print()
+    import pdb; pdb.set_trace()
 
     show_results(mesh_properties, alpha, mesh_name, [pressure_tag, error_plot_tag, exact_solution_tag])
 

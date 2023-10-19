@@ -108,6 +108,8 @@ strategy= 'inhouse';
 % F faces na vizinhanca de um elemento
 % V 
 % N
+respp.pressurexact = pressurexact;
+
 [F,V,N]=elementface; % falta finalizar o tratamento (05-08-2022)
 %% pre-processador local
 [pointarmonic,parameter,gamma,p_old,tol,nit,nflagface,nflagno,...
@@ -124,6 +126,13 @@ mobility=1;
     solverpressure(kmap,nflagface,nflagno,fonte, tol,nit,p_old,mobility,...
     gamma,wells,parameter,Hesq, Kde, Kn, Kt, Ded,weightDMP,auxface,...
     calnormface,gravresult,gravrate,weight,s,gravno,gravelem,gravface,grav_elem_escalar,wg);
+
+respp.pressure = pressurenum;
+
+save('results/resp.mat', '-struct', 'respp');
+disp('saved');
+
+err = max(abs(pressurenum-pressurexact));
 
 %% pos-processador no visit
 postprocessor(full(abs(pressurenum-pressurexact)),1); 
