@@ -38,7 +38,8 @@
 # test_xi_params_ds()
 
 from packs.mpfa_methods.test.test1_lpew2_monophasic import test_problem1, test_problem2
-test_problem2()
+# test_problem2()
+test_problem1()
 
 # from packs.mpfa_methods.test.test2_lpew2_monophasic import run
 # run()

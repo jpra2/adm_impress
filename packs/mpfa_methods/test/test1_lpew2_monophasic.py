@@ -159,7 +159,7 @@ def get_Emax(pressure, exact_sol):
 def get_Erms(pressure, exact_sol):
     dif = pressure - exact_sol
     n = len(pressure)
-    return np.linalg.norm(dif/n)
+    return np.sqrt(np.sum(np.power(dif, 2))/n)
 
 def get_L2(pressure, exact_sol):
     dif = pressure - exact_sol
@@ -215,6 +215,7 @@ def run_problem(mesh_name, mesh_properties_name, alpha):
             bc,
             **mesh_properties.get_all_data()
         )
+        resp['source'] += get_source(mesh_properties['faces_centroids'], alpha)*mesh_properties['areas']
 
         pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
@@ -364,7 +365,7 @@ def run_problem_2(mesh_name, mesh_properties_name, alpha):
             bc,
             **mesh_properties.get_all_data()
         )
-        resp['source'] += get_source_2(mesh_properties['faces_centroids'], 1)
+        resp['source'] += get_source_2(mesh_properties['faces_centroids'], 1)*mesh_properties['areas']
 
         # import pdb; pdb.set_trace()
 
@@ -404,7 +405,6 @@ def run_problem_2(mesh_name, mesh_properties_name, alpha):
     print(f'L2: {mesh_properties[error_tag]["L2"]}')
     print(f'Eu: {mesh_properties[error_tag]["Eu"]}')
     print()
-    import pdb; pdb.set_trace()
 
     show_results(mesh_properties, alpha, mesh_name, [pressure_tag, error_plot_tag, exact_solution_tag])
 
@@ -424,7 +424,8 @@ def test_problem1():
 def test_problem2():
     mesh_prefix = 'uns_trimesh_'
     mesh_sufix = '.msh'
-    list_of_meshs = ['16x16', '32x32', '64x64', '128x128']
+    # list_of_meshs = ['16x16', '32x32', '64x64', '128x128']
+    list_of_meshs = ['8x8', '16x16', '32x32', '64x64']
     alpha = 1
     for n_mesh in list_of_meshs:
         mesh_prop_name = mesh_prefix + n_mesh
