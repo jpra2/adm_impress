@@ -14,9 +14,15 @@ import matplotlib.pyplot as plt
 from packs.utils import calculate_face_properties
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess
 from packs.mpfa_methods.flux_calculation.diamond_method import DiamondFluxCalculation, get_xi_params_ds_flux
+import sympy as sym
 
 all_pr_names = ['problem1', 'problem2', 'problem3', 'problem4', 'problem5']
 all_weight_interpolation_names = ['gls', 'inverse_distance']
+
+def sympy_function_p1():
+    x, y = sym.symbols('x y')
+    expr = 0.5*((sym.sin((1-x)*(1-y)))/sym.sin(1) + ((1-x)**3)*((1-y)**2))
+    return x, y, expr
 
 def exact_solution_p1(centroids):
     """example 5.2 - Mild anisotropy
@@ -27,6 +33,18 @@ def exact_solution_p1(centroids):
     term1 = np.sin((1 - x)*(1 - y))/np.sin(1)
     term2 = np.power(1-x, 3)*np.power(1-y, 2)
     return 0.5*(term1 + term2)
+
+def get_source_p1(centroids):
+    x_ = centroids[:, 0]
+    y_ = centroids[:, 1]
+
+    x, y, expr = sympy_function_p1()
+    gradp = [expr.diff(x), expr.diff(y)]
+    kgradp = [-1.5*gradp[0] -0.5*gradp[1], -0.5*gradp[0] -1.5*gradp[1]]
+    diverg = kgradp[0].diff(x) + kgradp[1].diff(y)
+    f = sym.lambdify([x, y], diverg, "numpy")
+    return f(x_, y_)
+    
 
 def exact_solution_p2(centroids):
     """Test 1.1 Mild anisotropy
@@ -152,7 +170,7 @@ def get_permeability_p1(n_elements, centroids=0):
         [1.5, 0.5],
         [0.5, 1.5]
     ])
-    permeability[:,:] = K
+    permeability[:] = K
     return {'permeability': permeability}
 
 def get_permeability_and_exact_solution_func(pr_name):
@@ -161,22 +179,27 @@ def get_permeability_and_exact_solution_func(pr_name):
     if pr_name == all_pr_names[0]:
         get_permeability = get_permeability_p1
         exact_solution = exact_solution_p1
+        get_source = get_source_p1
     elif pr_name == all_pr_names[1]:
         get_permeability = get_permeability_p2
         exact_solution = exact_solution_p2
+        raise NotImplementedError
     elif pr_name == all_pr_names[2]:
         get_permeability = get_permeability_p3
         exact_solution = exact_solution_p3
+        raise NotImplementedError
     elif pr_name == all_pr_names[3]:
         get_permeability = get_permeability_p4
         exact_solution = exact_solution_p4
+        raise NotImplementedError
     elif pr_name == all_pr_names[4]:
         get_permeability = get_permeability_p5
         exact_solution = exact_solution_p5
+        raise NotImplementedError
     else:
         raise NameError
     
-    return get_permeability, exact_solution
+    return get_permeability, exact_solution, get_source
 
 def get_Eu(absolute_error, areas):
     error_2 = np.power(absolute_error, 2)
@@ -291,7 +314,7 @@ def run(pr_name, mesh_type, ns, n):
     lsds = LsdsFluxCalculation()
     diamond_flux = DiamondFluxCalculation()
     
-    get_permeability, exact_solution = get_permeability_and_exact_solution_func(pr_name)
+    get_permeability, exact_solution, get_source = get_permeability_and_exact_solution_func(pr_name)
 
     #define boundary conditions    
     problem_name = pr_name
@@ -371,10 +394,18 @@ def run(pr_name, mesh_type, ns, n):
             get_permeability(len(mesh_properties.faces), mesh_properties.faces_centroids[:, 0:2])
         )       
 
-        resp = lsds.mount_problem_v4(
+        # resp = lsds.mount_problem_v4(
+        #     bc,
+        #     **mesh_properties.get_all_data()
+        # )
+
+        resp = diamond_flux.mount_problem(
             bc,
             **mesh_properties.get_all_data()
         )
+        # resp['source'] += get_source(mesh_properties['faces_centroids'])*mesh_properties['areas']
+        resp['source'] += get_source(mesh_properties['faces_centroids'])
+
         
         pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
         edges_flux = lsds.get_edges_flux(
@@ -690,7 +721,8 @@ def plot_errors(problem = 0):
     pr_name = all_pr_names[problem]
     
     mesh_types_dict = {
-        'mesh1': [8, 32, 64, 128],
+        # 'mesh1': [8, 32, 64, 128],
+        'mesh1': [8, 32, 64],
         # 'mesh1': [8, 32, 64],
         # 'mesh2': [0, 1, 2, 3, 4, 5, 6, 7],
         # 'mesh5':  [12, 24, 48, 96, 192, 384],
@@ -713,6 +745,7 @@ def plot_errors(problem = 0):
         resp = testp1_by_meshtype(mesh_type, mesh_types_dict[mesh_type], pr_name)
         all_resps.append(resp.update({'mesh_type': mesh_type}))
         all_resps.append(resp.update({'mesh_type': mesh_type}))
+        import pdb; pdb.set_trace()
         ax1.plot(np.log10(resp['m_hdist']), np.log10(resp['l1_norm']), label=mesh_type)
         ax2.plot(np.log10(resp['m_hdist']), np.log10(resp['l2_norm']), label=mesh_type)
         ax3.plot(np.log10(resp['m_hdist']), np.log10(resp['eu']), label=mesh_type)

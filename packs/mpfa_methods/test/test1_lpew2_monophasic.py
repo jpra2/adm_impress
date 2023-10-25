@@ -216,6 +216,8 @@ def run_problem(mesh_name, mesh_properties_name, alpha):
             **mesh_properties.get_all_data()
         )
         resp['source'] += get_source(mesh_properties['faces_centroids'], alpha)*mesh_properties['areas']
+        # resp['source'] += get_source(mesh_properties['faces_centroids'], alpha)
+
 
         pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
@@ -419,6 +421,7 @@ def test_problem1():
         mesh_name = mesh_prop_name + mesh_sufix
         mesh_name = os.path.join(defpaths.lpew2_mesh_folder, mesh_name)
         run_problem(mesh_name, mesh_prop_name, alpha)
+        import pdb; pdb.set_trace()
         # run_problem_lsds(mesh_name, mesh_prop_name, alpha)
 
 def test_problem2():
