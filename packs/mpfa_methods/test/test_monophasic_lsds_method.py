@@ -627,7 +627,7 @@ def setup5():
         n = len(x)
 
         k1 = 1
-        k2 = 1
+        k2 = 2
 
         test = x <= 0.5
         test2 = ~test
@@ -673,33 +673,32 @@ def setup5():
         mesh_properties.nodes_centroids[:, 1] > ymax - mesh_delta
     ]
     
-    # nodes_bc = np.concatenate([
-    #     nodes_xmin, nodes_xmax
-    # ]).astype(np.uint64)
+    nodes_bc = np.concatenate([
+        nodes_xmin, nodes_xmax
+    ]).astype(np.uint64)
 
-    # pressures_xmin = np.repeat(100.0, len(nodes_xmin))
-    # pressures_xmax = np.repeat(1.0, len(nodes_xmax))
+    pressures_xmin = np.repeat(1.0, len(nodes_xmin))
+    pressures_xmax = np.repeat(0.0, len(nodes_xmax))
     
-    # pressures_bc = np.concatenate([pressures_xmin, pressures_xmax])
+    pressures_bc = np.concatenate([pressures_xmin, pressures_xmax])
 
-    nodes_bc = np.unique(np.concatenate([
-        nodes_xmin, nodes_xmax, nodes_ymin, nodes_ymax
-    ]))
-    pressures_bc = get_linear_exact_solution(mesh_properties.nodes_centroids[nodes_bc])
+    # nodes_bc = np.unique(np.concatenate([
+    #     nodes_xmin, nodes_xmax, nodes_ymin, nodes_ymax
+    # ]))
+    # pressures_bc = get_linear_exact_solution(mesh_properties.nodes_centroids[nodes_bc])
     
     bc.set_boundary('dirichlet_nodes', nodes_bc, pressures_bc)
 
+    edges_centroids = mesh_properties.edges_centroids
+    edges_ymax = mesh_properties.edges[edges_centroids[:, 1] >= edges_centroids[:, 1].max() - mesh_delta]
+    edges_ymin = mesh_properties.edges[edges_centroids[:, 1] <= 0 + mesh_delta]
 
-    # edges_centroids = mesh_properties.edges_centroids
-    # edges_ymax = mesh_properties.edges[edges_centroids[:, 1] >= edges_centroids[:, 1].max() - mesh_delta]
-    # edges_ymin = mesh_properties.edges[edges_centroids[:, 1] <= 0 + mesh_delta]
+    edges_bc = np.concatenate([edges_ymax, edges_ymin])
+    neumann_values = np.repeat(0.0, len(edges_bc))
 
-    # edges_bc = np.concatenate([edges_ymax, edges_ymin])
-    # neumann_values = np.repeat(0.0, len(edges_bc))
+    bc.set_boundary('neumann_edges', edges_bc, neumann_values)
 
-    # bc.set_boundary('neumann_edges', edges_bc, neumann_values)
-
-    bc.set_boundary('neumann_edges', np.array([]), np.array([]))
+    # bc.set_boundary('neumann_edges', np.array([]), np.array([]))
 
     mesh_properties.insert_or_update_data({
         'neumann_edges': bc['neumann_edges']['id'],
@@ -839,7 +838,7 @@ def setup6():
         n = len(x)
 
         k1 = 1
-        k2 = 1
+        k2 = 2
 
         test = x <= 0.5
         test2 = ~test
@@ -885,33 +884,32 @@ def setup6():
         mesh_properties.nodes_centroids[:, 1] > ymax - mesh_delta
     ]
     
-    # nodes_bc = np.concatenate([
-    #     nodes_xmin, nodes_xmax
-    # ]).astype(np.uint64)
+    nodes_bc = np.concatenate([
+        nodes_xmin, nodes_xmax
+    ]).astype(np.uint64)
 
-    # pressures_xmin = np.repeat(100.0, len(nodes_xmin))
-    # pressures_xmax = np.repeat(1.0, len(nodes_xmax))
+    pressures_xmin = np.repeat(1.0, len(nodes_xmin))
+    pressures_xmax = np.repeat(0.0, len(nodes_xmax))
     
-    # pressures_bc = np.concatenate([pressures_xmin, pressures_xmax])
+    pressures_bc = np.concatenate([pressures_xmin, pressures_xmax])
 
-    nodes_bc = np.unique(np.concatenate([
-        nodes_xmin, nodes_xmax, nodes_ymin, nodes_ymax
-    ]))
-    pressures_bc = get_linear_exact_solution(mesh_properties.nodes_centroids[nodes_bc])
+    # nodes_bc = np.unique(np.concatenate([
+    #     nodes_xmin, nodes_xmax, nodes_ymin, nodes_ymax
+    # ]))
+    # pressures_bc = get_linear_exact_solution(mesh_properties.nodes_centroids[nodes_bc])
     
     bc.set_boundary('dirichlet_nodes', nodes_bc, pressures_bc)
 
+    edges_centroids = mesh_properties.edges_centroids
+    edges_ymax = mesh_properties.edges[edges_centroids[:, 1] >= edges_centroids[:, 1].max() - mesh_delta]
+    edges_ymin = mesh_properties.edges[edges_centroids[:, 1] <= 0 + mesh_delta]
 
-    # edges_centroids = mesh_properties.edges_centroids
-    # edges_ymax = mesh_properties.edges[edges_centroids[:, 1] >= edges_centroids[:, 1].max() - mesh_delta]
-    # edges_ymin = mesh_properties.edges[edges_centroids[:, 1] <= 0 + mesh_delta]
+    edges_bc = np.concatenate([edges_ymax, edges_ymin])
+    neumann_values = np.repeat(0.0, len(edges_bc))
 
-    # edges_bc = np.concatenate([edges_ymax, edges_ymin])
-    # neumann_values = np.repeat(0.0, len(edges_bc))
+    bc.set_boundary('neumann_edges', edges_bc, neumann_values)
 
-    # bc.set_boundary('neumann_edges', edges_bc, neumann_values)
-
-    bc.set_boundary('neumann_edges', np.array([]), np.array([]))
+    # bc.set_boundary('neumann_edges', np.array([]), np.array([]))
 
     mesh_properties.insert_or_update_data({
         'neumann_edges': bc['neumann_edges']['id'],
@@ -986,7 +984,7 @@ def setup6():
     ex_sol = get_linear_exact_solution(mesh_properties.faces_centroids)
 
     error = np.abs(ex_sol - pressure)
-    mesh_properties.insert_data({
+    mesh_properties.insert_or_update_data({
         'pressure': pressure
     })
     mesh_properties.export_data()
@@ -1057,7 +1055,7 @@ def compare_solution():
     # import pdb; pdb.set_trace()
 
     ext = 'svg'
-    fig1.savefig(os.path.join('results', 'LinearTest_compare.' + ext), format=ext)
+    fig1.savefig(os.path.join('results', 'LinearTest_compare_p2.' + ext), format=ext)
 
     
     
