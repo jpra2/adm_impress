@@ -3,7 +3,7 @@ import numpy as np
 from packs.manager.boundary_conditions import BoundaryConditions
 from packs import defpaths
 from packs.manager.meshmanager import MeshProperty
-from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import create_properties_if_not_exists, mesh_verify, create_properties
+from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import create_properties_if_not_exists, mesh_verify, create_properties, load_mesh_properties
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.utils.utils_old import get_box
@@ -780,12 +780,18 @@ def setup5():
     ex_sol = get_linear_exact_solution(mesh_properties.faces_centroids)
 
     error = np.abs(ex_sol - pressure)
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
+    mesh_properties.insert_or_update_data({
+        'pressure': pressure
+    })
+    mesh_properties.export_data()
     
-    mesh_path = os.path.join(defpaths.mesh, mesh_test_name)
+    mesh_path = os.path.join(mesh_test_name)
     mesh_data = MeshData(mesh_path=mesh_path)
     mesh_data.create_tag('pressure')
     mesh_data.insert_tag_data('pressure', pressure, 'faces', mesh_properties.faces)
+    mesh_data.create_tag('error_abs')
+    mesh_data.insert_tag_data('error_abs', error, 'faces', mesh_properties.faces)
     mesh_data.create_tag('permeability')
     perm = mesh_properties.permeability.reshape((len(mesh_properties.faces), 4))
     mesh_data.insert_tag_data('permeability', perm[:, 0], 'faces', mesh_properties.faces)
@@ -815,7 +821,7 @@ def setup5():
     fig1.savefig(os.path.join('results', 'LinearTest_lsds.' + ext), format=ext)
 
     
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
 def setup6():
     ## setup 5 com diamond method and lpew2
@@ -980,12 +986,17 @@ def setup6():
     ex_sol = get_linear_exact_solution(mesh_properties.faces_centroids)
 
     error = np.abs(ex_sol - pressure)
-    import pdb; pdb.set_trace()
+    mesh_properties.insert_data({
+        'pressure': pressure
+    })
+    mesh_properties.export_data()
     
-    mesh_path = os.path.join(defpaths.mesh, mesh_test_name)
+    mesh_path = os.path.join(mesh_test_name)
     mesh_data = MeshData(mesh_path=mesh_path)
     mesh_data.create_tag('pressure')
     mesh_data.insert_tag_data('pressure', pressure, 'faces', mesh_properties.faces)
+    mesh_data.create_tag('error_abs')
+    mesh_data.insert_tag_data('error_abs', error, 'faces', mesh_properties.faces)
     mesh_data.create_tag('permeability')
     perm = mesh_properties.permeability.reshape((len(mesh_properties.faces), 4))
     mesh_data.insert_tag_data('permeability', perm[:, 0], 'faces', mesh_properties.faces)
@@ -995,9 +1006,9 @@ def setup6():
     mesh_data.insert_tag_data('nodes_pressure_presc', pressures_bc, 'nodes', nodes_bc)
     # mesh_data.create_tag('pressure_error')
     # mesh_data.insert_tag_data('pressure_error', error, 'faces', mesh_properties.faces)
-    mesh_data.export_all_elements_type_to_vtk('linear_test_nodes_lsds', 'nodes')
-    mesh_data.export_all_elements_type_to_vtk('linear_test_faces_lsds', 'faces')
-    mesh_data.export_only_the_elements('linear_test_nodes_pressure_boundary_lsds', 'nodes', nodes_bc)
+    mesh_data.export_all_elements_type_to_vtk('linear_test_nodes_lpew2', 'nodes')
+    mesh_data.export_all_elements_type_to_vtk('linear_test_faces_lpew2', 'faces')
+    mesh_data.export_only_the_elements('linear_test_nodes_pressure_boundary_lpew2', 'nodes', nodes_bc)
     
     plt.clf()
     fig1, ax1 = plt.subplots(1)
@@ -1012,26 +1023,47 @@ def setup6():
     # ax1.legend()
 
     ext = 'svg'
-    fig1.savefig(os.path.join('results', 'LinearTest_lsds.' + ext), format=ext)
+    fig1.savefig(os.path.join('results', 'LinearTest_lpew2.' + ext), format=ext)
 
     
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     
     
+def compare_solution():
+    mesh_prop_name1 = defpaths.mesh_prop_linear_2k + '_lsds'
+    mesh_prop_name2 = defpaths.mesh_prop_linear_2k + '_lpew2'
     
+    meshp1 = load_mesh_properties(mesh_prop_name1)
+    meshp2 = load_mesh_properties(mesh_prop_name2)
     
+    pressure1 = meshp1['pressure']
+    pressure2 = meshp2['pressure']
     
+    plt.clf()
+    fig1, ax1 = plt.subplots(1)
+    facesxcentroids = meshp1.faces_centroids[:, 0]
+    pd_series = pd.Series(facesxcentroids, index=np.arange(len(facesxcentroids)))
+    pd_series_ordenated = pd_series.sort_values(ascending=True)
     
-     
-        
+    ax1.plot(facesxcentroids[pd_series_ordenated.index], pressure1[pd_series_ordenated.index], linewidth=3,label='LSDS-GLS')
+    ax1.plot(facesxcentroids[pd_series_ordenated.index], pressure2[pd_series_ordenated.index],  lw=3,ls=':', label='D-LPEW2')
     
+    ax1.set_xlabel('X position')
+    ax1.set_ylabel('Presssure')
+    ax1.set_title('Pressure x position')
+    ax1.legend()
     
-    
-    
-    
+    # plt.show()
+    # import pdb; pdb.set_trace()
 
+    ext = 'svg'
+    fig1.savefig(os.path.join('results', 'LinearTest_compare.' + ext), format=ext)
 
-
+    
+    
+    
+    
+    
 
 def test_monophasic_problem_with_pressure_prescription():
     """test the lsds flux calculation with gls vertex interpolation
@@ -1043,7 +1075,8 @@ def test_monophasic_problem_with_pressure_prescription():
     # setup3()
     # setup4()
     # setup5()
-    setup6()
+    # setup6()
+    compare_solution()
     import pdb; pdb.set_trace()
 
 
