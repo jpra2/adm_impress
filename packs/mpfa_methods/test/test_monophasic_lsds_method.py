@@ -436,10 +436,13 @@ def setup4():
         _type_: _description_
     """
     mesh_test_name = defpaths.oblique_quad_mesh
-    mesh_properties_name = defpaths.mesh_prop_test7
+    mesh_properties_name = defpaths.mesh_prop_test7 + '_lsds'
     mesh_verify(mesh_test_name)
     mesh_properties: MeshProperty = create_properties_if_not_exists(mesh_test_name, mesh_properties_name)
     
+    mpfapreprocess = MpfaPreprocess()
+    mpfapreprocess.calculate_h_dist(mesh_properties)
+    mpfapreprocess.calculate_areas(mesh_properties)
     # define nodes to calculate_weights
     mesh_properties.insert_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
     
@@ -449,11 +452,11 @@ def setup4():
         lsds.preprocess(mesh_properties)
     )
 
-    mesh_properties.insert_data(
+    mesh_properties.insert_or_update_data(
         get_gls_nodes_weights(**mesh_properties.get_all_data())
     )
 
-    mesh_properties.insert_data(
+    mesh_properties.insert_or_update_data(
         lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
     )
     
@@ -529,7 +532,7 @@ def setup4():
     #define boundary conditions    
     problem_name = 'monophasic_oblique_test7'
     bc = BoundaryConditions()
-    bc.insert_name(problem_name)
+    # bc.insert_name(problem_name)
     
     xmin, ymin = mesh_properties.faces_centroids[:, 0:2].min(axis=0)
     xmax, ymax = mesh_properties.faces_centroids[:, 0:2].max(axis=0)
@@ -555,31 +558,28 @@ def setup4():
     centroids_nodes_bc = mesh_properties.nodes_centroids[nodes_bc, 0:2]
     pressures_bc = exact_solution(centroids_nodes_bc, delta)
     
-    bc.set_boundary('nodes_pressures', nodes_bc, pressures_bc)
+    bc.set_boundary('dirichlet_nodes', nodes_bc, pressures_bc)
+    
+    bc.set_boundary('neumann_edges', np.array([]), np.array([]))
+
+    mesh_properties.insert_or_update_data({
+        'neumann_edges': bc['neumann_edges']['id'],
+        'neumann_edges_value': bc['neumann_edges']['value']
+    })
     
     lsds = LsdsFluxCalculation()
     
-    resp = lsds.mount_problem_v2(
-        mesh_properties.nodes_weights,
-        mesh_properties.xi_params,
-        mesh_properties.faces,
-        mesh_properties.nodes,
-        mesh_properties.bool_boundary_edges,
-        mesh_properties.adjacencies,
-        bc,
-        mesh_properties.nodes_of_edges,
-        mesh_properties.neumann_weights,
-        mesh_properties.edges_of_nodes
-    )
+    resp = lsds.mount_problem_v6(bc, **mesh_properties.get_all_data())
+    
     
     pressure = spsolve(resp['transmissibility'], resp['source'])
     edges_flux = lsds.get_edges_flux(
+        bc,
+        pressure,
         mesh_properties.xi_params,
         mesh_properties.nodes_weights,
         mesh_properties.nodes_of_edges,
-        pressure,
         mesh_properties.adjacencies,
-        bc,
         mesh_properties.neumann_weights        
     )
     
@@ -592,8 +592,13 @@ def setup4():
     p_exact = exact_solution(mesh_properties.faces_centroids[:, 0:2], delta)
     
     error = np.absolute((pressure - p_exact))
+    mesh_properties.insert_or_update_data({
+        'pressure': pressure,
+        'abs_error': error,
+    })
+    mesh_properties.export_data()
     
-    mesh_path = os.path.join(defpaths.mesh, defpaths.oblique_quad_mesh)
+    mesh_path = os.path.join(defpaths.oblique_quad_mesh)
     mesh_data = MeshData(mesh_path=mesh_path)
     mesh_data.create_tag('pressure')
     mesh_data.insert_tag_data('pressure', pressure, 'faces', mesh_properties.faces)
@@ -609,7 +614,7 @@ def setup4():
     mesh_data.export_all_elements_type_to_vtk('test_7_nodes', 'nodes')
     mesh_data.export_all_elements_type_to_vtk('test_7_faces', 'faces')
     mesh_data.export_only_the_elements('test_7_nodes_pressure_boundary', 'nodes', nodes_bc)
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     
     
 def setup5():
@@ -1071,10 +1076,10 @@ def test_monophasic_problem_with_pressure_prescription():
     # setup1()
     # setup2()
     # setup3()
-    # setup4()
+    setup4()
     # setup5()
     # setup6()
-    compare_solution()
+    # compare_solution()
     import pdb; pdb.set_trace()
 
 

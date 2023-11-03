@@ -943,6 +943,8 @@ class LsdsFluxCalculation:
         
         resp = dict()
         source = np.zeros(faces.shape[0])
+        
+        n_edges = len(bool_boundary_edges)
 
         #verify pressure prescription of nodes in boundary
         nodes_pressure_prescription = defnames.nodes_pressure_prescription_name
@@ -953,6 +955,11 @@ class LsdsFluxCalculation:
         ## verify neumann prescription of nodes
         neumann_nodes = neumann_weights['node_id']
         neumann_values = neumann_weights['nweight']
+        neumann_edges = boundary_conditions['neumann_edges']
+        dirichlet_edges = np.setdiff1d(
+            np.arange(n_edges)[bool_boundary_edges],
+            neumann_edges
+        )
 
         other_nodes = np.setdiff1d(nodes, ids_node_press)
 
@@ -994,6 +1001,7 @@ class LsdsFluxCalculation:
 
         self.update_transmissibility_from_internal_edges(
             bool_boundary_edges,
+            dirichlet_edges,
             adjacencies,
             xi_params,
             lines,
