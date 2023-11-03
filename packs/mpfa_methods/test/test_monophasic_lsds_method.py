@@ -443,24 +443,12 @@ def setup4():
     mpfapreprocess = MpfaPreprocess()
     mpfapreprocess.calculate_h_dist(mesh_properties)
     mpfapreprocess.calculate_areas(mesh_properties)
-    # define nodes to calculate_weights
-    mesh_properties.insert_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
-    
+
     ## create weights and xi params for flux calculation
     lsds = LsdsFluxCalculation()
     mesh_properties.insert_or_update_data(
         lsds.preprocess(mesh_properties)
     )
-
-    mesh_properties.insert_or_update_data(
-        get_gls_nodes_weights(**mesh_properties.get_all_data())
-    )
-
-    mesh_properties.insert_or_update_data(
-        lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
-    )
-    
-    mesh_properties.remove_data(['nodes_to_calculate'])
     
     def exact_solution(centroids, delta):
         x = centroids[:, 0]
@@ -569,6 +557,21 @@ def setup4():
     
     lsds = LsdsFluxCalculation()
     
+    if not mesh_properties.verify_name_in_data_names('nodes_weights'):
+        # define nodes to calculate_weights
+        mesh_properties.insert_data({'nodes_to_calculate': mesh_properties.nodes.copy()})
+        mesh_properties.insert_data(
+            get_gls_nodes_weights(**mesh_properties.get_all_data())
+        )
+        mesh_properties.remove_data(['nodes_to_calculate'])
+        mesh_properties.export_data()
+
+    if not mesh_properties.verify_name_in_data_names('xi_params'):
+        mesh_properties.insert_or_update_data(
+            lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
+        )
+        mesh_properties.export_data()
+
     resp = lsds.mount_problem_v6(bc, **mesh_properties.get_all_data())
     
     pressure = spsolve(resp['transmissibility'], resp['source'])
@@ -1263,8 +1266,8 @@ def test_monophasic_problem_with_pressure_prescription():
     # setup1()
     # setup2()
     # setup3()
-    # setup4()
-    setup4_lpew2()
+    setup4()
+    # setup4_lpew2()
     # setup5()
     # setup6()
     # compare_solution()
