@@ -598,6 +598,13 @@ def setup4():
         'pressure': pressure,
         'abs_error': error,
     })
+    
+    error2 = np.power(error, 2)
+    Eu = error2*mesh_properties['areas']
+    Eu = np.sqrt(Eu.sum())
+    print(f'Eu: {Eu}')
+    print()
+    
     mesh_properties.export_data()
     
     mesh_path = os.path.join(defpaths.oblique_quad_mesh)
@@ -788,6 +795,12 @@ def setup4_lpew2():
         'abs_error': error,
     })
     mesh_properties.export_data()
+    
+    error2 = np.power(error, 2)
+    Eu = error2*mesh_properties['areas']
+    Eu = np.sqrt(Eu.sum())
+    print(f'Eu: {Eu}')
+    print()
     
     mesh_path = os.path.join(defpaths.oblique_quad_mesh)
     mesh_data = MeshData(mesh_path=mesh_path)
@@ -1266,8 +1279,8 @@ def test_monophasic_problem_with_pressure_prescription():
     # setup1()
     # setup2()
     # setup3()
-    setup4()
-    # setup4_lpew2()
+    # setup4() # 1.32e-13
+    setup4_lpew2() # 3.201e-16
     # setup5()
     # setup6()
     # compare_solution()
