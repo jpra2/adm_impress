@@ -14,6 +14,7 @@ class FR(FR1D):
 
     def run(self, M, fprop, wells, Ft_internal, Nk_SP_old, P_old, delta_t, t):
         Nk_SP = np.copy(Nk_SP_old)
+        Ft_internal = np.ones_like(Ft_internal)
 
         q_SP = fprop.qk_molar[:,:,np.newaxis] * np.ones_like(Nk_SP)
         #q_SP[:] = 0 #BASTIAN
@@ -67,9 +68,9 @@ class FR(FR1D):
         return Nk_SP, Fk_vols_total, wave_velocity
 
     def dFk_SP_from_Pspace(self, M, fprop, wells, Ft_internal, Nk_SP, P_old):
-
         Fk_SP = self.component_flux_SP(fprop, M, Nk_SP) #comment for burgers
         #Fk_SP = self.get_Fk_Ft_SP(fprop, M, Nk_SP)
+        #Fk_SP = np.ones_like(Fk_SP)#np.random.random([2,49,9])
 
         #FOR THE BURGERS PROBLEM
         #Fk_SP = (Nk_SP**2/2)/(1/ctes.n_volumes)
@@ -77,12 +78,13 @@ class FR(FR1D):
         Fk_faces_RS_FPs, Fk_vols_RS_neig, alpha_wv_FPs = self.Riemann_Solver(M, fprop, wells, Nk_SP,
             Fk_SP, P_old, Ft_internal)
 
-        import pdb; pdb.set_trace()
         Fk_SP_matrix = Fk_SP[:,:,ctes_FR.reshape_to_points_matrix]
 
         Fk_D_matrix = np.sum(Fk_SP_matrix[...,np.newaxis] * ctes_FR.L[np.newaxis,np.newaxis,:], axis=3)
         dFk_D = np.sum(Fk_SP_matrix[...,np.newaxis] * ctes_FR.dL[np.newaxis,np.newaxis,:], axis=3)
-        dFk_C = self.dFlux_Continuous(Fk_SP_matrix, Fk_vols_RS_neig)
+
+        dFk_C = self.dFlux_Continuous(Fk_SP, Fk_vols_RS_neig)
+        import pdb; pdb.set_trace()
         dFk_Pspace = (dFk_C + dFk_D)
         #dFk_Pspace[:,-1,1:-1] = dFk_D[:,-1,1:-1]
 
@@ -111,7 +113,7 @@ class FR(FR1D):
         Ft_face_phi = (Ft_internal_vec[:,:,np.newaxis,:,np.newaxis] * ctes_FR.phi[np.newaxis,np.newaxis,:])
 
         'Look for a faster way to do that'
-        Ft_SP_reshaped = np.empty((1,ctes.n_volumes,ctes_FR.n_points, 2))
+        Ft_SP_reshaped = np.empty((1,ctes.n_volumes,ctes_FR.  n_points, 2))
         #contours = np.array([0,ctes_FR.n_points-1])
         for dir in range(2):
             for i in range(ctes_FR.n_points):
@@ -121,7 +123,11 @@ class FR(FR1D):
                 Ft_SP_reshaped[:,:,i,dir] = sp.csc_matrix((data, (lines, cols)), shape = (1, ctes.n_volumes)).toarray()
         Ft_SP_vec = 2 * Ft_SP_reshaped #np.concatenate(np.dsplit(Ft_SP_reshaped, ctes_FR.n_points), axis = 2)
         Ft_SP = np.sqrt((Ft_SP_vec**2).sum(axis=-1))
-
+        import pdb; pdb.set_trace()
+        import matplotlib.pyplot as plt
+        plt.scatter(ctes_FR.Xs[...,0].flatten(), ctes_FR.Xs[...,1].flatten())
+        plt.show
+        plt.savefig("mesh_test.png")
         #Ft_SP[0,wells['all_wells'],:] = 0 #((Ft_internal[0,ctes_FR.vols_vec][wells['all_wells']]).sum(axis=-1)/2)[:,np.newaxis]
         #Ft_SP[:,[0,-1],:] = 0
         #Ft_SP[:,-1,0] = (Ft_SP[:,-1,0])[:,np.newaxis]
@@ -284,6 +290,7 @@ class FR(FR1D):
 
         'Obtaining Flux at each CV side - by finding faces that compounds the CV \
         this only works for 1D problems'
+
         Fk_vols_RS_neig = Fk_faces_RS_FPs[:,ctes_FR.vols_vec]
         #Fk_vols_RS_neig[:,self.vols_vec<0] = 0 #Fk_face_contour_RS #FOR THE BURGERS
 
@@ -293,10 +300,19 @@ class FR(FR1D):
         return Fk_faces_RS_FPs, Fk_vols_RS_neig, alpha_wv_FPs
 
     def dFlux_Continuous(self, Fk_SP, Fk_vols_RS_neig):
-        Fk_D_l = Fk_SP[...,0]#Fk_D @ x_left
-        Fk_D_r = Fk_SP[...,-1]#Fk_D @ x_right
-        dFk_C = (Fk_vols_RS_neig[:,:,0] - Fk_D_l)[:,:,np.newaxis] * ctes_FR.dgLB[np.newaxis,:] + \
-                (Fk_vols_RS_neig[:,:,1] - Fk_D_r)[:,:,np.newaxis] * ctes_FR.dgRB[np.newaxis,:]
+
+        Fk_SP_aux = Fk_SP[...,np.newaxis] * np.ones((ctes.n_components,ctes.n_volumes,ctes_FR.n_points,4))
+        Fk_SP_aux = Fk_SP_aux.transpose(0,1,3,2)
+        Fk_FPs_vols = Fk_SP_aux[:,ctes_FR.SPs_on_faces.transpose(0,2,1)]
+        Fk_FPs_vols_faces_fl = np.split(Fk_FPs_vols[:,np.newaxis,:],ctes.n_volumes,axis=-1)
+        Fk_FPs_vols_faces_ = np.concatenate(Fk_FPs_vols_faces_fl,axis=1)
+        Fk_FPs_vols_faces_fl2 = np.split(Fk_FPs_vols_faces_[...,np.newaxis],4,axis=2)
+        Fk_FPs_vols_faces = np.concatenate(Fk_FPs_vols_faces_fl2,axis=-1).transpose(0,1,3,2)
+        #checar se ´melhor mecher no RS e adequa
+        Fk_FPs_vols_faces_l = Fk_FPs_vols_faces[:,:,[0,3]]
+        Fk_FPs_vols_faces_r = Fk_FPs_vols_faces[:,:,[1,2]]
+        dFk_C = (Fk_vols_RS_neig[:,:,[0,3]] - Fk_FPs_vols_faces[:,:,[0,3]])[:,:,:,np.newaxis] * ctes_FR.dgLB[np.newaxis,np.newaxis,:] + \
+                (Fk_vols_RS_neig[:,:,[2,1]] - Fk_FPs_vols_faces[:,:,[2,1]])[:,:,:,np.newaxis] * ctes_FR.dgRB[np.newaxis,np.newaxis,0,:]
         return dFk_C
 
     def minmod(self, dNks):

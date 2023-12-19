@@ -5,7 +5,7 @@ from sympy import Symbol, diff, poly
 #import quadpy
 #from quadpy.c1 import gauss_lobatto
 from scipy.special import legendre, jacobi, gamma
-
+from scipy.interpolate import lagrange
 
 global x
 x = Symbol('x')
@@ -177,9 +177,13 @@ def map_faces_and_points_in_vols(M, Ns):
     for i in range(1,4):
         v = nodes_faces_vols_2D_coords[:,i] - v0
         angle = np.arctan(v[:,1]/v[:,0])
+        angle[(v[:,0]<0)*(angle==0)] = 2*np.pi # correcting for negative x value (it was 0 degrees when it should be 180)
+        angle[(v[:,0]<0)] -= np.pi # correcting for negative x value
         angle[angle<0]+=2*np.pi*np.ones_like(angle[angle<0]) # map the angle to 0,2pi interval
         angles[:,i-1] = angle
-
+        if i==2:# to correct the loop direction (right hand rule)
+            angles[angles[:,i-1]>=(angles[:,i-2]+np.pi),0] += 2*np.pi
+            angles[angles[:,i-2]>=(angles[:,i-1]+np.pi),1] += 2*np.pi
     angles_argsort = np.argsort(angles)
 
     vs = nodes_faces_vols_2D_coords[:,1:]
@@ -189,15 +193,21 @@ def map_faces_and_points_in_vols(M, Ns):
     vs_reord = np.diagonal(vs_reord_aux)
     vs_reord = vs_reord.transpose(2,0,1) #correct matrix shape
     nodes_faces_vols_2D_coords[:,1:] = vs_reord
+    Xs = np.sum(Ns[:,np.newaxis,:,np.newaxis] * nodes_faces_vols_2D_coords[np.newaxis,...],axis=2).transpose(1,0,2)
+    #import matplotlib.pyplot as plt
+    #plt.scatter(Xs[...,0].flatten(), Xs[...,1].flatten())
+    #plt.show
+    #plt.savefig("mesh_test.png")
 
-    Xs = Ns @ nodes_faces_vols_2D_coords
-
-    faces_contour_vols_2D_idx_flt = faces_vols[ff[:,:,-1]==0.5]
+    z_center_abs = np.max(abs(ff[:,:,-1]))/2
+    faces_contour_vols_2D_idx_flt = faces_vols[abs(ff[:,:,-1])==z_center_abs]
     xs2 = np.split(faces_contour_vols_2D_idx_flt[...,np.newaxis],ctes.n_volumes)
     faces_around_vols_2D_idx = np.concatenate(xs2,axis=-1).T
     return Xs, nodes_faces_vols_2D_coords, faces_around_vols_2D_idx
 
 def map_SPs_on_faces(Xs, nodes_faces_vols_2D_coords):
+    # I think there is an easier way to do that and just for 1 pattern CV:
+    # I can do only one for in range 4 or an array filling each row with the matrix pattern I am noticing
     faces_vols_coef = np.empty((ctes.n_volumes,4))
     for i in range(4):
         if i==3: i=-1
@@ -258,6 +268,7 @@ def map_FPs_from_SPs(n_points,faces_contour_vols_2D_idx,SPs_on_faces):
         i+=1
 
     v0_SPs_fl = SPs_on_faces.transpose(0,2,1)[internal_faces_contour_vols]
+
     v0_SPs_2 = v0_SPs_fl[idx_2]
     reorder_internal_faces_to_origin = (np.array(st)[:, None] == ctes.internal_faces).argmax(axis=0)
     v0_SPs = v0_SPs_2[reorder_internal_faces_to_origin]
@@ -317,6 +328,7 @@ def run(M):
     global Dr
     global phi
     global mesh_dim
+    global Xs
 
     mesh_dim = 2-1 * (M.volumes.internal.shape==0)
 
@@ -326,6 +338,7 @@ def run(M):
     if n_points==2:
         points = np.array([-1,1])
         weights = np.array([1,1])
+
     if n_points==3:
         points = np.array([-1,0,1])
         weights = np.array([1/3, 4/3, 1/3])
@@ -351,6 +364,7 @@ def run(M):
         global nFPs
         global reshape_to_points_matrix
         global points_matrix
+        global SPs_on_faces
 
         n_points *= n_points
         n_pmatrx, neta = np.meshgrid(points, points)
@@ -371,6 +385,7 @@ def run(M):
         aux_reshape = np.split(idx[:,np.newaxis],int(np.sqrt(n_points)),axis=0)
         reshape_to_points_matrix = np.concatenate(aux_reshape,axis=1).T
         points_matrix = x_points[reshape_to_points_matrix]
+
     else:
         phi = RT0_shape_functions(n_points, points)
         _points, vols_vec = auxiliary_terms(faces_contour_vols_2D_idx)

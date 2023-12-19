@@ -106,4 +106,3 @@ class WellsCompositional(Wells):
         self['values_q_vol'] = np.array(values_q_vol).T
         self['inj_cond'] = np.array(inj_cond).flatten()
         self['z'] = np.array(z)
-        

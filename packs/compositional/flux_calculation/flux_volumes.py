@@ -19,7 +19,7 @@ class Flux:
             ctes.z[ctes.v0], ctes.pretransmissibility_internal_faces)
         Fk_internal_faces = self.update_Fk_internal_faces(
             fprop.xkj_internal_faces, fprop.Csi_j_internal_faces, Fj_internal_faces)
-        Fk_vols_total = self.update_flux_volumes(M, Fk_internal_faces)
+        Fk_vols_total = self.update_flux_volumes(Fk_internal_faces)
         return Fk_vols_total
 
     def update_Fj_internal_faces(self, Ft_internal_faces, rho_j_internal_faces,
@@ -44,7 +44,7 @@ class Flux:
             Fj_internal_faces, axis = 1)
         return Fk_internal_faces
 
-    def update_flux_volumes(self, M, Fk_internal_faces):
+    def update_flux_volumes(self, Fk_internal_faces):
         ''' Function to compute component molar flux balance through the control \
         volume interfaces '''
         cx = np.arange(ctes.n_components)

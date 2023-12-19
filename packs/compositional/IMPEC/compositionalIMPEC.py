@@ -42,7 +42,7 @@ class CompositionalFVM:
             if any(fprop.P<0): import pdb; pdb.set_trace()
 
             fprop.qk_prod = fprop.qk_molar[:,wells['ws_prod']]
-            if fprop.qk_prod.sum()==0: import pdb; pdb.set_trace()
+            #if fprop.qk_prod.sum()==0: import pdb; pdb.set_trace()
 
             Fk_vols_total, wave_velocity = compute_flux(M, fprop, wells, Ft_internal, \
                 P_old, Nk_old, Pot_hid, delta_t, t, G)
