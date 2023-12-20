@@ -1,5 +1,5 @@
 boxdim = 2;
-n = 128;
+n = 8;
 gridsize = boxdim/n;
 
 Point(1) = {-1, -1, 0, gridsize};

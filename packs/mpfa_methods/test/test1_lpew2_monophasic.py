@@ -80,7 +80,7 @@ def get_source(centroids, alpha):
     source = np.zeros(len(x))
 
     test = x <= 0
-    source[test] = alpha*(2*np.sin(x[test]) + np.cos(y[test]))*x[test] + np.sin(y[test])
+    source[test] = alpha*(2*np.sin(y[test]) + np.cos(y[test]))*x[test] + np.sin(y[test])
 
     test = ~test
     source[test] = -2*alpha*np.exp(x[test])*np.cos(y[test])
@@ -414,21 +414,22 @@ def run_problem_2(mesh_name, mesh_properties_name, alpha):
 def test_problem1():
     mesh_prefix = 'str_trimesh_'
     mesh_sufix = '.msh'
-    list_of_meshs = ['16x16', '32x32', '64x64', '128x128']
-    alpha = 1
+    # list_of_meshs = ['16x16', '32x32', '64x64', '128x128']
+    list_of_meshs = ['8x8', '16x16', '32x32', '64x64']
+    alpha = 10
     for n_mesh in list_of_meshs:
         mesh_prop_name = mesh_prefix + n_mesh
         mesh_name = mesh_prop_name + mesh_sufix
         mesh_name = os.path.join(defpaths.lpew2_mesh_folder, mesh_name)
         run_problem(mesh_name, mesh_prop_name, alpha)
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         # run_problem_lsds(mesh_name, mesh_prop_name, alpha)
 
 def test_problem2():
     mesh_prefix = 'uns_trimesh_'
     mesh_sufix = '.msh'
     # list_of_meshs = ['16x16', '32x32', '64x64', '128x128']
-    list_of_meshs = ['8x8', '16x16', '32x32', '64x64']
+    list_of_meshs = ['16x16', '32x32', '64x64']
     alpha = 1
     for n_mesh in list_of_meshs:
         mesh_prop_name = mesh_prefix + n_mesh

@@ -122,7 +122,8 @@ class DiamondFluxCalculation:
             hb = h_dist[edge, 0]
             
             array[edge]['kappa'] = (Kan*Kbn)/(Kan*hb + Kbn*ha)
-            array[edge]['D'] = (b1b2.dot(ObOa))/edge_dim**2 - (1/edge_dim)*(Kbt*ha/Kbn + Kat*hb/Kan)
+            array[edge]['D'] = (b1b2.dot(ObOa))/edge_dim**2 - (1/edge_dim)*(Kbt*hb/Kbn + Kat*ha/Kan)
+
         
         return {self.data_names[1]: array}
         
