@@ -296,6 +296,8 @@ def run_problem_lsds(mesh_name, mesh_properties_name, alpha):
             bc,
             **mesh_properties.get_all_data()
         )
+        resp['source'] += get_source(mesh_properties['faces_centroids'], alpha)*mesh_properties['areas']
+
 
         pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
@@ -416,14 +418,14 @@ def test_problem1():
     mesh_sufix = '.msh'
     # list_of_meshs = ['16x16', '32x32', '64x64', '128x128']
     list_of_meshs = ['8x8', '16x16', '32x32', '64x64']
-    alpha = 10
+    alpha = 1000
     for n_mesh in list_of_meshs:
         mesh_prop_name = mesh_prefix + n_mesh
         mesh_name = mesh_prop_name + mesh_sufix
         mesh_name = os.path.join(defpaths.lpew2_mesh_folder, mesh_name)
-        run_problem(mesh_name, mesh_prop_name, alpha)
+        # run_problem(mesh_name, mesh_prop_name, alpha)
         # import pdb; pdb.set_trace()
-        # run_problem_lsds(mesh_name, mesh_prop_name, alpha)
+        run_problem_lsds(mesh_name, mesh_prop_name, alpha)
 
 def test_problem2():
     mesh_prefix = 'uns_trimesh_'

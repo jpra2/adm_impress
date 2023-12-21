@@ -6,6 +6,7 @@ import numpy as np
 from packs.manager.boundary_conditions import BoundaryConditions
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 import scipy.sparse as sp
+from packs.mpfa_methods.weight_interpolation.lpew import verify_if_data_exists
 
 class DiamondFluxCalculation:
 
@@ -237,31 +238,36 @@ class DiamondFluxCalculation:
 
 
       
-def create_kn_and_kt(mesh_properties: MeshProperty):
+def create_kn_and_kt(mesh_properties: MeshProperty, update=True):
     lpewflux = DiamondFluxCalculation()
+    k = 0
+    if verify_if_data_exists(mesh_properties, k, update, lpewflux.data_names):
+        return
+    resp = lpewflux.create_kn_and_kt(**mesh_properties.get_all_data())
+    mesh_properties.insert_or_update_data(resp)
+    mesh_properties.export_data()
 
-    if not mesh_properties.verify_name_in_data_names(lpewflux.data_names[0]):
-        resp = lpewflux.create_kn_and_kt(**mesh_properties.get_all_data())
-        mesh_properties.insert_data(resp)
-        mesh_properties.export_data()
-
-def create_kappa_and_D(mesh_properties: MeshProperty):
+def create_kappa_and_D(mesh_properties: MeshProperty, update=True):
     lpewflux = DiamondFluxCalculation()
+    k = 1
 
-    if not mesh_properties.verify_name_in_data_names(lpewflux.data_names[1]):
-        resp = lpewflux.create_kappa_and_D(**mesh_properties.get_all_data())
-        mesh_properties.insert_data(resp)
-        mesh_properties.export_data()
+    if verify_if_data_exists(mesh_properties, k, update, lpewflux.data_names):
+        return
+    resp = lpewflux.create_kappa_and_D(**mesh_properties.get_all_data())
+    mesh_properties.insert_or_update_data(resp)
+    mesh_properties.export_data()
 
-def create_xi_param_dsflux(mesh_properties: MeshProperty):
+def create_xi_param_dsflux(mesh_properties: MeshProperty, update=True):
     lpewflux = DiamondFluxCalculation()
+    k = 2
 
-    if not mesh_properties.verify_name_in_data_names(lpewflux.data_names[2]):
-        resp = lpewflux.create_xi_param_dsflux(**mesh_properties.get_all_data())
-        mesh_properties.insert_data(resp)
-        mesh_properties.export_data()
+    if verify_if_data_exists(mesh_properties, k, update, lpewflux.data_names):
+        return
+    resp = lpewflux.create_xi_param_dsflux(**mesh_properties.get_all_data())
+    mesh_properties.insert_or_update_data(resp)
+    mesh_properties.export_data()
 
-def get_xi_params_ds_flux(mesh_properties: MeshProperty):
+def get_xi_params_ds_flux(mesh_properties: MeshProperty, update=True):
     """
     Na etapa de preprocessamento:
     O no B2 esta a esquerda da normal do edge e o no B1 a direita
@@ -271,9 +277,9 @@ def get_xi_params_ds_flux(mesh_properties: MeshProperty):
     lpewflux = DiamondFluxCalculation()
 
     lpewflux.preprocess(mesh_properties)
-    create_kn_and_kt(mesh_properties)
-    create_kappa_and_D(mesh_properties)
-    create_xi_param_dsflux(mesh_properties)
+    create_kn_and_kt(mesh_properties, update=update)
+    create_kappa_and_D(mesh_properties, update=update)
+    create_xi_param_dsflux(mesh_properties, update=update)
 
 
 

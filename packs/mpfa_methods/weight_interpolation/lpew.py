@@ -174,8 +174,9 @@ class LpewWeight:
         """
 
         cosC = -(c**2 - (a**2 + b**2))/(2*a*b)
-        C = np.arccos(cosC)
-        return C
+        # C = np.arccos(cosC)
+        # return C
+        return np.arccos(cosC)
 
     def insert_knt_barra_vef_data(
             self,
@@ -277,23 +278,32 @@ class LpewWeight:
         #     (np.dot(-q0_ok, -tk1_ok))/(q0_okn*tk1_okn)
         # )
 
-        alln_node_id.append(node)
-        alln_edge_id.append(edges_selected[1])
-        alln_face_id.append(face)
-        alln_kn.append(knn_tk1)
-        alln_kt.append(ktn_tk1)
-        all_theta.append(theta_tk1)                
-        all_phi.append(phi_tk1)
-        all_v_angle.append(vangle1)             
+        # alln_node_id.append(node)
+        # alln_edge_id.append(edges_selected[1])
+        # alln_face_id.append(face)
+        # alln_kn.append(knn_tk1)
+        # alln_kt.append(ktn_tk1)
+        # all_theta.append(theta_tk1)                
+        # all_phi.append(phi_tk1)
+        # all_v_angle.append(vangle1)             
 
-        alln_node_id.append(node)
-        alln_edge_id.append(edges_selected[0])
-        alln_face_id.append(face)
-        alln_kn.append(knn_tk0)
-        alln_kt.append(ktn_tk0)
-        all_theta.append(theta_tk0)                
-        all_phi.append(phi_tk0)
-        all_v_angle.append(vangle0)
+        # alln_node_id.append(node)
+        # alln_edge_id.append(edges_selected[0])
+        # alln_face_id.append(face)
+        # alln_kn.append(knn_tk0)
+        # alln_kt.append(ktn_tk0)
+        # all_theta.append(theta_tk0)                
+        # all_phi.append(phi_tk0)
+        # all_v_angle.append(vangle0)
+
+        alln_node_id.extend((node, node))
+        alln_edge_id.extend((edges_selected[1], edges_selected[0]))
+        alln_face_id.extend((face, face))
+        alln_kn.extend((knn_tk1, knn_tk0))
+        alln_kt.extend((ktn_tk1, ktn_tk0))
+        all_theta.extend((theta_tk1, theta_tk0))
+        all_phi.extend((phi_tk1, phi_tk0))
+        all_v_angle.extend((vangle1, vangle0))
 
     def create_knt_barra_vef(self, tk_points, nodes_centroids, permeability, edges_of_nodes, nodes_of_edges, nodes, edges, adjacencies, faces_of_nodes, bool_boundary_nodes, faces_centroids, **kwargs):
 
@@ -855,91 +865,101 @@ def preprocess(mesh_properties: MeshProperty):
     mesh_properties.insert_or_update_data(resp)
     intermediate(mesh_properties)
 
-def create_Tk(mesh_properties: MeshProperty):
-    """criar k normal e tangente
+def create_Tk(mesh_properties: MeshProperty, update=True):
     """
-    k = 0
+        criar tk points
+    """
     lpew = LpewWeight()
-    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
-        return   
+    k = 0
+    if verify_if_data_exists(mesh_properties, k, update, lpew.datas):
+        return
     resp = lpew.create_Tk_points(
         mesh_properties['nodes_centroids'],
         mesh_properties['nodes_of_edges']
     )
-    mesh_properties.insert_data(resp)
+    mesh_properties.insert_or_update_data(resp)
     intermediate(mesh_properties)
 
-def create_neta(mesh_properties: MeshProperty):
+def create_neta(mesh_properties: MeshProperty, update=True):
     
     k = 1
     lpew = LpewWeight()
-    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
+    if verify_if_data_exists(mesh_properties, k, update, lpew.datas):
         return 
+    
     resp = lpew.create_neta(**mesh_properties.get_all_data())
-    mesh_properties.insert_data(resp)
+    mesh_properties.insert_or_update_data(resp)
     intermediate(mesh_properties)
 
-def create_knt_vef(mesh_properties: MeshProperty):
+def create_knt_vef(mesh_properties: MeshProperty, update=True):
     
     k = 2
     lpew = LpewWeight()
-    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
+    if verify_if_data_exists(mesh_properties, k, update, lpew.datas):
         return 
+    
     resp = lpew.create_knt_barra_vef(**mesh_properties.get_all_data())
-    mesh_properties.insert_data(resp)
+    mesh_properties.insert_or_update_data(resp)
     intermediate(mesh_properties)
 
-def create_zeta(mesh_properties: MeshProperty):
+def create_zeta(mesh_properties: MeshProperty, update=True):
     
     k = 4
     lpew = LpewWeight()
-    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
-        return 
+    if verify_if_data_exists(mesh_properties, k, update, lpew.datas):
+        return
+     
     resp = lpew.create_zeta(**mesh_properties.get_all_data())
-    mesh_properties.insert_data(resp)
+    mesh_properties.insert_or_update_data(resp)
     intermediate(mesh_properties)
 
-def create_lambda_barra(mesh_properties: MeshProperty):
+def create_lambda_barra(mesh_properties: MeshProperty, update=True):
     
     k = 5
     lpew = LpewWeight()
-    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
+    if verify_if_data_exists(mesh_properties, k, update, lpew.datas):
         return 
+    
     resp = lpew.create_lambda_barra(**mesh_properties.get_all_data())
-    mesh_properties.insert_data(resp)
+    mesh_properties.insert_or_update_data(resp)
     intermediate(mesh_properties)
 
-def create_lpew2_weights(mesh_properties: MeshProperty):
+def create_lpew2_weights(mesh_properties: MeshProperty, update=True):
     
     k = 0
     lpew = LpewWeight()
-    if mesh_properties.verify_name_in_data_names(lpew.data_weights[k]):
-        return 
+    if verify_if_data_exists(mesh_properties, k, update, lpew.datas):
+        return
+     
     resp = lpew.create_lpew2_weights(**mesh_properties.get_all_data())
-    mesh_properties.insert_data(resp)
+    mesh_properties.insert_or_update_data(resp)
     intermediate(mesh_properties)
 
-def create_lpew2_neumann_weights(mesh_properties: MeshProperty):
+def create_lpew2_neumann_weights(mesh_properties: MeshProperty, update=True):
 
     k = 6
-    lpew = LpewWeight()
-    if mesh_properties.verify_name_in_data_names(lpew.datas[k]):
-        return 
+    lpew = LpewWeight() 
+    if verify_if_data_exists(mesh_properties, k, update, lpew.datas):
+        return
+    
     resp = lpew.create_lpew2_neumann_weights(**mesh_properties.get_all_data())
-    mesh_properties.insert_data(resp)
+    mesh_properties.insert_or_update_data(resp)
     intermediate(mesh_properties)
     
+def verify_if_data_exists(mesh_properties: MeshProperty, k: int, update: bool, data_names: list):
+    
+    return (mesh_properties.verify_name_in_data_names(data_names[k])) & (update is False)
 
 
-def get_lpew2_weights(mesh_properties: MeshProperty, **kwargs):
+def get_lpew2_weights(mesh_properties: MeshProperty, update=True, **kwargs):
 
-    create_Tk(mesh_properties)
-    create_neta(mesh_properties)
-    create_knt_vef(mesh_properties)
-    create_zeta(mesh_properties)
-    create_lambda_barra(mesh_properties)
-    create_lpew2_weights(mesh_properties)
-    create_lpew2_neumann_weights(mesh_properties)
+    create_Tk(mesh_properties, update=update)
+    create_neta(mesh_properties, update=update)
+    create_knt_vef(mesh_properties, update=update)
+    create_zeta(mesh_properties, update=update)
+    create_lambda_barra(mesh_properties, update=update)
+    create_lpew2_weights(mesh_properties, update=update)
+    create_lpew2_neumann_weights(mesh_properties, update=update)
 
 
 
