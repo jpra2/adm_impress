@@ -1,3 +1,4 @@
+
 from packs import defpaths
 import numpy as np
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess
@@ -69,6 +70,27 @@ def get_permeability_2(centroids, alpha):
     permeability[:] = k
     return {'permeability': permeability}
 
+def get_permeability_3(centroids):
+    epsilon = 5e-2
+    x = centroids[:, 0]
+    y = centroids[:, 1]
+    permeability = np.zeros((len(centroids), 2, 2))
+
+    permeability[:, 0, 0] = np.power(y, 2) + epsilon*np.power(x, 2)
+    permeability[:, 0, 1] = -(1-epsilon)*x*y
+    permeability[:, 1, 0] = -(1-epsilon)*x*y
+    permeability[:, 1, 1] = epsilon*np.power(y, 2) + np.power(x, 2)
+
+    return {'permeability': permeability}
+
+def get_permeability_4(centroids):
+    x = centroids[:, 0]
+    y = centroids[:, 1]
+
+    val1 = 1/(np.power(x, 2) + np.power(y, 2))
+    import pdb; pdb.set_trace()
+
+
 def exact_solution_2(centroids, alpha):
     x = centroids[:,0]
     y = centroids[:,1]
@@ -93,6 +115,24 @@ def get_source_2(centroids, alpha):
     source = -2*np.exp(x*y)*(1 + np.power(y, 2) + np.power(x, 2) + x*y)
     return source
 
+def get_source_3(centroids):
+    x = centroids[:, 0]
+    y = centroids[:, 1]
+
+    mesh_delta = 1e-7
+
+    test1 = x > 3/8 - mesh_delta
+    test2 = x < 5/8 + mesh_delta
+    test3 = y > 3/8 - mesh_delta
+    test4 = y < 5/8 + mesh_delta
+
+    test = test1 & test2 & test3 & test4
+    source = np.zeros(len(x))
+    source[test] = 1.0
+    return source
+
+
+ 
 def define_boundary_conditions(mesh_properties: MeshProperty, alpha):
     bc = BoundaryConditions()
 
@@ -148,6 +188,36 @@ def define_boundary_conditions_2(mesh_properties: MeshProperty, alpha):
     ])).astype(np.uint64)
     
     pressures_bc = exact_solution_2(mesh_properties.nodes_centroids[nodes_bc], alpha)
+    bc.set_boundary('dirichlet_nodes', nodes_bc, pressures_bc)
+    bc.set_boundary('neumann_edges', np.array([]), np.array([]))
+
+    return bc
+
+def define_boundary_conditions_3(mesh_properties: MeshProperty):
+    bc = BoundaryConditions()
+
+    xmin, ymin = mesh_properties.faces_centroids[:, 0:2].min(axis=0)
+    xmax, ymax = mesh_properties.faces_centroids[:, 0:2].max(axis=0)
+    
+    mesh_delta = 1e-7
+    nodes_xmin = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 0] < xmin + mesh_delta
+    ]
+    nodes_xmax = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 0] > xmax - mesh_delta
+    ]
+    nodes_ymin = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 1] < ymin + mesh_delta
+    ]
+    nodes_ymax = mesh_properties.nodes[
+        mesh_properties.nodes_centroids[:, 1] > ymax - mesh_delta
+    ]
+    
+    nodes_bc = np.unique(np.concatenate([
+        nodes_xmin, nodes_xmax, nodes_ymin, nodes_ymax
+    ])).astype(np.uint64)
+    
+    pressures_bc = np.zeros(len(nodes_bc))
     bc.set_boundary('dirichlet_nodes', nodes_bc, pressures_bc)
     bc.set_boundary('neumann_edges', np.array([]), np.array([]))
 
@@ -412,6 +482,197 @@ def run_problem_2(mesh_name, mesh_properties_name, alpha):
 
     show_results(mesh_properties, alpha, mesh_name, [pressure_tag, error_plot_tag, exact_solution_tag])
 
+def run_problem_3(mesh_name, mesh_properties_name):
+
+    diamond_flux = DiamondFluxCalculation()
+
+    mesh_properties = preprocess_mesh(mesh_name, mesh_properties_name)
+    mesh_properties.insert_or_update_data(
+        get_permeability_3(mesh_properties.faces_centroids)
+    )
+    bc = define_boundary_conditions_3(mesh_properties)
+    mesh_properties.insert_or_update_data({
+        'neumann_edges': bc['neumann_edges']['id'],
+        'neumann_edges_value': bc['neumann_edges']['value']
+    })
+    get_lpew2_weights(mesh_properties)
+    get_xi_params_ds_flux(mesh_properties)
+    
+
+
+    pressure_tag = 'pressure'
+
+    if not mesh_properties.verify_name_in_data_names(pressure_tag):
+
+        resp = diamond_flux.mount_problem(
+            bc,
+            **mesh_properties.get_all_data()
+        )
+        resp['source'] += get_source_3(mesh_properties['faces_centroids'])*mesh_properties['areas']
+
+        # import pdb; pdb.set_trace()
+
+        pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+
+        # edges_flux = diamond_flux.get_edges_flux(
+        #     bc,
+        #     pressure,
+        #     **mesh_properties.get_all_data()        
+        # )
+        
+        # faces_flux = diamond_flux.get_faces_flux(
+        #     edges_flux,
+        #     mesh_properties.adjacencies,
+        #     mesh_properties.bool_boundary_edges
+        # )
+
+        mesh_properties.insert_or_update_data({
+            pressure_tag: pressure
+        })
+        mesh_properties.export_data()
+
+    print(f'MESH: {mesh_name}')
+    print(f'N elements: {len(mesh_properties.faces)}')
+    print(f'Pmax: {mesh_properties.pressure.max()}')
+    print(f'Pmin: {mesh_properties.pressure.min()}')
+    print()
+
+    show_results(mesh_properties, 1, mesh_name, [pressure_tag])
+
+    
+def run_problem_3_lslds(mesh_name, mesh_properties_name):
+
+    lsds = LsdsFluxCalculation()
+
+    mesh_properties = preprocess_mesh(mesh_name, mesh_properties_name)
+    mesh_properties.insert_or_update_data(
+        get_permeability_3(mesh_properties.faces_centroids)
+    )
+    bc = define_boundary_conditions_3(mesh_properties)
+    mesh_properties.insert_or_update_data({
+        'neumann_edges': bc['neumann_edges']['id'],
+        'neumann_edges_value': bc['neumann_edges']['value']
+    })
+
+    mesh_properties.insert_or_update_data(
+        {'nodes_to_calculate': mesh_properties['nodes']}
+    )
+    mesh_properties.insert_or_update_data(
+        get_gls_nodes_weights(**mesh_properties.get_all_data())
+    )
+
+    mesh_properties.insert_or_update_data(
+        lsds.get_all_edges_flux_params(**mesh_properties.get_all_data())
+    )
+
+    lsds_prefix = 'lsds_'
+    pressure_tag = lsds_prefix + 'pressure'
+
+    if not mesh_properties.verify_name_in_data_names(pressure_tag):
+
+        resp = lsds.mount_problem_v6(
+            bc,
+            **mesh_properties.get_all_data()
+        )
+        resp['source'] += get_source_3(mesh_properties['faces_centroids'])*mesh_properties['areas']
+
+
+        pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+
+        # edges_flux = diamond_flux.get_edges_flux(
+        #     bc,
+        #     pressure,
+        #     **mesh_properties.get_all_data()        
+        # )
+        
+        # faces_flux = diamond_flux.get_faces_flux(
+        #     edges_flux,
+        #     mesh_properties.adjacencies,
+        #     mesh_properties.bool_boundary_edges
+        # )
+        mesh_properties.insert_or_update_data({
+            pressure_tag: pressure
+        })
+        mesh_properties.export_data()
+        
+    print(f'MESH: {mesh_name}')
+    print(f'N elements: {len(mesh_properties.faces)}')
+    print(f'Pmax: {mesh_properties[pressure_tag].max()}')
+    print(f'Pmin: {mesh_properties[pressure_tag].min()}')
+    print()
+
+def run_problem_4(mesh_name, mesh_properties_name):
+    dtype_E = [('Emax', np.float64), ('Erms', np.float64), ('L2', np.float64),
+               ('Eu', np.float64)]
+
+    diamond_flux = DiamondFluxCalculation()
+
+    mesh_properties = preprocess_mesh(mesh_name, mesh_properties_name)
+    mesh_properties.insert_or_update_data(
+        get_permeability_4(mesh_properties.faces_centroids)
+    )
+    bc = define_boundary_conditions_2(mesh_properties, alpha)
+    mesh_properties.insert_or_update_data({
+        'neumann_edges': bc['neumann_edges']['id'],
+        'neumann_edges_value': bc['neumann_edges']['value']
+    })
+    get_lpew2_weights(mesh_properties)
+    get_xi_params_ds_flux(mesh_properties)
+
+    error_tag = 'error_alpha_' + str(alpha)
+    pressure_tag = 'pressure_alpha_' + str(alpha)
+    error_plot_tag = 'error_plot_' + str(alpha)
+    exact_solution_tag = 'exact_solution_' + str(alpha)
+
+    if not mesh_properties.verify_name_in_data_names(error_tag):
+
+        resp = diamond_flux.mount_problem(
+            bc,
+            **mesh_properties.get_all_data()
+        )
+        resp['source'] += get_source_2(mesh_properties['faces_centroids'], 1)*mesh_properties['areas']
+
+        # import pdb; pdb.set_trace()
+
+        pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+
+        # edges_flux = diamond_flux.get_edges_flux(
+        #     bc,
+        #     pressure,
+        #     **mesh_properties.get_all_data()        
+        # )
+        
+        # faces_flux = diamond_flux.get_faces_flux(
+        #     edges_flux,
+        #     mesh_properties.adjacencies,
+        #     mesh_properties.bool_boundary_edges
+        # )
+
+        exact_faces_solution = exact_solution_2(mesh_properties.faces_centroids, alpha)
+
+        array = np.zeros(1, dtype=dtype_E)
+        array['Emax'] = get_Emax(pressure, exact_faces_solution)
+        array['Erms'] = get_Erms(pressure, exact_faces_solution)
+        array['L2'] = get_L2(pressure, exact_faces_solution)
+        array['Eu'] = get_Eu(pressure, exact_faces_solution, mesh_properties['areas'])
+
+        mesh_properties.insert_or_update_data({
+            error_tag: array,
+            pressure_tag: pressure,
+            error_plot_tag: np.absolute(pressure - exact_faces_solution),
+            exact_solution_tag: exact_faces_solution
+        })
+        mesh_properties.export_data()
+        
+    print(f'MESH: {mesh_name}')
+    print(f'Emax: {mesh_properties[error_tag]["Emax"]}')
+    print(f'Erms: {mesh_properties[error_tag]["Erms"]}')
+    print(f'L2: {mesh_properties[error_tag]["L2"]}')
+    print(f'Eu: {mesh_properties[error_tag]["Eu"]}')
+    print()
+
+
+
 
 def test_problem1():
     mesh_prefix = 'str_trimesh_'
@@ -442,3 +703,26 @@ def test_problem2():
 
 
 
+def test_problem3():
+    mesh_prefix = 'uns_trimesh_'
+    mesh_sufix = '.msh'
+    # list_of_meshs = ['16x16', '32x32', '64x64', '128x128']
+    list_of_meshs = ['8x8', '16x16', '32x32', '64x64']
+    for n_mesh in list_of_meshs:
+        mesh_prop_name = mesh_prefix + n_mesh
+        mesh_name = mesh_prop_name + mesh_sufix
+        mesh_name = os.path.join(defpaths.lpew2_mesh_folder, mesh_name)
+        run_problem_3(mesh_name, mesh_prop_name)
+        # run_problem_3_lslds(mesh_name, mesh_prop_name)
+    
+def test_problem4():
+    mesh_prefix = 'uns_trimesh_'
+    mesh_sufix = '.msh'
+    # list_of_meshs = ['16x16', '32x32', '64x64', '128x128']
+    list_of_meshs = ['8x8', '16x16', '32x32', '64x64']
+    for n_mesh in list_of_meshs:
+        mesh_prop_name = mesh_prefix + n_mesh
+        mesh_name = mesh_prop_name + mesh_sufix
+        mesh_name = os.path.join(defpaths.lpew2_mesh_folder, mesh_name)
+        run_problem_4(mesh_name, mesh_prop_name)
+        # run_problem_3_lslds(mesh_name, mesh_prop_name)

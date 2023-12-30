@@ -13,7 +13,7 @@ class LpewWeight:
     """
 
     datas = ['tk_points', 'neta', 'kn_kt_barra', 'kn_kt_theta_phi_vangle',
-             'zeta', 'lambda_barra', 'neumann_weights']
+             'zeta', 'lambda_barra', 'neumann_weights', 'nodes_weights']
     
     data_weights = ['nodes_weights']
 
@@ -926,7 +926,7 @@ def create_lambda_barra(mesh_properties: MeshProperty, update=True):
 
 def create_lpew2_weights(mesh_properties: MeshProperty, update=True):
     
-    k = 0
+    k = 7
     lpew = LpewWeight()
     if verify_if_data_exists(mesh_properties, k, update, lpew.datas):
         return
