@@ -795,6 +795,13 @@ class LpewWeight:
         array['face_id'] = df['face_id'].values
         array['weight'] = df['weight'].values
 
+        # nodes_ids = np.unique(lambda_barra['node_id'])
+        # for node in nodes_ids:
+        #     test = array['node_id'] == node
+        #     v = array['weight'][test].sum()
+        #     print(v)
+        #     import pdb; pdb.set_trace()
+
         return {'nodes_weights': array}
 
     def create_lpew2_neumann_weights(self, neumann_edges: np.ndarray, neumann_edges_value: np.ndarray, zeta, nodes_of_edges, nodes_centroids, tk_points, lambda_barra, **kwargs):

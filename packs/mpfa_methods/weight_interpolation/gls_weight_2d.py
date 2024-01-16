@@ -63,6 +63,7 @@ class CalculateGlsWeight2D:
             mnodes = np.zeros((n_nodes, 2*n_faces))
             mnormal_perm = np.zeros((n_edges, 2*n_faces))
 
+
             for i in range(n_edges):
                 edge = edges_adj[i]
                 node_adj = nodes_adj[i]
@@ -99,6 +100,13 @@ class CalculateGlsWeight2D:
         nodes_ids = np.concatenate(nodes_ids)
         faces_ids = np.concatenate(faces_ids)
         all_weight = np.concatenate(all_weight)
+
+        # for node in np.unique(nodes_ids):
+        #     test = nodes_ids == node
+        #     print(all_weight[test].sum())
+        #     all_weight[test] = all_weight[test]/all_weight[test].sum()
+        #     print(all_weight[test].sum())
+        #     import pdb; pdb.set_trace()
 
         return nodes_ids, faces_ids, all_weight
 

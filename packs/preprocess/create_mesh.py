@@ -5,7 +5,7 @@ from pymoab import core, types, rng, topo_util
 
 class createMesh:
 
-    def __init__(self):
+    def __init__(self, dim=3):
         input_file = os.path.join('input_cards', 'generate_structured_mesh.yml')
 
         with open(input_file, 'r') as f:
@@ -64,6 +64,16 @@ class createMesh:
         
         return hexa
 
+    def _create_quads(self, i, j):
+        quad = [self.verts[int((i)+(j*(self.params['nblocks'][0]+1)))],  # (i, j)
+                self.verts[int((i+1)+(j*(self.params['nblocks'][0]+1)))],  # (i+1, j)
+                self.verts[int((i+1)+(j+1)*(self.params['nblocks'][0])+(j+1))],  # (i+1, j+1)
+                self.verts[int((i)+(j+1)*(self.params['nblocks'][0])+(j+1))] # (i, j+1)
+          ]
+
+        return quad  
+
+
     def create_elements(self):
         nbs = self.params['nblocks']
         hexas = [self._create_hexa(i, j, k) for i in range(nbs[0]) for j in range(nbs[1]) for k in range(nbs[2])]
@@ -72,3 +82,20 @@ class createMesh:
     def export_mesh(self):
         mesh_name = os.path.join('mesh', self.mesh_data['mesh_name'])
         self.mb.write_file(mesh_name)
+
+    def create_fine_vertices_2D(self):
+        coords = np.array([(i, j)
+                           for j in (
+                               np.arange(
+                                   self.params['nblocks'][1]+1, dtype='float64') *self.mesh_data['block_size'][1])
+                           for i in (
+                               np.arange(
+                                   self.params['nblocks'][0]+1, dtype='float64') *self.mesh_data['block_size'][0])
+                           ], dtype='float64')
+        coords+=self.mesh_data['starting_point'][0:2]
+        self.verts = self.mb.create_vertices(coords.flatten())
+    
+    def create_elements_2D(self):
+        nbs = self.params['nblocks'][0:2]
+        quads = [self._create_quads(i, j) for i in range(nbs[0]) for j in range(nbs[1])]
+        self.mb.create_elements(types.MBQUAD, quads)
