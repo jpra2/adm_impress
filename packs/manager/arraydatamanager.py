@@ -45,6 +45,14 @@ class ArrayDataManager:
 
 class SuperArrayManager:
     
+    def __init__(self):
+        self.initialize_name()
+    
+    def initialize_name(self):
+        """Modify initialize method if necessary for modify the name property
+        """
+        self.insert_name('')
+
     @classmethod
     def test_names(cls, names):
         """This function must be updated from the child class
@@ -193,6 +201,7 @@ class SuperArrayManager:
         return names_in
     
     def verify_names_out_data_names(self, names:list):
+
         names_series = pd.DataFrame({
             'names': names
         })
@@ -202,3 +211,18 @@ class SuperArrayManager:
         test = ~test.values
         names_out = names_series[test].values.flatten()
         return names_out
+    
+    def verify_name_in_data_names(self, name: str):
+        return name in self.data_names   
+
+    def verify_name_in_data_names_or_raise_error(self, name: str):
+        if self.verify_name_in_data_names(name):
+            pass
+        else:
+            raise errors.NameExistsError(f'The name: - {name} - does not exists in mesh properties')
+    
+    def verify_name_not_in_data_names_or_raise_error(self, name: str):
+        if self.verify_name_in_data_names(name):
+            raise errors.NameExistsError(f'The name: - {name} - exists in mesh properties')
+
+

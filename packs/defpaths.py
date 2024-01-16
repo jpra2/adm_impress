@@ -5,6 +5,7 @@ flying = 'flying'
 results = 'results'
 mesh = 'mesh'
 mpfad_mesh_folder = 'mpfad_mesh_tests'
+lpew2_mesh_folder = 'lpew2_mesh_test'
 
 def load_mpfad_meshs_by_name(mesh_name: str, folder: str) -> pd.DataFrame:
     file_names = os.listdir(folder)
@@ -51,10 +52,6 @@ def load_su_mesh_paths():
     
     
     
-     
-     
-
-
 mpfad_test_mesh = '2d_unstructured.msh'
 mpfad_mesh_properties_name = 'gls_test_weights'
 mpfad_mesh_properties_neumann_name = 'neumann_gls_test_weights'
@@ -62,8 +59,11 @@ mpfad_mesh_properties_neumann_name = 'neumann_gls_test_weights'
 mpfad_mesh_2d_test_6 = '2d_test6_paper.h5m'
 mesh_properties_2d_test_6_name = 'test6_mpfad'
 
-oblique_quad_mesh = os.path.join(mesh, 'oblique_quadrilateral_test1.msh')
+oblique_quad_mesh = os.path.join(mpfad_mesh_folder, 'oblique_quadrilateral_test1.msh')
 mesh_prop_test7 = 'test_oblique_7_mpfad'
 mesh_properties_mesh1_test = 'mpfad_lsds_mesh1'
+
+linear_2k_test = os.path.join(mpfad_mesh_folder, 'linear_2k_test.msh')
+mesh_prop_linear_2k = 'linear_2k_test'
 
 

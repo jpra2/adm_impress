@@ -49,3 +49,10 @@ class BoundaryConditions(SuperArrayManager):
         bc_array['value'][:] = values
         
         self.insert_data({bc_type: bc_array})
+
+    def get_neumann_nodes(self, nodes_of_edges):
+        neumann_edges = self['neumann_edges']['id']
+        neumann_nodes = np.unique(nodes_of_edges[neumann_edges])
+        neumann_nodes = np.setdiff1d(neumann_nodes, self['dirichlet_nodes']['id'])
+        return neumann_nodes
+

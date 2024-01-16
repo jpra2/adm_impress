@@ -12,7 +12,8 @@ class MeshData(MeshInit):
     
     def __init__(self, dim=2, mesh_path=''):
         self.tags = dict()
-        self.initialize(mesh_path=mesh_path)
+        mesh_path_name = os.path.join(defpaths.mesh, mesh_path)
+        self.initialize(mesh_path=mesh_path_name)
         self.init_mesh()
         
         if dim == 2:

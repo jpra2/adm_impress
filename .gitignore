@@ -1,8 +1,6 @@
 */__pycache__
 *.npy
-*.mat
 *.npz
-*.dat
 *.h5m
 *.h5
 *.vtk

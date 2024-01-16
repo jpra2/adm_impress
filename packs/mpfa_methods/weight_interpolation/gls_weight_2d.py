@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.sparse as sp
 from packs.manager.boundary_conditions import BoundaryConditions
+from packs import defnames
+
 
 
 class CalculateGlsWeight2D:
@@ -27,6 +29,7 @@ class CalculateGlsWeight2D:
             unitary_normal_edges,
             permeability,
             nodes_to_calculate,
+            nodes_of_edges,
             **kwargs
     ):
 
@@ -37,21 +40,53 @@ class CalculateGlsWeight2D:
         nodes_to_iterate = np.intersect1d(nodes[bool_internal_nodes], nodes_to_calculate)
 
         for node in nodes_to_iterate:
-            nodes_adj = nodes_of_nodes[node]
             edges_adj = edges_of_nodes[node]
+            nodes_edges_adj = nodes_of_edges[edges_adj]
+            nodes_adj = nodes_edges_adj[nodes_edges_adj!=node]
             centroid_node = nodes_centroids[node]
-            centroids_nodes_adj = nodes_centroids[nodes_adj]
             faces_adj = faces_of_nodes[node]
             centroids_faces_adj = faces_centroids[faces_adj]
 
             n = len(faces_adj)
+            n_nodes = len(nodes_adj)
+            n_edges = len(edges_adj)
+            n_faces = n
+
+            local_index_faces = np.arange(n_faces)
+            local_index_edges = np.arange(n_edges)
+
+            mfaces = np.zeros((n_faces, 2 * n_faces))
+            f_dists = centroids_faces_adj - centroid_node
+            for i in range(n_faces):
+                mfaces[i, 2 * i:2 * i + 2] = f_dists[i]
+            
+            mnodes = np.zeros((n_nodes, 2*n_faces))
+            mnormal_perm = np.zeros((n_edges, 2*n_faces))
+
+
+            for i in range(n_edges):
+                edge = edges_adj[i]
+                node_adj = nodes_adj[i]
+                unitary_normal_edge = unitary_normal_edges[edge]
+                id_edge = local_index_edges[edges_adj==edge]
+                id_node = id_edge
+                faces_adj_edge = adjacencies[edge]
+                tau = nodes_centroids[node_adj] - centroid_node
+                id_face0 = local_index_faces[faces_adj == faces_adj_edge[0]][0]
+                id_face1 = local_index_faces[faces_adj == faces_adj_edge[1]][0]
+
+                mnodes[id_node, 2*id_face0: 2*id_face0+2] = +tau
+                mnodes[id_node, 2*id_face1: 2*id_face1+2] = -tau
+
+                mnormal_perm[id_edge, 2*id_face0: 2*id_face0+2] = np.dot(unitary_normal_edge, permeability[faces_adj_edge[0]])
+                mnormal_perm[id_edge, 2*id_face1: 2*id_face1+2] = np.dot(-unitary_normal_edge, permeability[faces_adj_edge[1]])
 
             M = self.M(
                 self.Mv(
                     n,
-                    self.mfaces(n, centroids_faces_adj, centroid_node),
-                    self.mnodes(len(nodes_adj), centroids_nodes_adj, centroid_node),
-                    self.mnormalperm(n, faces_adj, edges_adj, adjacencies, unitary_normal_edges, permeability)
+                    mfaces,
+                    mnodes,
+                    mnormal_perm
                 ),
                 self.Nv(n)
             )
@@ -65,6 +100,13 @@ class CalculateGlsWeight2D:
         nodes_ids = np.concatenate(nodes_ids)
         faces_ids = np.concatenate(faces_ids)
         all_weight = np.concatenate(all_weight)
+
+        # for node in np.unique(nodes_ids):
+        #     test = nodes_ids == node
+        #     print(all_weight[test].sum())
+        #     all_weight[test] = all_weight[test]/all_weight[test].sum()
+        #     print(all_weight[test].sum())
+        #     import pdb; pdb.set_trace()
 
         return nodes_ids, faces_ids, all_weight
 
@@ -176,8 +218,9 @@ class CalculateGlsWeight2D:
     def get_weights_bnodes(
             self,
             nodes,
+            edges,
             bool_boundary_nodes,
-            nodes_of_nodes,
+            nodes_of_edges,
             edges_of_nodes,
             faces_of_nodes,
             nodes_centroids,
@@ -186,6 +229,7 @@ class CalculateGlsWeight2D:
             unitary_normal_edges,
             permeability,
             nodes_to_calculate,
+            bool_boundary_edges,
             neumann_edges = np.array([]),
             neumann_edges_value = np.array([]),
             **kwargs
@@ -195,67 +239,82 @@ class CalculateGlsWeight2D:
         faces_ids = []
         all_weight = []
 
-        bool_internal_nodes = ~bool_boundary_nodes
-        internal_nodes = nodes[bool_internal_nodes]
         nodes_to_iterate = np.intersect1d(nodes[bool_boundary_nodes], nodes_to_calculate)
-        
+        bool_biedges = ~bool_boundary_edges
         all_neumann_weights = []
         
-
         for node in nodes_to_iterate:
-            nodes_adj = nodes_of_nodes[node]
             edges_adj = edges_of_nodes[node]
             faces_adj = faces_of_nodes[node]
-            local_internal_nodes = np.intersect1d(internal_nodes, nodes_adj)
+            internal_edges = np.intersect1d(edges_adj, edges[bool_biedges])
+            nodes_edges_internal = nodes_of_edges[internal_edges]
+            nodes_adj = nodes_edges_internal[nodes_edges_internal!=node]
+
             centroid_node = nodes_centroids[node]
             centroids_faces_adj = faces_centroids[faces_adj]
-            map_faces_adj = np.repeat(-1, faces_adj.max() + 3)
-            map_faces_adj[faces_adj] = np.arange(faces_adj.shape[0])
+
+            n = len(faces_adj)
+            n_nodes = len(nodes_adj)
+            n_edges = len(edges_adj)
+            n_faces = n
+
+            local_index_nodes = np.arange(n_nodes)
+            local_index_faces = np.arange(n_faces)
+            local_index_edges = np.arange(n_edges)
+
+            mfaces = np.zeros((n_faces, 2 * n_faces))
+            f_dists = centroids_faces_adj - centroid_node
+            for i in range(n_faces):
+                mfaces[i, 2 * i:2 * i + 2] = f_dists[i]
+
+            if n_nodes == 0:
+                mnodes = np.array([])
+            else:
+                mnodes = np.zeros((n_nodes, 2*n_faces))
+                for i in local_index_nodes:
+                    tau = nodes_centroids[nodes_adj[i]] - centroid_node
+                    face0 = adjacencies[internal_edges[i], 0]
+                    id_face0 = local_index_faces[faces_adj == face0][0]
+                    mnodes[i, 2*id_face0: 2*id_face0+2] = +tau
+                    face1 = adjacencies[internal_edges[i], 1]                    
+                    id_face1 = local_index_faces[faces_adj == face1][0]
+                    mnodes[i, 2*id_face1: 2*id_face1+2] = -tau
+
+            mnormal_perm = np.zeros((n_edges, 2*n_faces))
+
+            for i in local_index_edges:
+                edge = edges_adj[i]
+                unitary_normal_edge = unitary_normal_edges[edge]
+                id_edge = i
+                faces_adj_edge = adjacencies[edge]
+                face0 = faces_adj_edge[0]
+                id_face0 = local_index_faces[faces_adj == face0][0]
+                mnormal_perm[id_edge, 2*id_face0: 2*id_face0+2] = np.dot(unitary_normal_edge, permeability[faces_adj_edge[0]])
+                face1 = faces_adj_edge[1]
+                if face1 == -1:
+                    continue
+                id_face1 = local_index_faces[faces_adj == face1][0]
+                mnormal_perm[id_edge, 2*id_face1: 2*id_face1+2] = np.dot(-unitary_normal_edge, permeability[faces_adj_edge[1]])
 
             M = self.bM(
-                faces_adj.shape[0],
-                local_internal_nodes.shape[0],
-                edges_adj.shape[0],
-                self.mfaces(
-                    faces_adj.shape[0],
-                    centroids_faces_adj,
-                    centroid_node
-                ),
-                self.bmnodes(
-                    local_internal_nodes.shape[0],
-                    faces_adj.shape[0],
-                    local_internal_nodes,
-                    edges_adj,
-                    centroid_node,
-                    nodes_centroids,
-                    map_faces_adj,
-                    adjacencies,
-                    nodes_adj
-                ),
-                self.bnormalperm(
-                    edges_adj.shape[0],
-                    faces_adj.shape[0],
-                    edges_adj,
-                    adjacencies,
-                    map_faces_adj,
-                    unitary_normal_edges,
-                    permeability
-                )
+                n_faces,
+                n_nodes,
+                n_edges,
+                mfaces,
+                mnodes,
+                mnormal_perm
             )
 
             N = self.bN(
-                faces_adj.shape[0],
-                local_internal_nodes.shape[0],
-                edges_adj.shape[0]
+                n_faces,
+                n_nodes,
+                n_edges
             )    
 
-            weights = self.eT(faces_adj.shape[0]).dot(np.linalg.inv(M.T.dot(M)).dot(M.T).dot(N))
+            weights = self.eT(n_faces).dot(np.linalg.inv(M.T.dot(M)).dot(M.T).dot(N))
             
             neummann_edges_node = np.intersect1d(neumann_edges, edges_adj)
             if neummann_edges_node.shape[0] > 0:
-                n_faces = faces_adj.shape[0]
-                n_nodes = local_internal_nodes.shape[0]
-                n_edges = edges_adj.shape[0]
                 F = np.zeros((n_faces + n_nodes + n_edges, 1))
                 local_map_edges_node = np.arange(n_faces+n_nodes, n_faces+n_nodes+n_edges)
                 
@@ -269,7 +328,7 @@ class CalculateGlsWeight2D:
             nodes_ids.append(np.repeat(node, weights.shape[0]))
             faces_ids.append(faces_adj)
             all_weight.append(weights)
-
+        
         nodes_ids = np.concatenate(nodes_ids)
         faces_ids = np.concatenate(faces_ids)
         all_weight = np.concatenate(all_weight)
@@ -394,7 +453,7 @@ class CalculateGlsWeight2D:
         
         resp = {
             'nodes_weights': nodes_weights,
-            'neumann_nodes_weights': neumann_weights
+            'neumann_weights': neumann_weights
         }
         
         return resp
@@ -402,7 +461,8 @@ class CalculateGlsWeight2D:
         
         
         
-        
+
+
     
 def mount_weight_matrix(nodes_weights):
     n_faces = len(np.unique(nodes_weights['face_id']))
@@ -428,21 +488,40 @@ def mount_sparse_weight_matrix(nodes_weights):
     n_faces = len(np.unique(nodes_weights['face_id']))
     n_nodes = len(np.unique(nodes_weights['node_id']))
 
-    lines = np.array([], dtype=int)
-    cols = lines.copy()
-    data = np.array([], dtype=np.float64)
+    lines = nodes_weights['node_id']
+    cols = nodes_weights['face_id']
+    data = nodes_weights['weight']
 
-    for node in np.unique(nodes_weights['node_id']):
-        faces = nodes_weights['face_id'][nodes_weights['node_id'] == node]
-        weights = nodes_weights['weight'][nodes_weights['node_id'] == node]
-        lines = np.append(lines, np.repeat(node, faces.shape[0]))
-        cols = np.append(cols, faces)
-        data = np.append(data, weights)
+    # for node in np.unique(nodes_weights['node_id']):
+    #     faces = nodes_weights['face_id'][nodes_weights['node_id'] == node]
+    #     weights = nodes_weights['weight'][nodes_weights['node_id'] == node]
+    #     lines = np.append(lines, np.repeat(node, faces.shape[0]))
+    #     cols = np.append(cols, faces)
+    #     data = np.append(data, weights)
     
     mweight = sp.csr_matrix((data, (lines, cols)), shape=(n_nodes, n_faces))
     
     return mweight
 
+def get_weight_matrix_structure(nodes_weights):
+    weights_matrix = mount_sparse_weight_matrix(nodes_weights)
+    structure = sp.find(weights_matrix)
+    n = len(structure[0])
+    dtype = [('row', np.int), ('col', np.int), ('data', np.float64)]
+    array = np.zeros(n, dtype=dtype)
+    array['row'] = structure[0]
+    array['col'] = structure[1]
+    array['data'] = structure[2]
+
+    return {defnames.nodes_weights_matrix_structure: array}
+    
+def mount_sparse_matrix_from_structure(nodes_weights_matrix_structure, n_nodes, n_faces):
+    row = nodes_weights_matrix_structure['row']
+    col = nodes_weights_matrix_structure['col']
+    data = nodes_weights_matrix_structure['data']
+
+    M = sp.csr_matrix((data, (row, col)), shape=(n_nodes, n_faces))
+    return M
 
 def get_gls_nodes_weights(**kwargs):
     """

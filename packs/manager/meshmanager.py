@@ -177,6 +177,8 @@ class MeshProperty:
         new_data = dict()
 
         for name in list(datas_to_rename.keys()):
+            self.verify_name_in_data_names_or_raise_error(name)
+            self.verify_name_not_in_data_names_or_raise_error(datas_to_rename[name])
             data = copy.deepcopy(self[name])
             new_name = datas_to_rename[name]
             del self.__dict__[name]
@@ -186,12 +188,9 @@ class MeshProperty:
     
     def update_data(self, datas_to_update: dict):
         
-        my_datas_name = self.data_names
-        
         new_data = dict()
         for name in datas_to_update:
-            if name not in my_datas_name:
-                raise errors.NameExistsError
+            self.verify_name_in_data_names_or_raise_error(name)
             new_data.update({
                 name: datas_to_update[name]   
             })
@@ -210,7 +209,25 @@ class MeshProperty:
         
     def remove_data(self, data_name: list):
         for name in data_name:
-            del self.__dict__[name]
+            if self.verify_name_in_data_names(name):
+                del self.__dict__[name]
+
+    def backup_data(self, from_name: str, to_name: str):
+        
+        self.verify_name_in_data_names_or_raise_error(from_name)
+        data = self[from_name].copy()
+        self.insert_or_update_data({
+            to_name: data
+        })
+    
+    def backup_datas(self, backup_datas_name: dict):
+
+        """
+        backup_datas_name = {from_name1: to_name1, from_name2: to_name2 ...}
+        """
+
+        for name in backup_datas_name:
+            self.backup_data(name, backup_datas_name[name])
 
     def exists(self):
         return os.path.exists(self.class_path)
@@ -249,10 +266,32 @@ class MeshProperty:
         test = ~test.values
         names_out = names_series[test].values.flatten()
         return names_out
-        
-        
-        
 
+    def verify_name_in_data_names(self, name: str):
+        return name in self.data_names   
+
+    def verify_name_in_data_names_or_raise_error(self, name: str):
+        if self.verify_name_in_data_names(name):
+            pass
+        else:
+            raise errors.NameExistsError(f'The name: - {name} - does not exists in mesh properties')
+    
+    def verify_name_not_in_data_names_or_raise_error(self, name: str):
+        if self.verify_name_in_data_names(name):
+            raise errors.NameExistsError(f'The name: - {name} - exists in mesh properties')
+
+    @property
+    def edges_dim(self):
+        resp = np.linalg.norm(
+            self.nodes_centroids[self.nodes_of_edges[self.edges, 0]] - self.nodes_centroids[self.nodes_of_edges[self.edges, 1]],
+            axis=1
+        )
+        return resp
+    
+    @property
+    def edges_centroids(self):
+        resp = (self.nodes_centroids[self.nodes_of_edges[:, 1]] + self.nodes_centroids[self.nodes_of_edges[:, 0]])/2
+        return resp
         
     
 
@@ -460,7 +499,7 @@ class CreateMeshProperties(MeshInit):
         
         nodes_adj_by_nodes, edges_adj_by_nodes, faces_adj_by_nodes = self.get_nodes_and_edges_and_faces_adjacencies_by_nodes(nodes, edges, nodes_of_edges, faces)
         
-        calculate_face_properties.ordenate_edges_and_nodes_of_nodes_xy_plane(
+        nodes_adj_by_nodes, edges_adj_by_nodes = calculate_face_properties.ordenate_edges_and_nodes_of_nodes_xy_plane(
             nodes,
             edges, 
             nodes_adj_by_nodes,
@@ -468,7 +507,7 @@ class CreateMeshProperties(MeshInit):
             nodes_centroids
         )
         
-        calculate_face_properties.ordenate_faces_of_nodes_xy_plane(faces_centroids, faces_adj_by_nodes, nodes_centroids)
+        faces_adj_by_nodes = calculate_face_properties.ordenate_faces_of_nodes_xy_plane(faces_centroids, faces_adj_by_nodes, nodes_centroids)
         
         bool_boundary_nodes = calculate_face_properties.define_bool_boundary_nodes(bool_boundary_edges, nodes_of_edges, nodes)
         
