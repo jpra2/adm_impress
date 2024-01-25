@@ -72,14 +72,26 @@ class CalculateGlsWeight2D:
                 id_node = id_edge
                 faces_adj_edge = adjacencies[edge]
                 tau = nodes_centroids[node_adj] - centroid_node
-                id_face0 = local_index_faces[faces_adj == faces_adj_edge[0]][0]
-                id_face1 = local_index_faces[faces_adj == faces_adj_edge[1]][0]
+                
+                nodes_edge = nodes_of_edges[edge]
+                if node_adj == nodes_edge[0]:
+                    # node_adj = B OK
+                    K = faces_adj_edge[0]
+                    L = faces_adj_edge[1]
+                else:
+                    # node = B
+                    unitary_normal_edge = -1*unitary_normal_edge
+                    K = faces_adj_edge[1]
+                    L = faces_adj_edge[0]
+
+                id_face0 = local_index_faces[faces_adj == K][0]
+                id_face1 = local_index_faces[faces_adj == L][0]
 
                 mnodes[id_node, 2*id_face0: 2*id_face0+2] = +tau
                 mnodes[id_node, 2*id_face1: 2*id_face1+2] = -tau
 
-                mnormal_perm[id_edge, 2*id_face0: 2*id_face0+2] = np.dot(unitary_normal_edge, permeability[faces_adj_edge[0]])
-                mnormal_perm[id_edge, 2*id_face1: 2*id_face1+2] = np.dot(-unitary_normal_edge, permeability[faces_adj_edge[1]])
+                mnormal_perm[id_edge, 2*id_face0: 2*id_face0+2] = np.dot(unitary_normal_edge, permeability[K])
+                mnormal_perm[id_edge, 2*id_face1: 2*id_face1+2] = np.dot(-unitary_normal_edge, permeability[L])
 
             M = self.M(
                 self.Mv(
@@ -271,12 +283,25 @@ class CalculateGlsWeight2D:
                 mnodes = np.array([])
             else:
                 mnodes = np.zeros((n_nodes, 2*n_faces))
-                for i in local_index_nodes:
+                for i, edge in zip(local_index_nodes, internal_edges):
                     tau = nodes_centroids[nodes_adj[i]] - centroid_node
-                    face0 = adjacencies[internal_edges[i], 0]
+
+
+                    nodes_edge = nodes_of_edges[edge]
+                    if nodes_adj[i] == nodes_edge[0]:
+                        # node_adj = B OK
+                        K = adjacencies[internal_edges[i], 0]
+                        L = adjacencies[internal_edges[i], 1]
+                    else:
+                        # node = B
+                        unitary_normal_edge = -1*unitary_normal_edge
+                        K = adjacencies[internal_edges[i], 1]
+                        L = adjacencies[internal_edges[i], 0]
+
+                    face0 = K
                     id_face0 = local_index_faces[faces_adj == face0][0]
                     mnodes[i, 2*id_face0: 2*id_face0+2] = +tau
-                    face1 = adjacencies[internal_edges[i], 1]                    
+                    face1 = L                    
                     id_face1 = local_index_faces[faces_adj == face1][0]
                     mnodes[i, 2*id_face1: 2*id_face1+2] = -tau
 

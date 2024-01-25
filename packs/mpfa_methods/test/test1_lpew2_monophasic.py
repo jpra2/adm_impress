@@ -905,22 +905,22 @@ def test_problem3():
         # run_problem_3_lslds(mesh_name, mesh_prop_name)
     
 def test_problem4():
-    # mesh_prefix = 'mesh1_'
-    mesh_prefix = 'str_quadmesh_'
+    mesh_prefix = 'mesh1_'
+    # mesh_prefix = 'str_quadmesh_'
     # mesh_prefix = 'str2_trimesh_'
     # mesh_prefix = 'uns_trimesh_'
     mesh_sufix = '.msh'
     # list_of_meshs = ['16x16', '32x32', '64x64', '128x128']
-    list_of_meshs = ['8x8', '16x16', '32x32', '64x64', '128x128']
-    # list_of_meshs = ['8_8', '16_16', '32_32', '64_64', '128_128']
+    # list_of_meshs = ['8x8', '16x16', '32x32', '64x64', '128x128']
+    list_of_meshs = ['8_8', '16_16', '32_32', '64_64', '128_128']
     for n_mesh in list_of_meshs:
         mesh_prop_name = mesh_prefix + n_mesh
         mesh_name = mesh_prop_name + mesh_sufix
         # mesh_name = mesh_prefix + n_mesh + mesh_sufix
-        # mesh_name = os.path.join(defpaths.mpfad_mesh_folder, mesh_name)
-        mesh_name = os.path.join(defpaths.lpew2_mesh_folder, mesh_name)
-        run_problem_4(mesh_name, mesh_prop_name)
+        mesh_name = os.path.join(defpaths.mpfad_mesh_folder, mesh_name)
+        # mesh_name = os.path.join(defpaths.lpew2_mesh_folder, mesh_name)
+        # run_problem_4(mesh_name, mesh_prop_name)
         # import pdb; pdb.set_trace()
-        # mesh_prop_name = 'lsds_' + mesh_prop_name
-        # run_problem_4_lsds(mesh_name, mesh_prop_name)
+        mesh_prop_name = 'lsds_' + mesh_prop_name
+        run_problem_4_lsds(mesh_name, mesh_prop_name)
         # import pdb; pdb.set_trace()
