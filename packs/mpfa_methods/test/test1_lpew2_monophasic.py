@@ -1,7 +1,7 @@
 
 from packs import defpaths
 import numpy as np
-from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess
+from packs.mpfa_methods.mesh_preprocess import preprocess_mesh
 import os
 from packs.manager.meshmanager import MeshProperty
 from packs.manager.mesh_data import MeshData
@@ -17,15 +17,6 @@ import sympy
 teste de convergencia problema 4.5 da dissertacao do professor Fernando
 Escoamento Monofasico em um Dominio Heterogeneo e Suavemente Anisotropico
 """
-
-def preprocess_mesh(mesh_name, mesh_properties_name) -> MeshProperty:
-    mpfa_preprocess = MpfaPreprocess()
-    mesh_properties = mpfa_preprocess.create_properties_if_not_exists(mesh_name, mesh_properties_name)
-    mpfa_preprocess.preprocess_data_lsds(mesh_properties)
-    mpfa_preprocess.calculate_areas(mesh_properties)
-    mpfa_preprocess.calculate_h_dist(mesh_properties)
-
-    return mesh_properties
 
 def exact_solution(centroids, alpha):
     x = centroids[:, 0]

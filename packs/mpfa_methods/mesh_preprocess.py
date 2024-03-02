@@ -123,3 +123,11 @@ class MpfaPreprocess:
 
 
 
+def preprocess_mesh(mesh_name, mesh_properties_name) -> MeshProperty:
+    mpfa_preprocess = MpfaPreprocess()
+    mesh_properties = mpfa_preprocess.create_properties_if_not_exists(mesh_name, mesh_properties_name)
+    mpfa_preprocess.preprocess_data_lsds(mesh_properties)
+    mpfa_preprocess.calculate_areas(mesh_properties)
+    mpfa_preprocess.calculate_h_dist(mesh_properties)
+
+    return mesh_properties

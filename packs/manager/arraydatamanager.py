@@ -45,13 +45,13 @@ class ArrayDataManager:
 
 class SuperArrayManager:
     
-    def __init__(self):
-        self.initialize_name()
+    def __init__(self, name=''):
+        self.initialize_name(name)
     
-    def initialize_name(self):
+    def initialize_name(self, name=''):
         """Modify initialize method if necessary for modify the name property
         """
-        self.insert_name('')
+        self.insert_name(name)
 
     @classmethod
     def test_names(cls, names):
@@ -219,10 +219,10 @@ class SuperArrayManager:
         if self.verify_name_in_data_names(name):
             pass
         else:
-            raise errors.NameExistsError(f'The name: - {name} - does not exists in mesh properties')
+            raise errors.NameExistsError(f'The name: - {name} - does not exists')
     
     def verify_name_not_in_data_names_or_raise_error(self, name: str):
         if self.verify_name_in_data_names(name):
-            raise errors.NameExistsError(f'The name: - {name} - exists in mesh properties')
+            raise errors.NameExistsError(f'The name: - {name} - exists')
 
 

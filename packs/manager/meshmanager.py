@@ -88,6 +88,8 @@ class MeshInit:
     def init_2d_mesh_entities(self):
         self.all_nodes = self.mb.get_entities_by_dimension(0, 0)
         self.all_faces = self.mb.get_entities_by_dimension(0, 2)
+
+        # bfaces = self.mb.get_entities_by_type_and_tag(self.root_set, types.MBTRI)
         
         # type_moab = self.mb.type_from_handle(self.root_set)
         all_moab_types = dir(types)
@@ -99,6 +101,8 @@ class MeshInit:
             # exec('print(types.' + tt + ')')
             # exec('respp[tt] = types.' + tt)
             exec('self.dict_moab_types[types.' + tt +'] = tt')
+        
+        # import pdb; pdb.set_trace()
         
         boundary_edges = self.mb.get_entities_by_dimension(0, 1)
         self.mtu.construct_aentities(self.all_nodes)
