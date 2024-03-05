@@ -1,10 +1,13 @@
 import meshio
 import numpy as np
+import os
+from packs import defpaths
 
 class MeshioWrapper:
 
     def __init__(self, mesh_path):
-        self.msh: meshio._mesh.Mesh = meshio.read(mesh_path)
+        full_path = os.path.join(defpaths.mesh, mesh_path)
+        self.msh: meshio._mesh.Mesh = meshio.read(full_path)
 
     @property
     def points_centroids(self) -> np.ndarray:

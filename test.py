@@ -47,8 +47,11 @@
 # from packs.mpfa_methods.test.test2_lpew2_monophasic import run
 # run()
 
-from packs.manager.test.meshiowrapper_test import run
-run()
+# from packs.manager.test.meshiowrapper_test import run
+# run()
 
 # from packs.multiscale.unstructured.test.create_primal_test import run
 # run()
+
+from packs.preprocess.test.mesh_properties_from_meshio_test import run
+run()

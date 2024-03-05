@@ -9,9 +9,9 @@ def create_vertices(points: np.ndarray, mb: core.Core) -> np.ndarray:
 
 def create_triangles(verts: np.ndarray, triangle_points: np.ndarray, mb: core.Core):
     alltriangles = [verts[i] for i in triangle_points]
-    triangles_moab = mb.create_elements(types.MBTRI, alltriangles)    
+    triangles_moab = mb.create_elements(types.MBTRI, alltriangles)
 
-def create_meshproperties_from_meshio(mesh_path):
+def create_meshproperties_from_meshio(mesh_path:str, mesh_properties_name: str):
     
     meshio_data = MeshioWrapper(mesh_path)
 
@@ -26,8 +26,19 @@ def create_meshproperties_from_meshio(mesh_path):
     initial_edges = mb.get_entities_by_dimension(root_set, 1)
     mtu.construct_aentities(all_nodes)
     all_edges = mb.get_entities_by_dimension(root_set, 1)
-
     edges_centroids_meshio = meshio_data.lines_centroids
+
+    all_nodes_coords = mb.get_coords(all_nodes).reshape(len(all_nodes), 3)
+
+
+
+    print('fim')
+
+
+
+
+
+
 
 
 
