@@ -21,7 +21,16 @@ def constant_function(x):
     return np.repeat(1, x.shape[0])
 
 def create_properties(mesh_name, mesh_properties_name):
-    mesh_path = os.path.join(defpaths.mesh, mesh_name)
+    if os.path.exists(mesh_name):
+        mesh_path = mesh_name
+    else:
+        mesh_path = os.path.join(defpaths.mesh, mesh_name)
+        if os.path.exists(mesh_path):
+            pass
+        else:
+            raise FileNotFoundError
+    
+    
     mesh_properties: MeshProperty = create_initial_mesh_properties(mesh_path, mesh_properties_name)
     mesh_properties.update_data(
         {

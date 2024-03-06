@@ -4,10 +4,14 @@
 	"name": "Existing Dockerfile",
 	"context": "..",
 	"dockerFile": "../docker/Dockerfile",
-	"extensions": [
-		"ms-python.python",
-		"esbenp.prettier-vscode",
-		"eamodio.gitlens",
-		"vector-of-bool.gitflow"
-	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"esbenp.prettier-vscode",
+				"eamodio.gitlens",
+				"vector-of-bool.gitflow"
+			]
+		}
+	}
 }
