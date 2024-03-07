@@ -53,5 +53,8 @@
 # from packs.multiscale.unstructured.test.create_primal_test import run
 # run()
 
-from packs.preprocess.test.mesh_properties_from_meshio_test import run
+# from packs.preprocess.test.mesh_properties_from_meshio_test import run
+# run()
+
+from packs.multiscale.unstructured.test.create_primal_test import run
 run()

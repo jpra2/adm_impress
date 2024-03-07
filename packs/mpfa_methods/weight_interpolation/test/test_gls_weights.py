@@ -8,6 +8,7 @@ from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.manager.boundary_conditions import BoundaryConditions
 from scipy.sparse.linalg import spsolve
 from packs.manager.mesh_data import MeshData
+from packs.utils.test_functions import test_mesh_path
 
 def mesh_verify(mesh_name):
     mesh_path = os.path.join(defpaths.mesh, mesh_name)
@@ -21,16 +22,7 @@ def constant_function(x):
     return np.repeat(1, x.shape[0])
 
 def create_properties(mesh_name, mesh_properties_name):
-    if os.path.exists(mesh_name):
-        mesh_path = mesh_name
-    else:
-        mesh_path = os.path.join(defpaths.mesh, mesh_name)
-        if os.path.exists(mesh_path):
-            pass
-        else:
-            raise FileNotFoundError
-    
-    
+    mesh_path = test_mesh_path(mesh_name)
     mesh_properties: MeshProperty = create_initial_mesh_properties(mesh_path, mesh_properties_name)
     mesh_properties.update_data(
         {
@@ -65,7 +57,7 @@ def create_properties(mesh_name, mesh_properties_name):
     permeability[:, [0, 1], [0, 1]] = 1
     mesh_properties.insert_data({'permeability': permeability})
 
-    mesh_properties.export_data()
+    return mesh_properties
 
 def constant_verify(weights_matrix, mesh_properties):
     const_faces_solution = constant_function(mesh_properties.faces_centroids[:, 0])
@@ -111,8 +103,7 @@ def create_properties_if_not_exists(mesh_name, mesh_properties_name):
         mesh_properties.load_data()
         return mesh_properties
     else:
-        create_properties(mesh_name, mesh_properties_name)
-        return load_mesh_properties(mesh_properties_name)
+        return create_properties(mesh_name, mesh_properties_name)
     
 def test_weights():
     ## verify if exists the mesh test

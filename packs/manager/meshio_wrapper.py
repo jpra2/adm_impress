@@ -2,11 +2,12 @@ import meshio
 import numpy as np
 import os
 from packs import defpaths
+from packs.utils.test_functions import test_mesh_path
 
 class MeshioWrapper:
 
-    def __init__(self, mesh_path):
-        full_path = os.path.join(defpaths.mesh, mesh_path)
+    def __init__(self, mesh_path):   
+        full_path = test_mesh_path(mesh_path)
         self.msh: meshio._mesh.Mesh = meshio.read(full_path)
 
     @property

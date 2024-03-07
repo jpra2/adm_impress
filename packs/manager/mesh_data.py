@@ -4,6 +4,7 @@ from packs.errors.err import TagNameExistsError, ElementTypeNotInMeshError, Dime
 import packs.defpaths as defpaths
 import os
 import numpy as np
+from packs.utils.test_functions import test_mesh_path
 
 
 
@@ -12,7 +13,8 @@ class MeshData(MeshInit):
     
     def __init__(self, dim=2, mesh_path=''):
         self.tags = dict()
-        mesh_path_name = os.path.join(defpaths.mesh, mesh_path)
+        mesh_path_name = test_mesh_path(mesh_path)
+        
         self.initialize(mesh_path=mesh_path_name)
         self.init_mesh()
         

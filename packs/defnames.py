@@ -9,3 +9,5 @@ tag_node_weight_test_sufix = '_nodes_weights_test_error'
 lpew2_test_mesh_prop_name = 'lpew2_test'
 
 nodes_weights_matrix_structure = 'nodes_weights_matrix_structure'
+
+fine_primal_id = 'fine_primal_id'

@@ -36,6 +36,18 @@ def get_box(all_centroids, limites):
         (all_centroids[:, 1] < limites[1, 1]) & (all_centroids[:, 2] < limites[1, 2])]
     return inds_vols
 
+def get_box_v2(all_centroids, limites):
+    inds_vols = \
+        (all_centroids[:, 0] > limites[0, 0]) & (all_centroids[:, 1] > limites[0, 1]) & \
+        (all_centroids[:, 2] > limites[0, 2]) & (all_centroids[:, 0] < limites[1, 0]) & \
+        (all_centroids[:, 1] < limites[1, 1]) & (all_centroids[:, 2] < limites[1, 2])
+    return inds_vols
+
+def get_box_v2_2d(all_centroids, limites):
+    inds_vols = \
+        (all_centroids[:, 0] > limites[0, 0]) & (all_centroids[:, 1] > limites[0, 1]) & \
+        (all_centroids[:, 0] < limites[1, 0]) & (all_centroids[:, 1] < limites[1, 1])
+    return inds_vols
 
 def getting_tag(mb, name, n, t1, t2, create, entitie, tipo, tags, tags_to_infos):
     types_data = ['handle', 'integer', 'array', 'double']
