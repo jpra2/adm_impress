@@ -29,7 +29,9 @@ def run():
         nodes_centroids_level1=coarse_mesh_properties['nodes_centroids'],
         nodes_of_faces_level1=coarse_mesh_properties['nodes_of_faces'],
         faces_of_nodes_level0=fine_mesh_properties['faces_of_nodes'],
-        adjacencies_level0=fine_mesh_properties['adjacencies']
+        adjacencies_level0=fine_mesh_properties['adjacencies'],
+        faces_of_faces_level0=fine_mesh_properties['faces_of_faces'],
+        faces_centroids_level1=coarse_mesh_properties['faces_centroids']
     )
     
     fine_mesh_properties.insert_or_update_data(

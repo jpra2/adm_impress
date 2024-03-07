@@ -296,6 +296,30 @@ class MeshProperty:
     def edges_centroids(self):
         resp = (self.nodes_centroids[self.nodes_of_edges[:, 1]] + self.nodes_centroids[self.nodes_of_edges[:, 0]])/2
         return resp
+    
+    @property
+    def boundary_edges(self):
+        return self.edges[self.bool_boundary_edges]
+    
+    @property
+    def faces_of_faces(self):
+        try:
+            return self['faces_of_faces']
+        except KeyError:
+            faces_of_faces = []
+            for face in self.faces:
+                test1 = self.adjacencies[:, 0] == face
+                test2 = self.adjacencies[:, 1] == face
+                test3 = test1 | test2
+                adjs = self.adjacencies[test3]
+                adjs = adjs[adjs!=face]
+                adjs = adjs[adjs!=-1]
+                faces_of_faces.append(adjs)
+            
+            faces_of_faces = np.array(faces_of_faces)
+            self.insert_data({'faces_of_faces': faces_of_faces})
+            self.export_data()
+            return faces_of_faces
         
     
 
