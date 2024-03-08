@@ -21,7 +21,7 @@ def run():
 
     fine_mesh_properties = create_meshproperties_from_meshio_if_not_exists(fine_mesh_path, fine_mesh_properties_name)
     coarse_mesh_properties = create_meshproperties_from_meshio_if_not_exists(coarse_mesh_path, coarse_mesh_properties_name)
-    
+
     fine_primal_ids = create_coarse_volumes(
         faces_id_level0=fine_mesh_properties['faces'],
         faces_centroids_level0=fine_mesh_properties['faces_centroids'],
@@ -30,8 +30,9 @@ def run():
         nodes_of_faces_level1=coarse_mesh_properties['nodes_of_faces'],
         faces_of_nodes_level0=fine_mesh_properties['faces_of_nodes'],
         adjacencies_level0=fine_mesh_properties['adjacencies'],
-        faces_of_faces_level0=fine_mesh_properties['faces_of_faces'],
-        faces_centroids_level1=coarse_mesh_properties['faces_centroids']
+        faces_of_faces_level0=fine_mesh_properties.faces_of_faces,
+        faces_centroids_level1=coarse_mesh_properties['faces_centroids'],
+        faces_of_faces_level1=coarse_mesh_properties.faces_of_faces
     )
     
     fine_mesh_properties.insert_or_update_data(
@@ -39,14 +40,15 @@ def run():
             defnames.fine_primal_id: fine_primal_ids
         }
     )
-    
-    
+
+
     flying_fine_mesh_path = _create_flying_mesh(fine_mesh_path)
     mesh_data = MeshData(mesh_path=flying_fine_mesh_path)   
     mesh_data.create_tag(defnames.fine_primal_id, data_type='int')
     mesh_data.insert_tag_data(defnames.fine_primal_id, fine_primal_ids, elements_type='faces', elements_array=fine_mesh_properties['faces'])
-    mesh_data.export_only_the_elements('coarse_test.vtk', element_type='faces', elements_array=fine_mesh_properties['faces'])
-    import pdb; pdb.set_trace()
+    mesh_data.export_only_the_elements('fine_prinal_ids', element_type='faces', elements_array=fine_mesh_properties['faces'])
+    print('end')
+    # import pdb; pdb.set_trace()
     
     
 
