@@ -144,53 +144,53 @@ def create_dual_edges(
                 (dual_vertice_in_coarse[0], dual_edge): path
             })
 
-    ## four: check viz of dual_vertices
-    for coarse_face in coarse_faces_id:
-        dual_vertice = fine_faces_id[
-            (primal_id==coarse_face) & (dual_id==defnames.dual_ids('vertice_id'))
-        ]
+    # ## four: check viz of dual_vertices
+    # for coarse_face in coarse_faces_id:
+    #     dual_vertice = fine_faces_id[
+    #         (primal_id==coarse_face) & (dual_id==defnames.dual_ids('vertice_id'))
+    #     ]
 
-        faces_of_dual_vertice = fine_faces_of_faces[dual_vertice[0]]
-        test_edges_faces_of_dual_edges = dual_id[faces_of_dual_vertice] == defnames.dual_ids('edge_id')
-        if test_edges_faces_of_dual_edges.sum() == faces_of_dual_vertice.shape[0]:
-            pass
-        else:
-            faces_not_edges = faces_of_dual_vertice[
-                dual_id[faces_of_dual_vertice] != defnames.dual_ids('edge_id')
-            ]
-            initial_dual_edges_coarse_face = initial_dual_edges[
-                primal_id[initial_dual_edges] == coarse_face
-            ]
+    #     faces_of_dual_vertice = fine_faces_of_faces[dual_vertice[0]]
+    #     test_edges_faces_of_dual_edges = dual_id[faces_of_dual_vertice] == defnames.dual_ids('edge_id')
+    #     if test_edges_faces_of_dual_edges.sum() == faces_of_dual_vertice.shape[0]:
+    #         pass
+    #     else:
+    #         faces_not_edges = faces_of_dual_vertice[
+    #             dual_id[faces_of_dual_vertice] != defnames.dual_ids('edge_id')
+    #         ]
+    #         initial_dual_edges_coarse_face = initial_dual_edges[
+    #             primal_id[initial_dual_edges] == coarse_face
+    #         ]
 
-            for face in faces_not_edges:
-                dists_to_test = np.linalg.norm(
-                    fine_faces_centroids[initial_dual_edges_coarse_face] - fine_faces_centroids[face],
-                    axis=1
-                )
+    #         for face in faces_not_edges:
+    #             dists_to_test = np.linalg.norm(
+    #                 fine_faces_centroids[initial_dual_edges_coarse_face] - fine_faces_centroids[face],
+    #                 axis=1
+    #             )
                 
-                selected_dual_initial_face = initial_dual_edges_coarse_face[dists_to_test <= dists_to_test.min()]
-                path_initial = edges_paths[(dual_vertice[0], selected_dual_initial_face[0])]
-                dual_id[path_initial] = -1
-                path = get_local_shortest_path_for_create_dual_edges(
-                    fine_adjacencies,
-                    dists,
-                    coarse_face,
-                    primal_id[fine_adjacencies],
-                    [face],
-                    selected_dual_initial_face[0],
-                    node_to_remove=dual_vertice[0]
-                )
-                dual_id[face] = defnames.dual_ids('edge_id')
-                dual_id[path] = defnames.dual_ids('edge_id')
-                edges_paths.update(
-                    {
-                        (dual_vertice[0], selected_dual_initial_face[0]): np.concatenate([path, [face]])
-                    }
-                )
+    #             selected_dual_initial_face = initial_dual_edges_coarse_face[dists_to_test <= dists_to_test.min()]
+    #             path_initial = edges_paths[(dual_vertice[0], selected_dual_initial_face[0])]
+    #             dual_id[path_initial] = -1
+    #             path = get_local_shortest_path_for_create_dual_edges(
+    #                 fine_adjacencies,
+    #                 dists,
+    #                 coarse_face,
+    #                 primal_id[fine_adjacencies],
+    #                 [face],
+    #                 selected_dual_initial_face[0],
+    #                 node_to_remove=dual_vertice[0]
+    #             )
+    #             dual_id[face] = defnames.dual_ids('edge_id')
+    #             dual_id[path] = defnames.dual_ids('edge_id')
+    #             edges_paths.update(
+    #                 {
+    #                     (dual_vertice[0], selected_dual_initial_face[0]): np.concatenate([path, [face]])
+    #                 }
+    #             )
     
-    all_edges_paths = np.unique(np.concatenate(list(edges_paths.values())))
-    dual_id[all_edges_paths] = defnames.dual_ids('edge_id')
-                
+    # all_edges_paths = np.unique(np.concatenate(list(edges_paths.values())))
+    # dual_id[all_edges_paths] = defnames.dual_ids('edge_id')
+    dual_id[dual_id == -1] = defnames.dual_ids('face_id')
 
 
 
@@ -253,14 +253,4 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
         fine_boundary_edges=fine_mesh_properties.boundary_edges,
         dual_id=dual_id
     )
-
-    
-
-
-    
-
-
-
-    
-    print('end')
     return dual_id
