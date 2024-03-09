@@ -2,6 +2,7 @@ from packs.manager.meshmanager import MeshProperty
 from packs.utils.utils_old import get_box_v2_2d
 import numpy as np
 from shapely.geometry import Point, Polygon
+from packs import defnames
 
 def _define_fine_volumes_in_coarse_volumes_step1(all_fine_faces_centroids, all_fine_faces_ids, coarse_points_face, coarse_nodes_centroids):
     coarse_centroids_of_face = coarse_nodes_centroids[coarse_points_face]
@@ -66,7 +67,7 @@ def verify_fine_adjacencies(fine_primal_ids, coarse_faces_ids, fine_adjacencies,
         
     
 
-def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_level1, nodes_centroids_level1, nodes_of_faces_level1, adjacencies_level0, faces_of_faces_level0, faces_centroids_level1, faces_of_faces_level1):
+def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_level1, nodes_centroids_level1, nodes_of_faces_level1, adjacencies_level0, faces_of_faces_level0, faces_centroids_level1, faces_of_faces_level1, level:int):
     """Insert the 'primal_fine_ids' tag in mesh_properties_level0
 
     Args:
@@ -114,6 +115,10 @@ def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_lev
         coarse_faces_centroids=faces_centroids_level1,
         coarse_faces_of_faces=faces_of_faces_level1
     )
+
+    data = {
+        defnames.get_primal_id_name_by_level(level): fine_primal_ids
+    }
     
-    return fine_primal_ids
+    return data
         

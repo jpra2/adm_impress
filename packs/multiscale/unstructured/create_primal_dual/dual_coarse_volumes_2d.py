@@ -104,9 +104,9 @@ def create_dual_edges(
         dual_id[selected_faces_to_dual_edge] = defnames.dual_ids('edge_id')
 
     ## three: loop for create paths in coarse faces
-    initial_dual_edges = fine_faces_id[
-        dual_id==defnames.dual_ids('edge_id')
-    ]
+    # initial_dual_edges = fine_faces_id[
+    #     dual_id==defnames.dual_ids('edge_id')
+    # ]
 
     edges_paths = dict()
 
@@ -193,38 +193,7 @@ def create_dual_edges(
     dual_id[dual_id == -1] = defnames.dual_ids('face_id')
 
 
-
-    
-            
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-    
-
-
-    # print('end')
-
-
-def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty):
+def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty, level:int):
     dual_id = np.repeat(-1, fine_mesh_properties['faces'].shape[0])
 
     create_dual_vertices(
@@ -253,4 +222,13 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
         fine_boundary_edges=fine_mesh_properties.boundary_edges,
         dual_id=dual_id
     )
-    return dual_id
+
+    test = dual_id == -1
+    if np.any(test):
+        raise NotImplementedError
+    
+    data = {
+        defnames.get_dual_id_name_by_level(level): dual_id
+    }
+
+    return data

@@ -13,6 +13,12 @@ nodes_weights_matrix_structure = 'nodes_weights_matrix_structure'
 fine_primal_id = 'primal_id'
 fine_dual_id = 'dual_id'
 
+def get_primal_id_name_by_level(level:int)
+    return fine_primal_id + '_' + str(level)
+
+def get_dual_id_name_by_level(level:int)
+    return fine_dual_id + '_' + str(level)
+
 def dual_ids(name:str):
     my_dict = {
         'vertice_id': 3,

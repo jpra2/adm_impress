@@ -26,8 +26,6 @@ def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties
 
         fine_mesh_properties.export_data()
 
-
-
 def run():
     fine_mesh_path, fine_mesh_properties_name = get_fine_mesh_path_and_mesh_properties_name_for_test()
     coarse_mesh_path, coarse_mesh_properties_name = get_coarse_mesh_path_and_mesh_properties_name_for_test()
@@ -37,20 +35,21 @@ def run():
 
     create_primal_ids(fine_mesh_properties, coarse_mesh_properties)   
 
-    dual_id = create_dual(fine_mesh_properties=fine_mesh_properties, coarse_mesh_properties=coarse_mesh_properties)
+    dual_id = create_dual(fine_mesh_properties=fine_mesh_properties, coarse_mesh_properties=coarse_mesh_properties, level=1)
 
     fine_mesh_properties.insert_or_update_data(
-        {
-            defnames.fine_dual_id: dual_id
-        }
+        dual_id
     )
+
+    key_str = list(dual_id.keys())[0]
+    data = list(dual_id.values())[0]
 
 
     flying_fine_mesh_path = _create_flying_mesh(fine_mesh_path)
     mesh_data = MeshData(mesh_path=flying_fine_mesh_path)   
-    mesh_data.create_tag(defnames.fine_dual_id, data_type='int')
-    mesh_data.insert_tag_data(defnames.fine_dual_id, dual_id, elements_type='faces', elements_array=fine_mesh_properties['faces'])
-    mesh_data.export_only_the_elements('fine_dual_ids', element_type='faces', elements_array=fine_mesh_properties['faces'])
+    mesh_data.create_tag(key_str, data_type='int')
+    mesh_data.insert_tag_data(key_str, data, elements_type='faces', elements_array=fine_mesh_properties['faces'])
+    mesh_data.export_only_the_elements(key_str, element_type='faces', elements_array=fine_mesh_properties['faces'])
 
     # flying_coarse_mesh_path = _create_flying_mesh(coarse_mesh_path)
     # mesh_data = MeshData(mesh_path=flying_coarse_mesh_path)   

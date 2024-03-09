@@ -31,22 +31,23 @@ def run():
         adjacencies_level0=fine_mesh_properties['adjacencies'],
         faces_of_faces_level0=fine_mesh_properties.faces_of_faces,
         faces_centroids_level1=coarse_mesh_properties['faces_centroids'],
-        faces_of_faces_level1=coarse_mesh_properties.faces_of_faces
+        faces_of_faces_level1=coarse_mesh_properties.faces_of_faces,
+        level=1
     )
     
     fine_mesh_properties.insert_or_update_data(
-        {
-            defnames.fine_primal_id: fine_primal_ids
-        }
+        fine_primal_ids
     )
+
+    key_str = list(fine_primal_ids.keys())[0]
+    data = list(fine_primal_ids.values())[0]
 
 
     flying_fine_mesh_path = _create_flying_mesh(fine_mesh_path)
     mesh_data = MeshData(mesh_path=flying_fine_mesh_path)   
-    mesh_data.create_tag(defnames.fine_primal_id, data_type='int')
-    mesh_data.insert_tag_data(defnames.fine_primal_id, fine_primal_ids, elements_type='faces', elements_array=fine_mesh_properties['faces'])
-    mesh_data.export_only_the_elements('fine_prinal_ids', element_type='faces', elements_array=fine_mesh_properties['faces'])
-    print('end')
+    mesh_data.create_tag(key_str, data_type='int')
+    mesh_data.insert_tag_data(key_str, data, elements_type='faces', elements_array=fine_mesh_properties['faces'])
+    mesh_data.export_only_the_elements(key_str, element_type='faces', elements_array=fine_mesh_properties['faces'])
     # import pdb; pdb.set_trace()
     
     
