@@ -21,7 +21,7 @@ def _get_faces_in_coarse_volume(fine_faces_step1, all_fine_faces_centroids, coar
     fine_faces_in_coarse_face = fine_faces_step1[test]
     return fine_faces_in_coarse_face
 
-def verify_fine_adjacencies(fine_primal_ids, coarse_faces_ids, fine_faces_of_nodes, fine_faces_ids, fine_adjacencies, fine_faces_of_faces, fine_faces_centroids, coarse_faces_centroids, coarse_faces_of_faces):
+def verify_fine_adjacencies(fine_primal_ids, coarse_faces_ids, fine_adjacencies, fine_faces_of_faces, fine_faces_centroids, coarse_faces_centroids, coarse_faces_of_faces):
     fine_coarse_adjacencies = fine_primal_ids[fine_adjacencies]
     
     for coarse_face in coarse_faces_ids:
@@ -66,7 +66,7 @@ def verify_fine_adjacencies(fine_primal_ids, coarse_faces_ids, fine_faces_of_nod
         
     
 
-def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_level1, nodes_centroids_level1, nodes_of_faces_level1, faces_of_nodes_level0, adjacencies_level0, faces_of_faces_level0, faces_centroids_level1, faces_of_faces_level1):
+def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_level1, nodes_centroids_level1, nodes_of_faces_level1, adjacencies_level0, faces_of_faces_level0, faces_centroids_level1, faces_of_faces_level1):
     """Insert the 'primal_fine_ids' tag in mesh_properties_level0
 
     Args:
@@ -108,8 +108,6 @@ def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_lev
     verify_fine_adjacencies(
         fine_primal_ids=fine_primal_ids,
         coarse_faces_ids=faces_ids_level1,
-        fine_faces_of_nodes=faces_of_nodes_level0,
-        fine_faces_ids=faces_id_level0,
         fine_adjacencies=adjacencies_level0,
         fine_faces_of_faces=faces_of_faces_level0,
         fine_faces_centroids=faces_centroids_level0,

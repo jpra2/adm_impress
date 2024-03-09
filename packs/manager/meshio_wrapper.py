@@ -1,7 +1,5 @@
 import meshio
 import numpy as np
-import os
-from packs import defpaths
 from packs.utils.test_functions import test_mesh_path
 
 class MeshioWrapper:

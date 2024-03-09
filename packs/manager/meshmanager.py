@@ -295,6 +295,10 @@ class MeshProperty:
     @property
     def edges_centroids(self):
         resp = (self.nodes_centroids[self.nodes_of_edges[:, 1]] + self.nodes_centroids[self.nodes_of_edges[:, 0]])/2
+        # resp = np.mean(
+        #     self.nodes_centroids[self.nodes_of_edges],
+        #     axis=1
+        # )
         return resp
     
     @property
@@ -316,7 +320,7 @@ class MeshProperty:
                 adjs = adjs[adjs!=-1]
                 faces_of_faces.append(adjs)
             
-            faces_of_faces = np.array(faces_of_faces)
+            faces_of_faces = np.array(faces_of_faces, dtype='O')
             self.insert_data({'faces_of_faces': faces_of_faces})
             self.export_data()
             return faces_of_faces
