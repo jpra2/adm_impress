@@ -325,7 +325,25 @@ class MeshProperty:
             self.export_data()
             return faces_of_faces
         
-    
+    @property
+    def faces_of_faces_by_nodes(self):
+        try:
+            return self['faces_of_faces_by_nodes']
+        except KeyError:
+            faces_of_faces_by_nodes = []
+            for face in self.faces:
+                nodes_face = self['nodes_of_faces'][face]
+                faces_nodes_face = np.concatenate(
+                    self['faces_of_nodes'][nodes_face]
+                )
+                faces_nodes_face = np.setdiff1d(faces_nodes_face, [face])
+                faces_of_faces_by_nodes.append(faces_nodes_face)
+            
+            faces_of_faces_by_nodes = np.array(faces_of_faces_by_nodes, dtype='O')
+            self.insert_data({'faces_of_faces_by_nodes': faces_of_faces_by_nodes})
+            self.export_data()
+            return faces_of_faces_by_nodes
+
 
 class CreateMeshProperties(MeshInit):
 

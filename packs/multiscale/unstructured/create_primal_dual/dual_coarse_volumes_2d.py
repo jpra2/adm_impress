@@ -30,10 +30,6 @@ def create_dual_vertices(
     
     dual_id[dual_vertices] = defnames.dual_ids('vertice_id')
 
-
-
-
-
 def create_dual_edges(
         coarse_faces_id: np.ndarray, 
         coarse_faces_centroids: np.ndarray, 
@@ -192,6 +188,44 @@ def create_dual_edges(
     # dual_id[all_edges_paths] = defnames.dual_ids('edge_id')
     dual_id[dual_id == -1] = defnames.dual_ids('face_id')
 
+def get_dual_volumes_2d(dual_id: np.ndarray, fine_faces_id: np.ndarray, fine_faces_of_faces: np.ndarray, fine_faces_of_faces_by_faces: np.ndarray):
+
+    dual_faces = fine_faces_id[dual_id == defnames.dual_ids('face_id')]
+    dual_others = fine_faces_id[dual_id != defnames.dual_ids('face_id')]
+    dual_volumes = []
+
+    while dual_faces.shape[0] > 0:
+        face0 = np.array([dual_faces[0]], dtype=np.int)
+        test = np.array([True], dtype=bool)
+        # dual_volume = [face0]
+        while np.any(test):
+            faces_of_face0 = np.unique(
+                np.union1d(
+                    np.concatenate(fine_faces_of_faces[face0]),
+                    [face0]
+                )
+            )
+            external_faces = np.setdiff1d(faces_of_face0, face0)
+            test = dual_id[external_faces] == defnames.dual_ids('face_id')
+            # dual_volume.append(
+            #     np.setdiff1d(external_faces, np.concatenate(dual_volume))
+            # )
+            
+            face0 = np.setdiff1d(faces_of_face0, dual_others)
+        
+        faces_of_face0_v2 = np.unique(
+            np.concatenate(
+                fine_faces_of_faces[faces_of_face0]
+            )
+        )
+        vertices_to_get = 
+        # dual_volume = np.unique(np.concatenate(dual_volume))
+        dual_faces = np.setdiff1d(dual_faces, faces_of_face0)
+        dual_volumes.append(faces_of_face0)
+    
+    dual_volumes = np.array(dual_volumes, dtype='O')
+    
+    return dual_volumes
 
 def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty, level:int):
     dual_id = np.repeat(-1, fine_mesh_properties['faces'].shape[0])
@@ -227,8 +261,16 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
     if np.any(test):
         raise NotImplementedError
     
+    dual_volumes = get_dual_volumes_2d(
+        dual_id=dual_id,
+        fine_faces_id=fine_mesh_properties['faces'],
+        fine_faces_of_faces=fine_mesh_properties.faces_of_faces_by_nodes,
+        fine_faces_of_faces_by_faces=fine_mesh_properties.faces_of_faces
+    )
+    
     data = {
-        defnames.get_dual_id_name_by_level(level): dual_id
+        defnames.get_dual_id_name_by_level(level): dual_id,
+        defnames.get_dual_volumes_name_by_level(level): dual_volumes
     }
 
     return data

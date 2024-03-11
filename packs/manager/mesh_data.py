@@ -5,6 +5,7 @@ import packs.defpaths as defpaths
 import os
 import numpy as np
 from packs.utils.test_functions import test_mesh_path
+from typing import Sequence
 
 
 
@@ -27,7 +28,6 @@ class MeshData(MeshInit):
     
     def create_tag(self, tag_name, data_size=1, data_type='float'):
         
-        
         self.test_name_in_tags(tag_name)
         
         # if data_density == "dense":
@@ -42,16 +42,22 @@ class MeshData(MeshInit):
         moab_type = self.get_data_type(data_type)
         
         tag = self.mb.tag_get_handle(tag_name, data_size, moab_type, types.MB_TAG_SPARSE, True)
-        
-        self.tags.update({tag_name: tag})
-    
+
+        self.tags.update({
+            tag_name: {
+                'tag': tag,
+                'data_type': data_type,
+                'data_size': data_size
+            }
+        })
+
     def insert_tag_data(self, tag_name, data, elements_type, elements_array):
         
         all_elements = self.get_all_elements(elements_type)
         
         to_elements = np.array(all_elements).astype(np.uint64)[elements_array]
         
-        self.mb.tag_set_data(self.tags[tag_name], to_elements, data)
+        self.mb.tag_set_data(self.tags[tag_name]['tag'], to_elements, data)
     
     def get_all_elements(self, elements_type):
         
@@ -77,11 +83,14 @@ class MeshData(MeshInit):
     
     def test_name_in_tags(self, tag_name):
         
-        if tag_name not in self.tags:
+        if not self.verify_tag_in_tags(tag_name):
             pass
         else:
             raise TagNameExistsError(f'The tag {tag_name} already exists')
     
+    def verify_tag_in_tags(self, tag_name):
+        return tag_name in self.tags
+
     def export_all_elements_type_to_vtk(self, export_name, element_type):
         
         name = os.path.join(defpaths.results, export_name + '.vtk')
@@ -115,3 +124,43 @@ class MeshData(MeshInit):
             
         
         return moab_type
+    
+    def get_tag_name_for_database(self, tag_name: str, n: int):
+        return '_'.join([tag_name, str(n)])
+    
+    def get_export_name_for_database(self, export_name: str, n: int):
+        return '_'.join([export_name, str(n)])
+
+    def insert_array_tag_data(self, tag_name: str, list_data: Sequence[np.ndarray], elements_type: str, list_of_elements_array: Sequence[np.ndarray], data_type='float', data_size=1):
+
+        for i, elements_array in enumerate(list_of_elements_array):
+            tag_name_database = self.get_tag_name_for_database(tag_name, i)
+            self.create_tag(tag_name=tag_name_database, data_size=data_size, data_type=data_type)
+            data = list_data[i]
+            assert data.shape[0] == elements_array.shape[0]
+            self.insert_tag_data(
+                tag_name=tag_name_database,
+                data=data,
+                elements_type=elements_type,
+                elements_array=elements_array
+            )
+
+    def export_list_elements_array_data(self, export_name_folder, element_type, list_of_elements_array: Sequence[np.ndarray]):
+        folder_to_make = os.path.join(defpaths.results, export_name_folder)
+        if not os.path.exists(folder_to_make):
+            os.makedirs(folder_to_make)
+        
+        for i, elements_array in enumerate(list_of_elements_array):
+            to_export_name = os.path.join(export_name_folder, '_' + str(i))
+            self.export_only_the_elements(
+                to_export_name,
+                element_type,
+                elements_array
+            )
+
+
+
+
+
+
+            

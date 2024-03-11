@@ -4,6 +4,7 @@ from packs.preprocess.create_mesh_properties_from_meshiowrapper import create_me
 from packs.multiscale.unstructured.create_primal_dual.primal_coarse_volumes_2d import create_coarse_volumes
 from packs import defnames
 from packs.manager.mesh_data import MeshData
+from packs.utils.multiscale_methods import print_fine_interfaces_coarse_mesh_2d
 
 def get_fine_mesh_path_and_mesh_properties_name_for_test():
     fine_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0.msh')
@@ -49,6 +50,15 @@ def run():
     mesh_data.insert_tag_data(key_str, data, elements_type='faces', elements_array=fine_mesh_properties['faces'])
     mesh_data.export_only_the_elements(key_str, element_type='faces', elements_array=fine_mesh_properties['faces'])
     # import pdb; pdb.set_trace()
+
+    print_fine_interfaces_coarse_mesh_2d(
+        fine_mesh_properties,
+        flying_fine_mesh_path,
+        1,
+        'edges_selected'
+    )
+
+
     
     
 
