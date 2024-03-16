@@ -218,7 +218,10 @@ def get_dual_volumes_2d(dual_id: np.ndarray, fine_faces_id: np.ndarray, fine_fac
                 fine_faces_of_faces[faces_of_face0]
             )
         )
-        vertices_to_get = 
+        vertices_to_get = faces_of_face0_v2[
+            dual_id[faces_of_face0_v2] == defnames.dual_ids('vertice_id')
+        ]
+        faces_of_face0 = np.union1d(faces_of_face0, vertices_to_get)
         # dual_volume = np.unique(np.concatenate(dual_volume))
         dual_faces = np.setdiff1d(dual_faces, faces_of_face0)
         dual_volumes.append(faces_of_face0)
@@ -226,6 +229,26 @@ def get_dual_volumes_2d(dual_id: np.ndarray, fine_faces_id: np.ndarray, fine_fac
     dual_volumes = np.array(dual_volumes, dtype='O')
     
     return dual_volumes
+
+def get_dual_interaction_region(dual_volumes, coarse_faces_id, fine_faces_id, primal_id, dual_id):
+    regions = []
+    for coarse_id in coarse_faces_id:
+        region = []
+        fine_vertice_id = fine_faces_id[
+            (dual_id == defnames.dual_ids('vertice_id')) & (primal_id == coarse_id)
+        ]
+
+        for dual_volume in dual_volumes:
+            if np.intersect1d(dual_volume, fine_vertice_id).shape[0] == 1:
+                region.append(dual_volume)
+        
+        region = np.unique(np.concatenate(region))
+
+        regions.append(region)
+    
+    regions = np.array(regions, dtype='O')
+    return regions
+
 
 def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty, level:int):
     dual_id = np.repeat(-1, fine_mesh_properties['faces'].shape[0])
@@ -267,10 +290,19 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
         fine_faces_of_faces=fine_mesh_properties.faces_of_faces_by_nodes,
         fine_faces_of_faces_by_faces=fine_mesh_properties.faces_of_faces
     )
+
+    regions = get_dual_interaction_region(
+        dual_volumes,
+        coarse_mesh_properties['faces'],
+        fine_mesh_properties['faces'],
+        fine_mesh_properties[defnames.fine_primal_id],
+        dual_id
+    )
     
     data = {
         defnames.get_dual_id_name_by_level(level): dual_id,
-        defnames.get_dual_volumes_name_by_level(level): dual_volumes
+        defnames.get_dual_volumes_name_by_level(level): dual_volumes,
+        defnames.get_dual_interation_region_name_by_level(level): regions
     }
 
     return data

@@ -55,6 +55,12 @@ def run():
 
     mesh_data.export_list_elements_array_data(dual_volumes_name, 'faces', dual_volumes)
 
+    interaction_regions_name = defnames.get_dual_interation_region_name_by_level(1)
+    regions = dual_data[interaction_regions_name]
+
+    mesh_data.export_list_elements_array_data(interaction_regions_name, 'faces', regions)
+
+
 
 
     # flying_coarse_mesh_path = _create_flying_mesh(coarse_mesh_path)
