@@ -258,7 +258,7 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
         coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
         fine_faces_id=fine_mesh_properties['faces'],
         fine_faces_centroids=fine_mesh_properties['faces_centroids'],
-        primal_id=fine_mesh_properties[defnames.fine_primal_id],
+        primal_id=fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
         dual_id=dual_id
     )
 
@@ -267,7 +267,7 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
         coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
         fine_faces_id=fine_mesh_properties['faces'],
         fine_faces_centroids=fine_mesh_properties['faces_centroids'],
-        primal_id=fine_mesh_properties[defnames.fine_primal_id],
+        primal_id=fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
         fine_adjacencies=fine_mesh_properties['adjacencies'],
         coarse_adjacencies=coarse_mesh_properties['adjacencies'],
         fine_edges=fine_mesh_properties['edges'],
@@ -295,7 +295,7 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
         dual_volumes,
         coarse_mesh_properties['faces'],
         fine_mesh_properties['faces'],
-        fine_mesh_properties[defnames.fine_primal_id],
+        fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
         dual_id
     )
     

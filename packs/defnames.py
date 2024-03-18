@@ -16,7 +16,7 @@ dual_volumes_str = 'dual_volumes'
 dual_interation_region = 'dual_interation_region'
 
 def get_primal_id_name_by_level(level:int):
-    return '_'.join(fine_primal_id, 'level' + str(level))
+    return '_'.join([fine_primal_id, 'level' + str(level)])
 
 def get_dual_id_name_by_level(level:int):
     return '_'.join([fine_dual_id, 'level' + str(level)])

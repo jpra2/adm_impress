@@ -18,12 +18,13 @@ def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties
             adjacencies_level0=fine_mesh_properties['adjacencies'],
             faces_of_faces_level0=fine_mesh_properties.faces_of_faces,
             faces_centroids_level1=coarse_mesh_properties['faces_centroids'],
-            faces_of_faces_level1=coarse_mesh_properties.faces_of_faces
+            faces_of_faces_level1=coarse_mesh_properties.faces_of_faces,
+            level=1
         )
 
-        fine_mesh_properties.insert_or_update_data({
-            defnames.fine_primal_id: fine_primal_ids
-        })
+        fine_mesh_properties.insert_or_update_data(
+            fine_primal_ids
+        )
 
         fine_mesh_properties.export_data()
 
@@ -55,15 +56,15 @@ def run():
     ams_prolongation.insert_ams_data(
         {
             defnames.dual_volumes_str: fine_mesh_properties[defnames.get_dual_volumes_name_by_level(1)],
-            defnames.fine_primal_id: fine_mesh_properties[defnames.fine_primal_id],
+            defnames.fine_primal_id: fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
             defnames.fine_dual_id: fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
         }
     )
 
     ams_prolongation.preprocess_ams_data()
-    
 
-    return ams_prolongation
+
+    return ams_prolongation, fine_mesh_properties, coarse_mesh_properties
 
 
 
