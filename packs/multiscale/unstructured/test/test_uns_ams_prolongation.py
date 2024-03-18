@@ -3,8 +3,14 @@ from packs.multiscale.unstructured.create_primal_dual.primal_coarse_volumes_2d i
 from packs.preprocess.create_mesh_properties_from_meshiowrapper import create_meshproperties_from_meshio_if_not_exists, _create_flying_mesh
 from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d import create_dual
 from packs import defnames
-from packs.manager import MeshProperty, MeshData
+from packs.manager import MeshProperty, MeshData, BoundaryConditions
 from packs.multiscale.unstructured.operators.prolongation.ams import Unstructured2DAmsProlongation
+from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
+from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
+
+import numpy as np
+from scipy.sparse.linalg import spsolve
+
 
 def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty):
     if defnames.fine_primal_id not in fine_mesh_properties.keys():
@@ -32,7 +38,6 @@ def create_dual_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: 
     key1 = defnames.get_dual_id_name_by_level(1)
     if key1 not in fine_mesh_properties.keys():
 
-
         dual_data = create_dual(fine_mesh_properties=fine_mesh_properties, coarse_mesh_properties=coarse_mesh_properties, level=1)
 
         fine_mesh_properties.insert_or_update_data(
@@ -41,7 +46,46 @@ def create_dual_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: 
 
         fine_mesh_properties.export_data()
 
+def define_boundary_conditions(fine_mesh_properties: MeshProperty):
+    bc_name = 'test1_ams'
+    bc = BoundaryConditions(name=bc_name)
+
+    dirichlet_edges_1 = fine_mesh_properties['Inflow']
+    dirichlet_edges_0 = fine_mesh_properties['Outflow']
+    walls_edges = fine_mesh_properties['Walls']
+
+    dirichlet_nodes1 = np.unique(
+        fine_mesh_properties['nodes_of_edges'][
+            dirichlet_edges_1
+        ])
+    
+    dirichlet_nodes0 = np.unique(
+        fine_mesh_properties['nodes_of_edges'][
+            dirichlet_edges_0
+        ])
+    
+    bc_nodes = np.concatenate([dirichlet_nodes1, dirichlet_nodes0])
+    nodes_values = np.concatenate([
+        np.repeat(1.0, dirichlet_nodes1.shape[0]),
+        np.repeat(0.0, dirichlet_nodes0.shape[0])
+    ])
+
+    bc.set_boundary('dirichlet_nodes', bc_nodes, nodes_values)
+
+    edges_values = np.repeat(0.0, walls_edges.shape[0])
+    bc.set_boundary('neumann_edges', walls_edges, edges_values)
+
+    return bc
+    
+
+
+
+
+    
+
 def run():
+    lsds = LsdsFluxCalculation()
+
     fine_mesh_path, fine_mesh_properties_name = get_fine_mesh_path_and_mesh_properties_name_for_test()
     coarse_mesh_path, coarse_mesh_properties_name = get_coarse_mesh_path_and_mesh_properties_name_for_test()
 
@@ -62,6 +106,66 @@ def run():
     )
 
     ams_prolongation.preprocess_ams_data()
+
+    bc = define_boundary_conditions(fine_mesh_properties)
+
+    fine_mesh_properties.insert_or_update_data({
+        'neumann_edges': bc['neumann_edges']['id'],
+        'neumann_edges_value': bc['neumann_edges']['value']
+    })
+
+    if not fine_mesh_properties.verify_name_in_data_names('nodes_weights'):
+        fine_mesh_properties.insert_or_update_data(
+            {'nodes_to_calculate': fine_mesh_properties['nodes']}
+        )
+        fine_mesh_properties.insert_or_update_data(
+            get_gls_nodes_weights(**fine_mesh_properties.get_all_data())
+        )
+        fine_mesh_properties.export_data()
+    
+    if not fine_mesh_properties.verify_name_in_data_names('xi_params'):
+        fine_mesh_properties.insert_or_update_data(
+            lsds.get_all_edges_flux_params(**fine_mesh_properties.get_all_data())
+        )
+        fine_mesh_properties.export_data()
+
+    resp = lsds.mount_problem_v6(
+            bc,
+            **fine_mesh_properties.get_all_data()
+        )
+    
+    pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+
+    edges_flux = lsds.get_edges_flux(
+        bc,
+        pressure,
+        fine_mesh_properties.xi_params,
+        fine_mesh_properties.nodes_weights,
+        fine_mesh_properties.nodes_of_edges,
+        fine_mesh_properties.adjacencies,
+        fine_mesh_properties['neumann_weights']      
+    )
+
+    faces_flux = lsds.get_faces_flux(
+        edges_flux,
+        fine_mesh_properties.adjacencies,
+        fine_mesh_properties.bool_boundary_edges
+    )
+
+    import pdb; pdb.set_trace()
+
+
+    
+
+
+
+
+
+
+
+    import pdb; pdb.set_trace()
+
+
 
 
     return ams_prolongation, fine_mesh_properties, coarse_mesh_properties

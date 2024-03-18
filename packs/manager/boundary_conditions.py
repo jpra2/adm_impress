@@ -42,6 +42,10 @@ class BoundaryConditions(SuperArrayManager):
                 raise err.NameExistsError(f'the name {name} not in {cls.boundary_names}')
 
     def set_boundary(self, bc_type, ids, values):
+        f"""
+            The boundary type must be in {self.boundary_names}
+        """
+
         self.test_names([bc_type])
         
         bc_array = np.zeros(len(ids), dtype=self.dtype_bc_array)
