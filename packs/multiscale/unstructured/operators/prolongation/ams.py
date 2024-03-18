@@ -1,6 +1,8 @@
 from packs.manager import SuperArrayManager
 from packs import defnames
 import numpy as np
+import scipy.sparse as sp
+from typing import Sequence
 
 class Unstructured2DAmsProlongation(SuperArrayManager):
 
@@ -63,7 +65,21 @@ class Unstructured2DAmsProlongation(SuperArrayManager):
             }
         )
         
+    def get_local_transmissibility_matrix(self, list_of_volumes: Sequence[np.ndarray], T: sp.csc_matrix, diagonal_term: np.ndarray):
+        local_matrices = []
+        for local_volumes in list_of_volumes:
+            T2 = T[local_volumes][:,local_volumes].copy()
+            data = np.array(T2.sum(axis=1).transpose())[0]
+            data2 = T2.diagonal()
+            data2 -= data
+            T2.setdiag(data2)
+            T2[local_volumes, local_volumes] += diagonal_term[local_volumes]
+            local_matrices.append(T2)
+        
+        return local_matrices
     
+
+
 
 
 

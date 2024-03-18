@@ -40,8 +40,6 @@ def create_dual_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: 
 
         fine_mesh_properties.export_data()
 
-
-
 def run():
     fine_mesh_path, fine_mesh_properties_name = get_fine_mesh_path_and_mesh_properties_name_for_test()
     coarse_mesh_path, coarse_mesh_properties_name = get_coarse_mesh_path_and_mesh_properties_name_for_test()
@@ -63,8 +61,9 @@ def run():
     )
 
     ams_prolongation.preprocess_ams_data()
+    
 
-    import pdb; pdb.set_trace()
+    return ams_prolongation
 
 
 

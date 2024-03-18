@@ -37,9 +37,47 @@ def _verify_mesh_properties_exists(mesh_properties_name):
     mesh_properties.insert_mesh_name(mesh_properties_name)
     return mesh_properties.exists()
 
+def insert_physical_tags(mesh_path, mesh_properties: MeshProperty):
+    meshio_data = MeshioWrapper(mesh_path)
+    tags = meshio_data.physical_tags
+    mesh_elements = {
+        'line': 'edge'
+    }
+
+    for tag in tags:
+        if tag == 'Volume':
+            continue
+        data = meshio_data.get_elements_by_physical_tag(tag)
+        keys = list(data.keys())
+        for key in keys:
+            if key == 'line':
+                edges_to_get = []
+                lines_centroids = meshio_data.lines_centroids[:, 0:2]
+                edges_centroids = mesh_properties.edges_centroids
+                edges = mesh_properties.edges
+                for centroid in lines_centroids[data[key]]:
+                    dists = np.linalg.norm(edges_centroids - centroid, axis=1)
+                    test = dists <= dists.min()
+                    edges_to_get.append(edges[test])
+                
+                edges_to_get = np.unique(np.concatenate(edges_to_get))
+                mesh_properties.insert_data({
+                    tag: edges_to_get
+                })
+
+            else:
+                raise  NotImplementedError
+
+                
+
+
+
+
 def create_meshproperties_from_meshio(mesh_path:str, mesh_properties_name: str):
     flying_mesh_path = _create_flying_mesh(mesh_path)
     mesh_properties = preprocess_mesh(flying_mesh_path, mesh_properties_name)
+    insert_physical_tags(mesh_path, mesh_properties)
+
     
     return mesh_properties
 

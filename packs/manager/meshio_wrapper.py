@@ -3,6 +3,7 @@ import numpy as np
 from packs.utils.test_functions import test_mesh_path
 
 class MeshioWrapper:
+    tags_to_remove = ['gmsh:bounding_entities']
 
     def __init__(self, mesh_path):   
         full_path = test_mesh_path(mesh_path)
@@ -55,8 +56,8 @@ class MeshioWrapper:
 
     @property
     def physical_tags(self) -> list:
-        tags = list(self.msh.cell_sets_dict.keys())
-        return tags
+        tags = set(list(self.msh.cell_sets_dict.keys())) - set(self.tags_to_remove)
+        return list(tags)
 
     def get_elements_by_physical_tag(self, tag: str) -> dict:
         return self.msh.cell_sets_dict[tag]
