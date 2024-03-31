@@ -79,10 +79,6 @@ def define_boundary_conditions(fine_mesh_properties: MeshProperty):
     
 
 
-
-
-    
-
 def run():
     lsds = LsdsFluxCalculation()
 
@@ -94,6 +90,7 @@ def run():
 
     create_primal_ids(fine_mesh_properties, coarse_mesh_properties)
     create_dual_ids(fine_mesh_properties, coarse_mesh_properties)
+    
 
     ams_prolongation = Unstructured2DAmsProlongation()
 
@@ -128,31 +125,52 @@ def run():
             lsds.get_all_edges_flux_params(**fine_mesh_properties.get_all_data())
         )
         fine_mesh_properties.export_data()
+    
+    transm = lsds.mount_transmissibility_matrix_without_bc(**fine_mesh_properties.get_all_data())
+    
+    
+    resp2 = lsds.mount_transmissibility_matrix(
+        bc,
+        **fine_mesh_properties.get_all_data()
+    )
+
+    # import pdb; pdb.set_trace()
 
     resp = lsds.mount_problem_v6(
             bc,
             **fine_mesh_properties.get_all_data()
         )
     
+
+    
+    # # ams_prolongation.get_local_transmissibility_matrix(
+    # #     ams_prolongation['dual_volumes'],
+    # #     resp['transmissibility'],
+    # #     np.zeros(resp['source'].shape[0])
+    # # )
+    
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+    pressure2 = spsolve(resp2['transmissibility'].tocsc(), resp2['source'])
 
-    edges_flux = lsds.get_edges_flux(
-        bc,
-        pressure,
-        fine_mesh_properties.xi_params,
-        fine_mesh_properties.nodes_weights,
-        fine_mesh_properties.nodes_of_edges,
-        fine_mesh_properties.adjacencies,
-        fine_mesh_properties['neumann_weights']      
-    )
+    # import pdb; pdb.set_trace()
 
-    faces_flux = lsds.get_faces_flux(
-        edges_flux,
-        fine_mesh_properties.adjacencies,
-        fine_mesh_properties.bool_boundary_edges
-    )
+    # edges_flux = lsds.get_edges_flux(
+    #     bc,
+    #     pressure,
+    #     fine_mesh_properties.xi_params,
+    #     fine_mesh_properties.nodes_weights,
+    #     fine_mesh_properties.nodes_of_edges,
+    #     fine_mesh_properties.adjacencies,
+    #     fine_mesh_properties['neumann_weights']      
+    # )
 
-    import pdb; pdb.set_trace()
+    # faces_flux = lsds.get_faces_flux(
+    #     edges_flux,
+    #     fine_mesh_properties.adjacencies,
+    #     fine_mesh_properties.bool_boundary_edges
+    # )
+
+    # import pdb; pdb.set_trace()
 
 
     
@@ -163,7 +181,7 @@ def run():
 
 
 
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
 
 

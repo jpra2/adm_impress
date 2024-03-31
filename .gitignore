@@ -6,6 +6,8 @@
 *.vtk
 *.su2
 *_rm.py
+*.prof
+*.profile
 
 # *.msh
 # !cube_unstructured.msh

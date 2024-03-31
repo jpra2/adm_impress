@@ -5,6 +5,7 @@ from packs import defnames
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import mount_sparse_weight_matrix, mount_sparse_matrix_from_structure
 from packs.utils import calculate_face_properties
 from packs.manager.meshmanager import MeshProperty
+from packs.utils.profile_functions import profile
 
 class LsdsFluxCalculation:
     """
@@ -710,6 +711,7 @@ class LsdsFluxCalculation:
             adjacencies,
             xi_params,
             source,
+            neumann_edges,
             **kwargs
     ):
         
@@ -722,6 +724,7 @@ class LsdsFluxCalculation:
         for node in ids_node_presc:
             value_node = values_nodes_presc[ids_node_presc==node]
             edges_node = edges_of_nodes[node]
+            edges_node = np.setdiff1d(edges_node, neumann_edges)
             nodes_edges_node = nodes_of_edges[edges_node]
             adjacencies_edges_node = adjacencies[edges_node]
             xi_params_edges_node = xi_params[edges_node]
@@ -763,23 +766,30 @@ class LsdsFluxCalculation:
             xi_B,
             weights_node,
             test_k_faces,
-            lines:[],
-            cols:[],
-            data:[],
+            lines: list,
+            cols: list,
+            data: list,
             signal=1,
             **kwargs
     ):
         A_test = (A_node) & (test_k_faces)
         B_test = (B_node) & (test_k_faces)
+
+        n_faces_node = faces_node.shape[0]
         
-        k_faces_A_node = np.repeat(K_faces[A_test], len(faces_node), axis=0)
-        k_faces_B_node = np.repeat(K_faces[B_test], len(faces_node), axis=0)
-        faces_node_A_node = np.tile(faces_node, len(K_faces[A_test]))
-        faces_node_B_node = np.tile(faces_node, len(K_faces[B_test]))
-        xi_A_node = np.repeat(xi_A[A_test], len(faces_node), axis=0)
-        xi_B_node = np.repeat(xi_B[B_test], len(faces_node), axis=0)
-        weights_node_A_node = np.tile(weights_node, len(K_faces[A_test]))
-        weights_node_B_node = np.tile(weights_node, len(K_faces[B_test]))
+        k_faces_A_node = np.repeat(K_faces[A_test], n_faces_node, axis=0)
+        k_faces_B_node = np.repeat(K_faces[B_test], n_faces_node, axis=0)
+        # faces_node_A_node = np.tile(faces_node, len(K_faces[A_test]))
+        # faces_node_B_node = np.tile(faces_node, len(K_faces[B_test]))
+        faces_node_A_node = np.tile(faces_node, A_test.sum())
+        faces_node_B_node = np.tile(faces_node, B_test.sum())
+        
+        xi_A_node = np.repeat(xi_A[A_test], n_faces_node, axis=0)
+        xi_B_node = np.repeat(xi_B[B_test], n_faces_node, axis=0)
+        # weights_node_A_node = np.tile(weights_node, len(K_faces[A_test]))
+        # weights_node_B_node = np.tile(weights_node, len(K_faces[B_test]))
+        weights_node_A_node = np.tile(weights_node, A_test.sum())
+        weights_node_B_node = np.tile(weights_node, B_test.sum())
 
         lines.extend([k_faces_A_node, k_faces_B_node])
         cols.extend([faces_node_A_node, faces_node_B_node])
@@ -793,9 +803,9 @@ class LsdsFluxCalculation:
             nodes_weights,
             adjacencies,
             xi_params,
-            lines:[],
-            cols:[],
-            data:[],
+            lines: list,
+            cols: list,
+            data: list,
             **kwargs
     ):
         for node in other_nodes:
@@ -855,9 +865,9 @@ class LsdsFluxCalculation:
             adjacencies,
             xi_params,
             boundary_edges,
-            lines:[],
-            cols:[],
-            data:[],
+            lines: list,
+            cols: list,
+            data: list,
             **kwargs
         ):
         
@@ -921,7 +931,7 @@ class LsdsFluxCalculation:
         cols = np.concatenate(cols)
         data = np.concatenate(data)
 
-        T = sp.csr_matrix((data,(lines,cols)), shape=(faces.shape[0],faces.shape[0]))
+        T = sp.csc_matrix((data,(lines,cols)), shape=(faces.shape[0],faces.shape[0]))
 
         return T
 
@@ -1290,7 +1300,7 @@ class LsdsFluxCalculation:
         
         for edge in edges[bool_boundary_edges]:
             pass
-
+    
     def mount_problem_v6(self,
         boundary_conditions: BoundaryConditions,
         nodes_weights,
@@ -1396,25 +1406,181 @@ class LsdsFluxCalculation:
             'source': source
         })
         return resp
-                    
-                    
-                
-                
-                
-            
-            
-            
-                
-                
-                
-                
-                
-                
-                    
-                
+
+    def mount_transmissibility_matrix_without_bc(
+            self,
+            nodes,
+            edges_of_nodes,
+            nodes_of_edges,
+            nodes_weights,
+            adjacencies,
+            xi_params,
+            faces,
+            bool_boundary_edges,
+            **kwargs
+    ):
+        """
+            Monta a matriz de transmissibilidade sem as condicoes de contorno
+        """
+        lines = []
+        cols = []
+        data = []
+
+        self.update_transmissibility_from_nodes(
+            nodes,
+            edges_of_nodes,
+            nodes_of_edges,
+            nodes_weights,
+            adjacencies,
+            xi_params,
+            lines,
+            cols,
+            data
+        )
+
+        biedges = ~bool_boundary_edges
+
+        # lines.extend([adjacencies[bool_boundary_edges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1]])
+        # cols.extend([adjacencies[bool_boundary_edges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
+        # data.extend([xi_params[bool_boundary_edges, 0], xi_params[biedges, 1], -xi_params[biedges, 1], -xi_params[biedges, 0]])
+
+        lines.extend([adjacencies[bool_boundary_edges, 0], adjacencies[biedges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1]])
+        cols.extend([ adjacencies[bool_boundary_edges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
+        data.extend([   xi_params[bool_boundary_edges, 0],   xi_params[biedges, 0],   xi_params[biedges, 1],  -xi_params[biedges, 1],  -xi_params[biedges, 0]])
+
+        T = self.get_transmissibility_from_data(lines, cols, data, faces)
+
+        return {'transmissibility_without_bc': T,
+                'source': np.zeros(faces.shape[0])}
+
+    def mount_transmissibility_matrix(
+            self,
+            bc: BoundaryConditions,
+            nodes,
+            edges,
+            edges_of_nodes,
+            nodes_of_edges,
+            nodes_weights,
+            adjacencies,
+            xi_params,
+            faces,
+            bool_boundary_edges,
+            bool_boundary_nodes,
+            neumann_weights,
+            edges_dim,
+            **kwargs
+    ):
+        
+        lines = []
+        cols = []
+        data = []
+        
+        dirichlet_nodes = bc['dirichlet_nodes']['id']
+        dirichlet_nodes_values = bc['dirichlet_nodes']['value']
+
+        neumann_edges = bc['neumann_edges']['id']
+        neumann_edges_values = bc['neumann_edges']['value']
+        neumann_nodes = bc.get_neumann_nodes(nodes_of_edges)
+        dirichlet_edges = np.setdiff1d(edges[bool_boundary_edges], neumann_edges)
+
+        binodes = ~bool_boundary_nodes
+
+        source = np.zeros(faces.shape[0])
+
+        ### insert neumann prescription in faces adjacencies of neumann edges:
+        # for i, edge in enumerate(neumann_edges):
+        #     face_adj = adjacencies[edge, 0]
+        #     edge_dim = edges_dim[edge]
+        #     source[face_adj] += neumann_edges_values[i]*edge_dim
+        
+        faces_adj = adjacencies[neumann_edges, 0]
+        edges_dim_neumann_edges = edges_dim[neumann_edges]
+        source[faces_adj] += neumann_edges_values*edges_dim_neumann_edges
+
+        ## atualizar T dos nos internos
+        self.update_transmissibility_from_nodes(
+            nodes[binodes],
+            edges_of_nodes,
+            nodes_of_edges,
+            nodes_weights,
+            adjacencies,
+            xi_params,
+            lines,
+            cols,
+            data
+        )
+
+        self.update_transmissibility_from_neumann_nodes(
+            neumann_nodes, 
+            edges_of_nodes,
+            nodes_of_edges,
+            nodes_weights,
+            adjacencies,
+            xi_params,
+            edges[bool_boundary_edges],
+            lines,
+            cols,
+            data
+        )
+
+        biedges = ~bool_boundary_edges
+
+        # lines.extend([adjacencies[bool_boundary_edges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1]])
+        # cols.extend([adjacencies[bool_boundary_edges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
+        # data.extend([xi_params[bool_boundary_edges, 0], xi_params[biedges, 1], -xi_params[biedges, 1], -xi_params[biedges, 0]])
+
+        lines.extend([adjacencies[dirichlet_edges, 0], adjacencies[biedges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1]])
+        cols.extend([ adjacencies[dirichlet_edges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
+        data.extend([   xi_params[dirichlet_edges, 0],   xi_params[biedges, 0],   xi_params[biedges, 1],  -xi_params[biedges, 1],  -xi_params[biedges, 0]])
+
+        ## adicionando a prescricao de dirichlet dos nos
+        self.insert_prescription_in_source(
+            dirichlet_nodes_values,
+            dirichlet_nodes,
+            edges_of_nodes,
+            nodes_of_edges,
+            adjacencies,
+            xi_params,
+            source,
+            neumann_edges
+        )
+
+        ## adicionando a prescricao de neumann dos nos
+        test = np.isin(neumann_weights['node_id'], neumann_nodes)
+
+        self.insert_prescription_in_source(
+            neumann_weights['nweight'][test],
+            neumann_weights['node_id'][test],
+            edges_of_nodes,
+            nodes_of_edges,
+            adjacencies,
+            xi_params,
+            source,
+            neumann_edges
+        )
+
+        T = self.get_transmissibility_from_data(lines, cols, data, faces)
+
+        resp = dict()
+
+        resp.update({
+            'transmissibility': T,
+            'source': source
+        })   
+        
+        return resp
+
+
         
 
 
+        
+
+
+
+
+
+        
 
     def get_edges_flux(
         self,
@@ -1452,7 +1618,7 @@ class LsdsFluxCalculation:
         
         nodes_pressures = nodes_weight_matrix.dot(faces_pressures)
         neumann_vector = np.zeros(len(nodes_pressures))
-        if len(neumann_nodes > 0):
+        if len(neumann_nodes) > 0:
             test = np.isin(neumann_weights['node_id'], neumann_nodes)
             neumann_vector[neumann_weights['node_id'][test]] = neumann_weights['nweight'][test]
         nodes_pressures = nodes_pressures + neumann_vector
