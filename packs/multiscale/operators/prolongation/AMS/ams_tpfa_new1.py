@@ -226,7 +226,7 @@ def get_wirebasket_elements(gids, dual_flags):
     edges = gids[dual_flags==2]
     vertices = gids[dual_flags==3]
 
-    wirebasket_elements = np.array([internals, faces, edges, vertices])
+    wirebasket_elements = np.array([internals, faces, edges, vertices], dtype='O')
     wirebasket_numbers = np.array([len(internals), len(faces), len(edges), len(vertices)])
     nv = wirebasket_numbers[-1]
     ns_sum = [wirebasket_numbers[0]]
@@ -241,7 +241,7 @@ def get_wirebasket_elements(gids, dual_flags):
         wirebasket_ids.append(np.arange(n_reord, n_reord + n2))
         n_reord += n2
 
-    wirebasket_ids = np.array(wirebasket_ids)
+    wirebasket_ids = np.array(wirebasket_ids, dtype='O')
 
     return wirebasket_elements, wirebasket_numbers, nv, ns_sum, wirebasket_ids
 

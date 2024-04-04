@@ -17,3 +17,16 @@ def profile(func):
         return retval
 
     return wrapper
+
+## rodar o cprofile:
+#ptyhon -m cProfile -o arquivo.profile arquivo.py
+
+## visualizar o profile com snakeviz
+#snakeviz arquivo.profile
+
+## converter de profile para dot
+#gprof2dot -f pstats arquivo.profile -o arquivo.dot
+
+## converter de dot para svg
+#dot -Tsvg arquivo.dot > arquivo.svg
+#dot -Tpng arquivo.dot > arquivo.png

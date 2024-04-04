@@ -5,7 +5,6 @@ from packs import defnames
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import mount_sparse_weight_matrix, mount_sparse_matrix_from_structure
 from packs.utils import calculate_face_properties
 from packs.manager.meshmanager import MeshProperty
-from packs.utils.profile_functions import profile
 
 class LsdsFluxCalculation:
     """

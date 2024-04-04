@@ -3,6 +3,7 @@ from packs import defnames
 import numpy as np
 import scipy.sparse as sp
 from typing import Sequence
+from packs.multiscale.operators.prolongation.AMS.ams_mpfa import AMSMpfa
 
 class Unstructured2DAmsProlongation(SuperArrayManager):
 
@@ -16,6 +17,8 @@ class Unstructured2DAmsProlongation(SuperArrayManager):
     local_fine_map_str = 'local_fine_map'
     local_coarse_map_str = 'local_coarse_map'
     coarse_ids_dual_volumes_str = 'coarse_ids_dual_volumes'
+
+    ##[local_matrices, local_ams] other_data
 
     def insert_ams_data(self, data: dict):
         f"""Insert the ams data for prolongation calculation.
@@ -68,16 +71,92 @@ class Unstructured2DAmsProlongation(SuperArrayManager):
     def get_local_transmissibility_matrix(self, list_of_volumes: Sequence[np.ndarray], T: sp.csc_matrix, diagonal_term: np.ndarray):
         local_matrices = []
         for local_volumes in list_of_volumes:
-            T2 = T[local_volumes][:,local_volumes].copy()
-            data = np.array(T2.sum(axis=1).transpose())[0]
-            data2 = T2.diagonal()
-            data2 -= data
-            T2.setdiag(data2)
-            T2[local_volumes, local_volumes] += diagonal_term[local_volumes]
-            local_matrices.append(T2)
+            local_matrices.append(self.get_local_matrix(local_volumes, T, diagonal_term))
         
         return local_matrices
     
+    def get_local_matrix(self, local_volumes, T: sp.csc_matrix, diagonal_term):
+        T2 = T[local_volumes][:,local_volumes].copy()
+        data = np.array(T2.sum(axis=1).transpose())[0]
+        data2 = T2.diagonal()
+        data2 -= data
+        data2 += diagonal_term[local_volumes]
+        T2.setdiag(data2)
+        return T2
+
+    def get_local_ams_op(self, list_of_volumes: Sequence[np.ndarray], T: sp.csc_matrix, diagonal_term: np.ndarray):
+
+        local_prolongation = []
+        for i, local_volumes in enumerate(list_of_volumes):
+            local_matrix = self.get_local_matrix(local_volumes, T, diagonal_term)
+            
+            ams = AMSMpfa(
+                self[self.local_dual_volumes_str][i],
+                self[self.local_primal_id_str][i],
+                self[self.local_dual_id_str][i]
+            )
+            local_coarse_map = self[self.local_coarse_map_str][i]
+            
+            op = ams.run(local_matrix)
+            all_data = sp.find(op)
+            lines = local_volumes[all_data[0]]
+            cols = local_coarse_map[all_data[1]]
+            data = all_data[2]
+            local_prolongation.append([lines, cols, data])
+        
+        return local_prolongation
+
+    def insert_data_in_global_OP(self, list_of_volumes: Sequence[np.ndarray], T: sp.csc_matrix, diagonal_term: np.ndarray, OP: sp.csc_matrix):
+        local_op_data = self.get_local_ams_op(list_of_volumes, T, diagonal_term)
+        for local_data in local_op_data:
+            OP[local_data[0], local_data[1]] = local_data[2]
+
+    def get_B_matrix(self, T: sp.csc_matrix, epsilon=0.001, w=1):
+        """
+        Algorithimic monotone multiscale
+        """
+
+        diagonal = T.diagonal()
+        n = diagonal.shape[0]
+        all_data = sp.find(T)
+        lines = all_data[0]
+        cols = all_data[1]
+        data = all_data[2]
+        test_pos = data > 0
+        test_dif = lines == cols
+        test_dif = ~test_dif
+
+        lines_B = []
+        cols_B = []
+        data_B = []
+
+        for i in range(n):
+            test_line = lines == i
+            test = (test_line) & (test_pos) & (test_dif)
+            local_data = data[test]
+            columns = cols[test]
+            xi = local_data/diagonal[i]
+            test2 = xi > epsilon
+            selected_columns = columns[test2]
+            selected_data = local_data[test2]
+            for col, ac_data in zip(selected_columns, selected_data):
+                data_B.append([-w*ac_data, w*ac_data, -w*ac_data, w*ac_data])
+                lines_B.append([i, i, col, col])
+                cols_B.append([col, i, i, col])
+        
+        lines_B = np.concatenate(lines_B)
+        cols_B = np.concatenate(cols_B)
+        data_B = np.concatenate(data_B)
+
+        B = sp.csc_matrix((data_B,(lines_B,cols_B)), shape=(n, n))
+        return B
+
+    def get_monotone_matrix(self, T: sp.csc_matrix, epsilon=0.001, w=1):
+        B = self.get_B_matrix(T, epsilon=epsilon, w=w)
+        return T + B
+        
+
+            
 
 
 
@@ -88,6 +167,11 @@ class Unstructured2DAmsProlongation(SuperArrayManager):
 
 
 
+
+
+    def get_global_op(self, coarse_faces: np.ndarray, fine_faces: np.ndarray):
+        OP = sp.lil_matrix((fine_faces.shape[0], coarse_faces.shape[0]))
+        return OP
 
 
 

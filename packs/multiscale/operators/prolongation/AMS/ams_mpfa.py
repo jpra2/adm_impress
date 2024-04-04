@@ -1,35 +1,10 @@
-from .ams_tpfa import AMSTpfa
+from .ams_tpfa_new1 import AMSTpfa
 import time
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse import linalg
 
 class AMSMpfa(AMSTpfa):
-
-    # def __init__(self,
-    #     internals,
-    #     faces,
-    #     edges,
-    #     vertices,
-    #     gids: 'global_ids',
-    #     primal_ids: 'primal_ids',
-    #     load=False,
-    #     data_name='AMSMpfa_',
-    #     tpfalizar=False,
-    #     get_correction_term=False):
-    #
-    #     super().__init__(
-    #         internals,
-    #         faces,
-    #         edges,
-    #         vertices,
-    #         gids,
-    #         primal_ids,
-    #         load=load,
-    #         data_name=data_name,
-    #         tpfalizar=tpfalizar,
-    #         get
-    #     )
 
     def get_as(self, T_wire):
 
@@ -101,34 +76,37 @@ class AMSMpfa(AMSTpfa):
         nne = self.ns_sum[2]
         nnv = self.ns_sum[3]
 
-        lines = np.arange(nne, nnv).astype(np.int32)
-        ntot = (self.wirebasket_numbers.sum())
-        op = sp.lil_matrix((ntot, nv))
-        op[lines] = As['Ivv'].tolil()
+        Pv = sp.identity(nv)
+        Pe = -linalg.spsolve(As['Aee'].tocsc(),(As['Aev']*Pv).tocsc())
+        Pf = linalg.spsolve(As['Aff'].tocsc(), (As['Afe']*(-Pe) - As['Afv']*(Pv)).tocsc())
+        Pi = linalg.spsolve(As['Aii'].tocsc(), (As['Aie']*(-Pe) + As['Aif']*(-Pf) - As['Aiv']*(Pv)).tocsc())
+        op = sp.vstack([Pi,Pf,Pe,Pv])
 
-        Meeinv = As['Aee']
-        Meeinv = linalg.spsolve(Meeinv.tocsc(), sp.identity(ne).tocsc())
-        Pe = Meeinv.dot(-1*As['Aev'])
-        op[nnf:nne] = Pe.tolil()
+        # lines = np.arange(nne, nnv).astype(np.int32)
+        # ntot = (self.wirebasket_numbers.sum())
+        # op = sp.lil_matrix((ntot, nv))
+        # op[lines] = As['Ivv'].tolil()
 
-        Mffinv = As['Aff']
-        Mffinv = linalg.spsolve(Mffinv.tocsc(), sp.identity(nf).tocsc())
-        Pf = As['Afe'].dot(-1*Pe) - As['Afv']
-        Pf = Mffinv.dot(Pf)
-        op[nni:nnf] = Pf.tolil()
+        # Meeinv = As['Aee']
+        # Meeinv = linalg.spsolve(Meeinv.tocsc(), sp.identity(ne).tocsc())
+        # Pe = Meeinv.dot(-1*As['Aev'])
+        # op[nnf:nne] = Pe.tolil()
 
-        Miiinv = As['Aii']
-        Miiinv = linalg.spsolve(Miiinv.tocsc(), sp.identity(ni).tocsc())
-        Pi = As['Aif'].dot(-1*Pf) + As['Aie'].dot(-1*Pe) - As['Aiv']
-        Pi = Miiinv.dot(Pi)
-        op[0:nni] = Pi.tolil()
+        # Mffinv = As['Aff']
+        # Mffinv = linalg.spsolve(Mffinv.tocsc(), sp.identity(nf).tocsc())
+        # Pf = As['Afe'].dot(-1*Pe) - As['Afv']
+        # Pf = Mffinv.dot(Pf)
+        # op[nni:nnf] = Pf.tolil()
+
+        # Miiinv = As['Aii']
+        # Miiinv = linalg.spsolve(Miiinv.tocsc(), sp.identity(ni).tocsc())
+        # Pi = As['Aif'].dot(-1*Pf) + As['Aie'].dot(-1*Pe) - As['Aiv']
+        # Pi = Miiinv.dot(Pi)
+        # op[0:nni] = Pi.tolil()
 
         return self.GT*op*self.G2
 
     def run(self, T: 'transmissibility matrix'):
-
-        if self.tpfalizar:
-            return super().run(T)
 
         T_wire = self.G*T*self.GT
         As = self.get_as(T_wire)

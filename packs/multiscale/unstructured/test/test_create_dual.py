@@ -2,6 +2,7 @@ from .create_primal_test import get_fine_mesh_path_and_mesh_properties_name_for_
 from packs.multiscale.unstructured.create_primal_dual.primal_coarse_volumes_2d import create_coarse_volumes
 from packs.preprocess.create_mesh_properties_from_meshiowrapper import create_meshproperties_from_meshio_if_not_exists, _create_flying_mesh
 from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d import create_dual
+# from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d_v2 import create_dual
 from packs import defnames
 from packs.manager import MeshProperty, MeshData
 
@@ -17,12 +18,13 @@ def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties
             adjacencies_level0=fine_mesh_properties['adjacencies'],
             faces_of_faces_level0=fine_mesh_properties.faces_of_faces,
             faces_centroids_level1=coarse_mesh_properties['faces_centroids'],
-            faces_of_faces_level1=coarse_mesh_properties.faces_of_faces
+            faces_of_faces_level1=coarse_mesh_properties.faces_of_faces,
+            level=1
         )
 
-        fine_mesh_properties.insert_or_update_data({
-            defnames.fine_primal_id: fine_primal_ids
-        })
+        fine_mesh_properties.insert_or_update_data(
+            fine_primal_ids
+        )
 
         fine_mesh_properties.export_data()
 
