@@ -9,7 +9,8 @@ from packs.multiscale.unstructured.operators.prolongation.ams import Unstructure
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 from packs.utils.profile_functions import profile
-
+from packs.utils.multiscale_methods import print_adm_interfaces_2d
+from packs.adm.adm_operators import Adm
 
 import numpy as np
 from scipy.sparse.linalg import spsolve
@@ -136,6 +137,13 @@ def export_op(mesh_path, OP_AMS):
         'faces'
     )
     
+def export_adm_levels(mesh_path, fine_levels):
+
+    flying_mesh_path = _create_flying_mesh(mesh_path)
+    mesh_data = MeshData(mesh_path=flying_mesh_path)
+    mesh_data.create_tag('adm_levels', data_type='int')
+    mesh_data.insert_tag_data('adm_levels', fine_levels, 'faces')
+    mesh_data.export_all_elements_type_to_vtk('adm_test', 'faces')
 
 
 
@@ -200,18 +208,7 @@ def run():
 
     resp = func2(lsds, bc, fine_mesh_properties)
 
-    # import pdb; pdb.set_trace()
-
-    # resp = lsds.mount_problem_v6(
-    #         bc,
-    #         **fine_mesh_properties.get_all_data()
-    #     )
-
-    # ams_prolongation.get_local_ams_op(
-    #     ams_prolongation[ams_prolongation.dual_volumes_str],
-    #     monotone_transm,
-    #     np.zeros(resp['source'].shape[0])
-    # )
+    
 
     OP_AMS = ams_prolongation.get_global_op(coarse_mesh_properties['faces'], fine_mesh_properties['faces'])
 
@@ -222,13 +219,60 @@ def run():
         OP_AMS
     )
 
-    export_op(fine_mesh_path, OP_AMS)
-    import pdb; pdb.set_trace()
-
-    
-    pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
-
+    # export_op(fine_mesh_path, OP_AMS)
     # import pdb; pdb.set_trace()
+
+    # pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+
+    ### adm
+    adm = Adm()
+    fine_levels = np.full(len(fine_mesh_properties['faces']), -1)
+    boundary_coarse_faces = np.unique(np.concatenate(coarse_mesh_properties.faces_of_nodes[
+        coarse_mesh_properties['bool_boundary_nodes']
+        ]))
+    fine_levels[
+        np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], boundary_coarse_faces)
+    ] = 0
+
+    list_primal_ids = [
+        fine_mesh_properties['faces'],
+        fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
+    ]
+
+    list_dual_ids = [
+        fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
+    ]
+
+    adm.update_levels(
+        list_primal_ids,
+        fine_levels,
+        fine_mesh_properties['faces'],
+        2,
+        fine_mesh_properties.faces_of_faces_by_nodes
+    )
+
+    # export_adm_levels(fine_mesh_path, fine_levels)
+    # flying_mesh_path = _create_flying_mesh(fine_mesh_path)
+    # print_adm_interfaces_2d(
+    #     fine_mesh_properties,
+    #     flying_mesh_path,
+    #     fine_levels,
+    #     'adm_edges'
+    # )
+
+    OP_adm = adm.get_adm_prolongation_operator(
+        [OP_AMS],
+        fine_levels,
+        list_primal_ids,
+        list_dual_ids,
+        fine_mesh_properties['faces'],
+        2
+    )
+    
+
+
+
+    import pdb; pdb.set_trace()
 
     # edges_flux = lsds.get_edges_flux(
     #     bc,

@@ -51,11 +51,15 @@ class MeshData(MeshInit):
             }
         })
 
-    def insert_tag_data(self, tag_name, data, elements_type, elements_array):
+    def insert_tag_data(self, tag_name, data, elements_type, elements_array='all'):
         
         all_elements = self.get_all_elements(elements_type)
+        all_elements = np.array(all_elements).astype(np.uint64)
         
-        to_elements = np.array(all_elements).astype(np.uint64)[elements_array]
+        if elements_array == 'all':
+            to_elements = all_elements
+        else:        
+            to_elements = all_elements[elements_array]
         
         self.mb.tag_set_data(self.tags[tag_name]['tag'], to_elements, data)
     
