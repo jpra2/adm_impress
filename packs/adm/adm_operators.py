@@ -36,6 +36,7 @@ class Adm:
     def get_adm_prolongation_operator(
             self,
             list_OP,
+            list_OR,
             fine_levels: np.ndarray,
             list_primal_ids,
             list_dual_ids,
@@ -49,9 +50,6 @@ class Adm:
         for level in range(n_levels):
             list_ids_level.append(np.unique(list_primal_ids[level][fine_levels==level]))
         
-        list_remap_adm_fine = []
-        list_remap_adm_coarse = []
-        
         ### do nivel 0 para o nivel 1
         level = 1
         all_n_adm_ids = [list_primal_ids[0].shape[0]]
@@ -60,13 +58,14 @@ class Adm:
         dual_ids_level_ant = list_dual_ids[level-1]
         
         OP = list_OP[level-1]
+        OR = list_OR[level-1]
         data_op = sp.find(OP)
+        data_or = sp.find(OR)
 
         primal_ids_ant = list_primal_ids[level-1]
         primal_ids_prox = list_primal_ids[level]
         fine_vertices = primal_ids_ant[dual_ids_level_ant == defnames.dual_ids('vertice_id')]
         coarse_ids_fine_vertices = primal_ids_prox[fine_vertices]
-
 
         ids_level_prox = np.unique(primal_ids_prox[fine_levels >= level])
         coarse_ids_to_remove = np.unique(primal_ids_prox[fine_levels < level])
@@ -80,19 +79,23 @@ class Adm:
         all_n_adm_ids.append(adm_ids.shape[0])
         all_adm_ids.append(adm_ids)
 
-        ## removendo do operador as linhas e as colunas que vao ficar no nivel anterior
-        # import pdb; pdb.set_trace()
+        ## removendo dos operadores as linhas e as colunas que vao ficar no nivel anterior
         test1 = np.isin(data_op[0], ids_level_ant)
-        # test2 = np.isin(data_op[1], coarse_ids_to_remove)
-        # test = test1 | test2
-        # test = ~test
         test = ~test1
         lines_op_adm = data_op[0][test]
         cols_op_adm = data_op[1][test]
         data_op_adm = data_op[2][test]
 
+        test5 = np.isin(data_or[1], ids_level_ant)
+        test5 = ~test5
+        lines_or_adm = data_or[0][test5]
+        cols_or_adm = data_or[1][test5]
+        data_or_adm = data_or[2][test5]
+
         test2 = np.isin(cols_op_adm, coarse_ids_to_remove)
-        coarse_ids_to_modify_by_adm_vertice_id = cols_op_adm[test2]
+        coarse_ids_to_modify_by_adm_vertice_id = np.unique(cols_op_adm[test2])
+        test6 = np.isin(lines_or_adm, coarse_ids_to_remove)
+        or_coarse_ids_to_modify_by_vertice = np.unique(lines_or_adm[test6])
 
         ### criando o remapeamento adm
         ## os que permanecem no nivel
@@ -109,15 +112,25 @@ class Adm:
             fine_vertice = fine_vertices[coarse_ids_fine_vertices==cid]
             test4 = cols_op_adm == cid
             cols_op_adm[test4] = remap_fine_cols[fine_vertice]
+        
+        test7 = ~test6
+        lines_or_adm[test7] = remap_coarse_cols[lines_or_adm[test7]]
+        for cid in or_coarse_ids_to_modify_by_vertice:
+            fine_vertice = fine_vertices[coarse_ids_fine_vertices==cid]
+            test8 = lines_or_adm == cid
+            lines_or_adm[test8] = remap_fine_cols[fine_vertice]
 
         ### adicionando os que permanecem no nivel
         lines_op_adm = np.append(lines_op_adm, ids_level_ant)
         cols_op_adm = np.append(cols_op_adm, remap_fine_cols[ids_level_ant])
         data_op_adm = np.append(data_op_adm, np.repeat(1.0, ids_level_ant.shape[0]))
 
+        lines_or_adm = np.append(lines_or_adm, remap_fine_cols[ids_level_ant])
+        cols_or_adm = np.append(cols_or_adm, ids_level_ant)
+        data_or_adm = np.append(data_or_adm, np.repeat(1.0, ids_level_ant.shape[0]))
+
         OP_adm = sp.csc_matrix((data_op_adm, (lines_op_adm, cols_op_adm)), shape=(all_n_adm_ids[level-1], all_n_adm_ids[level]))
+        OR_adm = sp.csc_matrix((data_or_adm, (lines_or_adm, cols_or_adm)), shape=(all_n_adm_ids[level], all_n_adm_ids[level-1]))
 
-        import pdb; pdb.set_trace()
-
-        return OP_adm
+        return OP_adm, OR_adm
 

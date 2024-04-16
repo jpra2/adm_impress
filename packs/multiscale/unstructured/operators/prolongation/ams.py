@@ -5,7 +5,7 @@ import scipy.sparse as sp
 from typing import Sequence
 from packs.multiscale.operators.prolongation.AMS.ams_mpfa import AMSMpfa
 
-class Unstructured2DAmsProlongation(SuperArrayManager):
+class Unstructured2DAmsOperator(SuperArrayManager):
 
     dual_volumes_str = defnames.dual_volumes_str
     primal_id_str = defnames.fine_primal_id
@@ -91,9 +91,9 @@ class Unstructured2DAmsProlongation(SuperArrayManager):
             local_matrix = self.get_local_matrix(local_volumes, T, diagonal_term)
             
             ams = AMSMpfa(
-                self[self.local_dual_volumes_str][i],
-                self[self.local_primal_id_str][i],
-                self[self.local_dual_id_str][i]
+                self[self.local_dual_volumes_str][i].astype(np.int64),
+                self[self.local_primal_id_str][i].astype(np.int64),
+                self[self.local_dual_id_str][i].astype(np.int64)
             )
             local_coarse_map = self[self.local_coarse_map_str][i]
             
@@ -155,19 +155,12 @@ class Unstructured2DAmsProlongation(SuperArrayManager):
         B = self.get_B_matrix(T, epsilon=epsilon, w=w)
         return T + B
         
+    def get_finite_volume_restriction_operator(self, fine_ids, primal_ids):
 
-            
-
-
-
-
-
-
-
-
-
-
-
+        cids = np.unique(primal_ids)
+        data_or = np.ones(fine_ids.shape[0], dtype=np.float64)
+        OR = sp.csc_matrix((data_or, (primal_ids, fine_ids)), shape=(cids.shape[0], fine_ids.shape[0]))
+        return OR
 
     def get_global_op(self, coarse_faces: np.ndarray, fine_faces: np.ndarray):
         OP = sp.lil_matrix((fine_faces.shape[0], coarse_faces.shape[0]))

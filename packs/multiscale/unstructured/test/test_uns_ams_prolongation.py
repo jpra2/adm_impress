@@ -5,7 +5,7 @@ from packs.preprocess.create_mesh_properties_from_meshiowrapper import create_me
 from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d_v2 import create_dual
 from packs import defnames
 from packs.manager import MeshProperty, MeshData, BoundaryConditions
-from packs.multiscale.unstructured.operators.prolongation.ams import Unstructured2DAmsProlongation
+from packs.multiscale.unstructured.operators.prolongation.ams import Unstructured2DAmsOperator
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 from packs.utils.profile_functions import profile
@@ -15,6 +15,7 @@ from packs.adm.adm_operators import Adm
 import numpy as np
 from scipy.sparse.linalg import spsolve
 import scipy.sparse as sp
+import os
 
 
 def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty):
@@ -72,8 +73,8 @@ def define_boundary_conditions(fine_mesh_properties: MeshProperty):
     
     bc_nodes = np.concatenate([dirichlet_nodes1, dirichlet_nodes0])
     nodes_values = np.concatenate([
-        np.repeat(1.0, dirichlet_nodes1.shape[0]),
-        np.repeat(0.0, dirichlet_nodes0.shape[0])
+        np.repeat(10.0, dirichlet_nodes1.shape[0]),
+        np.repeat(1.0, dirichlet_nodes0.shape[0])
     ])
 
     bc.set_boundary('dirichlet_nodes', bc_nodes, nodes_values)
@@ -96,7 +97,7 @@ def func2(lsds: LsdsFluxCalculation, bc: BoundaryConditions, fine_mesh_propertie
     return resp
 
 # @profile
-def func3(ams_prolongation: Unstructured2DAmsProlongation, transmissibility_without_bc, diagonal_term):
+def func3(ams_prolongation: Unstructured2DAmsOperator, transmissibility_without_bc, diagonal_term):
     local_matrices = ams_prolongation.get_local_transmissibility_matrix(
         ams_prolongation['dual_volumes'],
         transmissibility_without_bc,
@@ -159,11 +160,12 @@ def run():
     create_primal_ids(fine_mesh_properties, coarse_mesh_properties)
     create_dual_ids(fine_mesh_properties, coarse_mesh_properties)
     
-    ams_prolongation = Unstructured2DAmsProlongation()
+    ams_prolongation = Unstructured2DAmsOperator()
 
     ams_prolongation.insert_ams_data(
         {
-            defnames.dual_volumes_str: fine_mesh_properties[defnames.get_dual_volumes_name_by_level(1)],
+            # defnames.dual_volumes_str: fine_mesh_properties[defnames.get_dual_volumes_name_by_level(1)],
+            defnames.dual_volumes_str: np.array([fine_mesh_properties['faces']]),
             defnames.fine_primal_id: fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
             defnames.fine_dual_id: fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
         }
@@ -206,23 +208,26 @@ def run():
     #     **fine_mesh_properties.get_all_data()
     # )
 
-    resp = func2(lsds, bc, fine_mesh_properties)
-
-    
+    resp = func2(lsds, bc, fine_mesh_properties)    
 
     OP_AMS = ams_prolongation.get_global_op(coarse_mesh_properties['faces'], fine_mesh_properties['faces'])
 
     ams_prolongation.insert_data_in_global_OP(
         ams_prolongation[ams_prolongation.dual_volumes_str],
-        monotone_transm,
+        transm['transmissibility_without_bc'],
         np.zeros(resp['source'].shape[0]),
         OP_AMS
+    )
+
+    OR_AMS = ams_prolongation.get_finite_volume_restriction_operator(
+        fine_mesh_properties['faces'],
+        fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
     )
 
     # export_op(fine_mesh_path, OP_AMS)
     # import pdb; pdb.set_trace()
 
-    # pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+    pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
     ### adm
     adm = Adm()
@@ -260,15 +265,41 @@ def run():
     #     'adm_edges'
     # )
 
-    OP_adm = adm.get_adm_prolongation_operator(
+    OP_adm, OR_adm = adm.get_adm_prolongation_operator(
         [OP_AMS],
+        [OR_AMS],
         fine_levels,
         list_primal_ids,
         list_dual_ids,
         fine_mesh_properties['faces'],
         2
     )
-    
+
+    T_adm = OR_adm*(resp['transmissibility']*OP_adm)
+    Q_adm = OR_adm*resp['source']
+    P_adm = spsolve(T_adm.tocsc(), Q_adm)
+    P_prol = OP_adm*P_adm
+
+    error = np.absolute(pressure - P_prol)
+    relative_error = (error/pressure)*100
+
+    mesh_data = MeshData(mesh_path = os.path.join('remove', 'flying_mesh.h5m'))
+    mesh_data.create_tag('pressure')
+    mesh_data.insert_tag_data('pressure', pressure, elements_type='faces')
+
+    mesh_data.create_tag('adm_prol_pressure')
+    mesh_data.insert_tag_data('adm_prol_pressure', P_prol, elements_type='faces')
+
+    mesh_data.create_tag('absolute_error')
+    mesh_data.insert_tag_data('absolute_error', error, elements_type='faces')
+
+    mesh_data.create_tag('relative_error')
+    mesh_data.insert_tag_data('relative_error', relative_error, elements_type='faces')
+
+    mesh_data.export_all_elements_type_to_vtk('adm_solution_classic_global', element_type='faces')
+
+
+
 
 
 
