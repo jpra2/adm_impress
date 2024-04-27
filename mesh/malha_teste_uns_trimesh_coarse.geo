@@ -1,6 +1,6 @@
 Lx = 160;
 Ly = Lx/2;
-gridsize = 1;
+gridsize = 25;
 gridsizee = gridsize/3;
 
 Point(1) = {0, 0, 0, gridsize};
@@ -17,9 +17,8 @@ Line Loop(9) = {5, 6, 7, 8};
 
 Plane Surface(10) = {9};
 
+Physical Line("Boundary") = {5, 6, 7, 8};
+Physical Surface("Volume") = {10};
 Physical Line("Inflow") = {8};
 Physical Line("Outflow") = {6};
-Physical Line("Walls") = {5, 7};
-Physical Line("Boundary") = {5, 6, 7, 8};
-
-Physical Surface("Volume") = {10};
+Physical Line("Wall") = {5, 7};

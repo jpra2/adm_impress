@@ -3,7 +3,7 @@ from packs.utils import calculate_face_properties
 from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import create_properties_if_not_exists
 import numpy as np
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
-
+from packs.preprocess.create_mesh_properties_from_meshiowrapper import insert_physical_tags
 
 class MpfaPreprocess:
     
@@ -123,11 +123,14 @@ class MpfaPreprocess:
 
 
 
-def preprocess_mesh(mesh_name, mesh_properties_name) -> MeshProperty:
+def preprocess_mesh(mesh_name, mesh_properties_name, mesh_name_v4='') -> MeshProperty:
     mpfa_preprocess = MpfaPreprocess()
     mesh_properties = mpfa_preprocess.create_properties_if_not_exists(mesh_name, mesh_properties_name)
     mpfa_preprocess.preprocess_data_lsds(mesh_properties)
     mpfa_preprocess.calculate_areas(mesh_properties)
     mpfa_preprocess.calculate_h_dist(mesh_properties)
+    _ = mesh_properties.faces_of_faces
+    _ = mesh_properties.faces_of_faces_by_nodes
+    insert_physical_tags(mesh_path=mesh_name, mesh_properties=mesh_properties, mesh_name_v4=mesh_name_v4)
 
     return mesh_properties

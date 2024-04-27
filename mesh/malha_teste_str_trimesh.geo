@@ -18,3 +18,9 @@ Plane Surface(10) = 9;
 
 Transfinite Line{5, 6, 7, 8} = n + 1;
 Transfinite Surface{10};
+
+Physical Line("Boundary") = {5, 6, 7, 8};
+Physical Surface("Volume") = {10};
+Physical Line("Inflow") = {8};
+Physical Line("Outflow") = {6};
+Physical Line("Wall") = {5, 7};

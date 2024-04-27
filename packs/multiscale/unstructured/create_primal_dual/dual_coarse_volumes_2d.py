@@ -232,22 +232,25 @@ def get_dual_volumes_2d(dual_id: np.ndarray, fine_faces_id: np.ndarray, fine_fac
 
 def get_dual_interaction_region(dual_volumes, coarse_faces_id, fine_faces_id, primal_id, dual_id):
     regions = []
-    for coarse_id in coarse_faces_id:
+    vertices_selected = np.repeat(-1, coarse_faces_id.shape[0])
+
+    for i, coarse_id in enumerate(coarse_faces_id):
         region = []
         fine_vertice_id = fine_faces_id[
             (dual_id == defnames.dual_ids('vertice_id')) & (primal_id == coarse_id)
         ]
+        vertices_selected[i] = fine_vertice_id
 
         for dual_volume in dual_volumes:
             if np.intersect1d(dual_volume, fine_vertice_id).shape[0] == 1:
                 region.append(dual_volume)
-        
+           
         region = np.unique(np.concatenate(region))
-
         regions.append(region)
     
     regions = np.array(regions, dtype='O')
-    return regions
+    
+    return regions, vertices_selected
 
 
 def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty, level:int):
@@ -291,7 +294,7 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
         fine_faces_of_faces_by_faces=fine_mesh_properties.faces_of_faces
     )
 
-    regions = get_dual_interaction_region(
+    regions, vertices_selected = get_dual_interaction_region(
         dual_volumes,
         coarse_mesh_properties['faces'],
         fine_mesh_properties['faces'],
@@ -302,7 +305,8 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
     data = {
         defnames.get_dual_id_name_by_level(level): dual_id,
         defnames.get_dual_volumes_name_by_level(level): dual_volumes,
-        defnames.get_dual_interation_region_name_by_level(level): regions
+        defnames.get_dual_interation_region_name_by_level(level): regions,
+        defnames.vertices_selected + "_level" + str(level): vertices_selected
     }
 
     return data

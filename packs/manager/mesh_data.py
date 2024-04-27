@@ -56,8 +56,11 @@ class MeshData(MeshInit):
         all_elements = self.get_all_elements(elements_type)
         all_elements = np.array(all_elements).astype(np.uint64)
         
-        if elements_array == 'all':
-            to_elements = all_elements
+        if isinstance(elements_array, str):
+            if elements_array == 'all':
+                to_elements = all_elements
+            else:
+                raise NotImplementedError
         else:        
             to_elements = all_elements[elements_array]
         

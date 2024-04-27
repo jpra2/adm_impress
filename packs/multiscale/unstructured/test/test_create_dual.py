@@ -1,10 +1,11 @@
 from .create_primal_test import get_fine_mesh_path_and_mesh_properties_name_for_test, get_coarse_mesh_path_and_mesh_properties_name_for_test
 from packs.multiscale.unstructured.create_primal_dual.primal_coarse_volumes_2d import create_coarse_volumes
-from packs.preprocess.create_mesh_properties_from_meshiowrapper import create_meshproperties_from_meshio_if_not_exists, _create_flying_mesh
+# from packs.preprocess.create_mesh_properties_from_meshiowrapper import create_meshproperties_from_meshio_if_not_exists, _create_flying_mesh
 from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d import create_dual
 # from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d_v2 import create_dual
 from packs import defnames
 from packs.manager import MeshProperty, MeshData
+from packs.mpfa_methods.mesh_preprocess import preprocess_mesh
 
 def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty):
     if defnames.fine_primal_id not in fine_mesh_properties.keys():
@@ -32,8 +33,11 @@ def run():
     fine_mesh_path, fine_mesh_properties_name = get_fine_mesh_path_and_mesh_properties_name_for_test()
     coarse_mesh_path, coarse_mesh_properties_name = get_coarse_mesh_path_and_mesh_properties_name_for_test()
 
-    fine_mesh_properties = create_meshproperties_from_meshio_if_not_exists(fine_mesh_path, fine_mesh_properties_name)
-    coarse_mesh_properties = create_meshproperties_from_meshio_if_not_exists(coarse_mesh_path, coarse_mesh_properties_name)
+    # fine_mesh_properties = create_meshproperties_from_meshio_if_not_exists(fine_mesh_path, fine_mesh_properties_name)
+    # coarse_mesh_properties = create_meshproperties_from_meshio_if_not_exists(coarse_mesh_path, coarse_mesh_properties_name)
+
+    fine_mesh_properties = preprocess_mesh(mesh_name=fine_mesh_path, mesh_properties_name=fine_mesh_properties_name)
+    coarse_mesh_properties = preprocess_mesh(mesh_name=coarse_mesh_path, mesh_properties_name=coarse_mesh_properties_name)
 
     create_primal_ids(fine_mesh_properties, coarse_mesh_properties)   
 
@@ -46,7 +50,7 @@ def run():
     key_str = defnames.get_dual_id_name_by_level(level=1)
     data = dual_data.get(key_str)
 
-    flying_fine_mesh_path = _create_flying_mesh(fine_mesh_path)
+    flying_fine_mesh_path = fine_mesh_path
     mesh_data = MeshData(mesh_path=flying_fine_mesh_path)   
     mesh_data.create_tag(key_str, data_type='int')
     mesh_data.insert_tag_data(key_str, data, elements_type='faces', elements_array=fine_mesh_properties['faces'])
@@ -61,6 +65,10 @@ def run():
     regions = dual_data[interaction_regions_name]
 
     mesh_data.export_list_elements_array_data(interaction_regions_name, 'faces', regions)
+
+    # selected_edges_name = defnames.edges_selected + '_level' + str(1) 
+    # edges_data = dual_data[selected_edges_name]
+    # mesh_data.export_list_elements_array_data(selected_edges_name, 'faces', edges_data)
 
 
 

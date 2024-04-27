@@ -3,7 +3,6 @@ from pymoab import core, types, rng, topo_util
 from packs.manager.meshmanager import MeshProperty
 import numpy as np
 from packs import defpaths
-from packs.mpfa_methods.mesh_preprocess import preprocess_mesh
 import os
 from packs.utils.test_functions import test_mesh_path
 
@@ -37,8 +36,13 @@ def _verify_mesh_properties_exists(mesh_properties_name):
     mesh_properties.insert_mesh_name(mesh_properties_name)
     return mesh_properties.exists()
 
-def insert_physical_tags(mesh_path, mesh_properties: MeshProperty):
-    meshio_data = MeshioWrapper(mesh_path)
+def insert_physical_tags(mesh_path, mesh_properties: MeshProperty, mesh_name_v4=''):
+
+    if mesh_name_v4=='':
+        meshio_data = MeshioWrapper(mesh_path)
+    else:
+        meshio_data = MeshioWrapper(mesh_name_v4)
+    
     tags = meshio_data.physical_tags
     mesh_elements = {
         'line': 'edge'
@@ -61,20 +65,16 @@ def insert_physical_tags(mesh_path, mesh_properties: MeshProperty):
                     edges_to_get.append(edges[test])
                 
                 edges_to_get = np.unique(np.concatenate(edges_to_get))
-                mesh_properties.insert_data({
+                mesh_properties.insert_or_update_data({
                     tag: edges_to_get
                 })
 
             else:
                 raise  NotImplementedError
 
-                
-
-
-
-
 def create_meshproperties_from_meshio(mesh_path:str, mesh_properties_name: str):
     flying_mesh_path = _create_flying_mesh(mesh_path)
+    from packs.mpfa_methods.mesh_preprocess import preprocess_mesh
     mesh_properties = preprocess_mesh(flying_mesh_path, mesh_properties_name)
     insert_physical_tags(mesh_path, mesh_properties)
 

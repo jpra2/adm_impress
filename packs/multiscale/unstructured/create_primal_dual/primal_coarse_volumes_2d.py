@@ -3,6 +3,10 @@ from packs.utils.utils_old import get_box_v2_2d
 import numpy as np
 from shapely.geometry import Point, Polygon
 from packs import defnames
+import scipy.sparse as sp
+from scipy.sparse.csgraph import shortest_path
+from packs.utils import utils_old
+import time
 
 def _define_fine_volumes_in_coarse_volumes_step1(all_fine_faces_centroids, all_fine_faces_ids, coarse_points_face, coarse_nodes_centroids):
     coarse_centroids_of_face = coarse_nodes_centroids[coarse_points_face]
@@ -24,6 +28,7 @@ def _get_faces_in_coarse_volume(fine_faces_step1, all_fine_faces_centroids, coar
 
 def verify_fine_adjacencies(fine_primal_ids, coarse_faces_ids, fine_adjacencies, fine_faces_of_faces, fine_faces_centroids, coarse_faces_centroids, coarse_faces_of_faces):
     fine_coarse_adjacencies = fine_primal_ids[fine_adjacencies]
+    fine_coarse_adjacencies[fine_adjacencies[:, 1] == -1, 1] = -1
     
     for coarse_face in coarse_faces_ids:
         test1 = fine_coarse_adjacencies[:, 0] == coarse_face
@@ -57,17 +62,101 @@ def verify_fine_adjacencies(fine_primal_ids, coarse_faces_ids, fine_adjacencies,
                 ]
                 
                 fine_primal_ids[test_fine_faces[i]] = coarse_id_selected[0]
+
+def coarse_integrity_check(face_test, fine_adjacencies, fine_faces_centroids, fine_faces_id, primal_id, coarse_face, centroid_coarse_face, fine_edges_id, fine_edges_centroids):
+    
+    fine_faces_in_coarse_face = fine_faces_id[primal_id == coarse_face]
+    dists = np.linalg.norm(centroid_coarse_face - fine_faces_centroids[fine_faces_in_coarse_face], axis=1)
+    fine_face_in_coarse_centroid = fine_faces_in_coarse_face[dists <= dists.min()]
+    
+    edges_in_coarse_face = fine_edges_id[
+        (primal_id[fine_adjacencies[:, 0]] == coarse_face) | 
+        (primal_id[fine_adjacencies[:, 1]] == coarse_face)
+    ]
+    fine_adjacencies_local = fine_adjacencies[edges_in_coarse_face]
+    fine_faces_for_local_graph = np.unique(fine_adjacencies_local)
+    n_faces = fine_faces_for_local_graph.shape[0]
+
+    local_map = np.arange(fine_faces_for_local_graph.shape[0])
+    local_adjacencies = fine_adjacencies_local.copy()
+    local_adjacencies[:, 0] = np.array([local_map[fine_faces_for_local_graph==i][0] for i in fine_adjacencies_local[:, 0]])
+    local_adjacencies[:, 1] = np.array([local_map[fine_faces_for_local_graph==i][0] for i in fine_adjacencies_local[:, 1]])
+    lr = local_adjacencies
+
+    local_dists = np.zeros(local_adjacencies.shape)
+    local_dists[:, 0] = np.linalg.norm(fine_edges_centroids[edges_in_coarse_face] - fine_faces_centroids[fine_adjacencies[edges_in_coarse_face, 0]], axis=1)
+    local_dists[:, 1] = np.linalg.norm(fine_edges_centroids[edges_in_coarse_face] - fine_faces_centroids[fine_adjacencies[edges_in_coarse_face, 1]], axis=1)
+    local_dists = local_dists.sum(axis=1)
+
+    local_graph = sp.csr_matrix((local_dists, (lr[:, 0], lr[:, 1])), shape=(n_faces, n_faces))
+    D, Pr = shortest_path(local_graph, directed=False, method='D', return_predecessors=True)
+    from_node = local_map[fine_faces_for_local_graph==fine_face_in_coarse_centroid[0]][0]
+    target_node = local_map[fine_faces_for_local_graph==face_test][0]
+    local_path = utils_old.get_Path(Pr, from_node, target_node)
+    path = np.array([fine_faces_for_local_graph[local_map==i][0] for i in local_path]).astype(np.int64)
+
+    return path
+
+def verify_fine_adjacencies_v2(fine_faces_id, primal_id, fine_adjacencies, fine_faces_centroids, coarse_faces_centroids, coarse_faces_id, fine_edges_id, fine_bool_boundary_edges, fine_edges_centroids, fine_faces_of_faces):
+
+    fine_bool_internal_edges = ~fine_bool_boundary_edges
+    
+    for coarse_face in coarse_faces_id:
+        t0 = time.time()
+        centroid_coarse_face = coarse_faces_centroids[coarse_face]
         
+        edges_in_boundary_coarse_face = fine_edges_id[
+            (
+                (primal_id[fine_adjacencies[:, 0]] == coarse_face) & 
+                (primal_id[fine_adjacencies[:, 1]] != coarse_face)
+            ) |
+            (
+                (primal_id[fine_adjacencies[:, 1]] == coarse_face) & 
+                (primal_id[fine_adjacencies[:, 0]] != coarse_face)
+            ) & 
+            fine_bool_internal_edges
+        ]
+
+        faces_in_boundary_coarse_face = np.unique(fine_adjacencies[edges_in_boundary_coarse_face])
+        faces_for_test = faces_in_boundary_coarse_face[
+            primal_id[faces_in_boundary_coarse_face] == coarse_face
+        ]
+
+        # import pdb; pdb.set_trace()
+        faces_of_faces_for_test = fine_faces_of_faces[faces_for_test]
+        test = np.array([utils_old.allUnique(primal_id[i]) for i in faces_of_faces_for_test])
+        faces_for_test = faces_for_test[test]
+
+
+        for face_test in faces_for_test:
+            path = coarse_integrity_check(
+                face_test,
+                fine_adjacencies,
+                fine_faces_centroids,
+                fine_faces_id,
+                primal_id,
+                coarse_face,
+                centroid_coarse_face,
+                fine_edges_id,
+                fine_edges_centroids
+            )
+
+            primal_id[path] = coarse_face
+        t1 = time.time()
+
+        print(f"Coarse face: {coarse_face} finished with {t1-t0} seconds \n")
+
+
         
-        
-        
+
+
         
         
         
         
     
 
-def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_level1, nodes_centroids_level1, nodes_of_faces_level1, adjacencies_level0, faces_of_faces_level0, faces_centroids_level1, faces_of_faces_level1, level:int):
+def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_level1, nodes_centroids_level1, nodes_of_faces_level1, adjacencies_level0, faces_of_faces_level0, faces_centroids_level1, faces_of_faces_level1, level:int, edges_ids_level0, bool_boundary_edges_level0, edges_centroids_level0):
     """Insert the 'primal_fine_ids' tag in mesh_properties_level0
 
     Args:
@@ -106,14 +195,27 @@ def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_lev
         # TODO : criar funcao para verificar as faces que nao foram definidas em algum coarse volume
         raise NotImplementedError
     
-    verify_fine_adjacencies(
-        fine_primal_ids=fine_primal_ids,
-        coarse_faces_ids=faces_ids_level1,
+    # verify_fine_adjacencies(
+    #     fine_primal_ids=fine_primal_ids,
+    #     coarse_faces_ids=faces_ids_level1,
+    #     fine_adjacencies=adjacencies_level0,
+    #     fine_faces_of_faces=faces_of_faces_level0,
+    #     fine_faces_centroids=faces_centroids_level0,
+    #     coarse_faces_centroids=faces_centroids_level1,
+    #     coarse_faces_of_faces=faces_of_faces_level1
+    # )
+
+    verify_fine_adjacencies_v2(
+        fine_faces_id=faces_id_level0,
+        primal_id=fine_primal_ids,
         fine_adjacencies=adjacencies_level0,
-        fine_faces_of_faces=faces_of_faces_level0,
         fine_faces_centroids=faces_centroids_level0,
         coarse_faces_centroids=faces_centroids_level1,
-        coarse_faces_of_faces=faces_of_faces_level1
+        coarse_faces_id=faces_ids_level1,
+        fine_edges_id=edges_ids_level0,
+        fine_bool_boundary_edges=bool_boundary_edges_level0,
+        fine_edges_centroids=edges_centroids_level0,
+        fine_faces_of_faces=faces_of_faces_level0
     )
 
     data = {

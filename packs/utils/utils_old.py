@@ -177,3 +177,6 @@ def mount_graph(adjacencies, dists, coarse_gid, coarse_adj_fine, fine_vertice, f
             
             return path
     
+def allUnique(x):
+    seen = set()
+    return not any(i in seen or seen.add(i) for i in x)

@@ -1,8 +1,8 @@
 from .create_primal_test import get_fine_mesh_path_and_mesh_properties_name_for_test, get_coarse_mesh_path_and_mesh_properties_name_for_test
 from packs.multiscale.unstructured.create_primal_dual.primal_coarse_volumes_2d import create_coarse_volumes
 from packs.preprocess.create_mesh_properties_from_meshiowrapper import create_meshproperties_from_meshio_if_not_exists, _create_flying_mesh
-# from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d import create_dual
-from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d_v2 import create_dual
+from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d import create_dual
+# from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d_v2 import create_dual
 from packs import defnames
 from packs.manager import MeshProperty, MeshData, BoundaryConditions
 from packs.multiscale.unstructured.operators.prolongation.ams import Unstructured2DAmsOperator
@@ -11,6 +11,7 @@ from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_
 from packs.utils.profile_functions import profile
 from packs.utils.multiscale_methods import print_adm_interfaces_2d
 from packs.adm.adm_operators import Adm
+from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
 
 import numpy as np
 from scipy.sparse.linalg import spsolve
@@ -84,6 +85,18 @@ def define_boundary_conditions(fine_mesh_properties: MeshProperty):
 
     return bc
 
+def update_permeability(fine_mesh_properties: MeshProperty):
+    np.random.seed(5)
+    n_faces = fine_mesh_properties['faces'].shape[0]
+    permeability = np.zeros((n_faces, 2, 2))
+    v1 = np.random.randint(0, 6, size=n_faces)
+    perms = np.float_power(10, -v1)
+    permeability[:, 0, 0] = perms
+    permeability[:, 1, 1] = perms
+
+    fine_mesh_properties.insert_or_update_data({
+        'permeability': permeability
+    })
 
 def func1(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation):
     transm = lsds.mount_transmissibility_matrix_without_bc(**fine_mesh_properties.get_all_data())
@@ -107,7 +120,8 @@ def func3(ams_prolongation: Unstructured2DAmsOperator, transmissibility_without_
 
 def export_op(mesh_path, OP_AMS):
 
-    flying_mesh_path = _create_flying_mesh(mesh_path)
+    # flying_mesh_path = _create_flying_mesh(mesh_path)
+    flying_mesh_path = mesh_path
 
 
     mesh_data = MeshData(mesh_path=flying_mesh_path)
@@ -127,14 +141,14 @@ def export_op(mesh_path, OP_AMS):
         data_array.append(data[test])
 
     mesh_data.insert_array_tag_data(
-        'OP_AMS_MONOTONE',
+        'OP_AMS_MON',
         data_array,
         'faces',
         elements
     )
 
     mesh_data.export_all_elements_type_to_vtk(
-        'test_op_ams_monotone',
+        'op_ams_monotone_097',
         'faces'
     )
     
@@ -151,14 +165,26 @@ def export_adm_levels(mesh_path, fine_levels):
 def run():
     lsds = LsdsFluxCalculation()
 
-    fine_mesh_path, fine_mesh_properties_name = get_fine_mesh_path_and_mesh_properties_name_for_test()
+    fine_mesh_path, fine_mesh_properties_name, fine_mesh_path_v4 = get_fine_mesh_path_and_mesh_properties_name_for_test()
     coarse_mesh_path, coarse_mesh_properties_name = get_coarse_mesh_path_and_mesh_properties_name_for_test()
 
-    fine_mesh_properties = create_meshproperties_from_meshio_if_not_exists(fine_mesh_path, fine_mesh_properties_name)
-    coarse_mesh_properties = create_meshproperties_from_meshio_if_not_exists(coarse_mesh_path, coarse_mesh_properties_name)
+    # fine_mesh_properties = create_meshproperties_from_meshio_if_not_exists(fine_mesh_path, fine_mesh_properties_name)
+    # coarse_mesh_properties = create_meshproperties_from_meshio_if_not_exists(coarse_mesh_path, coarse_mesh_properties_name)
+
+    fine_mesh_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name, mesh_name_v4=fine_mesh_path_v4)
+    coarse_mesh_properties = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
+
+    # mesh_data = MeshData(mesh_path = fine_mesh_path)
+    # mesh_data.create_tag('permeability')
+    # perms = fine_mesh_properties.permeability[:, 0, 0]
+    # mesh_data.insert_tag_data('permeability', perms, elements_type='faces')
+    # mesh_data.export_all_elements_type_to_vtk('perm_field', element_type='faces')
+
 
     create_primal_ids(fine_mesh_properties, coarse_mesh_properties)
     create_dual_ids(fine_mesh_properties, coarse_mesh_properties)
+
+    # update_permeability(fine_mesh_properties)
     
     ams_prolongation = Unstructured2DAmsOperator()
 
@@ -199,7 +225,8 @@ def run():
     transm = func1(fine_mesh_properties, lsds)
     monotone_transm = ams_prolongation.get_monotone_matrix(
         transm['transmissibility_without_bc'],
-        epsilon=0.0001
+        epsilon=0.0001,
+        w=0.97
     )
 
     
@@ -214,7 +241,7 @@ def run():
 
     ams_prolongation.insert_data_in_global_OP(
         ams_prolongation[ams_prolongation.dual_volumes_str],
-        transm['transmissibility_without_bc'],
+        monotone_transm,
         np.zeros(resp['source'].shape[0]),
         OP_AMS
     )
@@ -224,8 +251,8 @@ def run():
         fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
     )
 
-    # export_op(fine_mesh_path, OP_AMS)
-    # import pdb; pdb.set_trace()
+    export_op(fine_mesh_path, OP_AMS)
+    import pdb; pdb.set_trace()
 
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 

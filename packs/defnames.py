@@ -14,6 +14,8 @@ fine_primal_id = 'primal_id'
 fine_dual_id = 'dual_id'
 dual_volumes_str = 'dual_volumes'
 dual_interation_region = 'dual_interation_region'
+vertices_selected = 'vertices_selected'
+edges_selected = 'edges_selected'
 
 def get_primal_id_name_by_level(level:int):
     return '_'.join([fine_primal_id, 'level' + str(level)])
