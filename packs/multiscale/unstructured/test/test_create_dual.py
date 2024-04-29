@@ -8,7 +8,8 @@ from packs.manager import MeshProperty, MeshData
 from packs.mpfa_methods.mesh_preprocess import preprocess_mesh
 
 def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty):
-    if defnames.fine_primal_id not in fine_mesh_properties.keys():
+     key1 = defnames.get_primal_id_name_by_level(1)
+     if not fine_mesh_properties.verify_name_in_data_names(key1):
     
         fine_primal_ids = create_coarse_volumes(
             faces_id_level0=fine_mesh_properties['faces'],
@@ -20,7 +21,10 @@ def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties
             faces_of_faces_level0=fine_mesh_properties.faces_of_faces,
             faces_centroids_level1=coarse_mesh_properties['faces_centroids'],
             faces_of_faces_level1=coarse_mesh_properties.faces_of_faces,
-            level=1
+            level=1,
+            edges_ids_level0=fine_mesh_properties['edges'],
+            bool_boundary_edges_level0=fine_mesh_properties['bool_boundary_edges'],
+            edges_centroids_level0=fine_mesh_properties.edges_centroids
         )
 
         fine_mesh_properties.insert_or_update_data(
@@ -30,13 +34,13 @@ def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties
         fine_mesh_properties.export_data()
 
 def run():
-    fine_mesh_path, fine_mesh_properties_name = get_fine_mesh_path_and_mesh_properties_name_for_test()
+    fine_mesh_path, fine_mesh_properties_name, fine_mesh_name_v4 = get_fine_mesh_path_and_mesh_properties_name_for_test()
     coarse_mesh_path, coarse_mesh_properties_name = get_coarse_mesh_path_and_mesh_properties_name_for_test()
 
     # fine_mesh_properties = create_meshproperties_from_meshio_if_not_exists(fine_mesh_path, fine_mesh_properties_name)
     # coarse_mesh_properties = create_meshproperties_from_meshio_if_not_exists(coarse_mesh_path, coarse_mesh_properties_name)
 
-    fine_mesh_properties = preprocess_mesh(mesh_name=fine_mesh_path, mesh_properties_name=fine_mesh_properties_name)
+    fine_mesh_properties = preprocess_mesh(mesh_name=fine_mesh_path, mesh_properties_name=fine_mesh_properties_name, mesh_name_v4=fine_mesh_name_v4)
     coarse_mesh_properties = preprocess_mesh(mesh_name=coarse_mesh_path, mesh_properties_name=coarse_mesh_properties_name)
 
     create_primal_ids(fine_mesh_properties, coarse_mesh_properties)   

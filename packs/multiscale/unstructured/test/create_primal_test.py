@@ -52,6 +52,8 @@ def run():
         fine_primal_ids
     )
 
+    fine_mesh_properties.export_data()
+
     key_str = list(fine_primal_ids.keys())[0]
     data = list(fine_primal_ids.values())[0]
 
