@@ -51,6 +51,8 @@ def run():
         dual_data
     )
 
+    fine_mesh_properties.export_data()
+
     key_str = defnames.get_dual_id_name_by_level(level=1)
     data = dual_data.get(key_str)
 
@@ -69,6 +71,11 @@ def run():
     regions = dual_data[interaction_regions_name]
 
     mesh_data.export_list_elements_array_data(interaction_regions_name, 'faces', regions)
+
+    dual_boundarys_name = 'dual_boundary'
+    boundarys = dual_data[defnames.boundary_dual_interaction + defnames.level_str(1)]
+
+    mesh_data.export_list_elements_array_data(dual_boundarys_name, 'faces', boundarys)
 
     # selected_edges_name = defnames.edges_selected + '_level' + str(1) 
     # edges_data = dual_data[selected_edges_name]

@@ -4,6 +4,7 @@ import numpy as np
 import scipy.sparse as sp
 from typing import Sequence
 from packs.multiscale.operators.prolongation.AMS.ams_mpfa import AMSMpfa
+from packs.utils import utils_old
 
 class Unstructured2DAmsOperator(SuperArrayManager):
 
@@ -76,13 +77,8 @@ class Unstructured2DAmsOperator(SuperArrayManager):
         return local_matrices
     
     def get_local_matrix(self, local_volumes, T: sp.csc_matrix, diagonal_term):
-        T2 = T[local_volumes][:,local_volumes].copy()
-        data = np.array(T2.sum(axis=1).transpose())[0]
-        data2 = T2.diagonal()
-        data2 -= data
-        data2 += diagonal_term[local_volumes]
-        T2.setdiag(data2)
-        return T2
+        
+        return utils_old.get_local_matrix(local_volumes, T, diagonal_term)
 
     def get_local_ams_op(self, list_of_volumes: Sequence[np.ndarray], T: sp.csc_matrix, diagonal_term: np.ndarray):
 

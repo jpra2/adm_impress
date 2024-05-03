@@ -12,11 +12,14 @@ from packs.utils.profile_functions import profile
 from packs.utils.multiscale_methods import print_adm_interfaces_2d
 from packs.adm.adm_operators import Adm
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
+from packs.multiscale.unstructured.operators.prolongation.dual_interaction_region import create_dual_interaction_regions
+from packs.multiscale.unstructured.operators.prolongation.get_op_from_amsu import update_global_op_from_amsu
 
 import numpy as np
 from scipy.sparse.linalg import spsolve
 import scipy.sparse as sp
 import os
+from typing import Sequence
 
 
 def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty):
@@ -118,6 +121,9 @@ def func3(ams_prolongation: Unstructured2DAmsOperator, transmissibility_without_
     )
     return local_matrices
 
+
+
+
 def export_op(mesh_path, OP_AMS):
 
     # flying_mesh_path = _create_flying_mesh(mesh_path)
@@ -141,14 +147,14 @@ def export_op(mesh_path, OP_AMS):
         data_array.append(data[test])
 
     mesh_data.insert_array_tag_data(
-        'OP_AMS_MON',
+        'OP',
         data_array,
         'faces',
         elements
     )
 
     mesh_data.export_all_elements_type_to_vtk(
-        'op_ams_monotone_097',
+        'op_amsU',
         'faces'
     )
     
@@ -235,16 +241,31 @@ def run():
     #     **fine_mesh_properties.get_all_data()
     # )
 
-    resp = func2(lsds, bc, fine_mesh_properties)    
+    resp = func2(lsds, bc, fine_mesh_properties)
+
+    level_str = defnames.level_str(1)
+
+    interaction_regions = create_dual_interaction_regions(
+        fine_mesh_properties[defnames.get_dual_interation_region_name_by_level(1)],
+        fine_mesh_properties[defnames.vertices_selected + level_str],
+        fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
+        fine_mesh_properties[defnames.boundary_dual_interaction + level_str],
+        fine_mesh_properties[defnames.internal_dual_path + level_str],
+        fine_mesh_properties[defnames.dual_initial_ccs + level_str],
+        global_transmissibility=transm['transmissibility_without_bc'],
+        global_diagonal_term=np.zeros(resp['source'].shape[0])
+    )  
 
     OP_AMS = ams_prolongation.get_global_op(coarse_mesh_properties['faces'], fine_mesh_properties['faces'])
 
-    ams_prolongation.insert_data_in_global_OP(
-        ams_prolongation[ams_prolongation.dual_volumes_str],
-        monotone_transm,
-        np.zeros(resp['source'].shape[0]),
-        OP_AMS
-    )
+    # ams_prolongation.insert_data_in_global_OP(
+    #     ams_prolongation[ams_prolongation.dual_volumes_str],
+    #     monotone_transm,
+    #     np.zeros(resp['source'].shape[0]),
+    #     OP_AMS
+    # )
+
+    update_global_op_from_amsu(interaction_regions, OP_AMS)
 
     OR_AMS = ams_prolongation.get_finite_volume_restriction_operator(
         fine_mesh_properties['faces'],

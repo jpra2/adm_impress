@@ -501,6 +501,8 @@ def get_dual_interaction_region_v2(
     vertices_selected = np.repeat(-1, coarse_faces_id.shape[0])
     boundarys = []
     internal_paths = []
+    initial_ccs = []
+
 
     for i, coarse_id in enumerate(coarse_faces_id):
         region = []
@@ -538,15 +540,23 @@ def get_dual_interaction_region_v2(
         )
         boundarys.append(boundary)
 
+        edges_path_of_vertice = np.unique(
+            np.concatenate(edge_paths[
+            np.isin(coarse_edges_path, edges_of_coarse_id)
+        ]))
 
+        internal_paths.append(edges_path_of_vertice)
 
-        import pdb; pdb.set_trace()
+        first_cc = np.intersect1d(boundary, edges_path_of_vertice)
+        initial_ccs.append(first_cc)
 
     
     regions = np.array(regions, dtype='O')
     boundarys = np.array(boundarys, dtype='O')
+    internal_paths = np.array(internal_paths, dtype='O')
+    initial_ccs = np.array(initial_ccs, dtype='O')
     
-    return regions, vertices_selected
+    return regions, vertices_selected, boundarys, internal_paths, initial_ccs
 
 
 def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty, level:int):
@@ -600,7 +610,7 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
         edge_paths=edge_paths
     )
 
-    regions, vertices_selected = get_dual_interaction_region_v2(
+    regions, vertices_selected, boundarys, internal_paths, initial_ccs = get_dual_interaction_region_v2(
         dual_volumes,
         coarse_mesh_properties['faces'],
         fine_mesh_properties['faces'],
@@ -611,14 +621,17 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
         edge_paths=edge_paths,
         coarse_edges_of_faces=coarse_mesh_properties['edges_of_faces']
     )
+
+    level_str = defnames.level_str(level)
     
     data = {
         defnames.get_dual_id_name_by_level(level): dual_id,
         defnames.get_dual_volumes_name_by_level(level): dual_volumes,
         defnames.get_dual_interation_region_name_by_level(level): regions,
-        defnames.vertices_selected + "_level" + str(level): vertices_selected
+        defnames.vertices_selected + level_str: vertices_selected,
+        defnames.boundary_dual_interaction + level_str: boundarys,
+        defnames.internal_dual_path + level_str: internal_paths,
+        defnames.dual_initial_ccs + level_str: initial_ccs
     }
-
-    import pdb; pdb.set_trace()
 
     return data

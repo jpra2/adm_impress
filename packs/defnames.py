@@ -16,6 +16,9 @@ dual_volumes_str = 'dual_volumes'
 dual_interation_region = 'dual_interation_region'
 vertices_selected = 'vertices_selected'
 edges_selected = 'edges_selected'
+boundary_dual_interaction = 'boundary_of_interaction'
+internal_dual_path = 'internal_dual_path'
+dual_initial_ccs = 'initial_ccs'
 
 def get_primal_id_name_by_level(level:int):
     return '_'.join([fine_primal_id, 'level' + str(level)])
@@ -34,8 +37,11 @@ def dual_ids(name:str):
         'vertice_id': 3,
         'edge_id': 2,
         'face_id': 1,
-        'inernal_id': 0 
+        'internal_id': 0 
     }
 
     assert name in my_dict.keys()
     return my_dict[name]
+
+def level_str(level):
+    return '_level' + str(level)

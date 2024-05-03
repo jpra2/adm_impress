@@ -180,3 +180,13 @@ def mount_graph(adjacencies, dists, coarse_gid, coarse_adj_fine, fine_vertice, f
 def allUnique(x):
     seen = set()
     return not any(i in seen or seen.add(i) for i in x)
+
+def get_local_matrix(local_volumes: np.ndarray, T: sp.csc_matrix, diagonal_term: np.ndarray) -> sp.csc_matrix:
+    
+    T2 = T[local_volumes][:,local_volumes].copy()
+    data = np.array(T2.sum(axis=1).transpose())[0]
+    data2 = T2.diagonal()
+    data2 -= data
+    data2 += diagonal_term[local_volumes]
+    T2.setdiag(data2)
+    return T2
