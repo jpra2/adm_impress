@@ -107,7 +107,7 @@ class Unstructured2DAmsOperator(SuperArrayManager):
         for local_data in local_op_data:
             OP[local_data[0], local_data[1]] = local_data[2]
 
-    def get_B_matrix(self, T: sp.csc_matrix, epsilon=0.001, w=1):
+    def get_B_matrix(self, T: sp.csc_matrix, epsilon=0.001, w=1, lines_to_modify=np.array([])):
         """
         Algorithimic monotone multiscale
         """
@@ -118,6 +118,12 @@ class Unstructured2DAmsOperator(SuperArrayManager):
         lines = all_data[0]
         cols = all_data[1]
         data = all_data[2]
+
+        if lines_to_modify.shape[0] == 0:
+            to_iterate = range(n)
+        else:
+            to_iterate = lines_to_modify
+
         test_pos = data > 0
         test_dif = lines == cols
         test_dif = ~test_dif
@@ -126,7 +132,7 @@ class Unstructured2DAmsOperator(SuperArrayManager):
         cols_B = []
         data_B = []
 
-        for i in range(n):
+        for i in to_iterate:
             test_line = lines == i
             test = (test_line) & (test_pos) & (test_dif)
             local_data = data[test]
@@ -147,9 +153,60 @@ class Unstructured2DAmsOperator(SuperArrayManager):
         B = sp.csc_matrix((data_B,(lines_B,cols_B)), shape=(n, n))
         return B
 
-    def get_monotone_matrix(self, T: sp.csc_matrix, epsilon=0.001, w=1):
-        B = self.get_B_matrix(T, epsilon=epsilon, w=w)
+    def get_monotone_matrix(self, T: sp.csc_matrix, epsilon=0.001, w=1, lines_to_modify=np.array([])):
+        B = self.get_B_matrix(T, epsilon=epsilon, w=w, lines_to_modify=lines_to_modify)
         return T + B
+    
+    def get_monotone_matrix_v2(self, T: sp.csc_matrix, epsilon=0.001, w=1, lines_to_modify=np.array([])):
+        
+        diagonal = T.diagonal()
+        n = diagonal.shape[0]
+        all_data = sp.find(T)
+        lines = all_data[0]
+        cols = all_data[1]
+        data = all_data[2]
+
+        if lines_to_modify.shape[0] == 0:
+            to_iterate = range(n)
+        else:
+            to_iterate = lines_to_modify
+
+        test_pos = data > 0
+        test_dif = lines == cols
+        test_dif = ~test_dif
+
+        for i in to_iterate:
+            
+            test_line = lines == i
+            test = (test_line) & (test_pos) & (test_dif)
+
+            columns = cols[test]
+
+            data[test] = data[test] - w*data[test]
+            data[(lines == i) & (cols == i)] = 0
+            to_diagonal = -data[test_line].sum()
+            data[(lines == i) & (cols == i)] = to_diagonal
+
+            for column in columns:
+                test_line_2 = lines == column
+                t1 = (lines==column) & (cols==i)
+                if t1.sum() > 0:
+                    ac_data = w*data[t1]
+                    data[t1] = data[t1] - ac_data
+                    data[(lines==column) & (cols==column)] = 0
+                    data[(lines==column) & (cols==column)] = data[test_line_2].sum()
+            
+        non_zero_data = np.nonzero(data)[0]
+
+        import pdb; pdb.set_trace()
+
+        lines_B = lines[non_zero_data]
+        cols_B = cols[non_zero_data]
+        data_B = data[non_zero_data]
+
+
+        B = sp.csc_matrix((data_B,(lines_B,cols_B)), shape=(n, n))
+        return B
         
     def get_finite_volume_restriction_operator(self, fine_ids, primal_ids):
 

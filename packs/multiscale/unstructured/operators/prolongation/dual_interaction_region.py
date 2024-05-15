@@ -29,13 +29,13 @@ class DualInteractionRegion:
         self.preprocess_data()
 
     def get_local_transmissibility(self, local_ids, global_transmissibility, diagonal_term):
-        self.local_transmissibility = utils_old.get_local_matrix(local_ids, global_transmissibility, diagonal_term)
+        return utils_old.get_local_matrix(local_ids, global_transmissibility, diagonal_term)
     
     def preprocess_data(self):
         self.local_map = np.arange(self.region.shape[0])
-        self.local_internal_path = np.array([self.local_map[self.region == i] for i in self.internal_edge_path_to_vertice])
-        self.local_boundary = np.array([self.local_map[self.region == i] for i in self.boundary])
-        self.local_initial_cc = np.array([self.local_map[self.region == i] for i in self.initial_cc])
+        self.local_internal_path = np.array([self.local_map[self.region == i][0] for i in self.internal_edge_path_to_vertice])
+        self.local_boundary = np.array([self.local_map[self.region == i][0] for i in self.boundary])
+        self.local_initial_cc = np.array([self.local_map[self.region == i][0] for i in self.initial_cc])
         self.local_vertice = self.local_map[self.region == self.vertice][0]
 
 

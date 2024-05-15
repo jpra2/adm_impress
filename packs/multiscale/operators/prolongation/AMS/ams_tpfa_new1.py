@@ -20,7 +20,7 @@ class AMSTpfa:
         self.get_G()
         self.G2 = get_G2(self.wirebasket_elements[3], primal_ids)
 
-    def run(self, T: 'transmissibility matrix', total_source_term=np.array([])):
+    def run(self, T: sp.csc_matrix, total_source_term=np.array([])):
 
         assert self.G.shape == T.shape
 

@@ -1,11 +1,11 @@
 Lx = 160;
 Ly = Lx/2;
-gridsize = 25;
+gridsize = 8.5  ;
 gridsizee = gridsize/3;
 
 Point(1) = {0, 0, 0, gridsize};
-Point(2) = {Lx, 0, 0, gridsizee};
-Point(3) = {Lx, Ly, 0, gridsizee};
+Point(2) = {Lx, 0, 0, gridsize};
+Point(3) = {Lx, Ly, 0, gridsize};
 Point(4) = {0, Ly, 0, gridsize};
 
 Line(5) = {1, 2};

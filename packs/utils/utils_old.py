@@ -2,6 +2,10 @@ from pymoab import core, types, rng, topo_util
 import numpy as np
 from scipy.sparse.csgraph import shortest_path
 from scipy import sparse as sp
+import h5sparse
+import os
+
+from packs import defpaths
 
 
 def get_box_dep0(all_centroids, limites):
@@ -190,3 +194,63 @@ def get_local_matrix(local_volumes: np.ndarray, T: sp.csc_matrix, diagonal_term:
     data2 += diagonal_term[local_volumes]
     T2.setdiag(data2)
     return T2
+
+def spai(A, m) -> sp.csc_matrix:
+
+    """Perform m step of the SPAI iteration.
+        Sparse Approximate Inverse
+        Iterative Methods For Sparse Linear Systems: Saad
+    """
+
+    from scipy.sparse import identity
+    from scipy.sparse import diags
+    from scipy.sparse.linalg import onenormest
+    
+    print('Spai iteration')
+
+    n = A.shape[0]
+    
+    ident = identity(n, format='csr')
+    alpha = 2 / onenormest(A @ A.T)
+    M = alpha * A
+        
+    for index in range(m):
+        print(index)
+        C = A @ M
+        G = ident - C
+        AG = A @ G
+        trace = (G.T @ AG).diagonal().sum()
+        alpha = trace / np.linalg.norm(AG.data)**2
+        M = M + alpha * G
+    print('finish')    
+    return M
+
+def get_flying_path(path):
+    return os.path.join(defpaths.flying, path)
+
+
+def save_matrix(path: str, matrix_name: str, matrix: sp.csc_matrix):
+    flying_path = get_flying_path(path)
+    try:
+        h5f = h5sparse.File(flying_path, 'a')
+    except FileNotFoundError:
+        h5f = h5sparse.File(flying_path, 'w')
+    try:
+        h5f.create_dataset(matrix_name, data=matrix.tocsc())
+    except ValueError:
+        del h5f[matrix_name]
+        h5f.create_dataset(matrix_name, data=matrix.tocsc())
+    h5f.close()
+    
+def load_matrix(path: str, matrix_name: str) -> sp.csc_matrix:
+    flying_path = get_flying_path(path)
+    with h5sparse.File(flying_path) as h5f:
+        M = h5f[matrix_name].value.copy()
+    return M
+
+def save_or_load_matrices(path: str, matrix_name: str, to_save: bool, matrix=None):
+    
+    if to_save is True:
+        return save_matrix(path, matrix_name, matrix)
+    elif to_save is False:
+        return load_matrix(path, matrix_name)

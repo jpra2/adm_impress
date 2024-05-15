@@ -33,7 +33,7 @@ def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties
 
         fine_mesh_properties.export_data()
 
-def run():
+def run2():
     fine_mesh_path, fine_mesh_properties_name, fine_mesh_name_v4 = get_fine_mesh_path_and_mesh_properties_name_for_test()
     coarse_mesh_path, coarse_mesh_properties_name = get_coarse_mesh_path_and_mesh_properties_name_for_test()
 

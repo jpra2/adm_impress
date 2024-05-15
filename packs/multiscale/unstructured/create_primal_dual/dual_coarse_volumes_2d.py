@@ -503,13 +503,13 @@ def get_dual_interaction_region_v2(
     internal_paths = []
     initial_ccs = []
 
-
     for i, coarse_id in enumerate(coarse_faces_id):
         region = []
         fine_vertice_id = fine_faces_id[
             (dual_id == defnames.dual_ids('vertice_id')) & (primal_id == coarse_id)
-        ]
+        ][0]
         vertices_selected[i] = fine_vertice_id
+        
 
         for dual_volume in dual_volumes:
             if np.intersect1d(dual_volume, fine_vertice_id).shape[0] == 1:
@@ -550,7 +550,7 @@ def get_dual_interaction_region_v2(
         first_cc = np.intersect1d(boundary, edges_path_of_vertice)
         initial_ccs.append(first_cc)
 
-    
+
     regions = np.array(regions, dtype='O')
     boundarys = np.array(boundarys, dtype='O')
     internal_paths = np.array(internal_paths, dtype='O')

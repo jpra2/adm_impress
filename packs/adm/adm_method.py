@@ -65,12 +65,20 @@ def solve_local_local_problem(solver, neigh_intern_faces, transmissibility, volu
     x = solver(T.tocsc(), b)
     return x
 
-def set_boundary_conditions(T: 'transmissibility matrix',
-                            b: 'source term',
-                            indices_q: 'indices flux prescription',
-                            values_q: 'flux prescription',
-                            indices_p: 'indices pressure prescription',
-                            values_p: 'values pressure prescription'):
+def set_boundary_conditions(T: sp.csc_matrix,
+                            b: np.ndarray,
+                            indices_q: np.ndarray,
+                            values_q: np.ndarray,
+                            indices_p: np.ndarray,
+                            values_p: np.ndarray):
+    
+    '''
+        T: transmissinility matrix
+        b: source term
+        indices_q: indices flux prescription
+        indices_p: indices pressure prescription
+        values_p: values pressure prescription
+    '''
     n = T.shape[0]
 
     T = T.tolil()
@@ -460,8 +468,11 @@ class AdmMethod(DataManager, TpfaFlux2):
         return(Mat2)
 
 
-    def solve_multiscale_pressure(self, T: 'fine transmissibility matrix', b: 'fine source term'):
-
+    def solve_multiscale_pressure(self, T: sp.csc_matrix, b: np.ndarray):
+        '''
+            T: fine transmisssibility matrix
+            b: fine source term
+        '''
         T_adm = T.copy()
         b_adm = b.copy()
 
@@ -808,7 +819,7 @@ class AdmMethod(DataManager, TpfaFlux2):
             all_intersect_faces = self.ml_data['coarse_intersect_faces_level_'+str(level)]
             all_intern_faces = self.ml_data['coarse_internal_faces_level_'+str(level)]
             coarse_ids = self.ml_data['coarse_primal_id_level_'+str(level)]
-            gids_level = np.unique(all_gids_coarse[levels==level])
+            gids_level = np.unique(all_gids_coatest_new_level = fine_levels <= levelrse[levels==level])
             for gidc in gids_level:
                 intersect_faces = all_intersect_faces[coarse_ids==gidc][0] # faces na interseccao
                 neig_intersect_faces = neig_internal_faces[remaped_internal_faces[intersect_faces]]

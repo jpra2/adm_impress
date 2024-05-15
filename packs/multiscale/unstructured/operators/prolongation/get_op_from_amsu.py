@@ -3,6 +3,7 @@ from packs.multiscale.unstructured.operators.prolongation.amsu import AmsU
 
 from typing import Sequence
 import scipy.sparse as sp
+import numpy as np
 
 def update_global_op_from_amsu(list_dual_interaction_region: Sequence[DualInteractionRegion], OP_AMSU: sp.csc_matrix):
     amsu = AmsU()
@@ -19,15 +20,14 @@ def update_global_op_from_amsu(list_dual_interaction_region: Sequence[DualIntera
         )
 
         OP_AMSU[dual_i.region, dual_i.coarse_id] = local_op
-    import pdb; pdb.set_trace()
-    soma = OP_AMSU.sum(axis=1).toarray().flatten()
-    for i in range(OP_AMSU.shape[1]):
-        OP_AMSU[:, i] = OP_AMSU[:, i].toarray().flatten()/soma
-    
-    OP_AMSU.eliminate_zeros()
-    import pdb; pdb.set_trace()
 
+    soma = np.array(OP_AMSU.sum(axis=1)).flatten()
 
-
-
+    all_data = sp.find(OP_AMSU)
+    lines = all_data[0]
+    cols = all_data[1]
+    data = all_data[2]
+    soma2 = soma[lines]
+    data = data/soma2
+    OP_AMSU[lines, cols] = data
         

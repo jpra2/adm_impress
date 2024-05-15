@@ -59,8 +59,8 @@
 # from packs.multiscale.unstructured.test.create_primal_test import run
 # run()
 
-# from packs.multiscale.unstructured.test.test_create_dual import run
-# run()
+# from packs.multiscale.unstructured.test.test_create_dual import run2
+# run2()
 
 from packs.multiscale.unstructured.test.test_uns_ams_prolongation import run
 ams, fine, coarse = run()

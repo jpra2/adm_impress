@@ -3,7 +3,7 @@ from packs.multiscale.unstructured.create_primal_dual.primal_coarse_volumes_2d i
 from packs.preprocess.create_mesh_properties_from_meshiowrapper import create_meshproperties_from_meshio_if_not_exists, _create_flying_mesh
 from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d import create_dual
 # from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d_v2 import create_dual
-from packs import defnames
+from packs import defnames, defpaths
 from packs.manager import MeshProperty, MeshData, BoundaryConditions
 from packs.multiscale.unstructured.operators.prolongation.ams import Unstructured2DAmsOperator
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
@@ -14,12 +14,15 @@ from packs.adm.adm_operators import Adm
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
 from packs.multiscale.unstructured.operators.prolongation.dual_interaction_region import create_dual_interaction_regions
 from packs.multiscale.unstructured.operators.prolongation.get_op_from_amsu import update_global_op_from_amsu
+from packs.utils import utils_old
+from packs.multiscale.ms_solvers.iterative_solver import ms_solve_it
 
 import numpy as np
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import spsolve, gmres, cg, bicgstab, spilu, LinearOperator
 import scipy.sparse as sp
 import os
 from typing import Sequence
+import h5sparse
 
 
 def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty):
@@ -36,7 +39,10 @@ def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties
             faces_of_faces_level0=fine_mesh_properties.faces_of_faces,
             faces_centroids_level1=coarse_mesh_properties['faces_centroids'],
             faces_of_faces_level1=coarse_mesh_properties.faces_of_faces,
-            level=1
+            level=1,
+            edges_ids_level0=fine_mesh_properties['edges'],
+            bool_boundary_edges_level0=fine_mesh_properties['bool_boundary_edges'],
+            edges_centroids_level0=fine_mesh_properties.edges_centroids
         )
 
         fine_mesh_properties.insert_or_update_data(
@@ -121,10 +127,7 @@ def func3(ams_prolongation: Unstructured2DAmsOperator, transmissibility_without_
     )
     return local_matrices
 
-
-
-
-def export_op(mesh_path, OP_AMS):
+def export_op(mesh_path, OP_AMS, op_name):
 
     # flying_mesh_path = _create_flying_mesh(mesh_path)
     flying_mesh_path = mesh_path
@@ -154,7 +157,7 @@ def export_op(mesh_path, OP_AMS):
     )
 
     mesh_data.export_all_elements_type_to_vtk(
-        'op_amsU',
+        op_name,
         'faces'
     )
     
@@ -169,6 +172,41 @@ def export_adm_levels(mesh_path, fine_levels):
 
 
 def run():
+    w = 0.9
+    matrix_path = 'matrices.h5'
+    fine_transm_without_bc_name = 'fine_transm_without_bc'
+    save_fine_transm_without_bc = True
+    monotone_transm_name = 'monotone_transm' + str(w)
+    save_monotone_transm = True
+    fine_transmissibility_name = 'fine_transmissibility'
+    save_fine_transmissibility = True
+    
+    op_amsu_name = 'amsu'
+    op_ams_name = 'ams'
+    monotone_name = '_monotone_w_' + str(w)
+    
+    op_name = 'OP_' + op_amsu_name
+    # op_name = 'OP_' + op_ams_name
+
+    op_name = op_name + monotone_name 
+
+    save_op = True
+    save_ops_adm = True
+
+    
+
+    save_fine_transm_without_bc=False
+    save_monotone_transm = False
+    save_fine_transmissibility = False
+    save_op = False
+    save_ops_adm = False
+        
+
+
+
+    monotone_transm = None
+
+
     lsds = LsdsFluxCalculation()
 
     fine_mesh_path, fine_mesh_properties_name, fine_mesh_path_v4 = get_fine_mesh_path_and_mesh_properties_name_for_test()
@@ -194,16 +232,16 @@ def run():
     
     ams_prolongation = Unstructured2DAmsOperator()
 
-    ams_prolongation.insert_ams_data(
-        {
-            # defnames.dual_volumes_str: fine_mesh_properties[defnames.get_dual_volumes_name_by_level(1)],
-            defnames.dual_volumes_str: np.array([fine_mesh_properties['faces']]),
-            defnames.fine_primal_id: fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
-            defnames.fine_dual_id: fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
-        }
-    )
+    # ams_prolongation.insert_ams_data(
+    #     {
+    #         # defnames.dual_volumes_str: fine_mesh_properties[defnames.get_dual_volumes_name_by_level(1)],
+    #         defnames.dual_volumes_str: np.array([fine_mesh_properties['faces']]),
+    #         defnames.fine_primal_id: fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
+    #         defnames.fine_dual_id: fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
+    #     }
+    # )
 
-    ams_prolongation.preprocess_ams_data()
+    # ams_prolongation.preprocess_ams_data()
 
     bc = define_boundary_conditions(fine_mesh_properties)
 
@@ -227,53 +265,110 @@ def run():
         )
         fine_mesh_properties.export_data()
     
+    transm = dict()
     # transm = lsds.mount_transmissibility_matrix_without_bc(**fine_mesh_properties.get_all_data())
-    transm = func1(fine_mesh_properties, lsds)
-    monotone_transm = ams_prolongation.get_monotone_matrix(
-        transm['transmissibility_without_bc'],
-        epsilon=0.0001,
-        w=0.97
-    )
+    if save_fine_transm_without_bc is True:
+        transm.update(func1(fine_mesh_properties, lsds))
+        utils_old.save_matrix(matrix_path, fine_transm_without_bc_name, matrix=transm.get('transmissibility_without_bc'))
+    else:
+        transm.update({
+            'transmissibility_without_bc': utils_old.load_matrix(
+                matrix_path,
+                fine_transm_without_bc_name
+            )
+        })
+
+    if save_monotone_transm is True:
+        monotone_transm = ams_prolongation.get_monotone_matrix(
+            transm['transmissibility_without_bc'],
+            epsilon=0.0001,
+            w=w
+        )
+        utils_old.save_matrix(matrix_path, monotone_transm_name, matrix=monotone_transm)
+    else:
+        monotone_transm = utils_old.load_matrix(
+            matrix_path,
+            monotone_transm_name
+        )
 
     
     # resp = lsds.mount_transmissibility_matrix(
     #     bc,
     #     **fine_mesh_properties.get_all_data()
     # )
+    resp = dict()
+    if save_fine_transmissibility is True:
 
-    resp = func2(lsds, bc, fine_mesh_properties)
+        resp.update(func2(lsds, bc, fine_mesh_properties))
+        utils_old.save_matrix(matrix_path, fine_transmissibility_name, matrix=resp['transmissibility'])
+        fine_mesh_properties.insert_or_update_data({
+            'fine_source': resp['source']
+        })
+        fine_mesh_properties.export_data()
+    else:
+
+        resp.update(
+            {
+                'transmissibility': utils_old.load_matrix(
+                    matrix_path,
+                    fine_transmissibility_name
+                ),
+                'source': fine_mesh_properties['fine_source']
+            }
+        )
 
     level_str = defnames.level_str(1)
 
-    interaction_regions = create_dual_interaction_regions(
-        fine_mesh_properties[defnames.get_dual_interation_region_name_by_level(1)],
-        fine_mesh_properties[defnames.vertices_selected + level_str],
-        fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
-        fine_mesh_properties[defnames.boundary_dual_interaction + level_str],
-        fine_mesh_properties[defnames.internal_dual_path + level_str],
-        fine_mesh_properties[defnames.dual_initial_ccs + level_str],
-        global_transmissibility=transm['transmissibility_without_bc'],
-        global_diagonal_term=np.zeros(resp['source'].shape[0])
-    )  
+    if save_op is True:
 
-    OP_AMS = ams_prolongation.get_global_op(coarse_mesh_properties['faces'], fine_mesh_properties['faces'])
+        interaction_regions = create_dual_interaction_regions(
+            fine_mesh_properties[defnames.get_dual_interation_region_name_by_level(1)],
+            fine_mesh_properties[defnames.vertices_selected + level_str],
+            fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
+            fine_mesh_properties[defnames.internal_dual_path + level_str],
+            fine_mesh_properties[defnames.boundary_dual_interaction + level_str],
+            fine_mesh_properties[defnames.dual_initial_ccs + level_str],
+            global_transmissibility=monotone_transm,
+            global_diagonal_term=np.zeros(resp['source'].shape[0])
+        )
 
-    # ams_prolongation.insert_data_in_global_OP(
-    #     ams_prolongation[ams_prolongation.dual_volumes_str],
-    #     monotone_transm,
-    #     np.zeros(resp['source'].shape[0]),
-    #     OP_AMS
-    # )
+        OP_AMS = ams_prolongation.get_global_op(coarse_mesh_properties['faces'], fine_mesh_properties['faces'])
 
-    update_global_op_from_amsu(interaction_regions, OP_AMS)
+        # ams_prolongation.insert_data_in_global_OP(
+        #     ams_prolongation[ams_prolongation.dual_volumes_str],
+        #     monotone_transm,
+        #     np.zeros(resp['source'].shape[0]),
+        #     OP_AMS
+        # )
+        
+
+        update_global_op_from_amsu(interaction_regions, OP_AMS)
+        utils_old.save_matrix(matrix_path, op_name, OP_AMS)
+    else:
+       OP_AMS = utils_old.load_matrix(matrix_path, op_name)
 
     OR_AMS = ams_prolongation.get_finite_volume_restriction_operator(
         fine_mesh_properties['faces'],
         fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
     )
 
-    export_op(fine_mesh_path, OP_AMS)
-    import pdb; pdb.set_trace()
+
+
+    # export_op(fine_mesh_path, OP_AMS, 'op_amsu_monotone_0.9')
+    # import pdb; pdb.set_trace()
+
+    # A = resp['transmissibility'].tocsc()
+    # b = resp['source']
+    
+    # n = A.shape[0]
+    # reordered = sp.csgraph.reverse_cuthill_mckee(transm['transmissibility_without_bc'])
+    # lines = np.arange(n)
+    # data = np.ones(n, dtype=np.float64)
+    # Perm = sp.csc_matrix((data, (lines, reordered)), shape=(n ,n))
+    # A2 = Perm*A*Perm.transpose()
+    # b2 = Perm*b
+    
+
 
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
@@ -308,12 +403,12 @@ def run():
     # flying_mesh_path = _create_flying_mesh(fine_mesh_path)
     # print_adm_interfaces_2d(
     #     fine_mesh_properties,
-    #     flying_mesh_path,
+    #     fine_mesh_path,
     #     fine_levels,
     #     'adm_edges'
     # )
 
-    OP_adm, OR_adm = adm.get_adm_prolongation_operator(
+    OP_adm, OR_adm, coarse_ids_adm = adm.get_adm_prolongation_operator(
         [OP_AMS],
         [OR_AMS],
         fine_levels,
@@ -324,14 +419,32 @@ def run():
     )
 
     T_adm = OR_adm*(resp['transmissibility']*OP_adm)
+    T_adm = ams_prolongation.get_monotone_matrix_v2(
+            T_adm,
+            epsilon=0.0001,
+            w=0.9,
+            lines_to_modify=coarse_ids_adm
+        )
     Q_adm = OR_adm*resp['source']
     P_adm = spsolve(T_adm.tocsc(), Q_adm)
     P_prol = OP_adm*P_adm
 
+    # P_prol = ms_solve_it(
+    #     A,
+    #     OP_adm,
+    #     OR_adm,
+    #     b,
+    #     P_prol,
+    #     epsilon=1e-9,
+    #     internal_loop_epsilon=1e-5,
+    #     maxiter=100,
+    #     internal_loop_maxiter=100
+    # )
+
     error = np.absolute(pressure - P_prol)
     relative_error = (error/pressure)*100
 
-    mesh_data = MeshData(mesh_path = os.path.join('remove', 'flying_mesh.h5m'))
+    mesh_data = MeshData(mesh_path=fine_mesh_path)
     mesh_data.create_tag('pressure')
     mesh_data.insert_tag_data('pressure', pressure, elements_type='faces')
 
@@ -344,7 +457,7 @@ def run():
     mesh_data.create_tag('relative_error')
     mesh_data.insert_tag_data('relative_error', relative_error, elements_type='faces')
 
-    mesh_data.export_all_elements_type_to_vtk('adm_solution_classic_global', element_type='faces')
+    mesh_data.export_all_elements_type_to_vtk('adm_solution_monotone_0.9_Tadm_modify', element_type='faces')
 
 
 

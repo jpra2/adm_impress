@@ -132,5 +132,5 @@ class Adm:
         OP_adm = sp.csc_matrix((data_op_adm, (lines_op_adm, cols_op_adm)), shape=(all_n_adm_ids[level-1], all_n_adm_ids[level]))
         OR_adm = sp.csc_matrix((data_or_adm, (lines_or_adm, cols_or_adm)), shape=(all_n_adm_ids[level], all_n_adm_ids[level-1]))
 
-        return OP_adm, OR_adm
-
+        return OP_adm, OR_adm, remap_coarse_cols[ids_level_prox]
+    
