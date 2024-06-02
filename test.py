@@ -62,5 +62,8 @@
 # from packs.multiscale.unstructured.test.test_create_dual import run2
 # run2()
 
-from packs.multiscale.unstructured.test.test_uns_ams_prolongation import run
-ams, fine, coarse = run()
+# from packs.multiscale.unstructured.test.test_uns_ams_prolongation import run3
+# ams, fine, coarse = run3()
+
+from packs.mpfa_methods.weight_interpolation.test.test_gls_edges_weights import run
+run()

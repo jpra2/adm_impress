@@ -1,5 +1,10 @@
 Lx = 160;
 Ly = Lx/2;
+
+// mesh3
+// fine mesh 1 gridsize = 0.7
+
+
 gridsize = 0.7;
 gridsizee = gridsize/3;
 

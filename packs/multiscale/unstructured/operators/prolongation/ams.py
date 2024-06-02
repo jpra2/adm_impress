@@ -114,6 +114,12 @@ class Unstructured2DAmsOperator(SuperArrayManager):
 
         diagonal = T.diagonal()
         n = diagonal.shape[0]
+
+        if w == 0:
+            B = sp.lil_matrix((n, n))
+            return B.tocsc()
+
+
         all_data = sp.find(T)
         lines = all_data[0]
         cols = all_data[1]

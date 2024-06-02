@@ -1,6 +1,11 @@
 Lx = 160;
 Ly = Lx/2;
-gridsize = 8.5  ;
+
+// mesh3
+// coarse mesh 1 gridsize = 8.5
+// coarse mesh 2 gridsize = 10
+
+gridsize = 10;
 gridsizee = gridsize/3;
 
 Point(1) = {0, 0, 0, gridsize};

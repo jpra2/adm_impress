@@ -1579,7 +1579,37 @@ class LsdsFluxCalculation:
 
 
 
+    def get_nodes_pressures(
+        self,
+        boundary_conditions: BoundaryConditions,
+        faces_pressures,
+        nodes_weights,
+        neumann_weights,
+        nodes_of_edges,
+        **kwargs
+    ):
         
+        nodes_pressure_prescription = defnames.nodes_pressure_prescription_name
+        node_press = boundary_conditions[nodes_pressure_prescription]
+        ids_node_press = node_press['id']
+        values = node_press['value']
+
+        neumann_nodes = boundary_conditions.get_neumann_nodes(nodes_of_edges)
+
+        nodes_weight_matrix = mount_sparse_weight_matrix(nodes_weights)
+        nodes_pressures = nodes_weight_matrix.dot(faces_pressures)
+
+        neumann_vector = np.zeros(len(nodes_pressures))
+        if len(neumann_nodes) > 0:
+            test = np.isin(neumann_weights['node_id'], neumann_nodes)
+            neumann_vector[neumann_weights['node_id'][test]] = neumann_weights['nweight'][test]
+        nodes_pressures = nodes_pressures + neumann_vector
+        nodes_pressures[ids_node_press] = values
+
+        return nodes_pressures
+
+
+
 
     def get_edges_flux(
         self,

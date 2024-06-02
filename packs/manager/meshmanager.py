@@ -286,20 +286,30 @@ class MeshProperty:
 
     @property
     def edges_dim(self):
-        resp = np.linalg.norm(
-            self.nodes_centroids[self.nodes_of_edges[self.edges, 0]] - self.nodes_centroids[self.nodes_of_edges[self.edges, 1]],
-            axis=1
-        )
-        return resp
+        try:
+            return self['edges_dim']
+        except KeyError:
+            resp = np.linalg.norm(
+                self.nodes_centroids[self.nodes_of_edges[self.edges, 0]] - self.nodes_centroids[self.nodes_of_edges[self.edges, 1]],
+                axis=1
+            )
+            self.insert_data({'edges_dim': resp})
+            self.export_data()
+            return resp
     
     @property
     def edges_centroids(self):
-        resp = (self.nodes_centroids[self.nodes_of_edges[:, 1]] + self.nodes_centroids[self.nodes_of_edges[:, 0]])/2
+        try:
+            return self['edges_centroids']
+        except KeyError:
+            resp = (self.nodes_centroids[self.nodes_of_edges[:, 1]] + self.nodes_centroids[self.nodes_of_edges[:, 0]])/2
+            self.insert_data({'edges_centroids': resp})
+            self.export_data()
+            return resp
         # resp = np.mean(
         #     self.nodes_centroids[self.nodes_of_edges],
         #     axis=1
         # )
-        return resp
     
     @property
     def boundary_edges(self):
