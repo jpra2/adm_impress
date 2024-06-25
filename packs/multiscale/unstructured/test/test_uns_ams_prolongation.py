@@ -16,6 +16,9 @@ from packs.multiscale.unstructured.operators.prolongation.dual_interaction_regio
 from packs.multiscale.unstructured.operators.prolongation.get_op_from_amsu import update_global_op_from_amsu
 from packs.utils import utils_old
 from packs.multiscale.ms_solvers.iterative_solver import ms_solve_it
+from packs.multiscale.unstructured.operators.prolongation.msrsb import MsRSB
+from packs.multiscale.unstructured.operators.precond.enhanced import Enhanced
+from packs.adm.non_uniform import fine_level_from_alpha, fine_level_from_beta
 
 import numpy as np
 from scipy.sparse.linalg import spsolve, gmres, cg, bicgstab, spilu, LinearOperator
@@ -173,21 +176,23 @@ def export_adm_levels(mesh_path, fine_levels):
 
 
 def run3():
-    w = 1.03
+    w = 1.0
     matrix_path = 'matrices.h5'
     fine_transm_without_bc_name = 'fine_transm_without_bc'
     save_fine_transm_without_bc = True
-    monotone_transm_name = 'monotone_transm' + str(w)
+    # monotone_transm_name = 'monotone_transm' + str(w)
+    monotone_transm_name = 'monotone_transm' + '_enhanced'
     save_monotone_transm = True
     fine_transmissibility_name = 'fine_transmissibility'
     save_fine_transmissibility = True
 
-    list_op_toget = ['AMS', 'AMS-U']
-    op_toget = 'AMS-U'
+    list_op_toget = ['AMS', 'AMS-U', 'MsRSB']
+    op_toget = 'MsRSB'
     if op_toget not in list_op_toget:
         raise ValueError
 
     op_sufix = op_toget + '_w_' + str(w)
+    # op_sufix = op_toget + '_w_' + 'enhanced'
     op_name = 'OP_' + op_sufix
 
     # op_name = op_name + monotone_name 
@@ -198,7 +203,7 @@ def run3():
     save_fine_transm_without_bc=False
     save_monotone_transm = False
     save_fine_transmissibility = False
-    save_op = False
+    # save_op = False
     # save_ops_adm = False
 
     monotone_transm = None
@@ -272,11 +277,15 @@ def run3():
         })
 
     if save_monotone_transm is True:
-        monotone_transm = ams_prolongation.get_monotone_matrix(
-            transm['transmissibility_without_bc'],
-            epsilon=0.0001,
-            w=w
-        )
+        # monotone_transm = ams_prolongation.get_monotone_matrix(
+        #     transm['transmissibility_without_bc'],
+        #     epsilon=0.001,
+        #     w=w
+        # )
+        
+        enhanced = Enhanced()
+        monotone_transm = enhanced.get_enhanced_matrix(transm['transmissibility_without_bc'])
+        
         utils_old.save_matrix(matrix_path, monotone_transm_name, matrix=monotone_transm)
     else:
         monotone_transm = utils_old.load_matrix(
@@ -309,6 +318,11 @@ def run3():
                 'source': fine_mesh_properties['fine_source']
             }
         )
+    
+    OR_AMS = ams_prolongation.get_finite_volume_restriction_operator(
+        fine_mesh_properties['faces'],
+        fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
+    )
 
     level_str = defnames.level_str(1)
 
@@ -348,17 +362,32 @@ def run3():
                 global_diagonal_term=np.zeros(resp['source'].shape[0])
             )
             update_global_op_from_amsu(interaction_regions, OP_AMS)
-
+        
+        elif op_toget == list_op_toget[2]:
+            msrsb = MsRSB()
+            OP_AMS = msrsb.get_OP(
+                faces=fine_mesh_properties['faces'],
+                T=monotone_transm.tocsc(),
+                diagonal_term=np.zeros(resp['source'].shape[0]),
+                interation_regions=fine_mesh_properties[defnames.get_dual_interation_region_name_by_level(1)],
+                interation_boundaries=fine_mesh_properties[defnames.boundary_dual_interaction + level_str],
+                vertices=fine_mesh_properties[defnames.vertices_selected + level_str],
+                dual_edges=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('edge_id')],
+                dual_faces=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('face_id')],
+                coarse_ids=fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
+                OR_fv=OR_AMS                
+            )
+        else:
+            raise ValueError
+            
         utils_old.save_matrix(matrix_path, op_name, OP_AMS)
         export_op(fine_mesh_path, OP_AMS, op_name)
         
     else:
        OP_AMS = utils_old.load_matrix(matrix_path, op_name)
 
-    OR_AMS = ams_prolongation.get_finite_volume_restriction_operator(
-        fine_mesh_properties['faces'],
-        fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
-    )
+    
+    
     
     # import pdb; pdb.set_trace()
 
@@ -384,6 +413,12 @@ def run3():
     fine_levels[
         np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], boundary_coarse_faces)
     ] = 0
+    
+    fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
+        OR_AMS,
+        OP_AMS,
+        transm['transmissibility_without_bc']
+    )
 
     list_primal_ids = [
         fine_mesh_properties['faces'],
