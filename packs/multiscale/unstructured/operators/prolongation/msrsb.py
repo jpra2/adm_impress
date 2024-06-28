@@ -107,7 +107,7 @@ class MsRSB:
         Dij: sp.csc_matrix = Ematrix@OP
         Dij[vertices, coarse_ids] = 0
         
-        self._update_Dij_dual_edges(Dij.tolil(), dual_edges, OP)
+        self._update_Dij_dual_edges(Dij.tolil(), dual_edges, OP.tocsc())
         Dij.eliminate_zeros()
         
         dij_final = Dij.multiply(toget_Dij)

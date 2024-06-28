@@ -167,7 +167,8 @@ def export_op(mesh_path, OP_AMS, op_name):
     
 def export_adm_levels(mesh_path, fine_levels):
 
-    flying_mesh_path = _create_flying_mesh(mesh_path)
+    # flying_mesh_path = _create_flying_mesh(mesh_path)
+    flying_mesh_path = mesh_path
     mesh_data = MeshData(mesh_path=flying_mesh_path)
     mesh_data.create_tag('adm_levels', data_type='int')
     mesh_data.insert_tag_data('adm_levels', fine_levels, 'faces')
@@ -203,7 +204,7 @@ def run3():
     save_fine_transm_without_bc=False
     save_monotone_transm = False
     save_fine_transmissibility = False
-    # save_op = False
+    save_op = False
     # save_ops_adm = False
 
     monotone_transm = None
@@ -292,7 +293,6 @@ def run3():
             matrix_path,
             monotone_transm_name
         )
-
     
     # resp = lsds.mount_transmissibility_matrix(
     #     bc,
@@ -413,12 +413,35 @@ def run3():
     fine_levels[
         np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], boundary_coarse_faces)
     ] = 0
+    # import pdb; pdb.set_trace()
+    # alpha_lim_finescale = fine_level_from_alpha.get_alpha_lim_finescale(transm['transmissibility_without_bc'])
+    # alpha_lim_finescale = 0.5*alpha_lim_finescale
+    alpha_lim_finescale = 0.5
+    # import pdb; pdb.set_trace()
     
     fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
         OR_AMS,
         OP_AMS,
-        transm['transmissibility_without_bc']
+        transm['transmissibility_without_bc'],
+        alpha_lim=alpha_lim_finescale
     )
+    
+    primal_ids_alpha = np.unique(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_ids_from_alpha])
+    
+    fine_levels[
+        np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], primal_ids_alpha)
+    ] = 0
+    
+    # fine_ids_from_beta = fine_level_from_beta.define_fine_levels_from_beta(
+    #     fine_mesh_properties['adjacencies'],
+    #     OP_AMS
+    # )
+    
+    # primal_ids_beta = np.unique(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_ids_from_beta])
+    # fine_levels[
+    #     np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], primal_ids_beta)
+    # ] = 0
+    
 
     list_primal_ids = [
         fine_mesh_properties['faces'],
@@ -436,9 +459,11 @@ def run3():
         2,
         fine_mesh_properties.faces_of_faces_by_nodes
     )
+    
+    # import pdb; pdb.set_trace()
 
     # export_adm_levels(fine_mesh_path, fine_levels)
-    # flying_mesh_path = _create_flying_mesh(fine_mesh_path)
+    # # flying_mesh_path = _create_flying_mesh(fine_mesh_path)
     # print_adm_interfaces_2d(
     #     fine_mesh_properties,
     #     fine_mesh_path,
@@ -461,7 +486,7 @@ def run3():
         T_adm = ams_prolongation.get_monotone_matrix(
                 T_adm,
                 epsilon=0.0001,
-                w=w,
+                w=1.5,
                 lines_to_modify=coarse_ids_adm
             )
     Q_adm = OR_adm*resp['source']
