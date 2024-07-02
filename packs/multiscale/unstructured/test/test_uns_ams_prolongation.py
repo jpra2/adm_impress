@@ -208,7 +208,9 @@ def run3():
     # save_ops_adm = False
 
     monotone_transm = None
-    modify_T_adm = True
+    modify_T_adm = False
+    
+    export_adm_levels_file = True
 
 
     lsds = LsdsFluxCalculation()
@@ -419,18 +421,18 @@ def run3():
     alpha_lim_finescale = 0.5
     # import pdb; pdb.set_trace()
     
-    fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
-        OR_AMS,
-        OP_AMS,
-        transm['transmissibility_without_bc'],
-        alpha_lim=alpha_lim_finescale
-    )
+    # fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
+    #     OR_AMS,
+    #     OP_AMS,
+    #     transm['transmissibility_without_bc'],
+    #     alpha_lim=alpha_lim_finescale
+    # )
     
-    primal_ids_alpha = np.unique(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_ids_from_alpha])
+    # primal_ids_alpha = np.unique(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_ids_from_alpha])
     
-    fine_levels[
-        np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], primal_ids_alpha)
-    ] = 0
+    # fine_levels[
+    #     np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], primal_ids_alpha)
+    # ] = 0
     
     # fine_ids_from_beta = fine_level_from_beta.define_fine_levels_from_beta(
     #     fine_mesh_properties['adjacencies'],
@@ -461,15 +463,16 @@ def run3():
     )
     
     # import pdb; pdb.set_trace()
-
-    # export_adm_levels(fine_mesh_path, fine_levels)
-    # # flying_mesh_path = _create_flying_mesh(fine_mesh_path)
-    # print_adm_interfaces_2d(
-    #     fine_mesh_properties,
-    #     fine_mesh_path,
-    #     fine_levels,
-    #     'adm_edges'
-    # )
+    
+    if export_adm_levels_file is True:
+        export_adm_levels(fine_mesh_path, fine_levels)
+        # flying_mesh_path = _create_flying_mesh(fine_mesh_path)
+        print_adm_interfaces_2d(
+            fine_mesh_properties,
+            fine_mesh_path,
+            fine_levels,
+            'adm_edges'
+        )
 
     OP_adm, OR_adm, coarse_ids_adm = adm.get_adm_prolongation_operator(
         [OP_AMS],
@@ -486,7 +489,7 @@ def run3():
         T_adm = ams_prolongation.get_monotone_matrix(
                 T_adm,
                 epsilon=0.0001,
-                w=1.5,
+                w=1.1,
                 lines_to_modify=coarse_ids_adm
             )
     Q_adm = OR_adm*resp['source']

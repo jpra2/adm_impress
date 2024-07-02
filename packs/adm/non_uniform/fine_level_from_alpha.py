@@ -16,8 +16,16 @@ def define_fine_levels_from_alpha(
     
     for i in range(n):
         test = data_T_alpha[0] == i
-        datai = np.absolute(data_T_alpha[2][test])
+        datai = data_T_alpha[2][test]
         colsi = data_T_alpha[1][test]
+        
+        ##########
+        test2 = datai > 0
+        if test2.sum() == 0:
+            continue
+        datai = datai[test2]
+        colsi = colsi[test2]
+        ############
         
         max_arg = np.argmax(datai)
         alphai[i] = datai[max_arg]/tau_coarse[colsi[max_arg]]   
