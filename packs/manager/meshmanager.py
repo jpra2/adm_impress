@@ -316,6 +316,10 @@ class MeshProperty:
         return self.edges[self.bool_boundary_edges]
     
     @property
+    def internal_edges(self):
+        return np.setdiff1d(self.edges, self.boundary_edges, assume_unique=True)
+    
+    @property
     def faces_of_faces(self):
         try:
             return self['faces_of_faces']

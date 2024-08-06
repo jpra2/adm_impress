@@ -38,15 +38,16 @@ def _verify_mesh_properties_exists(mesh_properties_name):
 
 def insert_physical_tags(mesh_path, mesh_properties: MeshProperty, mesh_name_v4=''):
 
+    preprocess_name = 'tags_preprocess'
+    if mesh_properties.verify_name_in_data_names(preprocess_name):
+        return 
+
     if mesh_name_v4=='':
         meshio_data = MeshioWrapper(mesh_path)
     else:
         meshio_data = MeshioWrapper(mesh_name_v4)
     
     tags = meshio_data.physical_tags
-    mesh_elements = {
-        'line': 'edge'
-    }
 
     for tag in tags:
         if tag == 'Volume':
@@ -69,8 +70,17 @@ def insert_physical_tags(mesh_path, mesh_properties: MeshProperty, mesh_name_v4=
                     tag: edges_to_get
                 })
 
+            elif key == 'triangle':
+                mesh_properties.insert_or_update_data({
+                    tag: data[key]
+                })
+
             else:
                 raise  NotImplementedError
+    
+    mesh_properties.insert_or_update_data({
+        preprocess_name: np.array([True])
+    })
 
 def create_meshproperties_from_meshio(mesh_path:str, mesh_properties_name: str):
     flying_mesh_path = _create_flying_mesh(mesh_path)

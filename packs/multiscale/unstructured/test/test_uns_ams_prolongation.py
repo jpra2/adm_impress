@@ -19,6 +19,7 @@ from packs.multiscale.ms_solvers.iterative_solver import ms_solve_it
 from packs.multiscale.unstructured.operators.prolongation.msrsb import MsRSB
 from packs.multiscale.unstructured.operators.precond.enhanced import Enhanced
 from packs.adm.non_uniform import fine_level_from_alpha, fine_level_from_beta
+from packs.fim_nu_adm.packs.processor import nu_adm_funcs
 
 import numpy as np
 from scipy.sparse.linalg import spsolve, gmres, cg, bicgstab, spilu, LinearOperator
@@ -111,6 +112,28 @@ def update_permeability(fine_mesh_properties: MeshProperty):
     })
     fine_mesh_properties.export_data()
 
+def update_permeability_2_regions(fine_mesh_properties: MeshProperty):
+
+    n_faces = fine_mesh_properties['faces'].shape[0]
+    permeability = np.zeros((n_faces, 2, 2))
+
+    reg1 = fine_mesh_properties['Region1']
+    reg2 = fine_mesh_properties['Region2']
+
+    perm1 = 1
+    perm2 = 1e-5
+
+    permeability[reg1, 0, 0] = perm1
+    permeability[reg1, 1, 1] = perm1
+
+    permeability[reg2, 0, 0] = perm2
+    permeability[reg2, 1, 1] = perm2
+
+    fine_mesh_properties.insert_or_update_data({
+        'permeability': permeability
+    })
+    fine_mesh_properties.export_data()
+
 def func1(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation):
     transm = lsds.mount_transmissibility_matrix_without_bc(**fine_mesh_properties.get_all_data())
     return transm
@@ -174,6 +197,153 @@ def export_adm_levels(mesh_path, fine_levels):
     mesh_data.insert_tag_data('adm_levels', fine_levels, 'faces')
     mesh_data.export_all_elements_type_to_vtk('adm_test', 'faces')
 
+def plot_beta_ind(beta_ind, faces, beta_lim, fine_mesh_path):
+    mesh_data = MeshData(mesh_path=fine_mesh_path)
+    mesh_data.create_tag('beta_ind')
+    test = beta_ind >= beta_lim
+    betas = beta_ind.copy()
+    test = ~test
+    betas[test] = 0.0
+    mesh_data.insert_tag_data(
+        'beta_ind',
+        betas,
+        elements_type='faces'
+    )
+    mesh_data.export_all_elements_type_to_vtk('beta_ind', element_type='faces')
+
+def plot_NU_id_Adm(fine_mesh_path, NU_adm_id):
+    mesh_data = MeshData(mesh_path=fine_mesh_path)
+    mesh_data.create_tag('nu_Adm_id', data_type='int')
+    mesh_data.insert_tag_data(
+        'nu_Adm_id',
+        NU_adm_id,
+        elements_type='faces'
+    )
+    mesh_data.export_all_elements_type_to_vtk('nu_adm_id', element_type='faces')
+
+def export_nu_adm_op(fine_mesh_path, NU_ADM_OP):
+    mesh_data = MeshData(mesh_path=fine_mesh_path)
+    all_data = sp.find(NU_ADM_OP)
+    lines = all_data[0]
+    cols = all_data[1]
+    data = all_data[2]
+
+    elements = []
+    data_array = []
+
+    cids_nuadm = np.unique(cols)
+
+    for cid in cids_nuadm:
+        test = cols == cid
+        if test.sum() == 1:
+            if np.all(data[test] == 1):
+                continue
+        elements.append(lines[test])
+        data_array.append(data[test])
+    
+    mesh_data.insert_array_tag_data(
+        'OP',
+        data_array,
+        'faces',
+        elements
+    )
+
+    mesh_data.export_all_elements_type_to_vtk(
+        'nu_adm_op',
+        'faces'
+    )
+
+def modify_finescale_map(GID_0: np.ndarray, GID_1: np.ndarray, DUAL_1: np.ndarray, fine_ids_finescale: np.ndarray, OP: np.ndarray, OR: np.ndarray, fine_levels:np.ndarray):
+    cids = np.unique(GID_1)
+    map_GID_0 = GID_0.copy()
+    new_GID_1 = GID_1.copy()
+    new_DUAL_1 = DUAL_1.copy()
+    l_op, c_op, d_op = OP
+    l_or, c_or, d_or = OR
+
+    count = 0
+    for cid in cids:
+        # import pdb; pdb.set_trace()
+        test = GID_1 == cid
+        nids = test.sum()
+        fine_ids_in_cid = GID_0[test]
+        dual_ids = DUAL_1[test]
+        
+        # new_GID_1[count:nids] = cid
+        # new_DUAL_1[count:nids] = dual_ids
+        map_GID_0[count:count+nids] = fine_ids_in_cid
+        count += nids
+    
+    new_GID_0 = np.arange(GID_0.shape[0])
+    new_GID_1 = GID_1[map_GID_0].copy()
+    new_DUAL_1 = DUAL_1[map_GID_0].copy()
+    
+    new_l_op = np.array([new_GID_0[map_GID_0==i][0] for i in l_op])
+    new_c_or = np.array([new_GID_0[map_GID_0==i][0] for i in c_or])
+    new_fine_ids_finescale = np.array([new_GID_0[map_GID_0==i][0] for i in fine_ids_finescale])
+    new_OP = [new_l_op, c_op, d_op]
+    new_OR = [l_or, new_c_or, d_or]
+
+    new_fine_levels = fine_levels[map_GID_0]
+
+    return new_GID_0, new_GID_1, new_DUAL_1, new_fine_ids_finescale, new_OP, new_OR, new_fine_levels, map_GID_0
+
+def get_adm_solution_with_remap(
+        GID_0: np.ndarray,
+        new_GID_0: np.ndarray,
+        new_GID_1,
+        new_DUAL_1,
+        new_fine_ids_finescale,
+        new_fine_levels,
+        new_OP,
+        new_OR,
+        map_GID_0,
+        fine_transmissibility: sp.csc_matrix,
+        fine_source: np.ndarray,
+        **kwargs
+):
+    
+    # new_OP_NU_ADM = sp.csc_matrix((dp, (lp, cp)), shape=(n_f, n_ADM))
+    # new_OR_NU_ADM = sp.csc_matrix((dr, (lr, cr)), shape=(n_ADM, n_f))
+
+    import pdb; pdb.set_trace()
+    data_permutation = np.ones(new_GID_0.shape[0], dtype=int)
+    n_permutation = GID_0.shape[0]
+    permutation = sp.csc_matrix((data_permutation, (GID_0, new_GID_0)), shape=(n_permutation, n_permutation))
+    permutation_transp = permutation.transpose().copy()
+    new_transmissibility = permutation*(fine_transmissibility*permutation_transp)
+    new_source = permutation*fine_source
+
+    coarse_id_NU_ADM, NU_ADM_ID = nu_adm_funcs.define_NU_ADM_mesh(
+        new_DUAL_1,
+        new_GID_0,
+        new_GID_1,
+        new_fine_ids_finescale
+    )
+
+    OP_adm, OR_adm, coarse_ids_adm = nu_adm_funcs.update_NU_ADM_operators_v0(
+        new_OP,
+        new_fine_levels,
+        coarse_id_NU_ADM,
+        new_GID_1,
+        new_GID_0,
+        NU_ADM_ID,
+        new_fine_ids_finescale
+    )
+
+    T_adm = OR_adm*(new_transmissibility*OP_adm)
+    Q_adm = OR_adm*new_source
+    P_adm = spsolve(T_adm.tocsc(), Q_adm)
+    P_prol = OP_adm*P_adm
+    P_prol_orig = permutation_transp*(P_prol)
+    return P_prol_orig
+
+
+
+
+
+
+
 
 
 def run3():
@@ -212,7 +382,6 @@ def run3():
     
     export_adm_levels_file = True
 
-
     lsds = LsdsFluxCalculation()
 
     fine_mesh_path, fine_mesh_properties_name, fine_mesh_path_v4 = get_fine_mesh_path_and_mesh_properties_name_for_test()
@@ -221,16 +390,11 @@ def run3():
     fine_mesh_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name, mesh_name_v4=fine_mesh_path_v4)
     coarse_mesh_properties = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
 
-    mesh_data = MeshData(mesh_path = fine_mesh_path)
-    mesh_data.create_tag('permeability')
-    perms = fine_mesh_properties.permeability[:, 0, 0]
-    mesh_data.insert_tag_data('permeability', perms, elements_type='faces')
-    mesh_data.export_all_elements_type_to_vtk('perm_field', element_type='faces')
-
     create_primal_ids(fine_mesh_properties, coarse_mesh_properties)
     create_dual_ids(fine_mesh_properties, coarse_mesh_properties)
 
     # update_permeability(fine_mesh_properties)
+    # update_permeability_2_regions(fine_mesh_properties)
 
     # mesh_data = MeshData(mesh_path=fine_mesh_path)
     # mesh_data.create_tag('permeability')
@@ -377,7 +541,8 @@ def run3():
                 dual_edges=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('edge_id')],
                 dual_faces=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('face_id')],
                 coarse_ids=fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
-                OR_fv=OR_AMS                
+                OR_fv=OR_AMS,
+                maxit=500                
             )
         else:
             raise ValueError
@@ -387,8 +552,6 @@ def run3():
         
     else:
        OP_AMS = utils_old.load_matrix(matrix_path, op_name)
-
-    
     
     
     # import pdb; pdb.set_trace()
@@ -403,41 +566,81 @@ def run3():
     # Perm = sp.csc_matrix((data, (lines, reordered)), shape=(n ,n))
     # A2 = Perm*A*Perm.transpose()
     # b2 = Perm*b
-
+       
+    
+    dual_volumes = fine_mesh_properties['dual_volumes_level1']
+    boundary_faces = fine_mesh_properties['adjacencies'][fine_mesh_properties.boundary_edges, 0]
+    dual_in_boundary = []
+    for dual in dual_volumes:
+        if np.any(np.isin(dual, boundary_faces)):
+            dual_in_boundary.append(dual)
+    
+    dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
+        
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
     ### adm
     adm = Adm()
     fine_levels = np.full(len(fine_mesh_properties['faces']), -1)
-    boundary_coarse_faces = np.unique(np.concatenate(coarse_mesh_properties.faces_of_nodes[
-        coarse_mesh_properties['bool_boundary_nodes']
-        ]))
-    fine_levels[
-        np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], boundary_coarse_faces)
-    ] = 0
+    # boundary_coarse_faces = np.unique(np.concatenate(coarse_mesh_properties.faces_of_nodes[
+    #     coarse_mesh_properties['bool_boundary_nodes']
+    #     ]))
+    
+    # fine_levels[
+    #     np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], boundary_coarse_faces)
+    # ] = 0
+    fine_levels[dual_in_boundary] = 0
+
     # import pdb; pdb.set_trace()
     # alpha_lim_finescale = fine_level_from_alpha.get_alpha_lim_finescale(transm['transmissibility_without_bc'])
     # alpha_lim_finescale = 0.5*alpha_lim_finescale
     alpha_lim_finescale = 0.5
     # import pdb; pdb.set_trace()
     
-    # fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
-    #     OR_AMS,
-    #     OP_AMS,
-    #     transm['transmissibility_without_bc'],
-    #     alpha_lim=alpha_lim_finescale
-    # )
+    fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
+        OR_AMS,
+        OP_AMS,
+        transm['transmissibility_without_bc'],
+        alpha_lim=alpha_lim_finescale
+    )
     
     # primal_ids_alpha = np.unique(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_ids_from_alpha])
     
     # fine_levels[
     #     np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], primal_ids_alpha)
     # ] = 0
-    
-    # fine_ids_from_beta = fine_level_from_beta.define_fine_levels_from_beta(
-    #     fine_mesh_properties['adjacencies'],
-    #     OP_AMS
-    # )
+
+    # fine_levels[fine_ids_from_alpha] = 0
+
+    beta_groups, beta_ind, betas = nu_adm_funcs.get_beta_groups(
+        fine_mesh_properties['faces'],
+        fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
+        sp.find(OP_AMS)[0:3],
+        fine_mesh_properties['adjacencies'][fine_mesh_properties.internal_edges],
+        beta_lim=3.0
+    )
+
+    # plot_beta_ind(betas, fine_mesh_properties['faces'], 0.3, fine_mesh_path)
+
+    finescale_faces = nu_adm_funcs.get_finescale_vols(
+        fine_mesh_properties['faces'][fine_levels==0],
+        fine_ids_from_alpha,
+        beta_ind,
+        beta_groups
+    )
+
+    # # primal_ids_finescale = np.unique(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][finescale_faces])
+
+    # # fine_levels[
+    # #     np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], primal_ids_finescale)
+    # # ] = 0
+
+    fine_levels[finescale_faces] = 0
+
+    # # # fine_ids_from_beta = fine_level_from_beta.define_fine_levels_from_beta(
+    # # #     fine_mesh_properties['adjacencies'],
+    # # #     OP_AMS
+    # # # )
     
     # primal_ids_beta = np.unique(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_ids_from_beta])
     # fine_levels[
@@ -454,15 +657,34 @@ def run3():
         fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
     ]
 
-    adm.update_levels(
-        list_primal_ids,
-        fine_levels,
-        fine_mesh_properties['faces'],
-        2,
-        fine_mesh_properties.faces_of_faces_by_nodes
-    )
+    # adm.update_levels(
+    #     list_primal_ids,
+    #     fine_levels,
+    #     fine_mesh_properties['faces'],
+    #     2,
+    #     fine_mesh_properties.faces_of_faces_by_nodes
+    # )
+
+    fine_levels[fine_levels==-1] = 1
+    finescale_ids = fine_mesh_properties['faces'][fine_levels==0]
     
-    # import pdb; pdb.set_trace()
+    # new_GID_0, new_GID_1, new_DUAL_1, new_fine_ids_finescale, new_OP, new_OR, new_fine_levels, map_GID_0 = modify_finescale_map(
+    #     fine_mesh_properties['faces'],
+    #     fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
+    #     fine_mesh_properties[defnames.get_dual_id_name_by_level(1)],
+    #     finescale_ids,
+    #     sp.find(OP_AMS)[0:3],
+    #     sp.find(OR_AMS)[0:3],
+    #     fine_levels
+    # )
+
+
+    # coarse_id_NU_ADM, NU_ADM_ID = nu_adm_funcs.define_NU_ADM_mesh(
+    #     list_dual_ids[0],
+    #     fine_mesh_properties['faces'],
+    #     fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
+    #     fine_mesh_properties['faces'][fine_levels==0]
+    # )
     
     if export_adm_levels_file is True:
         export_adm_levels(fine_mesh_path, fine_levels)
@@ -474,15 +696,45 @@ def run3():
             'adm_edges'
         )
 
-    OP_adm, OR_adm, coarse_ids_adm = adm.get_adm_prolongation_operator(
-        [OP_AMS],
-        [OR_AMS],
+    # OP_adm, OR_adm, coarse_ids_adm = adm.get_adm_prolongation_operator(
+    #     [OP_AMS],
+    #     [OR_AMS],
+    #     fine_levels,
+    #     list_primal_ids,
+    #     list_dual_ids,
+    #     fine_mesh_properties['faces'],
+    #     2
+    # )
+        
+    # OP_adm, OR_adm, coarse_ids_adm = nu_adm_funcs.update_NU_ADM_operators_v0(
+    #     sp.find(OP_AMS)[0:3],
+    #     fine_levels,
+    #     coarse_id_NU_ADM,
+    #     fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
+    #     fine_mesh_properties['faces'],
+    #     NU_ADM_ID,
+    #     fine_mesh_properties['faces'][fine_levels==0]
+    # )
+
+    LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
+        finescale_ids,
         fine_levels,
-        list_primal_ids,
-        list_dual_ids,
         fine_mesh_properties['faces'],
-        2
+        fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
+        fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
     )
+
+    OP_adm, OR_adm = nu_adm_funcs.organize(
+        fine_levels,
+        sp.find(OP_AMS)[0:3],
+        fine_mesh_properties['faces'],
+        fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
+        LEVEL_ID_1,
+        ADM_COARSE_ID_LEVEL_1,
+        fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
+    )
+
+    # export_nu_adm_op(fine_mesh_path, OP_adm)
 
     T_adm = OR_adm*(resp['transmissibility']*OP_adm)
     if modify_T_adm is True:
@@ -492,9 +744,29 @@ def run3():
                 w=1.1,
                 lines_to_modify=coarse_ids_adm
             )
+        
     Q_adm = OR_adm*resp['source']
     P_adm = spsolve(T_adm.tocsc(), Q_adm)
     P_prol = OP_adm*P_adm
+
+    # import pdb; pdb.set_trace()
+
+    # P_prol2 = get_adm_solution_with_remap(
+    #     fine_mesh_properties['faces'],
+    #     new_GID_0,
+    #     new_GID_1,
+    #     new_DUAL_1,
+    #     new_fine_ids_finescale,
+    #     new_fine_levels,
+    #     new_OP,
+    #     new_OR,
+    #     map_GID_0,
+    #     resp['transmissibility'],
+    #     resp['source'],
+    # )
+
+    # import pdb; pdb.set_trace()
+
 
     # P_prol = ms_solve_it(
     #     A,
@@ -508,12 +780,39 @@ def run3():
     #     internal_loop_maxiter=100
     # )
 
+    # LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
+    #     finescale_ids,
+    #     fine_levels,
+    #     fine_mesh_properties['faces'],
+    #     fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
+    #     fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
+    # )
+
+    # OP_adm2, OR_adm2 = nu_adm_funcs.organize(
+    #     fine_levels,
+    #     sp.find(OP_AMS)[0:3],
+    #     fine_mesh_properties['faces'],
+    #     fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
+    #     LEVEL_ID_1,
+    #     ADM_COARSE_ID_LEVEL_1,
+    #     fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
+    # )
+
+    # T_adm2 = OR_adm2*(resp['transmissibility']*OP_adm2)
+    # Q_adm2 = OR_adm2*resp['source']
+    # P_adm2 = spsolve(T_adm2.tocsc(), Q_adm2)
+    # P_prol2 = OP_adm2*P_adm2
+
+
     error = np.absolute(pressure - P_prol)
     relative_error = (error/pressure)*100
 
     mesh_data = MeshData(mesh_path=fine_mesh_path)
     mesh_data.create_tag('pressure')
     mesh_data.insert_tag_data('pressure', pressure, elements_type='faces')
+
+    # mesh_data.create_tag('adm_prol_pressure_2')
+    # mesh_data.insert_tag_data('adm_prol_pressure_2', P_prol2, elements_type='faces')
 
     mesh_data.create_tag('adm_prol_pressure')
     mesh_data.insert_tag_data('adm_prol_pressure', P_prol, elements_type='faces')
