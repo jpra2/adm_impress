@@ -338,8 +338,67 @@ def get_adm_solution_with_remap(
     P_prol_orig = permutation_transp*(P_prol)
     return P_prol_orig
 
+def define_new_fine_levels_v0(
+        fine_mesh_properties: MeshProperty,
+        bc: BoundaryConditions
+):
+    faces_of_nodes = fine_mesh_properties['faces_of_nodes']
+    dual_volumes = fine_mesh_properties['dual_volumes_level1']
+    
+    nodes_pressure_presc = bc['dirichlet_nodes']['id']
+    faces_of_nodes_presc = np.unique(
+        np.concatenate(faces_of_nodes[nodes_pressure_presc])
+    )   
+    
+    boundary_faces = faces_of_nodes_presc
+    dual_in_boundary = []
+    for dual in dual_volumes:
+        if np.any(np.isin(dual, boundary_faces)):
+            dual_in_boundary.append(dual)
+    
+    dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
+    return dual_in_boundary
 
+def define_new_fine_levels_v1(
+        fine_mesh_properties: MeshProperty,
+        bc: BoundaryConditions
+):
+    faces_of_nodes = fine_mesh_properties['faces_of_nodes']
+    dual_volumes = fine_mesh_properties['dual_volumes_level1']
+    dual_id = fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
+    
+    nodes_pressure_presc = bc['dirichlet_nodes']['id']
+    faces_of_nodes_presc = np.unique(
+        np.concatenate(faces_of_nodes[nodes_pressure_presc])
+    )
+    faces_of_nodes_presc = faces_of_nodes_presc[dual_id[faces_of_nodes_presc] == defnames.dual_ids('face_id')]
+    
+    boundary_faces = faces_of_nodes_presc
+    dual_in_boundary = []
+    for dual in dual_volumes:
+        if np.any(np.isin(dual, boundary_faces)):
+            dual_in_boundary.append(dual)
+    
+    dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
+    return dual_in_boundary
+    
+def define_new_fine_levels(
+        fine_mesh_properties: MeshProperty,
+        bc: BoundaryConditions
+):
+    faces_of_nodes = fine_mesh_properties['faces_of_nodes']
+    primal_id = fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
+    faces = fine_mesh_properties['faces']
 
+    nodes_pressure_presc = bc['dirichlet_nodes']['id']
+    faces_of_nodes_presc = np.unique(
+        np.concatenate(faces_of_nodes[nodes_pressure_presc])
+    )
+
+    primal_ids_presc = np.unique(primal_id[faces_of_nodes_presc])
+    boundary_faces = faces[np.isin(primal_id, primal_ids_presc)]
+
+    return boundary_faces
 
 
 
@@ -568,14 +627,18 @@ def run3():
     # b2 = Perm*b
        
     
-    dual_volumes = fine_mesh_properties['dual_volumes_level1']
-    boundary_faces = fine_mesh_properties['adjacencies'][fine_mesh_properties.boundary_edges, 0]
-    dual_in_boundary = []
-    for dual in dual_volumes:
-        if np.any(np.isin(dual, boundary_faces)):
-            dual_in_boundary.append(dual)
+    # dual_volumes = fine_mesh_properties['dual_volumes_level1']
+    # boundary_nodes = fine_mesh_properties['nodes'][fine_mesh_properties['bool_boundary_nodes']]
+    # boundary_faces = np.unique(np.concatenate(
+    #     fine_mesh_properties['faces_of_nodes'][boundary_nodes]
+    # ))
+    # dual_in_boundary = []
+    # for dual in dual_volumes:
+    #     if np.any(np.isin(dual, boundary_faces)):
+    #         dual_in_boundary.append(dual)
+    # dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
     
-    dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
+    dual_in_boundary = define_new_fine_levels(fine_mesh_properties, bc)
         
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
