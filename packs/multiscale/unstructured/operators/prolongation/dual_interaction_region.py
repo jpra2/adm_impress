@@ -15,10 +15,12 @@ class DualInteractionRegion:
             boundary: np.ndarray, 
             initial_cc: np.ndarray,
             global_transmissibility: sp.csc_matrix,
-            global_diagonal_term: np.ndarray
+            global_diagonal_term: np.ndarray,
+            dual_id
         ):
         
         self.region = region
+        self.local_dual_id = dual_id[region]
         self.vertice = vertice
         self.coarse_id = coarse_id
         self.internal_edge_path_to_vertice = internal_edge_path_to_vertice
@@ -47,7 +49,8 @@ def create_dual_interaction_regions(
         list_boundarys,
         list_initial_cc,
         global_transmissibility,
-        global_diagonal_term
+        global_diagonal_term,
+        dual_id
 
     ) -> Sequence[DualInteractionRegion]:
     
@@ -63,7 +66,8 @@ def create_dual_interaction_regions(
                 list_boundarys[i],
                 list_initial_cc[i],
                 global_transmissibility,
-                global_diagonal_term
+                global_diagonal_term,
+                dual_id
             )
         )
     

@@ -14,6 +14,7 @@ def define_fine_levels_from_alpha(
     data_T_alpha = get_data_T_alpha(T, OP)
     alphai = np.zeros(n)
     
+    
     for i in range(n):
         test = data_T_alpha[0] == i
         datai = data_T_alpha[2][test]
@@ -26,9 +27,9 @@ def define_fine_levels_from_alpha(
         datai = datai[test2]
         colsi = colsi[test2]
         ############
-        
+
         max_arg = np.argmax(datai)
-        alphai[i] = datai[max_arg]/tau_coarse[colsi[max_arg]]   
+        alphai[i] = datai[max_arg]/tau_coarse[colsi[max_arg]]
     
     # test_neg = data_T_alpha[2] < 0
     # test_diag = data_T_alpha[0] == data_T_alpha[1]

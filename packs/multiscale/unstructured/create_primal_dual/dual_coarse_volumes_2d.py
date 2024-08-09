@@ -3,7 +3,7 @@ from packs import defnames
 import numpy as np
 from packs.utils.utils_old import get_local_shortest_path_for_create_dual_edges
 
-def create_dual_vertices(
+def create_dual_vertices_v1(
         coarse_faces_id: np.ndarray, 
         coarse_faces_centroids: np.ndarray, 
         fine_faces_id: np.ndarray, 
@@ -11,6 +11,10 @@ def create_dual_vertices(
         primal_id: np.ndarray, 
         dual_id: np.ndarray
     ) -> None:
+
+    """
+    Malha dual conforme arthur no AMS-U
+    """
 
     dual_vertices = np.repeat(-1, coarse_faces_id.shape[0])
     for coarse_face in coarse_faces_id:
@@ -43,6 +47,12 @@ def create_dual_vertices_v2(
         coarse_edges_centroids: np.ndarray,
         coarse_edges_of_faces: np.ndarray
 ) -> None:
+    
+    """
+    Os vertices dos edges da malha grossa primal que 
+    estao no contorno estao localizados no centroide dos edges do contorno
+    eliminando o loop nos edges do contorno
+    """
     
     dual_vertices = np.repeat(-1, coarse_faces_id.shape[0])
     coarse_boundary_edges = coarse_edges[coarse_bool_boundary_edges]
@@ -91,7 +101,7 @@ def create_dual_vertices_v2(
     dual_id[dual_vertices] = defnames.dual_ids('vertice_id')
     
 
-def create_dual_edges(
+def create_dual_edges_v0(
         coarse_faces_id: np.ndarray, 
         coarse_faces_centroids: np.ndarray, 
         fine_faces_id: np.ndarray, 
@@ -108,6 +118,10 @@ def create_dual_edges(
         fine_boundary_edges: np.ndarray, 
         dual_id: np.ndarray
     ):
+
+    """
+    Nao esta sendo mais utilizada
+    """
 
     ## first: loop in boundary edges
     for coarse_edge in coarse_boundary_edges:
@@ -251,7 +265,7 @@ def create_dual_edges(
 
     return edges_paths
 
-def create_dual_edges_v2(
+def create_dual_edges_v1(
         coarse_faces_id: np.ndarray, 
         coarse_faces_centroids: np.ndarray, 
         fine_faces_id: np.ndarray, 
@@ -268,6 +282,10 @@ def create_dual_edges_v2(
         fine_boundary_edges: np.ndarray, 
         dual_id: np.ndarray
     ):
+
+    """
+    Malha dual conforme arthur no AMS-U
+    """
 
     fine_dual_edge_to_coarse_edge = dict()
 
@@ -424,7 +442,7 @@ def create_dual_edges_v2(
 
     return coarse_face_path, coarse_edge_path, paths
 
-def create_dual_edges_v3(
+def create_dual_edges_v2(
         coarse_faces_id: np.ndarray, 
         coarse_faces_centroids: np.ndarray, 
         fine_faces_id: np.ndarray, 
@@ -443,7 +461,9 @@ def create_dual_edges_v3(
     ):
 
     """
-    Create dual edges with dual vertices in boundary
+    Os vertices dos edges da malha grossa primal que 
+    estao no contorno estao localizados no centroide dos edges do contorno
+    eliminando o loop nos edges do contorno
     """
 
     fine_dual_edge_to_coarse_edge = dict()
@@ -799,27 +819,45 @@ def get_dual_interaction_region_v2(
 def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty, level:int):
     dual_id = np.repeat(-1, fine_mesh_properties['faces'].shape[0])
 
-    # create_dual_vertices(
-    #     coarse_faces_id=coarse_mesh_properties['faces'],
-    #     coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
-    #     fine_faces_id=fine_mesh_properties['faces'],
-    #     fine_faces_centroids=fine_mesh_properties['faces_centroids'],
-    #     primal_id=fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
-    #     dual_id=dual_id
-    # )
-
-    create_dual_vertices_v2(
+    create_dual_vertices_v1(
         coarse_faces_id=coarse_mesh_properties['faces'],
         coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
         fine_faces_id=fine_mesh_properties['faces'],
         fine_faces_centroids=fine_mesh_properties['faces_centroids'],
         primal_id=fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
-        dual_id=dual_id,
+        dual_id=dual_id
+    )
+
+    # create_dual_vertices_v2(
+    #     coarse_faces_id=coarse_mesh_properties['faces'],
+    #     coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
+    #     fine_faces_id=fine_mesh_properties['faces'],
+    #     fine_faces_centroids=fine_mesh_properties['faces_centroids'],
+    #     primal_id=fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
+    #     dual_id=dual_id,
+    #     coarse_adjacencies=coarse_mesh_properties['adjacencies'],
+    #     coarse_bool_boundary_edges=coarse_mesh_properties['bool_boundary_edges'],
+    #     coarse_edges=coarse_mesh_properties['edges'],
+    #     coarse_edges_centroids=coarse_mesh_properties.edges_centroids,
+    #     coarse_edges_of_faces=coarse_mesh_properties['edges_of_faces']
+    # )
+
+    coarse_face_path, coarse_edge_path, edge_paths = create_dual_edges_v1(
+        coarse_faces_id=coarse_mesh_properties['faces'],
+        coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
+        fine_faces_id=fine_mesh_properties['faces'],
+        fine_faces_centroids=fine_mesh_properties['faces_centroids'],
+        primal_id=fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
+        fine_adjacencies=fine_mesh_properties['adjacencies'],
         coarse_adjacencies=coarse_mesh_properties['adjacencies'],
-        coarse_bool_boundary_edges=coarse_mesh_properties['bool_boundary_edges'],
+        fine_edges=fine_mesh_properties['edges'],
         coarse_edges=coarse_mesh_properties['edges'],
+        fine_edges_centroids=fine_mesh_properties.edges_centroids,
         coarse_edges_centroids=coarse_mesh_properties.edges_centroids,
-        coarse_edges_of_faces=coarse_mesh_properties['edges_of_faces']
+        fine_faces_of_faces=fine_mesh_properties.faces_of_faces,
+        coarse_boundary_edges=coarse_mesh_properties.boundary_edges,
+        fine_boundary_edges=fine_mesh_properties.boundary_edges,
+        dual_id=dual_id
     )
 
     # coarse_face_path, coarse_edge_path, edge_paths = create_dual_edges_v2(
@@ -839,24 +877,6 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
     #     fine_boundary_edges=fine_mesh_properties.boundary_edges,
     #     dual_id=dual_id
     # )
-
-    coarse_face_path, coarse_edge_path, edge_paths = create_dual_edges_v3(
-        coarse_faces_id=coarse_mesh_properties['faces'],
-        coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
-        fine_faces_id=fine_mesh_properties['faces'],
-        fine_faces_centroids=fine_mesh_properties['faces_centroids'],
-        primal_id=fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
-        fine_adjacencies=fine_mesh_properties['adjacencies'],
-        coarse_adjacencies=coarse_mesh_properties['adjacencies'],
-        fine_edges=fine_mesh_properties['edges'],
-        coarse_edges=coarse_mesh_properties['edges'],
-        fine_edges_centroids=fine_mesh_properties.edges_centroids,
-        coarse_edges_centroids=coarse_mesh_properties.edges_centroids,
-        fine_faces_of_faces=fine_mesh_properties.faces_of_faces,
-        coarse_boundary_edges=coarse_mesh_properties.boundary_edges,
-        fine_boundary_edges=fine_mesh_properties.boundary_edges,
-        dual_id=dual_id
-    )
 
     test = dual_id == -1
     if np.any(test):

@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.sparse as sp
 from typing import Sequence
+from packs.manager.boundary_conditions import BoundaryConditions
 
 
 def define_NU_ADM_mesh(DUAL_1: np.ndarray, GID_0: np.ndarray, GID_1: np.ndarray, fs_vols: np.ndarray):
@@ -228,3 +229,18 @@ def organize(
     OR_ADM = sp.csc_matrix((data,(lines,cols)),shape=(n1_adm,len(gid_0)))
 
     return OP_ADM, OR_ADM
+
+def calculate_fine_flux(
+        GID_0: np.ndarray,
+        GID_1: np.ndarray,
+        pms_pressure: np.ndarray,
+        fine_edges: np.ndarray,
+        fine_edges_flux: np.ndarray,
+        fine_boundary_edges: np.ndarray,
+        fine_weights: np.ndarray,
+        fine_transmissibility: sp.csc_matrix,
+        DUAL_1: np.ndarray
+):
+    pass
+    
+    

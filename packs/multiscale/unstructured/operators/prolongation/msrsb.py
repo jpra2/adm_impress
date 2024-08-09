@@ -44,14 +44,16 @@ class MsRSB:
         """
         
         OP = OR_fv.transpose().tolil()
+        OP_toget = OP.copy()
         Ematrix = -omega*(self.get_D_matrix(T)@T)
         emax = 1e4
         toget_Dij = self.mount_toget_Dij(interation_regions, interation_boundaries, coarse_ids, faces)
 
+        cont = True
         count = 1
-        while emax >= etol and count < maxit:
+        while emax >= etol and count < maxit and cont:
             for i in range(10):
-                emax = self._mount_local_op_it(
+                newemax = self._mount_local_op_it(
                     coarse_ids, 
                     OP, 
                     dual_edges, 
@@ -61,9 +63,18 @@ class MsRSB:
                     toget_Dij,
                 )
                 count += 1
+                if newemax < emax:
+                    emax = newemax
+                    OP_toget = OP.copy()
+                else:
+                    
+                    print(f'MsRSB -- Loop: {count} and emax: {newemax} \n')
+                print(f'MsRSB -- Loop: {count} and emax: {newemax} \n')
         
-        print(f'MsRSB Operator With {count} iterations \n')
-                
+        print(f'MsRSB Operator With {count} iterations and tol={emax} \n')
+        
+        OP = OP_toget.copy()
+        del OP_toget
         soma_op = np.array(OP.sum(axis=1)).flatten()
         data_OP = sp.find(OP)
         data = data_OP[2]/soma_op[data_OP[0]]
@@ -93,7 +104,7 @@ class MsRSB:
         Matrix = sp.csc_matrix((data, (lines, cols)), shape=(n,m))
         return Matrix
             
-    def _update_Dij_dual_edges(self, Dij: sp.csc_matrix, dual_edges: np.ndarray, OP: sp.csc_matrix) -> None:
+    def _update_Dij_dual_edges(self, Dij: sp.lil_matrix, dual_edges: np.ndarray, OP: sp.csc_matrix) -> None:
               
         soma_dual_edges = np.array(Dij.sum(axis=1)[dual_edges]) 
         # soma_dual_edges = soma_dual_edges.reshape(soma_dual_edges.shape[0], 1)
@@ -104,10 +115,12 @@ class MsRSB:
         
     def _mount_local_op_it(self, coarse_ids, OP: sp.lil_matrix, dual_edges, dual_faces, vertices, Ematrix: sp.csc_matrix, toget_Dij):
         
-        Dij: sp.csc_matrix = Ematrix@OP
-        Dij[vertices, coarse_ids] = 0
         
-        self._update_Dij_dual_edges(Dij.tolil(), dual_edges, OP.tocsc())
+        Dij: sp.lil_matrix = (Ematrix@OP).tolil()
+        Dij[vertices, coarse_ids] = 0
+
+        self._update_Dij_dual_edges(Dij, dual_edges, OP.tocsc())
+        Dij = Dij.tocsc()
         Dij.eliminate_zeros()
         
         dij_final = Dij.multiply(toget_Dij)
