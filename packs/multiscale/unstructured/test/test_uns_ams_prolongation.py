@@ -338,10 +338,20 @@ def get_adm_solution_with_remap(
     P_prol_orig = permutation_transp*(P_prol)
     return P_prol_orig
 
+def define_new_fine_levels(
+    fine_mesh_properties: MeshProperty,
+    bc: BoundaryConditions
+) -> np.ndarray:
+    """
+    Nenhum volume na malha fina
+    """
+    return np.array([])
+
+
 def define_new_fine_levels_v0(
         fine_mesh_properties: MeshProperty,
         bc: BoundaryConditions
-):
+) -> np.ndarray:
     
     """
     Todas as duais do contorno na malha fina
@@ -367,12 +377,11 @@ def define_new_fine_levels_v0(
 def define_new_fine_levels_v1(
         fine_mesh_properties: MeshProperty,
         bc: BoundaryConditions
-):
+) -> np.ndarray:
     
     """
     Apenas as duais com prescricao na malha fina usando a dual tipo 1
     """
-    
 
     faces_of_nodes = fine_mesh_properties['faces_of_nodes']
     dual_volumes = fine_mesh_properties['dual_volumes_level1']
@@ -393,10 +402,10 @@ def define_new_fine_levels_v1(
     dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
     return dual_in_boundary
     
-def define_new_fine_levels(
+def define_new_fine_levels_v2(
         fine_mesh_properties: MeshProperty,
         bc: BoundaryConditions
-):
+) -> np.ndarray:
     """
     Todos os primais com prescricao permanecem na malha fina
     """
@@ -418,7 +427,7 @@ def define_new_fine_levels(
 def define_new_fine_levels_v3(
         fine_mesh_properties: MeshProperty,
         bc: BoundaryConditions
-):
+) -> np.ndarray:
     """
     Apenas os volumes da malha fina com prescricao ficam na malha fina
     """
@@ -438,7 +447,7 @@ def define_new_fine_levels_v3(
 
 
 def run3():
-    w = 1
+    w = 0
     matrix_path = 'matrices.h5'
     fine_transm_without_bc_name = 'fine_transm_without_bc'
     save_fine_transm_without_bc = True
@@ -449,7 +458,7 @@ def run3():
     save_fine_transmissibility = True
 
     list_op_toget = ['AMS', 'AMS-U', 'MsRSB']
-    op_toget = 'MsRSB'
+    op_toget = 'AMS-U'
     if op_toget not in list_op_toget:
         raise ValueError
 
@@ -464,9 +473,9 @@ def run3():
 
 
     save_fine_transm_without_bc=False
-    # save_monotone_transm = False
+    save_monotone_transm = False
     save_fine_transmissibility = False
-    # save_op = False
+    save_op = False
     # save_ops_adm = False
 
     monotone_transm = None
@@ -486,7 +495,7 @@ def run3():
     create_dual_ids(fine_mesh_properties, coarse_mesh_properties)
 
     # update_permeability(fine_mesh_properties)
-    # # update_permeability_2_regions(fine_mesh_properties)
+    # update_permeability_2_regions(fine_mesh_properties)
 
     # mesh_data = MeshData(mesh_path=fine_mesh_path)
     # mesh_data.create_tag('permeability')
@@ -687,7 +696,8 @@ def run3():
     # fine_levels[
     #     np.isin(fine_mesh_properties[defnames.get_primal_id_name_by_level(1)], boundary_coarse_faces)
     # ] = 0
-    fine_levels[dual_in_boundary] = 0
+    if dual_in_boundary.shape[0] > 0:
+        fine_levels[dual_in_boundary] = 0
 
     # import pdb; pdb.set_trace()
     # alpha_lim_finescale = fine_level_from_alpha.get_alpha_lim_finescale(transm['transmissibility_without_bc'])
@@ -787,13 +797,17 @@ def run3():
     if export_adm_levels_file is True:
         export_adm_levels(fine_mesh_path, fine_levels)
         # flying_mesh_path = _create_flying_mesh(fine_mesh_path)
-        print_adm_interfaces_2d(
-            fine_mesh_properties,
-            fine_mesh_path,
-            fine_levels,
-            'adm_edges'
-        )
-
+        test = fine_levels == 0
+        if test.sum() > 0:
+            print_adm_interfaces_2d(
+                fine_mesh_properties,
+                fine_mesh_path,
+                fine_levels,
+                'adm_edges'
+            )
+        else:
+            print("Nao tem volumes na malha fina \n")
+ 
     # OP_adm, OR_adm, coarse_ids_adm = adm.get_adm_prolongation_operator(
     #     [OP_AMS],
     #     [OR_AMS],

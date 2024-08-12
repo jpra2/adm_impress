@@ -23,6 +23,11 @@ def get_interfaces_edges(
         ]
         edges_to_print.append(edges_intersection)
     
+    if len(edges_to_print) > 0:
+        pass
+    else:
+        return np.array(edges_to_print)
+    
     edges_to_print = np.unique(np.concatenate(edges_to_print))
     
     return edges_to_print

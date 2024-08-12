@@ -819,48 +819,30 @@ def get_dual_interaction_region_v2(
 def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty, level:int):
     dual_id = np.repeat(-1, fine_mesh_properties['faces'].shape[0])
 
-    create_dual_vertices_v1(
-        coarse_faces_id=coarse_mesh_properties['faces'],
-        coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
-        fine_faces_id=fine_mesh_properties['faces'],
-        fine_faces_centroids=fine_mesh_properties['faces_centroids'],
-        primal_id=fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
-        dual_id=dual_id
-    )
-
-    # create_dual_vertices_v2(
+    # create_dual_vertices_v1(
     #     coarse_faces_id=coarse_mesh_properties['faces'],
     #     coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
     #     fine_faces_id=fine_mesh_properties['faces'],
     #     fine_faces_centroids=fine_mesh_properties['faces_centroids'],
     #     primal_id=fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
-    #     dual_id=dual_id,
-    #     coarse_adjacencies=coarse_mesh_properties['adjacencies'],
-    #     coarse_bool_boundary_edges=coarse_mesh_properties['bool_boundary_edges'],
-    #     coarse_edges=coarse_mesh_properties['edges'],
-    #     coarse_edges_centroids=coarse_mesh_properties.edges_centroids,
-    #     coarse_edges_of_faces=coarse_mesh_properties['edges_of_faces']
+    #     dual_id=dual_id
     # )
 
-    coarse_face_path, coarse_edge_path, edge_paths = create_dual_edges_v1(
+    create_dual_vertices_v2(
         coarse_faces_id=coarse_mesh_properties['faces'],
         coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
         fine_faces_id=fine_mesh_properties['faces'],
         fine_faces_centroids=fine_mesh_properties['faces_centroids'],
         primal_id=fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
-        fine_adjacencies=fine_mesh_properties['adjacencies'],
+        dual_id=dual_id,
         coarse_adjacencies=coarse_mesh_properties['adjacencies'],
-        fine_edges=fine_mesh_properties['edges'],
+        coarse_bool_boundary_edges=coarse_mesh_properties['bool_boundary_edges'],
         coarse_edges=coarse_mesh_properties['edges'],
-        fine_edges_centroids=fine_mesh_properties.edges_centroids,
         coarse_edges_centroids=coarse_mesh_properties.edges_centroids,
-        fine_faces_of_faces=fine_mesh_properties.faces_of_faces,
-        coarse_boundary_edges=coarse_mesh_properties.boundary_edges,
-        fine_boundary_edges=fine_mesh_properties.boundary_edges,
-        dual_id=dual_id
+        coarse_edges_of_faces=coarse_mesh_properties['edges_of_faces']
     )
 
-    # coarse_face_path, coarse_edge_path, edge_paths = create_dual_edges_v2(
+    # coarse_face_path, coarse_edge_path, edge_paths = create_dual_edges_v1(
     #     coarse_faces_id=coarse_mesh_properties['faces'],
     #     coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
     #     fine_faces_id=fine_mesh_properties['faces'],
@@ -877,6 +859,24 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
     #     fine_boundary_edges=fine_mesh_properties.boundary_edges,
     #     dual_id=dual_id
     # )
+
+    coarse_face_path, coarse_edge_path, edge_paths = create_dual_edges_v2(
+        coarse_faces_id=coarse_mesh_properties['faces'],
+        coarse_faces_centroids=coarse_mesh_properties['faces_centroids'],
+        fine_faces_id=fine_mesh_properties['faces'],
+        fine_faces_centroids=fine_mesh_properties['faces_centroids'],
+        primal_id=fine_mesh_properties[defnames.get_primal_id_name_by_level(level)],
+        fine_adjacencies=fine_mesh_properties['adjacencies'],
+        coarse_adjacencies=coarse_mesh_properties['adjacencies'],
+        fine_edges=fine_mesh_properties['edges'],
+        coarse_edges=coarse_mesh_properties['edges'],
+        fine_edges_centroids=fine_mesh_properties.edges_centroids,
+        coarse_edges_centroids=coarse_mesh_properties.edges_centroids,
+        fine_faces_of_faces=fine_mesh_properties.faces_of_faces,
+        coarse_boundary_edges=coarse_mesh_properties.boundary_edges,
+        fine_boundary_edges=fine_mesh_properties.boundary_edges,
+        dual_id=dual_id
+    )
 
     test = dual_id == -1
     if np.any(test):
