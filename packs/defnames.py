@@ -1,4 +1,6 @@
 ## boundary mpfa
+import os
+
 nodes_pressure_prescription_name = 'dirichlet_nodes'
 neumann_edges = 'neumann_edges'
 
@@ -19,6 +21,10 @@ edges_selected = 'edges_selected'
 boundary_dual_interaction = 'boundary_of_interaction'
 internal_dual_path = 'internal_dual_path'
 dual_initial_ccs = 'initial_ccs'
+
+
+list_op_toget = ['AMS', 'AMS-U', 'MsRSB']
+
 
 def get_primal_id_name_by_level(level:int):
     return '_'.join([fine_primal_id, 'level' + str(level)])
@@ -45,3 +51,6 @@ def dual_ids(name:str):
 
 def level_str(level):
     return '_level' + str(level)
+
+
+

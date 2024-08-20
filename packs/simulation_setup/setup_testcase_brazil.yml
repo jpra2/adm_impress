@@ -1,0 +1,33 @@
+fine_mesh_path: ""
+coarse_mesh_path: ""
+fine_mesh_properties_name: "brazilf"
+coarse_mesh_properties_name: "brazilC1"
+
+
+update_primal: True
+dual_type: 1
+# dual_type: 2
+update_dual: True
+
+permeability_type: 'barrier'
+# permeability_type: 'channel'
+export_permfield: True
+
+update_nodes_weights: True
+
+## saves matrices
+matrix_path: "matrices_brazil.h5"
+save_fine_transm_without_bc: True
+save_monotone_transm: True
+save_fine_transmissibility: True
+save_op: True
+
+## algorithmic monotone weight
+monotone_transm_setup: 'use w'
+w: 0
+# monotone_transm_setup: 'enhanced'
+
+# list_op_toget = ['AMS', 'AMS-U', 'MsRSB']
+op_toget: 'AMS-U'
+
+export_adm_levels_file: True

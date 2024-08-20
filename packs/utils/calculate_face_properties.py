@@ -36,6 +36,8 @@ def sort_radial_sweep(vs, indices):
     returns the vertex indices in order around that poly.
     """
     # indices = np.arange(len(vs))
+    if len(vs) < 2:
+        import pdb; pdb.set_trace()
     assert len(vs) >= 2
     
     # Centroid of verts
@@ -144,13 +146,19 @@ def sort_vertices_of_all_faces(faces, vertices_of_faces, vertices_centroids):
         faces (_type_): face ids
         vertices_of_faces (_type_): _description_
     """
+
+    vf2 = vertices_of_faces.copy()
     
     for face in faces:
-        vf = vertices_of_faces[face]
+        vf = vf2[face]
+        # vf = vertices_of_faces[face]
         indices = np.arange(len(vf))
-        cent_vertices = vertices_centroids[vf]
+        cent_vertices = vertices_centroids[vf][:]
         new_indices = sort_radial_sweep(cent_vertices, indices)
-        vertices_of_faces[face][:] = vf[new_indices]   
+        cent_vertices[:] = cent_vertices[new_indices]
+        vf[:] = vf[new_indices]
+        new_index = sort_vertices_by_zdirection_xy_plane(cent_vertices)
+        vertices_of_faces[face][:] = vf[new_index]   
     
 def define_normal_and_area(faces, vertices_of_faces, vertices_centroids):
     """return the area and unitary normal
@@ -286,6 +294,8 @@ def ordenate_edges_and_nodes_of_nodes_xy_plane(nodes, edges, nodes_adj_by_nodes,
         edges_adj = edges_adj_by_nodes[node]
         
         centroids_nodes_adj = nodes_centroids[nodes_adj]
+        if centroids_nodes_adj.shape[0] == 0:
+            continue
         # import pdb; pdb.set_trace()
         index_sorted = sort_radial_sweep(centroids_nodes_adj, np.arange(len(centroids_nodes_adj)))
         

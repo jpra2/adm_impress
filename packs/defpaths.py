@@ -69,4 +69,5 @@ mesh_properties_mesh1_test = 'mpfad_lsds_mesh1'
 linear_2k_test = os.path.join(mpfad_mesh_folder, 'linear_2k_test.msh')
 mesh_prop_linear_2k = 'linear_2k_test'
 
+matrix_path = os.path.join(flying, 'matrices.h5')
 

@@ -57,12 +57,11 @@ class MpfaPreprocess:
             z_centroids = np.zeros((len(centroids_nodes), 1))
             centroids_nodes = np.hstack([centroids_nodes, z_centroids])
             nodes_of_faces = mesh_properties.nodes_of_faces
-            cnodes_faces = centroids_nodes[nodes_of_faces]
             n_faces = len(mesh_properties.faces)
 
             areas = np.zeros(n_faces)
             for i in range(n_faces):
-                areas[i] = calculate_face_properties.polygon_area(cnodes_faces[i])
+                areas[i] = calculate_face_properties.polygon_area(centroids_nodes[nodes_of_faces[i]])
             mesh_properties.insert_data({'areas': areas})
             mesh_properties.export_data()
 
