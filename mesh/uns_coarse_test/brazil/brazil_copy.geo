@@ -14,7 +14,7 @@ Mesh.CharacteristicLengthFactor = 6;
 //divd = 10/nn;
 
 
-nn = 0.25;
+nn = 2.5;
 diva =  18/nn;
 divb  = 15/nn;
 divc = 10/nn;
@@ -23,8 +23,8 @@ divd = 10/nn;
 
 cl__1 = 0.1;
 
-x = 0.5;
-y = 0.5;
+//x = 0.5;
+//y = 0.5;
 
 a = 1.5;
 b = 1;
@@ -95,16 +95,16 @@ Line(8) = {8, 5};
 Circle(9) = {9, 11, 10};
 Circle(10) = {10, 11, 9};
 
-Transfinite Line {1} = diva Using Progression 1;
-Transfinite Line {2} = divb Using Progression 1;
-Transfinite Line {3} = diva Using Progression 1;
-Transfinite Line {4} = divb Using Progression 1;
-Transfinite Line {5} = divc Using Progression 1;
-Transfinite Line {6} = divc Using Progression 1;
-Transfinite Line {7} = divc Using Progression 1;
-Transfinite Line {8} = divc Using Progression 1;
-Transfinite Curve {9} = divd Using Progression 1;
-Transfinite Curve {10} = divd Using Progression 1;
+//Transfinite Line {1} = diva Using Progression 1;
+//Transfinite Line {2} = divb Using Progression 1;
+//Transfinite Line {3} = diva Using Progression 1;
+//Transfinite Line {4} = divb Using Progression 1;
+//Transfinite Line {5} = divc Using Progression 1;
+//Transfinite Line {6} = divc Using Progression 1;
+//Transfinite Line {7} = divc Using Progression 1;
+//Transfinite Line {8} = divc Using Progression 1;
+//Transfinite Curve {9} = divd Using Progression 1;
+//Transfinite Curve {10} = divd Using Progression 1;
 
 
 //Transfinite Line {8} = divS Using Progression 1;

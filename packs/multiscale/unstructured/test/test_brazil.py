@@ -36,14 +36,17 @@ def get_properties():
     fine_mesh_properties_name = 'brazilf' 
     fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
 
-    coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
-    coarse_mesh_properties_name = 'brazilC1'
+    # coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
+    # coarse_mesh_properties_name = 'brazilC1'
 
     coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
     coarse_mesh_properties_name = 'brazilC2'
 
     # coarse_mesh_path = os.path.join(rel_path, 'brazilC3.msh')
     # coarse_mesh_properties_name = 'brazilC3'
+
+    # coarse_mesh_path = os.path.join(rel_path, 'brazilC4.msh')
+    # coarse_mesh_properties_name = 'brazilC4'
 
     fine_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name)
     coarse_properties = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
@@ -286,7 +289,7 @@ def export_primal_ids(fine_mesh_path, fine_mesh_properties: MeshProperty, coarse
         pass
     else:
         return
-
+    
     key1 = defnames.get_primal_id_name_by_level(1)
     primal_id = fine_mesh_properties[key1]
 
@@ -529,14 +532,14 @@ def run4():
     monotone_transm_name = 'monotone_transm_w_0'
     fine_transmissibility_name = 'fine_transmissibility'
     op_toget = 'AMS-U'
-    op_name = 'AMS_U_w_0'
+    op_name = 'AMS_U_w_0_dual2'
     level_str = defnames.level_str(1)
     alpha_lim_finescale = 0.5
     beta_lim = 3
     export_adm_levels_file = True
-    bool_export_primal_id = True
-    bool_export_dual_id = True
-    my_dual_type = 1
+    bool_export_primal_id = False
+    bool_export_dual_id = False
+    my_dual_type = 2
     perm_type = 'barrier'
     update_nodes_weights = False
     export_permfield = False
@@ -551,7 +554,7 @@ def run4():
     export_primal_ids(fine_mesh_path, fp, coarse_mesh_path, export=bool_export_primal_id)
     create_dual_ids(fp, cp, update=bool_export_dual_id, dual_type=my_dual_type)
     export_dual_ids(fine_mesh_path, fp, export=bool_export_dual_id)
-    
+
     # set_permeability(fp, typek=perm_type, export_permfield=export_permfield)
     bc = set_boundary_conditions(fp)
     set_weights_nodes(fp, update=update_nodes_weights)

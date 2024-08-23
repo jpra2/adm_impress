@@ -15,10 +15,10 @@ k=1;
 //divd = 10/nn;
 
 // malha fina
-nn = 0.25;
+//nn = 0.25;
 
 //malha grossa 2
-//nn=2;
+nn=1;
 
 diva =  18/nn;
 divb  = 15/nn;
@@ -100,16 +100,16 @@ Line(8) = {8, 5};
 Circle(9) = {9, 11, 10};
 Circle(10) = {10, 11, 9};
 
-Transfinite Line {1} = diva Using Progression 1;
-Transfinite Line {2} = divb Using Progression 1;
-Transfinite Line {3} = diva Using Progression 1;
-Transfinite Line {4} = divb Using Progression 1;
-Transfinite Line {5} = divc Using Progression 1;
-Transfinite Line {6} = divc Using Progression 1;
-Transfinite Line {7} = divc Using Progression 1;
-Transfinite Line {8} = divc Using Progression 1;
-Transfinite Curve {9} = divd Using Progression 1;
-Transfinite Curve {10} = divd Using Progression 1;
+//Transfinite Line {1} = diva Using Progression 1;
+//Transfinite Line {2} = divb Using Progression 1;
+//Transfinite Line {3} = diva Using Progression 1;
+//Transfinite Line {4} = divb Using Progression 1;
+//Transfinite Line {5} = divc Using Progression 1;
+//Transfinite Line {6} = divc Using Progression 1;
+//Transfinite Line {7} = divc Using Progression 1;
+//Transfinite Line {8} = divc Using Progression 1;
+//Transfinite Curve {9} = divd Using Progression 1;
+//Transfinite Curve {10} = divd Using Progression 1;
 
 
 //Transfinite Line {8} = divS Using Progression 1;
@@ -128,8 +128,8 @@ Plane Surface(2) = {2,3};
 //Line {6} In Surface {2};
 //Line {7} In Surface {2};
 //Line {8} In Surface {2};
-Recombine Surface {1};
-Recombine Surface {2};
+//Recombine Surface {1};
+//Recombine Surface {2};
 
 //Physical Point(101) = {1, 4};
 //Physical Point(102) = {2, 3};

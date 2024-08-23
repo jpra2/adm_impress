@@ -157,7 +157,12 @@ def verify_fine_adjacencies(fine_primal_ids, coarse_faces_ids, fine_adjacencies,
 def coarse_integrity_check(face_test, fine_adjacencies, fine_faces_centroids, fine_faces_id, primal_id, coarse_face, centroid_coarse_face, fine_edges_id, fine_edges_centroids):
     
     fine_faces_in_coarse_face = fine_faces_id[primal_id == coarse_face]
-    dists = np.linalg.norm(centroid_coarse_face - fine_faces_centroids[fine_faces_in_coarse_face], axis=1)
+    coarse_centroid = np.mean(
+        fine_faces_centroids[fine_faces_in_coarse_face],
+        axis=0
+    )
+    # dists = np.linalg.norm(centroid_coarse_face - fine_faces_centroids[fine_faces_in_coarse_face], axis=1)
+    dists = np.linalg.norm(coarse_centroid - fine_faces_centroids[fine_faces_in_coarse_face], axis=1)
     fine_face_in_coarse_centroid = fine_faces_in_coarse_face[dists <= dists.min()]
     
     edges_in_coarse_face = fine_edges_id[
@@ -214,9 +219,9 @@ def verify_fine_adjacencies_v2(fine_faces_id, primal_id, fine_adjacencies, fine_
         ]
 
         # import pdb; pdb.set_trace()
-        faces_of_faces_for_test = fine_faces_of_faces[faces_for_test]
-        test = np.array([utils_old.allUnique(primal_id[i]) for i in faces_of_faces_for_test])
-        faces_for_test = faces_for_test[test]
+        # faces_of_faces_for_test = fine_faces_of_faces[faces_for_test]
+        # test = np.array([utils_old.allUnique(primal_id[i]) for i in faces_of_faces_for_test])
+        # faces_for_test = faces_for_test[test]
 
 
         for face_test in faces_for_test:
