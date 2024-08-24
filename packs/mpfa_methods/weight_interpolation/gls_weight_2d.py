@@ -41,6 +41,8 @@ class CalculateGlsWeight2D:
 
         for node in nodes_to_iterate:
             edges_adj = edges_of_nodes[node]
+            if edges_adj.shape[0] == 0:
+                continue
             nodes_edges_adj = nodes_of_edges[edges_adj]
             nodes_adj = nodes_edges_adj[nodes_edges_adj!=node]
             centroid_node = nodes_centroids[node]
@@ -62,7 +64,6 @@ class CalculateGlsWeight2D:
             
             mnodes = np.zeros((n_nodes, 2*n_faces))
             mnormal_perm = np.zeros((n_edges, 2*n_faces))
-
 
             for i in range(n_edges):
                 edge = edges_adj[i]

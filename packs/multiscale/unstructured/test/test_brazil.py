@@ -32,15 +32,23 @@ def get_properties():
         defpaths.unstructured_coarse_test_mesh_folder,
         'brazil'
     )
-    fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
-    fine_mesh_properties_name = 'brazilf' 
-    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
+    # fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
+    # fine_mesh_properties_name = 'brazilf' 
+    # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
 
-    # coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
-    # coarse_mesh_properties_name = 'brazilC1'
+    fine_mesh_path = os.path.join(rel_path, 'brazilfquad.msh')
+    fine_mesh_properties_name = 'brazilfquad' 
+    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilfquad_v4.msh')
 
-    coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
-    coarse_mesh_properties_name = 'brazilC2'
+    # fine_mesh_path = os.path.join(rel_path, 'brazilf_test.msh')
+    # fine_mesh_properties_name = 'brazilf_test' 
+    # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_test_v4.msh')
+
+    coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
+    coarse_mesh_properties_name = 'brazilC1'
+
+    # coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
+    # coarse_mesh_properties_name = 'brazilC2'
 
     # coarse_mesh_path = os.path.join(rel_path, 'brazilC3.msh')
     # coarse_mesh_properties_name = 'brazilC3'
@@ -177,6 +185,8 @@ def set_boundary_conditions(fine_properties: MeshProperty) -> BoundaryConditions
     
     bc = BoundaryConditions()
 
+    k = 1
+
     nodes = fine_properties['nodes']
     nodes_centroids = fine_properties['nodes_centroids']
     edges = fine_properties['edges']
@@ -185,7 +195,7 @@ def set_boundary_conditions(fine_properties: MeshProperty) -> BoundaryConditions
     xmin, ymin = nodes_centroids.min(axis=0)
     xmax, ymax = nodes_centroids.max(axis=0)
 
-    R = 0.2
+    R = 0.2*k
 
     delta = fine_properties.edges_dim.min()/10
 
