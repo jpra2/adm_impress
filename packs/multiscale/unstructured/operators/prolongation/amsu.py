@@ -4,6 +4,8 @@ from packs.utils import utils_old
 from scipy.sparse.linalg import spsolve
 from packs import defnames
 
+
+
 class AmsU:
 
     def get_local_op(self, region, vertice, internal_path, boundary, initial_cc, local_transmissibility, local_diagonal_term, local_dual_id) -> np.ndarray:
@@ -121,5 +123,110 @@ class AmsU:
         
         return resp
 
-
-
+    @staticmethod
+    def get_Ts_2d(
+        fine_transmissibility: sp.csc_matrix,
+        permutation: sp.csc_matrix,
+        dual_id: np.ndarray,
+        *args,
+        **kwargs
+    ):
+        nf = (dual_id == defnames.dual_ids('face_id')).sum()
+        ne = (dual_id == defnames.dual_ids('edge_id')).sum()
+        nv = (dual_id == defnames.dual_ids('vertice_id')).sum()
+        
+        permT = permutation.transpose().copy()
+        
+        Twire = permutation*fine_transmissibility*permT
+        
+        Tff = Twire[0:nf, 0:nf]
+        Tfe = Twire[0:nf, nf:nf+ne]
+        Tfv = Twire[0:nf, nf+ne:nf+ne+nv]
+        
+        Tef = Twire[nf:nf+ne, 0:nf]
+        Tee = Twire[nf:nf+ne, nf:nf+ne]
+        Tev = Twire[nf:nf+ne, nf+ne:nf+ne+nv]
+        
+        # Tvf = Twire[nf+ne:nf+ne+nv, 0:nf]
+        # Tve = Twire[nf+ne:nf+ne+nv, nf:nf+ne]
+        # Tvv = Twire[nf+ne:nf+ne+nv, nf+ne:nf+ne+nv]
+        
+        resp = {
+            'ff': Tff,
+            'fe': Tfe,
+            'fv': Tfv,
+            'ef': Tef,
+            'ee': Tee,
+            'ev': Tev
+        }
+        
+        return resp, permT, nf, ne, nv
+    
+    
+    @staticmethod 
+    def get_As_2d(
+        fine_transmissibility: sp.csc_matrix,
+        permutation: sp.csc_matrix,
+        dual_id: np.ndarray,
+        *args,
+        **kwargs
+    ):
+        
+        Ts, permT, nf, ne, nv = AmsU.get_Ts_2d(fine_transmissibility, permutation, dual_id)
+        Aee: sp.csc_matrix = Ts['ee'].copy()
+        
+        soma = Ts['ef'].sum(axis=1)
+        d1 = np.matrix(Aee.diagonal()).reshape([ne, 1])
+        d1 += soma
+        Aee.setdiag(d1)
+        
+        Ts.update({'ee': Aee, 'ef': None})
+        
+        return Ts, permT, nf, ne, nv
+        
+    @staticmethod
+    def get_Mee_corr_inv(OP_ev, Aev, ne):
+        AevT = Aev.transpose().copy()
+        Mev: sp.csc_matrix = (Aev*AevT)        
+        Mev_inv = spsolve(Mev, sp.identity(ne))
+        Mee_cor_inv = (-OP_ev*Aev)*Mev_inv
+        return Mee_cor_inv
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    
+    @staticmethod
+    def get_correction_function(OP_AMSU: sp.csc_matrix, permutation: sp.csc_matrix, fine_source: np.ndarray, fine_transmissibility: sp.csc_matrix, dual_id: np.ndarray):
+        As, permT, nf, ne, nv = AmsU.get_As_2d(fine_transmissibility, permutation, dual_id)
+        fine_source_perm = permutation*fine_source
+        OP_perm = permutation*OP_AMSU
+        Mee_corr_inv = AmsU.get_Mee_corr_inv(OP_perm[nf:nf+ne], As['ev'], ne)
+        
+        pcorr_ee = Mee_corr_inv*fine_source_perm[nf:nf+ne]
+        pcorr_fe = -spsolve(As['ff'], As['fe']*pcorr_ee)
+        
+        pcorr_ff = spsolve(As['ff'], fine_source[0:nf])
+        
+        pcorr = np.zeros(fine_source.shape[0])
+        pcorr[nf:nf+ne] = pcorr_ee
+        pcorr[0:nf] = pcorr_ff + pcorr_fe
+        
+        return permT*pcorr
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        

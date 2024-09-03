@@ -39,6 +39,16 @@ def get_dual_interation_region_name_by_level(level):
     return '_'.join([dual_interation_region, 'level' + str(level)])
 
 def dual_ids(name:str):
+    
+    """
+        my_dict = {
+            'vertice_id': 3,
+            'edge_id': 2,
+            'face_id': 1,
+            'internal_id': 0 
+        }
+    """
+    
     my_dict = {
         'vertice_id': 3,
         'edge_id': 2,

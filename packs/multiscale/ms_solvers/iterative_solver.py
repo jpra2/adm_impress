@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
-from scipy.sparse.linalg import gmres, cg, bicgstab, spilu, splu, LinearOperator
+from scipy.sparse.linalg import gmres, cg, bicgstab, spilu, splu, LinearOperator, spsolve
 from packs.solvers.solvers_scipy.solver_sp import SolverSp
 
 def ms_solve_it(
@@ -76,7 +76,77 @@ def ms_solve_it(
     return x
         
 
-
+def iterative_ms_ilu0_bicgstab(
+    A: sp.csc_matrix,
+    b: np.ndarray,
+    OP: sp.csc_matrix,
+    OR: sp.csc_matrix,
+    epsilon=1e-13,
+    maxit=100
+):
+       
+    rn = b.copy()
+    rn2 = rn.copy()
+    pn = b.copy()
+    dp1 = b.copy()
+    dp2 = b.copy()
+    
+    R = OR
+    # R_ADM = OR_ADM
+    
+    ilu0 = spilu(A)
+    Mx = lambda x: ilu0.solve(x)
+    M = LinearOperator(A.shape, Mx)
+    
+    LU = splu((R*(A*OP)).tocsc())
+    
+    pn[:] = OP*LU.solve(R*b)
+    rn[:] = b - A*pn
+    
+    err = 1e5
+    
+    it = 1
+    while err > epsilon and it < maxit:
+        dp1[:], exitcode = bicgstab(A, rn, M=M, tol=epsilon, maxiter=1)
+        rn2[:] = rn - A*dp1
+        # rc[:] = LU.solve(rn2)
+        # dp2[:] = OP*rc
+        dp2[:] = OP*LU.solve(R*rn2)
+        
+        pn[:] += dp1 + dp2
+        rn[:] = b - A*pn
+        err = np.linalg.norm(rn)
+        it += 1
+        
+        # if err2 > err:
+        #     import pdb; pdb.set_trace()
+        # else:
+        #     err = err2
+    
+    # while err > epsilon and it < maxit:
+    #     dp1[:] = OP*LU.solve(R*rn)
+    #     rn2[:] = rn - A*dp1
+    #     dp2[:], exitcode = bicgstab(Ms, rn2, M=M, tol=epsilon, maxiter=1)
+    #     pn[:] += dp1 + dp2
+    #     rn[:] = b - A*pn
+    #     err = np.linalg.norm(rn)
+    #     print(f'err: {err} \n')
+    #     it += 1
+        
+    
+    dp1[:], exitcode = bicgstab(A, rn, M=M, tol=epsilon, maxiter=1)
+    pn[:] += dp1
+    rn[:] = b - A*pn
+    err = np.linalg.norm(rn)
+    
+    return pn, it, err
+    
+        
+        
+    
+    
+    
+    
 
 
 

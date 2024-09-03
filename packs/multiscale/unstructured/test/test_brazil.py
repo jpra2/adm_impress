@@ -32,13 +32,13 @@ def get_properties():
         defpaths.unstructured_coarse_test_mesh_folder,
         'brazil'
     )
-    # fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
-    # fine_mesh_properties_name = 'brazilf' 
-    # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
+    fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
+    fine_mesh_properties_name = 'brazilf' 
+    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
 
-    fine_mesh_path = os.path.join(rel_path, 'brazilfquad.msh')
-    fine_mesh_properties_name = 'brazilfquad' 
-    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilfquad_v4.msh')
+    # fine_mesh_path = os.path.join(rel_path, 'brazilfquad.msh')
+    # fine_mesh_properties_name = 'brazilfquad' 
+    # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilfquad_v4.msh')
 
     # fine_mesh_path = os.path.join(rel_path, 'brazilf_test.msh')
     # fine_mesh_properties_name = 'brazilf_test' 
@@ -455,7 +455,7 @@ def get_OR_AMS(fine_mesh_properties: MeshProperty):
     )
     return OR_AMS
 
-def get_op(
+def get_op( 
         save_op, 
         fine_mesh_properties: MeshProperty, 
         coarse_mesh_properties: MeshProperty,
@@ -531,13 +531,41 @@ def define_new_fine_levels(
     dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
     return dual_in_boundary
 
+def define_new_fine_levels_v2(
+        fine_mesh_properties: MeshProperty,
+        bc: BoundaryConditions
+) -> np.ndarray:
+    
+    """
+    Apenas as duais com prescricao na malha fina usando a dual tipo 2
+    """
+
+    faces_of_nodes = fine_mesh_properties['faces_of_nodes']
+    dual_volumes = fine_mesh_properties['dual_volumes_level1']
+    dual_id = fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
+    
+    nodes_pressure_presc = bc['dirichlet_nodes']['id']
+    faces_of_nodes_presc = np.unique(
+        np.concatenate(faces_of_nodes[nodes_pressure_presc])
+    )
+    # faces_of_nodes_presc = faces_of_nodes_presc[dual_id[faces_of_nodes_presc] == defnames.dual_ids('face_id')]
+    
+    boundary_faces = faces_of_nodes_presc
+    dual_in_boundary = []
+    for dual in dual_volumes:
+        if np.any(np.isin(dual, boundary_faces)):
+            dual_in_boundary.append(dual)
+    
+    dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
+    return dual_in_boundary
+
 def run4():
     matrix_path = 'matrices.h5'
     fine_transm_without_bc_name = 'fine_transm_without_bc'
     save_fine_transm_without_bc = False
     save_monotone_transm = False
     save_fine_transmissibility = False
-    save_op = True
+    save_op = False
     w = 0
     monotone_transm_name = 'monotone_transm_w_0'
     fine_transmissibility_name = 'fine_transmissibility'
@@ -549,7 +577,7 @@ def run4():
     export_adm_levels_file = True
     bool_export_primal_id = False
     bool_export_dual_id = False
-    my_dual_type = 2
+    my_dual_type = 1
     perm_type = 'barrier'
     update_nodes_weights = False
     export_permfield = False
@@ -602,6 +630,44 @@ def run4():
         resp,
         level_str
     )
+    
+    ########################################
+    # from packs.multiscale.unstructured.operators.prolongation.amsu import AmsU
+    
+    # amsu = AmsU()
+    # ams_unstructured = Unstructured2DAmsOperator()
+    
+    # permutation_dict, map_dict = ams_unstructured.get_permutation_matrix_data_2d(
+    #     fp[defnames.get_dual_id_name_by_level(1)],
+    #     fp['faces']
+    # )
+    
+    # pcorr = amsu.get_correction_function(
+    #     OP_AMS,
+    #     permutation_dict['G'],
+    #     resp['source'],
+    #     resp['transmissibility'].tocsc(),
+    #     fp[defnames.get_dual_id_name_by_level(1)]
+    # )
+    # coarse_T = OR_AMS*resp['transmissibility']*OP_AMS
+    # coarse_q = OR_AMS*(resp['source'] - resp['transmissibility']*pcorr)
+    # pc = spsolve(coarse_T.tocsc(), coarse_q)
+    # pms_classic = OP_AMS*pc + pcorr
+    #####################################
+    
+    # ##########################################
+    # ### iterative ms classic
+    # from packs.multiscale.ms_solvers.iterative_solver import iterative_ms_ilu0_bicgstab
+    # pit, it = iterative_ms_ilu0_bicgstab(
+    #     resp['transmissibility'],
+    #     resp['source'],
+    #     OP_AMS,
+    #     OR_AMS,
+    #     epsilon=1e-13
+    # )
+    # import pdb; pdb.set_trace()
+    # ##########################################
+
 
     fine_mesh_properties = fp
 
@@ -673,6 +739,19 @@ def run4():
         ADM_COARSE_ID_LEVEL_1,
         fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
     )
+    
+    ##########################################
+    ### iterative ms NU-ADM
+    from packs.multiscale.ms_solvers.iterative_solver import iterative_ms_ilu0_bicgstab
+    pit, it, resid = iterative_ms_ilu0_bicgstab(
+        resp['transmissibility'],
+        resp['source'],
+        OP_AMS,
+        OR_AMS,
+        epsilon=1e-13
+    )
+    import pdb; pdb.set_trace()
+    ##########################################
 
     # export_nu_adm_op(fine_mesh_path, OP_adm)
 
@@ -683,6 +762,14 @@ def run4():
 
     error = np.absolute(pressure - P_prol)
     relative_error = (error/pressure)*100
+    l2_norm_error = np.linalg.norm(error)
+    l2_norm_relative_error = np.linalg.norm(relative_error)
+    
+    error_classic = np.absolute(pressure - pms_classic)
+    relative_error_classic = (error_classic/pressure)*100
+    l2_norm_error_classic = np.linalg.norm(error_classic)
+    l2_norm_relative_error_classic = np.linalg.norm(relative_error_classic)
+    
 
     mesh_data = MeshData(mesh_path=fine_mesh_path)
     mesh_data.create_tag('pressure')
@@ -690,17 +777,23 @@ def run4():
 
     mesh_data.create_tag('adm_prol_pressure')
     mesh_data.insert_tag_data('adm_prol_pressure', P_prol, elements_type='faces')
-
+    
     mesh_data.create_tag('absolute_error')
     mesh_data.insert_tag_data('absolute_error', error, elements_type='faces')
-
+    
     mesh_data.create_tag('relative_error')
     mesh_data.insert_tag_data('relative_error', relative_error, elements_type='faces')
 
     export_adm_name = 'adm_solution_w_' + str(w) + '_' + op_toget + "_NU-ADM"
   
     mesh_data.export_all_elements_type_to_vtk(export_adm_name, element_type='faces')
+    
+    # print('###############################################')
+    # print(f' Max abs error {error.max()}')
+    # print(f' Max relative error {relative_error.max()}')
+    # print(f' L2 error {l2_norm_error}')
+    # print(f' L2 relative error {l2_norm_relative_error}')
+    # print('###############################################')
 
-    import pdb; pdb.set_trace()
 
 

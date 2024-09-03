@@ -39,7 +39,7 @@ def _get_fine_faces_in_triangle(centroids_coarse_points_face, centroids_fine_fac
     test = np.array([poly.contains(i) for i in points_list.geoms])
     fine_faces_in_coarse_face = fine_faces_step1[test]
 
-    # polygon = centroids_coarse_points_face
+    # polygon = centroids2
     # result = np.array([nbspatial.ray_tracing(point[0], point[1], polygon) for point in centroids_fine_faces])
     # fine_faces_in_coarse_face = fine_faces_step1[result]
 

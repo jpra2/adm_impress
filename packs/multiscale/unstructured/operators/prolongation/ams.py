@@ -225,6 +225,35 @@ class Unstructured2DAmsOperator(SuperArrayManager):
         OP = sp.lil_matrix((fine_faces.shape[0], coarse_faces.shape[0]))
         return OP
 
+    @staticmethod
+    def get_permutation_matrix_data_2d(dual_id: np.ndarray, fine_id: np.ndarray):
+        n = fine_id.shape[0]
+        testf = dual_id == defnames.dual_ids('face_id')
+        nf = testf.sum()
+        teste = dual_id == defnames.dual_ids('edge_id')
+        ne = teste.sum()
+        testv = dual_id == defnames.dual_ids('vertice_id')
+        nv = testv.sum()
+        
+        dual_map = np.repeat(-1, n)
+        dual_map[0:nf] = fine_id[testf]
+        dual_map[nf:nf+ne] = fine_id[teste]
+        dual_map[nf+ne:nf+ne+nv] = fine_id[testv]
+        
+        ns = np.array([nf, ne, nv])
+        
+        data = np.ones(fine_id.shape[0])
+        G = sp.csc_matrix((data, (fine_id, dual_map)), shape=(n, n))
+        
+        resp = {'G': G}
+        resp2 = {'dual_map': dual_map, 'dual_ns': ns}
+        return resp, resp2
+        
+        
+        
+        
+        
+        
 
 
 

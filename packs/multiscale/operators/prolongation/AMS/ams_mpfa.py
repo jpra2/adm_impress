@@ -106,7 +106,7 @@ class AMSMpfa(AMSTpfa):
 
         return self.GT*op*self.G2
 
-    def run(self, T: 'transmissibility matrix'):
+    def run(self, T: sp.csc_matrix):
 
         T_wire = self.G*T*self.GT
         As = self.get_as(T_wire)
