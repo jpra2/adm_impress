@@ -12,8 +12,8 @@ import scipy.sparse as sp
 from scipy.sparse.csgraph import shortest_path
 from packs.utils import utils_old
 import time
-from packs.utils.to_compile_funcs.funcs import nbspatial
-from matplotlib.path import Path
+# from packs.utils.to_compile_funcs.funcs import nbspatial
+# from matplotlib.path import Path
 
 def _define_fine_volumes_in_coarse_volumes_step1(all_fine_faces_centroids, all_fine_faces_ids, coarse_points_face, coarse_nodes_centroids):
     coarse_centroids_of_face = coarse_nodes_centroids[coarse_points_face]

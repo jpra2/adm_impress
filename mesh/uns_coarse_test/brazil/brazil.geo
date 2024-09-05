@@ -3,7 +3,7 @@
 Mesh.Algorithm = 2;
 Mesh.CharacteristicLengthFactor = 6;
 
-k=10;
+k=1;
 
 //divD = 30;
 //divS = 30;
@@ -15,7 +15,7 @@ k=10;
 //divd = 10/nn;
 
 // malha fina
-nn = 0.3;
+nn = 0.193;
 
 //malha grossa 2
 //nn=1;

@@ -106,38 +106,44 @@ def iterative_ms_ilu0_bicgstab(
     err = 1e5
     
     it = 1
-    while err > epsilon and it < maxit:
-        dp1[:], exitcode = bicgstab(A, rn, M=M, tol=epsilon, maxiter=1)
-        rn2[:] = rn - A*dp1
-        # rc[:] = LU.solve(rn2)
-        # dp2[:] = OP*rc
-        dp2[:] = OP*LU.solve(R*rn2)
-        
-        pn[:] += dp1 + dp2
-        rn[:] = b - A*pn
-        err = np.linalg.norm(rn)
-        it += 1
-        
-        # if err2 > err:
-        #     import pdb; pdb.set_trace()
-        # else:
-        #     err = err2
-    
+
+    # ##############################
+    # ### metodo iterativo artur
     # while err > epsilon and it < maxit:
-    #     dp1[:] = OP*LU.solve(R*rn)
+    #     dp1[:], exitcode = bicgstab(A, rn, M=M, tol=epsilon, maxiter=1)
     #     rn2[:] = rn - A*dp1
-    #     dp2[:], exitcode = bicgstab(Ms, rn2, M=M, tol=epsilon, maxiter=1)
+    #     # rc[:] = LU.solve(rn2)
+    #     # dp2[:] = OP*rc
+    #     dp2[:] = OP*LU.solve(R*rn2)
+        
     #     pn[:] += dp1 + dp2
     #     rn[:] = b - A*pn
     #     err = np.linalg.norm(rn)
-    #     print(f'err: {err} \n')
     #     it += 1
         
+    #     # if err2 > err:
+    #     #     import pdb; pdb.set_trace()
+    #     # else:
+    #     #     err = err2
     
-    dp1[:], exitcode = bicgstab(A, rn, M=M, tol=epsilon, maxiter=1)
-    pn[:] += dp1
-    rn[:] = b - A*pn
-    err = np.linalg.norm(rn)
+    # dp1[:], exitcode = bicgstab(A, rn, M=M, tol=epsilon, maxiter=1)
+    # pn[:] += dp1
+    # rn[:] = b - A*pn
+    # err = np.linalg.norm(rn)
+    # #########################################
+    
+    ########################################
+    ## metodo iterativo Filipe
+    while err > epsilon and it < maxit:
+        dp1[:] = OP*LU.solve(R*rn)
+        rn2[:] = rn - A*dp1
+        dp2[:], exitcode = bicgstab(A, rn2, M=M, tol=epsilon)
+        pn[:] += dp1 + dp2
+        rn[:] = b - A*pn
+        err = np.linalg.norm(rn)
+        # print(f'err: {err} \n')
+        it += 1
+    #######################################
     
     return pn, it, err
     

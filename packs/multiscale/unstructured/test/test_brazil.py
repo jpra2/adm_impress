@@ -23,6 +23,7 @@ from typing import List, Union
 import numpy as np
 from scipy.sparse.linalg import spsolve, gmres, cg, bicgstab, spilu, LinearOperator
 import scipy.sparse as sp
+import pandas as pd
 
 def get_perm_diag(value):
     return np.array([[value, 0], [0, value]])
@@ -32,23 +33,23 @@ def get_properties():
         defpaths.unstructured_coarse_test_mesh_folder,
         'brazil'
     )
-    fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
-    fine_mesh_properties_name = 'brazilf' 
-    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
+    # fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
+    # fine_mesh_properties_name = 'brazilf' 
+    # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
 
-    # fine_mesh_path = os.path.join(rel_path, 'brazilfquad.msh')
-    # fine_mesh_properties_name = 'brazilfquad' 
-    # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilfquad_v4.msh')
+    fine_mesh_path = os.path.join(rel_path, 'brazilfquad.msh')
+    fine_mesh_properties_name = 'brazilfquad' 
+    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilfquad_v4.msh')
 
     # fine_mesh_path = os.path.join(rel_path, 'brazilf_test.msh')
     # fine_mesh_properties_name = 'brazilf_test' 
     # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_test_v4.msh')
 
-    coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
-    coarse_mesh_properties_name = 'brazilC1'
+    # coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
+    # coarse_mesh_properties_name = 'brazilC1'
 
-    # coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
-    # coarse_mesh_properties_name = 'brazilC2'
+    coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
+    coarse_mesh_properties_name = 'brazilC2'
 
     # coarse_mesh_path = os.path.join(rel_path, 'brazilC3.msh')
     # coarse_mesh_properties_name = 'brazilC3'
@@ -503,7 +504,7 @@ def define_new_fine_levels_v0(
     """
     return np.array([])
 
-def define_new_fine_levels(
+def define_new_fine_levels_v1(
         fine_mesh_properties: MeshProperty,
         bc: BoundaryConditions
 ) -> np.ndarray:
@@ -537,7 +538,7 @@ def define_new_fine_levels_v2(
 ) -> np.ndarray:
     
     """
-    Apenas as duais com prescricao na malha fina usando a dual tipo 2
+    Apenas as faces com prescricao na malha fina
     """
 
     faces_of_nodes = fine_mesh_properties['faces_of_nodes']
@@ -550,14 +551,99 @@ def define_new_fine_levels_v2(
     )
     # faces_of_nodes_presc = faces_of_nodes_presc[dual_id[faces_of_nodes_presc] == defnames.dual_ids('face_id')]
     
-    boundary_faces = faces_of_nodes_presc
-    dual_in_boundary = []
-    for dual in dual_volumes:
-        if np.any(np.isin(dual, boundary_faces)):
-            dual_in_boundary.append(dual)
+    # boundary_faces = faces_of_nodes_presc
+    # dual_in_boundary = []
+    # for dual in dual_volumes:
+    #     if np.any(np.isin(dual, boundary_faces)):
+    #         dual_in_boundary.append(dual)
     
-    dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
-    return dual_in_boundary
+    # dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
+    return faces_of_nodes_presc
+
+def write_results(
+        l2_error, 
+        l2_relative_error, 
+        max_abs_error, 
+        max_abs_relative_error,
+        dual_type,
+        fine_mesh_name,
+        coarse_mesh_name,
+        number_fine_vols,
+        number_coarse_vols,
+        perm_type,
+        fine_levels_setup,
+    ):
+
+    new_data = np.array([
+        l2_error,
+        l2_relative_error,
+        max_abs_error,
+        max_abs_relative_error,
+        dual_type,
+        fine_mesh_name,
+        coarse_mesh_name,
+        number_fine_vols,
+        number_coarse_vols,
+        perm_type
+    ], dtype='O')
+
+    file_path = os.path.join(defpaths.flying, 'sim_results.csv')
+
+    data_types = [np.float64, np.float64, np.float64, np.float64, np.int, 'O', 'O', np.int, np.int, 'O', np.int]
+
+    header = np.array([
+            'l2_error',
+            'l2_relative_error',
+            'max_abs_error',
+            'max_abs_relative_error',
+            'dual_type',
+            'fine_mesh_name',
+            'coarse_mesh_name',
+            'number_fine_vols',
+            'number_coarse_vols',
+            'perm_type',
+            'fine_levels_setup'
+        ], dtype='<U30')
+
+    if os.path.exists(file_path):
+        pass
+    else:
+        first_line = np.array([np.array([0.0], dtype=t) for t in data_types], dtype='O').T
+        df = pd.DataFrame(first_line, columns=header)
+        for i in range(header.shape[0]):
+            df[header[i]] = df[header[i]].astype(data_types[i])
+        df.to_csv(file_path, index=False)
+    
+    my_types = dict()
+    for i in range(header.shape[0]):
+        my_types.update({header[i]: data_types[i]})
+        
+    df = pd.read_csv(file_path, dtype=my_types)
+
+    new_df = {
+        'l2_error': l2_error,
+        'l2_relative_error': l2_relative_error,
+        'max_abs_error': max_abs_error,
+        'max_abs_relative_error': max_abs_relative_error,
+        'dual_type': dual_type,
+        'fine_mesh_name': fine_mesh_name,
+        'coarse_mesh_name': coarse_mesh_name,
+        'number_fine_vols': number_fine_vols,
+        'number_coarse_vols': number_coarse_vols,
+        'perm_type': perm_type,
+        'fine_levels_setup': fine_levels_setup
+    }
+    df.loc[len(df)] = new_df
+    df.reset_index(drop=True, inplace=True)
+    subset_to_drop = header[4:]
+    df.drop_duplicates(subset=subset_to_drop, inplace=True)
+    df.to_csv(file_path, index=False)
+
+    
+
+
+
+
 
 def run4():
     matrix_path = 'matrices.h5'
@@ -582,6 +668,7 @@ def run4():
     update_nodes_weights = False
     export_permfield = False
     update_permfield = False
+    fine_level_setup = 2
 
     fp, cp, fine_mesh_path, coarse_mesh_path = get_properties()
     mesh_data = MeshData(mesh_path=coarse_mesh_path)
@@ -671,7 +758,14 @@ def run4():
 
     fine_mesh_properties = fp
 
-    dual_in_boundary = define_new_fine_levels(fp, bc)
+    if fine_level_setup == 0:
+        dual_in_boundary = define_new_fine_levels_v0(fp, bc)
+    elif fine_level_setup == 1:
+        dual_in_boundary = define_new_fine_levels_v1(fp, bc)
+    elif fine_level_setup == 2:
+        dual_in_boundary = define_new_fine_levels_v2(fp, bc)
+    else:
+        raise ValueError
         
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
     fine_levels = np.full(len(fp['faces']), -1)
@@ -742,15 +836,15 @@ def run4():
     
     ##########################################
     ### iterative ms NU-ADM
-    from packs.multiscale.ms_solvers.iterative_solver import iterative_ms_ilu0_bicgstab
-    pit, it, resid = iterative_ms_ilu0_bicgstab(
-        resp['transmissibility'],
-        resp['source'],
-        OP_AMS,
-        OR_AMS,
-        epsilon=1e-13
-    )
-    import pdb; pdb.set_trace()
+    # from packs.multiscale.ms_solvers.iterative_solver import iterative_ms_ilu0_bicgstab
+    # pit, it, resid = iterative_ms_ilu0_bicgstab(
+    #     resp['transmissibility'],
+    #     resp['source'],
+    #     OP_AMS,
+    #     OR_AMS,
+    #     epsilon=1e-13
+    # )
+    # import pdb; pdb.set_trace()
     ##########################################
 
     # export_nu_adm_op(fine_mesh_path, OP_adm)
@@ -761,16 +855,10 @@ def run4():
     P_prol = OP_adm*P_adm
 
     error = np.absolute(pressure - P_prol)
-    relative_error = (error/pressure)*100
+    relative_error = (error/pressure)
     l2_norm_error = np.linalg.norm(error)
     l2_norm_relative_error = np.linalg.norm(relative_error)
     
-    error_classic = np.absolute(pressure - pms_classic)
-    relative_error_classic = (error_classic/pressure)*100
-    l2_norm_error_classic = np.linalg.norm(error_classic)
-    l2_norm_relative_error_classic = np.linalg.norm(relative_error_classic)
-    
-
     mesh_data = MeshData(mesh_path=fine_mesh_path)
     mesh_data.create_tag('pressure')
     mesh_data.insert_tag_data('pressure', pressure, elements_type='faces')
@@ -788,6 +876,19 @@ def run4():
   
     mesh_data.export_all_elements_type_to_vtk(export_adm_name, element_type='faces')
     
+    write_results(
+        l2_error=l2_norm_error,
+        l2_relative_error=l2_norm_relative_error,
+        max_abs_error=error.max(),
+        max_abs_relative_error=relative_error.max(),
+        dual_type=my_dual_type,
+        fine_mesh_name=fp['mesh_name'][0],
+        coarse_mesh_name=cp['mesh_name'][0],
+        number_fine_vols=fp['faces'].shape[0],
+        number_coarse_vols=cp['faces'].shape[0],
+        perm_type=perm_type,
+        fine_levels_setup=fine_level_setup
+    )
     # print('###############################################')
     # print(f' Max abs error {error.max()}')
     # print(f' Max relative error {relative_error.max()}')
