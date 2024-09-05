@@ -8,6 +8,7 @@
 *_rm.py
 *.prof
 *.profile
+*.so
 
 # *.msh
 # !cube_unstructured.msh
