@@ -71,10 +71,12 @@
 # from packs.multiscale.unstructured.test.test_brazil import run4
 # run4()
 
-from packs.multiscale.unstructured.test.test_cross import run4
-run4()
+# from packs.multiscale.unstructured.test.test_cross import run4
+# run4()
 
 # from packs.tests.test_initial_preprocess import run
 # run()
 
+from packs.examples.biphasic_mpfa import run
+run()
 
