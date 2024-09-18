@@ -107,10 +107,15 @@ def update_NU_ADM_operators_v0(OP, levels, coarse_id_NU_ADM, GID_1, GID_0, NU_AD
 def get_beta_groups(GID_0, GID_1, OP, internal_adjacencies, beta_lim=3.0):
         adjs = internal_adjacencies
         pos=GID_1[OP[0]]==OP[1]
-        v1 = GID_1[OP[0]][pos]
-        v2 = OP[1][pos]
+        index = OP[0][pos]
+        index2 = np.setdiff1d(GID_0, index)
+        # v1 = GID_1[OP[0]][pos]
+        # v2 = OP[1][pos]
         phis=OP[2][pos][np.argsort(OP[0][pos])]
-        betas=(1-phis)/phis
+        # betas=(1-phis)/phis
+        betas = np.zeros(pos.shape[0])
+        betas[index] = (1-phis)/phis
+        betas[index2] = np.inf
         beta_facs=betas[adjs].max(axis=1)
         ads=adjs[beta_facs>beta_lim]
         map=np.arange(adjs.max()+1)

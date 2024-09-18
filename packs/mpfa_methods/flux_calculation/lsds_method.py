@@ -1559,6 +1559,14 @@ class LsdsFluxCalculation:
         )
 
         T = self.get_transmissibility_from_data(lines, cols, data, faces)
+        
+        faces_presssure = bc['dirichlet_volumes']['id']
+        if faces_presssure.shape[0] > 0:
+            pressure_presc = bc['dirichlet_volumes']['value']
+            T[faces_presssure] = 0
+            T[faces_presssure, faces_presssure] = 1
+
+            source[faces_presssure] = pressure_presc
 
         resp = dict()
 

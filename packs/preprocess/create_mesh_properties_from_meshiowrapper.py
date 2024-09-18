@@ -41,7 +41,7 @@ def insert_physical_tags(mesh_path, mesh_properties: MeshProperty, mesh_name_v4=
     preprocess_name = 'tags_preprocess'
     if mesh_properties.verify_name_in_data_names(preprocess_name):
         return 
-
+    
     if mesh_name_v4=='':
         meshio_data = MeshioWrapper(mesh_path)
     else:
@@ -74,9 +74,26 @@ def insert_physical_tags(mesh_path, mesh_properties: MeshProperty, mesh_name_v4=
                 mesh_properties.insert_or_update_data({
                     tag: data[key]
                 })
+            
+            elif key == 'quad':
+                mesh_properties.insert_or_update_data({
+                    tag: data[key]
+                })
 
             else:
                 raise  NotImplementedError
+    
+    int_tags = meshio_data.physical_int_tags
+    physical_str = 'physical_'
+    keys = list(int_tags.keys())
+    for key in keys:
+        unique_tags = np.unique(int_tags[key])
+        for tag in unique_tags:
+            name = physical_str + key + '_' + str(tag)
+            elements = meshio_data.get_elements_by_physical_int_tag(key, tag)
+            mesh_properties.insert_or_update_data({
+                name: elements
+            })
     
     mesh_properties.insert_or_update_data({
         preprocess_name: np.array([True])

@@ -71,5 +71,10 @@
 # from packs.multiscale.unstructured.test.test_brazil import run4
 # run4()
 
-from packs.tests.test_initial_preprocess import run
-run()
+from packs.multiscale.unstructured.test.test_cross import run4
+run4()
+
+# from packs.tests.test_initial_preprocess import run
+# run()
+
+

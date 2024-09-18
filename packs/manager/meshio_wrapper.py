@@ -1,6 +1,7 @@
 import meshio
 import numpy as np
 from packs.utils.test_functions import test_mesh_path
+from copy import deepcopy
 
 class MeshioWrapper:
     tags_to_remove = ['gmsh:bounding_entities']
@@ -59,9 +60,28 @@ class MeshioWrapper:
         tags = set(list(self.msh.cell_sets_dict.keys())) - set(self.tags_to_remove)
         return list(tags)
 
+    @property
+    def physical_int_tags(self):
+        return deepcopy(self.msh.cell_data_dict["gmsh:physical"])
+
     def get_elements_by_physical_tag(self, tag: str) -> dict:
-        return self.msh.cell_sets_dict[tag]
+        return deepcopy(self.msh.cell_sets_dict[tag])
+    
+    def get_elements_by_physical_int_tag(self, key: str, tag: int):
 
-
-
+        data = self.physical_int_tags
+        test = data[key] == tag
+        
+        if key == 'vertex':
+            vertices = self.msh.cells_dict[key].flatten()
+            return vertices[test]
+        elif key == 'line':
+            lines = self.lines
+            return lines[test]
+        elif key == 'quad':
+            return self.quads[test]
+        elif key == 'triangle':
+            return self.triangles[test]
+        else:
+            raise ValueError
         

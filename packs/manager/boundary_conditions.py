@@ -3,6 +3,7 @@ from copy import deepcopy
 from packs.errors import err
 from packs import defnames
 import numpy as np
+from packs.utils.docstring_with_parameters import docstring_parameter
 
 
 class BoundaryConditions(SuperArrayManager):
@@ -41,9 +42,10 @@ class BoundaryConditions(SuperArrayManager):
             if name not in cls.boundary_names:
                 raise err.NameExistsError(f'the name {name} not in {cls.boundary_names}')
 
+    
     def set_boundary(self, bc_type, ids, values):
-        f"""
-            The boundary type must be in {self.boundary_names}
+        """
+            The boundary type must be in {self.boundary_names} 
         """
 
         self.test_names([bc_type])

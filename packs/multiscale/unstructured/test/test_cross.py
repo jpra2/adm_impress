@@ -31,25 +31,28 @@ def get_perm_diag(value):
 def get_properties():
     rel_path = os.path.join(
         defpaths.unstructured_coarse_test_mesh_folder,
-        'brazil'
+        'cross'
     )
     # fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
     # fine_mesh_properties_name = 'brazilf' 
     # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
 
-    fine_mesh_path = os.path.join(rel_path, 'brazilfquad.msh')
-    fine_mesh_properties_name = 'brazilfquad' 
-    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilfquad_v4.msh')
+    fine_mesh_path = os.path.join(rel_path, 'crossf.msh')
+    fine_mesh_properties_name = 'crossf' 
+    fine_mesh_path_v4 = os.path.join(rel_path, 'crossf.msh')
 
     # fine_mesh_path = os.path.join(rel_path, 'brazilf_test.msh')
     # fine_mesh_properties_name = 'brazilf_test' 
     # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_test_v4.msh')
 
-    # coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
-    # coarse_mesh_properties_name = 'brazilC1'
+    # coarse_mesh_path = os.path.join(rel_path, 'crossc1.msh')
+    # coarse_mesh_properties_name = 'crossC1'
 
-    coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
-    coarse_mesh_properties_name = 'brazilC2'
+    coarse_mesh_path = os.path.join(rel_path, 'crrossc2.msh')
+    coarse_mesh_properties_name = 'crossC2'
+
+    # coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
+    # coarse_mesh_properties_name = 'brazilC2'
 
     # coarse_mesh_path = os.path.join(rel_path, 'brazilC3.msh')
     # coarse_mesh_properties_name = 'brazilC3'
@@ -61,90 +64,6 @@ def get_properties():
     coarse_properties = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
 
     return fine_properties, coarse_properties, fine_mesh_path, coarse_mesh_path
-
-def define_faces_in_losangle(fine_properties: MeshProperty) -> None:
-    tag_preprocess = 'faces_in_losangle'
-    if fine_properties.verify_name_in_data_names(tag_preprocess):
-        return
-    
-    Lx = 1.5
-    Ly = 1
-
-    d1 = 1.2
-    d2 = 0.75
-
-    x1 = (Lx-d1)/2
-    x2 = x1 + d1/2
-    x3 = x1 + d1
-    x4 = x2
-
-    y1 = Ly/2
-    y2 = (Ly-d2)/2
-    y3 = y1
-    y4 = y2 + d2
-
-    losangle = geometry.Polygon([
-        (x1, y1),
-        (x2, y2),
-        (x3, y3),
-        (x4, y4)
-    ])
-
-    poly = losangle
-    faces_centroids = fine_properties['faces_centroids']
-    points_list = geometry.MultiPoint(faces_centroids)
-    test = np.array([poly.contains(i) for i in points_list.geoms])
-    
-    faces_in_losangle = fine_properties['faces'][test]
-
-    fine_properties.insert_or_update_data({
-        tag_preprocess: faces_in_losangle
-    })
-
-def define_boundary(fine_properties: MeshProperty) -> None:
-
-    data_to_update = dict()
-
-    nodes = fine_properties['nodes']
-    nodes_centroids = fine_properties['nodes_centroids']
-    edges = fine_properties['edges']
-    edges_centroids = fine_properties.edges_centroids
-
-    xmin, ymin = nodes_centroids.min(axis=0)
-    xmax, ymax = nodes_centroids.max(axis=0)
-
-    center = np.array([xmax/2, ymax/2])
-    R = 0.2
-
-    delta = fine_properties.edges_dim.min()/10
-
-    dists = np.linalg.norm(nodes_centroids - center, axis=1)
-    nodes_internal_boundary = nodes[
-        dists <= R + delta
-    ]
-
-    data_to_update.update({'nodes_internal_boundary': nodes_internal_boundary})
-
-    
-
-    inflow = edges[edges_centroids[:, 0] < xmin + delta]
-    outflow = edges[edges_centroids[:, 0] > xmax - delta]
-
-    walls = np.concatenate([
-        edges[edges_centroids[:, 1] < ymin + delta],
-        edges[edges_centroids[:, 1] > ymax - delta]
-    ])
-
-    data_to_update.update({
-        'Inflow': inflow,
-        'Outflow': outflow,
-        'Walls': walls
-    })
-
-    fine_properties.insert_or_update_data(data_to_update)
-
-
-
 
 def set_permeability(fine_mesh_path, fine_properties: MeshProperty, typek='barrier', export_permfield=True, update_permfield=True) -> None:
     typeks = ['barrier', 'channel']
@@ -158,15 +77,15 @@ def set_permeability(fine_mesh_path, fine_properties: MeshProperty, typek='barri
     k2 = 1e-3
     k3 = 1e3
 
-    faces_in_losangle = fine_properties['faces_in_losangle']
+    faces_in_cross = fine_properties['physical_quad_2']
     faces = fine_properties['faces']
 
     permeability = np.zeros((faces.shape[0], 2, 2))
     permeability[:] = get_perm_diag(k1)
     if typek == typeks[0]:
-        permeability[faces_in_losangle] = permeability[faces_in_losangle]*k2
+        permeability[faces_in_cross] = permeability[faces_in_cross]*k2
     else:
-        permeability[faces_in_losangle] = permeability[faces_in_losangle]*k3
+        permeability[faces_in_cross] = permeability[faces_in_cross]*k3
     
     fine_properties.insert_or_update_data({
         tag_preprocess: permeability
@@ -186,45 +105,27 @@ def set_boundary_conditions(fine_properties: MeshProperty) -> BoundaryConditions
     
     bc = BoundaryConditions()
 
-    k = 1
-
-    nodes = fine_properties['nodes']
     nodes_centroids = fine_properties['nodes_centroids']
-    edges = fine_properties['edges']
-    edges_centroids = fine_properties.edges_centroids
+    faces = fine_properties['faces']
+    faces_centroids = fine_properties['faces_centroids']
 
     xmin, ymin = nodes_centroids.min(axis=0)
     xmax, ymax = nodes_centroids.max(axis=0)
 
-    R = 0.2*k
+    c_p1 = np.array([xmin, ymax])
+    c_p0 = np.array([xmax, ymin])
 
-    delta = fine_properties.edges_dim.min()/10
+    dists = np.linalg.norm(faces_centroids - c_p1, axis=1)
+    face_p1 = faces[dists <= dists.min()][0]
+    dists[:] = np.linalg.norm(faces_centroids - c_p0, axis=1)
+    face_p0 = faces[dists <= dists.min()][0]
+    faces_pressure = np.array([face_p1, face_p0])
+    pressure_presc = np.array([1.0, 0.0])
 
-    center = np.array([xmax/2, ymax/2])
+    bc.set_boundary('dirichlet_volumes', faces_pressure, pressure_presc)
+    bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
 
-    nodes_p1 = nodes[nodes_centroids[:,0] < xmin + delta]
-    nodes_p0 = nodes[nodes_centroids[:,0] > xmax - delta]
-
-    dist_nodes = np.linalg.norm(
-        nodes_centroids - center,
-        axis=1
-    )
-
-    nodes_p05 = nodes[dist_nodes < R + delta]
-
-    edges_ymax = edges[edges_centroids[:, 1] > ymax - delta]
-    edges_ymin = edges[edges_centroids[:, 1] < ymin + delta]
-
-    bc_nodes = np.concatenate([nodes_p1, nodes_p0, nodes_p05])
-    nodes_values = np.concatenate([
-        np.repeat(1.0, nodes_p1.shape[0]),
-        np.repeat(0.0, nodes_p0.shape[0]),
-        np.repeat(0.5, nodes_p05.shape[0])
-    ])
-
-    bc.set_boundary('dirichlet_nodes', bc_nodes, nodes_values)
-
-    walls_edges = np.unique(np.concatenate([edges_ymax, edges_ymin]))
+    walls_edges = fine_properties['edges'][fine_properties['bool_boundary_edges']]
 
     edges_values = np.repeat(0.0, walls_edges.shape[0])
     bc.set_boundary('neumann_edges', walls_edges, edges_values)
@@ -560,6 +461,48 @@ def define_new_fine_levels_v2(
     # dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
     return faces_of_nodes_presc
 
+def define_new_fine_levels_v3(
+        fine_mesh_properties: MeshProperty,
+        bc: BoundaryConditions
+) -> np.ndarray:
+    
+    """
+    Volume primal todo na malha fina com algum volume da malha fina com pressao prescrita
+    """
+    faces = fine_mesh_properties['faces']
+    primal_id = fine_mesh_properties['primal_id_level1']
+    faces_pressure = bc['dirichlet_volumes']['id']
+
+    primal_ids_with_pressure_presc = np.unique(primal_id[faces_pressure])
+    fine_vols = faces[np.isin(primal_id, primal_ids_with_pressure_presc)]
+
+    return fine_vols
+
+def define_new_fine_levels_v4(
+        fine_mesh_properties: MeshProperty,
+        bc: BoundaryConditions
+) -> np.ndarray:
+    
+    """
+    Volume dual todo na malha fina com algum volume da malha fina com pressao prescrita
+    """
+    faces = fine_mesh_properties['faces']
+    primal_id = fine_mesh_properties['primal_id_level1']
+    faces_pressure = bc['dirichlet_volumes']['id']
+
+    dual_volumes = fine_mesh_properties['dual_volumes_level1']
+    
+    
+    boundary_faces = faces_pressure
+    dual_in_boundary = []
+    for dual in dual_volumes:
+        if np.any(np.isin(dual, boundary_faces)):
+            dual_in_boundary.append(dual)
+    
+    dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
+    return dual_in_boundary
+
+
 def write_results(
         l2_error, 
         l2_relative_error, 
@@ -651,30 +594,31 @@ def run4():
     save_fine_transm_without_bc = False
     save_monotone_transm = False
     save_fine_transmissibility = False
-    save_op = False
+    save_op = True
     w = 0
     monotone_transm_name = 'monotone_transm_w_0'
     fine_transmissibility_name = 'fine_transmissibility'
     op_toget = 'AMS-U'
     op_name = 'AMS_U_w_0_dual2'
     level_str = defnames.level_str(1)
-    alpha_lim_finescale = 0.5
+    alpha_lim_finescale = 0.1
     beta_lim = 3
     export_adm_levels_file = True
-    bool_export_primal_id = False
-    bool_export_dual_id = False
+    bool_export_primal_id = True
+    bool_export_dual_id = True
     my_dual_type = 1
-    perm_type = 'channel'
+    # perm_type = 'channel'
+    perm_type = 'barrier'
     update_nodes_weights = False
     export_permfield = False
     update_permfield = False
-    fine_level_setup = 2
+    fine_level_setup = 4
 
     fp, cp, fine_mesh_path, coarse_mesh_path = get_properties()
     mesh_data = MeshData(mesh_path=coarse_mesh_path)
     mesh_data.export_all_elements_type_to_vtk('background_coarse_mesh', 'faces')
-    define_faces_in_losangle(fp)
     set_permeability(fine_mesh_path, fp, typek=perm_type, export_permfield=export_permfield, update_permfield=update_permfield)
+    
     create_primal_ids(fp, cp, update=bool_export_primal_id)
     export_primal_ids(fine_mesh_path, fp, coarse_mesh_path, export=bool_export_primal_id)
     create_dual_ids(fp, cp, update=bool_export_dual_id, dual_type=my_dual_type)
@@ -764,6 +708,10 @@ def run4():
         dual_in_boundary = define_new_fine_levels_v1(fp, bc)
     elif fine_level_setup == 2:
         dual_in_boundary = define_new_fine_levels_v2(fp, bc)
+    elif fine_level_setup == 3:
+        dual_in_boundary = define_new_fine_levels_v3(fp, bc)
+    elif fine_level_setup == 4:
+        dual_in_boundary = define_new_fine_levels_v4(fp, bc)
     else:
         raise ValueError
         
@@ -855,7 +803,10 @@ def run4():
     P_prol = OP_adm*P_adm
 
     error = np.absolute(pressure - P_prol)
-    relative_error = (error/pressure)
+    test = pressure == 0
+    ttest = ~test
+    relative_error = np.zeros(error.shape[0])
+    relative_error[ttest] = (error[ttest]/pressure[ttest])
     l2_norm_error = np.linalg.norm(error)
     l2_norm_relative_error = np.linalg.norm(relative_error)
     
@@ -876,19 +827,19 @@ def run4():
   
     mesh_data.export_all_elements_type_to_vtk(export_adm_name, element_type='faces')
     
-    write_results(
-        l2_error=l2_norm_error,
-        l2_relative_error=l2_norm_relative_error,
-        max_abs_error=error.max(),
-        max_abs_relative_error=relative_error.max(),
-        dual_type=my_dual_type,
-        fine_mesh_name=fp['mesh_name'][0],
-        coarse_mesh_name=cp['mesh_name'][0],
-        number_fine_vols=fp['faces'].shape[0],
-        number_coarse_vols=cp['faces'].shape[0],
-        perm_type=perm_type,
-        fine_levels_setup=fine_level_setup
-    )
+    # write_results(
+    #     l2_error=l2_norm_error,
+    #     l2_relative_error=l2_norm_relative_error,
+    #     max_abs_error=error.max(),
+    #     max_abs_relative_error=relative_error.max(),
+    #     dual_type=my_dual_type,
+    #     fine_mesh_name=fp['mesh_name'][0],
+    #     coarse_mesh_name=cp['mesh_name'][0],
+    #     number_fine_vols=fp['faces'].shape[0],
+    #     number_coarse_vols=cp['faces'].shape[0],
+    #     perm_type=perm_type,
+    #     fine_levels_setup=fine_level_setup
+    # )
     # print('###############################################')
     # print(f' Max abs error {error.max()}')
     # print(f' Max relative error {relative_error.max()}')

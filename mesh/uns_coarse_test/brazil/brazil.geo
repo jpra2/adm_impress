@@ -138,21 +138,21 @@ Recombine Surface {2};
 //Physical Point(201) = {9,10};
 
 
-//Physical Line(101) = {4};
-//Physical Line(102) = {2};
-//Physical Line(103) = {9,10};
-//Physical Line(201) = {1,3};
+Physical Line(101) = {4};
+Physical Line(102) = {2};
+Physical Line(201) = {1,3};
+Physical Line(103) = {9,10};
 
-Physical Line("Inflow") = {4};
-Physical Line("Outflow") = {2};
-Physical Line("InternalBoundary") = {9,10};
-Physical Line("Walls") = {1,3};
-Physical Line ("ExternalBoundary") = {1, 2, 3, 4};
+//Physical Line("Inflow") = {4};
+//Physical Line("Outflow") = {2};
+//Physical Line("InternalBoundary") = {9,10};
+//Physical Line("Walls") = {1,3};
+//Physical Line ("ExternalBoundary") = {1, 2, 3, 4};
 
-//Physical Surface(1) = {1};
-//Physical Surface(2) = {2};
+Physical Surface(1) = {1};
+Physical Surface(2) = {2};
 
-Physical Surface("Green") = {1};
-Physical Surface("Yellow") = {2};
+//Physical Surface("Green") = {1};
+//Physical Surface("Yellow") = {2};
 
 
