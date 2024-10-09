@@ -9,6 +9,9 @@
 *.prof
 *.profile
 *.so
+*.html
+*.c
+*.cpp
 
 # *.msh
 # !cube_unstructured.msh
@@ -32,6 +35,10 @@
 *.pdf
 *.sh
 *_testcases.py
+
+*.svg
+*.png
+*.jpg
 
 impress/
 impress_new/

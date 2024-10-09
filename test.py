@@ -77,6 +77,14 @@
 # from packs.tests.test_initial_preprocess import run
 # run()
 
-from packs.examples.biphasic_mpfa import run
+# from packs.examples.remove_data import run_flying, run_results
+# run_flying()
+# run_results()
+# import pdb; pdb.set_trace()
+
+from packs.examples.biphasic_mpfa_nu_adm import run
 run()
+# plot_graph()
+
+
 

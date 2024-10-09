@@ -29,23 +29,24 @@ class BrooksAndCorey:
             S (np.ndarray): water saturation
 
         Returns:
-            _type_: _description_
+            (np.ndarray): stemp
         """
-        # S1 = S.copy()
-        # S1[S>1 - self.Sor] = 1 - self.Sor
-        # S1[S<self.Swc] = self.Swc
-        return (S - self.Swc) / (1 - self.Swc - self.Sor)
+        S1 = S.copy()
+
+        S1[S>1 - self.Sor] = 1 - self.Sor
+        S1[S<self.Swc] = self.Swc
+        return (S1 - self.Swc) / (1 - self.Swc - self.Sor)
 
     def _krw(self, S_temp: np.ndarray) -> np.ndarray:
-
         return self.krw0*(np.power(S_temp, self.n_w))
 
     def _kro(self, S_temp: np.ndarray) -> np.ndarray:
         return self.kro0*(np.power(1 - S_temp, self.n_o))
 
-    def calculate(self, saturations: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-               
-        self._test_saturations(saturations)
+    def calculate(self, saturations: np.ndarray, test_saturation=True) -> Tuple[np.ndarray, np.ndarray]:
+        
+        if test_saturation is True:
+            self._test_saturations(saturations)
         stemp = self._stemp(saturations)
         krw = self._krw(stemp)
         kro = self._kro(stemp)
@@ -58,8 +59,10 @@ class BrooksAndCorey:
         Args:
             saturations (np.ndarray): water saturations
         """
-        test1 = saturations < self.Swc
-        test2 = saturations > 1 - self.Sor
+        # test1 = saturations < self.Swc
+        # test2 = saturations > 1 - self.Sor
+        test1 = saturations < 0
+        test2 = saturations > 1
         n = test1.sum() + test2.sum()
         assert n == 0
 

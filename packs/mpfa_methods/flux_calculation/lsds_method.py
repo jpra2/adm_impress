@@ -136,12 +136,15 @@ class LsdsFluxCalculation:
         for edge in edges[bool_internal_edges]:
             edge_nodes = nodes_of_edges[edge]
             faces_adj = adjacencies[edge]
-            Skl[edge] = self.get_local_Skl(
-                nodes_centroids[edge_nodes],
-                unitary_normal_edges[edge],
-                permeability[faces_adj],
-                S_alpha_sigma
-            )
+            try:
+                Skl[edge] = self.get_local_Skl(
+                    nodes_centroids[edge_nodes],
+                    unitary_normal_edges[edge],
+                    permeability[faces_adj],
+                    S_alpha_sigma
+                )
+            except IndexError:
+                import pdb; pdb.set_trace()
 
         return Skl
 
@@ -855,6 +858,39 @@ class LsdsFluxCalculation:
                 signal=-1
             )
 
+    def update_transmissibility_from_nodes_cy(
+            self,
+            other_nodes,
+            edges_of_nodes,
+            nodes_of_edges,
+            nodes_weights,
+            adjacencies,
+            xi_params,
+            lines: list,
+            cols: list,
+            data: list,
+            **kwargs
+    ):
+        
+        transmissibility.update_transmissibility_from_nodes_py(
+            other_nodes,
+            edges_of_nodes,
+            nodes_of_edges.astype(np.int64),
+            nodes_weights['node_id'],
+            nodes_weights['face_id'],
+            nodes_weights['weight'],
+            adjacencies,
+            xi_params,
+            lines,
+            cols,
+            data
+        )
+
+        import pdb; pdb.set_trace()
+
+
+
+
     def update_transmissibility_from_neumann_nodes(
             self,
             neumann_nodes,
@@ -932,7 +968,7 @@ class LsdsFluxCalculation:
 
         T = sp.csc_matrix((data,(lines,cols)), shape=(faces.shape[0],faces.shape[0]))
 
-        return T
+        return T.tolil()
 
 
     def mount_problem_v2(
@@ -1568,6 +1604,9 @@ class LsdsFluxCalculation:
 
             source[faces_presssure] = pressure_presc
 
+        T: sp.csc_matrix = T.tocsc()
+        T.eliminate_zeros()
+        
         resp = dict()
 
         resp.update({
