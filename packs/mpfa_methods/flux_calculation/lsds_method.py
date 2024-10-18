@@ -1708,6 +1708,56 @@ class LsdsFluxCalculation:
         
         return Fk_sigma
 
+    def get_edges_flux_and_nodes_pressure(
+        self,
+        boundary_conditions: BoundaryConditions,
+        faces_pressures,
+        xi_params,
+        nodes_weights,
+        nodes_of_edges,
+        adjacencies,
+        neumann_weights,
+        **kwargs
+    ):
+        
+        xi_alpha = xi_params
+        
+        nodes_pressure_prescription = defnames.nodes_pressure_prescription_name
+        node_press = boundary_conditions[nodes_pressure_prescription]
+        ids_node_press = node_press['id']
+        values = node_press['value']
+
+        neumann_edges = boundary_conditions['neumann_edges']['id']
+        neumann_edges_values = boundary_conditions['neumann_edges']['value']
+        neumann_nodes = boundary_conditions.get_neumann_nodes(nodes_of_edges)
+        
+        nodes_weight_matrix = mount_sparse_weight_matrix(nodes_weights)
+        K_faces = adjacencies[:, 0]
+        L_faces = adjacencies[:, 1]
+        
+        B_nodes = nodes_of_edges[:, 0]
+        A_nodes = nodes_of_edges[:, 1]
+        
+        K_pressure = faces_pressures[K_faces]
+        L_pressure = faces_pressures[L_faces]
+        L_pressure[L_faces == -1] = 0
+        
+        nodes_pressures = nodes_weight_matrix.dot(faces_pressures)
+        neumann_vector = np.zeros(len(nodes_pressures))
+        if len(neumann_nodes) > 0:
+            test = np.isin(neumann_weights['node_id'], neumann_nodes)
+            neumann_vector[neumann_weights['node_id'][test]] = neumann_weights['nweight'][test]
+        nodes_pressures = nodes_pressures + neumann_vector
+        nodes_pressures[ids_node_press] = values
+        
+        B_pressure = nodes_pressures[B_nodes]
+        A_pressure = nodes_pressures[A_nodes]
+        
+        Fk_sigma = xi_alpha[:, 0]*K_pressure + xi_alpha[:, 1]*L_pressure + xi_alpha[:, 2]*A_pressure + xi_alpha[:, 3]*B_pressure
+        Fk_sigma[neumann_edges] = neumann_edges_values
+        
+        return Fk_sigma, nodes_pressures
+
     def get_faces_flux(
         self,
         edges_flux,

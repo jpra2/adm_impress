@@ -499,8 +499,11 @@ def mount_weight_matrix(nodes_weights):
     return mweight
 
 def mount_sparse_weight_matrix(nodes_weights):
-    n_faces = len(np.unique(nodes_weights['face_id']))
-    n_nodes = len(np.unique(nodes_weights['node_id']))
+    # n_faces = len(np.unique(nodes_weights['face_id']))
+    # n_nodes = len(np.unique(nodes_weights['node_id']))
+
+    n_nodes = nodes_weights['node_id'].max() + 1
+    n_faces = nodes_weights['face_id'].max() + 1
 
     lines = nodes_weights['node_id']
     cols = nodes_weights['face_id']
@@ -512,7 +515,7 @@ def mount_sparse_weight_matrix(nodes_weights):
     #     lines = np.append(lines, np.repeat(node, faces.shape[0]))
     #     cols = np.append(cols, faces)
     #     data = np.append(data, weights)
-    
+
     mweight = sp.csr_matrix((data, (lines, cols)), shape=(n_nodes, n_faces))
     
     return mweight

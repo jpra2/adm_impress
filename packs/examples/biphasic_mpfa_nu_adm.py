@@ -207,7 +207,8 @@ def update_fine_flux(
         edges_flux: np.ndarray,
         ms_pressure: np.ndarray,
         total_mobility_edges: np.ndarray,
-        lsds: LsdsFluxCalculation
+        lsds: LsdsFluxCalculation,
+        nodes_pressure: np.ndarray
     ):
 
     for cstruct in coarse_struct:
@@ -216,17 +217,27 @@ def update_fine_flux(
         local_flux_presc = edges_flux[global_edges[bool_boundary_edges]]
         neumann_edges = cstruct['edges'][bool_boundary_edges]
         bc = BoundaryConditions()
-        bc.set_boundary('neumann_edges', neumann_edges, local_flux_presc)
-        local_vertice = cstruct['faces'][cstruct['dual_id']==defnames.dual_ids('vertice_id')]
-        bc.set_boundary('dirichlet_volumes', local_vertice, ms_pressure[local_vertice])
-        # bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
-        bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
+        # bc.set_boundary('neumann_edges', neumann_edges, local_flux_presc)
+        bc.set_boundary('neumann_edges', np.array([]), np.array([]))
 
-        v1 = total_mobility_edges[global_edges].copy()
+        # local_vertice = cstruct['faces'][cstruct['dual_id']==defnames.dual_ids('vertice_id')]
+        # bc.set_boundary('dirichlet_volumes', local_vertice, ms_pressure[local_vertice])
+        bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
+        # bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
+
+        bool_boundary_nodes = cstruct['bool_boundary_nodes']
+        mapbnodes = cstruct['map_nodes'][bool_boundary_nodes]
+        bnodes = cstruct['nodes'][bool_boundary_nodes]
+        bc.set_boundary('dirichlet_nodes', bnodes, nodes_pressure[mapbnodes])
+
+        edges_multiplier = total_mobility_edges[global_edges].copy()
+        ########################
+        # edges_multiplier[:] = 1
+        #########################
         cstruct.update_data({
             'neumann_edges': neumann_edges,
             'neumann_edges_value': local_flux_presc,
-            'edges_multiplier': v1,
+            'edges_multiplier': edges_multiplier,
         })
         
         boundary_nodes_weights = set_weights_nodes_cstruct(cstruct)
@@ -252,11 +263,14 @@ def update_fine_flux(
             cstruct['neumann_weights']
         )
 
+        # if cstruct['coarse_id'][0] == 1:
+        #     import pdb; pdb.set_trace()
+
         cstruct.insert_or_update_data({
             'edges_flux': local_edges_flux
         })
 
-        bool_internal_edges = ~cstruct['bool_boundary_edges']
+        bool_internal_edges = ~bool_boundary_edges
         edges_flux[cstruct['map_edges'][bool_internal_edges]] = local_edges_flux[bool_internal_edges]
 
 
@@ -375,7 +389,7 @@ def initial_loop(
     P_adm = spsolve(T_adm.tocsc(), Q_adm)
     P_prol = OP_adm*P_adm
 
-    edges_flux = lsds.get_edges_flux(
+    edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,
         P_prol,
         fp['xi_params'],
@@ -390,42 +404,22 @@ def initial_loop(
         edges_flux,
         P_prol,
         total_mobility_edges,
-        lsds
+        lsds,
+        nodes_pressure
     )
 
-    # import pdb; pdb.set_trace()
+    # pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
+    # edges_flux2 = lsds.get_edges_flux(
+    #     bc,
+    #     pressure,
+    #     fp['xi_params'],
+    #     fp['nodes_weights'],
+    #     fp['nodes_of_edges'],
+    #     fp['adjacencies'],
+    #     fp['neumann_weights']
+    # )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
-
-    edges_flux2 = lsds.get_edges_flux(
-        bc,
-        pressure,
-        fp['xi_params'],
-        fp['nodes_weights'],
-        fp['nodes_of_edges'],
-        fp['adjacencies'],
-        fp['neumann_weights']
-    )
-
-    import pdb; pdb.set_trace()
 
     faces_flux = lsds.get_faces_flux(
         edges_flux,
@@ -480,7 +474,7 @@ def initial_loop(
         dt
     )
 
-    return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water
+    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux
 
 def while_loop(
         relative_perm: BrooksAndCorey,
@@ -743,11 +737,11 @@ def run():
     pressure = np.repeat(0.0, fp['faces'].shape[0])
     newS = saturation.copy()
 
-    # mesh_data = MeshData(mesh_path=fine_mesh_path)
-    # mesh_data.create_tag('pressure')
-    # # mesh_data.create_tag('faces_flux')
-    # # mesh_data.create_tag('water_faces_flux')
-    # mesh_data.create_tag('saturation')
+    mesh_data = MeshData(mesh_path=fine_mesh_path)
+    mesh_data.create_tag('pressure')
+    mesh_data.create_tag('faces_flux')
+    # mesh_data.create_tag('water_faces_flux')
+    mesh_data.create_tag('saturation')
     # # mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
 
     initial_fine_vols = define_initial_fine_volumes(fp, bc)
@@ -756,7 +750,7 @@ def run():
     if load is False:
         initial_funcs(fp, fine_mesh_path, type_k)
         coarse_struct = define_coarse_structure(fp, lsds, level=1, update=update_coarse_struct)
-        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water = initial_loop(
+        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux = initial_loop(
             relative_perm,
             biphasic_mobility,
             saturation,
@@ -776,9 +770,11 @@ def run():
             beta_lim,
             coarse_struct
         )
-        # mesh_data.insert_tag_data('pressure', pressure, 'faces')
-        # mesh_data.insert_tag_data('saturation', saturation, 'faces')
-        # mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
+        mesh_data.insert_tag_data('pressure', pressure, 'faces')
+        mesh_data.insert_tag_data('saturation', saturation, 'faces')
+        mesh_data.insert_tag_data('faces_flux', np.absolute(faces_flux), 'faces')
+        mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
+        import pdb; pdb.set_trace()
         simulation_data.insert_or_update_data({
             'all_loops': np.array([0]),
             'all_vpi': np.array([0.0]),

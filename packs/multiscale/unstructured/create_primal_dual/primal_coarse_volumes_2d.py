@@ -335,7 +335,6 @@ def get_coarse_structure(
         ]
 
         nodes_in = np.unique(nodes_of_edges_level0[edges_in].flatten())
-        nodes_of_nodes_aux = nodes_of_nodes_level0[nodes_in]
 
         local_edges = np.arange(edges_in.shape[0])
         local_faces = np.arange(faces_in.shape[0])
@@ -351,7 +350,7 @@ def get_coarse_structure(
                 aux = local_nodes[nodes_in==local_nodes_of_edges[i,j]]
                 local_nodes_of_edges[i,j] = aux
 
-
+        nodes_of_nodes_aux = nodes_of_nodes_level0[nodes_in]
         local_nodes_of_nodes = []
         for aux in nodes_of_nodes_aux:
             test = np.isin(aux, nodes_in)
@@ -417,7 +416,7 @@ def get_coarse_structure(
         for face in faces_in:
             local_nodes_weight['face_id'][local_nodes_weight['face_id']==face] = local_faces[faces_in==face]
         
-        test4 = np.isin(local_nodes_weight['node_id'], local_bool_boundary_nodes)
+        test4 = np.isin(local_nodes_weight['node_id'], local_nodes[local_bool_boundary_nodes])
         test4 = ~test4
         local_nodes_weight = local_nodes_weight[test4]
         
