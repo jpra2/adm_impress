@@ -5,12 +5,19 @@ from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
 from packs import defpaths, defnames
 from packs.manager import MeshProperty, MeshData, BoundaryConditions, SimulationData
 from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set_fine_transmissibility
-from packs.multiscale.unstructured.test.test_brazil import define_faces_in_losangle, set_permeability
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
+from packs.examples.same_functions import (
+    define_faces_in_losangle, 
+    set_permeability_brazil as set_permeability,
+    define_coarse_structure,
+    update_xi_params,
+    set_fine_transmissibility_biphasic,
+    update_fine_flux
+)
+
 
 from packs.multiscale.unstructured.test.test_brazil import create_primal_ids, create_dual_ids, export_primal_ids, export_dual_ids
-from packs.multiscale.unstructured.create_primal_dual.primal_coarse_volumes_2d import get_coarse_structure, load_coarse_structure
 from packs.multiscale.unstructured.test.test_brazil import get_OR_AMS
 from packs.multiscale.unstructured.operators.prolongation.dual_interaction_region import create_dual_interaction_regions
 from packs.multiscale.unstructured.operators.prolongation.get_op_from_amsu import update_global_op_from_amsu
@@ -87,11 +94,6 @@ def set_boundary_conditions(fine_properties: MeshProperty):
     bc.set_boundary('producers', np.array([face_p0]), np.array([True]))
 
     return bc
-
-def update_xi_params(xi_params, total_mobility_edges):
-    xi_params_new = xi_params.copy()
-    xi_params_new[:] = xi_params*total_mobility_edges[:, np.newaxis]
-    return xi_params_new
     
 def update_water_faces_flux(water_faces_flux: np.ndarray, bc: BoundaryConditions, total_faces_flux: np.ndarray, relative_perm: BrooksAndCorey, biphasic_mobility: BiphasicMobility, fw_faces: np.ndarray):
     volumes_sat_prescription = bc['water_saturation_volumes']['id']
@@ -151,19 +153,6 @@ def update_simulation_data(faces_flux: np.ndarray, injectors: np.ndarray, produc
 
     return vpi, cum_oil, cum_water
 
-def set_fine_transmissibility_biphasic(fine_mesh_properties: MeshProperty, bc: BoundaryConditions, lsds: LsdsFluxCalculation):
-    resp = lsds.mount_transmissibility_matrix(
-        bc,
-        **fine_mesh_properties.get_all_data()
-    )
-    return resp
-
-def set_weights_nodes_cstruct(cstruct: PrimalCoarseData):
-
-    fine_properties = cstruct
-    weights = get_gls_nodes_weights(**fine_properties.get_all_data())
-    return weights
-
 def get_OP_matrix(fine_mesh_properties: MeshProperty):
     primal_ids = fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
     cids = np.unique(primal_ids)
@@ -201,86 +190,6 @@ def initial_funcs(
     set_weights_nodes(fp, update=True)
     fp.backup_data('xi_params', 'xi_params_backup')
     fp.export_data()
-
-def update_fine_flux(
-        coarse_struct: Sequence[PrimalCoarseData],
-        edges_flux: np.ndarray,
-        ms_pressure: np.ndarray,
-        total_mobility_edges: np.ndarray,
-        lsds: LsdsFluxCalculation,
-        nodes_pressure: np.ndarray
-    ):
-
-    for cstruct in coarse_struct:
-        global_edges = cstruct['map_edges']
-        bool_boundary_edges = cstruct['bool_boundary_edges']
-        local_flux_presc = edges_flux[global_edges[bool_boundary_edges]]
-        neumann_edges = cstruct['edges'][bool_boundary_edges]
-        bc = BoundaryConditions()
-        # bc.set_boundary('neumann_edges', neumann_edges, local_flux_presc)
-        bc.set_boundary('neumann_edges', np.array([]), np.array([]))
-
-        # local_vertice = cstruct['faces'][cstruct['dual_id']==defnames.dual_ids('vertice_id')]
-        # bc.set_boundary('dirichlet_volumes', local_vertice, ms_pressure[local_vertice])
-        bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
-        # bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
-
-        bool_boundary_nodes = cstruct['bool_boundary_nodes']
-        mapbnodes = cstruct['map_nodes'][bool_boundary_nodes]
-        bnodes = cstruct['nodes'][bool_boundary_nodes]
-        bc.set_boundary('dirichlet_nodes', bnodes, nodes_pressure[mapbnodes])
-
-        edges_multiplier = total_mobility_edges[global_edges].copy()
-        ########################
-        # edges_multiplier[:] = 1
-        #########################
-        cstruct.update_data({
-            'neumann_edges': neumann_edges,
-            'neumann_edges_value': local_flux_presc,
-            'edges_multiplier': edges_multiplier,
-        })
-        
-        boundary_nodes_weights = set_weights_nodes_cstruct(cstruct)
-        local_nodes_weights = cstruct['nodes_weights_internal'].copy()
-        local_nodes_weights = np.hstack([local_nodes_weights, boundary_nodes_weights['nodes_weights']])
-
-        cstruct.insert_or_update_data({
-            'xi_params': update_xi_params(cstruct['xi_params_backup'], total_mobility_edges[global_edges]),
-            'nodes_weights': local_nodes_weights,
-            'neumann_weights': boundary_nodes_weights['neumann_weights']
-        })
-
-        lt = set_fine_transmissibility_biphasic(cstruct, bc, lsds)
-        local_pressure = spsolve(lt['transmissibility'], lt['source'])
-        
-        local_edges_flux = lsds.get_edges_flux(
-            bc,
-            local_pressure,
-            cstruct['xi_params'],
-            local_nodes_weights,
-            cstruct['nodes_of_edges'],
-            cstruct['adjacencies'],
-            cstruct['neumann_weights']
-        )
-
-        # if cstruct['coarse_id'][0] == 1:
-        #     import pdb; pdb.set_trace()
-
-        cstruct.insert_or_update_data({
-            'edges_flux': local_edges_flux
-        })
-
-        bool_internal_edges = ~bool_boundary_edges
-        edges_flux[cstruct['map_edges'][bool_internal_edges]] = local_edges_flux[bool_internal_edges]
-
-
-
-
-
-
-
-
-
 
 
 def initial_loop(
@@ -646,40 +555,7 @@ def plot_graph():
 
     ax.legend()
     fig.savefig(fig_path)
-
-def define_coarse_structure(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation, level=1, update=True):
-    fp = fine_mesh_properties
-    if update is True:
-        coarse_struct = get_coarse_structure(
-            1,
-            fp[defnames.get_primal_id_name_by_level(level)],
-            fp['faces'],
-            fp['adjacencies'],
-            fp['edges'],
-            fp['nodes_of_edges'],
-            fp['bool_boundary_edges'],
-            fp['bool_boundary_nodes'],
-            fp['nodes'],
-            fp['nodes_weights'],
-            fp['nodes_of_nodes'],
-            fp['edges_of_nodes'],
-            fp['faces_of_nodes'],
-            fp['nodes_centroids'],
-            fp['faces_centroids'],
-            fp['permeability'],
-            fp['unitary_normal_edges'],
-            fp[defnames.get_dual_id_name_by_level(1)],
-            fp.edges_dim,
-            lsds
-        )
-    else:
-        coarse_struct = load_coarse_structure(
-            level,
-            fp[defnames.get_primal_id_name_by_level(level)]
-        )
     
-    return coarse_struct
-        
 def define_initial_fine_volumes(fp: MeshProperty, bc: BoundaryConditions):
     dirichlet_vols = bc['dirichlet_volumes']['id']
     values = bc['dirichlet_volumes']['id']

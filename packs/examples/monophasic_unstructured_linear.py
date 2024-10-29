@@ -23,6 +23,8 @@ from packs.examples.same_functions import (
     update_fine_flux
 )
 
+from packs.multiscale.unstructured.test.create_primal_test import get_fine_mesh_path_and_mesh_properties_name_for_test, get_coarse_mesh_path_and_mesh_properties_name_for_test
+
 
 import os
 from shapely import geometry
@@ -110,48 +112,33 @@ def define_boundary(fine_properties: MeshProperty) -> None:
     fine_properties.insert_or_update_data(data_to_update)
 
 def set_boundary_conditions(fine_properties: MeshProperty) -> BoundaryConditions:
-    
+    fine_mesh_properties = fine_properties
     bc = BoundaryConditions()
 
-    k = 1
+    bc_name = 'test1_ams'
+    bc = BoundaryConditions(name=bc_name)
 
-    nodes = fine_properties['nodes']
-    nodes_centroids = fine_properties['nodes_centroids']
-    edges = fine_properties['edges']
-    edges_centroids = fine_properties.edges_centroids
+    dirichlet_edges_1 = fine_mesh_properties['Inflow']
+    dirichlet_edges_0 = fine_mesh_properties['Outflow']
+    walls_edges = fine_mesh_properties['Walls']
 
-    xmin, ymin = nodes_centroids.min(axis=0)
-    xmax, ymax = nodes_centroids.max(axis=0)
-
-    R = 0.2*k
-
-    delta = fine_properties.edges_dim.min()/10
-
-    center = np.array([xmax/2, ymax/2])
-
-    nodes_p1 = nodes[nodes_centroids[:,0] < xmin + delta]
-    nodes_p0 = nodes[nodes_centroids[:,0] > xmax - delta]
-
-    dist_nodes = np.linalg.norm(
-        nodes_centroids - center,
-        axis=1
-    )
-
-    nodes_p05 = nodes[dist_nodes < R + delta]
-
-    edges_ymax = edges[edges_centroids[:, 1] > ymax - delta]
-    edges_ymin = edges[edges_centroids[:, 1] < ymin + delta]
-
-    bc_nodes = np.concatenate([nodes_p1, nodes_p0, nodes_p05])
+    dirichlet_nodes1 = np.unique(
+        fine_mesh_properties['nodes_of_edges'][
+            dirichlet_edges_1
+        ])
+    
+    dirichlet_nodes0 = np.unique(
+        fine_mesh_properties['nodes_of_edges'][
+            dirichlet_edges_0
+        ])
+    
+    bc_nodes = np.concatenate([dirichlet_nodes1, dirichlet_nodes0])
     nodes_values = np.concatenate([
-        np.repeat(1.0, nodes_p1.shape[0]),
-        np.repeat(0.0, nodes_p0.shape[0]),
-        np.repeat(0.5, nodes_p05.shape[0])
+        np.repeat(10.0, dirichlet_nodes1.shape[0]),
+        np.repeat(1.0, dirichlet_nodes0.shape[0])
     ])
 
     bc.set_boundary('dirichlet_nodes', bc_nodes, nodes_values)
-
-    walls_edges = np.unique(np.concatenate([edges_ymax, edges_ymin]))
 
     edges_values = np.repeat(0.0, walls_edges.shape[0])
     bc.set_boundary('neumann_edges', walls_edges, edges_values)
@@ -590,23 +577,26 @@ def run4():
     alpha_lim_finescale = 0.5
     beta_lim = 3
     export_adm_levels_file = True
-    bool_export_primal_id = False
-    bool_export_dual_id = False
+    bool_export_primal_id = True
+    bool_export_dual_id = True
     my_dual_type = 1
     perm_type = 'channel'
-    update_nodes_weights = False
-    export_permfield = False
-    update_permfield = False
+    update_nodes_weights = True
+    export_permfield = True
+    update_permfield = True
     fine_level_setup = 1
-    update_coarse_struct = False
+    update_coarse_struct = True
 
     lsds = LsdsFluxCalculation()
 
+    fine_mesh_path, fine_mesh_properties_name, fine_mesh_path_v4 = get_fine_mesh_path_and_mesh_properties_name_for_test()
+    coarse_mesh_path, coarse_mesh_properties_name = get_coarse_mesh_path_and_mesh_properties_name_for_test()
+    fp = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name, mesh_name_v4=fine_mesh_path_v4)
+    cp = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
+
     fp, cp, fine_mesh_path, coarse_mesh_path = get_properties()
     mesh_data = MeshData(mesh_path=coarse_mesh_path)
-    mesh_data.export_all_elements_type_to_vtk('background_coarse_mesh', 'faces')
-    define_faces_in_losangle(fp)
-    set_permeability(fine_mesh_path, fp, typek=perm_type, export_permfield=export_permfield, update_permfield=update_permfield)
+    
     create_primal_ids(fp, cp, update=bool_export_primal_id)
     export_primal_ids(fine_mesh_path, fp, coarse_mesh_path, export=bool_export_primal_id)
     create_dual_ids(fp, cp, update=bool_export_dual_id, dual_type=my_dual_type)
@@ -620,6 +610,8 @@ def run4():
     for cs in coarse_struct:
         int_edges = cs['map_edges'][cs['bool_boundary_edges']]
         intersect_edges.append(int_edges)
+    
+    import pdb; pdb.set_trace()
 
     
     intersect_edges = np.unique(np.concatenate(intersect_edges))

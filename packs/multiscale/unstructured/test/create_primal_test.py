@@ -9,12 +9,12 @@ from packs.mpfa_methods.mesh_preprocess import preprocess_mesh
 
 def get_fine_mesh_path_and_mesh_properties_name_for_test():
     # fine_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0.msh')
-    # fine_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_2.msh')
-    # fine_mesh_path_name_v4 = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_2_v4.msh')
+    fine_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_2.msh')
+    fine_mesh_path_name_v4 = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_2_v4.msh')
     # fine_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_3.msh')
     # fine_mesh_path_name_v4 = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_3_v4.msh')
-    fine_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_4.msh')
-    fine_mesh_path_name_v4 = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_4_v4.msh')
+    # fine_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_4.msh')
+    # fine_mesh_path_name_v4 = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_4_v4.msh')
     # fine_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_test.msh')
     # fine_mesh_path_name_v4 = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_test_v4.msh')
     # fine_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'mesh0_3.msh')
@@ -23,11 +23,11 @@ def get_fine_mesh_path_and_mesh_properties_name_for_test():
     return fine_mesh_path, fine_mesh_properties_name, fine_mesh_path_name_v4
 
 def get_coarse_mesh_path_and_mesh_properties_name_for_test():
-    # coarse_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'meshc1_1.msh')
+    coarse_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'meshc1_1.msh')
     # coarse_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'meshc1_2.msh')
     # coarse_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'meshc3_1.msh')
     # coarse_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'meshc3_2.msh')
-    coarse_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'meshc4_1.msh')
+    # coarse_mesh_path = os.path.join(defpaths.unstructured_coarse_test_mesh_folder, 'meshc4_1.msh')
     coarse_mesh_properties_name = 'coarse_properties_uns'
     return coarse_mesh_path, coarse_mesh_properties_name
 
