@@ -73,7 +73,6 @@ class FirstOrder:
         if any(ponteiro):
             wave_velocity[:,ponteiro],m = RS.medium_wave_velocity(M, fprop, Nk_face, P_face, \
             Ft_internal, ponteiro)
-            
             #wave_velocity[:,ponteiro] = 1e-10
 
         #Fk_face = RS.get_Fk_face(fprop, M, Nk_face, P_face, fprop.Vp[ctes.v0].flatten(), Ft_internal)

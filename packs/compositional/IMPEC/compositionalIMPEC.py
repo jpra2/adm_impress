@@ -51,11 +51,10 @@ class CompositionalFVM:
              because it treats composition explicitly and this explicit models \
              are conditionally stable - which can be based on the CFL parameter '''
 
-            #delta_t_new = delta_time.update_CFL(delta_t, fprop, wells, Fk_vols_total, fprop.Nk, wave_velocity)
-            #if any(Ft_internal[0]<0): delta_t_new=delta_t/2
-            #r = delta_t_new/delta_t
-            #delta_t = delta_t_new
-            r=1
+            delta_t_new = delta_time.update_CFL(delta_t, fprop, wells, Fk_vols_total, fprop.Nk, wave_velocity)
+            r = delta_t_new/delta_t
+            delta_t = delta_t_new
+            #r=1
 
         if not ctes.FR:
             time_integration = getattr(self, ctes.time_integration)

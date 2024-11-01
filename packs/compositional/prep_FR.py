@@ -274,6 +274,8 @@ def map_FPs_from_SPs(n_points,faces_contour_vols_2D_idx,SPs_on_faces):
     v0_SPs = v0_SPs_2[reorder_internal_faces_to_origin]
     return v0_SPs
 
+def Jacobimatrix():
+    D = np.array[[0.25*(x[1]-x[0])*]]
 """
 def get_vols_external_faces(M):
     "function to get the number of external faces of a volume"
@@ -285,6 +287,7 @@ def get_vols_external_faces(M):
 def RT0_shape_functions_2D(n_points,x_points,y_points):
     #function to map from the reference domain to the physical one
     phi = np.empty((n_points,2,2))
+    #format: npointsxcoordsxside(0 for left, 1 for right)
     phi[:,0,0] = -1/4*(1-x_points)
     phi[:,0,1] = 1/4*(1+x_points)
     phi[:,1,0] = -1/4*(1-y_points)
@@ -365,6 +368,9 @@ def run(M):
         global reshape_to_points_matrix
         global points_matrix
         global SPs_on_faces
+
+        L = L*L #still going to deal with this
+        dL = 2*dL #still going to deal with this
 
         n_points *= n_points
         n_pmatrx, neta = np.meshgrid(points, points)

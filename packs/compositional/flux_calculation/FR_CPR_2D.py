@@ -24,11 +24,11 @@ class FR(FR1D):
         #self.Nk_SP_old = Nk_SP_old
         self.delta_t = delta_t
 
-        self.Ft_SP = self.total_flux_SP_2D(M, fprop, wells, Ft_internal)
+        Ft_SP_vec = self.total_flux_SP_2D(M, fprop, wells, Ft_internal)
 
         #t_solver = getattr(self,ctes.time_integration)
 
-        Nk_SP, Fk_vols_total, wave_velocity = self.RK3(M, fprop, wells, Ft_internal, Nk_SP, P_old, q_SP, Nk_SP_old, delta_t)
+        Nk_SP, Fk_vols_total, wave_velocity = self.RK3(M, fprop, wells, Ft_internal, Ft_SP_vec, Nk_SP, P_old, q_SP, Nk_SP_old, delta_t)
 
         Nk = 1 / sum(ctes_FR.weights) * np.sum(ctes_FR.weights * Nk_SP,axis=2)
         z = Nk[0:ctes.Nc,:] / np.sum(Nk[0:ctes.Nc,:], axis = 0)
@@ -47,8 +47,8 @@ class FR(FR1D):
         Fk_vols_total = np.min(abs(dFk_SP),axis=2)
         return Nk_SP, Fk_vols_total, wave_velocity
 
-    def RK3(self, M, fprop, wells, Ft_internal, Nk_SP, P_old, q_SP, Nk_SP_old, delta_t):
-        dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, np.copy(Nk_SP), P_old)
+    def RK3(self, M, fprop, wells, Ft_internal, Ft_SP_vec, Nk_SP, P_old, q_SP, Nk_SP_old, delta_t):
+        dFk_SP, wave_velocity = self.dFk_SP_from_Pspace(M, fprop, wells, Ft_internal, Ft_SP_vec, np.copy(Nk_SP), P_old)
         Nk_SP = RK3.update_composition_RK3_1(np.copy(Nk_SP_old), q_SP, dFk_SP, delta_t)
         #Nk_SP = self.slopeLim1(M, Nk_SP)
 
@@ -67,8 +67,13 @@ class FR(FR1D):
 
         return Nk_SP, Fk_vols_total, wave_velocity
 
-    def dFk_SP_from_Pspace(self, M, fprop, wells, Ft_internal, Nk_SP, P_old):
-        Fk_SP = self.component_flux_SP(fprop, M, Nk_SP) #comment for burgers
+    def dFk_SP_from_Pspace(self, M, fprop, wells, Ft_internal, Ft_SP_vec, Nk_SP, P_old):
+        import pdb; pdb.set_trace()
+        Fk_SPx = self.component_flux_SP(fprop, M, Ft_SP_vec[...,0], Nk_SP) #comment for burgers
+        Fk_SPy = self.component_flux_SP(fprop, M, Ft_SP_vec[...,1], Nk_SP) #comment for burgers
+        Ft_SP = np.sqrt((Ft_SP_vec**2).sum(axis=-1))
+        Fk_SP = np.sqrt(Fk_SPx**2 + Fk_SPy**2)
+
         #Fk_SP = self.get_Fk_Ft_SP(fprop, M, Nk_SP)
         #Fk_SP = np.ones_like(Fk_SP)#np.random.random([2,49,9])
 
@@ -76,7 +81,7 @@ class FR(FR1D):
         #Fk_SP = (Nk_SP**2/2)/(1/ctes.n_volumes)
 
         Fk_faces_RS_FPs, Fk_vols_RS_neig, alpha_wv_FPs = self.Riemann_Solver(M, fprop, wells, Nk_SP,
-            Fk_SP, P_old, Ft_internal)
+            Fk_SP, P_old, Ft_internal) #is it this way?
 
         Fk_SP_matrix = Fk_SP[:,:,ctes_FR.reshape_to_points_matrix]
 
@@ -110,24 +115,29 @@ class FR(FR1D):
         'RTo'
 
         Ft_internal_vec = Ft_internal[:,:,np.newaxis] * M.data['faces_normals'][M.faces.internal][:,:-1]
+
+
         Ft_face_phi = (Ft_internal_vec[:,:,np.newaxis,:,np.newaxis] * ctes_FR.phi[np.newaxis,np.newaxis,:])
 
         'Look for a faster way to do that'
-        Ft_SP_reshaped = np.empty((1,ctes.n_volumes,ctes_FR.  n_points, 2))
-        #contours = np.array([0,ctes_FR.n_points-1])
+        Ft_SP_reshaped = np.empty((1,ctes.n_volumes,ctes_FR.n_points, 2))
         for dir in range(2):
             for i in range(ctes_FR.n_points):
                 lines = np.array([np.zeros_like(ctes.v0[:,0]), np.zeros_like(ctes.v0[:,1])]).astype(int).flatten()
                 cols = np.array([ctes.v0[:,0], ctes.v0[:,1]]).flatten()
-                data = np.array([Ft_face_phi[:,:,i,dir,0], Ft_face_phi[:,:,i,dir,1]]).flatten()
+                #estou na dúvida do sinal negativo abaixo: uma coisa é o balanço, outra é a direção
+                data = np.array([Ft_internal_vec[:,:,np.newaxis,dir]*ctes_FR.phi[np.newaxis,np.newaxis,i,dir,1], Ft_internal_vec[:,:,np.newaxis, dir]*ctes_FR.phi[np.newaxis,np.newaxis,i,dir,0]]).flatten()
                 Ft_SP_reshaped[:,:,i,dir] = sp.csc_matrix((data, (lines, cols)), shape = (1, ctes.n_volumes)).toarray()
-        Ft_SP_vec = 2 * Ft_SP_reshaped #np.concatenate(np.dsplit(Ft_SP_reshaped, ctes_FR.n_points), axis = 2)
-        Ft_SP = np.sqrt((Ft_SP_vec**2).sum(axis=-1))
-        import pdb; pdb.set_trace()
-        import matplotlib.pyplot as plt
-        plt.scatter(ctes_FR.Xs[...,0].flatten(), ctes_FR.Xs[...,1].flatten())
-        plt.show
-        plt.savefig("mesh_test.png")
+
+        Ft_SP_vec = 2 * Ft_SP_reshaped #*2 por causa da derivada
+        #Ft_SP = np.sqrt((Ft_SP_vec**2).sum(axis=-1))
+
+        #import matplotlib.pyplot as plt
+        #plt.quiver(ctes_FR.Xs[...,0].flatten(), ctes_FR.Xs[...,1].flatten(), Ft_SP_vec[...,0].flatten(), Ft_SP_vec[...,1].flatten())
+        #plt.scatter(ctes_FR.Xs[...,0].flatten(), ctes_FR.Xs[...,1].flatten())
+        #plt.show
+        #plt.savefig("mesh_test_Fs.png")
+
         #Ft_SP[0,wells['all_wells'],:] = 0 #((Ft_internal[0,ctes_FR.vols_vec][wells['all_wells']]).sum(axis=-1)/2)[:,np.newaxis]
         #Ft_SP[:,[0,-1],:] = 0
         #Ft_SP[:,-1,0] = (Ft_SP[:,-1,0])[:,np.newaxis]
@@ -139,7 +149,7 @@ class FR(FR1D):
         Ft_SP[:,-1,0] = (Ft_SP[:,-1,0]).sum(axis=-1)[:,:,np.newaxis]
         Ft_SP[0,-1,1:] = 0'''
 
-        return Ft_SP
+        return Ft_SP_vec
 
     def get_pressure_SP_2D(self, wells, Pold):
         #P_SP = np.empty((ctes.n_volumes,ctes_FR.n_points))
@@ -174,18 +184,18 @@ class FR(FR1D):
         #import pdb; pdb.set_trace()
         return P_SP
 
-    def component_flux_SP_inputs(self, fprop):
+    def component_flux_SP_inputs(self, fprop, Ft_SP):
         Fk_SP_inputs = dict()
         Fk_SP_inputs['ponteiro'] = np.ones(ctes.n_volumes,dtype=bool)
         Fk_SP_inputs['v0'] = np.arange(ctes.n_volumes)[:,np.newaxis] * np.ones((ctes.n_volumes,ctes_FR.n_points))
-        Fk_SP_inputs['Ft_SP_flatt'] = np.concatenate(np.dsplit(self.Ft_SP, ctes_FR.n_points),axis=1)[:,:,0]
+        Fk_SP_inputs['Ft_SP_flatt'] = np.concatenate(np.dsplit(Ft_SP, ctes_FR.n_points),axis=1)[:,:,0]
         Fk_SP_inputs['pretr'] = ctes.pretransmissibility_internal_faces[ctes_FR.vols_vec][:,0]
         Fk_SP_inputs['Vp_SP'] = np.tile(fprop.Vp, ctes_FR.n_points)
         Fk_SP_inputs['P_SP_flatt'] = np.concatenate(np.hsplit(self.P_SP, ctes_FR.n_points),axis=0)[:,0]
         return Fk_SP_inputs
 
-    def component_flux_SP(self, fprop, M, Nk_SP):
-        Fk_SP_inputs = self.component_flux_SP_inputs(fprop)
+    def component_flux_SP(self, fprop, M, Ft_SP, Nk_SP):
+        Fk_SP_inputs = self.component_flux_SP_inputs(fprop, Ft_SP)
         Nk_SP_flatt = np.concatenate(np.dsplit(Nk_SP, ctes_FR.n_points),axis=1)[:,:,0]
         Fk_SP = RiemannSolvers(Fk_SP_inputs['v0'].astype(int), Fk_SP_inputs['pretr']).Fk_from_Nk(fprop,
             M, Nk_SP_flatt, Fk_SP_inputs['P_SP_flatt'], Fk_SP_inputs['Vp_SP'],
@@ -300,7 +310,6 @@ class FR(FR1D):
         return Fk_faces_RS_FPs, Fk_vols_RS_neig, alpha_wv_FPs
 
     def dFlux_Continuous(self, Fk_SP, Fk_vols_RS_neig):
-
         Fk_SP_aux = Fk_SP[...,np.newaxis] * np.ones((ctes.n_components,ctes.n_volumes,ctes_FR.n_points,4))
         Fk_SP_aux = Fk_SP_aux.transpose(0,1,3,2)
         Fk_FPs_vols = Fk_SP_aux[:,ctes_FR.SPs_on_faces.transpose(0,2,1)]
@@ -308,11 +317,12 @@ class FR(FR1D):
         Fk_FPs_vols_faces_ = np.concatenate(Fk_FPs_vols_faces_fl,axis=1)
         Fk_FPs_vols_faces_fl2 = np.split(Fk_FPs_vols_faces_[...,np.newaxis],4,axis=2)
         Fk_FPs_vols_faces = np.concatenate(Fk_FPs_vols_faces_fl2,axis=-1).transpose(0,1,3,2)
-        #checar se ´melhor mecher no RS e adequa
+        #checar se ´melhor mexer no RS e adequa
+        import pdb; pdb.set_trace()
         Fk_FPs_vols_faces_l = Fk_FPs_vols_faces[:,:,[0,3]]
         Fk_FPs_vols_faces_r = Fk_FPs_vols_faces[:,:,[1,2]]
         dFk_C = (Fk_vols_RS_neig[:,:,[0,3]] - Fk_FPs_vols_faces[:,:,[0,3]])[:,:,:,np.newaxis] * ctes_FR.dgLB[np.newaxis,np.newaxis,:] + \
-                (Fk_vols_RS_neig[:,:,[2,1]] - Fk_FPs_vols_faces[:,:,[2,1]])[:,:,:,np.newaxis] * ctes_FR.dgRB[np.newaxis,np.newaxis,0,:]
+                (Fk_vols_RS_neig[:,:,[2,1]] - Fk_FPs_vols_faces[:,:,[2,1]])[:,:,:,np.newaxis] * ctes_FR.dgRB[np.newaxis,np.newaxis,:]
         return dFk_C
 
     def minmod(self, dNks):

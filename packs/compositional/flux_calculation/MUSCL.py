@@ -107,7 +107,7 @@ class MUSCL:
     def get_extrapolated_compositions(self, fprop, Phi, dNk_face_neig):
         #Phi[abs(dNk_face_neig)<1e-30] = 0
         Nk_face = self.Nk[:,ctes.v0] + Phi / 2 * dNk_face_neig
-        Nk_face[(Nk_face<0)*(abs(Nk_face)<1e-90)] = 0
+        Nk_face[(Nk_face<0)*(abs(Nk_face)<1e-30)] = 0
         if any(Nk_face.flatten()<0): import pdb; pdb.set_trace()
         z_face = Nk_face[0:ctes.Nc] / np.sum(Nk_face[0:ctes.Nc], axis = 0)
         return Nk_face, z_face
@@ -127,7 +127,7 @@ class MUSCL:
 
     def update_flux_upwind(self, Pot_hid, Fk_face_upwind_all, v0, ponteiro):
         Fk_face_upwind = np.empty_like(Fk_face_upwind_all[:,:,0])
-    
+
         Pot_hidj = Pot_hid[0,v0[:,0]][ponteiro] #- G[0,:,:,0]
         Pot_hidj_up = Pot_hid[0,v0[:,1]][ponteiro] #- G[0,:,:,1]
 
