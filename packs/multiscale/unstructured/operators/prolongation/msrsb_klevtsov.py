@@ -137,7 +137,7 @@ class MsRSB:
         new_OP.data *= soma[new_OP.indices]
 
         op_diff = new_OP - OP_0
-        difference = (op_diff.data[np.isin(op_diff.indices, dual_faces)]).max()
+        difference = np.absolute(op_diff.data[np.isin(op_diff.indices, dual_faces)]).max()
 
         return new_OP, difference
 
