@@ -46,6 +46,8 @@ def print_fine_interfaces_coarse_mesh_2d(
         np.unique(fine_mesh_properties[get_primal_id_name_by_level(level)])
     )
 
+    edges_to_print = np.unique(np.concatenate([edges_to_print, fine_mesh_properties.boundary_edges]))
+
     mesh_data = MeshData(mesh_path=fine_mesh_path)
     mesh_data.export_only_the_elements(
         export_name,

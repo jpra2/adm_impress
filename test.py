@@ -86,7 +86,10 @@
 # run()
 # plot_graph()
 
-from packs.examples.monophasic_unstructured_linear import run4
+# from packs.examples.monophasic_unstructured_linear import run4
+# run4()
+
+from packs.examples.diss_test1 import run4
 run4()
 
 

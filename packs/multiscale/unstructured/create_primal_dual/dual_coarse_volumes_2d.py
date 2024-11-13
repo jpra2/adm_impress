@@ -22,10 +22,11 @@ def create_dual_vertices_v1(
 
     for coarse_face in coarse_faces_id:
         local_fine_faces = fine_faces_id[primal_id == coarse_face]
-        coarse_centroid = np.mean(
-            fine_faces_centroids[local_fine_faces],
-            axis=0
-        )
+        # coarse_centroid = np.mean(
+        #     fine_faces_centroids[local_fine_faces],
+        #     axis=0
+        # )
+        coarse_centroid = coarse_faces_centroids[coarse_face]
         
         dists = np.linalg.norm(
             fine_faces_centroids[local_fine_faces] - coarse_centroid,

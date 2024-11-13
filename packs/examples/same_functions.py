@@ -9,6 +9,7 @@ import numpy as np
 from typing import Sequence
 from shapely import geometry
 from scipy.sparse.linalg import spsolve
+import scipy.sparse as sp
 
 
 def get_perm_diag(value):
@@ -146,8 +147,12 @@ def update_fine_flux(
         ms_pressure: np.ndarray,
         total_mobility_edges: np.ndarray,
         lsds: LsdsFluxCalculation,
-        nodes_pressure: np.ndarray
+        nodes_pressure: np.ndarray,
+        global_bc: BoundaryConditions,
+        global_nodes_of_edges: np.ndarray
     ):
+
+    global_dirichlet_nodes = global_bc['dirichlet_nodes']['id']
 
     for cstruct in coarse_struct:
         global_edges = cstruct['map_edges']
@@ -155,13 +160,39 @@ def update_fine_flux(
         local_flux_presc = edges_flux[global_edges[bool_boundary_edges]]
         neumann_edges = cstruct['edges'][bool_boundary_edges]
         bc = BoundaryConditions()
-        bc.set_boundary('neumann_edges', neumann_edges, local_flux_presc)
+
+        ## verificar edges com pressao prescrita:
+        nodes_of_global_edges = global_nodes_of_edges[global_edges]
+        test1 = np.isin(nodes_of_global_edges[:,0], global_dirichlet_nodes)
+        test2 = np.isin(nodes_of_global_edges[:,1], global_dirichlet_nodes)
+        test3 = test1 & test2
+        edges_to_remove = global_edges[test3]
+        test4 = np.isin(global_edges[bool_boundary_edges], edges_to_remove)
+        test4 = ~test4
+
+        ## verificar nos com pressao prescrita
+        with_nodes_pressure = False
+        local_global_dirichlet_nodes = np.intersect1d(global_dirichlet_nodes, cstruct['map_nodes'][cstruct['bool_boundary_nodes']])
+        if local_global_dirichlet_nodes.shape[0] > 0:
+            with_nodes_pressure = True
+            my_nodes = cstruct['map_nodes']
+            local_dirichlet_nodes = cstruct['nodes'][np.isin(my_nodes, local_global_dirichlet_nodes)]
+            test5 = np.isin(global_dirichlet_nodes, local_global_dirichlet_nodes)
+            bc.set_boundary('dirichlet_nodes', local_dirichlet_nodes, global_bc['dirichlet_nodes']['value'][test5])
+            bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
+
+        ##############?
+
+        bc.set_boundary('neumann_edges', neumann_edges[test4], local_flux_presc[test4])
         # bc.set_boundary('neumann_edges', np.array([]), np.array([]))
 
-        local_vertice = cstruct['faces'][cstruct['dual_id']==defnames.dual_ids('vertice_id')]
-        bc.set_boundary('dirichlet_volumes', local_vertice, ms_pressure[local_vertice])
-        # bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
-        bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
+        if with_nodes_pressure is True:
+            pass
+        else:
+            local_vertice = cstruct['faces'][cstruct['dual_id']==defnames.dual_ids('vertice_id')]
+            bc.set_boundary('dirichlet_volumes', local_vertice, ms_pressure[local_vertice])
+            # bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
+            bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
 
         # bool_boundary_nodes = cstruct['bool_boundary_nodes']
         # mapbnodes = cstruct['map_nodes'][bool_boundary_nodes]
@@ -173,8 +204,8 @@ def update_fine_flux(
         # edges_multiplier[:] = 1
         #########################
         cstruct.update_data({
-            'neumann_edges': neumann_edges,
-            'neumann_edges_value': local_flux_presc,
+            'neumann_edges': bc['neumann_edges']['id'],
+            'neumann_edges_value': bc['neumann_edges']['value'],
             'edges_multiplier': edges_multiplier,
         })
         
@@ -189,6 +220,20 @@ def update_fine_flux(
         })
 
         lt = set_fine_transmissibility_biphasic(cstruct, bc, lsds)
+
+        # #### segunda modificação
+        # local_edges_presc_neumann = neumann_edges[test4]
+        # local_presc_neumann_value = local_flux_presc[test4]
+        # local_boundary_faces = cstruct['adjacencies'][local_edges_presc_neumann, 0]
+        # diag = lt['transmissibility'].diagonal()
+        # local_boundary_faces_diag = diag[local_boundary_faces]
+        # lt['transmissibility'][local_boundary_faces] = 0
+        # lt['source'][local_boundary_faces] = 0
+        # lt['transmissibility'][local_boundary_faces, local_boundary_faces] = local_boundary_faces_diag
+        # lt['source'][local_boundary_faces] = local_presc_neumann_value
+        # lt['transmissibility'].eliminate_zeros()
+        # ##################
+
         local_pressure = spsolve(lt['transmissibility'], lt['source'])
         
         local_edges_flux = lsds.get_edges_flux(
@@ -208,6 +253,44 @@ def update_fine_flux(
             'edges_flux': local_edges_flux
         })
 
+        cstruct.insert_or_update_data({
+            'local_pressure': local_pressure
+        })
+
         bool_internal_edges = ~bool_boundary_edges
         # edges_flux[cstruct['map_edges'][bool_internal_edges]] = local_edges_flux[bool_internal_edges]
         edges_flux[cstruct['map_edges']] = local_edges_flux
+
+def export_op(mesh_path, OP_AMS, op_name):
+
+    # flying_mesh_path = _create_flying_mesh(mesh_path)
+    flying_mesh_path = mesh_path
+
+
+    mesh_data = MeshData(mesh_path=flying_mesh_path)
+    all_data = sp.find(OP_AMS)
+    lines = all_data[0]
+    cols = all_data[1]
+    data = all_data[2]
+
+    elements = []
+    data_array = []
+
+    cids = np.unique(cols)
+
+    for cid in cids:
+        test = cols == cid
+        elements.append(lines[test])
+        data_array.append(data[test])
+
+    mesh_data.insert_array_tag_data(
+        'OP',
+        data_array,
+        'faces',
+        elements
+    )
+
+    mesh_data.export_all_elements_type_to_vtk(
+        op_name,
+        'faces'
+    )
