@@ -33,11 +33,11 @@ Wells:
     ksi_total: 55484.31862337
     p0:
     - 0.0
-    - 0.60198
-    - -0.03048
+    - 0.0
+    - -1
     p1:
-    - 0.00762
-    - 0.6096
+    - 5
+    - 5
     - 0.0
     prescription: Q
     type: Injector
@@ -49,12 +49,12 @@ Wells:
     - 1.0
   P2:
     p0:
-    - 0.60198
-    - 0.0
-    - -0.03048
+    - 5
+    - 5
+    - -1
     p1:
-    - 0.6096
-    - 0.00762
+    - 10
+    - 10
     - 0.0
     prescription: P
     type: Producer
@@ -67,13 +67,13 @@ compositional_data:
   Epc: 2
   FR:
     order: 3
-    set: false
+    set: true
   MUSCL:
     set: false
   Pf: 13.79E6
   RiemannSolver:
     DW: false
-    LLF: false
+    LLF: true
     MDW: false
     ROE: false
   capillary_pressure: Chang
@@ -119,13 +119,13 @@ compositional_data:
   solver:
     IMPSAT: false
   time_data:
-    deltaNlim: 1
+    deltaNlim: 10
     deltaPlim: 7
     deltaSlim: 0.2
     deltaVlim: 1
-    delta_t_ini: 0.05
+    delta_t_ini: 0.5
     delta_tmax: 8640
-    delta_tmin: 0.001
+    delta_tmin: 0.1
   time_integration:
     Euler: true
     RK3: false
@@ -148,12 +148,12 @@ hidrocarbon_components: true
 load_compositional_data: false
 load_data: true
 load_operators: false
-mesh_name: 80x80_BL.msh
-mesh_type: structured
+mesh_name: 2x2x1_test.msh
+mesh_type: unstructured
 monophasic_data:
   gama: 10000.0
   mi: 1.0
-name_save_file: results_Buckley_Leverett_case_2D_80x80_IMPEC_FOU
+name_save_file: results_Buckley_Leverett_case_2D_40x40
 read_permeability: false
 set_permeability: true
 set_porosity: true
