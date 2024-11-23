@@ -1,0 +1,532 @@
+import copy
+from tkinter import ALL
+from impress.preprocessor.meshHandle.finescaleMesh import FineScaleMesh
+
+from packs.directories import data_loaded
+from run_compositional_adm import RunSimulationAdm
+import time
+from packs.multiscale.preprocess.dual_primal.create_dual_and_primal_mesh import MultilevelData
+from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
+from packs.compositional.compositional_params import Params
+from packs.adm.non_uniform.adm_method_non_nested import AdmNonNested
+from packs.multiscale.preprocess.prep_neumann import NeumannSubdomains
+from packs.multiscale.preprocess.dual_domains import DualSubdomain, create_dual_subdomains
+from packs.utils import constants as ctes
+import numpy as np
+import scipy.sparse as sp
+from packs.data_class.compositional_data import CompositionalData
+from packs.data_class.compositional_cumulative_datamanager import CumulativeCompositionalDataManager
+from packs.cases.compositional_adm_cases.compressible_oil import functions_update
+from packs.multiscale.neuman_local_problems.master_local_solver import MasterLocalSolver
+from packs.multiscale.operators.prolongation.AMS.paralell2.paralel_ams_new_2 import MasterLocalOperator
+from packs.data_class.sparse_operators import SparseOperators
+from packs.cases.compositional_adm_cases.compressible_oil import update_variables_before_init
+from packs.multiscale.ms_utils.multiscale_functions import print_mesh_volumes_data
+from packs.cases.compositional_adm_cases.compressible_oil import all_functions
+from packs.solvers.solvers_trilinos.solvers_tril import solverTril
+from packs.solvers.solvers_scipy.solver_sp import SolverSp
+from packs.cases.compositional_adm_cases.compressible_oil import descriptions
+from packs.utils import multilevel_visualization
+
+""" ---------------- LOAD STOP CRITERIA AND MESH DATA ---------------------- """
+
+name_current = 'current_compositional_results_'
+name_all = data_loaded['name_save_file'] + '_'
+mesh = 'mesh/' + data_loaded['mesh_name']
+n_levels = data_loaded['n_levels']
+get_correction_term = data_loaded['get_correction_term']
+load_operators = data_loaded['load_operators']
+load_multilevel_data = data_loaded['load_multilevel_data']
+
+# description = 'case1_finescale_'
+# description = 'case3_finescale_3k'
+# description = 'case2_adm_'
+# description = 'case4_adm_3k'
+# description = 'case5_adm_3k'
+# description = 'case6_adm_3k'
+# description = 'case7_adm_3k'
+# description = 'case8_adm_3k' # coarse volumes wells in fine scale
+# description = 'case9_adm_3k' # neig wells in fine scale
+# description = 'case10_adm_3k' # case9_adm_3k with 10 coarse ratio
+# description = 'case11_adm_3k' # case 9 adm 3k with 25 coarse ratio
+# description = 'case12_finescale_6k'
+# description = 'case13_adm_6k' # case 12 with cr=5
+# description = 'case14_adm_6k' # with 10 coarse volumes
+# description = 'case15_adm_6k' # with 25 coarse volumes
+# description = 'case16_finescale_5000_3k_' # with 25 coarse volumes
+# description = 'case16_finescale_5000_3k_' # with 25 coarse volumes
+# description = 'case18_adm_6k_5000_' # cr = 25
+# description = 'case19_adm_6k_5000_' # cr = 25, iterate finescale, tol=1e-10
+# description = 'case20_adm_6k_5000_' # cr = 25, iterate finescale, tol=1e-14
+# description = 'case21_adm_6k_5000_' # cr = 25, iterate finescale, tol=1e-14, without correction functions
+# description = 'case22_adm_6k_5000_' # cr = 50, iterate finescale, tol=1e-14, without correction functions
+# description = 'case23_finescale_6k_5000_' # finescale iterative
+# description = 'case24_testcaseOfCase19_'
+# description = 'case25_finescale_80x80_adm'
+# description = 'case33_adm_80x80_BL_tams_solver'
+# description = 'case34_adm_80x80_BL_iterative_CG_tol-1e18'
+# description = 'case35_adm_80x80_BL_tams_solver_new_prolong'
+# description = 'case36_adm_80x80_Firoo_tams_solver_new_prolong'
+# description = 'case37_adm_80x80_Firoo_tams_solver_new_prolong_coarsewells_level0'
+# description = 'case38_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0'
+# description = 'case39_adm_80x80_Firoo_iterative_CG_new_prolong_coarsewells_level0_cr-10'
+# description = 'case41_adm_biph_v'
+# description = 'case45_test'
+# description = 'case46_test-limit_maxiter_tams-5'
+# description = 'case47-test-limit_maxiter_tams_cg-20_thres-update-BF-0.3'
+# description = 'case48-test-limit_maxiter_tams_cg-1000_thres-update-BF-0.1_by_dvtol'
+# description = 'case49-test-limit_maxiter_tams_cg-1000_thres-update-BF-0.1_by_dvtol'
+description = descriptions.case2_adm_description
+
+
+compositional_data = CompositionalData(description=description)
+manage_operators = SparseOperators(description=description)
+cumulative_compositional_datamanager = CumulativeCompositionalDataManager(description=description)
+cumulative_compositional_datamanager.create()
+# datas_comp = cumulative_compositional_datamanager.load_all_datas()
+# cumulative_compositional_datamanager.delete_all_datas()
+# compositional_data.delete()
+# import pdb; pdb.set_trace()
+loop_array = all_functions.get_empty_loop_array()
+params = Params()
+
+if data_loaded['use_vpi']:
+    stop_criteria = max(data_loaded['compositional_data']['vpis_para_gravar_vtk'])
+else: stop_criteria = data_loaded['compositional_data']['maximum_time']
+
+loop_max = 1000
+run_criteria = 0# ###############
+
+# ###############- RUN CODE --------------------------------- """
+
+load = data_loaded['load_data']
+convert = data_loaded['convert_english_to_SI']
+
+t = time.time()
+sim = RunSimulationAdm(name_current, name_all)
+M, data_impress, wells, fprop, load, elements_lv0 = sim.initialize(load, convert, mesh)
+# import pdb; pdb.set_trace()
+# load_multilevel_data = False
+
+# volumes = M.volumes.all[:]
+# c_volumes = M.volumes.center[:]
+# nodes_volumes = M.volumes.bridge_adjacencies(volumes, 3, 0)
+# c_nodes = M.nodes.center[:]
+# c_v0 = c_nodes[nodes_volumes[0]]
+
+# import pdb; pdb.set_trace()
+
+
+ml_data = MultilevelData(data_impress, M, load=load_multilevel_data, n_levels=n_levels)
+# import pdb; pdb.set_trace()
+# data_impress['DUAL_1'][:] = dual_ids
+# data_impress['GID_1'][:] = primal_ids
+# data_impress.update_variables_to_mesh()
+# m = M.core.mb.create_meshset()
+# M.core.mb.add_entities(m, M.core.all_volumes)
+# M.core.mb.write_file('results/test_primals.vtk', [m])
+# import pdb; pdb.set_trace()
+
+ml_data.run()
+data_impress.update_variables_to_mesh()
+# for i in ml_data.keys():
+#     print(i)
+volumes_without_grav_level_0 = ml_data['volumes_without_grav_level_0']
+v1 = volumes_without_grav_level_0
+# print(ml_data.keys())
+# import pdb; pdb.set_trace()
+mlo = MultilevelOperators(n_levels, data_impress, elements_lv0, ml_data, load=load_operators, get_correction_term=get_correction_term)
+neumann_subds = NeumannSubdomains(elements_lv0, ml_data, data_impress, wells)
+adm = AdmNonNested(wells['all_wells'], n_levels, M, data_impress, elements_lv0)
+# ml_data.load_tags()
+# import pdb; pdb.set_trace()
+dual_subdomains = create_dual_subdomains(ml_data['dual_structure_level_1'], ml_data['fine_dual_id_level_1'], ml_data['fine_primal_id_level_1'])
+global_vector_update = np.full(ctes.n_volumes, False, dtype=bool)
+ncoarse_ids = len(np.unique(data_impress['GID_1']))
+OP_AMS = sp.lil_matrix((ctes.n_volumes, ncoarse_ids)).tocsc()
+
+keywords1 = {
+    'update_FC': False,
+    'update_basis_functions': False
+}
+
+master_neumann = MasterLocalSolver(neumann_subds.neumann_subds, ctes.n_volumes)
+master_local_operator = MasterLocalOperator(dual_subdomains, ctes.n_volumes, **keywords1)
+
+params['area'] = data_impress['area']
+params['pretransmissibility'] = data_impress['pretransmissibility']
+
+
+def create_volumes_to_volumes(M: FineScaleMesh):
+    v1 = M.volumes.bridge_adjacencies(M.volumes.all, 2, 3)
+    v2 = []
+    for vols in v1:
+        v2.append(np.unique(np.hstack([np.hstack(v1[vols]), vols])))
+    
+    v2 = np.array(v2)
+    return v2
+
+# trilinos_solver = solverTril()
+scipy_solver = SolverSp()
+local_problem_params = {
+    # 'trilinos_solver': trilinos_solver
+    'elements_lv0': elements_lv0,
+    'scipy_solver': scipy_solver,
+    'tolerance': 1e-8,
+    'iterative_solver_finescale': 'cg', # ['cg', 'gmres']
+    'adm_solver': 'tams', # ['tams', 'iterative-finescale']
+    # 'well_volumes': np.concatenate([wells['ws_p'], wells['values_p']]),
+    'wells_producer': wells['ws_p'],
+    'loop': 0,
+    'dvtol': 1e-5
+}
+
+params.update({
+    'multilevel_data': ml_data,
+    'Vbulk': ctes.Vbulk,
+    'porosity': ctes.porosity,
+    'Cf': ctes.Cf,
+    'dVtdP': None,
+    'P': None,
+    'n_volumes': ctes.n_volumes,
+    'n_components': ctes.n_components,
+    'n_phases': ctes.n_phases,
+    'internal_faces_adjacencies': ctes.v0,
+    'dVtdk': None,
+    'z_centroids': ctes.z,
+    'xkj_internal_faces': None,
+    'Csi_j_internal_faces': None,
+    'mobilities_internal_faces': None,
+    'pretransmissibility_internal_faces': ctes.pretransmissibility_internal_faces,
+    'Pcap': None,
+    'Vp': None,
+    'Vt': None,
+    'well_volumes_flux_prescription': wells['ws_q'],
+    'values_flux_prescription': wells['values_q'],
+    'delta_t': None,
+    'g': ctes.g,
+    'well_volumes_pressure_prescription': wells['ws_p'],
+    'pressure_prescription': wells['values_p'],
+    'bhp_ind': ctes.bhp_ind,
+    'rho_j': None,
+    'rho_j_internal_faces': None,
+    'm_object': M,
+    'global_vector_update': global_vector_update,
+    'OP_AMS': OP_AMS,
+    'dual_subdomains': dual_subdomains,
+    'master_neumann': master_neumann,
+    'master_local_operator': master_local_operator,
+    'multilevel_operators': mlo,
+    'adm_method': adm,
+    'neumann_subds': neumann_subds,
+    'data_impress': data_impress,
+    'tams_itcounter': 0,
+    'internal_faces_velocity': np.ones(len(elements_lv0['internal_faces'])),
+    'all_coarse_intersect_faces_level_1': np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1'])),
+    'other_faces_level_1': np.setdiff1d(elements_lv0['internal_faces'], np.unique(np.concatenate(ml_data['coarse_intersect_faces_level_1']))),
+    'volumes_to_volumes': create_volumes_to_volumes(M),
+    'level0_negative_composition': np.full(ctes.n_volumes, False, bool),
+    'update_basis_functions': keywords1['update_basis_functions'],
+    'loop': 0
+})   
+
+latest_mobility = np.zeros(fprop.mobilities.shape)
+latest_mobility[:] = 0.001
+latest_density = np.zeros(fprop.rho_j.shape)
+latest_internal_faces_velocity = np.zeros(len(elements_lv0['internal_faces']))
+global_vector_update[:] = False
+total_volumes_updated = copy.deepcopy(global_vector_update)
+data_impress['LEVEL'][:] = 1
+params['active_volumes'] = 0
+
+# #######################
+# ## update before init
+# update_variables_before_init.update_variables_for_initial_run_adm(
+#     fprop,
+#     sim,
+#     latest_mobility,
+#     compositional_data,
+#     OP_AMS,
+#     manage_operators
+# )
+# ############################
+
+
+n_loops_for_acumulate = 1
+n_loops_for_export = 100
+
+assert (n_loops_for_export % n_loops_for_acumulate) == 0
+
+
+# tmax_simulation_day = 15 # dias
+tmax_simulation_day = 2.1 # dias
+t_simulation_day = sim.t/86400
+# M.data.update_variables_to_mesh()
+# print_mesh_volumes_data(M, 'results/dual_test.vtk')
+
+global_vector_update[:] = True
+
+ALL_GIDS = np.array([
+    data_impress['GID_0'],
+    data_impress['GID_1'],
+    data_impress['GID_2']
+])
+
+ALL_VOLUMES_TO_FACES = [elements_lv0.volumes_to_faces(elements_lv0['volumes'])]
+
+for i in range(1, 2):
+    ff = []
+    cgids = np.unique(ALL_GIDS[i])
+    for cid in cgids:
+        ff.append(
+            np.setdiff1d(
+                ml_data['coarse_faces_level_' + str(i)][cid],
+                ml_data['coarse_internal_faces_level_' + str(i)][cid])    
+            )
+    ff = np.array(ff)
+    ALL_VOLUMES_TO_FACES.append(ff)
+
+ALL_VOLUMES_TO_FACES = np.array(ALL_VOLUMES_TO_FACES, dtype='O')
+
+# while run_criteria < stop_criteria:# and loop < loop_max:
+while t_simulation_day < tmax_simulation_day:
+# while True:
+    # import pdb; pdb.set_trace()
+    params.update({
+        'pressure': fprop.P,
+        'mobilities': fprop.mobilities,
+        'composition': fprop.Csi_j,
+        'mol_number': fprop.Nk,
+        'Sg': fprop.Sg,
+        'Sw': fprop.Sw,
+        'So': fprop.So,
+        'z': fprop.z,
+        'porous_volume': fprop.Vp,
+        'total_volume': fprop.Vt
+    })
+
+    # global_vector_update[:] = True # update the prolongation operator in all dual volumes
+    # for phase in range(ctes.n_phases):
+    #     functions_update.update_global_vector_for_latest_variable(
+    #         global_vector_update,
+    #         latest_mobility[:, phase, :]*latest_density[:, phase, :],
+    #         fprop.mobilities[:, phase, :]*fprop.rho_j[:, phase, :],
+    #         0.1
+    #     )
+
+    if keywords1['update_basis_functions']:    
+        for phase in range(ctes.n_phases):
+            functions_update.update_global_vector_for_latest_variable(
+                global_vector_update,
+                latest_mobility[:, phase, :],
+                fprop.mobilities[:, phase, :],
+                0.1
+            )
+
+
+    # for comp in range(fprop.z.shape[0]):
+    #     functions_update.update_global_vector_for_volumes_adjacencies_variable(
+    #         global_vector_update,
+    #         elements_lv0['neig_internal_faces'],
+    #         fprop.z[comp, :],
+    #         0.1
+    #     )
+
+    for dual in dual_subdomains:
+        dual: DualSubdomain
+        if np.any(global_vector_update[dual.gids]):
+            latest_mobility[:, :, dual.gids] = fprop.mobilities[:, :, dual.gids]
+            latest_density[:, :, dual.gids] = fprop.rho_j[:, :, dual.gids]
+            total_volumes_updated[dual.gids] = True
+    print('#####################################')
+    print(f'\nGlobal update sum: {global_vector_update.sum()}\n')
+    print('#####################################')
+
+    functions_update.set_level0_delta_sat(
+        data_impress['LEVEL'],
+        fprop.Sg,
+        elements_lv0['neig_internal_faces'],
+        0.1
+    )
+
+    functions_update.set_level0_delta_sat(
+        data_impress['LEVEL'],
+        fprop.So,
+        elements_lv0['neig_internal_faces'],
+        0.1
+    )
+
+    functions_update.set_level0_delta_sat(
+        data_impress['LEVEL'],
+        fprop.Sw,
+        elements_lv0['neig_internal_faces'],
+        0.1
+    )
+
+
+    t0 = time.time()
+    sim.run(M, wells, fprop, load,
+            params=params,
+            **local_problem_params)
+    simulation_time = time.time() - t0
+
+    if data_loaded['use_vpi']:
+        'If using time-step unit as vpi'
+        run_criteria = sim.vpi
+    else:
+        'If using time-step unit as second'
+        run_criteria = sim.t
+        if sim.time_save[-1] == 0.0:
+            'if time_save = [0.0] only, it means that all time-steps are going \
+            to be saved'
+            t_next = sim.t + sim.delta_t
+        else:
+            'This is made so time to save is equal to the simulation time - this \
+            only works (for now) if time to save is in seconds and not vpi'
+            t_next = sim.time_save[sim.time_save > sim.t]
+            if len(t_next)>1: t_next = t_next[0]
+
+        'If the current simulation time plus the computed time-step is bigger \
+        than the final simulation time, correct the time-step so the current \
+        simulation time plus delta_t is equal to the final time'
+        if sim.t + sim.delta_t > t_next:
+            sim.delta_t = t_next - sim.t
+
+    params.update({
+        'mobilities_internal_faces': fprop.mobilities_internal_faces,
+        'composition_internal_faces': fprop.Csi_j_internal_faces,
+        'xkj_internal_faces': fprop.xkj_internal_faces,
+        'rho_phase_internal_faces': fprop.rho_j_internal_faces
+    })
+
+    loop = sim.loop
+    params.update({
+        'loop': loop
+    })
+    print(sim.t)
+    loop_array['total_simulation_time'][0] += simulation_time
+    loop_array['n_total_loops'][0] += 1
+
+    if (loop) % n_loops_for_acumulate == 0:
+
+        loop_array['loop'][0] = loop
+        loop_array['t'][0] = sim.t
+        loop_array['vpi'][0] = sim.vpi
+        loop_array['simulation_time'][0] = simulation_time
+        loop_array['oil_production'][0] = sim.oil_production
+        loop_array['gas_production'][0] = sim.gas_production
+        loop_array['n_volumes_update_base_functions'][0] = global_vector_update.sum()
+        loop_array['total_volumes_updated'][0] = total_volumes_updated.sum()
+        loop_array['active_volumes'][0] = params['active_volumes']
+        loop_array['oil_rate'][0] = np.sum(fprop.q_phase[:,0])
+        loop_array['gas_rate'][0] = np.sum(fprop.q_phase[:,1])
+        loop_array['tams_iterations'] = params['tams_itcounter']
+
+        compositional_data.update({
+            # 'pressure': fprop.P,
+            # 'Sg': fprop.Sg,
+            # 'Sw': fprop.Sw,
+            # 'So': fprop.So,
+            # 'global_composition': fprop.z,
+            # 'mols': fprop.Nk,
+            # 'xkj': fprop.xkj,
+            # 'Vp': fprop.Vp,
+            # 'latest_mobility': latest_mobility,
+            # 'latest_density': latest_density,
+            'loop_array': loop_array
+        })
+        cumulative_compositional_datamanager.insert_data(compositional_data._data)
+
+        manage_operators.update(
+            {
+                'prolongation_level_1': OP_AMS
+            }
+        )
+
+    if (loop) % n_loops_for_export == 0:
+        compositional_data.export_to_npz()
+        cumulative_compositional_datamanager.export()
+        manage_operators.export()
+        
+        file_name = 'results/images_' + description + '_'
+    
+    # if loop % 3*n_loops_for_export == 0:
+    #     multilevel_visualization.visualize_levels(M, data_impress['LEVEL'], ALL_GIDS, ALL_VOLUMES_TO_FACES, file_name, loop, elements_lv0['boundary_faces'])
+                
+
+    global_vector_update[:] = False
+    total_volumes_updated[:] = False
+    data_impress['LEVEL'][:] = 1
+    t_simulation_day = sim.t/86400
+    local_problem_params.update({
+        'loop': loop
+    })
+
+    # functions_update.update_global_vector_by_internal_face_variable(
+    #     global_vector_update,
+    #     latest_internal_faces_velocity,
+    #     params['internal_faces_velocity'],
+    #     elements_lv0['neig_internal_faces'],
+    #     local_problem_params['dvtol']
+    # )
+    #
+    # for phase in range(ctes.n_phases):
+    #     functions_update.update_global_vector_for_latest_variable(
+    #         global_vector_update,
+    #         latest_mobility[:, phase, :],
+    #         fprop.mobilities[:, phase, :],
+    #         0.1
+    #     )
+
+    print(f'Time in days: {t_simulation_day} \n')
+    print(f'LOOP: {loop} \n')
+    
+    if loop % 2500 == 0:
+        print('sleeping...')
+        time.sleep(5)
+    
+    # if loop % 100000 == 0:
+    #     import pdb; pdb.set_trace()
+    print(simulation_time)
+    import pdb; pdb.set_trace()
+    
+
+
+loop_array['loop'][0] = loop
+loop_array['t'][0] = sim.t
+loop_array['vpi'][0] = sim.vpi
+loop_array['simulation_time'][0] = simulation_time
+loop_array['oil_production'][0] = sim.oil_production
+loop_array['gas_production'][0] = sim.gas_production
+loop_array['n_volumes_update_base_functions'][0] = global_vector_update.sum()
+loop_array['total_volumes_updated'][0] = total_volumes_updated.sum()
+loop_array['active_volumes'][0] = params['active_volumes']
+loop_array['oil_rate'][0] = np.sum(fprop.q_phase[:,0])
+loop_array['gas_rate'][0] = np.sum(fprop.q_phase[:,1])
+compositional_data.update({
+    # 'pressure': fprop.P,
+    # 'Sg': fprop.Sg,
+    # 'Sw': fprop.Sw,
+    # 'So': fprop.So,
+    # 'global_composition': fprop.z,
+    # 'mols': fprop.Nk,
+    # 'xkj': fprop.xkj,
+    # 'Vp': fprop.Vp,
+    # 'latest_mobility': latest_mobility,
+    'loop_array': loop_array
+})
+cumulative_compositional_datamanager.insert_data(compositional_data._data)
+
+manage_operators.update(
+    {
+        'prolongation_level_1': OP_AMS
+    }
+)
+compositional_data.export_to_npz()
+cumulative_compositional_datamanager.export()
+manage_operators.export()
+
+tf = time.time()
+print('Total computational time: ', tf-t) #total simulation time
+import pdb; pdb.set_trace()
+sim.save_infos(data_impress, M) #Save data to file

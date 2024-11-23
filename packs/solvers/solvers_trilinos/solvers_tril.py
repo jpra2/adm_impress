@@ -1,7 +1,8 @@
-from PyTrilinos import Epetra, AztecOO, EpetraExt, Teuchos
+# from PyTrilinos import Epetra, AztecOO
 import numpy as np
 import scipy.sparse as sp
 # IFPACK.PrintSparsity(Matrix, "matrix.ps")
+# from PyTrilinos import Epetra, AztecOO
 
 
 class solverTril:
@@ -11,7 +12,7 @@ class solverTril:
         self._params = dict()
         # self.set_parameters()
 
-    def solve_linear_problem(self, A, b, x=None, its=1000, tolerance=1e-10):
+    def solve_linear_problem(self, A, b, x=None, its=1000, tolerance=1e-9):
         '''
         resolve o problema Ax = b
         input:
@@ -24,6 +25,7 @@ class solverTril:
             res: informa se o residuo foi menor que a tolerancia
             x2: vetor resposta
         '''
+
         comm = self._comm
         n = len(b)
         std_map = Epetra.Map(n, 0, comm)

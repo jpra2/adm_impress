@@ -1,0 +1,24 @@
+fine_mesh: ""
+coarse_mesh: ""
+
+## algorithmic monotone weight
+w: 0
+
+save_fine_transm_without_bc: True
+save_monotone_transm: True
+save_fine_transmissibility: True
+save_op: True
+
+op_toget: 'AMS-U'
+monotone_transm_setup: 'use w'
+# monotone_transm_setup: 'enhanced'
+
+permeability_type: '2regions'
+bc_type: 'type1'
+
+update_nodes_weights: True
+update_dual: True
+
+export_adm_levels_file: True
+export_permfield: True
+

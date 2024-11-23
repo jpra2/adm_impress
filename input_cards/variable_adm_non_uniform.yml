@@ -1,0 +1,762 @@
+COARSE_GID_1:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+COARSE_GID_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+COARSE_LOCAL_ID_1:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+COARSE_LOCAL_ID_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+DUAL_1:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+DUAL_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+GID_0:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+GID_1:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+GID_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+INITIAL_LEVEL:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+LEVEL:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+LEVEL_ID_0:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+LEVEL_ID_1:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+LEVEL_ID_2:
+  data size: 1
+  data type: int
+  level: 0
+  sparse: true
+  type: volumes
+NODES:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: nodes
+area:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+capillary_pressure:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+centroid_edges:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: edges
+centroid_faces:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+centroid_nodes:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: nodes
+centroid_volumes:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+dist_cent:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+erro:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+erro_pcorr_pdm:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+flux:
+  data size: 3
+  data type: int
+  level: 0
+  sparse: true
+  type: faces
+flux_cap_faces:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_cap_volumes:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+flux_faces:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+upwind_w_faces_vec:
+  data size: 3
+  data type: int
+  level: 0
+  sparse: true
+  type: faces
+upwind_o_faces_vec:
+  data size: 3
+  data type: int
+  level: 0
+  sparse: true
+  type: faces
+flux_grav_faces:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_grav_o_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_grav_volumes:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+flux_grav_w_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_o_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+
+flux_o_volumes:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: False
+  type: volumes
+
+phi:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: False
+  type: volumes
+flux_press_o_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_press_w_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_volumes:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+flux_volumes_test:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+flux_w_faces:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_w_faces_vec:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+flux_w_volumes:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+fw_faces:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+fw_vol:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+gama:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+gama_faces:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+hs:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+k_harm:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+kro:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+krw:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+lambda_o:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+lambda_t:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+lambda_t_faces:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+lambda_w:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+mass_oil_production:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+mass_water_production:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pcorr:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+permeability:
+  data size: 9
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pms:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pms_flux_faces:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+pms_flux_interfaces_volumes:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pms_flux_volumes:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+poro:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pressure:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+pretransmissibility:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+pseudo_erro:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+saturation:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+saturation_last:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+test_fw:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+tpfa_pressure:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+transmissibility:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+u_normal:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+velocity_faces:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: faces
+verif_po:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+verif_rest:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+volume:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+water_pressure:
+  data size: 1
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+weight:
+  data size: 3
+  data type: float
+  level: 0
+  sparse: true
+  type: volumes
+
+swns:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+swn1s:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+k_eq:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+k_eq:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+id_fint:
+  type: faces
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+velocity:
+  type: faces
+  data size: 3
+  data type: float
+  sparse: True
+  level: 0
+
+
+id_global:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+perm_x:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+perm_z:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+erro_p:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+erro_v:
+  type: faces
+  data size: 3
+  data type: float
+  level: 0
+  sparse: True
+
+flux_o_faces:
+  type: faces
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+perpendicular_direction_flag:
+  type: faces
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+verif_faces_flag:
+  type: faces
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+vug:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+g_total_source_term:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+pms_adm_pressure:
+    type: volumes
+    data size: 1
+    data type: float
+    sparse: True
+    level: 0
+
+ADM_COARSE_ID_LEVEL_1:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+ADM_COARSE_ID_LEVEL_2:
+  type: volumes
+  data size: 1
+  data type: int
+  sparse: True
+  level: 0
+
+velocity_projection:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_0:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_1:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_2:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_3:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_4:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_5:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+non_physical_value_999:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+val_diric:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+val_neum:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+coupled_flag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_flux_tag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_pos:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+initial_diag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_diag:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+nfp:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+nfn:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+raz_phi:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+ref_param:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0
+
+DUAL_PRESSURE:
+  type: volumes
+  data size: 1
+  data type: float
+  sparse: True
+  level: 0

@@ -10,9 +10,9 @@ entities_lv0_0 = direc_impress.entities_lv0_0
 names_data_loaded_lv0 = ['read_permeability', 'file_name_permeability', 'Permeability', 'Crs',
                          'Saturation', 'set_permeability', 'set_porosity', 'Porosity']
 
-names_data_loaded_lv2 = ['type', 'value', 'p0', 'p1']
+names_data_loaded_lv2 = ['type', 'value', 'value_a', 'p0', 'p1']
 
-types_region_data_loaded = ['all', 'box']
+types_region_data_loaded = ['all', 'box', 'ring']
 types_region_for_saturation = ['all', 'wells', 'box']
 types_presc = ['dirichlet', 'neumann']
 types_wells = ['injector', 'producer']
@@ -23,7 +23,8 @@ types_simulation = ['compositional', 'biphasic', 'monophasic']
 # variables_impress = {'permeability': 'permeability', 'poro': 'poro', 'k_harm': 'k_harm',
 #                      'area': 'area', 'dist_cent': 'dist_cent', 'u_normal': 'u_normal'}
 
-variables_impress = dict()
+# variables_impress = {'poro': 'phi'}
+variables_impress = {}
 
 impress = 'impress'
 tcc = 'tcc'
@@ -51,18 +52,21 @@ state_path = os.path.join(flying, state_file)
 last_file_name = 'last_file_name.npy'
 path_local_last_file_name = os.path.join(flying, last_file_name)
 
-names_outfiles_steps = [output_file+'0-all.h5m',
-                        output_file+'1-all.h5m',
-                        output_file+'2-all.h5m',
-                        output_file+'3-all.h5m',
-                        output_file+'4-all.h5m']
+# names_outfiles_steps = [output_file+'0-all.h5m',
+#                         output_file+'1-all.h5m',
+#                         output_file+'2-all.h5m',
+#                         output_file+'3-all.h5m',
+#                         output_file+'4-all.h5m']
+#
+# names_outfiles_variables_steps = [os.path.join(flying, 'variables0.npz'),
+#                                   os.path.join(flying, 'variables1.npz'),
+#                                   os.path.join(flying, 'variables2.npz'),
+#                                   os.path.join(flying, 'variables3.npz')
+#                                   ]
 
-names_outfiles_variables_steps = [os.path.join(flying, 'variables0.npz'),
-                                  os.path.join(flying, 'variables1.npz'),
-                                  os.path.join(flying, 'variables2.npz'),
-                                  os.path.join(flying, 'variables3.npz')
-                                  ]
 names_datas_contour = os.path.join(flying, 'datas_contour.npz')
+file_adm_mesh_def = 'initial_mesh_def.yml'
+file_adm_mesh_def = os.path.join('input_cards', file_adm_mesh_def)
 
 #with open('input_cards/inputs_compositional.yml', 'r') as f:
 with open ('input_cards/input_file_name.yml','r') as f:
@@ -74,8 +78,23 @@ with open ('input_cards/input_file_name.yml','r') as f:
 with open(name_input_file_load, 'r') as f:
     data_loaded = yaml.safe_load(f)
 
+with open(file_adm_mesh_def, 'r') as f:
+    file_adm_mesh_def = yaml.safe_load(f)
+
 with open(name_variable_inputs_file_load, 'r') as f:
     variables_loaded = yaml.safe_load(f)
 
 name_load = os.path.join(flying, 'load.npy')
-name_hist = os.path.join(flying, 'current_compositional_results.npy')
+if simulation_type == 'compositional':
+    name_hist = os.path.join(flying, 'current_compositional_results.npy')
+elif simulation_type == 'biphasic':
+    name_hist = os.path.join(flying, 'current_biphasic_results.npy')
+elif simulation_type == 'monophasic':
+    pass
+else:
+    print('Simulation type may be:')
+    for i in types_simulation:
+        print(i)
+    raise NotImplementedError('\nSimulation type not implemented\n')
+
+only_mesh_name = data_loaded['mesh_name'].split('/')[-1][:-4]

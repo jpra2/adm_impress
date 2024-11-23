@@ -2,7 +2,7 @@
 '''
 classe Data criada para armazenar um dict linkando o nome da variavel
 a variavel do impress e tambem as informacoes dos dados.
-Essa classe será utilizada para automatizar alguns processos.
+Essa classe sera utilizada para automatizar alguns processos.
 '''
 import numpy as np
 from .. import directories as direc
@@ -10,6 +10,7 @@ import pickle
 import pdb
 from .data_manager import DataManager
 from ..convert_unit import constants
+from packs.directories import only_mesh_name
 
 class Data(DataManager):
     '''
@@ -18,10 +19,11 @@ class Data(DataManager):
     '''
     # valores_para_converter = ['hs', 'permeability', 'dist_cent']
 
-    def __init__(self, fine_scale_mesh_obj, elementsLv0_obj, load: bool=False, data_name: str='data_impress.npz'):
+    def __init__(self, fine_scale_mesh_obj, elementsLv0_obj, load: bool=False, data_name: str='data_impress'):
         '''
         fine_scale_mesh_obj: objeto multiscalemeshMS
         '''
+        data_name = data_name + '_' + only_mesh_name + '.npz'
         super().__init__(data_name, load=load)
 
         self.info_data = dict()
@@ -72,11 +74,15 @@ class Data(DataManager):
                 data = np.zeros(n_entity)
             elif format == 'int':
                 data = np.zeros(n_entity, dtype=np.int32)
+            elif format == 'bool':
+                data = np.full(n_entity, False, dtype=bool)
+            else:
+                raise TypeError('\nTipo nao listado\n')
             if n > 1:
                 data = np.repeat(data, n).reshape([n_entity, n])
 
             self[name] = data
-            self._data[name] = data
+            # self._data[name] = data
             variables_impress[name] = name
 
         self.variables_impress = variables_impress
@@ -89,13 +95,27 @@ class Data(DataManager):
                 exec(command)
 
         else:
+            # import pdb; pdb.set_trace()
             for name in self._data.keys():
                 command = 'self.mesh.' + name + '[:] = ' + 'self._data["' + name + '"]'
                 try:
                     exec(command)
                 except:
-                    print(command)
-                    #import pdb; pdb.set_trace()
+                    n=len(self._data[name])
+                    try:
+                        command_2 = 'self.mesh.' + name + '[0:n-1] = ' + 'self._data["' + name + '"][0:n-1]'
+                        exec(command_2)
+                        command_3 = 'self.mesh.' + name + '[n-1] = ' + 'self._data["' + name + '"][n-1]'
+                        exec(command_3)
+                    except:
+
+                        print(name)
+                        print(command)
+                        #import pdb; pdb.set_trace()
+
+
+
+            command = 'self.mesh.' + name + '.update_all()'
 
     def load_variables_from_mesh(self, names=None):
 

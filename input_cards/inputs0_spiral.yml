@@ -1,0 +1,198 @@
+# mesh_name: mesh/45x45x45.msh
+# mesh_name: mesh/9x9x9.msh
+mesh_name: mesh/isotropic/100x100x1.msh
+# mesh_name: mesh/60x220x1L85.msh
+# mesh_name: mesh/isotropic/21x21x1.msh
+n_test: 0
+state: 0
+type_of_solution: fine_scale
+gravity: false
+load_data: false
+convert_english_to_SI: false
+monophasic: false
+biphasic: true
+load_biphasic_data: false
+deletar_results: true
+multilevel_data: true
+load_multilevel_data: false
+load_operators: false
+get_correction_term: false
+n_levels: 2
+capillary_pressure: false
+convert_capillary_pressure_to: 'Pa'
+_debug: True
+
+Crs:
+  Cr1: [9, 9, 1]
+  Cr2: [99, 99, 1]
+
+read_permeability: false
+file_name_permeability: spe10_perms_and_phi.npz
+set_permeability: true
+Permeability:
+  r1:
+    type: all
+    value: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+  # r2:
+  #   type: box
+  #   p0: [11.0, 6.0, 0.0]
+  #   p1: [12.0, 13.0, 1.0]
+  #   value: [1e-8, 0.0, 0.0, 0.0, 1e-8, 0.0, 0.0, 0.0, 1.0]
+  # r3:
+  #   type: box
+  #   p0: [10.0, 12.0, 0.0]
+  #   p1: [11.0, 21.0, 1.0]
+  #   value: [1e-8, 0.0, 0.0, 0.0, 1e-8, 0.0, 0.0, 0.0, 1.0]
+  # r4:
+  #   type: box
+  #   p0: [6.0, 14.0, 0.0]
+  #   p1: [14.0, 15.0, 1.0]
+  #   value: [1e-8, 0.0, 0.0, 0.0, 1e-8, 0.0, 0.0, 0.0, 1.0]
+
+  r2:
+    type: polar_region
+    center: [[42, 41, 0.5], [42, 41, 0.5], [43, 41, 0.5]]
+    r_inf: ['10*t/pi-2', '20+10*t/pi-2', '40+11*t/pi-2']
+    r_sup: ['10*t/pi', '20+10*t/pi', '40+11*t/pi']
+    t_inf: ['0.0', '0.0', '0.0']
+    t_sup: ['2*pi','2*pi', '3*pi/4']
+    value: [1.0e-6, 0.0, 0.0, 0.0, 1.0e-6, 0.0, 0.0, 0.0, 1.0e-6]
+  # r2:
+  #   type: box
+  #   p0: [2.0, 0.0, 0.0]
+  #   p1: [3.0, 6.0, 1.0]
+  #   value: [1000000.0, 0.0, 0.0, 0.0, 10000000.0, 0.0, 0.0, 0.0, 0.00001]
+  # r2:
+  #   type: box
+  #   p0: [0.0, 10.0, 0.0]
+  #   p1: [18.0, 11.0, 1.0]
+  #   value: [0.00001, 0.0, 0.0, 0.0, 0.00001, 0.0, 0.0, 0.0, 0.00001]
+  #
+  # r4:
+  #   type: box
+  #   p0: [20.0, 18.0, 0.0]
+  #   p1: [21.0, 27.0, 1.0]
+  #   value: [0.00001, 0.0, 0.0, 0.0, 0.00001, 0.0, 0.0, 0.0, 0.00001]
+
+  # r5:
+  #   type: ring
+  #   c0: [50,50,0.5]
+  #   r0: 45
+  #   r1: 46
+  #   value: [0.001, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0, 0.001]
+  #
+  # r6:
+  #   type: box
+  #   p0: [0.0, 24.0, 0.0]
+  #   p1: [27.0, 25.0, 1.0]
+  #   value: [100.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 100.0]
+
+  # r7:
+  #   type: box
+  #   p0: [60.0, 86.0, 0.0]
+  #   p1: [99.0, 87.0, 1.0]
+  #   value: [100.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 100.0]
+  # r8:
+  #   type: ring
+  #   c0: [50,50,0.5]
+  #   r0: 0
+  #   r1: 30
+  #   value: [0.000001, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.0, 0.000001]
+
+set_porosity: true
+Porosity:
+  r1:
+    type: all
+    value: 0.3
+
+  # r2:
+  #   type: box
+  #   p0: [0.0, 0.0, 0.0]
+  #   p1: [20.0, 10.0, 54.0]
+  #   value: 0.8
+
+Saturation:
+  r1:
+    type: all
+    value: 0.2
+
+  # r2:
+  #   type: box
+  #   type1_well: null
+  #   type2_well: null
+  #   p0: [0.0, 0.0, 0.0]
+  #   p1: [27.0, 27.0, 13.0]
+  #   value: 0.2
+
+  r3:
+    type: wells
+    type1_well: Injector
+    type2_well: null
+    value: 0.8
+
+Wells:
+  P1:
+    p0: [99.0, 0.0, 0.0]
+    p1: [100.0, 1.0, 1.0]
+    # p0: [560.0, 1080.0, 168.0]
+    # p1: [580.0, 1090.0, 170.0]
+    prescription: P
+    type: Injector
+    type_region: box
+    value: 1.0
+
+  P2:
+    p0: [44.0, 32.0, 0.0]
+    p1: [45.0, 33.0, 1.0]
+    # p0: [0.0, 0.0, 168.0]
+    # p1: [20.0, 10.0, 170.0]
+    prescription: P
+    type: Producer
+    type_region: box
+    value: 0.0
+
+  # P3:
+  #   p0: [1180.0, 0.0, 168.0]
+  #   p1: [1200.0, 10.0, 170.0]
+  #   prescription: P
+  #   type: Producer
+  #   type_region: box
+  #   value: 1.0
+  #
+  # P4:
+  #   p0: [0.0, 2190.0, 168.0]
+  #   p1: [20.0, 2200.0, 170.0]
+  #   prescription: P
+  #   type: Producer
+  #   type_region: box
+  #   value: 1.0
+  #
+  # P5:
+  #   p0: [1180.0, 2190.0, 168.0]
+  #   p1: [1200.0, 2200.0, 170.0]
+  #   prescription: P
+  #   type: Producer
+  #   type_region: box
+  #   value: 1.0
+
+monophasic_data:
+  gama: 100.0
+  mi: 1.0
+
+biphasic_data:
+  Sor: 0.2
+  Swc: 0.2
+  cfl: 0.9
+  gama_o: 1000.0
+  gama_w: 1000.0
+  kro0: 1.0
+  krw0: 1.0
+  loop_maximo: null
+  loops_para_gravar: 2
+  mi_o: 0.01
+  mi_w: 0.01
+  n_o: 2.0
+  n_w: 2.0
+  relative_permeability: BrooksAndCorey
+  tempo_maximo: null
+  vpis_para_gravar_vtk: [0.1, 0.3, 0.5]

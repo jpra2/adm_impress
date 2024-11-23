@@ -1,7 +1,7 @@
 from .. import directories as direc
 from ..utils.utils_old import get_box
 import numpy as np
-
+from ..utils.utils_old import get_box
 
 
 def set_saturation_regions(M, wells):
@@ -36,24 +36,26 @@ def set_saturation_regions(M, wells):
             tipos = [type1, type2]
             all_wells = []
             all_values = []
+            wss = []
 
             for tipo in tipos:
                 if tipo == 'dirichlet':
-                    wells = wells['ws_p']
+                    wss.append(wells['ws_p'])
                 elif tipo == 'neumann':
-                    wells = wells['ws_q']
+                    wss.append(wells['ws_q'])
+
                 elif tipo == 'Injector':
-                    wells = wells['ws_inj']
+                    wss.append(wells['ws_inj'])
                 elif tipo == 'Producer':
-                    wells = wells['ws_prod']
+                    wss.append(wells['ws_prod'])
                 else:
                     continue
 
-                all_wells.append(wells)
-                all_values.append(np.repeat(value, len(wells)))
+            # all_wells.append(np.unique(np.concatenate(wss)))
+            # all_values.append(np.repeat(value, len(wss)))
 
-            all_wells = np.array(all_wells)
-            all_values = np.array(all_values)
+            all_wells = np.unique(np.concatenate(wss))
+            all_values = np.repeat(value, len(all_wells))
             M.data[M.data.variables_impress['saturation']][all_wells] = all_values
 
     M.data[M.data.variables_impress['saturation']] = data

@@ -62,19 +62,21 @@ class CompositionalFVM:
                 Ft_internal, Fk_vols_total, delta_t, t)
 
         #if fprop.z[-1,0] > 0: import pdb; pdb.set_trace()
-        if any(fprop.Sg<0): import pdb; pdb.set_trace()
+        #if any(fprop.Sg<0): import pdb; pdb.set_trace()
         fprop.wave_velocity = wave_velocity
         fprop.Ft_internal = Ft_internal
         #fprop.Nk[(fprop.Nk<0)*(abs(fprop.Nk)<1e-300)] = 0
         #if fprop.P[0]<fprop.P[1]: import pdb; pdb.set_trace()
         #fprop.Nk[abs(fprop.Nk)<1e-300] = abs(fprop.Nk[abs(fprop.Nk)<1e-300])
-        if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
+        #if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
         #if any(fprop.Sw>1): import pdb; pdb.set_trace()
         #fprop.Nk[fprop.Nk<0] = 1e-30
         #if any(Ft_internal[0]<0): import pdb; pdb.set_trace()
-        if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
+        #if any(np.isnan(fprop.Nk).flatten()): import pdb; pdb.set_trace()
         #if any(Ft_internal.flatten()<-1e-6): import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         return delta_t
+
 
     def update_gravity_term(self, fprop):
         if any((ctes.z - ctes.z[0]) != 0):

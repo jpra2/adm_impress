@@ -182,8 +182,14 @@ def set_faces_in_boundary_by_meshsets(mb, mtu, meshsets, faces_boundary_meshset_
         #     mb.add_entities(all_faces_on_boundary, rng.Range(face))
         elems2 = mtu.get_bridge_adjacencies(elems1, 2, 3)
         elems3 = rng.subtract(elems2, elems1)
-        faces3 = mtu.get_bridge_adjacencies(elems3, 3, 2)
-        faces_cont = rng.intersect(faces3, faces1)
+
+        try:
+            faces3 = mtu.get_bridge_adjacencies(elems3, 3, 2)
+            faces_cont = rng.intersect(faces3, faces1)
+        except Exception as e:
+            faces_cont = faces1
+
+
 
         mb.add_entities(all_faces_on_boundary, faces_cont)
 

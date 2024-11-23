@@ -1,0 +1,43 @@
+//--------------------------------------------------------------------
+//---------------- UNIVERSIDADE FEDERAL DE PERNAMBUCO ----------------
+//---------------- CENTRO DE TECNOLOGIA E GEOCIENCIAS ----------------
+//---------- PROGRAMA DE POS GRADUACAO EM ENGENHARIA CIVIL -----------
+//--------------------------------------------------------------------
+
+//Work developed by: Marcio Souza and Luiz E. Queiroz
+//Adviser Professors: Paulo Lyra & Darlan Carvalho
+//Create date: 2022/4/19;	hour: 15:32h
+
+//--------------------------------------------------------------------
+//This file has OPTIONS parameters. Configure GMSH environment
+
+//Maximum mesh element size:
+//1e+22 ==> [Default]
+
+Mesh.CharacteristicLengthMax = 10000000000000000000000.000000;
+
+//Minimum mesh element size:
+//0 ==> [Default]
+
+Mesh.CharacteristicLengthMin = 0.000000;
+
+//Type of mesh used:
+//0 ==> [AllTriangles]; 1 ==> [AllQuadrangles]
+
+Mesh.SubdivisionAlgorithm = 1;
+
+//Type of algorithm used:
+//1 ==> [MeshAdapt]; 5 ==> [Delaunay]; 6 ==> [Frontal]
+
+Mesh.Algorithm = 5;
+
+//Type of remeshing algorithm:
+//0 ==> [No split]; 1 ==> [Automatic]
+
+Mesh.RemeshAlgorithm = 0;
+
+//Factor applied to all element sizes:
+//1 ==> [Default]
+
+Mesh.CharacteristicLengthFactor = 1.000000;
+

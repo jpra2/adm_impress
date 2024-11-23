@@ -1,22 +1,60 @@
-*__pycache__
+*/__pycache__
 *.npy
 *.npz
-*.dat
 *.h5m
 *.h5
-*.imp
 *.vtk
-*.msh
-*compositional_adm
+*.su2
+*_rm.py
+*.prof
+*.profile
+*.so
+*.html
+*.c
+*.cpp
+
+# *.msh
+# !cube_unstructured.msh
+# !cube_structured.msh
+# !2d_unstructured.msh
+# !oblique_quadrilateral_test1.msh
+# !mpfad_mesh_tests
+
+!2d_square.geo
+
 *.txt
+!const_definitions.txt
+!requirements.txt
+
 *.csv
-*.png
 *_tt.py
-impress/
-impress(copia)/
 *.pyc
+*.cpython-36.pyc
+*.imp
+*.zip
+*.pdf
+*.sh
+*_testcases.py
+
+*.svg
+*.png
+*.jpg
+
+impress/
+impress_new/
+impress(copia)/
 .idea/
+venv/
+env/
+*__pycache__/
 *_0_0.yml
 *_0_0.py
+
+remove/
+
+
 *gmsh
 *case_1d_5k_MM.py
+
+.spyproject/
+.conda/

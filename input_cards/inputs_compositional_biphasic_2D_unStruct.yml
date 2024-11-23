@@ -33,10 +33,10 @@ compositional_data:
     IMPSAT: false
 
   MUSCL:
-    set: false
+    set: true
 
   FR:
-    set: true
+    set: false
     order: 3
 
   RiemannSolver:

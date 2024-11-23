@@ -3,6 +3,7 @@ from ..flux_calculation.flux_tpfa import TpfaFlux
 from ..directories import data_loaded
 from ..solvers.solvers_scipy.solver_sp import SolverSp
 import numpy as np
+from ..data_class.structured_mesh_properties import StructuredMeshProperties
 
 class FineScaleTpfaPressureSolver(TpfaScheme, TpfaFlux):
 
@@ -10,7 +11,7 @@ class FineScaleTpfaPressureSolver(TpfaScheme, TpfaFlux):
         super().__init__(data_impress, elements_lv0, data_name=data_name, load=load)
         self.gravity = data_loaded['gravity']
         self.wells = wells
-        self.solver = SolverSp()
+        # self.solver = SolverSp()
 
     def get_RHS_term(self):
 
@@ -37,15 +38,17 @@ class FineScaleTpfaPressureSolver(TpfaScheme, TpfaFlux):
         ws_p = self.wells['ws_p']
 
         T = self['Tini'].tolil().copy()
-        T[ws_p] = np.zeros((len(ws_p), T.shape[0]))
-        T[ws_p, ws_p] = np.ones(len(ws_p))
+        T[ws_p] = 0
+        T[ws_p, ws_p] = 1.0
 
         return T.tocsc()
 
     def update_gama(self):
 
         gama = data_loaded['monophasic_data']['gama']
+
         self.data_impress['gama'] = np.repeat(gama, self.n_volumes)
+        self.data_impress['gama_faces'] = np.repeat(gama, len(self.elements_lv0['faces']))
 
     def run(self):
         self.update_gama()

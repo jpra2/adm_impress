@@ -1,107 +1,3 @@
-# from packs.solvers.solvers_scipy.solver_sp import SolverSp
-# from packs.running.run_simulation import RunSimulation
-# # from packs.direct_solution.monophasic.monophasic1 import Monophasic
-# from packs.direct_solution.biphasic.biphasic1 import Biphasic
-# from packs.preprocess.preprocess1 import Preprocess1
-import pdb
-#
-# rodar = RunSimulation(state=5)
-# M = rodar.M
-#
-#
-# prep1 = Preprocess1()
-# prep1.set_saturation_regions(M)
-#
-# # m1 = Monophasic(M)
-# m1 = Biphasic(M)
-# m1.get_transmissibility_matrix_without_contours()
-# m1.get_transmissibility_matrix()
-# m1.get_RHS_term()
-#
-#
-# solver = SolverSp()
-# x = solver.direct_solver(m1.datas['T'], m1.datas['b'])
-# m1.get_solution(x)
-# m1.get_flux_faces_and_volumes()
-#
-# pdb.set_trace()
-# M.data.update_variables_to_mesh()
-
-#################################
-##test Monophasic
-# from packs.type_simulation.monophasic_tpfa import monophasicTpfa
-# m1 = monophasicTpfa(M)
-# m1.run()
-# import pdb; pdb.set_trace()
-#################################
-
-#############################
-# # test biphasic
-# from packs.type_simulation.biphasic_simulation.biphasic_tpfa import biphasicTpfa
-# import time
-# b1 = biphasicTpfa(M, load=False)
-# b1.run()
-# b1.run()
-# b1.update_flux_w_and_o_volumes()
-# b1.update_delta_t()
-# b1.update_saturation()
-# b1.update_relative_permeability()
-# b1.update_mobilities()
-# b1.update_transmissibility()
-
-# def r1():
-#     b1.run()
-#
-# def r2():
-#     r1()
-#     b1.mesh.data.update_variables_to_mesh()
-#     b1.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
-#
-#
-# def mostrar():
-#     b1.mesh.data.update_variables_to_mesh()
-#     b1.mesh.core.print(file='test', extension='.vtk', config_input="input_cards/print_settings0.yml")
-#
-# verif = True
-# contador = 1
-# while verif:
-#     if contador % 2 == 0:
-#         contador = 1
-#         import pdb; pdb.set_trace()
-#     r1()
-#     contador += 1
-
-
-
-
-
-
-# from packs.data_class.data_impress import Data
-# from packs.data_class.elements_lv0 import ElementsLv0
-# from packs.contours.wells import Wells
-# from packs.convert_unit.conversion import Conversion
-
-# import pdb; pdb.set_trace()
-
-# def initial_mesh(load=False, convert=False):
-#     from packs.load.preprocessor0 import M
-#
-#     elements_lv0 = ElementsLv0(M, load=load)
-#     data_impress = Data(M, elements_lv0, load=load)
-#     wells = Wells(M, load=load)
-#     if convert:
-#         conversion = Conversion(wells, data_impress)
-#         conversion.convert_English_to_SI()
-#
-#     if not load:
-#
-#         wells.update_values_to_mesh()
-#         wells.export_to_npz()
-#         data_impress.update_variables_to_mesh()
-#         data_impress.export_to_npz()
-#
-#     return M, elements_lv0, data_impress, wells
-
 from packs.running.initial_mesh_properties import initial_mesh
 from packs.pressure_solver.fine_scale_tpfa import FineScaleTpfaPressureSolver
 from packs.multiscale.multilevel.multilevel_operators import MultilevelOperators
@@ -129,19 +25,23 @@ def mostrar(i, data_impress, M, op1, rest1):
     el0 = np.concatenate(rest1[i].toarray())
     data_impress['verif_po'] = l0
     data_impress['verif_rest'] = el0
-    data_impress.update_variables_to_mesh(['verif_po', 'verif_rest'])
-    M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    rr = set(np.where(l0>0)[0])
+    rr2 = set(np.where(el0>0)[0])
+    if rr & rr2 != rr2:
+        import pdb; pdb.set_trace()
 
 def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     l0 = np.concatenate(op[:,i].toarray())
     el0 = np.concatenate(rest[i].toarray())
     el2 = np.zeros(len(gid0))
     l2 = el2.copy()
-    for fid in el0:
-        if fid == 0:
+    cont = 0
+    for fid, val in enumerate(el0):
+        if val == 0:
+            cont += 1
             continue
-
-        el2[gid_coarse2==fid] = np.ones(len(el2[gid_coarse2==fid]))
+        else:
+            el2[gid_coarse1==fid] = np.ones(len(el2[gid_coarse1==fid]))
 
     for fid, val in enumerate(l0):
         if val == 0:
@@ -153,7 +53,8 @@ def mostrar_2(i, data_impress, M, op, rest, gid0, gid_coarse1, gid_coarse2):
     data_impress['verif_po'] = l2
     data_impress['verif_rest'] = el2
     data_impress.update_variables_to_mesh(['verif_po', 'verif_rest'])
-    M.core.print(file='results/test_'+ str(n), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    M.core.print(file='results/test_'+ str(0), extension='.vtk', config_input='input_cards/print_settings0.yml')
+    import pdb; pdb.set_trace()
 
 def dados_unitarios(data_impress):
     data_impress['hs'] = np.ones(len(data_impress['hs'])*3).reshape([len(data_impress['hs']), 3])
@@ -170,18 +71,30 @@ load = data_loaded['load_data']
 convert = data_loaded['convert_english_to_SI']
 n = data_loaded['n_test']
 load_operators = data_loaded['load_operators']
+get_correction_term = data_loaded['get_correction_term']
+n_levels = int(data_loaded['n_levels'])
+_debug = data_loaded['_debug']
 
-M, elements_lv0, data_impress, wells = initial_mesh(load=load, convert=convert)
-# dados_unitarios(data_impress)
+M, elements_lv0, data_impress, wells = initial_mesh()
 
-#######################
+######################
 tpfa_solver = FineScaleTpfaPressureSolver(data_impress, elements_lv0, wells)
-tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
+# tpfa_solver.get_transmissibility_matrix_without_boundary_conditions()
+T, b = tpfa_solver.run()
 # tpfa_solver.get_RHS_term()
 # tpfa_solver.get_transmissibility_matrix()
-multilevel_operators = MultilevelOperators(2, data_impress, M.multilevel_data, load=load_operators)
+
+multilevel_operators = MultilevelOperators(n_levels, data_impress, elements_lv0, M.multilevel_data, load=load_operators, get_correction_term=get_correction_term)
 
 if load_operators:
     pass
 else:
-    multilevel_operators.run(tpfa_solver['Tini'])
+    if get_correction_term:
+        multilevel_operators.run(tpfa_solver['Tini'], total_source_term=b, q_grav=data_impress['flux_grav_volumes'])
+        # multilevel_operators.run_paralel_ant0(tpfa_solver['Tini'], total_source_term=b, q_grav=data_impress['flux_grav_volumes'])
+    else:
+        # multilevel_operators.run(tpfa_solver['Tini'])
+        multilevel_operators.run_paralel(tpfa_solver['Tini'], M.multilevel_data['dual_structure_level_1'], 0, False)
+        # multilevel_operators.run_paralel_ant0(tpfa_solver['Tini'])
+
+# import pdb; pdb.set_trace()

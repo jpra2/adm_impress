@@ -75,12 +75,13 @@ class FirstOrder:
             Ft_internal, ponteiro)
             #wave_velocity[:,ponteiro] = 1e-10
 
-        #Fk_face = RS.get_Fk_face(fprop, M, Nk_face, P_face, fprop.Vp[ctes.v0].flatten(), Ft_internal)
-        #wave_velocity_RH = (Fk_face[...,1] - Fk_face[...,0])/(Nk_face[...,1] - Nk_face[...,0])
-        #e = 0
-        #wave_velocity[abs(Nk_face[...,1] - Nk_face[...,0])>e] = wave_velocity_RH[abs(Nk_face[...,1] - Nk_face[...,0])>e]
+        Fk_face = RS.get_Fk_face(fprop, M, Nk_face, P_face, fprop.Vp[ctes.v0].flatten(), Ft_internal)
+        wave_velocity_RH = (Fk_face[...,1] - Fk_face[...,0])/(Nk_face[...,1] - Nk_face[...,0])
+        e = 0
+        wave_velocity[abs(Nk_face[...,1] - Nk_face[...,0])>e] = wave_velocity_RH[abs(Nk_face[...,1] - Nk_face[...,0])>e]
         #import pdb; pdb.set_trace()
 
+        #wave_velocity = Fk_vols_total/self.Nk #np.max(abs(wave_velocity),axis=0)
         #wave_velocity = Fk_vols_total/self.Nk #np.max(abs(wave_velocity),axis=0)
 
 

@@ -104,6 +104,7 @@ def init(M, wells):
     internal_faces = M.faces.internal
     n_internal_faces = len(v0[:,0])
     g = 9.80665
+    # g = 0.0
     z = -M.data['centroid_volumes'][:,2]
     vols_index = M.volumes.all
     vols_no_wells = np.setdiff1d(vols_index,wells['all_wells'])

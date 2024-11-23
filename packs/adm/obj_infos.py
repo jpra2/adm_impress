@@ -1,6 +1,6 @@
-import copy
+from ..common_files.common_infos import CommonInfos
 
-class InfosForProcess:
+class InfosForProcess(CommonInfos):
     def __init__(self,
         T: 'global transmissibility matrix without boundary conditions',
         pms: 'global multiscale presure',
@@ -20,6 +20,3 @@ class InfosForProcess:
         self.g_neig_internal_faces = g_neig_internal_faces
         self.remaped_internal_faces = remaped_internal_faces
         self.solver = solver
-
-    def copy(self):
-        return copy.deepcopy(self)

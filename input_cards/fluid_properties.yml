@@ -1,0 +1,14 @@
+Sor: 0.0
+Swc: 0.0
+cfl: 0.9
+gama_o: 1000.0
+gama_w: 1000.0
+kro0: 1.0
+krw0: 1.0
+loop_maximo: null
+loops_para_gravar: 2
+mi_o: 0.01
+mi_w: 0.01
+n_o: 2.0
+n_w: 2.0
+relative_permeability: BrooksAndCorey

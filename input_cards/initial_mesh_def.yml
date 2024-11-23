@@ -1,0 +1,17 @@
+load_adm_levels: false
+
+set_initial_mesh: true
+
+refinar_nv2: false
+imprimir_a_cada_iteracao: true
+rel_v2: 1.2
+TOL: 0.0
+tol_n2: 0.1
+Ni: 3
+calc_tpfa: false
+load_tpfa: false
+iterar_mono: true
+_dev: True
+solver: direct
+jacobi_options:
+  n_verif: 50
