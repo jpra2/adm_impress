@@ -324,159 +324,383 @@ def get_coarse_structure(
     resp = []
 
     for cid in cids:
-        cname = name + str(cid)
-        coarse_data = PrimalCoarseData(cname)
-        faces_in = faces_id_level0[primal_id==cid]
-        set_faces_in = set(faces_in)
-
-
-        edges_in = edges_id_level0[
-            (cadj_fine[:, 0] == cid) | (cadj_fine[:, 1] == cid)  
-        ]
-
-        nodes_in = np.unique(nodes_of_edges_level0[edges_in].flatten())
-
-        local_edges = np.arange(edges_in.shape[0])
-        local_faces = np.arange(faces_in.shape[0])
-        local_nodes = np.arange(nodes_in.shape[0])
-        local_bool_boundary_edges = np.isin(edges_in, bedges)
-        local_bool_boundary_nodes = np.isin(nodes_in, bnodes)
-
-        
-        local_nodes_of_edges = nodes_of_edges_level0[edges_in]
-        n1, n2 = local_nodes_of_edges.shape
-        for i in range(n1):
-            for j in range(n2):
-                aux = local_nodes[nodes_in==local_nodes_of_edges[i,j]]
-                local_nodes_of_edges[i,j] = aux
-
-        nodes_of_nodes_aux = nodes_of_nodes_level0[nodes_in]
-        local_nodes_of_nodes = []
-        for aux in nodes_of_nodes_aux:
-            test = np.isin(aux, nodes_in)
-            nodes_aux = aux[test]
-            nodes_aux = np.array([local_nodes[nodes_in==i] for i in nodes_aux])
-            local_nodes_of_nodes.append(nodes_aux.flatten())
-        local_nodes_of_nodes = np.array(local_nodes_of_nodes, dtype='O')
-
-        edges_of_nodes_aux = edges_of_nodes_level0[nodes_in]
-        local_edges_of_nodes = []
-        for aux in edges_of_nodes_aux:
-            test = np.isin(aux, edges_in)
-            edges_aux = aux[test]
-            edges_aux = np.array([local_edges[edges_in==i] for i in edges_aux])
-            local_edges_of_nodes.append(edges_aux.flatten())
-        local_edges_of_nodes = np.array(local_edges_of_nodes, dtype='O')
-
-        faces_of_nodes_aux = faces_of_nodes_level0[nodes_in]
-        local_faces_of_nodes = []
-        for aux in faces_of_nodes_aux:
-            test = np.isin(aux, faces_in)
-            faces_aux = aux[test]
-            faces_aux = np.array([local_faces[faces_in==i] for i in faces_aux])
-            local_faces_of_nodes.append(faces_aux.flatten())
-        local_faces_of_nodes = np.array(local_faces_of_nodes, dtype='O')
-        
-        intersect_edges = edges_id_level0[
-            ((cadj_fine[:, 0] == cid) & (cadj_fine[:, 1] != cid)) |
-            ((cadj_fine[:, 0] != cid) & (cadj_fine[:, 1] == cid))
-        ]
-
-        local_bool_intersect_edges = np.isin(edges_in, intersect_edges)
-        intersect_nodes = np.unique(nodes_of_edges_level0[intersect_edges].flatten())
-        local_bool_intersect_nodes = np.isin(nodes_in, intersect_nodes)
-        local_bool_boundary_edges = local_bool_boundary_edges | local_bool_intersect_edges
-        local_bool_boundary_nodes = local_bool_boundary_nodes | local_bool_intersect_nodes
-
-        local_adjacencies = adjacencies_level0[edges_in].copy()
-
-        for edge in local_edges[local_bool_intersect_edges]:       
-            if set([local_adjacencies[edge, 1]]) & set_faces_in:
-                local_adjacencies[edge] = local_adjacencies[edge, [1, 0]]
-            local_adjacencies[edge, 1] = -1
-        
-        # test_bound = local_adjacencies == -1
-        ni, nj = local_adjacencies.shape
-        for i in range(ni):
-            for j in range(nj):
-                if local_adjacencies[i,j] == -1:
-                    continue
-                aux = local_faces[faces_in==local_adjacencies[i,j]]
-                local_adjacencies[i,j] = aux
-
-        test1 = np.isin(nodes_weight['node_id'], nodes_in)
-        test2 =  np.isin(nodes_weight['face_id'], faces_in)
-        test3 = test1 & test2
-
-        local_nodes_weight = nodes_weight[test3]
-
-        for node in nodes_in:
-            local_nodes_weight['node_id'][local_nodes_weight['node_id']==node] = local_nodes[nodes_in==node]
-        
-        for face in faces_in:
-            local_nodes_weight['face_id'][local_nodes_weight['face_id']==face] = local_faces[faces_in==face]
-        
-        test4 = np.isin(local_nodes_weight['node_id'], local_nodes[local_bool_boundary_nodes])
-        test4 = ~test4
-        local_nodes_weight = local_nodes_weight[test4]
-        
-        coarse_id = np.array([cid])
-
-        nodes_to_calculate = local_nodes[local_bool_intersect_nodes | local_bool_boundary_nodes]
-
-        local_xi_params = lsds.get_all_edges_flux_params(
-            faces_centroids_level0[faces_in],
-            local_bool_boundary_edges,
-            nodes_centroids_level0[nodes_in],
-            local_nodes_of_edges,
-            local_adjacencies,
-            local_faces,
-            local_edges,
-            unitary_normal_edges[edges_in],
-            permeability[faces_in],
-            edges_dim_level0[edges_in]
+        coarse_data = aux_get_coarse_structure(
+            level,
+            primal_id,
+            faces_id_level0,
+            adjacencies_level0,
+            edges_id_level0,
+            nodes_of_edges_level0,
+            bool_boundary_edges_level0,
+            bool_boundary_nodes_level0,
+            nodes_level0,
+            nodes_weight,
+            nodes_of_nodes_level0,
+            edges_of_nodes_level0,
+            faces_of_nodes_level0,
+            nodes_centroids_level0,
+            faces_centroids_level0,
+            permeability,
+            unitary_normal_edges,
+            dual_id_level0,
+            edges_dim_level0,
+            lsds,
+            name,
+            cadj_fine,
+            bedges,
+            bnodes,
+            cid
         )
+        # cname = name + str(cid)
+        # coarse_data = PrimalCoarseData(cname)
+        # faces_in = faces_id_level0[primal_id==cid]
+        # set_faces_in = set(faces_in)
 
-        coarse_data.insert_or_update_data({
-            coarse_data.my_data_names[0]: local_adjacencies,
-            coarse_data.my_data_names[1]: local_nodes,
-            coarse_data.my_data_names[2]: local_faces,
-            coarse_data.my_data_names[3]: local_edges,
-            coarse_data.my_data_names[4]: local_bool_boundary_edges,
-            coarse_data.my_data_names[5]: local_bool_intersect_edges,
-            coarse_data.my_data_names[6]: nodes_in,
-            coarse_data.my_data_names[7]: faces_in,
-            coarse_data.my_data_names[8]: edges_in,
-            coarse_data.my_data_names[9]: local_nodes_weight,
-            coarse_data.my_data_names[10]: local_bool_boundary_nodes,
-            coarse_data.my_data_names[11]: local_bool_intersect_nodes,
-            coarse_data.my_data_names[12]: coarse_id,
-            coarse_data.my_data_names[13]: nodes_to_calculate,
-            coarse_data.my_data_names[14]: local_nodes_of_nodes,
-            coarse_data.my_data_names[15]: local_edges_of_nodes,
-            coarse_data.my_data_names[16]: local_faces_of_nodes,
-            coarse_data.my_data_names[17]: nodes_centroids_level0[nodes_in],
-            coarse_data.my_data_names[18]: faces_centroids_level0[faces_in],
-            coarse_data.my_data_names[19]: permeability[faces_in],
-            coarse_data.my_data_names[20]: unitary_normal_edges[edges_in],
-            coarse_data.my_data_names[21]: np.array([]),
-            coarse_data.my_data_names[22]: np.array([]),
-            coarse_data.my_data_names[23]: np.array([]),
-            coarse_data.my_data_names[24]: np.array([]),
-            coarse_data.my_data_names[25]: dual_id_level0[faces_in],
-            coarse_data.my_data_names[26]: np.array([]),
-            coarse_data.my_data_names[27]: np.array([]),
-            coarse_data.my_data_names[28]: edges_dim_level0[edges_in],
-            coarse_data.my_data_names[29]: local_xi_params['xi_params'],
-            coarse_data.my_data_names[30]: local_xi_params['xi_params'],
-            coarse_data.my_data_names[31]: test3,
-            coarse_data.my_data_names[32]: local_nodes_of_edges,
-        })
 
-        coarse_data.export_data()   
+        # edges_in = edges_id_level0[
+        #     (cadj_fine[:, 0] == cid) | (cadj_fine[:, 1] == cid)  
+        # ]
+
+        # nodes_in = np.unique(nodes_of_edges_level0[edges_in].flatten())
+
+        # local_edges = np.arange(edges_in.shape[0])
+        # local_faces = np.arange(faces_in.shape[0])
+        # local_nodes = np.arange(nodes_in.shape[0])
+        # local_bool_boundary_edges = np.isin(edges_in, bedges)
+        # local_bool_boundary_nodes = np.isin(nodes_in, bnodes)
+        # other_side_flux = np.full(local_edges.shape[0], False, dtype=bool)
+
+        
+        # local_nodes_of_edges = nodes_of_edges_level0[edges_in]
+        # n1, n2 = local_nodes_of_edges.shape
+        # for i in range(n1):
+        #     for j in range(n2):
+        #         aux = local_nodes[nodes_in==local_nodes_of_edges[i,j]]
+        #         local_nodes_of_edges[i,j] = aux
+
+        # nodes_of_nodes_aux = nodes_of_nodes_level0[nodes_in]
+        # local_nodes_of_nodes = []
+        # for aux in nodes_of_nodes_aux:
+        #     test = np.isin(aux, nodes_in)
+        #     nodes_aux = aux[test]
+        #     nodes_aux = np.array([local_nodes[nodes_in==i] for i in nodes_aux])
+        #     local_nodes_of_nodes.append(nodes_aux.flatten())
+        # local_nodes_of_nodes = np.array(local_nodes_of_nodes, dtype='O')
+
+        # edges_of_nodes_aux = edges_of_nodes_level0[nodes_in]
+        # local_edges_of_nodes = []
+        # for aux in edges_of_nodes_aux:
+        #     test = np.isin(aux, edges_in)
+        #     edges_aux = aux[test]
+        #     edges_aux = np.array([local_edges[edges_in==i] for i in edges_aux])
+        #     local_edges_of_nodes.append(edges_aux.flatten())
+        # local_edges_of_nodes = np.array(local_edges_of_nodes, dtype='O')
+
+        # faces_of_nodes_aux = faces_of_nodes_level0[nodes_in]
+        # local_faces_of_nodes = []
+        # for aux in faces_of_nodes_aux:
+        #     test = np.isin(aux, faces_in)
+        #     faces_aux = aux[test]
+        #     faces_aux = np.array([local_faces[faces_in==i] for i in faces_aux])
+        #     local_faces_of_nodes.append(faces_aux.flatten())
+        # local_faces_of_nodes = np.array(local_faces_of_nodes, dtype='O')
+        
+        # intersect_edges = edges_id_level0[
+        #     (((cadj_fine[:, 0] == cid) & (cadj_fine[:, 1] != cid)) |
+        #     ((cadj_fine[:, 0] != cid) & (cadj_fine[:, 1] == cid))) & 
+        #     (cadj_fine[:, 1] != -1)
+        # ]
+
+        # local_bool_intersect_edges = np.isin(edges_in, intersect_edges)
+        # intersect_nodes = np.unique(nodes_of_edges_level0[intersect_edges].flatten())
+        # local_bool_intersect_nodes = np.isin(nodes_in, intersect_nodes)
+        # local_bool_boundary_edges = local_bool_boundary_edges | local_bool_intersect_edges
+        # local_bool_boundary_nodes = local_bool_boundary_nodes | local_bool_intersect_nodes
+
+        # local_adjacencies = adjacencies_level0[edges_in].copy()
+        # # local_cadjfine = cadj_fine[edges_in]
+        
+        # for edge in local_edges[local_bool_intersect_edges]:
+               
+        #     if set([local_adjacencies[edge, 1]]) & set_faces_in:
+        #         local_adjacencies[edge] = local_adjacencies[edge, [1, 0]]
+        #         other_side_flux[edge] = True
+        #     local_adjacencies[edge, 1] = -1
+        
+        # # local_adjacencies[local_bool_intersect_edges, 1] = -1
+
+        # # test_bound = local_adjacencies == -1
+        # ni, nj = local_adjacencies.shape
+        # for i in range(ni):
+        #     for j in range(nj):
+        #         if local_adjacencies[i,j] == -1:
+        #             continue
+        #         aux = local_faces[faces_in==local_adjacencies[i,j]]
+        #         local_adjacencies[i,j] = aux
+
+        # test1 = np.isin(nodes_weight['node_id'], nodes_in)
+        # test2 =  np.isin(nodes_weight['face_id'], faces_in)
+        # test3 = test1 & test2
+
+        # local_nodes_weight = nodes_weight[test3]
+
+        # for node in nodes_in:
+        #     local_nodes_weight['node_id'][local_nodes_weight['node_id']==node] = local_nodes[nodes_in==node]
+        
+        # for face in faces_in:
+        #     local_nodes_weight['face_id'][local_nodes_weight['face_id']==face] = local_faces[faces_in==face]
+        
+        # test4 = np.isin(local_nodes_weight['node_id'], local_nodes[local_bool_boundary_nodes])
+        # test4 = ~test4
+        # local_nodes_weight = local_nodes_weight[test4]
+        
+        # coarse_id = np.array([cid])
+
+        # nodes_to_calculate = local_nodes[local_bool_intersect_nodes | local_bool_boundary_nodes]
+
+        # local_xi_params = lsds.get_all_edges_flux_params(
+        #     faces_centroids_level0[faces_in],
+        #     local_bool_boundary_edges,
+        #     nodes_centroids_level0[nodes_in],
+        #     local_nodes_of_edges,
+        #     local_adjacencies,
+        #     local_faces,
+        #     local_edges,
+        #     unitary_normal_edges[edges_in],
+        #     permeability[faces_in],
+        #     edges_dim_level0[edges_in]
+        # )
+
+        # coarse_data.insert_or_update_data({
+        #     coarse_data.my_data_names[0]: local_adjacencies,
+        #     coarse_data.my_data_names[1]: local_nodes,
+        #     coarse_data.my_data_names[2]: local_faces,
+        #     coarse_data.my_data_names[3]: local_edges,
+        #     coarse_data.my_data_names[4]: local_bool_boundary_edges,
+        #     coarse_data.my_data_names[5]: local_bool_intersect_edges,
+        #     coarse_data.my_data_names[6]: nodes_in,
+        #     coarse_data.my_data_names[7]: faces_in,
+        #     coarse_data.my_data_names[8]: edges_in,
+        #     coarse_data.my_data_names[9]: local_nodes_weight,
+        #     coarse_data.my_data_names[10]: local_bool_boundary_nodes,
+        #     coarse_data.my_data_names[11]: local_bool_intersect_nodes,
+        #     coarse_data.my_data_names[12]: coarse_id,
+        #     coarse_data.my_data_names[13]: nodes_to_calculate,
+        #     coarse_data.my_data_names[14]: local_nodes_of_nodes,
+        #     coarse_data.my_data_names[15]: local_edges_of_nodes,
+        #     coarse_data.my_data_names[16]: local_faces_of_nodes,
+        #     coarse_data.my_data_names[17]: nodes_centroids_level0[nodes_in],
+        #     coarse_data.my_data_names[18]: faces_centroids_level0[faces_in],
+        #     coarse_data.my_data_names[19]: permeability[faces_in],
+        #     coarse_data.my_data_names[20]: unitary_normal_edges[edges_in],
+        #     coarse_data.my_data_names[21]: np.array([]),
+        #     coarse_data.my_data_names[22]: np.array([]),
+        #     coarse_data.my_data_names[23]: np.array([]),
+        #     coarse_data.my_data_names[24]: np.array([]),
+        #     coarse_data.my_data_names[25]: dual_id_level0[faces_in],
+        #     coarse_data.my_data_names[26]: np.array([]),
+        #     coarse_data.my_data_names[27]: np.array([]),
+        #     coarse_data.my_data_names[28]: edges_dim_level0[edges_in],
+        #     coarse_data.my_data_names[29]: local_xi_params['xi_params'],
+        #     coarse_data.my_data_names[30]: local_xi_params['xi_params'],
+        #     coarse_data.my_data_names[31]: test3,
+        #     coarse_data.my_data_names[32]: local_nodes_of_edges,
+        #     coarse_data.my_data_names[33]: other_side_flux,
+        # })
+
+        # coarse_data.export_data()   
         resp.append(coarse_data)
 
     return resp     
+
+def aux_get_coarse_structure(
+        level: int,
+        primal_id: np.ndarray,
+        faces_id_level0: np.ndarray,
+        adjacencies_level0: np.ndarray,
+        edges_id_level0: np.ndarray,
+        nodes_of_edges_level0: np.ndarray,
+        bool_boundary_edges_level0: np.ndarray,
+        bool_boundary_nodes_level0: np.ndarray,
+        nodes_level0: np.ndarray,
+        nodes_weight: np.ndarray,
+        nodes_of_nodes_level0: np.ndarray,
+        edges_of_nodes_level0: np.ndarray,
+        faces_of_nodes_level0: np.ndarray,
+        nodes_centroids_level0: np.ndarray,
+        faces_centroids_level0: np.ndarray,
+        permeability: np.ndarray,
+        unitary_normal_edges: np.ndarray,
+        dual_id_level0: np.ndarray,
+        edges_dim_level0: np.ndarray,
+        lsds: LsdsFluxCalculation,
+        name: str,
+        cadj_fine: np.ndarray,
+        bedges: np.ndarray,
+        bnodes: np.ndarray,
+        cid: int
+):
+    
+    cname = name + str(cid)
+    coarse_data = PrimalCoarseData(cname)
+    faces_in = faces_id_level0[primal_id==cid]
+    set_faces_in = set(faces_in)
+
+
+    edges_in = edges_id_level0[
+        (cadj_fine[:, 0] == cid) | (cadj_fine[:, 1] == cid)  
+    ]
+
+    nodes_in = np.unique(nodes_of_edges_level0[edges_in].flatten())
+
+    local_edges = np.arange(edges_in.shape[0])
+    local_faces = np.arange(faces_in.shape[0])
+    local_nodes = np.arange(nodes_in.shape[0])
+    local_bool_boundary_edges = np.isin(edges_in, bedges)
+    local_bool_boundary_nodes = np.isin(nodes_in, bnodes)
+    other_side_flux = np.full(local_edges.shape[0], False, dtype=bool)
+
+    
+    local_nodes_of_edges = nodes_of_edges_level0[edges_in]
+    n1, n2 = local_nodes_of_edges.shape
+    for i in range(n1):
+        for j in range(n2):
+            aux = local_nodes[nodes_in==local_nodes_of_edges[i,j]]
+            local_nodes_of_edges[i,j] = aux
+
+    nodes_of_nodes_aux = nodes_of_nodes_level0[nodes_in]
+    local_nodes_of_nodes = []
+    for aux in nodes_of_nodes_aux:
+        test = np.isin(aux, nodes_in)
+        nodes_aux = aux[test]
+        nodes_aux = np.array([local_nodes[nodes_in==i] for i in nodes_aux])
+        local_nodes_of_nodes.append(nodes_aux.flatten())
+    local_nodes_of_nodes = np.array(local_nodes_of_nodes, dtype='O')
+
+    edges_of_nodes_aux = edges_of_nodes_level0[nodes_in]
+    local_edges_of_nodes = []
+    for aux in edges_of_nodes_aux:
+        test = np.isin(aux, edges_in)
+        edges_aux = aux[test]
+        edges_aux = np.array([local_edges[edges_in==i] for i in edges_aux])
+        local_edges_of_nodes.append(edges_aux.flatten())
+    local_edges_of_nodes = np.array(local_edges_of_nodes, dtype='O')
+
+    faces_of_nodes_aux = faces_of_nodes_level0[nodes_in]
+    local_faces_of_nodes = []
+    for aux in faces_of_nodes_aux:
+        test = np.isin(aux, faces_in)
+        faces_aux = aux[test]
+        faces_aux = np.array([local_faces[faces_in==i] for i in faces_aux])
+        local_faces_of_nodes.append(faces_aux.flatten())
+    local_faces_of_nodes = np.array(local_faces_of_nodes, dtype='O')
+    
+    intersect_edges = edges_id_level0[
+        (((cadj_fine[:, 0] == cid) & (cadj_fine[:, 1] != cid)) |
+        ((cadj_fine[:, 0] != cid) & (cadj_fine[:, 1] == cid))) & 
+        (cadj_fine[:, 1] != -1)
+    ]
+
+    local_bool_intersect_edges = np.isin(edges_in, intersect_edges)
+    intersect_nodes = np.unique(nodes_of_edges_level0[intersect_edges].flatten())
+    local_bool_intersect_nodes = np.isin(nodes_in, intersect_nodes)
+    local_bool_boundary_edges = local_bool_boundary_edges | local_bool_intersect_edges
+    local_bool_boundary_nodes = local_bool_boundary_nodes | local_bool_intersect_nodes
+
+    local_adjacencies = adjacencies_level0[edges_in].copy()
+    # local_cadjfine = cadj_fine[edges_in]
+    
+    for edge in local_edges[local_bool_intersect_edges]:
+            
+        if set([local_adjacencies[edge, 1]]) & set_faces_in:
+            local_adjacencies[edge] = local_adjacencies[edge, [1, 0]]
+            other_side_flux[edge] = True
+        local_adjacencies[edge, 1] = -1
+    
+    # local_adjacencies[local_bool_intersect_edges, 1] = -1
+
+    # test_bound = local_adjacencies == -1
+    ni, nj = local_adjacencies.shape
+    for i in range(ni):
+        for j in range(nj):
+            if local_adjacencies[i,j] == -1:
+                continue
+            aux = local_faces[faces_in==local_adjacencies[i,j]]
+            local_adjacencies[i,j] = aux
+
+    test1 = np.isin(nodes_weight['node_id'], nodes_in)
+    test2 =  np.isin(nodes_weight['face_id'], faces_in)
+    test3 = test1 & test2
+
+    local_nodes_weight = nodes_weight[test3]
+
+    for node in nodes_in:
+        local_nodes_weight['node_id'][local_nodes_weight['node_id']==node] = local_nodes[nodes_in==node]
+    
+    for face in faces_in:
+        local_nodes_weight['face_id'][local_nodes_weight['face_id']==face] = local_faces[faces_in==face]
+    
+    test4 = np.isin(local_nodes_weight['node_id'], local_nodes[local_bool_boundary_nodes])
+    test4 = ~test4
+    local_nodes_weight = local_nodes_weight[test4]
+    
+    coarse_id = np.array([cid])
+
+    nodes_to_calculate = local_nodes[local_bool_intersect_nodes | local_bool_boundary_nodes]
+
+    local_xi_params = lsds.get_all_edges_flux_params(
+        faces_centroids_level0[faces_in],
+        local_bool_boundary_edges,
+        nodes_centroids_level0[nodes_in],
+        local_nodes_of_edges,
+        local_adjacencies,
+        local_faces,
+        local_edges,
+        unitary_normal_edges[edges_in],
+        permeability[faces_in],
+        edges_dim_level0[edges_in]
+    )
+
+    coarse_data.insert_or_update_data({
+        coarse_data.my_data_names[0]: local_adjacencies,
+        coarse_data.my_data_names[1]: local_nodes,
+        coarse_data.my_data_names[2]: local_faces,
+        coarse_data.my_data_names[3]: local_edges,
+        coarse_data.my_data_names[4]: local_bool_boundary_edges,
+        coarse_data.my_data_names[5]: local_bool_intersect_edges,
+        coarse_data.my_data_names[6]: nodes_in,
+        coarse_data.my_data_names[7]: faces_in,
+        coarse_data.my_data_names[8]: edges_in,
+        coarse_data.my_data_names[9]: local_nodes_weight,
+        coarse_data.my_data_names[10]: local_bool_boundary_nodes,
+        coarse_data.my_data_names[11]: local_bool_intersect_nodes,
+        coarse_data.my_data_names[12]: coarse_id,
+        coarse_data.my_data_names[13]: nodes_to_calculate,
+        coarse_data.my_data_names[14]: local_nodes_of_nodes,
+        coarse_data.my_data_names[15]: local_edges_of_nodes,
+        coarse_data.my_data_names[16]: local_faces_of_nodes,
+        coarse_data.my_data_names[17]: nodes_centroids_level0[nodes_in],
+        coarse_data.my_data_names[18]: faces_centroids_level0[faces_in],
+        coarse_data.my_data_names[19]: permeability[faces_in],
+        coarse_data.my_data_names[20]: unitary_normal_edges[edges_in],
+        coarse_data.my_data_names[21]: np.array([]),
+        coarse_data.my_data_names[22]: np.array([]),
+        coarse_data.my_data_names[23]: np.array([]),
+        coarse_data.my_data_names[24]: np.array([]),
+        coarse_data.my_data_names[25]: dual_id_level0[faces_in],
+        coarse_data.my_data_names[26]: np.array([]),
+        coarse_data.my_data_names[27]: np.array([]),
+        coarse_data.my_data_names[28]: edges_dim_level0[edges_in],
+        coarse_data.my_data_names[29]: local_xi_params['xi_params'],
+        coarse_data.my_data_names[30]: local_xi_params['xi_params'],
+        coarse_data.my_data_names[31]: test3,
+        coarse_data.my_data_names[32]: local_nodes_of_edges,
+        coarse_data.my_data_names[33]: other_side_flux,
+    })
+
+    coarse_data.export_data()
+    return coarse_data
+
 
 def load_coarse_structure(level, primal_ids):
     cids = np.unique(primal_ids)

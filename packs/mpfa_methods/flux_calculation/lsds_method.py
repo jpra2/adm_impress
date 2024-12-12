@@ -1503,6 +1503,7 @@ class LsdsFluxCalculation:
             bool_boundary_nodes,
             neumann_weights,
             edges_dim,
+            only_internal_nodes=False,
             **kwargs
     ):
         
@@ -1529,8 +1530,10 @@ class LsdsFluxCalculation:
         #     source[face_adj] += neumann_edges_values[i]*edge_dim
         
         faces_adj = adjacencies[neumann_edges, 0]
-        edges_dim_neumann_edges = edges_dim[neumann_edges]
-        source[faces_adj] += neumann_edges_values*edges_dim_neumann_edges
+        # edges_dim_neumann_edges = edges_dim[neumann_edges]
+        # source[faces_adj] += neumann_edges_values*edges_dim_neumann_edges
+        source[faces_adj] += neumann_edges_values
+
 
         ## atualizar T dos nos internos
         self.update_transmissibility_from_nodes(
@@ -1545,18 +1548,21 @@ class LsdsFluxCalculation:
             data
         )
 
-        self.update_transmissibility_from_neumann_nodes(
-            neumann_nodes, 
-            edges_of_nodes,
-            nodes_of_edges,
-            nodes_weights,
-            adjacencies,
-            xi_params,
-            edges[bool_boundary_edges],
-            lines,
-            cols,
-            data
-        )
+        if only_internal_nodes is True:
+            pass
+        else:
+            self.update_transmissibility_from_neumann_nodes(
+                neumann_nodes, 
+                edges_of_nodes,
+                nodes_of_edges,
+                nodes_weights,
+                adjacencies,
+                xi_params,
+                edges[bool_boundary_edges],
+                lines,
+                cols,
+                data
+            )
 
         biedges = ~bool_boundary_edges
 
@@ -1581,28 +1587,40 @@ class LsdsFluxCalculation:
         )
 
         ## adicionando a prescricao de neumann dos nos
-        test = np.isin(neumann_weights['node_id'], neumann_nodes)
+        if only_internal_nodes is True:
+            pass
+        else:
+            test = np.isin(neumann_weights['node_id'], neumann_nodes)
 
-        self.insert_prescription_in_source(
-            neumann_weights['nweight'][test],
-            neumann_weights['node_id'][test],
-            edges_of_nodes,
-            nodes_of_edges,
-            adjacencies,
-            xi_params,
-            source,
-            neumann_edges
-        )
+            self.insert_prescription_in_source(
+                neumann_weights['nweight'][test],
+                neumann_weights['node_id'][test],
+                edges_of_nodes,
+                nodes_of_edges,
+                adjacencies,
+                xi_params,
+                source,
+                neumann_edges
+            )
 
         T = self.get_transmissibility_from_data(lines, cols, data, faces)
         
-        faces_presssure = bc['dirichlet_volumes']['id']
-        if faces_presssure.shape[0] > 0:
-            pressure_presc = bc['dirichlet_volumes']['value']
-            T[faces_presssure] = 0
-            T[faces_presssure, faces_presssure] = 1
+        if only_internal_nodes is True:
+            pass
+        else:
+            faces_presssure = bc['dirichlet_volumes']['id']
+            if faces_presssure.shape[0] > 0:
+                pressure_presc = bc['dirichlet_volumes']['value']
+                T[faces_presssure] = 0
+                T[faces_presssure, faces_presssure] = 1
 
-            source[faces_presssure] = pressure_presc
+                source[faces_presssure] = pressure_presc
+        
+        faces_neumann = bc['neumann_volumes']['id']
+        if faces_neumann.shape[0] > 0:
+            values = bc['neumann_volumes']['value']
+            source[faces_neumann] += values
+        
 
         T: sp.csc_matrix = T.tocsc()
         T.eliminate_zeros()
