@@ -238,7 +238,8 @@ def _update_fine_flux_aux(
         pass
     else:
         local_vertice = cstruct['faces'][cstruct['dual_id']==defnames.dual_ids('vertice_id')]
-        bc.set_boundary('dirichlet_volumes', local_vertice, ms_pressure[local_vertice])
+        global_local_vertice = cstruct['map_faces'][cstruct['dual_id']==defnames.dual_ids('vertice_id')]
+        bc.set_boundary('dirichlet_volumes', local_vertice, ms_pressure[global_local_vertice])
         # bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
         bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
 
