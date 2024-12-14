@@ -190,35 +190,35 @@ def _update_fine_flux_aux(
     # local_flux_presc = edges_flux[global_edges[bool_boundary_edges]]/(edges_dim[global_edges[bool_boundary_edges]])
     local_flux_presc = edges_flux[global_edges].copy()
     local_flux_presc[cstruct['other_side_flux']] *= -1
-    local_flux_presc = local_flux_presc[bool_boundary_edges]
+    local_flux_presc = -1*local_flux_presc[bool_boundary_edges]
 
     # local_flux_presc = edges_flux[global_edges[bool_boundary_edges]]
     neumann_edges = cstruct['edges'][bool_boundary_edges]
     bc = BoundaryConditions()
 
-    ##################
-    ## verificar edges com pressao prescrita:
-    nodes_of_global_edges = global_nodes_of_edges[global_edges]
-    test1 = np.isin(nodes_of_global_edges[:,0], global_dirichlet_nodes)
-    test2 = np.isin(nodes_of_global_edges[:,1], global_dirichlet_nodes)
-    test3 = test1 & test2
-    edges_to_remove = global_edges[test3]
-    test4 = np.isin(global_edges[bool_boundary_edges], edges_to_remove)
-    test4 = ~test4
-    #######################3
-    # test4 = np.full(neumann_edges.shape[0], True, dtype=bool)
+    # ##################
+    # ## verificar edges com pressao prescrita:
+    # nodes_of_global_edges = global_nodes_of_edges[global_edges]
+    # test1 = np.isin(nodes_of_global_edges[:,0], global_dirichlet_nodes)
+    # test2 = np.isin(nodes_of_global_edges[:,1], global_dirichlet_nodes)
+    # test3 = test1 & test2
+    # edges_to_remove = global_edges[test3]
+    # test4 = np.isin(global_edges[bool_boundary_edges], edges_to_remove)
+    # test4 = ~test4
+    # #######################3
+    test4 = np.full(neumann_edges.shape[0], True, dtype=bool)
 
     ###################
     ## verificar nos com pressao prescrita
     with_nodes_pressure = False
-    local_global_dirichlet_nodes = np.intersect1d(global_dirichlet_nodes, cstruct['map_nodes'][cstruct['bool_boundary_nodes']])
-    if local_global_dirichlet_nodes.shape[0] > 0:
-        with_nodes_pressure = True
-        my_nodes = cstruct['map_nodes']
-        local_dirichlet_nodes = cstruct['nodes'][np.isin(my_nodes, local_global_dirichlet_nodes)]
-        test5 = np.isin(global_dirichlet_nodes, local_global_dirichlet_nodes)
-        bc.set_boundary('dirichlet_nodes', local_dirichlet_nodes, global_bc['dirichlet_nodes']['value'][test5])
-        bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
+    # local_global_dirichlet_nodes = np.intersect1d(global_dirichlet_nodes, cstruct['map_nodes'][cstruct['bool_boundary_nodes']])
+    # if local_global_dirichlet_nodes.shape[0] > 0:
+    #     with_nodes_pressure = True
+    #     my_nodes = cstruct['map_nodes']
+    #     local_dirichlet_nodes = cstruct['nodes'][np.isin(my_nodes, local_global_dirichlet_nodes)]
+    #     test5 = np.isin(global_dirichlet_nodes, local_global_dirichlet_nodes)
+    #     bc.set_boundary('dirichlet_nodes', local_dirichlet_nodes, global_bc['dirichlet_nodes']['value'][test5])
+    #     bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
     ##############
 
     ##########

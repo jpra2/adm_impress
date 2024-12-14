@@ -896,7 +896,7 @@ def run4():
         local_pressure = cstruct['local_pressure']
         perror2[local_faces] = local_pressure
     
-    perror2[:] = np.absolute(perror2 - pressure)
+    # perror2[:] = np.absolute(perror2 - pressure)
 
     mesh_data.create_tag('local_pressure_error')
     mesh_data.insert_tag_data('local_pressure_error', perror2, elements_type='faces')

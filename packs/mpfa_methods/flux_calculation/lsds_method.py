@@ -1532,8 +1532,11 @@ class LsdsFluxCalculation:
         faces_adj = adjacencies[neumann_edges, 0]
         # edges_dim_neumann_edges = edges_dim[neumann_edges]
         # source[faces_adj] += neumann_edges_values*edges_dim_neumann_edges
-        source[faces_adj] += neumann_edges_values
-
+        # source[faces_adj] += neumann_edges_values
+        u_, idx = np.unique(faces_adj, return_inverse=True)
+        soma = np.bincount(idx, weights=neumann_edges_values)
+        source[u_] += soma
+ 
 
         ## atualizar T dos nos internos
         self.update_transmissibility_from_nodes(
