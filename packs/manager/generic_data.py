@@ -14,5 +14,6 @@ class PrimalCoarseData(SuperArrayManager):
         'permeability', 'unitary_normal_edges', 'neumann_edges', 
         'neumann_edges_value', 'dirichlet_nodes', 'edges_multiplier',
         'dual_id', 'edges_flux', 'pressure', 'edges_dim', 'xi_params', 
-        'xi_params_backup', 'nodes_weight_select', 'nodes_of_edges'
+        'xi_params_backup', 'nodes_weight_select', 'nodes_of_edges', 
+        'other_side_flux'
     ]

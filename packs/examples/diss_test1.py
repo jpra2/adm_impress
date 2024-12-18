@@ -130,6 +130,7 @@ def set_boundary_conditions(fine_properties: MeshProperty) -> BoundaryConditions
     bc.set_boundary('neumann_edges', walls_edges, edges_values)
 
     bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
+    bc.set_boundary('neumann_volumes', np.array([]), np.array([]))
 
     fine_properties.insert_or_update_data({
         'neumann_edges': bc['neumann_edges']['id'],
@@ -566,7 +567,7 @@ def run4():
     level_str = defnames.level_str(1)
     alpha_lim_finescale = 0.5
     beta_lim = 3
-    export_adm_levels_file = False
+    export_adm_levels_file = True
     bool_export_primal_id = False
     bool_export_dual_id = False
     my_dual_type = 1
@@ -575,7 +576,7 @@ def run4():
     export_permfield = True
     update_permfield = True
     fine_level_setup = 1
-    update_coarse_struct = False
+    update_coarse_struct = True
     
     level_str = defnames.level_str(1)
     lsds = LsdsFluxCalculation()
@@ -854,7 +855,8 @@ def run4():
         lsds,
         nodes_pressure,
         bc,
-        fp['nodes_of_edges']
+        fp['nodes_of_edges'],
+        fp.edges_dim
     )
 
     faces_flux = lsds.get_faces_flux(
@@ -894,10 +896,13 @@ def run4():
         local_pressure = cstruct['local_pressure']
         perror2[local_faces] = local_pressure
     
-    perror2[:] = np.absolute(perror2 - pressure)
+    # perror2[:] = np.absolute(perror2 - selected_pressure)
+
+    mesh_data.create_tag('local_pressure')
+    mesh_data.insert_tag_data('local_pressure', perror2, elements_type='faces')
 
     mesh_data.create_tag('local_pressure_error')
-    mesh_data.insert_tag_data('local_pressure_error', perror2, elements_type='faces')
+    mesh_data.insert_tag_data('local_pressure_error', np.absolute(perror2 - pressure), elements_type='faces')
 
     mesh_data.create_tag('coarse_face_flux')
     cf2 = np.zeros(fp['faces'].shape[0])
