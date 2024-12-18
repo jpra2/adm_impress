@@ -825,7 +825,7 @@ def run4():
     P_adm = spsolve(T_adm.tocsc(), Q_adm)
     P_prol = OP_adm*P_adm
 
-    selected_pressure = P_prol
+    selected_pressure = pressure
 
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,
@@ -900,6 +900,9 @@ def run4():
 
     mesh_data.create_tag('local_pressure')
     mesh_data.insert_tag_data('local_pressure', perror2, elements_type='faces')
+
+    mesh_data.create_tag('local_pressure_error')
+    mesh_data.insert_tag_data('local_pressure_error', np.absolute(perror2 - pressure), elements_type='faces')
 
     mesh_data.create_tag('coarse_face_flux')
     cf2 = np.zeros(fp['faces'].shape[0])
