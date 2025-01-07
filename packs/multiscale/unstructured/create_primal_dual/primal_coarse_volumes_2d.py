@@ -38,7 +38,7 @@ def _get_fine_faces_in_triangle(centroids_coarse_points_face, centroids_fine_fac
     poly = geometry.Polygon(centroids2)    
     # points_list = [geometry.Point(i[0], i[1]) for i in centroids_fine_faces]
     points_list = geometry.MultiPoint(centroids_fine_faces)
-    test = np.array([poly.contains(i) for i in points_list.geoms])
+    test = np.array([poly.contains(i) for i in points_list.geoms], dtype=bool)
     fine_faces_in_coarse_face = fine_faces_step1[test]
 
     # polygon = centroids2

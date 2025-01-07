@@ -22,7 +22,8 @@ from packs.examples.same_functions import (
     define_coarse_structure,
     update_fine_flux
 )
-
+from packs.multiscale.unstructured.operators.precond.algorithimic_monotone import AlgorithimicMonotone
+from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_flux, DiamondFluxCalculation
 
 import os
 from shapely import geometry
@@ -42,19 +43,25 @@ def get_properties():
     # fine_mesh_properties_name = 'brazilf' 
     # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
 
-    fine_mesh_path = os.path.join(rel_path, 'brazilfquad.msh')
-    fine_mesh_properties_name = 'brazilfquad' 
-    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilfquad_v4.msh')
+    # fine_mesh_path = os.path.join(rel_path, 'brazilfquad.msh')
+    # fine_mesh_properties_name = 'brazilfquad' 
+    # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilfquad_v4.msh')
+
+    fine_mesh_path = os.path.join(rel_path, 'brazilf_tri.msh')
+    fine_mesh_properties_name = 'brazilf_tri' 
+    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_tri.msh')
+
+
 
     # fine_mesh_path = os.path.join(rel_path, 'brazilf_test.msh')
     # fine_mesh_properties_name = 'brazilf_test' 
     # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_test_v4.msh')
 
-    # coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
-    # coarse_mesh_properties_name = 'brazilC1'
+    coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
+    coarse_mesh_properties_name = 'brazilC1'
 
-    coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
-    coarse_mesh_properties_name = 'brazilC2'
+    # coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
+    # coarse_mesh_properties_name = 'brazilC2'
 
     # coarse_mesh_path = os.path.join(rel_path, 'brazilC3.msh')
     # coarse_mesh_properties_name = 'brazilC3'
@@ -157,6 +164,7 @@ def set_boundary_conditions(fine_properties: MeshProperty) -> BoundaryConditions
     bc.set_boundary('neumann_edges', walls_edges, edges_values)
 
     bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
+    bc.set_boundary('neumann_volumes', np.array([]), np.array([]))
 
     fine_properties.insert_or_update_data({
         'neumann_edges': bc['neumann_edges']['id'],
@@ -589,7 +597,7 @@ def run4():
     level_str = defnames.level_str(1)
     alpha_lim_finescale = 0.5
     beta_lim = 3
-    export_adm_levels_file = True
+    export_adm_levels_file = False
     bool_export_primal_id = False
     bool_export_dual_id = False
     my_dual_type = 1
@@ -601,6 +609,7 @@ def run4():
     update_coarse_struct = False
 
     lsds = LsdsFluxCalculation()
+    algo_monotone = AlgorithimicMonotone()
 
     fp, cp, fine_mesh_path, coarse_mesh_path = get_properties()
     mesh_data = MeshData(mesh_path=coarse_mesh_path)
@@ -629,6 +638,12 @@ def run4():
     cadj_fine[fp['adjacencies'] == -1] = -1
 
     cadj_intersect = cadj_fine[intersect_edges]
+
+    get_xi_params_ds_flux(fp, update=True)
+
+    fp.insert_or_update_data({
+        'xi_params': fp['xi_params_ds']
+    })
 
     transm = set_fine_transmissibility_without_bc(
         save_fine_transm_without_bc,
@@ -715,6 +730,31 @@ def run4():
         raise ValueError
         
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+
+    fedges_flux, fnodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
+        bc,
+        pressure,
+        fp['xi_params'],
+        fp['nodes_weights'],
+        fp['nodes_of_edges'],
+        fp['adjacencies'],
+        fp['neumann_weights']
+    )
+    v1 = np.concatenate([
+        fedges_flux[fp.internal_edges], 
+        -fedges_flux[fp.internal_edges],
+        fedges_flux[fp.boundary_edges]
+    ])
+    v2 = np.concatenate([
+        fp['adjacencies'][fp.internal_edges, 0], 
+        fp['adjacencies'][fp.internal_edges, 1], 
+        fp['adjacencies'][fp.boundary_edges, 0]
+    ])
+    fine_faces_flux = np.bincount(v2, weights=v1)
+    fine_faces_flux = np.absolute(fine_faces_flux)
+
+
+
     fine_levels = np.full(len(fp['faces']), -1)
     if dual_in_boundary.shape[0] > 0:
         fine_levels[dual_in_boundary] = 0
@@ -801,9 +841,11 @@ def run4():
     P_adm = spsolve(T_adm.tocsc(), Q_adm)
     P_prol = OP_adm*P_adm
 
+    selected_pressure = P_prol
+
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,
-        P_prol,
+        selected_pressure,
         fp['xi_params'],
         fp['nodes_weights'],
         fp['nodes_of_edges'],
@@ -812,8 +854,10 @@ def run4():
     )
 
     intersect_flux = edges_flux[intersect_edges]
-    v1 = np.concatenate([intersect_flux, -intersect_flux])
-    v2 = np.concatenate([cadj_intersect[:, 0], cadj_intersect[:, 1]])
+    bflux = edges_flux[fp.boundary_edges]
+
+    v1 = np.concatenate([intersect_flux, -intersect_flux, bflux])
+    v2 = np.concatenate([cadj_intersect[:, 0], cadj_intersect[:, 1], cadj_fine[fp.boundary_edges, 0]])
     coarse_face_flux = np.bincount(v2, weights=v1)
     cff = coarse_face_flux
 
@@ -822,10 +866,13 @@ def run4():
     update_fine_flux(
         coarse_struct,
         edges_flux,
-        P_prol,
+        selected_pressure,
         total_mobility_edges,
         lsds,
-        nodes_pressure
+        nodes_pressure,
+        bc,
+        fp['nodes_of_edges'],
+        fp.edges_dim
     )
 
     faces_flux = lsds.get_faces_flux(
@@ -833,8 +880,7 @@ def run4():
         fp['adjacencies'],
         fp['bool_boundary_edges']
     )
-
-
+    faces_flux = np.absolute(faces_flux)
 
     error = np.absolute(pressure - P_prol)
     relative_error = (error/pressure)
@@ -857,11 +903,30 @@ def run4():
     mesh_data.create_tag('faces_flux')
     mesh_data.insert_tag_data('faces_flux', faces_flux, elements_type='faces')
 
+    mesh_data.create_tag('fine_faces_flux')
+    mesh_data.insert_tag_data('fine_faces_flux', fine_faces_flux, elements_type='faces')
+
+
+    perror2 = np.zeros(pressure.shape[0])
+    for cstruct in coarse_struct:
+        local_faces = cstruct['map_faces']
+        local_pressure = cstruct['local_pressure']
+        perror2[local_faces] = local_pressure
+
+    mesh_data.create_tag('local_pressure')
+    mesh_data.insert_tag_data('local_pressure', perror2, elements_type='faces')
+
+    mesh_data.create_tag('local_pressure_error')
+    mesh_data.insert_tag_data('local_pressure_error', np.absolute(perror2 - pressure), elements_type='faces')
+
+
     mesh_data.create_tag('coarse_face_flux')
     cf2 = np.zeros(fp['faces'].shape[0])
     primal_id = fp[defnames.get_primal_id_name_by_level(1)]
     for cid in cp['faces']:
         cf2[primal_id == cid] = cff[cid]
+    
+    cf2 = np.absolute(cf2)
 
     mesh_data.insert_tag_data('coarse_face_flux', cf2, elements_type='faces')
 

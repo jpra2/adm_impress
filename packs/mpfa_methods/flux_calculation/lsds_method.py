@@ -1573,21 +1573,25 @@ class LsdsFluxCalculation:
         # cols.extend([adjacencies[bool_boundary_edges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
         # data.extend([xi_params[bool_boundary_edges, 0], xi_params[biedges, 1], -xi_params[biedges, 1], -xi_params[biedges, 0]])
 
+        
         lines.extend([adjacencies[dirichlet_edges, 0], adjacencies[biedges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1]])
         cols.extend([ adjacencies[dirichlet_edges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
         data.extend([   xi_params[dirichlet_edges, 0],   xi_params[biedges, 0],   xi_params[biedges, 1],  -xi_params[biedges, 1],  -xi_params[biedges, 0]])
 
         ## adicionando a prescricao de dirichlet dos nos
-        self.insert_prescription_in_source(
-            dirichlet_nodes_values,
-            dirichlet_nodes,
-            edges_of_nodes,
-            nodes_of_edges,
-            adjacencies,
-            xi_params,
-            source,
-            neumann_edges
-        )
+        if only_internal_nodes is True:
+            pass
+        else:
+            self.insert_prescription_in_source(
+                dirichlet_nodes_values,
+                dirichlet_nodes,
+                edges_of_nodes,
+                nodes_of_edges,
+                adjacencies,
+                xi_params,
+                source,
+                neumann_edges
+            )
 
         ## adicionando a prescricao de neumann dos nos
         if only_internal_nodes is True:
@@ -1608,16 +1612,14 @@ class LsdsFluxCalculation:
 
         T = self.get_transmissibility_from_data(lines, cols, data, faces)
         
-        if only_internal_nodes is True:
-            pass
-        else:
-            faces_presssure = bc['dirichlet_volumes']['id']
-            if faces_presssure.shape[0] > 0:
-                pressure_presc = bc['dirichlet_volumes']['value']
-                T[faces_presssure] = 0
-                T[faces_presssure, faces_presssure] = 1
+        
+        faces_presssure = bc['dirichlet_volumes']['id']
+        if faces_presssure.shape[0] > 0:
+            pressure_presc = bc['dirichlet_volumes']['value']
+            T[faces_presssure] = 0
+            T[faces_presssure, faces_presssure] = 1
 
-                source[faces_presssure] = pressure_presc
+            source[faces_presssure] = pressure_presc
         
         faces_neumann = bc['neumann_volumes']['id']
         if faces_neumann.shape[0] > 0:
@@ -1633,7 +1635,7 @@ class LsdsFluxCalculation:
         resp.update({
             'transmissibility': T,
             'source': source
-        })   
+        })
         
         return resp
 

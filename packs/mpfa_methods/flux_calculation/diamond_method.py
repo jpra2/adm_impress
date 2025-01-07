@@ -10,7 +10,7 @@ from packs.mpfa_methods.weight_interpolation.lpew import verify_if_data_exists
 
 class DiamondFluxCalculation:
 
-    data_names = ['kn_kt_dsflux', 'kappa_D_dsflux', 'xi_params']
+    data_names = ['kn_kt_dsflux', 'kappa_D_dsflux', 'xi_params_ds']
 
     @staticmethod
     def get_edges_dim(nodes_centroids, nodes_of_edges, edges, **kwargs):

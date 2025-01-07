@@ -40,14 +40,17 @@ import pandas as pd
 def get_properties():
     rel_path = 'malhas_diss'
 
-    # fine_mesh_path = os.path.join(rel_path, 'square_uns.msh')
-    # fine_mesh_properties_name = 'square_uns'
-    fine_mesh_path = os.path.join(rel_path, 'square_uns_tri.msh')
-    fine_mesh_properties_name = 'square_uns_tri' 
+    fine_mesh_path = os.path.join(rel_path, 'square_uns.msh')
+    fine_mesh_properties_name = 'square_uns'
+    # fine_mesh_path = os.path.join(rel_path, 'square_uns_tri.msh')
+    # fine_mesh_properties_name = 'square_uns_tri' 
     fine_mesh_path_v4 = fine_mesh_path
 
-    coarse_mesh_path = os.path.join(rel_path, 'square_uns_coarse_tri.msh')
-    coarse_mesh_properties_name = 'square_uns_coarse_tri'
+    # coarse_mesh_path = os.path.join(rel_path, 'square_uns_coarse_tri.msh')
+    # coarse_mesh_properties_name = 'square_uns_coarse_tri'
+
+    coarse_mesh_path = os.path.join(rel_path, 'square_uns_coarse.msh')
+    coarse_mesh_properties_name = 'square_uns_coarse'
 
     fine_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name)
     coarse_properties = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
@@ -572,11 +575,11 @@ def run4():
     bool_export_dual_id = False
     my_dual_type = 1
     perm_type = 'channel'
-    update_nodes_weights = True
-    export_permfield = True
-    update_permfield = True
+    update_nodes_weights = False
+    export_permfield = False
+    update_permfield = False
     fine_level_setup = 1
-    update_coarse_struct = True
+    update_coarse_struct = False
     
     level_str = defnames.level_str(1)
     lsds = LsdsFluxCalculation()
@@ -586,7 +589,8 @@ def run4():
     mesh_data = MeshData(mesh_path=coarse_mesh_path)
     mesh_data.export_all_elements_type_to_vtk('background_coarse_mesh', 'faces')
     define_faces_in_losangle(fp)
-    set_permeability(fine_mesh_path, fp, typek=perm_type, export_permfield=export_permfield, update_permfield=update_permfield)
+    
+    # set_permeability(fine_mesh_path, fp, typek=perm_type, export_permfield=export_permfield, update_permfield=update_permfield)
     create_primal_ids(fp, cp, update=bool_export_primal_id)
     export_primal_ids(fine_mesh_path, fp, coarse_mesh_path, export=bool_export_primal_id)
     create_dual_ids(fp, cp, update=bool_export_dual_id, dual_type=my_dual_type)
@@ -825,7 +829,7 @@ def run4():
     P_adm = spsolve(T_adm.tocsc(), Q_adm)
     P_prol = OP_adm*P_adm
 
-    selected_pressure = pressure
+    selected_pressure = P_prol
 
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,

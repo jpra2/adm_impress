@@ -33,6 +33,7 @@ def create_dual_vertices_v1(
             axis = 1
         )
 
+        
         selected_vertice = local_fine_faces[dists <= dists.min()]
         dual_vertices[coarse_face] = selected_vertice
 
@@ -654,7 +655,7 @@ def create_dual_edges_v2(
     )
 
     ####
-    dists[:] = 1
+    # dists[:] = 1
     ####
 
     dists[fine_adjacencies==-1] = np.inf

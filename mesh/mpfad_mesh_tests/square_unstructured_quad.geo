@@ -17,8 +17,8 @@ Line(4) = {4, 1};
 Line Loop(5) = {1, 2, 3, 4};
 Plane Surface(6) = {5};
 
-Transfinite Curve {1, 3} = Lx/hx + 1 Using Progression 1;
-Transfinite Curve {2, 4} = Ly/hy + 1 Using Progression 1;
+Transfinite Curve {1, 3} = 3 + 1 Using Progression 1;
+Transfinite Curve {2, 4} = 3 + 1 Using Progression 1;
 Transfinite Surface {6};
 Recombine Surface {6};
 
