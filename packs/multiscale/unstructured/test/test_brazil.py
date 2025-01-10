@@ -24,6 +24,8 @@ from packs.examples.same_functions import (
 )
 from packs.multiscale.unstructured.operators.precond.algorithimic_monotone import AlgorithimicMonotone
 from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_flux, DiamondFluxCalculation
+from packs.multiscale.unstructured.operators.prolongation.msrsb_klevtsov import MsRSB
+
 
 import os
 from shapely import geometry
@@ -57,11 +59,11 @@ def get_properties():
     # fine_mesh_properties_name = 'brazilf_test' 
     # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_test_v4.msh')
 
-    coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
-    coarse_mesh_properties_name = 'brazilC1'
+    # coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
+    # coarse_mesh_properties_name = 'brazilC1'
 
-    # coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
-    # coarse_mesh_properties_name = 'brazilC2'
+    coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
+    coarse_mesh_properties_name = 'brazilC2'
 
     # coarse_mesh_path = os.path.join(rel_path, 'brazilC3.msh')
     # coarse_mesh_properties_name = 'brazilC3'
@@ -331,12 +333,12 @@ def func1(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation):
     transm = lsds.mount_transmissibility_matrix_without_bc(**fine_mesh_properties.get_all_data())
     return transm
 
-def set_monotone_transm(save_monotone_transm, transm: dict, w, matrix_path, monotone_transm_name):
+def set_monotone_transm(save_monotone_transm, transm: dict, w, matrix_path, monotone_transm_name, epsilon=0.001):
     ams_prolongation = Unstructured2DAmsOperator()
     if save_monotone_transm is True:
         monotone_transm = ams_prolongation.get_monotone_matrix(
             transm['transmissibility_without_bc'],
-            epsilon=0.001,
+            epsilon=epsilon,
             w=w
         )
         
@@ -589,7 +591,8 @@ def run4():
     save_monotone_transm = True
     save_fine_transmissibility = True
     save_op = True
-    w = 0
+    w = 1
+    epsilon = 1e-9
     monotone_transm_name = 'monotone_transm_w_0'
     fine_transmissibility_name = 'fine_transmissibility'
     op_toget = 'AMS-U'
@@ -597,16 +600,16 @@ def run4():
     level_str = defnames.level_str(1)
     alpha_lim_finescale = 0.5
     beta_lim = 3
-    export_adm_levels_file = False
-    bool_export_primal_id = False
-    bool_export_dual_id = False
+    export_adm_levels_file = True
+    bool_export_primal_id = True
+    bool_export_dual_id = True
     my_dual_type = 1
-    perm_type = 'channel'
-    update_nodes_weights = False
-    export_permfield = False
-    update_permfield = False
+    perm_type = 'barrier'
+    update_nodes_weights = True
+    export_permfield = True
+    update_permfield = True
     fine_level_setup = 1
-    update_coarse_struct = False
+    update_coarse_struct = True
 
     lsds = LsdsFluxCalculation()
     algo_monotone = AlgorithimicMonotone()
@@ -641,9 +644,9 @@ def run4():
 
     get_xi_params_ds_flux(fp, update=True)
 
-    fp.insert_or_update_data({
-        'xi_params': fp['xi_params_ds']
-    })
+    # fp.insert_or_update_data({
+    #     'xi_params': fp['xi_params_ds']
+    # })
 
     transm = set_fine_transmissibility_without_bc(
         save_fine_transm_without_bc,
@@ -656,7 +659,8 @@ def run4():
         transm,
         w,
         matrix_path,
-        monotone_transm_name
+        monotone_transm_name,
+        epsilon=epsilon
     )
     
     resp = set_fine_transmissibility(
@@ -668,17 +672,37 @@ def run4():
     )
 
     OR_AMS = get_OR_AMS(fp)
-    OP_AMS = get_op(
-        save_op,
-        fp,
-        cp,
-        op_name,
-        matrix_path,
-        op_toget,
-        monotone_transm,
-        resp,
-        level_str
-    )
+    # OP_AMS = get_op(
+    #     save_op,
+    #     fp,
+    #     cp,
+    #     op_name,
+    #     matrix_path,
+    #     op_toget,
+    #     monotone_transm,
+    #     resp,
+    #     level_str
+    # )
+
+    fine_mesh_properties = fp
+
+    msrsb = MsRSB()
+    OP_AMS = msrsb.get_OP(
+                faces=fine_mesh_properties['faces'],
+                T=monotone_transm.tocsc(),
+                diagonal_term=np.zeros(resp['source'].shape[0]),
+                interation_regions=fine_mesh_properties[defnames.get_dual_interation_region_name_by_level(1)],
+                interation_boundaries=fine_mesh_properties[defnames.boundary_dual_interaction + level_str],
+                vertices=fine_mesh_properties[defnames.vertices_selected + level_str],
+                dual_edges=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('edge_id')],
+                dual_faces=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('face_id')],
+                coarse_ids=fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
+                OR_fv=OR_AMS,
+                maxit=500                
+            )
+    
+
+    
     
     ########################################
     # from packs.multiscale.unstructured.operators.prolongation.amsu import AmsU
@@ -752,7 +776,6 @@ def run4():
     ])
     fine_faces_flux = np.bincount(v2, weights=v1)
     fine_faces_flux = np.absolute(fine_faces_flux)
-
 
 
     fine_levels = np.full(len(fp['faces']), -1)
@@ -885,7 +908,15 @@ def run4():
     error = np.absolute(pressure - P_prol)
     relative_error = (error/pressure)
     l2_norm_error = np.linalg.norm(error)
+    linf_error = error.max()
     l2_norm_relative_error = np.linalg.norm(relative_error)
+    
+    print('######################')
+    print(f'Linf: {linf_error}')
+    print(f'L2 error: {l2_norm_error}')
+    print(f'Number of fine vols: {fp.faces.shape[0]}')
+    print(f'Number of NU-ADM vols: {T_adm.shape[0]}')
+    print('######################')
     
     mesh_data = MeshData(mesh_path=fine_mesh_path)
     mesh_data.create_tag('pressure')
