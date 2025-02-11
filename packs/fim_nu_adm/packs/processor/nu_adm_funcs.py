@@ -112,6 +112,7 @@ def get_beta_groups(GID_0, GID_1, OP, internal_adjacencies, beta_lim=3.0):
         # v1 = GID_1[OP[0]][pos]
         # v2 = OP[1][pos]
         phis=OP[2][pos][np.argsort(OP[0][pos])]
+        # phis=OP[2][pos]
         # betas=(1-phis)/phis
         betas = np.zeros(pos.shape[0])
         betas[index] = (1-phis)/phis

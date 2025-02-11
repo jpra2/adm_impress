@@ -23,6 +23,7 @@ from packs.examples.same_functions import (
     update_fine_flux
 )
 from packs.multiscale.unstructured.operators.precond.algorithimic_monotone import AlgorithimicMonotone
+from packs.multiscale.unstructured.operators.precond.enhanced import Enhanced
 from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_flux, DiamondFluxCalculation
 from packs.multiscale.unstructured.operators.prolongation.msrsb_klevtsov import MsRSB
 
@@ -591,7 +592,7 @@ def run4():
     save_monotone_transm = True
     save_fine_transmissibility = True
     save_op = True
-    w = 1
+    w = 0
     epsilon = 1e-9
     monotone_transm_name = 'monotone_transm_w_0'
     fine_transmissibility_name = 'fine_transmissibility'
@@ -613,6 +614,7 @@ def run4():
 
     lsds = LsdsFluxCalculation()
     algo_monotone = AlgorithimicMonotone()
+    enhanced = Enhanced()
 
     fp, cp, fine_mesh_path, coarse_mesh_path = get_properties()
     mesh_data = MeshData(mesh_path=coarse_mesh_path)
@@ -642,7 +644,7 @@ def run4():
 
     cadj_intersect = cadj_fine[intersect_edges]
 
-    get_xi_params_ds_flux(fp, update=True)
+    # get_xi_params_ds_flux(fp, update=True)
 
     # fp.insert_or_update_data({
     #     'xi_params': fp['xi_params_ds']
@@ -654,14 +656,15 @@ def run4():
         fp,
         fine_transm_without_bc_name
     )
-    monotone_transm = set_monotone_transm(
-        save_monotone_transm,
-        transm,
-        w,
-        matrix_path,
-        monotone_transm_name,
-        epsilon=epsilon
-    )
+    # monotone_transm = set_monotone_transm(
+    #     save_monotone_transm,
+    #     transm,
+    #     w,
+    #     matrix_path,
+    #     monotone_transm_name,
+    #     epsilon=epsilon
+    # )
+    monotone_transm = enhanced.get_enhanced_matrix(transm['transmissibility_without_bc'])
     
     resp = set_fine_transmissibility(
         save_fine_transmissibility,
@@ -698,7 +701,8 @@ def run4():
                 dual_faces=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('face_id')],
                 coarse_ids=fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
                 OR_fv=OR_AMS,
-                maxit=500                
+                etol=0.01,
+                maxit=1000                
             )
     
 

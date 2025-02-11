@@ -26,11 +26,6 @@ def edges_mobility(total_mobility_nodes: np.ndarray, nodes_of_edges: np.ndarray,
     mob_nodes_adjs = total_mobility_nodes[nodes_of_edges]
 
     mob_edges = np.mean(mob_nodes_adjs, axis=1)
-
-    edges_with_sat_presc = bc['water_saturation_edges']['id']
-    if len(edges_with_sat_presc) > 0:
-        # TODO implementar essa parte
-        raise NotImplementedError
     
     return mob_edges
 
@@ -40,8 +35,13 @@ def direct_edges_mobility(total_mobility: np.ndarray, areas: np.ndarray, nodes_e
 
     edges_presc_sat = bc['water_saturation_edges']['id']
     if len(edges_presc_sat) > 0:
-        # TODO atualizar aqui
-        raise NotImplementedError
+        saturation_edges = bc['water_saturation_edges']['value']
+        krw_edges, kro_edges = relative_perm.calculate(saturation_edges)
+        mobw_edges, mobo_edges = biphasic_mobility.calculate(krw_edges, kro_edges)
+        total_mobility_edges = biphasic_mobility.get_total_mobility(mobw_edges, mobo_edges)
+
+        mob_edges[edges_presc_sat] = total_mobility_edges
+        
 
     return mob_edges
 

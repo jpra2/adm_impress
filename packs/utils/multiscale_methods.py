@@ -81,6 +81,10 @@ def print_adm_interfaces_2d(
         all_edges.append(edges_to_print)
     
     all_edges = np.unique(np.concatenate(all_edges))
+    all_edges = np.unique(np.concatenate([
+        all_edges,
+        fine_mesh_properties.boundary_edges
+    ]))
 
     mesh_data = MeshData(mesh_path=fine_mesh_path)
     mesh_data.export_only_the_elements(export_name, element_type='edges', elements_array=all_edges)

@@ -62,3 +62,12 @@ class BoundaryConditions(SuperArrayManager):
         neumann_nodes = np.setdiff1d(neumann_nodes, self['dirichlet_nodes']['id'])
         return neumann_nodes
 
+    def update_zero_bcs(self):
+        my_names = set(list(self.keys()))
+        all_boundary_names = set(defnames.mpfa_boundary_names)
+
+        other = all_boundary_names - my_names
+        ids = np.array([])
+        values = np.array([])
+        for bc_type_name in other:
+            self.set_boundary(bc_type_name, ids, values)

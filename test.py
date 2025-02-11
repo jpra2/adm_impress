@@ -68,8 +68,8 @@
 # from packs.mpfa_methods.weight_interpolation.test.test_gls_edges_weights import run
 # run()
 
-from packs.multiscale.unstructured.test.test_brazil import run4
-run4()
+# from packs.multiscale.unstructured.test.test_brazil import run4
+# run4()
 
 # from packs.multiscale.unstructured.test.test_cross import run4
 # run4()
@@ -81,6 +81,9 @@ run4()
 # run_flying()
 # run_results()
 # import pdb; pdb.set_trace()
+
+from packs.examples.biphasic_mpfa import run
+run()
 
 # from packs.examples.biphasic_mpfa_nu_adm import run
 # run()

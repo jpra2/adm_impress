@@ -16,6 +16,11 @@ from packs.utils.multiscale_methods import print_adm_interfaces_2d
 from packs.multiscale.unstructured.test.test_uns_ams_prolongation import export_adm_levels
 from packs.utils.multiscale_methods import print_fine_interfaces_coarse_mesh_2d
 
+from packs.multiscale.unstructured.operators.precond.algorithimic_monotone import AlgorithimicMonotone
+from packs.multiscale.unstructured.operators.precond.enhanced import Enhanced
+from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_flux, DiamondFluxCalculation
+from packs.multiscale.unstructured.operators.prolongation.msrsb_klevtsov import MsRSB
+
 import os
 from shapely import geometry
 from typing import List, Union
@@ -44,11 +49,11 @@ def get_properties():
     # fine_mesh_properties_name = 'brazilf_test' 
     # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_test_v4.msh')
 
-    # coarse_mesh_path = os.path.join(rel_path, 'crossc1.msh')
-    # coarse_mesh_properties_name = 'crossC1'
+    coarse_mesh_path = os.path.join(rel_path, 'crossc1.msh')
+    coarse_mesh_properties_name = 'crossC1'
 
-    coarse_mesh_path = os.path.join(rel_path, 'crrossc2.msh')
-    coarse_mesh_properties_name = 'crossC2'
+    # coarse_mesh_path = os.path.join(rel_path, 'crrossc2.msh')
+    # coarse_mesh_properties_name = 'crossC2'
 
     # coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
     # coarse_mesh_properties_name = 'brazilC2'
@@ -128,6 +133,7 @@ def set_boundary_conditions(fine_properties: MeshProperty) -> BoundaryConditions
 
     edges_values = np.repeat(0.0, walls_edges.shape[0])
     bc.set_boundary('neumann_edges', walls_edges, edges_values)
+    bc.set_boundary('neumann_volumes', np.array([]), np.array([]))
 
     fine_properties.insert_or_update_data({
         'neumann_edges': bc['neumann_edges']['id'],
@@ -590,9 +596,9 @@ def write_results(
 def run4():
     matrix_path = 'matrices.h5'
     fine_transm_without_bc_name = 'fine_transm_without_bc'
-    save_fine_transm_without_bc = False
-    save_monotone_transm = False
-    save_fine_transmissibility = False
+    save_fine_transm_without_bc = True
+    save_monotone_transm = True
+    save_fine_transmissibility = True
     save_op = True
     w = 0
     monotone_transm_name = 'monotone_transm_w_0'
@@ -600,18 +606,24 @@ def run4():
     op_toget = 'AMS-U'
     op_name = 'AMS_U_w_0_dual2'
     level_str = defnames.level_str(1)
-    alpha_lim_finescale = 0.1
+    alpha_lim_finescale = 0.5
     beta_lim = 3
     export_adm_levels_file = True
-    bool_export_primal_id = True
-    bool_export_dual_id = True
+    bool_export_primal_id = False
+    bool_export_dual_id = False
     my_dual_type = 1
     # perm_type = 'channel'
     perm_type = 'barrier'
-    update_nodes_weights = False
-    export_permfield = False
-    update_permfield = False
+    update_nodes_weights = True
+    export_permfield = True
+    update_permfield = True
     fine_level_setup = 4
+    etol = 0.0001
+
+    lsds = LsdsFluxCalculation()
+    algo_monotone = AlgorithimicMonotone()
+    enhanced = Enhanced()
+
 
     fp, cp, fine_mesh_path, coarse_mesh_path = get_properties()
     mesh_data = MeshData(mesh_path=coarse_mesh_path)
@@ -632,13 +644,15 @@ def run4():
         fp,
         fine_transm_without_bc_name
     )
-    monotone_transm = set_monotone_transm(
-        save_monotone_transm,
-        transm,
-        w,
-        matrix_path,
-        monotone_transm_name
-    )
+    # monotone_transm = set_monotone_transm(
+    #     save_monotone_transm,
+    #     transm,
+    #     w,
+    #     matrix_path,
+    #     monotone_transm_name
+    # )
+
+    monotone_transm = enhanced.get_enhanced_matrix(transm['transmissibility_without_bc'])
     
     resp = set_fine_transmissibility(
         save_fine_transmissibility,
@@ -651,17 +665,35 @@ def run4():
     
 
     OR_AMS = get_OR_AMS(fp)
-    OP_AMS = get_op(
-        save_op,
-        fp,
-        cp,
-        op_name,
-        matrix_path,
-        op_toget,
-        monotone_transm,
-        resp,
-        level_str
-    )
+    # OP_AMS = get_op(
+    #     save_op,
+    #     fp,
+    #     cp,
+    #     op_name,
+    #     matrix_path,
+    #     op_toget,
+    #     monotone_transm,
+    #     resp,
+    #     level_str
+    # )
+
+    fine_mesh_properties = fp
+
+    msrsb = MsRSB()
+    OP_AMS = msrsb.get_OP(
+                faces=fine_mesh_properties['faces'],
+                T=monotone_transm.tocsc(),
+                diagonal_term=np.zeros(resp['source'].shape[0]),
+                interation_regions=fine_mesh_properties[defnames.get_dual_interation_region_name_by_level(1)],
+                interation_boundaries=fine_mesh_properties[defnames.boundary_dual_interaction + level_str],
+                vertices=fine_mesh_properties[defnames.vertices_selected + level_str],
+                dual_edges=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('edge_id')],
+                dual_faces=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('face_id')],
+                coarse_ids=fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
+                OR_fv=OR_AMS,
+                etol=etol,
+                maxit=1000                
+            )
     
     ########################################
     # from packs.multiscale.unstructured.operators.prolongation.amsu import AmsU
@@ -804,12 +836,20 @@ def run4():
     P_prol = OP_adm*P_adm
 
     error = np.absolute(pressure - P_prol)
+    linf_error = error.max()
     test = pressure == 0
     ttest = ~test
     relative_error = np.zeros(error.shape[0])
     relative_error[ttest] = (error[ttest]/pressure[ttest])
     l2_norm_error = np.linalg.norm(error)
     l2_norm_relative_error = np.linalg.norm(relative_error)
+
+    print('######################')
+    print(f'Linf: {linf_error}')
+    print(f'L2 error: {l2_norm_error}')
+    print(f'Number of fine vols: {fp.faces.shape[0]}')
+    print(f'Number of NU-ADM vols: {T_adm.shape[0]}')
+    print('######################')
     
     mesh_data = MeshData(mesh_path=fine_mesh_path)
     mesh_data.create_tag('pressure')
