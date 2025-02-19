@@ -242,6 +242,7 @@ def _update_fine_flux_aux(
         bc.set_boundary('dirichlet_volumes', local_vertice, ms_pressure[global_local_vertice])
         # bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
         bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
+        bc.update_zero_bcs()
 
     # bool_boundary_nodes = cstruct['bool_boundary_nodes']
     # mapbnodes = cstruct['map_nodes'][bool_boundary_nodes]
@@ -375,3 +376,26 @@ def export_op(mesh_path, OP_AMS, op_name):
         op_name,
         'faces'
     )
+
+def define_fine_ids_from_saturation(saturation, adjacencies, internal_edges, delta_sat_lim=0.1):
+    adj_sat = saturation[adjacencies[internal_edges]]
+    delta_sat = np.absolute(adj_sat[:, 1] - adj_sat[:, 0])
+    test = delta_sat >= delta_sat_lim
+
+    fine_ids = adjacencies[internal_edges]
+    fine_ids = np.unique(fine_ids[test])
+    return fine_ids
+
+def get_intersect_edges(coarse_struct, fine_properties):
+    fp = fine_properties
+    intersect_edges = []
+    for cs in coarse_struct:
+        int_edges = cs['map_edges'][cs['bool_boundary_edges']]
+        intersect_edges.append(int_edges)
+
+    intersect_edges = np.unique(np.concatenate(intersect_edges))
+    intersect_edges = np.intersect1d(intersect_edges, fp.internal_edges)
+
+    return intersect_edges
+
+

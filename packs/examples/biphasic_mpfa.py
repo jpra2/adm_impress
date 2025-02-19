@@ -457,7 +457,7 @@ def run():
     max_vpi = 1.3
     loop = 0
     max_loop = np.inf
-    load = True
+    load = False
     loop_intervals = 10
 
     cumulative_oil = 0.0
@@ -486,7 +486,6 @@ def run():
     mesh_data.create_tag('saturation')
     # mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
    
-
     if load is False:
         initial_funcs(fp, fine_mesh_path, type_k)
         pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux = initial_loop(
@@ -518,7 +517,7 @@ def run():
             'saturation_' + str(loop): saturation
         })
         saturation[:] = newS
-    else:
+    elif load is True:
         # import pdb; pdb.set_trace()
         simulation_data.load_data()
         loop = simulation_data['all_loops'][-1]
@@ -572,7 +571,7 @@ def run():
         mesh_data.insert_tag_data('saturation', saturation_plot, 'faces')
         mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
 
-        if loop % 100 == 0 and cumulative_water > 1e-4:
+        if loop % 100 == 0 and abs(cumulative_water) > 1e-4:
             import pdb; pdb.set_trace()
 
     import pdb; pdb.set_trace()
