@@ -4,6 +4,7 @@ from packs.manager.generic_data import PrimalCoarseData
 from packs.multiscale.unstructured.create_primal_dual.primal_coarse_volumes_2d import get_coarse_structure, load_coarse_structure
 from packs import defnames
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
+from packs.multiscale.unstructured.operators.prolongation.ams import Unstructured2DAmsOperator
 
 import numpy as np
 from typing import Sequence
@@ -398,4 +399,48 @@ def get_intersect_edges(coarse_struct, fine_properties):
 
     return intersect_edges
 
+def get_OR_AMS(fine_mesh_properties: MeshProperty):
+    ams_prolongation = Unstructured2DAmsOperator()
+    OR_AMS = ams_prolongation.get_finite_volume_restriction_operator(
+        fine_mesh_properties['faces'],
+        fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
+    )
+    return OR_AMS
 
+def define_initial_fine_volumes(fp: MeshProperty, bc: BoundaryConditions):
+    dirichlet_vols = bc['dirichlet_volumes']['id']
+    values = bc['dirichlet_volumes']['id']
+
+    cids = fp[defnames.get_primal_id_name_by_level(1)][dirichlet_vols]
+    test = np.isin(fp[defnames.get_primal_id_name_by_level(1)], cids)
+    fine_vols = fp['faces'][test]
+    return fine_vols
+
+def define_new_fine_levels_v1(
+        fine_mesh_properties: MeshProperty,
+        bc: BoundaryConditions
+) -> np.ndarray:
+    
+    """
+    Apenas as duais com prescricao na malha fina usando a dual tipo 1
+    """
+
+    faces_of_nodes = fine_mesh_properties['faces_of_nodes']
+    dual_volumes = fine_mesh_properties['dual_volumes_level1']
+    dual_id = fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
+    
+    nodes_pressure_presc = bc['dirichlet_nodes']['id']
+    faces_pressure_presc = bc['dirichlet_faces']['id']
+    faces_of_nodes_presc = np.unique(
+        np.concatenate(faces_of_nodes[nodes_pressure_presc])
+    )
+    faces_of_nodes_presc = faces_of_nodes_presc[dual_id[faces_of_nodes_presc] == defnames.dual_ids('face_id')]
+    
+    boundary_faces = np.unique(np.concatenate([faces_of_nodes_presc, faces_pressure_presc]))
+    dual_in_boundary = []
+    for dual in dual_volumes:
+        if np.any(np.isin(dual, boundary_faces)):
+            dual_in_boundary.append(dual)
+    
+    dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
+    return dual_in_boundary

@@ -2,16 +2,37 @@ from packs.biphasic.relative_perm.brooks_and_corey import BrooksAndCorey
 from packs.biphasic.mobility import BiphasicMobility
 from packs.biphasic.unstructured.mobility_mesh_elements import direct_edges_mobility
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
-from packs import defpaths
+from packs import defpaths, defnames
 from packs.manager import MeshProperty, MeshData, BoundaryConditions, SimulationData
 from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set_fine_transmissibility
 from packs.multiscale.unstructured.test.test_brazil import define_faces_in_losangle, set_permeability
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 
+from packs.manager.generic_data import PrimalCoarseData
+from packs.examples.same_functions import (
+    define_faces_in_losangle, 
+    set_permeability_brazil as set_permeability,
+    define_coarse_structure,
+    update_fine_flux,
+    export_op,
+    get_OR_AMS,
+    define_fine_ids_from_saturation,
+    define_new_fine_levels_v1
+)
+
+from packs.mpfa_methods.flux_calculation.diamond_method import DiamondFluxCalculation, get_xi_params_ds_flux
+from packs.multiscale.unstructured.operators.prolongation.msrsb_klevtsov import MsRSB
+from packs.multiscale.unstructured.operators.precond.algorithimic_monotone import AlgorithimicMonotone
+from packs.multiscale.unstructured.operators.precond.enhanced import Enhanced
+
+from packs.adm.non_uniform import fine_level_from_alpha
+from packs.fim_nu_adm.packs.processor import nu_adm_funcs
+
 import os
 import numpy as np
 from typing import Tuple
+import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 
@@ -168,6 +189,7 @@ def initial_loop(
         cumulative_oil: float,
         cumulative_water: float
 ):
+    initial_fine_volumes = define_new_fine_levels_v1(fp, bc)
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
     total_mobility_faces = biphasic_mobility.get_total_mobility(mobw_faces, mobo_faces)
@@ -193,11 +215,120 @@ def initial_loop(
     weights = get_gls_nodes_weights(**fp)
     fp.insert_or_update_data(weights)
 
+    coarse_struct = define_coarse_structure(fp, lsds, level=1, update=True)
+    intersect_edges = []
+    for cs in coarse_struct:
+        int_edges = cs['map_edges'][cs['bool_boundary_edges']]
+        intersect_edges.append(int_edges)
+
+    intersect_edges = np.unique(np.concatenate(intersect_edges))
+    intersect_edges = np.intersect1d(intersect_edges, fp.internal_edges)
+
+    cadj_fine = fp[defnames.get_primal_id_name_by_level(1)][fp['adjacencies']]
+    cadj_fine[fp['adjacencies'] == -1] = -1
+
+    cadj_intersect = cadj_fine[intersect_edges]    
+
     resp = set_fine_transmissibility_biphasic(
         fp,
         bc,
         lsds
     )
+
+    fine_mesh_properties = fp
+    level_str = defnames.level_str(1)
+    OR_AMS = get_OR_AMS(fp)
+    msrsb = MsRSB()
+    OP_AMS = msrsb.get_OP(
+        faces=fine_mesh_properties['faces'],
+        T=resp['transmissibility'],
+        diagonal_term=np.zeros(resp['source'].shape[0]),
+        interation_regions=fine_mesh_properties[defnames.get_dual_interation_region_name_by_level(1)],
+        interation_boundaries=fine_mesh_properties[defnames.boundary_dual_interaction + level_str],
+        vertices=fine_mesh_properties[defnames.vertices_selected + level_str],
+        dual_edges=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('edge_id')],
+        dual_faces=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('face_id')],
+        coarse_ids=fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
+        OR_fv=OR_AMS,
+        maxit=500                
+    )
+
+    fine_levels = np.full(fp['faces'].shape[0], -1)
+    fine_levels[initial_fine_volumes] = 0
+    fine_ids_from_saturation = define_fine_ids_from_saturation(saturation, fp['adjacencies'], fp.internal_edges)
+    fine_levels[fine_ids_from_saturation] = 0
+
+    fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
+        OR_AMS,
+        OP_AMS,
+        resp['transmissibility'],
+        alpha_lim=0.5
+    )
+
+    fine_levels[fine_ids_from_alpha] = 0
+
+    beta_groups, beta_ind, betas = nu_adm_funcs.get_beta_groups(
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        sp.find(OP_AMS)[0:3],
+        fp['adjacencies'][fp.internal_edges],
+        beta_lim=3
+    )
+
+    finescale_faces = nu_adm_funcs.get_finescale_vols(
+        fp['faces'][fine_levels==0],
+        fine_ids_from_alpha,
+        beta_ind,
+        beta_groups
+    )
+
+    fine_levels[finescale_faces] = 0
+    fine_levels[fine_levels==-1] = 1
+
+    finescale_ids = fp['faces'][fine_levels==0]
+
+    LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
+        finescale_ids,
+        fine_levels,
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        fp[defnames.get_dual_id_name_by_level(1)]
+    )
+
+    OP_adm, OR_adm = nu_adm_funcs.organize(
+        fine_levels,
+        sp.find(OP_AMS)[0:3],
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        LEVEL_ID_1,
+        ADM_COARSE_ID_LEVEL_1,
+        fp[defnames.get_dual_id_name_by_level(1)]
+    )
+
+    T_adm = OR_adm*(resp['transmissibility']*OP_adm)
+    Q_adm = OR_adm*resp['source']
+    P_adm = spsolve(T_adm.tocsc(), Q_adm)
+    P_prol = OP_adm*P_adm
+
+    edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
+        bc,
+        P_prol,
+        fp['xi_params'],
+        fp['nodes_weights'],
+        fp['nodes_of_edges'],
+        fp['adjacencies'],
+        fp['neumann_weights']
+    )
+
+    intersect_flux = edges_flux[intersect_edges]
+    bflux = edges_flux[fp.boundary_edges]
+
+    v1 = np.concatenate([intersect_flux, -intersect_flux, bflux])
+    v2 = np.concatenate([cadj_intersect[:, 0], cadj_intersect[:, 1], cadj_fine[fp.boundary_edges, 0]])
+    coarse_face_flux = np.bincount(v2, weights=v1)
+    cff = coarse_face_flux
+
+    import pdb; pdb.set_trace()
 
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
@@ -452,17 +583,29 @@ def plot_graph():
 
 def run():
 
+    matrices_path = 'matrices.h5'
+    op_name = 'AMSU'
+
+    update_primal_mesh = True
+    update_coarse_struct = True
+    update_dual_mesh = True
+    my_dual_type = 1
+
+    alpha_lim_finescale = 0.5
+    beta_lim = 3.0
+    
     type_k = 'barrier'
     dt = 0.00005
     max_vpi = 1.3
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 10
+    loop_intervals = 50
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
     vpi = 0.0
+
 
     relative_perm = BrooksAndCorey()
     biphasic_mobility = BiphasicMobility()

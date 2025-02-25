@@ -4,7 +4,7 @@ from packs.utils.calculate_face_properties import sort_radial_sweep
 from packs.manager.generic_data import PrimalCoarseData
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 
-from packs.utils.utils_old import get_box_v2_2d
+from packs.utils.utils_old import get_box_v2_2d, remap_values
 import numpy as np
 from shapely import geometry
 
@@ -628,21 +628,14 @@ def aux_get_coarse_structure(
             aux = local_faces[faces_in==local_adjacencies[i,j]]
             local_adjacencies[i,j] = aux
 
-    test1 = np.isin(nodes_weight['node_id'], nodes_in)
-    test2 =  np.isin(nodes_weight['face_id'], faces_in)
-    test3 = test1 & test2
-
-    local_nodes_weight = nodes_weight[test3]
-
-    for node in nodes_in:
-        local_nodes_weight['node_id'][local_nodes_weight['node_id']==node] = local_nodes[nodes_in==node]
-    
-    for face in faces_in:
-        local_nodes_weight['face_id'][local_nodes_weight['face_id']==face] = local_faces[faces_in==face]
-    
-    test4 = np.isin(local_nodes_weight['node_id'], local_nodes[local_bool_boundary_nodes])
-    test4 = ~test4
-    local_nodes_weight = local_nodes_weight[test4]
+    local_nodes_weight, test3 = coarse_data.get_local_nodes_weights(
+        nodes_weight,
+        nodes_in,
+        local_nodes,
+        faces_in,
+        local_faces,
+        local_bool_boundary_nodes
+    )
     
     coarse_id = np.array([cid])
 

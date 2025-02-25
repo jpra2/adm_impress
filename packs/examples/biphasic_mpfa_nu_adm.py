@@ -242,6 +242,19 @@ def initial_loop(
 
     coarse_struct = define_coarse_structure(fp, lsds, level=1)
 
+    intersect_edges = []
+    for cs in coarse_struct:
+        int_edges = cs['map_edges'][cs['bool_boundary_edges']]
+        intersect_edges.append(int_edges)
+
+    intersect_edges = np.unique(np.concatenate(intersect_edges))
+    intersect_edges = np.intersect1d(intersect_edges, fp.internal_edges)
+
+    cadj_fine = fp[defnames.get_primal_id_name_by_level(1)][fp['adjacencies']]
+    cadj_fine[fp['adjacencies'] == -1] = -1
+
+    cadj_intersect = cadj_fine[intersect_edges]
+
     resp = set_fine_transmissibility_biphasic(
         fp,
         bc,
@@ -329,14 +342,33 @@ def initial_loop(
         fp['neumann_weights']
     )
 
+    intersect_flux = edges_flux[intersect_edges]
+    bflux = edges_flux[fp.boundary_edges]
+
+    v1 = np.concatenate([intersect_flux, -intersect_flux, bflux])
+    v2 = np.concatenate([cadj_intersect[:, 0], cadj_intersect[:, 1], cadj_fine[fp.boundary_edges, 0]])
+    coarse_face_flux = np.bincount(v2, weights=v1)
+    cff = coarse_face_flux
+
     update_fine_flux(
         coarse_struct,
         edges_flux,
         P_prol,
         total_mobility_edges,
         lsds,
-        nodes_pressure
+        nodes_pressure,
+        bc,
+        fp['nodes_of_edges'],
+        fp.edges_dim
     )
+
+    faces_flux = lsds.get_faces_flux(
+        edges_flux,
+        fp['adjacencies'],
+        fp['bool_boundary_edges']
+    )
+
+    
 
     # pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
@@ -350,13 +382,6 @@ def initial_loop(
     #     fp['neumann_weights']
     # )
 
-
-    faces_flux = lsds.get_faces_flux(
-        edges_flux,
-        fp['adjacencies'],
-        fp['bool_boundary_edges']
-    )
-
     edges_saturation = edges_flux.copy()
 
     edges_saturation[:] = biphasic_mobility.update_edges_saturation_foum(
@@ -367,7 +392,7 @@ def initial_loop(
             edges_saturation,
             fp['bool_boundary_edges']
         )
-    
+        
     krw_edges, kro_edges = relative_perm.calculate(edges_saturation)
     mobw_edges, mobo_edges = biphasic_mobility.calculate(krw_edges, kro_edges)
     fw_edges = biphasic_mobility.get_fw(mobw_edges, mobo_edges)
@@ -404,7 +429,7 @@ def initial_loop(
         dt
     )
 
-    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux
+    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR
 
 def while_loop(
         relative_perm: BrooksAndCorey,
@@ -594,9 +619,9 @@ def run():
     matrices_path = 'matrices.h5'
     op_name = 'AMSU'
 
-    update_primal_mesh = True
+    update_primal_mesh = False
+    update_dual_mesh = False
     update_coarse_struct = True
-    update_dual_mesh = True
     my_dual_type = 1
 
     alpha_lim_finescale = 0.5
@@ -648,7 +673,7 @@ def run():
     if load is False:
         initial_funcs(fp, fine_mesh_path, type_k)
         # coarse_struct = define_coarse_structure(fp, lsds, level=1, update=update_coarse_struct)
-        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux = initial_loop(
+        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, coarse_struct, OP, OR = initial_loop(
             relative_perm,
             biphasic_mobility,
             saturation,
@@ -671,7 +696,6 @@ def run():
         mesh_data.insert_tag_data('saturation', saturation, 'faces')
         mesh_data.insert_tag_data('faces_flux', np.absolute(faces_flux), 'faces')
         mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
-        import pdb; pdb.set_trace()
         simulation_data.insert_or_update_data({
             'all_loops': np.array([0]),
             'all_vpi': np.array([0.0]),
@@ -690,7 +714,9 @@ def run():
         cumulative_water = simulation_data['all_cumulative_water'][-1]
         saturation[:] = simulation_data['saturation_' + str(loop)]
         pressure[:] = simulation_data['pressure_' + str(loop)]
-        coarse_struct = define_coarse_structure(fp, lsds, level=1, update=update_coarse_struct)
+        coarse_struct = define_coarse_structure(fp, lsds, level=1, update=False)
+        OP = utils_old.load_matrix(matrices_path, op_name)
+        OR = get_OR_AMS(fp)
 
     while vpi < max_vpi and loop < max_loop:
         for i in range(loop_intervals):

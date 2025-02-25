@@ -254,3 +254,10 @@ def save_or_load_matrices(path: str, matrix_name: str, to_save: bool, matrix=Non
         return save_matrix(path, matrix_name, matrix)
     elif to_save is False:
         return load_matrix(path, matrix_name)
+
+def remap_values(map_from, map_to, values):
+    vals, inv = np.unique(values, return_inverse=True)
+    vals[np.searchsorted(vals, map_from)] = map_to
+    resp = vals[inv].copy()
+    return resp
+

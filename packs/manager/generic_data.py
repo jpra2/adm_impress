@@ -1,4 +1,6 @@
 from packs.manager.arraydatamanager import SuperArrayManager
+import numpy as np
+from packs.utils.utils_old import remap_values
 
 class SimulationData(SuperArrayManager):
     my_data_names = ['all_loops', 'all_vpi', 'all_cumulative_oil', 'all_cumulative_water', 'pressure_', 'saturation_']
@@ -17,3 +19,20 @@ class PrimalCoarseData(SuperArrayManager):
         'xi_params_backup', 'nodes_weight_select', 'nodes_of_edges', 
         'other_side_flux'
     ]
+
+    def get_local_nodes_weights(self, global_nodes_weight, map_from_nodes, map_to_nodes, map_from_faces, map_to_faces, local_bool_boundary_nodes):
+        nodes_weight = global_nodes_weight
+        test1 = np.isin(nodes_weight['node_id'], map_from_nodes)
+        test2 =  np.isin(nodes_weight['face_id'], map_from_faces)
+        test3 = test1 & test2
+
+        local_nodes_weight = nodes_weight[test3]
+
+        local_nodes_weight['node_id'][:] = remap_values(map_from_nodes, map_to_nodes, local_nodes_weight['node_id'])
+        local_nodes_weight['face_id'][:] = remap_values(map_from_faces, map_to_faces, local_nodes_weight['face_id'])
+
+        test4 = np.isin(local_nodes_weight['node_id'], map_to_nodes[local_bool_boundary_nodes])
+        test4 = ~test4
+        local_nodes_weight = local_nodes_weight[test4]
+        
+        return local_nodes_weight.copy(), test3

@@ -21,7 +21,8 @@ from packs.examples.same_functions import (
     set_permeability_brazil as set_permeability,
     define_coarse_structure,
     update_fine_flux,
-    export_op
+    export_op,
+    get_OR_AMS
 )
 
 from packs.mpfa_methods.flux_calculation.diamond_method import DiamondFluxCalculation, get_xi_params_ds_flux
@@ -358,14 +359,6 @@ def set_fine_transmissibility(save_fine_transmissibility, fine_mesh_properties: 
     
     return resp
 
-def get_OR_AMS(fine_mesh_properties: MeshProperty):
-    ams_prolongation = Unstructured2DAmsOperator()
-    OR_AMS = ams_prolongation.get_finite_volume_restriction_operator(
-        fine_mesh_properties['faces'],
-        fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
-    )
-    return OR_AMS
-
 def get_op( 
         save_op, 
         fine_mesh_properties: MeshProperty, 
@@ -428,12 +421,13 @@ def define_new_fine_levels_v1(
     dual_id = fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
     
     nodes_pressure_presc = bc['dirichlet_nodes']['id']
+    faces_pressure_presc = bc['dirichlet_faces']['id']
     faces_of_nodes_presc = np.unique(
         np.concatenate(faces_of_nodes[nodes_pressure_presc])
     )
     faces_of_nodes_presc = faces_of_nodes_presc[dual_id[faces_of_nodes_presc] == defnames.dual_ids('face_id')]
     
-    boundary_faces = faces_of_nodes_presc
+    boundary_faces = np.unique(np.concatenate([faces_of_nodes_presc, faces_pressure_presc]))
     dual_in_boundary = []
     for dual in dual_volumes:
         if np.any(np.isin(dual, boundary_faces)):
@@ -575,11 +569,11 @@ def run4():
     bool_export_dual_id = False
     my_dual_type = 1
     perm_type = 'channel'
-    update_nodes_weights = False
-    export_permfield = False
-    update_permfield = False
+    update_nodes_weights = True
+    export_permfield = True
+    update_permfield = True
     fine_level_setup = 1
-    update_coarse_struct = False
+    update_coarse_struct = True
     
     level_str = defnames.level_str(1)
     lsds = LsdsFluxCalculation()

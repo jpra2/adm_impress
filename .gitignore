@@ -12,6 +12,7 @@
 *.html
 *.c
 *.cpp
+*.log
 
 # *.msh
 # !cube_unstructured.msh
