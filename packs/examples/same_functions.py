@@ -152,7 +152,8 @@ def update_fine_flux(
         nodes_pressure: np.ndarray,
         global_bc: BoundaryConditions,
         global_nodes_of_edges: np.ndarray,
-        edges_dim: np.ndarray
+        edges_dim: np.ndarray,
+        fine_ids: np.ndarray
     ):
 
     global_dirichlet_nodes = global_bc['dirichlet_nodes']['id']
@@ -168,7 +169,8 @@ def update_fine_flux(
             global_bc,
             global_nodes_of_edges,
             edges_dim,
-            global_dirichlet_nodes
+            global_dirichlet_nodes,
+            fine_ids
         )
 
         edges_flux[edges_update] = local_edges_flux
@@ -183,7 +185,8 @@ def _update_fine_flux_aux(
         global_bc: BoundaryConditions,
         global_nodes_of_edges: np.ndarray,
         edges_dim: np.ndarray,
-        global_dirichlet_nodes: np.ndarray
+        global_dirichlet_nodes: np.ndarray,
+        fine_ids: np.ndarray
 ):
     
     global_edges = cstruct['map_edges']
@@ -192,6 +195,8 @@ def _update_fine_flux_aux(
     local_flux_presc = edges_flux[global_edges].copy()
     local_flux_presc[cstruct['other_side_flux']] *= -1
     local_flux_presc = -1*local_flux_presc[bool_boundary_edges]
+
+    global_dirichlet_faces = np.intersect1d(global_bc['dirichlet_volumes']['id'], cstruct['map_faces'])
 
     # local_flux_presc = edges_flux[global_edges[bool_boundary_edges]]
     neumann_edges = cstruct['edges'][bool_boundary_edges]
@@ -232,18 +237,31 @@ def _update_fine_flux_aux(
     # #############
 
     bc.set_boundary('neumann_edges', neumann_edges[test4], local_flux_presc[test4])
-    bc.set_boundary('neumann_volumes', np.array([]), np.array([]))
+    # bc.set_boundary('neumann_volumes', np.array([]), np.array([]))
     # bc.set_boundary('neumann_edges', np.array([]), np.array([]))
 
     if with_nodes_pressure is True:
         pass
+    elif global_dirichlet_faces.shape[0] > 0:
+        all_values = global_bc['dirichlet_volumes']['value']
+        all_gids =  global_bc['dirichlet_volumes']['id']
+        values = []
+        lids = []
+        for i in global_dirichlet_faces:
+            values.append(all_values[all_gids==i][0])
+            lids.append(cstruct['faces'][cstruct['map_faces']==i][0])
+        values = np.array(values)
+        lids = np.array(lids)
+        bc.set_boundary('dirichlet_volumes', lids, values)
+
     else:
         local_vertice = cstruct['faces'][cstruct['dual_id']==defnames.dual_ids('vertice_id')]
         global_local_vertice = cstruct['map_faces'][cstruct['dual_id']==defnames.dual_ids('vertice_id')]
         bc.set_boundary('dirichlet_volumes', local_vertice, ms_pressure[global_local_vertice])
         # bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
-        bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
-        bc.update_zero_bcs()
+        # bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
+    
+    bc.update_zero_bcs()
 
     # bool_boundary_nodes = cstruct['bool_boundary_nodes']
     # mapbnodes = cstruct['map_nodes'][bool_boundary_nodes]

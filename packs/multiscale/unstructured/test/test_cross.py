@@ -606,14 +606,14 @@ def run4():
     op_toget = 'AMS-U'
     op_name = 'AMS_U_w_0_dual2'
     level_str = defnames.level_str(1)
-    alpha_lim_finescale = 0.5
+    alpha_lim_finescale = 0.1
     beta_lim = 3
     export_adm_levels_file = True
-    bool_export_primal_id = False
-    bool_export_dual_id = False
+    bool_export_primal_id = True
+    bool_export_dual_id = True
     my_dual_type = 1
-    # perm_type = 'channel'
-    perm_type = 'barrier'
+    perm_type = 'channel'
+    # perm_type = 'barrier'
     update_nodes_weights = True
     export_permfield = True
     update_permfield = True
@@ -652,8 +652,6 @@ def run4():
     #     monotone_transm_name
     # )
 
-    monotone_transm = enhanced.get_enhanced_matrix(transm['transmissibility_without_bc'])
-    
     resp = set_fine_transmissibility(
         save_fine_transmissibility,
         fp,
@@ -662,8 +660,9 @@ def run4():
         fine_transmissibility_name
     )
 
+    # monotone_transm = enhanced.get_enhanced_matrix(transm['transmissibility_without_bc'])
+    monotone_transm = enhanced.get_enhanced_matrix(resp['transmissibility'])
     
-
     OR_AMS = get_OR_AMS(fp)
     # OP_AMS = get_op(
     #     save_op,

@@ -141,6 +141,8 @@ def set_boundary_conditions(fine_properties: MeshProperty) -> BoundaryConditions
         'neumann_edges_value': bc['neumann_edges']['value']
     })
 
+    bc.update_zero_bcs()
+
     return bc
 
 def set_weights_nodes(fine_properties: MeshProperty, update=True):
@@ -421,11 +423,15 @@ def define_new_fine_levels_v1(
     dual_id = fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
     
     nodes_pressure_presc = bc['dirichlet_nodes']['id']
-    faces_pressure_presc = bc['dirichlet_faces']['id']
-    faces_of_nodes_presc = np.unique(
-        np.concatenate(faces_of_nodes[nodes_pressure_presc])
-    )
-    faces_of_nodes_presc = faces_of_nodes_presc[dual_id[faces_of_nodes_presc] == defnames.dual_ids('face_id')]
+    faces_pressure_presc = bc['dirichlet_volumes']['id']
+
+    if nodes_pressure_presc.shape[0] > 0:
+        faces_of_nodes_presc = np.unique(
+            np.concatenate(faces_of_nodes[nodes_pressure_presc])
+        )
+        faces_of_nodes_presc = faces_of_nodes_presc[dual_id[faces_of_nodes_presc] == defnames.dual_ids('face_id')]
+    else:
+        faces_of_nodes_presc = np.array([])
     
     boundary_faces = np.unique(np.concatenate([faces_of_nodes_presc, faces_pressure_presc]))
     dual_in_boundary = []
@@ -562,7 +568,7 @@ def run4():
     op_toget = 'AMS-U'
     op_name = 'AMS_U_w_0_dual2'
     level_str = defnames.level_str(1)
-    alpha_lim_finescale = 0.5
+    alpha_lim_finescale = 0.1
     beta_lim = 3
     export_adm_levels_file = True
     bool_export_primal_id = False
@@ -835,6 +841,8 @@ def run4():
         fp['neumann_weights']
     )
 
+    fine_edges_flux = edges_flux.copy()
+
     intersect_flux = edges_flux[intersect_edges]
     bflux = edges_flux[fp.boundary_edges]
 
@@ -854,7 +862,8 @@ def run4():
         nodes_pressure,
         bc,
         fp['nodes_of_edges'],
-        fp.edges_dim
+        fp.edges_dim,
+        finescale_ids
     )
 
     faces_flux = lsds.get_faces_flux(
@@ -862,7 +871,16 @@ def run4():
         fp['adjacencies'],
         fp['bool_boundary_edges']
     )
+
     faces_flux = np.absolute(faces_flux)
+
+    fine_faces_flux = lsds.get_faces_flux(
+        fine_edges_flux,
+        fp['adjacencies'],
+        fp['bool_boundary_edges']
+    )
+
+    faces_flux[finescale_ids] = np.absolute(fine_faces_flux[finescale_ids])
 
     error = np.absolute(pressure - P_prol)
     relative_error = (error/pressure)

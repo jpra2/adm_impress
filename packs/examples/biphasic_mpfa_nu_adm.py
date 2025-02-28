@@ -4,7 +4,7 @@ from packs.biphasic.unstructured.mobility_mesh_elements import direct_edges_mobi
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
 from packs import defpaths, defnames
 from packs.manager import MeshProperty, MeshData, BoundaryConditions, SimulationData
-from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set_fine_transmissibility
+from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set_fine_transmissibility, get_properties
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 from packs.examples.same_functions import (
@@ -16,7 +16,11 @@ from packs.examples.same_functions import (
     update_fine_flux,
     define_fine_ids_from_saturation
 )
+from packs.examples.biphasic_mpfa import initial_funcs
+from packs.examples.diss_test1 import define_new_fine_levels_v1
 
+from packs.multiscale.unstructured.test.test_uns_ams_prolongation import export_adm_levels
+from packs.utils.multiscale_methods import print_adm_interfaces_2d
 
 from packs.multiscale.unstructured.test.test_brazil import create_primal_ids, create_dual_ids, export_primal_ids, export_dual_ids
 from packs.multiscale.unstructured.test.test_brazil import get_OR_AMS
@@ -33,27 +37,28 @@ from typing import Tuple, Sequence
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
+from typing import Sequence
 
-def get_properties():
-    rel_path = os.path.join(
-        defpaths.unstructured_coarse_test_mesh_folder,
-        'brazil'
-    )
-    fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
-    fine_mesh_properties_name = 'brazilf' 
-    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
+# def get_properties():
+#     rel_path = os.path.join(
+#         defpaths.unstructured_coarse_test_mesh_folder,
+#         'brazil'
+#     )
+#     fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
+#     fine_mesh_properties_name = 'brazilf' 
+#     fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
 
-    coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
-    coarse_mesh_properties_name = 'brazilC1'
+#     coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
+#     coarse_mesh_properties_name = 'brazilC1'
 
-    # coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
-    # coarse_mesh_properties_name = 'brazilC2'
+#     # coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
+#     # coarse_mesh_properties_name = 'brazilC2'
 
 
-    fine_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name)
-    coarse_properties = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
+#     fine_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name)
+#     coarse_properties = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
 
-    return fine_properties, coarse_properties, fine_mesh_path, coarse_mesh_path
+#     return fine_properties, coarse_properties, fine_mesh_path, coarse_mesh_path
 
 def set_boundary_conditions(fine_properties: MeshProperty):
     bc = BoundaryConditions()
@@ -183,16 +188,16 @@ def get_op_amsu(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation, O
     OP = update_global_op_from_amsu(interaction_regions, OP)
     return OP
 
-def initial_funcs(
-        fp: MeshProperty,
-        fine_mesh_path: str,
-        type_k: str
-):
-    define_faces_in_losangle(fp)
-    set_permeability(fine_mesh_path, fp, typek=type_k, export_permfield=True, update_permfield=True)
-    set_weights_nodes(fp, update=True)
-    fp.backup_data('xi_params', 'xi_params_backup')
-    fp.export_data()
+# def initial_funcs(
+#         fp: MeshProperty,
+#         fine_mesh_path: str,
+#         type_k: str
+# ):
+#     define_faces_in_losangle(fp)
+#     set_permeability(fine_mesh_path, fp, typek=type_k, export_permfield=True, update_permfield=True)
+#     set_weights_nodes(fp, update=True)
+#     fp.backup_data('xi_params', 'xi_params_backup')
+#     fp.export_data()
 
 
 def initial_loop(
@@ -276,7 +281,7 @@ def initial_loop(
     fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
         OR,
         OP,
-        fine_transm_without_bc['transmissibility_without_bc'],
+        resp['transmissibility'],
         alpha_lim=alpha_lim_finescale
     )
 
@@ -342,6 +347,15 @@ def initial_loop(
         fp['neumann_weights']
     )
 
+    fine_edges_flux = edges_flux.copy()
+    fine_faces_flux = lsds.get_faces_flux(
+        fine_edges_flux,
+        fp['adjacencies'],
+        fp['bool_boundary_edges']
+    )
+
+    fid = bc['dirichlet_volumes']['id']
+
     intersect_flux = edges_flux[intersect_edges]
     bflux = edges_flux[fp.boundary_edges]
 
@@ -359,7 +373,8 @@ def initial_loop(
         nodes_pressure,
         bc,
         fp['nodes_of_edges'],
-        fp.edges_dim
+        fp.edges_dim,
+        finescale_ids
     )
 
     faces_flux = lsds.get_faces_flux(
@@ -367,8 +382,6 @@ def initial_loop(
         fp['adjacencies'],
         fp['bool_boundary_edges']
     )
-
-    
 
     # pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
@@ -413,7 +426,7 @@ def initial_loop(
         biphasic_mobility,
         fw_faces
     )
-
+    
     newS = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation)
     relative_perm._test_saturations(newS)
 
@@ -429,7 +442,7 @@ def initial_loop(
         dt
     )
 
-    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR
+    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels
 
 def while_loop(
         relative_perm: BrooksAndCorey,
@@ -442,7 +455,15 @@ def while_loop(
         vpi: float,
         cumulative_oil: float,
         cumulative_water: float,
-        total_area_reservoir: float
+        total_area_reservoir: float,
+        matrices_path: str,
+        op_name: str,
+        initial_fine_volumes: np.ndarray,
+        alpha_lim_finescale: float,
+        beta_lim: float,
+        OP: sp.csc_matrix,
+        OR: sp.csc_matrix,
+        coarse_struct: Sequence[PrimalCoarseData]
 ):
     
     krw_faces, kro_faces = relative_perm.calculate(saturation)
@@ -461,8 +482,28 @@ def while_loop(
     )
 
     fp.insert_or_update_data({
+        'edges_multiplier': total_mobility_edges
+    })
+
+    fp.insert_or_update_data({
         'xi_params': update_xi_params(fp['xi_params_backup'], total_mobility_edges)
     })
+
+    weights = get_gls_nodes_weights(**fp)
+    fp.insert_or_update_data(weights)
+
+    for coarse_data in coarse_struct:
+        local_nodes_weight, test3 = coarse_data.get_local_nodes_weights(
+            weights['nodes_weights'],
+            coarse_data['map_nodes'],
+            coarse_data['nodes'],
+            coarse_data['map_faces'],
+            coarse_data['faces'],
+            coarse_data['bool_boundary_nodes']
+        )
+        coarse_data.insert_or_update_data({
+            coarse_data.my_data_names[9]: local_nodes_weight
+        })
 
     resp = set_fine_transmissibility_biphasic(
         fp,
@@ -470,11 +511,66 @@ def while_loop(
         lsds
     )
 
-    pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+    fine_levels = np.full(fp['faces'].shape[0], -1)
+    fine_levels[initial_fine_volumes] = 0
+    fine_ids_from_saturation = define_fine_ids_from_saturation(saturation, fp['adjacencies'], fp.internal_edges)
+    fine_levels[fine_ids_from_saturation] = 0
 
-    edges_flux = lsds.get_edges_flux(
+    fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
+        OR,
+        OP,
+        resp['transmissibility'],
+        alpha_lim=alpha_lim_finescale
+    )
+
+    fine_levels[fine_ids_from_alpha] = 0
+
+    beta_groups, beta_ind, betas = nu_adm_funcs.get_beta_groups(
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        sp.find(OP)[0:3],
+        fp['adjacencies'][fp.internal_edges],
+        beta_lim=beta_lim
+    )
+
+    finescale_faces = nu_adm_funcs.get_finescale_vols(
+        fp['faces'][fine_levels==0],
+        fine_ids_from_alpha,
+        beta_ind,
+        beta_groups
+    )
+
+    fine_levels[finescale_faces] = 0
+    fine_levels[fine_levels==-1] = 1
+
+    finescale_ids = fp['faces'][fine_levels==0]
+
+    LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
+        finescale_ids,
+        fine_levels,
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        fp[defnames.get_dual_id_name_by_level(1)]
+    )
+
+    OP_adm, OR_adm = nu_adm_funcs.organize(
+        fine_levels,
+        sp.find(OP)[0:3],
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        LEVEL_ID_1,
+        ADM_COARSE_ID_LEVEL_1,
+        fp[defnames.get_dual_id_name_by_level(1)]
+    )
+
+    T_adm = OR_adm*(resp['transmissibility']*OP_adm)
+    Q_adm = OR_adm*resp['source']
+    P_adm = spsolve(T_adm.tocsc(), Q_adm)
+    P_prol = OP_adm*P_adm
+
+    edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,
-        pressure,
+        P_prol,
         fp['xi_params'],
         fp['nodes_weights'],
         fp['nodes_of_edges'],
@@ -482,11 +578,25 @@ def while_loop(
         fp['neumann_weights']
     )
 
+    update_fine_flux(
+        coarse_struct,
+        edges_flux,
+        P_prol,
+        total_mobility_edges,
+        lsds,
+        nodes_pressure,
+        bc,
+        fp['nodes_of_edges'],
+        fp.edges_dim,
+        finescale_ids
+    )
+
     faces_flux = lsds.get_faces_flux(
         edges_flux,
         fp['adjacencies'],
         fp['bool_boundary_edges']
     )
+
     edges_saturation = edges_flux.copy()
     edges_saturation[:] = biphasic_mobility.update_edges_saturation_foum(
         saturation,
@@ -527,7 +637,7 @@ def while_loop(
         fw_faces,
         saturation,
         porosity,
-        cfl=0.5
+        cfl=0.7
     )
 
     newS = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation)
@@ -543,7 +653,7 @@ def while_loop(
         dt
     )
 
-    return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water
+    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, fine_levels, water_faces_flux, dt
 
 def update_data(
         simulation_data: SimulationData,
@@ -619,12 +729,12 @@ def run():
     matrices_path = 'matrices.h5'
     op_name = 'AMSU'
 
-    update_primal_mesh = False
-    update_dual_mesh = False
+    update_primal_mesh = True
+    update_dual_mesh = True
     update_coarse_struct = True
     my_dual_type = 1
 
-    alpha_lim_finescale = 0.5
+    alpha_lim_finescale = 0.1
     beta_lim = 3.0
     
 
@@ -634,7 +744,7 @@ def run():
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 50
+    loop_intervals = 25
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
@@ -667,13 +777,14 @@ def run():
     mesh_data.create_tag('saturation')
     # # mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
 
-    initial_fine_vols = define_initial_fine_volumes(fp, bc)
+    # initial_fine_vols = define_initial_fine_volumes(fp, bc)
+    initial_fine_vols = define_new_fine_levels_v1(fp, bc)
    
 
     if load is False:
         initial_funcs(fp, fine_mesh_path, type_k)
         # coarse_struct = define_coarse_structure(fp, lsds, level=1, update=update_coarse_struct)
-        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, coarse_struct, OP, OR = initial_loop(
+        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels = initial_loop(
             relative_perm,
             biphasic_mobility,
             saturation,
@@ -704,7 +815,15 @@ def run():
             'pressure_' + str(loop): pressure,
             'saturation_' + str(loop): saturation
         })
+        saturation_plot[:] = saturation
         saturation[:] = newS
+        adm_interfaces_name = 'adm_edges_' + str(loop)
+        print_adm_interfaces_2d(
+            fp,
+            fine_mesh_path,
+            fine_levels,
+            adm_interfaces_name
+        )
     else:
         # import pdb; pdb.set_trace()
         simulation_data.load_data()
@@ -721,7 +840,7 @@ def run():
     while vpi < max_vpi and loop < max_loop:
         for i in range(loop_intervals):
             loop += 1
-            pressure[:], newS[:], vpi, cumulative_oil, cumulative_water = while_loop(
+            pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, fine_levels, water_faces_flux, dt = while_loop(
                 relative_perm,
                 biphasic_mobility,
                 saturation,
@@ -732,8 +851,17 @@ def run():
                 vpi,
                 cumulative_oil,
                 cumulative_water,
-                total_area_reservoir
+                total_area_reservoir,
+                matrices_path,
+                op_name,
+                initial_fine_vols,
+                alpha_lim_finescale,
+                beta_lim,
+                OP,
+                OR,
+                coarse_struct
             )
+            saturation_plot[:] = saturation
             saturation[:] = newS
             
             print()
@@ -742,10 +870,9 @@ def run():
             print(f'Cum oil: {cumulative_oil}')
             print(f'Cum water: {cumulative_water}')
             print(f'Loop: {loop}')
+            print(f'Dt: {dt}')
             print('##########################')
             print()
-        
-        import pdb; pdb.set_trace()
         
         update_data(
             simulation_data,
@@ -756,6 +883,20 @@ def run():
             pressure,
             saturation
         )
+
+        adm_interfaces_name = 'adm_edges_' + str(loop)
+        print_adm_interfaces_2d(
+            fp,
+            fine_mesh_path,
+            fine_levels,
+            adm_interfaces_name
+        )
+
+        mesh_data.insert_tag_data('pressure', pressure, 'faces')
+        mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
+        mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
+        mesh_data.insert_tag_data('saturation', saturation_plot, 'faces')
+        mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
         
         
 

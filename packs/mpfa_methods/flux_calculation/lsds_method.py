@@ -1612,6 +1612,10 @@ class LsdsFluxCalculation:
 
         T = self.get_transmissibility_from_data(lines, cols, data, faces)
         
+        faces_neumann = bc['neumann_volumes']['id']
+        if faces_neumann.shape[0] > 0:
+            values = bc['neumann_volumes']['value']
+            source[faces_neumann] += values
         
         faces_presssure = bc['dirichlet_volumes']['id']
         if faces_presssure.shape[0] > 0:
@@ -1620,11 +1624,6 @@ class LsdsFluxCalculation:
             T[faces_presssure, faces_presssure] = 1
 
             source[faces_presssure] = pressure_presc
-        
-        faces_neumann = bc['neumann_volumes']['id']
-        if faces_neumann.shape[0] > 0:
-            values = bc['neumann_volumes']['value']
-            source[faces_neumann] += values
         
 
         T: sp.csc_matrix = T.tocsc()

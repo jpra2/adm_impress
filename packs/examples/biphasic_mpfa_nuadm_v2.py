@@ -348,6 +348,8 @@ def initial_loop(
         fp['bool_boundary_edges']
     )
 
+    import pdb; pdb.set_trace()
+
     edges_saturation = edges_flux.copy()
 
     edges_saturation[:] = biphasic_mobility.update_edges_saturation_foum(
@@ -502,7 +504,7 @@ def while_loop(
         porosity,
         fp['areas'],
         faces_flux,
-        cfl=0.5
+        cfl=0.9
     )
 
     newS = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation)

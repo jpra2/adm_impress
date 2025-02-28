@@ -4,8 +4,8 @@ from packs.biphasic.unstructured.mobility_mesh_elements import direct_edges_mobi
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
 from packs import defpaths
 from packs.manager import MeshProperty, MeshData, BoundaryConditions, SimulationData
-from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set_fine_transmissibility
-from packs.multiscale.unstructured.test.test_brazil import define_faces_in_losangle, set_permeability
+from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set_fine_transmissibility, set_permeability
+# from packs.multiscale.unstructured.test.test_brazil import define_faces_in_losangle, set_permeability
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 
@@ -16,13 +16,22 @@ from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 
 def get_properties() -> Tuple[MeshProperty, str]:
+    # rel_path = os.path.join(
+    #     defpaths.unstructured_coarse_test_mesh_folder,
+    #     'brazil'
+    # )
+    # fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
+    # fine_mesh_properties_name = 'brazilf' 
+    # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
+
     rel_path = os.path.join(
         defpaths.unstructured_coarse_test_mesh_folder,
-        'brazil'
+        'cross'
     )
-    fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
-    fine_mesh_properties_name = 'brazilf' 
-    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
+
+    fine_mesh_path = os.path.join(rel_path, 'crossf.msh')
+    fine_mesh_properties_name = 'crossf' 
+    fine_mesh_path_v4 = os.path.join(rel_path, 'crossf.msh')
 
     fine_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name)
 
@@ -148,7 +157,7 @@ def initial_funcs(
         fine_mesh_path: str,
         type_k: str
 ):
-    define_faces_in_losangle(fp)
+    # define_faces_in_losangle(fp)
     set_permeability(fine_mesh_path, fp, typek=type_k, export_permfield=True, update_permfield=True)
     set_weights_nodes(fp, update=True)
     fp.backup_data('xi_params', 'xi_params_backup')
@@ -387,7 +396,7 @@ def while_loop(
         dt
     )
 
-    return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux
+    return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux, dt
 
 def update_data(
         simulation_data: SimulationData,
@@ -452,7 +461,7 @@ def plot_graph():
 
 def run():
 
-    type_k = 'barrier'
+    type_k = 'channel'
     dt = 0.00005
     max_vpi = 1.3
     loop = 0
@@ -530,7 +539,7 @@ def run():
     while vpi < max_vpi and loop < max_loop:
         for i in range(loop_intervals):
             loop += 1
-            pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux = while_loop(
+            pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux, dt = while_loop(
                 relative_perm,
                 biphasic_mobility,
                 saturation,
@@ -552,6 +561,7 @@ def run():
             print(f'Cum oil: {cumulative_oil}')
             print(f'Cum water: {cumulative_water}')
             print(f'Loop: {loop}')
+            print(f'Dt: {dt}')
             print('##########################')
             print()
         
