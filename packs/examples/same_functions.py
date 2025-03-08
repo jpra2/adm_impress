@@ -197,6 +197,7 @@ def _update_fine_flux_aux(
     local_flux_presc = -1*local_flux_presc[bool_boundary_edges]
 
     global_dirichlet_faces = np.intersect1d(global_bc['dirichlet_volumes']['id'], cstruct['map_faces'])
+    global_neumman_faces = np.intersect1d(global_bc['neumann_volumes']['id'], cstruct['map_faces'])
 
     # local_flux_presc = edges_flux[global_edges[bool_boundary_edges]]
     neumann_edges = cstruct['edges'][bool_boundary_edges]
@@ -261,6 +262,18 @@ def _update_fine_flux_aux(
         # bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
         # bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
     
+    if global_neumman_faces.shape[0] > 0:
+        all_values = global_bc['neumann_volumes']['value']
+        all_gids =  global_bc['neumann_volumes']['id']
+        values = []
+        lids = []
+        for i in global_neumman_faces:
+            values.append(all_values[all_gids==i][0])
+            lids.append(cstruct['faces'][cstruct['map_faces']==i][0])
+        values = np.array(values)
+        lids = np.array(lids)
+        bc.set_boundary('neumann_volumes', lids, values)
+
     bc.update_zero_bcs()
 
     # bool_boundary_nodes = cstruct['bool_boundary_nodes']

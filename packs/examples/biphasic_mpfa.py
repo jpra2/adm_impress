@@ -37,6 +37,49 @@ def get_properties() -> Tuple[MeshProperty, str]:
 
     return fine_properties, fine_mesh_path
 
+# def set_boundary_conditions(fine_properties: MeshProperty):
+#     bc = BoundaryConditions()
+
+#     nodes_centroids = fine_properties['nodes_centroids']
+#     faces = fine_properties['faces']
+#     faces_centroids = fine_properties['faces_centroids']
+
+#     xmin, ymin = nodes_centroids.min(axis=0)
+#     xmax, ymax = nodes_centroids.max(axis=0)
+
+#     c_p1 = np.array([xmin, ymax])
+#     c_p0 = np.array([xmax, ymin])
+
+#     dists = np.linalg.norm(faces_centroids - c_p1, axis=1)
+#     face_p1 = faces[dists <= dists.min()][0]
+#     dists[:] = np.linalg.norm(faces_centroids - c_p0, axis=1)
+#     face_p0 = faces[dists <= dists.min()][0]
+#     faces_pressure = np.array([face_p1, face_p0])
+#     pressure_presc = np.array([1.0, 0.0])
+
+#     bc.set_boundary('dirichlet_volumes', faces_pressure, pressure_presc)
+#     bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
+
+#     walls_edges = fine_properties['edges'][fine_properties['bool_boundary_edges']]
+
+#     edges_values = np.repeat(0.0, walls_edges.shape[0])
+#     bc.set_boundary('neumann_edges', walls_edges, edges_values)
+
+#     fine_properties.insert_or_update_data({
+#         'neumann_edges': bc['neumann_edges']['id'],
+#         'neumann_edges_value': bc['neumann_edges']['value']
+#     })
+
+#     bc.set_boundary('water_saturation_volumes', np.array([face_p1]), np.array([1.0]))
+#     bc.set_boundary('water_saturation_edges', np.array([]), np.array([]))
+
+#     bc.set_boundary('injectors', np.array([face_p1]), np.array([True]))
+#     bc.set_boundary('producers', np.array([face_p0]), np.array([True]))
+
+#     bc.update_zero_bcs()
+
+#     return bc
+
 def set_boundary_conditions(fine_properties: MeshProperty):
     bc = BoundaryConditions()
 
@@ -54,11 +97,16 @@ def set_boundary_conditions(fine_properties: MeshProperty):
     face_p1 = faces[dists <= dists.min()][0]
     dists[:] = np.linalg.norm(faces_centroids - c_p0, axis=1)
     face_p0 = faces[dists <= dists.min()][0]
-    faces_pressure = np.array([face_p1, face_p0])
-    pressure_presc = np.array([1.0, 0.0])
+    
+    faces_pressure = np.array([face_p0])
+    pressure_presc = np.array([0.0])
+
+    faces_neumann = np.array([face_p1])
+    neummann_presc_faces = np.array([1.0])
 
     bc.set_boundary('dirichlet_volumes', faces_pressure, pressure_presc)
-    bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
+
+    bc.set_boundary('neumann_volumes', faces_neumann, neummann_presc_faces)
 
     walls_edges = fine_properties['edges'][fine_properties['bool_boundary_edges']]
 

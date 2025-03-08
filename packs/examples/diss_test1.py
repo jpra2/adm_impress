@@ -424,6 +424,9 @@ def define_new_fine_levels_v1(
     
     nodes_pressure_presc = bc['dirichlet_nodes']['id']
     faces_pressure_presc = bc['dirichlet_volumes']['id']
+    faces_neumann_presc = bc['neumann_volumes']['id']
+
+    faces_pressure_presc = np.union1d(faces_pressure_presc, faces_neumann_presc)
 
     if nodes_pressure_presc.shape[0] > 0:
         faces_of_nodes_presc = np.unique(
