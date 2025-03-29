@@ -37,5 +37,17 @@ def run_results():
             os.remove(path)
             print(f'{path} deleted \n')
             
+def delete_dual_infos():
+    my_path = defpaths.results
+    files: List[str] = os.listdir(my_path)
+    dual_str = 'dual'
 
-                 
+    for file in files:
+        if dual_str in file:
+            path = os.path.join(my_path, file)
+            shutil.rmtree(path)
+
+def run_delete_all():
+    run_flying()
+    run_results()
+    delete_dual_infos()

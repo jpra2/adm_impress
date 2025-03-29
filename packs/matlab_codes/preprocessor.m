@@ -29,6 +29,8 @@ function [coord,centelem,elem,esurn1,esurn2,nsurn1,nsurn2,bedge,inedge,...
     satlimit,pormap,bcflag,courant,totaltime,keypath2,foldername,kmap,...
     wells] = preprocessor 
 
+global respp;
+
 %--------------------------------------------------------------------------
 %It reads the data file (from "Start.dat")
 
@@ -61,9 +63,9 @@ if strcmp(keyfile,'y')
     foldername = '';
 
     %Verify if the folder already exists.
-    if exist(sprintf('%s\\Results',char(keypath2)),'dir') == 0
+    if exist(sprintf('%s/Results',char(keypath2)),'dir') == 0
         %Create a folder to put Results
-        command = sprintf('md %s\\Results',char(keypath2));
+        command = sprintf('mkdir %s/Results',char(keypath2));
         %It calls system
         system(command);
     end  %End of IF
@@ -766,7 +768,7 @@ end  %End of IF
 %generated
 
 %Building the "command" to be used in the dos's prompt
-command = sprintf('copy Start.dat %s\\%s',char(keypath2),foldername);
+command = sprintf('copy Start.dat %s/%s',char(keypath2),foldername);
 %Transfer "Start.dat" using the dos's command "copy"
 system(command);
 
@@ -799,6 +801,24 @@ disp('"coord" was generated!');
 [elem,nbe,nelem,nodelim,intnode,flaglim] = getelem(filepath,nnode,numwell,...
     well);
 
+vec_elem_show = false(nelem,1);
+
+for ielem = 1:nelem
+    v1 = elem(ielem,1:4);
+    v2 = v1 == 0;
+    v3 = sum(v2);
+    if v3 > 0
+        vec_elem_show(ielem,1) = 1;
+    end
+
+end
+
+respp.vec_elem_show = vec_elem_show;
+% save('results/resp.mat', '-struct', 'respp');
+
+% [elem,nbe,nelem,nodelim,intnode,flaglim,inboundedge,meshtype,elemloc,npar,coarseelem ,ghostelem] = getelemfull(filepath,nnode,numwell,...
+%     well);
+
 %Gives the information of "elem" generated
 disp('"elem" was generated!');
 %   x1=elem(:,1);
@@ -827,8 +847,13 @@ disp('"elemarea" was generated!');
 %--------------------------------------------------------------------------
 %"bedge" and "inedge" - It get inform. about boundary and internal edges
 
+verifymshfile = filepath;
+
 [bedge,inedge] = getinfoedge(coord,elem,nnode,nbe,nelem,nodelim,intnode,...
-    flaglim,filepath);
+   flaglim,filepath);
+
+% [bedge,inedge,klb] = getinfoedgefull(coord,elem,nnode,nbe,nelem,nodelim,...
+%     intnode,flaglim,verifymshfile,bcflag,meshtype);
 
 %Gives the information of "bedge" and "inedge" generated
 disp('"bedge" was generated!');

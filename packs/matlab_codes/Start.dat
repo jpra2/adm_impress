@@ -19,21 +19,21 @@ y
 //If [y] write, immediately below, only the name of mesh file with 
 //extension *.msh:
 
-str_trimesh_16x16.msh
+crossf.msh
 
 //OBS.: This file must be puted into folder together with *.m files 
 //or in a folder whose path will be declared immediately below:
 //IMPORTANT: if the file is puted into folder which contain the *.m
 //files, write in the statment below "no path".
 
-C:\Users\flc59\Documents\GitHub\codes_singlephase_2022
+/home/jp/Documentos/espelho/adm_impress/packs/matlab_codes
 
 //If [n] write, immediately below, the path which conduct to  
 //folder where the *.m files is:
 //IMPORTANT: gmsh.exe must be puted in this folder together with
 //the *.m files. Otherwise it does not work.
 
-C:\Users\flc59\Documents\GitHub\codes_singlephase_2022
+/home/jp/Documentos/espelho/adm_impress/packs/matlab_codes
 
 //write the name of BASE geometry file WITHOUT extension *.geo.
 //This file can serve to several simulations. Each one may have 
@@ -129,7 +129,7 @@ n
 //or unstructured mesh
 //[0] ==> "Triangles"; [1] ==> "Quadrangles"; [2] ==> "Both"
 
-0
+1
 
 //OBS.: 
 //The option "Both" does not work when the mesh is structured. 

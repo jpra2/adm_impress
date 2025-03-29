@@ -15,11 +15,21 @@ from packs.fim_nu_adm.packs.processor import nu_adm_funcs
 from packs.utils.multiscale_methods import print_adm_interfaces_2d
 from packs.multiscale.unstructured.test.test_uns_ams_prolongation import export_adm_levels
 from packs.utils.multiscale_methods import print_fine_interfaces_coarse_mesh_2d
+from packs.mpfa_methods.weight_interpolation.lpew import get_lpew2_weights
+
+from packs.examples.same_functions import (
+    define_faces_in_losangle, 
+    set_permeability_brazil as set_permeability,
+    define_coarse_structure,
+    update_fine_flux
+)
 
 from packs.multiscale.unstructured.operators.precond.algorithimic_monotone import AlgorithimicMonotone
 from packs.multiscale.unstructured.operators.precond.enhanced import Enhanced
 from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_flux, DiamondFluxCalculation
 from packs.multiscale.unstructured.operators.prolongation.msrsb_klevtsov import MsRSB
+
+from packs.multiscale.unstructured.test.test_brazil import write_results, exists_simulation, f_linf_percent
 
 import os
 from shapely import geometry
@@ -28,6 +38,7 @@ import numpy as np
 from scipy.sparse.linalg import spsolve, gmres, cg, bicgstab, spilu, LinearOperator
 import scipy.sparse as sp
 import pandas as pd
+import scipy.io as sio
 
 def get_perm_diag(value):
     return np.array([[value, 0], [0, value]])
@@ -139,6 +150,57 @@ def set_boundary_conditions(fine_properties: MeshProperty) -> BoundaryConditions
         'neumann_edges': bc['neumann_edges']['id'],
         'neumann_edges_value': bc['neumann_edges']['value']
     })
+    
+    bc.update_zero_bcs()
+
+    return bc
+
+def set_boundary_conditions_2(fine_properties: MeshProperty):
+    bc = BoundaryConditions()
+
+    nodes_centroids = fine_properties['nodes_centroids']
+    faces = fine_properties['faces']
+    faces_centroids = fine_properties['faces_centroids']
+
+    xmin, ymin = nodes_centroids.min(axis=0)
+    xmax, ymax = nodes_centroids.max(axis=0)
+
+    c_p1 = np.array([xmin, ymin])
+    c_p0 = np.array([xmax, ymax])
+
+    dists = np.linalg.norm(faces_centroids - c_p1, axis=1)
+    face_p1 = faces[dists <= dists.min()][0]
+    dists[:] = np.linalg.norm(faces_centroids - c_p0, axis=1)
+    face_p0 = faces[dists <= dists.min()][0]
+    
+    faces_pressure = np.array([face_p0])
+    pressure_presc = np.array([1.0])
+
+    faces_neumann = np.array([face_p1])
+    area_face_p1 = fine_properties['areas'][face_p1]
+    neummann_presc_faces = np.array([1.0])
+
+    bc.set_boundary('dirichlet_volumes', faces_pressure, pressure_presc)
+
+    bc.set_boundary('neumann_volumes', faces_neumann, neummann_presc_faces)
+
+    walls_edges = fine_properties['edges'][fine_properties['bool_boundary_edges']]
+
+    edges_values = np.repeat(0.0, walls_edges.shape[0])
+    bc.set_boundary('neumann_edges', walls_edges, edges_values)
+
+    fine_properties.insert_or_update_data({
+        'neumann_edges': bc['neumann_edges']['id'],
+        'neumann_edges_value': bc['neumann_edges']['value']
+    })
+
+    bc.set_boundary('water_saturation_volumes', np.array([face_p1]), np.array([1.0]))
+    bc.set_boundary('water_saturation_edges', np.array([]), np.array([]))
+
+    bc.set_boundary('injectors', np.array([face_p1]), np.array([True]))
+    bc.set_boundary('producers', np.array([face_p0]), np.array([True]))
+
+    bc.update_zero_bcs()
 
     return bc
 
@@ -495,10 +557,12 @@ def define_new_fine_levels_v4(
     primal_id = fine_mesh_properties['primal_id_level1']
     faces_pressure = bc['dirichlet_volumes']['id']
 
+    faces_neumann = bc['neumann_volumes']['id']
+
     dual_volumes = fine_mesh_properties['dual_volumes_level1']
     
     
-    boundary_faces = faces_pressure
+    boundary_faces = np.concatenate([faces_pressure, faces_neumann])
     dual_in_boundary = []
     for dual in dual_volumes:
         if np.any(np.isin(dual, boundary_faces)):
@@ -508,84 +572,7 @@ def define_new_fine_levels_v4(
     return dual_in_boundary
 
 
-def write_results(
-        l2_error, 
-        l2_relative_error, 
-        max_abs_error, 
-        max_abs_relative_error,
-        dual_type,
-        fine_mesh_name,
-        coarse_mesh_name,
-        number_fine_vols,
-        number_coarse_vols,
-        perm_type,
-        fine_levels_setup,
-    ):
 
-    new_data = np.array([
-        l2_error,
-        l2_relative_error,
-        max_abs_error,
-        max_abs_relative_error,
-        dual_type,
-        fine_mesh_name,
-        coarse_mesh_name,
-        number_fine_vols,
-        number_coarse_vols,
-        perm_type
-    ], dtype='O')
-
-    file_path = os.path.join(defpaths.flying, 'sim_results.csv')
-
-    data_types = [np.float64, np.float64, np.float64, np.float64, np.int, 'O', 'O', np.int, np.int, 'O', np.int]
-
-    header = np.array([
-            'l2_error',
-            'l2_relative_error',
-            'max_abs_error',
-            'max_abs_relative_error',
-            'dual_type',
-            'fine_mesh_name',
-            'coarse_mesh_name',
-            'number_fine_vols',
-            'number_coarse_vols',
-            'perm_type',
-            'fine_levels_setup'
-        ], dtype='<U30')
-
-    if os.path.exists(file_path):
-        pass
-    else:
-        first_line = np.array([np.array([0.0], dtype=t) for t in data_types], dtype='O').T
-        df = pd.DataFrame(first_line, columns=header)
-        for i in range(header.shape[0]):
-            df[header[i]] = df[header[i]].astype(data_types[i])
-        df.to_csv(file_path, index=False)
-    
-    my_types = dict()
-    for i in range(header.shape[0]):
-        my_types.update({header[i]: data_types[i]})
-        
-    df = pd.read_csv(file_path, dtype=my_types)
-
-    new_df = {
-        'l2_error': l2_error,
-        'l2_relative_error': l2_relative_error,
-        'max_abs_error': max_abs_error,
-        'max_abs_relative_error': max_abs_relative_error,
-        'dual_type': dual_type,
-        'fine_mesh_name': fine_mesh_name,
-        'coarse_mesh_name': coarse_mesh_name,
-        'number_fine_vols': number_fine_vols,
-        'number_coarse_vols': number_coarse_vols,
-        'perm_type': perm_type,
-        'fine_levels_setup': fine_levels_setup
-    }
-    df.loc[len(df)] = new_df
-    df.reset_index(drop=True, inplace=True)
-    subset_to_drop = header[4:]
-    df.drop_duplicates(subset=subset_to_drop, inplace=True)
-    df.to_csv(file_path, index=False)
 
     
 
@@ -618,7 +605,10 @@ def run4():
     export_permfield = True
     update_permfield = True
     fine_level_setup = 4
-    etol = 0.0001
+    etol = -1
+    update_coarse_struct = True
+    run_simulation_repeated = True
+    check_write_results = False
 
     lsds = LsdsFluxCalculation()
     algo_monotone = AlgorithimicMonotone()
@@ -626,6 +616,19 @@ def run4():
 
 
     fp, cp, fine_mesh_path, coarse_mesh_path = get_properties()
+
+    exists_simulation(
+        etol=etol,
+        alpha_lim=alpha_lim_finescale,
+        beta_lim=beta_lim,
+        finescale_name=fp['mesh_name'][0],
+        coarse_scale_name=cp['mesh_name'][0],
+        permtype=perm_type,
+        dual_type=my_dual_type,
+        fine_levels_setup=fine_level_setup,
+        run_simulation=run_simulation_repeated
+    )
+
     mesh_data = MeshData(mesh_path=coarse_mesh_path)
     mesh_data.export_all_elements_type_to_vtk('background_coarse_mesh', 'faces')
     set_permeability(fine_mesh_path, fp, typek=perm_type, export_permfield=export_permfield, update_permfield=update_permfield)
@@ -636,21 +639,68 @@ def run4():
     export_dual_ids(fine_mesh_path, fp, export=bool_export_dual_id)
 
     # set_permeability(fp, typek=perm_type, export_permfield=export_permfield)
-    bc = set_boundary_conditions(fp)
+    bc = set_boundary_conditions_2(fp)
     set_weights_nodes(fp, update=update_nodes_weights)
+    # fp.backup_data('nodes_weights', 'nodes_weights_gls')
+
+
+    coarse_struct = define_coarse_structure(fp, lsds, level=1, update=update_coarse_struct)
+    intersect_edges = []
+    for cs in coarse_struct:
+        int_edges = cs['map_edges'][cs['bool_boundary_edges']]
+        intersect_edges.append(int_edges)
+
+    
+    intersect_edges = np.unique(np.concatenate(intersect_edges))
+    intersect_edges = np.intersect1d(intersect_edges, fp.internal_edges)
+
+    cadj_fine = fp[defnames.get_primal_id_name_by_level(1)][fp['adjacencies']]
+    cadj_fine[fp['adjacencies'] == -1] = -1
+
+    cadj_intersect = cadj_fine[intersect_edges]
+
+    # get_xi_params_ds_flux(fp, update=True)
+
+    # fp.insert_or_update_data({
+    #     'xi_params': fp['xi_params_ds']
+    # })
+
+    # get_lpew2_weights(fp, update=True)
+
+    # w_lpew2 = fp['nodes_weights']
+    # w_gls = fp['nodes_weights_gls']
+
+    # for node in fp['nodes']:
+    #     t1 = w_lpew2['node_id'] == node
+    #     t2 = w_gls['node_id'] == node
+
+    #     w1 = w_lpew2[t1]
+    #     w2 = w_gls[t2]
+
+    #     print('Peso LPEW2:')
+    #     print(w1)
+    #     print()
+    #     print('Peso GLS:')
+    #     print(w2)
+    #     print()
+    #     import pdb; pdb.set_trace()
+
+        
+
+
     transm = set_fine_transmissibility_without_bc(
         save_fine_transm_without_bc,
         matrix_path,
         fp,
         fine_transm_without_bc_name
     )
-    # monotone_transm = set_monotone_transm(
-    #     save_monotone_transm,
-    #     transm,
-    #     w,
-    #     matrix_path,
-    #     monotone_transm_name
-    # )
+    monotone_transm = set_monotone_transm(
+        save_monotone_transm,
+        transm,
+        w,
+        matrix_path,
+        monotone_transm_name
+    )
 
     resp = set_fine_transmissibility(
         save_fine_transmissibility,
@@ -661,38 +711,38 @@ def run4():
     )
 
     # monotone_transm = enhanced.get_enhanced_matrix(transm['transmissibility_without_bc'])
-    monotone_transm = enhanced.get_enhanced_matrix(resp['transmissibility'])
+    # monotone_transm = enhanced.get_enhanced_matrix(resp['transmissibility'])
     
     OR_AMS = get_OR_AMS(fp)
-    # OP_AMS = get_op(
-    #     save_op,
-    #     fp,
-    #     cp,
-    #     op_name,
-    #     matrix_path,
-    #     op_toget,
-    #     monotone_transm,
-    #     resp,
-    #     level_str
-    # )
+    OP_AMS = get_op(
+        save_op,
+        fp,
+        cp,
+        op_name,
+        matrix_path,
+        op_toget,
+        monotone_transm,
+        resp,
+        level_str
+    )
 
     fine_mesh_properties = fp
 
-    msrsb = MsRSB()
-    OP_AMS = msrsb.get_OP(
-                faces=fine_mesh_properties['faces'],
-                T=monotone_transm.tocsc(),
-                diagonal_term=np.zeros(resp['source'].shape[0]),
-                interation_regions=fine_mesh_properties[defnames.get_dual_interation_region_name_by_level(1)],
-                interation_boundaries=fine_mesh_properties[defnames.boundary_dual_interaction + level_str],
-                vertices=fine_mesh_properties[defnames.vertices_selected + level_str],
-                dual_edges=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('edge_id')],
-                dual_faces=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('face_id')],
-                coarse_ids=fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
-                OR_fv=OR_AMS,
-                etol=etol,
-                maxit=1000                
-            )
+    # msrsb = MsRSB()
+    # OP_AMS = msrsb.get_OP(
+    #             faces=fine_mesh_properties['faces'],
+    #             T=monotone_transm.tocsc(),
+    #             diagonal_term=np.zeros(resp['source'].shape[0]),
+    #             interation_regions=fine_mesh_properties[defnames.get_dual_interation_region_name_by_level(1)],
+    #             interation_boundaries=fine_mesh_properties[defnames.boundary_dual_interaction + level_str],
+    #             vertices=fine_mesh_properties[defnames.vertices_selected + level_str],
+    #             dual_edges=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('edge_id')],
+    #             dual_faces=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('face_id')],
+    #             coarse_ids=fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
+    #             OR_fv=OR_AMS,
+    #             etol=etol,
+    #             maxit=1000                
+    #         )
     
     ########################################
     # from packs.multiscale.unstructured.operators.prolongation.amsu import AmsU
@@ -748,6 +798,37 @@ def run4():
         raise ValueError
         
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+
+    fedges_flux, fnodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
+        bc,
+        pressure,
+        fp['xi_params'],
+        fp['nodes_weights'],
+        fp['nodes_of_edges'],
+        fp['adjacencies'],
+        fp['neumann_weights']
+    )
+    v1 = np.concatenate([
+        fedges_flux[fp.internal_edges], 
+        -fedges_flux[fp.internal_edges],
+        fedges_flux[fp.boundary_edges]
+    ])
+    v2 = np.concatenate([
+        fp['adjacencies'][fp.internal_edges, 0], 
+        fp['adjacencies'][fp.internal_edges, 1], 
+        fp['adjacencies'][fp.boundary_edges, 0]
+    ])
+    fine_faces_flux = np.bincount(v2, weights=v1)
+    # fine_faces_flux = np.absolute(fine_faces_flux)
+
+    all_flux = fine_faces_flux*fp['areas']
+    all_flux_mod = np.absolute(all_flux)
+    test = all_flux_mod > 1e-10
+    # print(all_flux[test])
+    # print(fp['areas'].sum())
+    # import pdb; pdb.set_trace()
+    
+    
     fine_levels = np.full(len(fp['faces']), -1)
     if dual_in_boundary.shape[0] > 0:
         fine_levels[dual_in_boundary] = 0
@@ -834,6 +915,48 @@ def run4():
     P_adm = spsolve(T_adm.tocsc(), Q_adm)
     P_prol = OP_adm*P_adm
 
+    selected_pressure = P_prol
+
+    edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
+        bc,
+        selected_pressure,
+        fp['xi_params'],
+        fp['nodes_weights'],
+        fp['nodes_of_edges'],
+        fp['adjacencies'],
+        fp['neumann_weights']
+    )
+
+    intersect_flux = edges_flux[intersect_edges]
+    bflux = edges_flux[fp.boundary_edges]
+
+    v1 = np.concatenate([intersect_flux, -intersect_flux, bflux])
+    v2 = np.concatenate([cadj_intersect[:, 0], cadj_intersect[:, 1], cadj_fine[fp.boundary_edges, 0]])
+    coarse_face_flux = np.bincount(v2, weights=v1)
+    cff = coarse_face_flux
+
+    total_mobility_edges = np.repeat(1.0, fp['edges'].shape[0])
+
+    update_fine_flux(
+        coarse_struct,
+        edges_flux,
+        selected_pressure,
+        total_mobility_edges,
+        lsds,
+        nodes_pressure,
+        bc,
+        fp['nodes_of_edges'],
+        fp.edges_dim,
+        finescale_ids
+    )
+
+    faces_flux = lsds.get_faces_flux(
+        edges_flux,
+        fp['adjacencies'],
+        fp['bool_boundary_edges']
+    )
+    faces_flux = np.absolute(faces_flux)
+
     error = np.absolute(pressure - P_prol)
     linf_error = error.max()
     test = pressure == 0
@@ -842,12 +965,25 @@ def run4():
     relative_error[ttest] = (error[ttest]/pressure[ttest])
     l2_norm_error = np.linalg.norm(error)
     l2_norm_relative_error = np.linalg.norm(relative_error)
+    linf_error_percent = f_linf_percent(pressure, P_prol)
+
+    error2 = error*error
+    pressure2 = pressure*pressure
+    err2 = np.sqrt(error2.sum()/pressure2.sum())
+
+    n_faces_f = fp.faces.shape[0]
+    n_faces_nuadm = T_adm.shape[0]
+    percent_nuadm_vols = (n_faces_nuadm/n_faces_f)*100
+    n_faces_coarse = cp.faces.shape[0]
 
     print('######################')
     print(f'Linf: {linf_error}')
     print(f'L2 error: {l2_norm_error}')
-    print(f'Number of fine vols: {fp.faces.shape[0]}')
-    print(f'Number of NU-ADM vols: {T_adm.shape[0]}')
+    print(f'Number of fine vols: {n_faces_f}')
+    print(f'Number of NU-ADM vols: {n_faces_nuadm}')
+    print(f'Percent NU-ADM vols: {percent_nuadm_vols}')
+    print(f'Error 2: {err2}')
+    print(f'linf_relative_error_percent: {linf_error_percent}')
     print('######################')
     
     mesh_data = MeshData(mesh_path=fine_mesh_path)
@@ -863,10 +999,71 @@ def run4():
     mesh_data.create_tag('relative_error')
     mesh_data.insert_tag_data('relative_error', relative_error, elements_type='faces')
 
+    mesh_data.create_tag('faces_flux')
+    mesh_data.insert_tag_data('faces_flux', faces_flux, elements_type='faces')
+
+    mesh_data.create_tag('fine_faces_flux')
+    mesh_data.insert_tag_data('fine_faces_flux', fine_faces_flux, elements_type='faces')
+
+    path_matlab_vec = os.path.join('packs', 'matlab_codes', 'results', 'resp.mat')
+    mesh_data.create_tag('show_volumes')
+    vec_to_show = np.zeros(fp['faces'].shape[0])
+    vec_loaded = sio.loadmat(path_matlab_vec)
+    to_show = vec_loaded['vec_elem_show'].flatten()
+    testt = to_show == 1
+    vec_to_show[testt] = 1
+    mesh_data.insert_tag_data('show_volumes', vec_to_show, elements_type='faces')
+
+    perror2 = np.zeros(pressure.shape[0])
+    for cstruct in coarse_struct:
+        local_faces = cstruct['map_faces']
+        local_pressure = cstruct['local_pressure']
+        perror2[local_faces] = local_pressure
+
+    mesh_data.create_tag('local_pressure')
+    mesh_data.insert_tag_data('local_pressure', perror2, elements_type='faces')
+
+    mesh_data.create_tag('local_pressure_error')
+    mesh_data.insert_tag_data('local_pressure_error', np.absolute(perror2 - pressure), elements_type='faces')
+
+
+    mesh_data.create_tag('coarse_face_flux')
+    cf2 = np.zeros(fp['faces'].shape[0])
+    primal_id = fp[defnames.get_primal_id_name_by_level(1)]
+    for cid in cp['faces']:
+        cf2[primal_id == cid] = cff[cid]
+    
+    cf2 = np.absolute(cf2)
+
+    mesh_data.insert_tag_data('coarse_face_flux', cf2, elements_type='faces')
+
     export_adm_name = 'adm_solution_w_' + str(w) + '_' + op_toget + "_NU-ADM"
   
     mesh_data.export_all_elements_type_to_vtk(export_adm_name, element_type='faces')
-    
+
+    if check_write_results is True:
+        write_results(
+            l2_error=l2_norm_error,
+            l2_relative_error=l2_norm_relative_error,
+            max_abs_error=error.max(),
+            max_abs_relative_error=relative_error.max(),
+            dual_type=my_dual_type,
+            fine_mesh_name=fp['mesh_name'][0],
+            coarse_mesh_name=cp['mesh_name'][0],
+            number_fine_vols=fp['faces'].shape[0],
+            number_coarse_vols=cp['faces'].shape[0],
+            perm_type=perm_type,
+            fine_levels_setup=fine_level_setup,
+            error2=err2,
+            alpha_lim=alpha_lim_finescale,
+            beta_lim=beta_lim,
+            etol=etol,
+            percent_nuadm_vols=percent_nuadm_vols,
+            linf_percent=linf_error_percent
+        )
+
+    import pdb; pdb.set_trace()
+
     # write_results(
     #     l2_error=l2_norm_error,
     #     l2_relative_error=l2_norm_relative_error,

@@ -9,6 +9,8 @@
 # from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import test_weights
 # test_weights()
 
+from packs.examples.remove_data import run_delete_all
+
 # from packs.mpfa_methods.flux_calculation.test.test_flux_lsds_method import test_lsds_flux
 # test_lsds_flux()
 
@@ -68,11 +70,13 @@
 # from packs.mpfa_methods.weight_interpolation.test.test_gls_edges_weights import run
 # run()
 
+# # run_delete_all()
 # from packs.multiscale.unstructured.test.test_brazil import run4
 # run4()
 
-# from packs.multiscale.unstructured.test.test_cross import run4
-# run4()
+# run_delete_all()
+from packs.multiscale.unstructured.test.test_cross import run4
+run4()
 
 # from packs.tests.test_initial_preprocess import run
 # run()
@@ -85,8 +89,8 @@
 # from packs.examples.biphasic_mpfa import run
 # run()
 
-from packs.examples.biphasic_mpfa_nu_adm import run
-run()
+# from packs.examples.biphasic_mpfa_nu_adm import run
+# run()
 # plot_graph()
 
 # from packs.examples.monophasic_unstructured_linear import run4
