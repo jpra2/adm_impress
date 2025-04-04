@@ -178,7 +178,13 @@ def set_boundary_conditions_2(fine_properties: MeshProperty):
 
     faces_neumann = np.array([face_p1])
     area_face_p1 = fine_properties['areas'][face_p1]
-    neummann_presc_faces = np.array([1.0])
+    neummann_presc_faces = np.array([2.0])
+
+    # areas = fine_properties['areas']
+    # edges_dim = fine_properties.edges_dim
+    # area_face_p1 = areas[face_p1]
+
+    # import pdb; pdb.set_trace()
 
     bc.set_boundary('dirichlet_volumes', faces_pressure, pressure_presc)
 

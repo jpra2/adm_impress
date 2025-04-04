@@ -128,6 +128,7 @@ class MeshProperty:
         
         a = [test_array_instance(_) for _ in values]
         a = [test_str_instance(_) for _ in names]
+
         
         names_series = pd.DataFrame({
             'names': names
@@ -210,7 +211,7 @@ class MeshProperty:
         
         self.insert_data({name: datas[name] for name in names_out})
         self.update_data({name: datas[name] for name in names_in})
-        
+
     def remove_data(self, data_name: list):
         for name in data_name:
             if self.verify_name_in_data_names(name):
@@ -320,6 +321,15 @@ class MeshProperty:
         return np.setdiff1d(self.edges, self.boundary_edges, assume_unique=True)
     
     @property
+    def boundary_nodes(self):
+        return self.nodes[self.bool_boundary_nodes]
+    
+    @property
+    def internal_nodes(self):
+        return np.setdiff1d(self.nodes, self.boundary_nodes, assume_unique=True)
+
+
+    @property
     def faces_of_faces(self):
         try:
             return self['faces_of_faces']
@@ -357,6 +367,59 @@ class MeshProperty:
             self.insert_data({'faces_of_faces_by_nodes': faces_of_faces_by_nodes})
             self.export_data()
             return faces_of_faces_by_nodes
+    
+    def get_nodes_org_from_faces_of_nodes_object(self):
+        n_faces_of_nodes = self['n_faces_of_nodes']
+
+        all_nodes_org = []
+        faces_of_nodes_org = []
+        n_nodes = np.arange(1, n_faces_of_nodes.max()+1)
+
+        for i in n_nodes:
+            test = n_faces_of_nodes == i
+            v4 = self.nodes[test]
+            all_nodes_org.append(v4)
+        
+            ft = self['faces_of_nodes'][v4].copy()
+            ft2 = np.concatenate(ft)
+            ft3 = ft2.reshape((ft.shape[0], i))
+            faces_of_nodes_org.append(ft3)
+        
+        all_nodes_org = np.array(all_nodes_org, dtype='O')
+        faces_of_nodes_org = np.array(faces_of_nodes_org, dtype='O')
+
+        return all_nodes_org, faces_of_nodes_org, n_nodes
+
+    def get_internal_nodes_org_from_faces_of_nodes_object(self):
+        n_faces_of_nodes = self['n_faces_of_nodes']
+        internal_nodes = self.internal_nodes
+
+        all_nodes_org = []
+        faces_of_nodes_org = []
+        n_nodes = np.arange(2, n_faces_of_nodes.max()+1)
+        new_n_nodes = []
+
+        for i in n_nodes:
+            test = n_faces_of_nodes == i
+            v4 = self.nodes[test]
+            v4 = np.intersect1d(v4, internal_nodes)
+            if v4.shape[0] == 0:
+                continue
+            all_nodes_org.append(v4)
+        
+            ft = self['faces_of_nodes'][v4].copy()
+            ft2 = np.concatenate(ft)
+            ft3 = ft2.reshape((ft.shape[0], i))
+            faces_of_nodes_org.append(ft3)
+            new_n_nodes.append(i)
+        
+        all_nodes_org = np.array(all_nodes_org, dtype='O')
+        faces_of_nodes_org = np.array(faces_of_nodes_org, dtype='O')
+        new_n_nodes = np.array(new_n_nodes)
+        
+        return all_nodes_org, faces_of_nodes_org, new_n_nodes
+
+
 
 
 class CreateMeshProperties(MeshInit):
@@ -571,7 +634,7 @@ class CreateMeshProperties(MeshInit):
             nodes_centroids
         )
         
-        faces_adj_by_nodes = calculate_face_properties.ordenate_faces_of_nodes_xy_plane(faces_centroids, faces_adj_by_nodes, nodes_centroids)
+        faces_adj_by_nodes, n_faces_of_nodes = calculate_face_properties.ordenate_faces_of_nodes_xy_plane(faces_centroids, faces_adj_by_nodes, nodes_centroids)
         
         bool_boundary_nodes = calculate_face_properties.define_bool_boundary_nodes(bool_boundary_edges, nodes_of_edges, nodes)
         
@@ -585,6 +648,7 @@ class CreateMeshProperties(MeshInit):
         self.data['bool_boundary_edges'] = bool_boundary_edges
         self.data['faces_adj_by_edges'] = faces_adj_by_edges
         self.data['faces_adj_by_nodes'] = faces_adj_by_nodes
+        self.data['n_faces_of_nodes'] = n_faces_of_nodes
         self.data['nodes_of_faces'] = nodes_of_faces
         self.data['nodes_centroids'] = nodes_centroids
         self.data['edges_of_faces'] = edges_of_faces

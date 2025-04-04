@@ -43,7 +43,7 @@ class LsdsFluxCalculation:
                 nodes_centroids2
             )
 
-            faces_of_nodes = calculate_face_properties.ordenate_faces_of_nodes_xy_plane(
+            faces_of_nodes, n_faces_of_nodes = calculate_face_properties.ordenate_faces_of_nodes_xy_plane(
                 faces_centroids2,
                 mesh_properties.faces_of_nodes,
                 nodes_centroids2

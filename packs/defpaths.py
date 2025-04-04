@@ -71,3 +71,7 @@ mesh_prop_linear_2k = 'linear_2k_test'
 
 matrix_path = os.path.join(flying, 'matrices.h5')
 
+layers_folder = os.path.join(unstructured_coarse_test_mesh_folder, 'layers')
+finescale_mesh_layer = os.path.join(layers_folder, '5spotHETq.msh')
+
+

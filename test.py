@@ -75,8 +75,8 @@ from packs.examples.remove_data import run_delete_all
 # run4()
 
 # run_delete_all()
-from packs.multiscale.unstructured.test.test_cross import run4
-run4()
+# from packs.multiscale.unstructured.test.test_cross import run4
+# run4()
 
 # from packs.tests.test_initial_preprocess import run
 # run()
@@ -101,5 +101,9 @@ run4()
 
 # from packs.examples.biphasic_mpfa_nuadm_v2 import run
 # run()
+
+# run_delete_all()
+from packs.examples.biphasic_mpfa_layers_tri_finescale import run5
+run5()
 
 
