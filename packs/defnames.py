@@ -8,7 +8,7 @@ mpfa_boundary_names = [neumann_edges,
                        'dirichlet_nodes', 'neumann_nodes', 'dirichlet_edges',
                        'dirichlet_volumes', 'neumann_volumes',
                        'water_saturation_volumes', 'water_saturation_edges',
-                       'injectors', 'producers', 'dirichlet_faces']
+                       'injectors', 'producers', 'dirichlet_faces', 'initial_saturation']
 
 tag_node_weight_test_sufix = '_nodes_weights_test_error'
 lpew2_test_mesh_prop_name = 'lpew2_test'

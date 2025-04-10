@@ -9,6 +9,8 @@ from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 
+from packs.examples.biphasic_mpfa import initial_loop, while_loop, update_data
+
 import os
 import numpy as np
 from typing import Tuple
@@ -24,63 +26,13 @@ def get_properties():
 
     return fine_properties, fine_mesh_path
 
-def get_nodes_org_from_faces_of_nodes_object(fp: MeshProperty):
-    n_faces_of_nodes = fp['n_faces_of_nodes']
-
-    all_nodes_org = []
-    faces_of_nodes_org = []
-    n_nodes = np.arange(1, n_faces_of_nodes.max()+1)
-
-    for i in n_nodes:
-        test = n_faces_of_nodes == i
-        v4 = fp.nodes[test]
-        all_nodes_org.append(v4)
-    
-        ft = fp['faces_of_nodes'][v4].copy()
-        ft2 = np.concatenate(ft)
-        ft3 = ft2.reshape((ft.shape[0], i))
-        faces_of_nodes_org.append(ft3)
-    
-    all_nodes_org = np.array(all_nodes_org, dtype='O')
-    faces_of_nodes_org = np.array(faces_of_nodes_org, dtype='O')
-
-    return all_nodes_org, faces_of_nodes_org, n_nodes
-
-def get_internal_nodes_org_from_faces_of_nodes_object(fp: MeshProperty):
-    n_faces_of_nodes = fp['n_faces_of_nodes']
-    internal_nodes = fp.internal_nodes
-
-    all_nodes_org = []
-    faces_of_nodes_org = []
-    n_nodes = np.arange(2, n_faces_of_nodes.max()+1)
-    new_n_nodes = []
-
-    for i in n_nodes:
-        test = n_faces_of_nodes == i
-        v4 = fp.nodes[test]
-        v4 = np.intersect1d(v4, internal_nodes)
-        if v4.shape[0] == 0:
-            continue
-        all_nodes_org.append(v4)
-    
-        ft = fp['faces_of_nodes'][v4].copy()
-        ft2 = np.concatenate(ft)
-        ft3 = ft2.reshape((ft.shape[0], i))
-        faces_of_nodes_org.append(ft3)
-        new_n_nodes.append(i)
-    
-    all_nodes_org = np.array(all_nodes_org, dtype='O')
-    faces_of_nodes_org = np.array(faces_of_nodes_org, dtype='O')
-    new_n_nodes = np.array(new_n_nodes)
-    
-    return all_nodes_org, faces_of_nodes_org, new_n_nodes
-
 def set_boundary_conditions(fine_properties: MeshProperty):
     bc = BoundaryConditions()
 
     nodes_centroids = fine_properties['nodes_centroids']
     faces = fine_properties['faces']
     faces_centroids = fine_properties['faces_centroids']
+    initial_saturation = np.zeros(fine_properties['faces'].shape[0])
 
     xmin, ymin = nodes_centroids.min(axis=0)
     xmax, ymax = nodes_centroids.max(axis=0)
@@ -114,38 +66,310 @@ def set_boundary_conditions(fine_properties: MeshProperty):
     })
 
     bc.set_boundary('water_saturation_volumes', np.array([face_p1]), np.array([1.0]))
-    bc.set_boundary('water_saturation_edges', np.array([]), np.array([]))
+    initial_saturation[face_p1] = 1.0
 
     bc.set_boundary('injectors', np.array([face_p1]), np.array([True]))
     bc.set_boundary('producers', np.array([face_p0]), np.array([True]))
+    bc.set_boundary('initial_saturation', fine_properties['faces'], initial_saturation)
 
     bc.update_zero_bcs()
 
     return bc
 
+def set_permeability_layers(fine_mesh_path, fine_properties: MeshProperty, export_permfield=True, update_permfield=True, **kwargs):
+    
+    k1 = np.array([
+        np.array([505, 495]),
+        np.array([495, 505])
+    ])
+
+    k2 = np.array([
+        np.array([1000, 0]),
+        np.array([0, 100])
+    ])
+
+    k3 = np.array([
+        np.array([100, 0]),
+        np.array([0, 1000])
+    ])
+
+    tag_preprocess = 'permeability'
+    if fine_properties.verify_name_in_data_names(tag_preprocess) and update_permfield is False:
+        return
+    
+    faces_k1 = np.concatenate([fine_properties['physical_quad_1'], fine_properties['physical_quad_4']])
+    faces_k2 = fine_properties['physical_quad_2']
+    faces_k3 = fine_properties['physical_quad_3']
+
+    faces = fine_properties['faces']
+
+    permeability = np.zeros((faces.shape[0], 2, 2))
+    permeability[faces_k1] = k1
+    permeability[faces_k2] = k2
+    permeability[faces_k3] = k3
+    
+    fine_properties.insert_or_update_data({
+        tag_preprocess: permeability
+    })
+
+    if export_permfield:
+        mesh_data = MeshData(mesh_path=fine_mesh_path)
+        mesh_data.create_tag('permeability_xx')
+        mesh_data.create_tag('permeability_xy')
+        mesh_data.create_tag('permeability_yx')
+        mesh_data.create_tag('permeability_yy')
+        mesh_data.insert_tag_data(
+            'permeability_xx',
+            fine_properties['permeability'][:, 0, 0],
+            elements_type='faces'
+        )
+        mesh_data.insert_tag_data(
+            'permeability_xy',
+            fine_properties['permeability'][:, 0, 1],
+            elements_type='faces'
+        )
+        mesh_data.insert_tag_data(
+            'permeability_yx',
+            fine_properties['permeability'][:, 1, 0],
+            elements_type='faces'
+        )
+        mesh_data.insert_tag_data(
+            'permeability_yy',
+            fine_properties['permeability'][:, 1, 1],
+            elements_type='faces'
+        )
+        mesh_data.export_all_elements_type_to_vtk('permfield', element_type='faces')
+
+def initial_funcs(
+        fp: MeshProperty,
+        fine_mesh_path: str
+):
+    # define_faces_in_losangle(fp)
+    set_permeability_layers(fine_mesh_path, fp, export_permfield=True, update_permfield=True)
+    set_weights_nodes(fp, update=True)
+    fp.backup_data('xi_params', 'xi_params_backup')
+    fp.export_data()
+
+def load_or_update_initial_loop(
+        load: bool, 
+        fp: MeshProperty, 
+        fine_mesh_path: str,
+        pressure: np.ndarray,
+        newS: np.ndarray,
+        vpi: float,
+        cumulative_oil: float,
+        cumulative_water: float,
+        relative_perm: BrooksAndCorey,
+        biphasic_mobility: BiphasicMobility,
+        saturation: np.ndarray,
+        bc: BoundaryConditions,
+        lsds: LsdsFluxCalculation,
+        dt: float,
+        porosity: np.ndarray,
+        total_area_reservoir: float,
+        mesh_data: MeshData,
+        simulation_data: SimulationData,
+        loop: int
+    ):
+    
+    if load is False:
+        initial_funcs(fp, fine_mesh_path)
+        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux = initial_loop(
+            relative_perm,
+            biphasic_mobility,
+            saturation,
+            fp,
+            bc,
+            lsds,
+            dt,
+            porosity,
+            total_area_reservoir,
+            vpi,
+            cumulative_oil,
+            cumulative_water
+        )
+        mesh_data.insert_tag_data('pressure', pressure, 'faces')
+        mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
+        mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
+        mesh_data.insert_tag_data('saturation', saturation, 'faces')
+        mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
+        saturation[:] = newS
+        simulation_data.insert_or_update_data({
+            'all_loops': np.array([0]),
+            'all_vpi': np.array([0.0]),
+            'all_cumulative_oil': np.array([0.0]),
+            'all_cumulative_water': np.array([0.0]),
+            'pressure_' + str(loop): pressure,
+            'saturation_' + str(loop): saturation
+        })
+        saturation[:] = newS
+    elif load is True:
+        # import pdb; pdb.set_trace()
+        simulation_data.load_data()
+        loop = simulation_data['all_loops'][-1]
+        vpi = simulation_data['all_vpi'][-1]
+        cumulative_oil = simulation_data['all_cumulative_oil'][-1]
+        cumulative_water = simulation_data['all_cumulative_water'][-1]
+        saturation[:] = simulation_data['saturation_' + str(loop)]
+        pressure[:] = simulation_data['pressure_' + str(loop)]
+    
+    return loop, cumulative_oil, cumulative_water, vpi
+
+def update_while_loop(
+        loop_intervals: int,
+        loop: int,
+        pressure: np.ndarray,
+        newS: np.ndarray,
+        vpi: float,
+        cumulative_oil: float,
+        cumulative_water: float,
+        relative_perm,
+        biphasic_mobility,
+        saturation: np.ndarray,
+        fp: MeshProperty,
+        bc: BoundaryConditions,
+        lsds: LsdsFluxCalculation,
+        porosity: np.ndarray,
+        total_area_reservoir: float,
+        saturation_plot: np.ndarray,
+        simulation_data: SimulationData,
+        mesh_data: MeshData,
+        cfl: float,
+        **kwargs
+):
+    
+    for i in range(loop_intervals):
+        loop += 1
+        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux, dt = while_loop(
+            relative_perm,
+            biphasic_mobility,
+            saturation,
+            fp,
+            bc,
+            lsds,
+            porosity,
+            vpi,
+            cumulative_oil,
+            cumulative_water,
+            total_area_reservoir,
+            cfl=cfl
+        )
+        saturation_plot[:] = saturation
+        saturation[:] = newS
+        
+        print()
+        print('##########################')
+        print(f'VPI: {vpi}')
+        print(f'Cum oil: {cumulative_oil}')
+        print(f'Cum water: {cumulative_water}')
+        print(f'Loop: {loop}')
+        print(f'Dt: {dt}')
+        print('##########################')
+        print()
+    
+    update_data(
+        simulation_data,
+        vpi,
+        cumulative_oil,
+        cumulative_water,
+        loop,
+        pressure,
+        saturation
+    )
+    
+    mesh_data.insert_tag_data('pressure', pressure, 'faces')
+    mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
+    mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
+    mesh_data.insert_tag_data('saturation', saturation_plot, 'faces')
+    mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
+
+    return loop, cumulative_oil, cumulative_water, vpi
+
 
 def run5():
 
-    
     dt = 0.00005
     max_vpi = 1.3
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 10
+    loop_intervals = 1
+    cfl = 0.8
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
     vpi = 0.0
 
-    relative_perm = BrooksAndCorey()
+    relative_perm = BrooksAndCorey(Sor=0.0, Swc=0.0)
     biphasic_mobility = BiphasicMobility()
     lsds = LsdsFluxCalculation()
-    simulation_data = SimulationData('biphasic_fine_mesh')
+    simulation_data = SimulationData('biphasic_layer_finescale')
 
     fp, fine_mesh_path = get_properties()
+    bc = set_boundary_conditions(fp)
 
-    nodes_org, faces_of_nodes_org, n_nodes_org = fp.get_internal_nodes_org_from_faces_of_nodes_object()
+    porosity = np.repeat(0.2, len(fp['faces']))
+    total_area_reservoir = porosity.dot(fp['areas'])
+    saturation: np.ndarray = bc['initial_saturation']['value'].copy() 
+    pressure = np.repeat(0.0, fp['faces'].shape[0])
+    newS = saturation.copy()
+    saturation_plot = saturation.copy()
+
+    mesh_data = MeshData(mesh_path=fine_mesh_path)
+    mesh_data.create_tag('pressure')
+    mesh_data.create_tag('faces_flux')
+    mesh_data.create_tag('water_faces_flux')
+    mesh_data.create_tag('saturation')
+
+    loop, cumulative_oil, cumulative_water, vpi = load_or_update_initial_loop(
+        load,
+        fp,
+        fine_mesh_path,
+        pressure,
+        newS,
+        vpi,
+        cumulative_oil,
+        cumulative_water,
+        relative_perm,
+        biphasic_mobility,
+        saturation,
+        bc,
+        lsds,
+        dt,
+        porosity,
+        total_area_reservoir,
+        mesh_data,
+        simulation_data,
+        loop
+    )
+
+    while vpi < max_vpi and loop < max_loop:
+        loop, cumulative_oil, cumulative_water, vpi = update_while_loop(
+            loop_intervals,
+            loop,
+            pressure,
+            newS,
+            vpi,
+            cumulative_oil,
+            cumulative_water,
+            relative_perm,
+            biphasic_mobility,
+            saturation,
+            fp,
+            bc,
+            lsds,
+            porosity,
+            total_area_reservoir,
+            saturation_plot,
+            simulation_data,
+            mesh_data,
+            cfl
+        )
+
+    import pdb; pdb.set_trace()
+
+
+    # nodes_org, faces_of_nodes_org, n_nodes_org = fp.get_internal_nodes_org_from_faces_of_nodes_object()
 
 
 

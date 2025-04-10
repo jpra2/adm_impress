@@ -334,7 +334,9 @@ def while_loop(
         vpi: float,
         cumulative_oil: float,
         cumulative_water: float,
-        total_area_reservoir: float
+        total_area_reservoir: float,
+        cfl: float=1.0,
+        **kwargs
 ):
     
     krw_faces, kro_faces = relative_perm.calculate(saturation)
@@ -428,7 +430,7 @@ def while_loop(
         porosity,
         fp['areas'],
         faces_flux,
-        cfl=0.5
+        cfl=cfl
     )
 
     newS = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation)
@@ -520,6 +522,7 @@ def run():
     cumulative_oil = 0.0
     cumulative_water = 0.0
     vpi = 0.0
+    cfl = 1.0
 
     relative_perm = BrooksAndCorey()
     biphasic_mobility = BiphasicMobility()
@@ -528,6 +531,7 @@ def run():
 
     fp, fine_mesh_path = get_properties()
     bc = set_boundary_conditions(fp)
+    
     porosity = np.repeat(0.2, len(fp['faces']))
     total_area_reservoir = porosity.dot(fp['areas'])
     saturation = np.repeat(0.2, fp['faces'].shape[0])
@@ -598,7 +602,8 @@ def run():
                 vpi,
                 cumulative_oil,
                 cumulative_water,
-                total_area_reservoir
+                total_area_reservoir,
+                cfl=cfl
             )
             saturation_plot[:] = saturation
             saturation[:] = newS

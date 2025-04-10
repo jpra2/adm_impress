@@ -370,6 +370,7 @@ class MeshProperty:
     
     def get_nodes_org_from_faces_of_nodes_object(self):
         n_faces_of_nodes = self['n_faces_of_nodes']
+        faces_of_nodes = self['faces_of_nodes']
 
         all_nodes_org = []
         faces_of_nodes_org = []
@@ -380,7 +381,7 @@ class MeshProperty:
             v4 = self.nodes[test]
             all_nodes_org.append(v4)
         
-            ft = self['faces_of_nodes'][v4].copy()
+            ft = faces_of_nodes[v4].copy()
             ft2 = np.concatenate(ft)
             ft3 = ft2.reshape((ft.shape[0], i))
             faces_of_nodes_org.append(ft3)
@@ -388,11 +389,18 @@ class MeshProperty:
         all_nodes_org = np.array(all_nodes_org, dtype='O')
         faces_of_nodes_org = np.array(faces_of_nodes_org, dtype='O')
 
-        return all_nodes_org, faces_of_nodes_org, n_nodes
+        resp = {
+            'nodes_org': all_nodes_org,
+            'faces_of_nodes_org': faces_of_nodes_org,
+            'n_nodes': n_nodes
+        }
+
+        return resp
 
     def get_internal_nodes_org_from_faces_of_nodes_object(self):
         n_faces_of_nodes = self['n_faces_of_nodes']
         internal_nodes = self.internal_nodes
+        faces_of_nodes = self['faces_of_nodes']
 
         all_nodes_org = []
         faces_of_nodes_org = []
@@ -407,7 +415,7 @@ class MeshProperty:
                 continue
             all_nodes_org.append(v4)
         
-            ft = self['faces_of_nodes'][v4].copy()
+            ft = faces_of_nodes[v4].copy()
             ft2 = np.concatenate(ft)
             ft3 = ft2.reshape((ft.shape[0], i))
             faces_of_nodes_org.append(ft3)
@@ -416,8 +424,14 @@ class MeshProperty:
         all_nodes_org = np.array(all_nodes_org, dtype='O')
         faces_of_nodes_org = np.array(faces_of_nodes_org, dtype='O')
         new_n_nodes = np.array(new_n_nodes)
+
+        resp = {
+            'internal_nodes_org': all_nodes_org,
+            'internal_faces_of_nodes_org': faces_of_nodes_org,
+            'internal_n_nodes': new_n_nodes
+        }
         
-        return all_nodes_org, faces_of_nodes_org, new_n_nodes
+        return resp
 
 
 
