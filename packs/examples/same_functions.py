@@ -418,6 +418,31 @@ def define_fine_ids_from_saturation(saturation, adjacencies, internal_edges, del
     fine_ids = np.unique(fine_ids[test])
     return fine_ids
 
+def define_fine_ids_from_saturation_internal_nodes_org(internal_nodes_org: np.ndarray, internal_faces_of_nodes_org: np.ndarray, saturation: np.ndarray, delta_sat_min=0.1, **kwargs):
+    # 'internal_nodes_org': all_nodes_org,
+    # 'internal_faces_of_nodes_org': faces_of_nodes_org,
+    # 'internal_n_nodes': new_n_nodes
+
+    all_faces = []
+    
+    for i, nodes in enumerate(internal_nodes_org):
+        faces_of_nodes = internal_faces_of_nodes_org[i]
+        saturations_faces = saturation[faces_of_nodes]
+        max_sat = saturations_faces.max(axis=1)
+        min_sat = saturations_faces.min(axis=1)
+        delta_sat = max_sat - min_sat
+        test = delta_sat > delta_sat_min
+        all_faces.append(np.unique(faces_of_nodes[test].flatten()))
+    
+    all_faces = np.unique(np.concatenate(all_faces))
+
+    return all_faces
+
+
+
+
+
+
 def get_intersect_edges(coarse_struct, fine_properties):
     fp = fine_properties
     intersect_edges = []

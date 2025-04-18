@@ -807,8 +807,8 @@ def run4():
     alpha_lim_finescale = 0.5
     beta_lim = 3
     export_adm_levels_file = True
-    bool_export_primal_id = False
-    bool_export_dual_id = False
+    bool_export_primal_id = True
+    bool_export_dual_id = True
     my_dual_type = 1
     perm_type = 'barrier'
     # perm_type = 'channel'

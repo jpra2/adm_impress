@@ -308,6 +308,11 @@ class LpewWeight:
     def create_knt_barra_vef(self, tk_points, nodes_centroids, permeability, edges_of_nodes, nodes_of_edges, nodes, edges, adjacencies, faces_of_nodes, bool_boundary_nodes, faces_centroids, **kwargs):
 
         R_matrix = self.get_Rmatrix()
+        faces_multiplier = kwargs.get('faces_multiplier')
+        if isinstance(faces_multiplier, np.ndarray):
+            pass
+        else:
+            faces_multiplier = np.ones(len(faces_centroids))
 
         ## ids kn and kt (k_barra)
         all_kface_id = []
@@ -429,13 +434,14 @@ class LpewWeight:
             ('kn', np.float64),
             ('kt', np.float64)
         ]
+
         array1 = np.zeros(len(all_kface_id), dtype=dtype1)
         array1['face_id'][:] = all_kface_id
         array1['edge_id0'][:] = all_kedge_id1
         array1['edge_id1'][:] = all_kedge_id2
         array1['node_id'][:] = all_knode_id
-        array1['kn'][:] = all_kn
-        array1['kt'][:] = all_kt
+        array1['kn'][:] = all_kn*faces_multiplier[all_kface_id]
+        array1['kt'][:] = all_kt*faces_multiplier[all_kface_id]
 
         alln_node_id = np.array(alln_node_id)
         alln_edge_id = np.array(alln_edge_id)
@@ -459,8 +465,8 @@ class LpewWeight:
         array3['node_id'][:] = alln_node_id
         array3['edge_id'][:] = alln_edge_id
         array3['face_id'][:] = alln_face_id
-        array3['kn'][:] = alln_kn
-        array3['kt'][:] = alln_kt
+        array3['kn'][:] = alln_kn*faces_multiplier[alln_face_id]
+        array3['kt'][:] = alln_kt*faces_multiplier[alln_face_id]
         array3['theta'][:] = all_theta
         array3['phi'][:] = all_phi
         array3['v_angle'][:] = all_v_angle

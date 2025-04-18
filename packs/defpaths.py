@@ -73,5 +73,9 @@ matrix_path = os.path.join(flying, 'matrices.h5')
 
 layers_folder = os.path.join(unstructured_coarse_test_mesh_folder, 'layers')
 finescale_mesh_layer = os.path.join(layers_folder, '5spotHETq.msh')
+coarse_mesh_layer = os.path.join(layers_folder, 'coarse1.msh')
+
+biphasic_folder = 'bifasico'
+barreira_mesh = os.path.join(biphasic_folder, '5spotN2.msh')
 
 

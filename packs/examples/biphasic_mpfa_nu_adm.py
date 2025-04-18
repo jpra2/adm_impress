@@ -14,9 +14,10 @@ from packs.examples.same_functions import (
     update_xi_params,
     set_fine_transmissibility_biphasic,
     update_fine_flux,
-    define_fine_ids_from_saturation
+    define_fine_ids_from_saturation,
+    define_fine_ids_from_saturation_internal_nodes_org
 )
-from packs.examples.biphasic_mpfa import initial_funcs, set_boundary_conditions
+from packs.examples.biphasic_mpfa import initial_funcs, set_boundary_conditions, update_saturation
 from packs.examples.diss_test1 import define_new_fine_levels_v1
 
 from packs.multiscale.unstructured.test.test_uns_ams_prolongation import export_adm_levels
@@ -30,6 +31,9 @@ from packs.utils import utils_old
 from packs.adm.non_uniform import fine_level_from_alpha
 from packs.fim_nu_adm.packs.processor import nu_adm_funcs
 from packs.manager.generic_data import PrimalCoarseData
+
+from packs.multiscale.unstructured.operators.precond.enhanced import Enhanced
+from packs.multiscale.unstructured.operators.prolongation.msrsb_klevtsov import MsRSB
 
 import os
 import numpy as np
@@ -189,11 +193,6 @@ def calculate_dt(faces_centroids: np.ndarray, adjacencies: np.ndarray, bool_boun
     dt = min([all_dt1.min(), all_dt2.min()])
     return dt
     
-def update_saturation(water_faces_flux, areas, dt, porosity, saturation):
-
-    ds = dt*water_faces_flux/(porosity*areas)
-    newS = saturation + ds
-    return newS
 
 def update_simulation_data(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float) -> None:
     total_volume_injected = faces_flux[injectors].sum()*dt
@@ -207,7 +206,7 @@ def update_simulation_data(faces_flux: np.ndarray, injectors: np.ndarray, produc
     cum_oil += total_volume_oil_produced
     cum_water += total_volume_water_produced
 
-    return vpi, cum_oil, cum_water
+    return vpi, cum_oil, cum_water, water_flux, oil_flux
 
 def get_OP_matrix(fine_mesh_properties: MeshProperty):
     primal_ids = fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
@@ -265,7 +264,9 @@ def initial_loop(
         op_name,
         initial_fine_volumes: np.ndarray,
         alpha_lim_finescale,
-        beta_lim
+        beta_lim,
+        etol_msrsb,
+        maxit_msrsb
 ):
 
     krw_faces, kro_faces = relative_perm.calculate(saturation)
@@ -314,16 +315,42 @@ def initial_loop(
         lsds
     )
 
-    fine_transm_without_bc = lsds.mount_transmissibility_matrix_without_bc(**fp.get_all_data())
-
-    OP = get_OP_matrix(fp)
+    
     OR = get_OR_AMS(fp)
-    OP = get_op_amsu(fp, lsds, OP, fine_transm_without_bc['transmissibility_without_bc'])
+    if op_name == defnames.list_op_toget[1]:
+        OP = get_OP_matrix(fp)
+        fine_transm_without_bc = lsds.mount_transmissibility_matrix_without_bc(**fp.get_all_data())
+        OP = get_op_amsu(fp, lsds, OP, fine_transm_without_bc['transmissibility_without_bc'])
+    elif op_name == defnames.list_op_toget[2]:
+        level_str = defnames.level_str(1)
+        enhanced = Enhanced()
+        monotone_transm = enhanced.get_enhanced_matrix(resp['transmissibility'])
+        msrsb = MsRSB()
+        OP = msrsb.get_OP(
+            faces=fp['faces'],
+            T=monotone_transm,
+            diagonal_term=np.zeros(resp['source'].shape[0]),
+            interation_regions=fp[defnames.get_dual_interation_region_name_by_level(1)],
+            interation_boundaries=fp[defnames.boundary_dual_interaction + level_str],
+            vertices=fp[defnames.vertices_selected + level_str],
+            dual_edges=fp['faces'][fp[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('edge_id')],
+            dual_faces=fp['faces'][fp[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('face_id')],
+            coarse_ids=fp[defnames.get_primal_id_name_by_level(1)][fp[defnames.vertices_selected + level_str]],
+            OR_fv=OR,
+            etol=etol_msrsb,
+            maxit=maxit_msrsb                
+        )
+    else:
+        raise NameError
+
     utils_old.save_matrix(matrices_path, op_name, OP)
 
     fine_levels = np.full(fp['faces'].shape[0], -1)
     fine_levels[initial_fine_volumes] = 0
-    fine_ids_from_saturation = define_fine_ids_from_saturation(saturation, fp['adjacencies'], fp.internal_edges)
+    # fine_ids_from_saturation = define_fine_ids_from_saturation(saturation, fp['adjacencies'], fp.internal_edges)
+    fine_ids_from_saturation = define_fine_ids_from_saturation_internal_nodes_org(fp['internal_nodes_org'], fp['internal_faces_of_nodes_org'], saturation)
+
+
     fine_levels[fine_ids_from_saturation] = 0
 
     fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
@@ -356,6 +383,8 @@ def initial_loop(
         beta_ind,
         beta_groups
     )
+
+    finescale_faces = finescale_faces.astype(np.int)
 
     fine_levels[finescale_faces] = 0
     fine_levels[fine_levels==-1] = 1
@@ -475,10 +504,10 @@ def initial_loop(
         fw_faces
     )
     
-    newS = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation)
+    newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     relative_perm._test_saturations(newS)
 
-    new_vpi, new_cumulative_oil, new_cumulative_water = update_simulation_data(
+    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux = update_simulation_data(
         faces_flux,
         bc['injectors']['id'],
         bc['producers']['id'],
@@ -490,7 +519,7 @@ def initial_loop(
         dt
     )
 
-    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels
+    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux
 
 def while_loop(
         relative_perm: BrooksAndCorey,
@@ -511,7 +540,8 @@ def while_loop(
         beta_lim: float,
         OP: sp.csc_matrix,
         OR: sp.csc_matrix,
-        coarse_struct: Sequence[PrimalCoarseData]
+        coarse_struct: Sequence[PrimalCoarseData],
+        cfl: float
 ):
     
     krw_faces, kro_faces = relative_perm.calculate(saturation)
@@ -561,7 +591,9 @@ def while_loop(
 
     fine_levels = np.full(fp['faces'].shape[0], -1)
     fine_levels[initial_fine_volumes] = 0
-    fine_ids_from_saturation = define_fine_ids_from_saturation(saturation, fp['adjacencies'], fp.internal_edges)
+    # fine_ids_from_saturation = define_fine_ids_from_saturation(saturation, fp['adjacencies'], fp.internal_edges)
+    fine_ids_from_saturation = define_fine_ids_from_saturation_internal_nodes_org(fp['internal_nodes_org'], fp['internal_faces_of_nodes_org'], saturation)
+
     fine_levels[fine_ids_from_saturation] = 0
 
     fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
@@ -587,6 +619,8 @@ def while_loop(
         beta_ind,
         beta_groups
     )
+
+    finescale_faces = finescale_faces.astype(np.int)
 
     fine_levels[finescale_faces] = 0
     fine_levels[fine_levels==-1] = 1
@@ -685,11 +719,11 @@ def while_loop(
         fw_faces,
         saturation,
         porosity,
-        cfl=0.7
+        cfl=cfl
     )
 
-    newS = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation)
-    new_vpi, new_cumulative_oil, new_cumulative_water = update_simulation_data(
+    newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
+    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux = update_simulation_data(
         faces_flux,
         bc['injectors']['id'],
         bc['producers']['id'],
@@ -701,7 +735,7 @@ def while_loop(
         dt
     )
 
-    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, fine_levels, water_faces_flux, dt
+    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux
 
 def update_data(
         simulation_data: SimulationData,
@@ -710,7 +744,9 @@ def update_data(
         cumulative_water: float,
         loop: int,
         pressure: np.ndarray,
-        saturation: np.ndarray
+        saturation: np.ndarray,
+        water_flux: float,
+        oil_flux: float
 ):
     
     all_loops = simulation_data['all_loops']
@@ -724,6 +760,12 @@ def update_data(
 
     all_cum_wat = simulation_data[simulation_data.my_data_names[3]]
     all_cum_wat = np.append(all_cum_wat, [cumulative_water])
+
+    all_water_flux = simulation_data[simulation_data.my_data_names[6]]
+    all_water_flux = np.append(all_water_flux, [water_flux])
+
+    all_oil_flux = simulation_data[simulation_data.my_data_names[7]]
+    all_oil_flux = np.append(all_oil_flux, [oil_flux])
     
     simulation_data.insert_or_update_data({
         simulation_data.my_data_names[0]: all_loops,
@@ -731,7 +773,9 @@ def update_data(
         simulation_data.my_data_names[2]: all_cum_oil,
         simulation_data.my_data_names[3]: all_cum_wat,
         simulation_data.my_data_names[4] + str(loop): pressure,
-        simulation_data.my_data_names[5] + str(loop): saturation
+        simulation_data.my_data_names[5] + str(loop): saturation,
+        simulation_data.my_data_names[6]: all_water_flux,
+        simulation_data.my_data_names[7]: all_oil_flux
     })
 
     simulation_data.export_data()
@@ -775,12 +819,13 @@ def define_initial_fine_volumes(fp: MeshProperty, bc: BoundaryConditions):
 def run():
 
     matrices_path = 'matrices.h5'
-    op_name = 'AMSU'
+    op_name = 'AMS-U'
 
     update_primal_mesh = True
     update_dual_mesh = True
     update_coarse_struct = True
     my_dual_type = 1
+    cfl = 0.7
 
     alpha_lim_finescale = 0.1
     beta_lim = 3.0
@@ -793,6 +838,8 @@ def run():
     max_loop = np.inf
     load = False
     loop_intervals = 1
+    etol_msrsb = 0.01
+    maxit_msrsb = 1000
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
@@ -832,7 +879,7 @@ def run():
     if load is False:
         initial_funcs(fp, fine_mesh_path, type_k)
         # coarse_struct = define_coarse_structure(fp, lsds, level=1, update=update_coarse_struct)
-        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels = initial_loop(
+        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux = initial_loop(
             relative_perm,
             biphasic_mobility,
             saturation,
@@ -849,7 +896,9 @@ def run():
             op_name,
             initial_fine_vols,
             alpha_lim_finescale,
-            beta_lim
+            beta_lim,
+            etol_msrsb,
+            maxit_msrsb
         )
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
         mesh_data.insert_tag_data('saturation', saturation, 'faces')
@@ -861,7 +910,9 @@ def run():
             'all_cumulative_oil': np.array([0.0]),
             'all_cumulative_water': np.array([0.0]),
             'pressure_' + str(loop): pressure,
-            'saturation_' + str(loop): saturation
+            'saturation_' + str(loop): saturation,
+            'water_flux': np.array([water_flux]),
+            'oil_flux': np.ndarray([oil_flux])
         })
         saturation_plot[:] = saturation
         saturation[:] = newS
@@ -888,7 +939,7 @@ def run():
     while vpi < max_vpi and loop < max_loop:
         for i in range(loop_intervals):
             loop += 1
-            pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, fine_levels, water_faces_flux, dt = while_loop(
+            pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux = while_loop(
                 relative_perm,
                 biphasic_mobility,
                 saturation,
@@ -907,7 +958,8 @@ def run():
                 beta_lim,
                 OP,
                 OR,
-                coarse_struct
+                coarse_struct,
+                cfl
             )
             saturation_plot[:] = saturation
             saturation[:] = newS
@@ -929,7 +981,9 @@ def run():
             cumulative_water,
             loop,
             pressure,
-            saturation
+            saturation,
+            water_flux,
+            oil_flux
         )
 
         adm_interfaces_name = 'adm_edges_' + str(loop)

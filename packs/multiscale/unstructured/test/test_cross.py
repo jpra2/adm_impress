@@ -578,8 +578,6 @@ def define_new_fine_levels_v4(
     return dual_in_boundary
 
 
-
-
     
 
 
@@ -605,8 +603,8 @@ def run4():
     bool_export_primal_id = True
     bool_export_dual_id = True
     my_dual_type = 1
-    perm_type = 'channel'
-    # perm_type = 'barrier'
+    # perm_type = 'channel'
+    perm_type = 'barrier'
     update_nodes_weights = True
     export_permfield = True
     update_permfield = True

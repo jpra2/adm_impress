@@ -103,8 +103,16 @@ from packs.examples.remove_data import run_delete_all, run_results
 # run()
 
 # run_delete_all()
-run_results()
-from packs.examples.biphasic_mpfa_layers_tri_finescale import run5
-run5()
+# run_results()
+# from packs.examples.biphasic_mpfa_layers_quad1_finescale import run5
+# run5()
 
+# run_delete_all()
+# from packs.examples.biphasic_mpfa_layers_quad1_ms import run6
+# run6()
+
+run_delete_all()
+# run_results()
+from packs.examples.biphasic_mpfa_barreira_finescale import run5
+run5()
 

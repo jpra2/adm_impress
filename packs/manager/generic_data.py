@@ -3,7 +3,7 @@ import numpy as np
 from packs.utils.utils_old import remap_values
 
 class SimulationData(SuperArrayManager):
-    my_data_names = ['all_loops', 'all_vpi', 'all_cumulative_oil', 'all_cumulative_water', 'pressure_', 'saturation_']
+    my_data_names = ['all_loops', 'all_vpi', 'all_cumulative_oil', 'all_cumulative_water', 'pressure_', 'saturation_', 'water_flux', 'oil_flux']
 
 class PrimalCoarseData(SuperArrayManager):
     my_data_names = [

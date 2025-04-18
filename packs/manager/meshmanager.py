@@ -433,7 +433,36 @@ class MeshProperty:
         
         return resp
 
+    @property
+    def dist_centroids(self):
+        try:
+            return self['dist_centroids']
+        except KeyError:
+            all_dists = np.zeros(len(self['edges']))
+            faces_centroids = self['faces_centroids']
+            adjacencies = self['adjacencies']
+            bool_internal_edges = ~self['bool_boundary_edges']
+            edges_centroids = self.edges_centroids
 
+            all_dists[self.internal_edges] = np.linalg.norm(
+                faces_centroids[adjacencies[bool_internal_edges, 0]] - faces_centroids[adjacencies[bool_internal_edges, 1]],
+                axis=1
+            )
+
+            all_dists[self.boundary_edges] = np.linalg.norm(
+                faces_centroids[adjacencies[self.boundary_edges, 0]] - edges_centroids[self.boundary_edges],
+                axis=1
+            )
+
+            self.insert_data({'dist_centroids': all_dists})
+            self.export_data()
+            return all_dists
+
+
+
+
+
+        
 
 
 class CreateMeshProperties(MeshInit):

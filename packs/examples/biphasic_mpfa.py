@@ -9,6 +9,9 @@ from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 
+from packs.mpfa_methods.weight_interpolation.lpew import get_lpew2_weights
+from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_flux
+
 import os
 import numpy as np
 from typing import Tuple
@@ -148,14 +151,13 @@ def update_water_faces_flux(water_faces_flux: np.ndarray, bc: BoundaryConditions
         water_faces_flux[producers] += water_flux
 
 
-def calculate_dt(faces_centroids: np.ndarray, adjacencies: np.ndarray, bool_boundary_edges: np.ndarray, total_flux_edges: np.ndarray, edges_dim: np.ndarray, fw_faces: np.ndarray, saturation: np.ndarray, porosity: np.ndarray, areas: np.ndarray, faces_flux: np.ndarray, cfl: float=1.0):
+def calculate_dt(faces_centroids: np.ndarray, adjacencies: np.ndarray, bool_boundary_edges: np.ndarray, total_flux_edges: np.ndarray, edges_dim: np.ndarray, fw_faces: np.ndarray, saturation: np.ndarray, porosity: np.ndarray, areas: np.ndarray, faces_flux: np.ndarray, dist_centroids: np.ndarray, cfl: float=0.9):
+    import pdb; pdb.set_trace()
     bool_internal_edges = ~bool_boundary_edges
     velocity_edges = total_flux_edges/edges_dim
 
-    dist_internal_edges = np.linalg.norm(
-        faces_centroids[adjacencies[bool_internal_edges, 0]] - faces_centroids[adjacencies[bool_internal_edges, 1]],
-        axis=1
-    )
+    dist_internal_edges = dist_centroids[bool_internal_edges]
+
     v_internal_edges = np.abs(velocity_edges[bool_internal_edges])
     dfw = np.absolute(fw_faces[adjacencies[bool_internal_edges, 0]] - fw_faces[adjacencies[bool_internal_edges, 1]])
     ds = np.absolute(saturation[adjacencies[bool_internal_edges, 0]] - saturation[adjacencies[bool_internal_edges, 1]])
@@ -170,10 +172,32 @@ def calculate_dt(faces_centroids: np.ndarray, adjacencies: np.ndarray, bool_boun
     all_dt1: np.ndarray = cfl*dist_internal_edges[test]*adj_phi[test,0]/(v_internal_edges[test]*dfds)
     all_dt2: np.ndarray = cfl*dist_internal_edges[test]*adj_phi[test,1]/(v_internal_edges[test]*dfds)
     dt = min([all_dt1.min(), all_dt2.min()])
+
+    velocity_bedges = np.abs(velocity_edges[bool_boundary_edges])
+    dfw_bedges = np.absolute(fw_faces[adjacencies[bool_boundary_edges, 0]])
+    ds_bedges = np.absolute(saturation[adjacencies[bool_boundary_edges, 0]])
+    phis = porosity[adjacencies[bool_boundary_edges, 0]]
+
+    test = ds_bedges != 0
+
+    if test.sum() > 0:
+        dist_bedges = dist_centroids[bool_boundary_edges]
+        dfw_bedges = dfw_bedges[test]
+        ds_bedges = ds_bedges[test]
+
+        dfds_bedges = dfw_bedges/ds_bedges
+        all_dt3 = cfl*dist_bedges[test]*phis[test]/(velocity_bedges[test]*dfds_bedges)
+        dt3 = all_dt3.min()
+
+        if dt3 == 0:
+            pass
+        else:
+            dt = min([dt, dt3])
+
     return dt
  
 
-def update_saturation(water_faces_flux, areas, dt, porosity, saturation):
+def update_saturation_dep0(water_faces_flux, areas, dt, porosity, saturation):
 
     ds = dt*water_faces_flux/(porosity*areas)
     newS = saturation + ds
@@ -191,7 +215,7 @@ def update_simulation_data(faces_flux: np.ndarray, injectors: np.ndarray, produc
     cum_oil += total_volume_oil_produced
     cum_water += total_volume_water_produced
 
-    return vpi, cum_oil, cum_water
+    return vpi, cum_oil, cum_water, water_flux, oil_flux
 
 def set_fine_transmissibility_biphasic(fine_mesh_properties: MeshProperty, bc: BoundaryConditions, lsds: LsdsFluxCalculation):
     resp = lsds.mount_transmissibility_matrix(
@@ -228,6 +252,7 @@ def initial_loop(
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
     total_mobility_faces = biphasic_mobility.get_total_mobility(mobw_faces, mobo_faces)
+    # fp.insert_or_update_data({'faces_multiplier': total_mobility_faces})
     fw_faces = biphasic_mobility.get_fw(mobw_faces, mobo_faces)
     total_mobility_edges = direct_edges_mobility(
         total_mobility_faces,
@@ -249,6 +274,8 @@ def initial_loop(
 
     weights = get_gls_nodes_weights(**fp)
     fp.insert_or_update_data(weights)
+
+    # get_lpew2_weights(fp, update=True)
 
     resp = set_fine_transmissibility_biphasic(
         fp,
@@ -285,6 +312,28 @@ def initial_loop(
             fp['bool_boundary_edges']
         )
     
+    # mobw_edges = direct_edges_mobility(
+    #     mobw_faces,
+    #     fp['areas'],
+    #     fp['faces_of_nodes'],
+    #     fp['nodes_of_edges'],
+    #     bc,
+    #     biphasic_mobility,
+    #     relative_perm
+    # )
+
+    # mobo_edges = direct_edges_mobility(
+    #     mobo_faces,
+    #     fp['areas'],
+    #     fp['faces_of_nodes'],
+    #     fp['nodes_of_edges'],
+    #     bc,
+    #     biphasic_mobility,
+    #     relative_perm
+    # )
+
+
+
     krw_edges, kro_edges = relative_perm.calculate(edges_saturation)
     mobw_edges, mobo_edges = biphasic_mobility.calculate(krw_edges, kro_edges)
     fw_edges = biphasic_mobility.get_fw(mobw_edges, mobo_edges)
@@ -306,10 +355,10 @@ def initial_loop(
         fw_faces
     )
 
-    newS = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation)
+    newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     relative_perm._test_saturations(newS)
 
-    new_vpi, new_cumulative_oil, new_cumulative_water = update_simulation_data(
+    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux = update_simulation_data(
         faces_flux,
         bc['injectors']['id'],
         bc['producers']['id'],
@@ -321,7 +370,31 @@ def initial_loop(
         dt
     )
 
-    return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux
+    return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux, water_flux, oil_flux
+
+def update_saturation(water_faces_flux, areas, dt, porosity, saturation, relative_perm: BrooksAndCorey, ratio=0.5):
+    
+    ds = dt*water_faces_flux/(porosity*areas)
+    newS = saturation + ds
+    verify = relative_perm.is_saturations_max_bound(newS)
+
+    while verify == True:
+        print('####################')
+        print('dt updated')
+        print('####################')
+        dt = ratio*dt
+        ds = dt*water_faces_flux/(porosity*areas)
+        newS[:] = saturation + ds
+        verify = relative_perm.is_saturations_max_bound(newS)
+    
+    return newS, dt
+
+
+
+
+
+
+
 
 def while_loop(
         relative_perm: BrooksAndCorey,
@@ -342,6 +415,7 @@ def while_loop(
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
     total_mobility_faces = biphasic_mobility.get_total_mobility(mobw_faces, mobo_faces)
+    # fp.insert_or_update_data({'faces_multiplier': total_mobility_faces})
     fw_faces = biphasic_mobility.get_fw(mobw_faces, mobo_faces)
 
     total_mobility_edges = direct_edges_mobility(
@@ -364,6 +438,8 @@ def while_loop(
 
     weights = get_gls_nodes_weights(**fp)
     fp.insert_or_update_data(weights)
+
+    # get_lpew2_weights(fp, update=True)
 
     resp = set_fine_transmissibility_biphasic(
         fp,
@@ -398,6 +474,26 @@ def while_loop(
         fp['bool_boundary_edges']
     )
 
+    # mobw_edges = direct_edges_mobility(
+    #     mobw_faces,
+    #     fp['areas'],
+    #     fp['faces_of_nodes'],
+    #     fp['nodes_of_edges'],
+    #     bc,
+    #     biphasic_mobility,
+    #     relative_perm
+    # )
+
+    # mobo_edges = direct_edges_mobility(
+    #     mobo_faces,
+    #     fp['areas'],
+    #     fp['faces_of_nodes'],
+    #     fp['nodes_of_edges'],
+    #     bc,
+    #     biphasic_mobility,
+    #     relative_perm
+    # )
+
     krw_edges, kro_edges = relative_perm.calculate(edges_saturation)
     mobw_edges, mobo_edges = biphasic_mobility.calculate(krw_edges, kro_edges)
     fw_edges = biphasic_mobility.get_fw(mobw_edges, mobo_edges)
@@ -430,11 +526,13 @@ def while_loop(
         porosity,
         fp['areas'],
         faces_flux,
+        fp.dist_centroids,
         cfl=cfl
     )
 
-    newS = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation)
-    new_vpi, new_cumulative_oil, new_cumulative_water = update_simulation_data(
+
+    newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
+    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux = update_simulation_data(
         faces_flux,
         bc['injectors']['id'],
         bc['producers']['id'],
@@ -446,7 +544,7 @@ def while_loop(
         dt
     )
 
-    return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux, dt
+    return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux, dt, water_flux, oil_flux
 
 def update_data(
         simulation_data: SimulationData,
@@ -455,7 +553,9 @@ def update_data(
         cumulative_water: float,
         loop: int,
         pressure: np.ndarray,
-        saturation: np.ndarray
+        saturation: np.ndarray,
+        water_flux,
+        oil_flux
 ):
     
     all_loops = simulation_data['all_loops']
@@ -470,13 +570,21 @@ def update_data(
     all_cum_wat = simulation_data[simulation_data.my_data_names[3]]
     all_cum_wat = np.append(all_cum_wat, [cumulative_water])
     
+    all_water_flux = simulation_data[simulation_data.my_data_names[6]]
+    all_water_flux = np.append(all_water_flux, [water_flux])
+
+    all_oil_flux = simulation_data[simulation_data.my_data_names[7]]
+    all_oil_flux = np.append(all_oil_flux, [oil_flux])
+    
     simulation_data.insert_or_update_data({
         simulation_data.my_data_names[0]: all_loops,
         simulation_data.my_data_names[1]: all_vpi,
         simulation_data.my_data_names[2]: all_cum_oil,
         simulation_data.my_data_names[3]: all_cum_wat,
         simulation_data.my_data_names[4] + str(loop): pressure,
-        simulation_data.my_data_names[5] + str(loop): saturation
+        simulation_data.my_data_names[5] + str(loop): saturation,
+        simulation_data.my_data_names[6]: all_water_flux,
+        simulation_data.my_data_names[7]: all_oil_flux
     })
 
     simulation_data.export_data()
@@ -549,7 +657,7 @@ def run():
    
     if load is False:
         initial_funcs(fp, fine_mesh_path, type_k)
-        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux = initial_loop(
+        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux, water_flux, oil_flux = initial_loop(
             relative_perm,
             biphasic_mobility,
             saturation,
@@ -575,7 +683,9 @@ def run():
             'all_cumulative_oil': np.array([0.0]),
             'all_cumulative_water': np.array([0.0]),
             'pressure_' + str(loop): pressure,
-            'saturation_' + str(loop): saturation
+            'saturation_' + str(loop): saturation,
+            'water_flux': np.array([water_flux]),
+            'oil_flux': np.ndarray([oil_flux])
         })
         saturation[:] = newS
     elif load is True:
@@ -591,7 +701,7 @@ def run():
     while vpi < max_vpi and loop < max_loop:
         for i in range(loop_intervals):
             loop += 1
-            pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux, dt = while_loop(
+            pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux, dt, water_flux, oil_flux = while_loop(
                 relative_perm,
                 biphasic_mobility,
                 saturation,
@@ -625,7 +735,9 @@ def run():
             cumulative_water,
             loop,
             pressure,
-            saturation
+            saturation,
+            water_flux,
+            oil_flux
         )
         
         mesh_data.insert_tag_data('pressure', pressure, 'faces')

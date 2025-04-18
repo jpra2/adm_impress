@@ -3,7 +3,7 @@ from typing import Tuple
 
 class BrooksAndCorey:
 
-    def __init__(self, Sor: float= 0.2, Swc: float=0.2, nw: int=2, no: int=2, krw0: float=1, kro0: float=1):
+    def __init__(self, Sor: float= 0.2, Swc: float=0.2, nw: int=2, no: int=2, krw0: float=1, kro0: float=1, debug=False):
         """Biphasic Corey and Brooks relative permeability Init parameters
 
         Args:
@@ -21,6 +21,7 @@ class BrooksAndCorey:
         self.n_o = no
         self.krw0 = krw0
         self.kro0 = kro0
+        self.debug = debug
 
     def _stemp(self, S:np.ndarray) -> np.ndarray:
         """Update self.stemp
@@ -64,7 +65,22 @@ class BrooksAndCorey:
         test1 = saturations < 0
         test2 = saturations > 1
         n = test1.sum() + test2.sum()
+        if n != 0 and self.debug == True:
+            v1 = saturations[test1]
+            v2 = saturations[test2]
+            print(v1)
+            print(v2)
+            import pdb; pdb.set_trace()
         assert n == 0
+
+    def is_saturations_max_bound(self, saturations: np.ndarray):
+        test1 = saturations < 0
+        test2 = saturations > 1 - self.Sor
+        n = test1.sum() + test2.sum()
+        if n > 0:
+            return True
+        else:
+            return False
 
     def __call__(self, saturations:np.ndarray) -> np.ndarray:
         return self.calculate(saturations)
