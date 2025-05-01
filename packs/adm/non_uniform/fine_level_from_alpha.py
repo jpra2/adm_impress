@@ -5,6 +5,7 @@ def define_fine_levels_from_alpha(
     OR: sp.csc_matrix,
     OP: sp.csc_matrix,
     T: sp.csc_matrix,
+    primal_ids: np.ndarray,
     alpha_lim: float=1.0,
     **kwargs
 ) -> np.ndarray:
@@ -19,17 +20,24 @@ def define_fine_levels_from_alpha(
         test = data_T_alpha[0] == i
         datai = data_T_alpha[2][test]
         colsi = data_T_alpha[1][test]
-        
-        ##########
-        test2 = datai > 0
-        if test2.sum() == 0:
-            continue
-        datai = datai[test2]
-        colsi = colsi[test2]
-        ############
 
-        max_arg = np.argmax(datai)
-        alphai[i] = datai[max_arg]/tau_coarse[colsi[max_arg]]
+        cid = primal_ids[i]
+        
+        # ##########
+        # test2 = datai > 0
+        # if test2.sum() == 0:
+        #     continue
+        # datai = datai[test2]
+        # colsi = colsi[test2]
+        # ############
+
+        test2 = colsi != cid
+        if test2.sum() > 0:
+            datai2 = datai[test2]
+            colsi2 = colsi[test2]
+
+            max_arg = np.argmax(datai2)
+            alphai[i] = datai2[max_arg]/tau_coarse[colsi2[max_arg]]
     
     # test_neg = data_T_alpha[2] < 0
     # test_diag = data_T_alpha[0] == data_T_alpha[1]

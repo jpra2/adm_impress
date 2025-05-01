@@ -500,3 +500,57 @@ def define_new_fine_levels_v1(
     
     dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
     return dual_in_boundary
+
+def set_permeability_barreira_for_weights(fine_properties: MeshProperty, **kwargs):
+    
+
+    faces1 = fine_properties['physical_triangle_1']
+    faces2 = fine_properties['physical_triangle_2']
+
+    k1 = np.eye(2)*1
+    k2 = np.eye(2)*1e-3
+
+    # k1 = np.eye(2)*1
+    # k2 = np.eye(2)*1e6
+
+    tag_preprocess = 'permeability'
+    
+    faces_k1 = faces1
+    faces_k2 = faces2
+
+    faces = fine_properties['faces']
+
+    permeability = np.zeros((faces.shape[0], 2, 2))
+    permeability[faces_k1] = k1
+    permeability[faces_k2] = k2
+    
+    fine_properties.insert_or_update_data({
+        tag_preprocess: permeability
+    })
+
+def set_permeability_barreira_for_simulation(fine_properties: MeshProperty, **kwargs):
+    
+
+    faces1 = fine_properties['physical_triangle_1']
+    faces2 = fine_properties['physical_triangle_2']
+
+    k1 = np.eye(2)*1
+    k2 = np.eye(2)*1e-3
+
+    # k1 = np.eye(2)*1
+    # k2 = np.eye(2)*1e6
+
+    tag_preprocess = 'permeability'
+    
+    faces_k1 = faces1
+    faces_k2 = faces2
+
+    faces = fine_properties['faces']
+
+    permeability = np.zeros((faces.shape[0], 2, 2))
+    permeability[faces_k1] = k1
+    permeability[faces_k2] = k2
+    
+    fine_properties.insert_or_update_data({
+        tag_preprocess: permeability
+    })

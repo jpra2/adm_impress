@@ -7,6 +7,10 @@ import os
 
 from packs import defpaths
 
+from scipy.sparse import identity
+from scipy.sparse import diags
+from scipy.sparse.linalg import onenormest
+
 
 def get_box_dep0(all_centroids, limites):
     '''
@@ -261,3 +265,22 @@ def remap_values(map_from, map_to, values):
     resp = vals[inv].copy()
     return resp
 
+def spai(A, m):
+    """Perform m step of the SPAI iteration."""
+    
+    
+    n = A.shape[0]
+    
+    ident = identity(n, format='csr')
+    alpha = 2 / onenormest(A @ A.T)
+    M = alpha * A
+        
+    for index in range(m):
+        C = A @ M
+        G = ident - C
+        AG = A @ G
+        trace = (G.T @ AG).diagonal().sum()
+        alpha = trace / np.linalg.norm(AG.data)**2
+        M = M + alpha * G
+        
+    return M

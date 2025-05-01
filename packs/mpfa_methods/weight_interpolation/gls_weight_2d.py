@@ -216,7 +216,17 @@ class CalculateGlsWeight2D:
 
     @staticmethod
     def M(Mv, Nv):
-        return np.linalg.inv(Mv.T.dot(Mv)).dot(Mv.T).dot(Nv)
+        # return np.linalg.inv(Mv.T.dot(Mv)).dot(Mv.T).dot(Nv)
+        Q, R = np.linalg.qr(Mv)
+        # Mv.T = R.T.dot(Q.T)
+        return np.linalg.inv(R).dot(Q.T).dot(Nv)
+    
+    
+
+        
+
+
+
 
     @staticmethod
     def weights(eT, M):
@@ -320,7 +330,9 @@ class CalculateGlsWeight2D:
                 n_edges
             )    
 
-            weights = self.eT(n_faces).dot(np.linalg.inv(M.T.dot(M)).dot(M.T).dot(N))
+            Q, R = np.linalg.qr(M)
+            weights = self.eT(n_faces).dot(np.linalg.inv(R).dot(Q.T).dot(N))
+            # weights = self.eT(n_faces).dot(np.linalg.inv(M.T.dot(M)).dot(M.T).dot(N))
             
             neummann_edges_node = np.intersect1d(neumann_edges, edges_adj)
             if neummann_edges_node.shape[0] > 0:
@@ -338,10 +350,16 @@ class CalculateGlsWeight2D:
             faces_ids.append(faces_adj)
             all_weight.append(weights)
         
-        nodes_ids = np.concatenate(nodes_ids)
-        faces_ids = np.concatenate(faces_ids)
-        all_weight = np.concatenate(all_weight)
-        all_neumann_weights = np.array(all_neumann_weights)
+        if len(nodes_ids) > 0:
+            nodes_ids = np.concatenate(nodes_ids)
+            faces_ids = np.concatenate(faces_ids)
+            all_weight = np.concatenate(all_weight)
+            all_neumann_weights = np.array(all_neumann_weights)
+        else:
+            nodes_ids = np.array([])
+            faces_ids = nodes_ids.copy()
+            all_weight = nodes_ids.copy()
+            all_neumann_weights = nodes_ids.copy()
 
         return nodes_ids, faces_ids, all_weight, all_neumann_weights
 
@@ -450,9 +468,10 @@ class CalculateGlsWeight2D:
         nodes_ids, faces_ids, weights = self.get_weights_internal_nodes(**kwargs)
         nodes_ids2, faces_ids2, weights2, all_neumann_weights = self.get_weights_bnodes(**kwargs)
 
-        nodes_ids = np.concatenate([nodes_ids, nodes_ids2])
-        faces_ids = np.concatenate([faces_ids, faces_ids2])
-        weights = np.concatenate([weights, weights2])
+        if nodes_ids2.shape[0] > 0:
+            nodes_ids = np.concatenate([nodes_ids, nodes_ids2])
+            faces_ids = np.concatenate([faces_ids, faces_ids2])
+            weights = np.concatenate([weights, weights2])
 
         nodes_weights = np.zeros(len(nodes_ids), dtype=dtype)
         nodes_weights['node_id'] = nodes_ids

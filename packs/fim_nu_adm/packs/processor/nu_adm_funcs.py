@@ -141,7 +141,7 @@ def get_finescale_vols(inital_level0_vols:np.ndarray, alpha_vols_finescale:np.nd
         bvols=np.concatenate(beta_groups[binds])
         fs_vs=np.unique(np.concatenate([fs_vs,bvols]))
     
-    return fs_vs
+    return fs_vs.astype(np.int)
 
 def set_adm_mesh_non_nested(
         v0:np.ndarray,
@@ -227,7 +227,8 @@ def organize(
     cols = np.concatenate([cols,c1_adm])
     data = np.concatenate([data,d1])
 
-    n1_adm = c1_adm.max()+1
+    # n1_adm = c1_adm.max()+1
+    n1_adm = cols.max() + 1
 
     OP_ADM = sp.csc_matrix((data,(lines,cols)),shape=(len(gid_0),n1_adm))
 

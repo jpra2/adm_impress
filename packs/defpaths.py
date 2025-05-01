@@ -76,6 +76,7 @@ finescale_mesh_layer = os.path.join(layers_folder, '5spotHETq.msh')
 coarse_mesh_layer = os.path.join(layers_folder, 'coarse1.msh')
 
 biphasic_folder = 'bifasico'
-barreira_mesh = os.path.join(biphasic_folder, '5spotN2.msh')
-
-
+barreira_mesh = os.path.join(biphasic_folder, '5spotN2f.msh')
+barreira_mesh_coarse = os.path.join(biphasic_folder, '5spotN2_coarse_2.msh')
+quadrado_mesh = os.path.join(biphasic_folder, '5spot_quadrado_no_meio_v2.msh')
+quadrado_mesh_coarse = os.path.join(biphasic_folder, '5spot_quadrado_no_meio_v2_coarse.msh')

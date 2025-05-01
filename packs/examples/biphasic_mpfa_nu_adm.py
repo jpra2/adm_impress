@@ -17,7 +17,7 @@ from packs.examples.same_functions import (
     define_fine_ids_from_saturation,
     define_fine_ids_from_saturation_internal_nodes_org
 )
-from packs.examples.biphasic_mpfa import initial_funcs, set_boundary_conditions, update_saturation
+from packs.examples.biphasic_mpfa import initial_funcs, set_boundary_conditions, update_saturation, calculate_dt
 from packs.examples.diss_test1 import define_new_fine_levels_v1
 
 from packs.multiscale.unstructured.test.test_uns_ams_prolongation import export_adm_levels
@@ -169,7 +169,7 @@ def update_water_faces_flux(water_faces_flux: np.ndarray, bc: BoundaryConditions
         water_flux = total_faces_flux[producers]*fw_faces[producers]
         water_faces_flux[producers] += water_flux
 
-def calculate_dt(faces_centroids: np.ndarray, adjacencies: np.ndarray, bool_boundary_edges: np.ndarray, total_flux_edges: np.ndarray, edges_dim: np.ndarray, fw_faces: np.ndarray, saturation: np.ndarray, porosity: np.ndarray, cfl: float=1.0):
+def calculate_dt_v1_ms(faces_centroids: np.ndarray, adjacencies: np.ndarray, bool_boundary_edges: np.ndarray, total_flux_edges: np.ndarray, edges_dim: np.ndarray, fw_faces: np.ndarray, saturation: np.ndarray, porosity: np.ndarray, cfl: float=1.0):
     bool_internal_edges = ~bool_boundary_edges
     velocity_edges = total_flux_edges/edges_dim
 
@@ -247,6 +247,38 @@ def get_op_amsu(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation, O
 #     fp.export_data()
 
 
+def refine_by_gradient_v0(fp: MeshProperty, pressure: np.ndarray, max_grad: float=4000.0):
+    
+    # dist_centroids = fp['dist_centroids']
+    dist_centroids = fp.dist_centroids
+    nodes_edges = fp['nodes_of_edges']
+    faces_nodes = fp['faces_of_nodes']
+    primal_id = fp[defnames.get_primal_id_name_by_level(1)]
+
+    dp = pressure[fp['adjacencies'][fp.internal_edges]]
+    dp = np.absolute(dp[:, 1] - dp[:, 0])
+    grad = dp/dist_centroids[fp.internal_edges]
+    test = grad > max_grad
+    nodes_selected = np.unique(nodes_edges[fp.internal_edges[test]].flatten())
+    faces_selected = np.unique(np.concatenate(faces_nodes[nodes_selected]))
+    primal_id_selected = np.unique(primal_id[faces_selected])
+    test1 = np.isin(primal_id, primal_id_selected)
+    faces_selected = fp['faces'][test1]
+    return faces_selected
+
+def refine_by_pressure_lim(fp: MeshProperty, pressure: np.ndarray, min_pressure=1e5, max_pressure=5e5):
+    f1 = fp['faces'][pressure > max_pressure]
+    f2 = fp['faces'][pressure < min_pressure]
+    all_faces = np.concatenate([f1, f2])
+
+    all_faces = np.concatenate(fp.faces_of_faces_by_nodes[all_faces])
+
+    return all_faces
+
+
+
+
+
 def initial_loop(
         relative_perm: BrooksAndCorey,
         biphasic_mobility: BiphasicMobility,
@@ -266,7 +298,8 @@ def initial_loop(
         alpha_lim_finescale,
         beta_lim,
         etol_msrsb,
-        maxit_msrsb
+        maxit_msrsb,
+        cfl: float
 ):
 
     krw_faces, kro_faces = relative_perm.calculate(saturation)
@@ -353,10 +386,15 @@ def initial_loop(
 
     fine_levels[fine_ids_from_saturation] = 0
 
+    fine_ids_from_perm = refine_from_permeability_value(fp)
+    if fine_ids_from_perm.shape[0] > 0:
+        fine_levels[fine_ids_from_perm] = 0
+
     fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
         OR,
         OP,
         resp['transmissibility'],
+        fp[defnames.get_primal_id_name_by_level(1)],
         alpha_lim=alpha_lim_finescale
     )
 
@@ -384,7 +422,7 @@ def initial_loop(
         beta_groups
     )
 
-    finescale_faces = finescale_faces.astype(np.int)
+    # finescale_faces = finescale_faces.astype(np.int)
 
     fine_levels[finescale_faces] = 0
     fine_levels[fine_levels==-1] = 1
@@ -413,6 +451,69 @@ def initial_loop(
     Q_adm = OR_adm*resp['source']
     P_adm = spsolve(T_adm.tocsc(), Q_adm)
     P_prol = OP_adm*P_adm
+
+    fine_faces_by_grad = refine_by_gradient_v0(fp, P_prol, max_grad=4000)
+    # fine_faces_by_grad = nu_adm_funcs.get_finescale_vols(
+    #     fp['faces'][fine_levels==0],
+    #     fine_faces_by_grad,
+    #     beta_ind,
+    #     beta_groups
+    # )
+    fp.insert_or_update_data({'fine_faces_by_grad': fine_faces_by_grad})
+
+    fine_levels[fine_faces_by_grad] = 0
+    finescale_ids = fp['faces'][fine_levels==0]
+
+    LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
+        finescale_ids,
+        fine_levels,
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        fp[defnames.get_dual_id_name_by_level(1)]
+    )
+
+    OP_adm, OR_adm = nu_adm_funcs.organize(
+        fine_levels,
+        sp.find(OP)[0:3],
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        LEVEL_ID_1,
+        ADM_COARSE_ID_LEVEL_1,
+        fp[defnames.get_dual_id_name_by_level(1)]
+    )
+
+    T_adm = OR_adm*(resp['transmissibility']*OP_adm)
+    Q_adm = OR_adm*resp['source']
+    P_adm = spsolve(T_adm.tocsc(), Q_adm)
+    P_prol = OP_adm*P_adm
+
+    # fine_faces_by_pressure = refine_by_pressure_lim(fp, P_prol)
+    # fine_levels[fine_faces_by_pressure] = 0
+    # finescale_ids = fp['faces'][fine_levels==0]
+
+    # LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
+    #     finescale_ids,
+    #     fine_levels,
+    #     fp['faces'],
+    #     fp[defnames.get_primal_id_name_by_level(1)],
+    #     fp[defnames.get_dual_id_name_by_level(1)]
+    # )
+
+    # OP_adm, OR_adm = nu_adm_funcs.organize(
+    #     fine_levels,
+    #     sp.find(OP)[0:3],
+    #     fp['faces'],
+    #     fp[defnames.get_primal_id_name_by_level(1)],
+    #     LEVEL_ID_1,
+    #     ADM_COARSE_ID_LEVEL_1,
+    #     fp[defnames.get_dual_id_name_by_level(1)]
+    # )
+
+    # T_adm = OR_adm*(resp['transmissibility']*OP_adm)
+    # Q_adm = OR_adm*resp['source']
+    # P_adm = spsolve(T_adm.tocsc(), Q_adm)
+    # P_prol = OP_adm*P_adm
+
 
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,
@@ -503,6 +604,23 @@ def initial_loop(
         biphasic_mobility,
         fw_faces
     )
+
+    dt = calculate_dt(
+        fp['faces_centroids'],
+        fp['adjacencies'],
+        fp['bool_boundary_edges'],
+        edges_flux,
+        fp.edges_dim,
+        fw_faces,
+        saturation,
+        porosity,
+        fp['areas'],
+        faces_flux,
+        fp.dist_centroids,
+        fw_edges,
+        edges_saturation,
+        cfl=cfl
+    )
     
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     relative_perm._test_saturations(newS)
@@ -518,6 +636,9 @@ def initial_loop(
         total_area_reservoir,
         dt
     )
+
+    intitial_fine_faces = fp['faces'][fine_levels==0]
+    fp.insert_or_update_data({'initial_fine_faces': intitial_fine_faces})
 
     return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux
 
@@ -591,15 +712,21 @@ def while_loop(
 
     fine_levels = np.full(fp['faces'].shape[0], -1)
     fine_levels[initial_fine_volumes] = 0
+    fine_levels[fp['initial_fine_faces']] = 0
     # fine_ids_from_saturation = define_fine_ids_from_saturation(saturation, fp['adjacencies'], fp.internal_edges)
     fine_ids_from_saturation = define_fine_ids_from_saturation_internal_nodes_org(fp['internal_nodes_org'], fp['internal_faces_of_nodes_org'], saturation)
 
     fine_levels[fine_ids_from_saturation] = 0
 
+    # fine_ids_from_perm = refine_from_permeability_value(fp)
+    # if fine_ids_from_perm.shape[0] > 0:
+    #     fine_levels[fine_ids_from_perm] = 0
+
     fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
         OR,
         OP,
         resp['transmissibility'],
+        fp[defnames.get_primal_id_name_by_level(1)],
         alpha_lim=alpha_lim_finescale
     )
 
@@ -719,6 +846,11 @@ def while_loop(
         fw_faces,
         saturation,
         porosity,
+        fp['areas'],
+        faces_flux,
+        fp.dist_centroids,
+        fw_edges,
+        edges_saturation,
         cfl=cfl
     )
 
@@ -813,6 +945,59 @@ def define_initial_fine_volumes(fp: MeshProperty, bc: BoundaryConditions):
     fine_vols = fp['faces'][test]
     return fine_vols
 
+def refine_from_permeability_contrast(fp: MeshProperty):
+    perm = fp['permeabiity']
+    permx = perm[:, 0, 0]
+
+    adjacencies = fp['adjacencies']
+
+    dperm = permx[adjacencies[fp.internal_edges]]
+
+    ddperm = np.absolute(dperm[:, 0] - dperm[:, 1])
+    test = ddperm > 0
+    edges1 = fp.internal_edges[test]
+    volumes = np.unique(adjacencies[edges1].flatten())
+    return volumes
+
+def refine_from_permeability_value_v0(fp: MeshProperty):
+    perm = fp['permeability']
+    permx = perm[:, 0, 0]
+
+    adjacencies = fp['adjacencies']
+
+    test = permx <= 1e-5
+
+    vols1 = fp.faces[test]
+
+    t1 = np.isin(adjacencies[:, 0], vols1)
+    t2 = np.isin(adjacencies[:, 1], vols1)
+    t3 = t1 | t2
+
+    vols2 = np.unique(adjacencies[t3].flatten())
+
+    return vols2
+
+def refine_from_permeability_value_v2(fp: MeshProperty):
+    perm = fp['permeability']
+    primal_id = fp[defnames.get_primal_id_name_by_level(1)]
+
+    permx = perm[:, 0, 0]
+
+    test = permx <= 1e-5
+
+    vols1 = fp.faces[test]
+
+    primal_ids = np.unique(primal_id[vols1])
+
+    test = np.isin(primal_id, primal_ids)
+
+    vols2 = fp.faces[test]
+
+
+    return vols2
+
+def refine_from_permeability_value(fp: MeshProperty):
+    return np.array([])
 
 
 
@@ -923,6 +1108,7 @@ def run():
             fine_levels,
             adm_interfaces_name
         )
+        fp.export_data()
     else:
         # import pdb; pdb.set_trace()
         simulation_data.load_data()

@@ -456,7 +456,9 @@ class LsdsFluxCalculation:
         for edge in edges[bool_internal_edges]:
             xy_kigma_edge = xy_ksigma[edge]
             M = M_matrix[edge]
-            MM = np.linalg.inv(M.T.dot(M)).dot(M.T)
+            # MM = np.linalg.inv(M.T.dot(M)).dot(M.T)
+            Q, R = np.linalg.qr(M)
+            MM = np.linalg.inv(R).dot(Q.T)
             params = xy_kigma_edge.dot(I_23).dot(MM)
             k_params[edge] = params
         

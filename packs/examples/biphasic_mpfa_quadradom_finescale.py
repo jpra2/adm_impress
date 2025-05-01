@@ -13,42 +13,56 @@ from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_
 
 from packs.examples.biphasic_mpfa import initial_loop, while_loop, update_data
 
+
 import os
 import numpy as np
 from typing import Tuple
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
+import pint
 
 def get_properties():
-    fine_mesh_properties_name = 'finescale_barreira'
-    fine_mesh_path = defpaths.barreira_mesh
+    fine_mesh_properties_name = 'finescale_quadrado'
+    fine_mesh_path = defpaths.quadrado_mesh
 
     fine_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name)
 
     return fine_properties, fine_mesh_path
 
-def set_boundary_conditions_tri(fine_properties: MeshProperty):
+def set_boundary_conditions(fine_properties: MeshProperty):
     bc = BoundaryConditions()
+
+    ureg = pint.UnitRegistry(system='SI')
+    inj = 10368*ureg.meter**3/ureg.day
+    q0 = inj.to_base_units().to_tuple()[0]*1e6
+    p1 = 2e5
+
+    nodes_centroids = fine_properties['nodes_centroids']
+    faces_centroids = fine_properties['faces_centroids']
+    faces = fine_properties['faces']
+    xmin, ymin = nodes_centroids.min(axis=0)
+    xmax, ymax = nodes_centroids.max(axis=0)
+
+    c_q0 = np.array([xmin, ymin])
+    c_p1 = np.array([xmax, ymax])
+
+    dists = np.linalg.norm(faces_centroids - c_p1, axis=1)
+    face_p1 = faces[dists <= dists.min()][0]
+    dists[:] = np.linalg.norm(faces_centroids - c_q0, axis=1)
+    face_q0 = faces[dists <= dists.min()][0]
+    
+    face_q0 = np.array([face_q0])
+    face_p1 = np.array([face_p1])
+
+    pressure_presc = np.array([p1])
+    neumann_presc_vol = np.array([q0])
+
+    bc.set_boundary('dirichlet_volumes', face_p1, pressure_presc)
+    bc.set_boundary('neumann_volumes', face_q0, neumann_presc_vol)
 
     initial_saturation = np.zeros(fine_properties['faces'].shape[0])
 
-    pl_in = fine_properties['physical_line_201']
-    pl_out = fine_properties['physical_line_202']
-    pl_wall = fine_properties['physical_line_203']
-
-    p0 = 5e5
-    p1 = 1e5
-
-    nodes_p0 = np.unique(fine_properties['nodes_of_edges'][pl_in].flatten())
-    nodes_p1 = np.unique(fine_properties['nodes_of_edges'][pl_out].flatten())
-
-    nodes_pressure = np.concatenate([nodes_p0, nodes_p1])
-    nodes_pressure_value = np.concatenate([np.repeat(p0, len(nodes_p0)), np.repeat(p1, len(nodes_p1))])
-
-    bc.set_boundary('dirichlet_nodes', nodes_pressure, nodes_pressure_value)
-    bc.set_boundary('water_saturation_edges', pl_in, np.repeat(1.0, len(pl_in)))
-
-    walls_edges = pl_wall
+    walls_edges = fine_properties.boundary_edges
     edges_values = np.repeat(0.0, walls_edges.shape[0])
     bc.set_boundary('neumann_edges', walls_edges, edges_values)
 
@@ -57,7 +71,14 @@ def set_boundary_conditions_tri(fine_properties: MeshProperty):
         'neumann_edges_value': bc['neumann_edges']['value']
     })
 
+    bc.set_boundary('water_saturation_volumes', np.array([face_q0]), np.array([1.0]))
+    initial_saturation[face_q0] = 1.0
+
     bc.set_boundary('initial_saturation', fine_properties['faces'], initial_saturation)
+
+    bc.set_boundary('injectors', face_q0, np.array([True]))
+    bc.set_boundary('producers', face_p1, np.array([True]))
+
 
     bc.update_zero_bcs()
 
@@ -68,13 +89,9 @@ def set_permeability_barreira(fine_mesh_path, fine_properties: MeshProperty, exp
 
     faces1 = fine_properties['physical_triangle_1']
     faces2 = fine_properties['physical_triangle_2']
-    faces3 = fine_properties['physical_triangle_3']
 
-    k1 = np.eye(2)*1e-6
-    k2 = np.eye(2)*1
-
-    # k1 = np.eye(2)*1e-10
-    # k2 = np.eye(2)*1e-4
+    k1 = np.eye(2)*1e-7*1e6
+    k2 = np.eye(2)*1e-10*1e6
 
     # k1 = np.eye(2)*1
     # k2 = np.eye(2)*1e6
@@ -83,8 +100,8 @@ def set_permeability_barreira(fine_mesh_path, fine_properties: MeshProperty, exp
     if fine_properties.verify_name_in_data_names(tag_preprocess) and update_permfield is False:
         return
     
-    faces_k1 = np.concatenate([fine_properties['physical_triangle_2'], fine_properties['physical_triangle_3']])
-    faces_k2 = fine_properties['physical_triangle_1']
+    faces_k1 = faces1
+    faces_k2 = faces2
 
     faces = fine_properties['faces']
 
@@ -123,8 +140,61 @@ def set_permeability_barreira(fine_mesh_path, fine_properties: MeshProperty, exp
             elements_type='faces'
         )
         mesh_data.export_all_elements_type_to_vtk('permfield', element_type='faces')
+    
 
-    pass
+def set_permeability_barreira_for_weights(fine_mesh_path, fine_properties: MeshProperty, export_permfield=True, update_permfield=True, **kwargs):
+    
+
+    faces1 = fine_properties['physical_triangle_1']
+    faces2 = fine_properties['physical_triangle_2']
+
+    k1 = np.eye(2)*1
+    k2 = np.eye(2)*1e-3
+
+    # k1 = np.eye(2)*1
+    # k2 = np.eye(2)*1e6
+
+    tag_preprocess = 'permeability'
+    
+    faces_k1 = faces1
+    faces_k2 = faces2
+
+    faces = fine_properties['faces']
+
+    permeability = np.zeros((faces.shape[0], 2, 2))
+    permeability[faces_k1] = k1
+    permeability[faces_k2] = k2
+    
+    fine_properties.insert_or_update_data({
+        tag_preprocess: permeability
+    })
+
+def set_permeability_barreira_for_simulation(fine_mesh_path, fine_properties: MeshProperty, export_permfield=True, update_permfield=True, **kwargs):
+    
+
+    faces1 = fine_properties['physical_triangle_1']
+    faces2 = fine_properties['physical_triangle_2']
+
+    k1 = np.eye(2)*1e-7
+    k2 = np.eye(2)*1e-10
+
+    # k1 = np.eye(2)*1
+    # k2 = np.eye(2)*1e6
+
+    tag_preprocess = 'permeability'
+    
+    faces_k1 = faces1
+    faces_k2 = faces2
+
+    faces = fine_properties['faces']
+
+    permeability = np.zeros((faces.shape[0], 2, 2))
+    permeability[faces_k1] = k1
+    permeability[faces_k2] = k2
+    
+    fine_properties.insert_or_update_data({
+        tag_preprocess: permeability
+    })
 
 def initial_funcs(
         fp: MeshProperty,
@@ -133,24 +203,21 @@ def initial_funcs(
     
     set_permeability_barreira(fine_mesh_path, fp, export_permfield=True, update_permfield=True)
     # set_weights_nodes(fp, update=True)
+    fine_properties = fp
 
     lsds = LsdsFluxCalculation()
-    fp.insert_or_update_data(
-        lsds.get_all_edges_flux_params(**fp.get_all_data())
+    fine_properties.insert_or_update_data(
+        lsds.get_all_edges_flux_params(**fine_properties.get_all_data())
     )
 
-    fp.insert_or_update_data({
-        'nodes_to_calculate': fp.nodes
+    fine_properties.insert_or_update_data({
+        'nodes_to_calculate': fine_properties.nodes
     })
 
-    weights = get_gls_nodes_weights(**fp.get_all_data())
-    fp.insert_or_update_data(weights)
+    weights = get_gls_nodes_weights(**fine_properties.get_all_data())
+    fine_properties.insert_or_update_data(weights)
 
-    if fp.verify_name_in_data_names('nodes_org'):
-        pass
-    else:
-        nodes_org = fp.get_nodes_org_from_faces_of_nodes_object()
-        fp.insert_or_update_data(nodes_org)
+    fine_properties.export_data()
 
     # get_xi_params_ds_flux(fp, update=True)
 
@@ -203,7 +270,6 @@ def load_or_update_initial_loop(
             cumulative_water,
             cfl
         )
-        
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
         mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
         mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
@@ -296,7 +362,6 @@ def update_while_loop(
         water_flux,
         oil_flux
     )
-    fp.export_data()
     
     mesh_data.insert_tag_data('pressure', pressure, 'faces')
     mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
@@ -311,28 +376,26 @@ def run5():
     max_vpi = 1.3
     loop = 0
     max_loop = np.inf
-    load = True
-    loop_intervals = 5
-    cfl = 0.9
+    load = False
+    loop_intervals = 20
+    cfl = 0.7
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
     vpi = 0.0
 
     relative_perm = BrooksAndCorey(Sor=0.0, Swc=0.0)
-    biphasic_mobility = BiphasicMobility(miw=0.001, mio=0.004)
+    biphasic_mobility = BiphasicMobility(miw=0.001, mio=0.001)
     lsds = LsdsFluxCalculation()
-    simulation_data = SimulationData('biphasic_barreira')
+    simulation_data = SimulationData('biphasic_quadrado_finescale')
 
     fp, fine_mesh_path = get_properties()
-    bc = set_boundary_conditions_tri(fp)
+    bc = set_boundary_conditions(fp)
 
     porosity = np.repeat(0.2, len(fp['faces']))
-    porosity[fp['physical_triangle_1']] = 0.35
 
     total_area_reservoir = porosity.dot(fp['areas'])
-    saturation: np.ndarray = bc['initial_saturation']['value'].copy()
-    fp.insert_or_update_data({'sat_for_weight': saturation.copy()}) 
+    saturation: np.ndarray = bc['initial_saturation']['value'].copy() 
     pressure = np.repeat(0.0, fp['faces'].shape[0])
     newS = saturation.copy()
     saturation_plot = saturation.copy()
@@ -367,7 +430,6 @@ def run5():
     )
 
     while vpi < max_vpi and loop < max_loop:
-        
         loop, cumulative_oil, cumulative_water, vpi = update_while_loop(
             loop_intervals,
             loop,

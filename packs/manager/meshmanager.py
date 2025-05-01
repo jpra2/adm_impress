@@ -374,9 +374,9 @@ class MeshProperty:
 
         all_nodes_org = []
         faces_of_nodes_org = []
-        n_nodes = np.arange(1, n_faces_of_nodes.max()+1)
+        nf_nodes = np.unique(n_faces_of_nodes)
 
-        for i in n_nodes:
+        for i in nf_nodes:
             test = n_faces_of_nodes == i
             v4 = self.nodes[test]
             all_nodes_org.append(v4)
@@ -392,7 +392,7 @@ class MeshProperty:
         resp = {
             'nodes_org': all_nodes_org,
             'faces_of_nodes_org': faces_of_nodes_org,
-            'n_nodes': n_nodes
+            'n_nodes_org': nf_nodes
         }
 
         return resp
@@ -458,6 +458,17 @@ class MeshProperty:
             self.export_data()
             return all_dists
 
+    @property
+    def faces(self):
+        return self['faces']
+    
+    @property
+    def nodes(self):
+        return self['nodes']
+    
+    @property
+    def edges(self):
+        return self['edges']
 
 
 

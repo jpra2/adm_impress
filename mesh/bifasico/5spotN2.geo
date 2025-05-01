@@ -1,7 +1,10 @@
-//Mesh.Algorithm = 2;
+Mesh.Algorithm = 2;
 
-cl__1 = 3.5;
-cl__2 = 3.5;
+//cl__1 = 3.5;
+//cl__2 = 3.5;
+
+cl__1 = 1;
+cl__2 = 1;
 
 Lx = 100;
 Ly = 100;
@@ -49,8 +52,8 @@ Plane Surface(3) = {3};
 //Transfinite Curve {4, 8} = 40 + 1 Using Progression 1;
 //Transfinite Curve {11, 9, 14, 12} = 10 + 1 Using Progression 1;
 //Transfinite Surface {1};
-Transfinite Surface {2};
-Transfinite Surface {3};
+//Transfinite Surface {2};
+//Transfinite Surface {3};
 
 //Line {5} In Surface {1};
 //Line {6} In Surface {1};

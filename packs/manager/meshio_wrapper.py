@@ -62,7 +62,10 @@ class MeshioWrapper:
 
     @property
     def physical_int_tags(self):
-        return deepcopy(self.msh.cell_data_dict["gmsh:physical"])
+        try:
+            return deepcopy(self.msh.cell_data_dict["gmsh:physical"])
+        except KeyError:
+            return dict()
 
     def get_elements_by_physical_tag(self, tag: str) -> dict:
         return deepcopy(self.msh.cell_sets_dict[tag])

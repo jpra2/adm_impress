@@ -17,6 +17,9 @@ import numpy as np
 from typing import Tuple
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
+import pint
+import dask
+
 
 def get_properties() -> Tuple[MeshProperty, str]:
     # rel_path = os.path.join(
@@ -151,8 +154,9 @@ def update_water_faces_flux(water_faces_flux: np.ndarray, bc: BoundaryConditions
         water_faces_flux[producers] += water_flux
 
 
-def calculate_dt(faces_centroids: np.ndarray, adjacencies: np.ndarray, bool_boundary_edges: np.ndarray, total_flux_edges: np.ndarray, edges_dim: np.ndarray, fw_faces: np.ndarray, saturation: np.ndarray, porosity: np.ndarray, areas: np.ndarray, faces_flux: np.ndarray, dist_centroids: np.ndarray, cfl: float=0.9):
-    import pdb; pdb.set_trace()
+def calculate_dt(faces_centroids: np.ndarray, adjacencies: np.ndarray, bool_boundary_edges: np.ndarray, total_flux_edges: np.ndarray, edges_dim: np.ndarray, fw_faces: np.ndarray, saturation: np.ndarray, porosity: np.ndarray, areas: np.ndarray, faces_flux: np.ndarray, dist_centroids: np.ndarray, fw_edges: np.ndarray, edges_saturation: np.ndarray, cfl: float=0.9):
+    
+    dt = 1e20
     bool_internal_edges = ~bool_boundary_edges
     velocity_edges = total_flux_edges/edges_dim
 
@@ -165,17 +169,18 @@ def calculate_dt(faces_centroids: np.ndarray, adjacencies: np.ndarray, bool_boun
 
     test = ds != 0
 
-    dfw = dfw[test]
-    ds = ds[test]
+    if test.sum() > 0:
+        dfw = dfw[test]
+        ds = ds[test]
 
-    dfds = dfw/ds
-    all_dt1: np.ndarray = cfl*dist_internal_edges[test]*adj_phi[test,0]/(v_internal_edges[test]*dfds)
-    all_dt2: np.ndarray = cfl*dist_internal_edges[test]*adj_phi[test,1]/(v_internal_edges[test]*dfds)
-    dt = min([all_dt1.min(), all_dt2.min()])
+        dfds = dfw/ds
+        all_dt1: np.ndarray = cfl*dist_internal_edges[test]*adj_phi[test,0]/(v_internal_edges[test]*dfds)
+        all_dt2: np.ndarray = cfl*dist_internal_edges[test]*adj_phi[test,1]/(v_internal_edges[test]*dfds)
+        dt = min([all_dt1.min(), all_dt2.min()])
 
     velocity_bedges = np.abs(velocity_edges[bool_boundary_edges])
-    dfw_bedges = np.absolute(fw_faces[adjacencies[bool_boundary_edges, 0]])
-    ds_bedges = np.absolute(saturation[adjacencies[bool_boundary_edges, 0]])
+    dfw_bedges = np.absolute(fw_faces[adjacencies[bool_boundary_edges, 0]] - fw_edges[bool_boundary_edges])
+    ds_bedges = np.absolute(saturation[adjacencies[bool_boundary_edges, 0]] - edges_saturation[bool_boundary_edges])
     phis = porosity[adjacencies[bool_boundary_edges, 0]]
 
     test = ds_bedges != 0
@@ -232,6 +237,8 @@ def initial_funcs(
     # define_faces_in_losangle(fp)
     set_permeability(fine_mesh_path, fp, typek=type_k, export_permfield=True, update_permfield=True)
     set_weights_nodes(fp, update=True)
+    nodes_org_dict = fp.get_nodes_org_from_faces_of_nodes_object()
+    fp.insert_or_update_data(nodes_org_dict)
     fp.backup_data('xi_params', 'xi_params_backup')
     fp.export_data()
 
@@ -247,7 +254,8 @@ def initial_loop(
         total_area_reservoir: float,
         vpi: float,
         cumulative_oil: float,
-        cumulative_water: float
+        cumulative_water: float,
+        cfl: float
 ):
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
@@ -355,6 +363,23 @@ def initial_loop(
         fw_faces
     )
 
+    dt = calculate_dt(
+        fp['faces_centroids'],
+        fp['adjacencies'],
+        fp['bool_boundary_edges'],
+        edges_flux,
+        fp.edges_dim,
+        fw_faces,
+        saturation,
+        porosity,
+        fp['areas'],
+        faces_flux,
+        fp.dist_centroids,
+        fw_edges,
+        edges_saturation,
+        cfl=cfl
+    )
+
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     relative_perm._test_saturations(newS)
 
@@ -369,7 +394,7 @@ def initial_loop(
         total_area_reservoir,
         dt
     )
-
+    
     return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux, water_flux, oil_flux
 
 def update_saturation(water_faces_flux, areas, dt, porosity, saturation, relative_perm: BrooksAndCorey, ratio=0.5):
@@ -391,7 +416,60 @@ def update_saturation(water_faces_flux, areas, dt, porosity, saturation, relativ
 
 
 
+def define_nodes_for_weight_from_delta_sat(fp: MeshProperty, saturation: np.ndarray, delta_sat_for_weight, **kwargs):
 
+    sat_for_weight = fp['sat_for_weight']
+    
+    nodes_org = fp['nodes_org']
+    faces_of_nodes_org = fp['faces_of_nodes_org']
+
+    my_nodes = []
+    faces_to_update_sat_for_weight = []
+
+    for i, nodes in enumerate(nodes_org):
+        faces_nodes = faces_of_nodes_org[i]
+        sat1 = sat_for_weight[faces_nodes]
+        sat2 = saturation[faces_nodes]
+        dsat = np.absolute(sat1 - sat2)
+        test = dsat >= delta_sat_for_weight
+        test = np.any(test, axis=1)
+        if np.any(test):
+            my_nodes.append(nodes[test])
+            faces_to_update_sat_for_weight.append(np.unique(faces_nodes[test].flatten()))
+    
+    my_nodes = np.concatenate(my_nodes)
+    faces_to_update_sat_for_weight = np.unique(np.concatenate(faces_to_update_sat_for_weight))
+
+    sat_for_weight[faces_to_update_sat_for_weight] = saturation[faces_to_update_sat_for_weight]
+    fp.insert_or_update_data({'sat_for_weight': sat_for_weight})
+    fp.insert_or_update_data({'nodes_to_calculate': my_nodes})
+
+
+def update_weight_new_function(fp: MeshProperty, saturation: np.ndarray, delta_sat_for_weight=0.1, **kwargs):
+
+    define_nodes_for_weight_from_delta_sat(fp, saturation, delta_sat_for_weight)
+
+    weights = get_gls_nodes_weights(**fp)
+    
+    nodes_updated = np.unique(weights['nodes_weights']['node_id'])
+    neumann_nodes_updated = weights['neumann_weights']['node_id']
+
+    mesh_node_weight = fp['nodes_weights']
+    mesh_node_neumman_weights = fp['neumann_weights']
+    
+    if nodes_updated.shape[0] > 0:
+        test = np.isin(mesh_node_weight['node_id'], nodes_updated)
+        test = ~test
+        new_weight = mesh_node_weight[test].copy()
+        new_weight = np.hstack([new_weight, weights['nodes_weights']])
+        fp.insert_or_update_data({'nodes_weights': new_weight})
+    
+    if neumann_nodes_updated.shape[0] > 0:
+        test2 = np.isin(mesh_node_neumman_weights['node_id'], neumann_nodes_updated)
+        test2 = ~test2
+        new_neumann_weight = mesh_node_neumman_weights[test2]
+        new_neumann_weight = np.hstack([new_neumann_weight, weights['neumann_weights']])
+        fp.insert_or_update_data({'neumann_weights': new_neumann_weight})
 
 
 
@@ -436,8 +514,12 @@ def while_loop(
         'xi_params': update_xi_params(fp['xi_params_backup'], total_mobility_edges)
     })
 
-    weights = get_gls_nodes_weights(**fp)
-    fp.insert_or_update_data(weights)
+
+    # weights = get_gls_nodes_weights(**fp)
+    # fp.insert_or_update_data(weights)
+
+    update_weight_new_function(fp, saturation)
+
 
     # get_lpew2_weights(fp, update=True)
 
@@ -527,6 +609,8 @@ def while_loop(
         fp['areas'],
         faces_flux,
         fp.dist_centroids,
+        fw_edges,
+        edges_saturation,
         cfl=cfl
     )
 
@@ -669,8 +753,10 @@ def run():
             total_area_reservoir,
             vpi,
             cumulative_oil,
-            cumulative_water
+            cumulative_water,
+            cfl
         )
+        
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
         mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
         mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')

@@ -461,6 +461,8 @@ def create_dual_edges_v1(
     )
     dists[fine_adjacencies==-1] = np.inf
 
+    set_fine_edges = set(list(fine_dual_edge_to_coarse_edge.keys()))
+
     for coarse_face in coarse_faces_id:
         dual_vertice_in_coarse = fine_faces_id[
             (primal_id==coarse_face) & (dual_id==defnames.dual_ids('vertice_id'))
@@ -470,6 +472,10 @@ def create_dual_edges_v1(
         ]
 
         for dual_edge in dual_edges_in_coarse:
+            test_set = set([dual_edge]) & set_fine_edges
+            if len(test_set) == 0:
+                dual_id[dual_edge] = -1
+                continue
             path = get_local_shortest_path_for_create_dual_edges(
                 fine_adjacencies,
                 dists,
