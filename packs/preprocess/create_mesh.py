@@ -123,8 +123,14 @@ class createMesh:
     
 
     def generate_non_uniform_mesh_2D(self):
-        x_points = np.array(self.mesh_data['nonuniform_mesh']['x_points'])
-        y_points = np.array(self.mesh_data['nonuniform_mesh']['y_points'])
+        # x_points = np.array(self.mesh_data['nonuniform_mesh']['x_points']).astype(np.float64)
+        # y_points = np.array(self.mesh_data['nonuniform_mesh']['y_points'])
+
+        x_data = self.mesh_data['nonuniform_mesh']['x_points']
+        y_data = self.mesh_data['nonuniform_mesh']['y_points']
+
+        x_points = np.array([eval(i) for i in x_data])
+        y_points = np.array([eval(i) for i in y_data])
 
         self.params = dict()
         nbs = np.array([x_points.shape[0] - 1, y_points.shape[0] - 1, 0])

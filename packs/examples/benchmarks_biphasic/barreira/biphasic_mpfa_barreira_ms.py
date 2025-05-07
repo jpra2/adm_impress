@@ -16,9 +16,9 @@ from packs.examples.same_functions import (
     define_fine_ids_from_saturation
 )
 
-from packs.examples.biphasic_mpfa_layers_quad1_finescale import (
+from packs.examples.benchmarks_biphasic.barreira.biphasic_mpfa_barreira_finescale import (
     get_properties as get_properties_finescale,
-    set_boundary_conditions,
+    set_boundary_conditions_tri as set_boundary_conditions,
     initial_funcs
 )
 
@@ -50,8 +50,8 @@ import matplotlib.pyplot as plt
 from typing import Sequence
 
 def get_properties_coarse():
-    coarse_mesh_properties_name = 'coarse1_layers'
-    coarse_mesh_path = defpaths.coarse_mesh_layer
+    coarse_mesh_properties_name = 'coarse1_barreira'
+    coarse_mesh_path = defpaths.barreira_mesh_coarse
 
     coarse_properties = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
 
@@ -84,7 +84,8 @@ def load_or_update_initial_loop(
         beta_lim: float,
         saturation_plot: np.ndarray,
         etol_msrsb,
-        maxit_msrsb
+        maxit_msrsb,
+        cfl: float
 ):
     
     if load is False:
@@ -108,7 +109,8 @@ def load_or_update_initial_loop(
             alpha_lim_finescale,
             beta_lim,
             etol_msrsb,
-            maxit_msrsb
+            maxit_msrsb,
+            cfl
         )
 
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
@@ -135,6 +137,7 @@ def load_or_update_initial_loop(
             fine_levels,
             adm_interfaces_name
         )
+        fp.export_data()
     else:
         # import pdb; pdb.set_trace()
         simulation_data.load_data()
@@ -249,14 +252,20 @@ def update_while_loop_ms(
 
 def run6():
     matrices_path = 'matrices.h5'
-    op_name = 'MsRSB'
+    op_name = 'AMS-U'
+    # op_name = 'MsRSB'
     debug = False
 
-    update_primal_mesh = True
-    update_dual_mesh = True
-    update_coarse_struct = True
+    # update_primal_mesh = True
+    # update_dual_mesh = True
+    # update_coarse_struct = True
+
+    update_primal_mesh = False
+    update_dual_mesh = False
+    update_coarse_struct = False
+
     my_dual_type = 1
-    cfl = 0.9
+    cfl = 0.8
 
     alpha_lim_finescale = 0.1
     beta_lim = 3.0
@@ -266,8 +275,8 @@ def run6():
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 1
-    etol_msrsb = 0.01
+    loop_intervals = 5
+    etol_msrsb = 0.001
     maxit_msrsb = 1000
 
     cumulative_oil = 0.0
@@ -275,9 +284,9 @@ def run6():
     vpi = 0.0
 
     relative_perm = BrooksAndCorey(Sor=0.0, Swc=0.0)
-    biphasic_mobility = BiphasicMobility(mio=4)
+    biphasic_mobility = BiphasicMobility(miw=0.001, mio=0.001)
     lsds = LsdsFluxCalculation()
-    simulation_data = SimulationData('biphasic_nuadm_quad1_ms')
+    simulation_data = SimulationData('biphasic_nuadm_barreira_ms')
     
     fp, fine_mesh_path = get_properties_finescale()
     cp, coarse_mesh_path = get_properties_coarse()
@@ -331,11 +340,13 @@ def run6():
         beta_lim,
         saturation_plot,
         etol_msrsb,
-        maxit_msrsb
+        maxit_msrsb,
+        cfl
     )
 
-    while vpi < max_vpi and loop < max_loop:
 
+    while vpi < max_vpi and loop < max_loop:
+        # import pdb; pdb.set_trace()
         loop, cumulative_oil, cumulative_water, vpi = update_while_loop_ms(
             loop_intervals,
             loop,

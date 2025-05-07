@@ -353,6 +353,8 @@ def create_dual_edges_v1(
 
     ## first: loop in boundary edges
     for coarse_edge in coarse_boundary_edges:
+        selected_fine_edge = None
+
         coarse_edge_centroid = coarse_edges_centroids[coarse_edge]
         coarse_face_adj = coarse_adjacencies[coarse_edge, 0]
         vertice = fine_faces_id[

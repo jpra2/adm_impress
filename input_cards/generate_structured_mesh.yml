@@ -15,10 +15,15 @@ dimension: 2
 
 # nome da malha para salvar
 #mesh_name: '54x216x1_L_37_unit.h5m'
-mesh_name: '5spotN2_coarse.msh'
+mesh_name: 'ex1_coarse.msh'
+
+# nonuniform_mesh:
+#   x_points: [0, 17, 34, 50, 66, 83, 100]
+#   y_points: [0, 20, 40, 60, 80, 100]
+#   z_points: [0]
 
 nonuniform_mesh:
-  x_points: [0, 17, 34, 50, 66, 83, 100]
-  y_points: [0, 20, 40, 60, 80, 100]
-  z_points: [0]
+  x_points: ['0', 1/12, 1/12 + 1/6, 1/12 + 2*1/6, 1/12 + 3*1/6, 1/12 + 4*1/6, 1/12 + 5*1/6, 2*1/12 + 5*1/6]
+  y_points: ['0', 1/12, 1/12 + 1/6, 1/12 + 2*1/6, 1/12 + 3*1/6, 1/12 + 4*1/6, 1/12 + 5*1/6, 2*1/12 + 5*1/6]
+  z_points: ['0']
 

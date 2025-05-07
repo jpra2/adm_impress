@@ -292,7 +292,6 @@ def ordenate_edges_and_nodes_of_nodes_xy_plane(nodes, edges, nodes_adj_by_nodes,
     for node in nodes:
         nodes_adj = nodes_adj_by_nodes[node]
         edges_adj = edges_adj_by_nodes[node]
-        
         centroids_nodes_adj = nodes_centroids[nodes_adj]
         if centroids_nodes_adj.shape[0] == 0:
             continue

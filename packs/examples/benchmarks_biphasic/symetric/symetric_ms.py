@@ -16,9 +16,9 @@ from packs.examples.same_functions import (
     define_fine_ids_from_saturation
 )
 
-from packs.examples.biphasic_mpfa_barreira_finescale import (
+from packs.examples.benchmarks_biphasic.symetric_finescale import (
     get_properties as get_properties_finescale,
-    set_boundary_conditions_tri as set_boundary_conditions,
+    set_boundary_conditions,
     initial_funcs
 )
 
@@ -50,8 +50,8 @@ import matplotlib.pyplot as plt
 from typing import Sequence
 
 def get_properties_coarse():
-    coarse_mesh_properties_name = 'coarse1_barreira'
-    coarse_mesh_path = defpaths.barreira_mesh_coarse
+    coarse_mesh_properties_name = 'coarse1_symetric'
+    coarse_mesh_path = defpaths.symetric_coarse
 
     coarse_properties = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
 
@@ -274,8 +274,8 @@ def run6():
     max_vpi = 1.3
     loop = 0
     max_loop = np.inf
-    load = False
-    loop_intervals = 5
+    load = True
+    loop_intervals = 20
     etol_msrsb = 0.001
     maxit_msrsb = 1000
 
@@ -297,7 +297,6 @@ def run6():
     export_primal_ids(fine_mesh_path, fp, coarse_mesh_path, export=update_primal_mesh)
     create_dual_ids(fp, cp, update=update_dual_mesh, dual_type=my_dual_type)
     export_dual_ids(fine_mesh_path, fp, export=update_dual_mesh)
-    
     porosity = np.repeat(0.2, len(fp['faces']))
     total_area_reservoir = porosity.dot(fp['areas'])
     saturation: np.ndarray = bc['initial_saturation']['value'].copy() 
@@ -346,7 +345,6 @@ def run6():
 
 
     while vpi < max_vpi and loop < max_loop:
-        # import pdb; pdb.set_trace()
         loop, cumulative_oil, cumulative_water, vpi = update_while_loop_ms(
             loop_intervals,
             loop,

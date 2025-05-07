@@ -436,13 +436,14 @@ def define_nodes_for_weight_from_delta_sat(fp: MeshProperty, saturation: np.ndar
         if np.any(test):
             my_nodes.append(nodes[test])
             faces_to_update_sat_for_weight.append(np.unique(faces_nodes[test].flatten()))
-    
-    my_nodes = np.concatenate(my_nodes)
-    faces_to_update_sat_for_weight = np.unique(np.concatenate(faces_to_update_sat_for_weight))
-
-    sat_for_weight[faces_to_update_sat_for_weight] = saturation[faces_to_update_sat_for_weight]
-    fp.insert_or_update_data({'sat_for_weight': sat_for_weight})
-    fp.insert_or_update_data({'nodes_to_calculate': my_nodes})
+    if len(my_nodes) > 0:
+        my_nodes = np.concatenate(my_nodes)
+        faces_to_update_sat_for_weight = np.unique(np.concatenate(faces_to_update_sat_for_weight))
+        sat_for_weight[faces_to_update_sat_for_weight] = saturation[faces_to_update_sat_for_weight]
+        fp.insert_or_update_data({'sat_for_weight': sat_for_weight})
+    else:
+        my_nodes = np.array([])
+        fp.insert_or_update_data({'nodes_to_calculate': my_nodes})
 
 
 def update_weight_new_function(fp: MeshProperty, saturation: np.ndarray, delta_sat_for_weight=0.1, **kwargs):

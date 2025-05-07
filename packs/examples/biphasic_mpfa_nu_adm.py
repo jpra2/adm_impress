@@ -247,23 +247,28 @@ def get_op_amsu(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation, O
 #     fp.export_data()
 
 
-def refine_by_gradient_v0(fp: MeshProperty, pressure: np.ndarray, max_grad: float=4000.0):
-    
-    # dist_centroids = fp['dist_centroids']
-    dist_centroids = fp.dist_centroids
-    nodes_edges = fp['nodes_of_edges']
-    faces_nodes = fp['faces_of_nodes']
-    primal_id = fp[defnames.get_primal_id_name_by_level(1)]
+def refine_by_gradient_v0(fp: MeshProperty, pressure: np.ndarray, max_grad: float=0.05, refine=True):
+    # refine = False
+    ## limite para refinar considerando os primais 0.5
+    if refine is True: 
+        # dist_centroids = fp['dist_centroids']
+        dist_centroids = fp.dist_centroids
+        nodes_edges = fp['nodes_of_edges']
+        faces_nodes = fp['faces_of_nodes']
+        primal_id = fp[defnames.get_primal_id_name_by_level(1)]
 
-    dp = pressure[fp['adjacencies'][fp.internal_edges]]
-    dp = np.absolute(dp[:, 1] - dp[:, 0])
-    grad = dp/dist_centroids[fp.internal_edges]
-    test = grad > max_grad
-    nodes_selected = np.unique(nodes_edges[fp.internal_edges[test]].flatten())
-    faces_selected = np.unique(np.concatenate(faces_nodes[nodes_selected]))
-    primal_id_selected = np.unique(primal_id[faces_selected])
-    test1 = np.isin(primal_id, primal_id_selected)
-    faces_selected = fp['faces'][test1]
+        dp = pressure[fp['adjacencies'][fp.internal_edges]]
+        dp = np.absolute(dp[:, 1] - dp[:, 0])
+        grad = dp/dist_centroids[fp.internal_edges]
+        test = grad > max_grad
+        nodes_selected = np.unique(nodes_edges[fp.internal_edges[test]].flatten())
+        faces_selected = np.unique(np.concatenate(faces_nodes[nodes_selected]))
+        # primal_id_selected = np.unique(primal_id[faces_selected])
+        # test1 = np.isin(primal_id, primal_id_selected)
+        # faces_selected = fp['faces'][test1]
+    elif refine is False:
+        faces_selected  = np.array([])
+    
     return faces_selected
 
 def refine_by_pressure_lim(fp: MeshProperty, pressure: np.ndarray, min_pressure=1e5, max_pressure=5e5):
@@ -452,7 +457,7 @@ def initial_loop(
     P_adm = spsolve(T_adm.tocsc(), Q_adm)
     P_prol = OP_adm*P_adm
 
-    fine_faces_by_grad = refine_by_gradient_v0(fp, P_prol, max_grad=4000)
+    fine_faces_by_grad = refine_by_gradient_v0(fp, P_prol)
     # fine_faces_by_grad = nu_adm_funcs.get_finescale_vols(
     #     fp['faces'][fine_levels==0],
     #     fine_faces_by_grad,
@@ -461,7 +466,8 @@ def initial_loop(
     # )
     fp.insert_or_update_data({'fine_faces_by_grad': fine_faces_by_grad})
 
-    fine_levels[fine_faces_by_grad] = 0
+    if fine_faces_by_grad.shape[0] > 0:
+        fine_levels[fine_faces_by_grad] = 0
     finescale_ids = fp['faces'][fine_levels==0]
 
     LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
@@ -637,7 +643,8 @@ def initial_loop(
         dt
     )
 
-    intitial_fine_faces = fp['faces'][fine_levels==0]
+    # intitial_fine_faces = fp['faces'][fine_levels==0]
+    intitial_fine_faces = initial_fine_volumes
     fp.insert_or_update_data({'initial_fine_faces': intitial_fine_faces})
 
     return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux
@@ -752,6 +759,46 @@ def while_loop(
     fine_levels[finescale_faces] = 0
     fine_levels[fine_levels==-1] = 1
 
+    finescale_ids = fp['faces'][fine_levels==0]
+
+    LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
+        finescale_ids,
+        fine_levels,
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        fp[defnames.get_dual_id_name_by_level(1)]
+    )
+
+    OP_adm, OR_adm = nu_adm_funcs.organize(
+        fine_levels,
+        sp.find(OP)[0:3],
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        LEVEL_ID_1,
+        ADM_COARSE_ID_LEVEL_1,
+        fp[defnames.get_dual_id_name_by_level(1)]
+    )
+
+    T_adm = OR_adm*(resp['transmissibility']*OP_adm)
+    Q_adm = OR_adm*resp['source']
+    P_adm = spsolve(T_adm.tocsc(), Q_adm)
+    P_prol = OP_adm*P_adm
+
+    pmin = P_prol.min()
+    pmax = P_prol.max()
+    max_grad = 0.8*(pmax - pmin)/np.sqrt(2)
+
+    fine_faces_by_grad = refine_by_gradient_v0(fp, P_prol, max_grad=max_grad)
+    # fine_faces_by_grad = nu_adm_funcs.get_finescale_vols(
+    #     fp['faces'][fine_levels==0],
+    #     fine_faces_by_grad,
+    #     beta_ind,
+    #     beta_groups
+    # )
+    fp.insert_or_update_data({'fine_faces_by_grad': fine_faces_by_grad})
+
+    if fine_faces_by_grad.shape[0] > 0:
+        fine_levels[fine_faces_by_grad] = 0
     finescale_ids = fp['faces'][fine_levels==0]
 
     LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
@@ -1010,9 +1057,9 @@ def run():
     update_dual_mesh = True
     update_coarse_struct = True
     my_dual_type = 1
-    cfl = 0.7
+    cfl = 0.9
 
-    alpha_lim_finescale = 0.1
+    alpha_lim_finescale = 0.05
     beta_lim = 3.0
     
 

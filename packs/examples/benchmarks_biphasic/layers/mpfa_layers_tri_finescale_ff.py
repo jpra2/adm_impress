@@ -21,8 +21,8 @@ import matplotlib.pyplot as plt
 
 def get_properties():
 
-    fine_mesh_properties_name = 'finescale_layers'
-    fine_mesh_path = defpaths.finescale_mesh_layer
+    fine_mesh_properties_name = 'finescale_layers_tri_ff'
+    fine_mesh_path = defpaths.layers_tri_finescale_ff
 
     fine_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name)
 
@@ -31,27 +31,21 @@ def get_properties():
 def set_boundary_conditions(fine_properties: MeshProperty):
     bc = BoundaryConditions()
 
-    nodes_centroids = fine_properties['nodes_centroids']
-    faces = fine_properties['faces']
-    faces_centroids = fine_properties['faces_centroids']
     initial_saturation = np.zeros(fine_properties['faces'].shape[0])
+    faces_of_nodes = fine_properties['faces_of_nodes']
 
-    xmin, ymin = nodes_centroids.min(axis=0)
-    xmax, ymax = nodes_centroids.max(axis=0)
+    node_q0 = fine_properties['physical_vertex_201']
+    node_p0 = fine_properties['physical_vertex_202']
 
-    c_p1 = np.array([xmin, ymin])
-    c_p0 = np.array([xmax, ymax])
+    faces_q0 = faces_of_nodes[node_q0[0]]
+    faces_p0 = faces_of_nodes[node_p0[0]]
 
-    dists = np.linalg.norm(faces_centroids - c_p1, axis=1)
-    face_p1 = faces[dists <= dists.min()][0]
-    dists[:] = np.linalg.norm(faces_centroids - c_p0, axis=1)
-    face_p0 = faces[dists <= dists.min()][0]
-    
-    faces_pressure = np.array([face_p0])
-    pressure_presc = np.array([0.0])
+    faces_pressure = faces_p0
+    pressure_presc = 0*np.array([1.0, 1.0])
 
-    faces_neumann = np.array([face_p1])
-    neummann_presc_faces = np.array([1.0])
+    faces_neumann = faces_q0
+    areas_faces_neumann = fine_properties['areas'][faces_neumann]
+    neummann_presc_faces = 1.0*areas_faces_neumann/areas_faces_neumann.sum()
 
     bc.set_boundary('dirichlet_volumes', faces_pressure, pressure_presc)
 
@@ -67,11 +61,11 @@ def set_boundary_conditions(fine_properties: MeshProperty):
         'neumann_edges_value': bc['neumann_edges']['value']
     })
 
-    bc.set_boundary('water_saturation_volumes', np.array([face_p1]), np.array([1.0]))
-    initial_saturation[face_p1] = 1.0
+    bc.set_boundary('water_saturation_volumes', faces_neumann, np.array([1.0, 1.0]))
+    initial_saturation[faces_neumann] = 1.0
 
-    bc.set_boundary('injectors', np.array([face_p1]), np.array([True]))
-    bc.set_boundary('producers', np.array([face_p0]), np.array([True]))
+    bc.set_boundary('injectors', faces_neumann, np.array([True]))
+    bc.set_boundary('producers', faces_pressure, np.array([True]))
     bc.set_boundary('initial_saturation', fine_properties['faces'], initial_saturation)
 
     bc.update_zero_bcs()
@@ -107,9 +101,9 @@ def set_permeability_layers(fine_mesh_path, fine_properties: MeshProperty, expor
     if fine_properties.verify_name_in_data_names(tag_preprocess) and update_permfield is False:
         return
     
-    faces_k1 = np.concatenate([fine_properties['physical_quad_1'], fine_properties['physical_quad_4']])
-    faces_k2 = fine_properties['physical_quad_2']
-    faces_k3 = fine_properties['physical_quad_3']
+    faces_k1 = np.concatenate([fine_properties['physical_triangle_1'], fine_properties['physical_triangle_4']])
+    faces_k2 = fine_properties['physical_triangle_2']
+    faces_k3 = fine_properties['physical_triangle_3']
 
     faces = fine_properties['faces']
 
@@ -158,6 +152,12 @@ def initial_funcs(
     set_permeability_layers(fine_mesh_path, fp, export_permfield=True, update_permfield=True)
     set_weights_nodes(fp, update=True)
 
+    if fp.verify_name_in_data_names('nodes_org'):
+        pass
+    else:
+        nodes_org = fp.get_nodes_org_from_faces_of_nodes_object()
+        fp.insert_or_update_data(nodes_org)
+
     # get_xi_params_ds_flux(fp, update=True)
 
     # fp.insert_or_update_data({
@@ -188,7 +188,8 @@ def load_or_update_initial_loop(
         total_area_reservoir: float,
         mesh_data: MeshData,
         simulation_data: SimulationData,
-        loop: int
+        loop: int,
+        cfl
     ):
     
     if load is False:
@@ -205,7 +206,8 @@ def load_or_update_initial_loop(
             total_area_reservoir,
             vpi,
             cumulative_oil,
-            cumulative_water
+            cumulative_water,
+            cfl
         )
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
         mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
@@ -316,7 +318,7 @@ def run5():
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 1
+    loop_intervals = 10
     cfl = 0.9
 
     cumulative_oil = 0.0
@@ -334,6 +336,7 @@ def run5():
     porosity = np.repeat(0.2, len(fp['faces']))
     total_area_reservoir = porosity.dot(fp['areas'])
     saturation: np.ndarray = bc['initial_saturation']['value'].copy() 
+    fp.insert_or_update_data({'sat_for_weight': saturation.copy()})
     pressure = np.repeat(0.0, fp['faces'].shape[0])
     newS = saturation.copy()
     saturation_plot = saturation.copy()
@@ -363,10 +366,12 @@ def run5():
         total_area_reservoir,
         mesh_data,
         simulation_data,
-        loop
+        loop,
+        cfl
     )
 
     while vpi < max_vpi and loop < max_loop:
+        
         loop, cumulative_oil, cumulative_water, vpi = update_while_loop(
             loop_intervals,
             loop,

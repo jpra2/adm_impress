@@ -103,12 +103,12 @@ from packs.examples.remove_data import run_delete_all, run_results
 # run()
 
 # run_delete_all()
-# run_results()
-# from packs.examples.biphasic_mpfa_layers_quad1_finescale import run5
+# # run_results()
+# from packs.examples.benchmarks_biphasic.layers.biphasic_mpfa_layers_quad1_finescale import run5
 # run5()
 
 # run_delete_all()
-# from packs.examples.biphasic_mpfa_layers_quad1_ms import run6
+# from packs.examples.benchmarks_biphasic.layers.biphasic_mpfa_layers_quad1_ms import run6
 # run6()
 
 # # run_delete_all()
@@ -127,6 +127,57 @@ from packs.examples.remove_data import run_delete_all, run_results
 
 # run_delete_all()
 # run_results()
-from packs.examples.biphasic_mpfa_barreira_ms import run6
+# from packs.examples.biphasic_mpfa_barreira_ms import run6
+# run6()
+
+# run_delete_all()
+# # run_results()
+# from packs.examples.benchmarks_biphasic.symetric.symetric_finescale import run5
+# run5()
+
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.symetric.symetric_ms import run6
+# run6()
+
+# # run_delete_all()
+# from packs.examples.benchmarks_biphasic.symetric.symetric_finescale_tri import run5
+# run5()
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.symetric.symetric_ms_tri import run6
+# run6()
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.layers.mpfa_layers_tri_finescale import run5
+# run5()
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.layers.mpfa_layers_tri_ms import run6
+# run6()
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.layers.mpfa_layers_tri_finescale_ff import run5
+# run5()
+
+# run_delete_all()
+# run_results()
+# from packs.examples.benchmarks_biphasic.layers.mpfa_layers_tri_ms_f import run6
+# run6()
+
+# from packs.examples.benchmarks_biphasic.layers.generate_coarse_points import run
+# run()
+
+# from packs.examples.benchmarks_biphasic.layers.generate_coarse_points import run2
+# run2()
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.layers.mpfa_fine1_layers import run5
+# run5()
+
+run_delete_all()
+run_results()
+from packs.examples.benchmarks_biphasic.layers.mpfa_coarse1_layers_ms import run6
 run6()
+
 
