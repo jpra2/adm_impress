@@ -4,7 +4,7 @@ from typing import Sequence
 from packs.utils.calculate_face_properties import sort_radial_sweep, sort_vertices_by_zdirection_xy_plane
 import os
 from packs.mpfa_methods.mesh_preprocess import preprocess_mesh
-
+import copy
 
 def get_points_of_line(x1, y1, x2, y2, x) -> float:
     """return the y point of a line"""
@@ -33,18 +33,22 @@ class Point:
     sequence = []
     def __init__(self, i: float, j: float, k: float):
         self.coordinate = np.array([i, j, k], dtype=np.float64)
-        self.id = len(Point.sequence)
+        self.idp = len(Point.sequence)
         Point.sequence.append(self)
     
     def getx(self):
-        return self.coord[0]
+        return self.coord.copy()[0]
     
     def gety(self):
-        return self.coord[1]
+        return self.coord.copy()[1]
     
     def getz(self):
-        return self.coord[2]
+        return self.coord.copy()[2]
     
+    @property
+    def id(self):
+        return copy.deepcopy(self.idp)
+
     @property
     def coord(self):
         return self.coordinate.copy()
@@ -67,8 +71,12 @@ class Polygon:
         else:
             raise TypeError
         
-        self.id = len(Polygon.sequence)
+        self.idp = len(Polygon.sequence)
         Polygon.sequence.append(self)
+
+    @property
+    def id(self):
+        return copy.deepcopy(self.idp)
 
     @property
     def points_coords(self):
@@ -96,7 +104,7 @@ class Polygon:
         polygon: Polygon
         if isinstance(polygon, Polygon):
             my_ids = self.points_ids
-            another_ids = polygon.points
+            another_ids = polygon.points_ids
             intersect = np.intersect1d(my_ids, another_ids)
             return intersect
         else:
