@@ -266,8 +266,11 @@ def run6():
     my_dual_type = 1
     cfl = 0.9
 
-    alpha_lim_finescale = 1000
-    beta_lim = 1000
+    # alpha_lim_finescale = 0.1
+    # beta_lim = 2
+
+    alpha_lim_finescale = 1e3
+    beta_lim = 1e3
 
     dt = 0.00005
     max_vpi = 1.3
@@ -343,6 +346,8 @@ def run6():
         maxit_msrsb,
         cfl
     )
+
+    import pdb; pdb.set_trace()
 
     while vpi < max_vpi and loop < max_loop:
 

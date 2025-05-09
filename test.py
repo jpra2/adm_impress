@@ -171,7 +171,7 @@ from packs.examples.remove_data import run_delete_all, run_results
 # from packs.examples.benchmarks_biphasic.layers.generate_coarse_points import run2
 # run2()
 
-# run_delete_all()
+# # run_delete_all()
 # from packs.examples.benchmarks_biphasic.layers.mpfa_fine1_layers import run5
 # run5()
 

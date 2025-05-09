@@ -303,6 +303,34 @@ def initial_loop(
         fp['neumann_weights']
     )
 
+    edges_flux2, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
+        bc,
+        pressure,
+        fp['xi_params'],
+        fp['nodes_weights'],
+        fp['nodes_of_edges'],
+        fp['adjacencies'],
+        fp['neumann_weights']
+    )
+
+    gradient_faces_dif = lsds.get_gradient_faces_dif(
+        fp['matrix_for_gradient'],
+        pressure,
+        nodes_pressure,
+        fp['nodes_of_edges'],
+        fp['adjacencies'],
+        fp.internal_edges,
+        fp['Gkl']
+    )
+
+    estimator1 = lsds.get_estimator_1(
+        gradient_faces_dif,
+        fp.edges_dim,
+        fp.internal_edges
+    )
+
+    import pdb; pdb.set_trace()
+
     faces_flux = lsds.get_faces_flux(
         edges_flux,
         fp['adjacencies'],

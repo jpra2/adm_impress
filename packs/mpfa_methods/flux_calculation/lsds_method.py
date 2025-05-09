@@ -17,7 +17,7 @@ class LsdsFluxCalculation:
     
     """
 
-    datas = ['xi_params', 'lsds_preprocess']
+    datas = ['xi_params', 'lsds_preprocess', 'matrix_for_gradient', 'Gkl']
     
     def preprocess(
         self,
@@ -131,7 +131,9 @@ class LsdsFluxCalculation:
         
         bool_internal_edges = ~bool_boundary_edges
         S_alpha_sigma = self.get_local_S_alpha_sigma()
+        G_alpha_sigma = self.get_local_G_alpha_sigma()
         Skl = np.zeros((edges.shape[0], 3, 3))
+        Gkl = np.zeros((edges.shape[0], 2, 2))
 
         for edge in edges[bool_internal_edges]:
             edge_nodes = nodes_of_edges[edge]
@@ -143,10 +145,37 @@ class LsdsFluxCalculation:
                     permeability[faces_adj],
                     S_alpha_sigma
                 )
+                Gkl[edge] = self.get_local_Gkl(
+                    nodes_centroids[edge_nodes],
+                    unitary_normal_edges[edge],
+                    permeability[faces_adj],
+                    G_alpha_sigma
+                )
             except IndexError:
                 import pdb; pdb.set_trace()
 
-        return Skl
+        return Skl, Gkl
+    
+    def get_local_Gkl(
+            self,
+            edge_nodes_centroids,
+            unitary_normal_edge,
+            faces_permeabilities,
+            G_alpha_sigma,
+            **kwargs
+    ):
+        
+        nk_k = np.dot(unitary_normal_edge, faces_permeabilities[0])
+        nk_l = np.dot(unitary_normal_edge, faces_permeabilities[1])
+        A_centroid = edge_nodes_centroids[1]
+        B_centroid = edge_nodes_centroids[0]
+
+        G_alpha_sigma[:, 0, :] = A_centroid - B_centroid
+        G_alpha_sigma[0, 1, :] = nk_k
+        G_alpha_sigma[1, 1, :] = nk_l
+
+        Gkl = np.linalg.inv(G_alpha_sigma[1]).dot(G_alpha_sigma[0])
+        return Gkl
 
     def get_local_Skl(
             self,
@@ -195,7 +224,11 @@ class LsdsFluxCalculation:
         S_alpha_sigma[:, 1, 0:2] = B_centroid
         S_alpha_sigma[0, 2, 0:2] = nk_k
         S_alpha_sigma[1, 2, 0:2] = nk_l
-        
+
+    def get_local_G_alpha_sigma(self):
+        G_alpha_sigma = np.zeros((2, 2, 2))
+        return G_alpha_sigma
+
     def get_local_S_alpha_sigma(self):
 
         S_alpha_sigma = np.zeros((2, 3, 3))
@@ -373,7 +406,7 @@ class LsdsFluxCalculation:
         n_edges = len(edges)
         bool_internal_edges = ~bool_boundary_edges
         M_matrix = np.zeros((n_edges, 4, 3))
-        Skl = self.get_Skl(
+        Skl, Gkl = self.get_Skl(
             edges,
             bool_boundary_edges,
             nodes_of_edges,
@@ -411,7 +444,7 @@ class LsdsFluxCalculation:
             local_M_matrix[1,:] = local_M_matrix[1,:].dot(Skl[edge])
             M_matrix[edge] = local_M_matrix
 
-        return M_matrix
+        return M_matrix, Gkl
 
     def get_internal_edges_flux_params(
             self,
@@ -436,7 +469,7 @@ class LsdsFluxCalculation:
             adjacencies
         )
 
-        M_matrix = self.get_M_matrix(
+        M_matrix, Gkl = self.get_M_matrix(
             faces_centroids,
             bool_boundary_edges,
             nodes_centroids,
@@ -452,6 +485,7 @@ class LsdsFluxCalculation:
 
         k_params = np.zeros((len(edges), 4))
         bool_internal_edges = ~bool_boundary_edges
+        matrix_for_gradient = np.zeros((len(edges), 2, 4))
 
         for edge in edges[bool_internal_edges]:
             xy_kigma_edge = xy_ksigma[edge]
@@ -460,9 +494,10 @@ class LsdsFluxCalculation:
             Q, R = np.linalg.qr(M)
             MM = np.linalg.inv(R).dot(Q.T)
             params = xy_kigma_edge.dot(I_23).dot(MM)
+            matrix_for_gradient[edge] = I_23.dot(MM)
             k_params[edge] = params
         
-        return k_params
+        return k_params, matrix_for_gradient, Gkl
 
     def get_boundary_edges_flux_params(
             self,
@@ -526,6 +561,11 @@ class LsdsFluxCalculation:
     ):
         """Returns the xi_params for all aldges 
             includes the xi_alpha (internal edges) and mi_alpha (boundary edges)
+            params[edge] = [K, L, A, B]
+            B = nodes_edge[0]
+            A = nodes_edge[1]
+            K = ajacencies[edge, 0]
+            L = ajacencies[edge, 1]
         
         Args:
             faces_centroids (_type_): _description_
@@ -544,7 +584,7 @@ class LsdsFluxCalculation:
         """
         
 
-        internal_edges_params = self.get_internal_edges_flux_params(
+        internal_edges_params, matrix_for_gradient, Gkl = self.get_internal_edges_flux_params(
             faces_centroids,
             bool_boundary_edges,
             nodes_centroids,
@@ -572,7 +612,9 @@ class LsdsFluxCalculation:
         internal_edges_params[bool_boundary_edges] = boundary_edges_params[bool_boundary_edges]
         
         resp = {
-            'xi_params': internal_edges_params
+            'xi_params': internal_edges_params,
+            'matrix_for_gradient': matrix_for_gradient,
+            'Gkl': Gkl
         }
 
         return resp
@@ -1802,8 +1844,50 @@ class LsdsFluxCalculation:
         faces_flux = np.bincount(index_faces, weights=value_flux)
         return faces_flux
         
+    def get_gradient_faces_dif(
+            self, 
+            matrix_for_gradient, 
+            faces_pressure, 
+            nodes_pressure, 
+            nodes_of_edges, 
+            adjacencies, 
+            internal_edges,
+            Gkl,
+            **kwargs
+    ):
 
+        # gradient_T = np.zeros((adjacencies.shape[0], 2, 2))
+        dif_gradient = np.zeros((adjacencies.shape[0], 2))
 
+        for i, edge in enumerate(internal_edges):
+            K = adjacencies[edge, 0]
+            L = adjacencies[edge, 1]
+            B_node = nodes_of_edges[edge, 0]
+            A_node = nodes_of_edges[edge, 1]
+            local_matrix = matrix_for_gradient[edge]
+            local_Gkl = Gkl[edge]
+
+            pressures = np.array([
+                faces_pressure[K], 
+                faces_pressure[L], 
+                nodes_pressure[A_node], 
+                nodes_pressure[B_node]
+            ])
+
+            gK = local_matrix.dot(pressures)
+            gL = local_Gkl.dot(gK)
+            dif_gradient[edge] = gK - gL
+            # gradient_T[edge] = [gK, gL]
+        
+        dif_gradient = np.linalg.norm(dif_gradient, axis=1)
+
+        return dif_gradient
+
+    def get_estimator_1(self, dif_gradient, edges_dim, internal_edges):
+        ### estimator 1 (gk - gl)/edge_dim
+        estim1 = np.zeros(edges_dim.shape[0])
+        estim1[internal_edges] = dif_gradient[internal_edges]/edges_dim[internal_edges]
+        return estim1
 
 
 
