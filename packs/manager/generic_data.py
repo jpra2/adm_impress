@@ -1,9 +1,16 @@
 from packs.manager.arraydatamanager import SuperArrayManager
 import numpy as np
 from packs.utils.utils_old import remap_values
+import os
+from packs import defpaths
 
 class SimulationData(SuperArrayManager):
     my_data_names = ['all_loops', 'all_vpi', 'all_cumulative_oil', 'all_cumulative_water', 'pressure_', 'saturation_', 'water_flux', 'oil_flux']
+
+    @property
+    def class_path(self):
+        return os.path.join(defpaths.data_simulation, self.class_name() + '_' +  self.name[0] + '.npz')
+
 
 class PrimalCoarseData(SuperArrayManager):
     my_data_names = [

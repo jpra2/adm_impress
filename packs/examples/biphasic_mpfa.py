@@ -18,7 +18,6 @@ from typing import Tuple
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 import pint
-import dask
 
 
 def get_properties() -> Tuple[MeshProperty, str]:
@@ -313,23 +312,21 @@ def initial_loop(
         fp['neumann_weights']
     )
 
-    gradient_faces_dif = lsds.get_gradient_faces_dif(
-        fp['matrix_for_gradient'],
-        pressure,
-        nodes_pressure,
-        fp['nodes_of_edges'],
-        fp['adjacencies'],
-        fp.internal_edges,
-        fp['Gkl']
-    )
+    # gradient_faces_dif = lsds.get_gradient_faces_dif(
+    #     fp['matrix_for_gradient'],
+    #     pressure,
+    #     nodes_pressure,
+    #     fp['nodes_of_edges'],
+    #     fp['adjacencies'],
+    #     fp.internal_edges,
+    #     fp['Gkl']
+    # )
 
-    estimator1 = lsds.get_estimator_1(
-        gradient_faces_dif,
-        fp.edges_dim,
-        fp.internal_edges
-    )
-
-    import pdb; pdb.set_trace()
+    # estimator1 = lsds.get_estimator_1(
+    #     gradient_faces_dif,
+    #     fp.edges_dim,
+    #     fp.internal_edges
+    # )
 
     faces_flux = lsds.get_faces_flux(
         edges_flux,

@@ -180,7 +180,19 @@ from packs.examples.remove_data import run_delete_all, run_results
 # from packs.examples.benchmarks_biphasic.layers.mpfa_coarse1_layers_ms import run6
 # run6()
 
-from packs.examples.benchmarks_biphasic.layers.write_geo_file import run
-run()
+# from packs.examples.benchmarks_biphasic.layers.write_geo_file import run
+# run()
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.layers.mpfa_fine3_layers import run5
+# run5()
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.layers.mpfa_coarse3_layers_ms import run6
+# run6()
+
+# run_delete_all()
+from packs.examples.benchmarks_monophasic.test_cross import run4
+run4()
 
 

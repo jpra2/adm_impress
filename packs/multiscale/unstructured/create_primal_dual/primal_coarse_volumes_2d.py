@@ -758,6 +758,7 @@ def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_lev
     test = fine_primal_ids == -1
 
     if np.any(test):
+        
         # TODO : criar funcao para verificar as faces que nao foram definidas em algum coarse volume
         # fine_faces_without_primal_id = faces_id_level0[test]
         # update_fine_faces(
@@ -773,6 +774,10 @@ def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_lev
         #     primal_id=fine_primal_ids
         # )
         raise NotImplementedError
+    
+    # test = fine_primal_ids == -1
+    # if np.any(test):
+    #     raise NotImplementedError
     
     # verify_fine_adjacencies(
     #     fine_primal_ids=fine_primal_ids,

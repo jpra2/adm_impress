@@ -324,8 +324,6 @@ def run():
     polygons = np.array([Polygon(points_list[indexes]) for indexes in elements])
     for i, polygon in enumerate(polygons):
         polygon: Polygon
-        if i == 6:
-            continue
         polygon.sort_by_xy_plane()
     
     polygons_n_points = np.array([poly.npoints for poly in polygons])

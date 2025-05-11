@@ -1,8 +1,10 @@
 from packs import defpaths
 import numpy as np
-from packs.examples.benchmarks_biphasic.layers.generate_coarse_points import Point, Line
+from packs.examples.benchmarks_biphasic.layers.generate_coarse_points import MoabMesh, Point, Line, Polygon
 from typing import Sequence
 import os
+from pymoab import core, types, rng, topo_util
+
 
 
 def write_points(points: Sequence[Point], lengths: list, points_ids_of_lenghts):
@@ -76,9 +78,137 @@ def write_curve_loop(curves_loop):
     
     return text
 
+def write_coarse_msh_file(filename, elements, nodes_centroids):
+    text = ['$MeshFormat\n']
+    text.append('2.0 0 8\n')
+    text.append('$EndMeshFormat\n')
+    text.append('$Nodes\n')
+
+    n_nodes = len(nodes_centroids)
+
+    text.append(str(n_nodes) + '\n')
+
+    for i, cnode in enumerate(nodes_centroids):
+        coords_str = [str(val) for val in cnode]
+        coords_str = ' '.join(coords_str)
+        coords_str += '\n'
+        linepoint = str(i+1) + ' ' + coords_str
+        text.append(linepoint)
+    
+    text.append('$EndNodes\n')
+    text.append('$Elements\n')
+
+    n_elements = len(elements)
+
+    text.append(str(n_elements) + '\n')
+
+    n_points_elements = np.zeros(elements.shape[0], dtype=int)
+
+    for i, el in enumerate(elements):
+        n_points_elements[i] = len(el)
+    
+    test3 = n_points_elements == 3
+    test4 = n_points_elements == 4
+
+    triangles = elements[test3]
+    quadrangles = elements[test4]
+
+    type_triangle = '2'
+    type_quadrangle = '3'
+
+    n_el = 1
+
+    for tri in triangles:
+        # points_ids = tri - 1
+        # coords = nodes_centroids[points_ids]
+        coords_str = [str(val) for val in tri]
+        coords_str = ' '.join(coords_str)
+        coords_str += '\n'
+        elem_str = str(n_el) + ' 2 0 ' + coords_str
+        text.append(elem_str)
+        n_el += 1
+
+    for tri in quadrangles:
+        # points_ids = tri - 1
+        # coords = nodes_centroids[points_ids]
+        coords_str = [str(val) for val in tri]
+        coords_str = ' '.join(coords_str)
+        coords_str += '\n'
+        elem_str = str(n_el) + ' 3 0 ' + coords_str
+        text.append(elem_str)
+        n_el += 1
+    
+    text.append('$EndElements\n')
+
+    with open(filename, 'w') as f:
+        for line in text:
+            f.write(line)
+    
+def write_coarse_mesh_pymoab(elements, points_list, nodes_centroids):
+
+    # points_list = np.array([Point(coord[0], coord[1], coord[2]) for coord in nodes_centroids])
+    polygons: Sequence[Polygon] = np.array([Polygon(points_list[np.array(indexes)-1]) for indexes in elements])
+
+    for i, polygon in enumerate(polygons):
+        polygon.sort_by_xy_plane()
+
+    polygons_n_points = np.array([poly.npoints for poly in polygons])
+
+    polygons3 = polygons[polygons_n_points==3]
+    polygons4 = polygons[polygons_n_points==4]
+
+    moab = MoabMesh()
+    moab.create_vertexes(nodes_centroids)
+
+    quads = [moab.verts[polygon.points_ids] for polygon in polygons4]
+    tris = [moab.verts[polygon.points_ids] for polygon in polygons3]
+
+    moab.create_tri_elements(tris)
+
+    for i, quad in enumerate(quads):
+        moab.create_quad_element(quad)
+        
+    moab.export_mesh('coarse_test2.vtk')
+    moab.export_mesh('coarse_test2.msh')
+
+    text = []
+    n_el = 59
+
+    for i, quad in enumerate(quads):
+        
+        poly: Polygon = polygons4[i]
+        points_ids = poly.points_ids + 1
+
+        coords_str = [str(val) for val in points_ids]
+        coords_str = ' '.join(coords_str)
+        coords_str += '\n'
+        elem_str = str(n_el) + ' 3 0 ' + coords_str
+        text.append(elem_str)
+        n_el -= 1
+        if n_el == 0:
+            n_el -= 1
+    
+    file_text = os.path.join(defpaths.mesh, defpaths.layers_folder, 'correct_elements_quad.txt')
+    with open(file_text, 'w') as f:
+        for line in text:
+            f.write(line)
+        
+
+
+
+
+
+           
+
+
+
+
+
 def run():
 
     filename = os.path.join(defpaths.mesh ,defpaths.layers_folder, 'coarse3.geo')
+    filename_coarse_msh = os.path.join(defpaths.mesh ,defpaths.layers_folder, 'coarse3.msh')
+
 
     Lx = 1.0
     Ly = 1.0
@@ -235,13 +365,13 @@ def run():
     newpoints26[:, 0] = newpoints26[:, 0] + Lx/6
     points = np.vstack([points, newpoints26])
 
-    lengths = [0.02, 0.01]
+    lengths = [0.8, 0.8]
 
     points_list = np.array([Point(coord[0], coord[1], coord[2]) for coord in points])
     all_points_ids = np.array([point.id for point in points_list])
     points_ids_lenght2 = np.array([0, 2, 14, 20, 21, 22, 23, 64, 65, 66, 78, 82, 84,
-                                   13, 19, 25, 26, 27, 28, 61, 62, 63, 77, 81,
-                                   1, 4, 15, 16, 17, 18, 67, 68, 69, 79, 83,
+                                   13, 76, 81,
+                                   1, 83,
                                    3, 24, 33, 40, 45, 48, 49, 52, 57, 80])
     points_ids_lenght1 = np.setdiff1d(all_points_ids, points_ids_lenght2)
 
@@ -520,6 +650,16 @@ def run():
         
     ], dtype='O')
 
+    elements2 = []
+    for curve in curve_loop:
+        cv = np.array(curve)
+        cv = np.absolute(cv) - 1
+        lines_cv = lines[cv]
+        points_lines = np.unique(np.concatenate(lines_cv))
+        elements2.append(points_lines)
+    
+    elements2 = np.array(elements2, dtype='O')
+
     elements = np.array([
         [1, 2, 3],
         [2, 4, 5],
@@ -609,4 +749,7 @@ def run():
     text_curves = write_curve_loop(curve_loop)
 
     write_file_geo(filename, text_points, text_lines, text_curves)
+    # write_coarse_msh_file(filename_coarse_msh, elements, points)
+
+    # write_coarse_mesh_pymoab(elements2, points_list, points)
 

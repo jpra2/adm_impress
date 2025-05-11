@@ -2,6 +2,8 @@ import os
 import pandas as pd
 
 flying = 'flying'
+data_mesh = os.path.join(flying, 'data_mesh_property')
+data_simulation = data_mesh
 results = 'results'
 mesh = 'mesh'
 mpfad_mesh_folder = 'mpfad_mesh_tests'
@@ -80,6 +82,8 @@ layers_tri_finescale_ff = os.path.join(layers_folder, 'layers_tri_ff.msh')
 layers_tri_coarse_f = os.path.join(layers_folder, 'layers_tri_coarse_f.msh')
 coarse1_layers = os.path.join(layers_folder, 'coarse_test.msh')
 fine1_layers = os.path.join(layers_folder, 'fine1_layers.msh')
+coarse3_layers = os.path.join(layers_folder, 'coarse3.msh')
+fine3_layers = os.path.join(layers_folder, 'fine3_layers.msh')
 
 biphasic_folder = 'bifasico'
 barreira_mesh = os.path.join(biphasic_folder, '5spotN2f.msh')

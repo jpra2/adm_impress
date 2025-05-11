@@ -155,7 +155,7 @@ class MeshProperty:
     @property
     def class_path(self):
         try:
-            return os.path.join(defpaths.flying, 'mesh_property_' + self.mesh_name[0] + '.npz')
+            return os.path.join(defpaths.data_mesh, 'mesh_property_' + self.mesh_name[0] + '.npz')
         except:
             import pdb; pdb.set_trace()
     

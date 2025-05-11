@@ -16,7 +16,7 @@ from packs.examples.same_functions import (
     define_fine_ids_from_saturation
 )
 
-from packs.examples.benchmarks_biphasic.layers.mpfa_fine1_layers import (
+from packs.examples.benchmarks_biphasic.layers.mpfa_fine3_layers import (
     get_properties as get_properties_finescale,
     set_boundary_conditions,
     initial_funcs
@@ -50,8 +50,8 @@ import matplotlib.pyplot as plt
 from typing import Sequence
 
 def get_properties_coarse():
-    coarse_mesh_properties_name = 'coarse1_layers'
-    coarse_mesh_path = defpaths.coarse1_layers
+    coarse_mesh_properties_name = 'coarse3_layers'
+    coarse_mesh_path = defpaths.coarse3_layers
 
     coarse_properties = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
 
@@ -276,7 +276,7 @@ def run6():
     max_vpi = 1.3
     loop = 0
     max_loop = np.inf
-    load = True
+    load = False
     loop_intervals = 10
     etol_msrsb = 0.01
     maxit_msrsb = 1000
@@ -346,6 +346,8 @@ def run6():
         maxit_msrsb,
         cfl
     )
+
+    import pdb; pdb.set_trace()
 
     while vpi < max_vpi and loop < max_loop:
 
