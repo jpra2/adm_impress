@@ -392,13 +392,13 @@ def create_dual_edges_v1(
             axis=1
         )
 
-        selected_fine_edge_2 = boundary_fine_edges_in_coarse_face[dists2 <= dists2.min()]
+        selected_fine_edge_2 = boundary_fine_edges_in_coarse_face[dists2 <= dists2.min()][0]
 
         # selected_face_to_dual_edge = fine_adjacencies[selected_fine_edge, 0]
         selected_face_to_dual_edge = fine_adjacencies[selected_fine_edge_2, 0]
 
         dual_id[selected_face_to_dual_edge] = defnames.dual_ids('edge_id')
-        fine_dual_edge_to_coarse_edge.update({selected_face_to_dual_edge[0]: coarse_edge})
+        fine_dual_edge_to_coarse_edge.update({selected_face_to_dual_edge: coarse_edge})
 
     # second: loop in internal_edges
     bool_coarse_boundary_edges = np.isin(coarse_edges, coarse_boundary_edges)

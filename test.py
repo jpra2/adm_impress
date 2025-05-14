@@ -9,7 +9,7 @@
 # from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import test_weights
 # test_weights()
 
-from packs.examples.remove_data import run_delete_all, run_results
+from packs.examples.remove_data import run_delete_all, run_results, maitain_only_data_mesh
 
 # from packs.mpfa_methods.flux_calculation.test.test_flux_lsds_method import test_lsds_flux
 # test_lsds_flux()
@@ -125,9 +125,8 @@ from packs.examples.remove_data import run_delete_all, run_results
 # from packs.examples.biphasic_mpfa_quadradom_ms import run6
 # run6()
 
-# run_delete_all()
-# run_results()
-# from packs.examples.biphasic_mpfa_barreira_ms import run6
+# maitain_only_data_mesh()
+# from packs.examples.benchmarks_biphasic.barreira.biphasic_mpfa_barreira_ms import run6
 # run6()
 
 # run_delete_all()
@@ -192,7 +191,43 @@ from packs.examples.remove_data import run_delete_all, run_results
 # run6()
 
 # run_delete_all()
-from packs.examples.benchmarks_monophasic.test_cross import run4
-run4()
+# from packs.examples.benchmarks_monophasic.cross.test_cross_1 import run4
+# run4()
+
+
+# from packs.examples.benchmarks_monophasic.cross.test_cross_2 import run4
+# run4()
+
+# from packs.examples.benchmarks_monophasic.cross.test_cross_3 import run4
+# run4()
+
+# from packs.examples.benchmarks_monophasic.cross.test_cross_3_2 import run4
+# run4()
+
+# from packs.examples.benchmarks_monophasic.cross.test_cross_4 import run4
+# run4()
+
+# from packs.examples.benchmarks_monophasic.cross.test_cross_5 import run4
+# run4()
+
+# from packs.examples.benchmarks_monophasic.cross.test_cross_6 import run4
+# run4()
+
+# run_delete_all()
+# maitain_only_data_mesh()
+# from packs.examples.benchmarks_biphasic.het.fine1 import run5
+# run5()
+
+
+# maitain_only_data_mesh()
+from packs.examples.benchmarks_biphasic.het.coarse1 import run6
+run6()
+
+# from packs.examples.benchmarks_biphasic.het.write_geo_file import run
+# run()
+
+
+
+
 
 

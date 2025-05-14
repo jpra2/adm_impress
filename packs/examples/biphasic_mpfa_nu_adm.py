@@ -247,7 +247,7 @@ def get_op_amsu(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation, O
 #     fp.export_data()
 
 
-def refine_by_gradient_v0(fp: MeshProperty, pressure: np.ndarray, max_grad: float=0.05, refine=True):
+def refine_by_gradient_v0(fp: MeshProperty, pressure: np.ndarray, max_grad: float=0.6, refine=True):
     # refine = False
     ## limite para refinar considerando os primais 0.5
     if refine is True: 
@@ -256,6 +256,7 @@ def refine_by_gradient_v0(fp: MeshProperty, pressure: np.ndarray, max_grad: floa
         nodes_edges = fp['nodes_of_edges']
         faces_nodes = fp['faces_of_nodes']
         primal_id = fp[defnames.get_primal_id_name_by_level(1)]
+        faces_of_faces_by_nodes = fp.faces_of_faces_by_nodes
 
         dp = pressure[fp['adjacencies'][fp.internal_edges]]
         dp = np.absolute(dp[:, 1] - dp[:, 0])
@@ -263,6 +264,8 @@ def refine_by_gradient_v0(fp: MeshProperty, pressure: np.ndarray, max_grad: floa
         test = grad > max_grad
         nodes_selected = np.unique(nodes_edges[fp.internal_edges[test]].flatten())
         faces_selected = np.unique(np.concatenate(faces_nodes[nodes_selected]))
+        # faces_selected = np.unique(np.concatenate(faces_of_faces_by_nodes[faces_selected])) 
+
         # primal_id_selected = np.unique(primal_id[faces_selected])
         # test1 = np.isin(primal_id, primal_id_selected)
         # faces_selected = fp['faces'][test1]
@@ -285,7 +288,7 @@ def refine_by_estimator1(
         lsds: LsdsFluxCalculation,
         bc: BoundaryConditions,
         pressure: np.ndarray,
-        max_value: float=1e-7
+        max_value: float=230.0
 ):
 
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
@@ -359,7 +362,7 @@ def initial_loop(
 ):
     
     refine_by_grad_bool = False
-    refine_by_estimator1_bool = True
+    refine_by_estimator1_bool = True   
 
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
@@ -594,6 +597,7 @@ def initial_loop(
         if fine_faces_by_estimator1.shape[0] > 0:
             fine_levels[fine_faces_by_estimator1] = 0
         finescale_ids = fp['faces'][fine_levels==0]
+
         
     ###############################################################
     

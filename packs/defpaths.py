@@ -92,6 +92,11 @@ quadrado_mesh = os.path.join(biphasic_folder, '5spot_quadrado_no_meio_v2.msh')
 quadrado_mesh_coarse = os.path.join(biphasic_folder, '5spot_quadrado_no_meio_v2_coarse.msh')
 ex1_finescale = os.path.join(biphasic_folder, 'ex1f.msh')
 
+het_fine1_mesh = os.path.join(biphasic_folder, 'het_fine1.msh')
+het_coarse1_mesh = os.path.join(biphasic_folder, 'het_coarse1.msh')
+het_fine2_mesh = os.path.join(biphasic_folder, 'het_fine2.msh')
+het_coarse2_mesh = os.path.join(biphasic_folder, 'het_coarse2.msh')
+
 symetric_finescale = os.path.join(biphasic_folder, 'symetricf.msh')
 symetric_finescale_tri = os.path.join(biphasic_folder, 'symetricf_tri.msh')
 symetric_coarse = os.path.join(biphasic_folder, 'symetric_coarse.msh')

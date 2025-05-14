@@ -30,7 +30,14 @@ from packs.multiscale.unstructured.operators.precond.enhanced import Enhanced
 from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_flux, DiamondFluxCalculation
 from packs.multiscale.unstructured.operators.prolongation.msrsb_klevtsov import MsRSB
 
-from packs.multiscale.unstructured.test.test_brazil import write_results, exists_simulation, f_linf_percent, f_l2_error_paper_artur, f_linf_percent_paper_artur
+from packs.multiscale.unstructured.test.test_brazil import (
+    write_results, 
+    exists_simulation, 
+    f_linf_percent, 
+    f_l2_error_paper_artur, 
+    f_linf_percent_paper_artur, 
+    f_l2_error_percent_paper_artur
+)
 
 import os
 from shapely import geometry
@@ -588,7 +595,10 @@ def define_new_fine_levels_v4(
 
 
 def run4():
-    ## apenas com alpha e beta
+
+    ## sem nada, refinando pelo estimador
+    ## barreira
+    ## coarse 1
     matrix_path = 'matrices.h5'
     fine_transm_without_bc_name = 'fine_transm_without_bc'
     save_fine_transm_without_bc = True
@@ -601,7 +611,7 @@ def run4():
     op_toget = 'AMS-U'
     op_name = 'AMS_U_w_0_dual2'
     level_str = defnames.level_str(1)
-    # alpha_lim_finescale = 0.5
+    # alpha_lim_finescale = 0.1
     # beta_lim = 3.0
     alpha_lim_finescale = 1000
     beta_lim = 1000
@@ -613,8 +623,8 @@ def run4():
     bool_export_primal_id = False
     bool_export_dual_id = False
 
-    refine_by_delta_grad_bool = False
-    max_value_delta_grad = 4.0
+    refine_by_delta_grad_bool = True
+    max_value_delta_grad = 8.0
 
     refine_by_estimator1_bool = False
     max_value_estimator1 = 1e-7
@@ -622,12 +632,12 @@ def run4():
     my_dual_type = 1
     # perm_type = 'channel'
     perm_type = 'barrier'
-    update_nodes_weights = True
+    update_nodes_weights = False
     export_permfield = True
     update_permfield = True
     fine_level_setup = 4
     etol = -1
-    update_coarse_struct = True
+    update_coarse_struct = False
     # update_coarse_struct = False
     run_simulation_repeated = True
     check_write_results = False
@@ -1054,6 +1064,7 @@ def run4():
     # err2 = np.sqrt(error2.sum()/pressure2.sum())
 
     err2 = f_l2_error_paper_artur(pressure, P_prol)
+    err2_percent = f_l2_error_percent_paper_artur(pressure, P_prol)
 
     n_faces_f = fp.faces.shape[0]
     n_faces_nuadm = T_adm.shape[0]

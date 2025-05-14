@@ -15,7 +15,7 @@ dimension: 2
 
 # nome da malha para salvar
 #mesh_name: '54x216x1_L_37_unit.h5m'
-mesh_name: 'ex1_coarse.msh'
+mesh_name: 'het_coarse1.msh'
 
 # nonuniform_mesh:
 #   x_points: [0, 17, 34, 50, 66, 83, 100]

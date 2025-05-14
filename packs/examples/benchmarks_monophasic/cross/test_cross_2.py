@@ -15,18 +15,29 @@ from packs.fim_nu_adm.packs.processor import nu_adm_funcs
 from packs.utils.multiscale_methods import print_adm_interfaces_2d
 from packs.multiscale.unstructured.test.test_uns_ams_prolongation import export_adm_levels
 from packs.utils.multiscale_methods import print_fine_interfaces_coarse_mesh_2d
-from packs.manager.generic_data import PrimalCoarseData
+from packs.mpfa_methods.weight_interpolation.lpew import get_lpew2_weights
+
 from packs.examples.same_functions import (
     define_faces_in_losangle, 
-    set_permeability_brazil as set_permeability,
     define_coarse_structure,
     update_fine_flux
 )
+
+from packs.examples.biphasic_mpfa_nu_adm import refine_by_estimator1, refine_by_gradient_v0
+
 from packs.multiscale.unstructured.operators.precond.algorithimic_monotone import AlgorithimicMonotone
 from packs.multiscale.unstructured.operators.precond.enhanced import Enhanced
 from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_flux, DiamondFluxCalculation
 from packs.multiscale.unstructured.operators.prolongation.msrsb_klevtsov import MsRSB
 
+from packs.multiscale.unstructured.test.test_brazil import (
+    write_results, 
+    exists_simulation, 
+    f_linf_percent, 
+    f_l2_error_paper_artur, 
+    f_linf_percent_paper_artur, 
+    f_l2_error_percent_paper_artur
+)
 
 import os
 from shapely import geometry
@@ -35,36 +46,36 @@ import numpy as np
 from scipy.sparse.linalg import spsolve, gmres, cg, bicgstab, spilu, LinearOperator
 import scipy.sparse as sp
 import pandas as pd
+import scipy.io as sio
 
+def get_perm_diag(value):
+    return np.array([[value, 0], [0, value]])
 
 def get_properties():
     rel_path = os.path.join(
         defpaths.unstructured_coarse_test_mesh_folder,
-        'brazil'
+        'cross'
     )
     # fine_mesh_path = os.path.join(rel_path, 'brazilf.msh')
     # fine_mesh_properties_name = 'brazilf' 
     # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_v4.msh')
 
-    # fine_mesh_path = os.path.join(rel_path, 'brazilfquad.msh')
-    # fine_mesh_properties_name = 'brazilfquad' 
-    # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilfquad_v4.msh')
-
-    fine_mesh_path = os.path.join(rel_path, 'brazilf_tri.msh')
-    fine_mesh_properties_name = 'brazilf_tri' 
-    fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_tri.msh')
-
-
+    fine_mesh_path = os.path.join(rel_path, 'crossf.msh')
+    fine_mesh_properties_name = 'crossf' 
+    fine_mesh_path_v4 = os.path.join(rel_path, 'crossf.msh')
 
     # fine_mesh_path = os.path.join(rel_path, 'brazilf_test.msh')
     # fine_mesh_properties_name = 'brazilf_test' 
     # fine_mesh_path_v4 = os.path.join(rel_path, 'brazilf_test_v4.msh')
 
-    # coarse_mesh_path = os.path.join(rel_path, 'brazilC.msh')
-    # coarse_mesh_properties_name = 'brazilC1'
+    coarse_mesh_path = os.path.join(rel_path, 'crossc1.msh')
+    coarse_mesh_properties_name = 'crossC1'
 
-    coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
-    coarse_mesh_properties_name = 'brazilC2'
+    # coarse_mesh_path = os.path.join(rel_path, 'crrossc2.msh')
+    # coarse_mesh_properties_name = 'crossC2'
+
+    # coarse_mesh_path = os.path.join(rel_path, 'brazilC2.msh')
+    # coarse_mesh_properties_name = 'brazilC2'
 
     # coarse_mesh_path = os.path.join(rel_path, 'brazilC3.msh')
     # coarse_mesh_properties_name = 'brazilC3'
@@ -77,102 +88,133 @@ def get_properties():
 
     return fine_properties, coarse_properties, fine_mesh_path, coarse_mesh_path
 
-def define_boundary(fine_properties: MeshProperty) -> None:
+def set_permeability(fine_mesh_path, fine_properties: MeshProperty, typek='barrier', export_permfield=True, update_permfield=True) -> None:
+    typeks = ['barrier', 'channel']
+    assert typek in typeks
 
-    data_to_update = dict()
+    tag_preprocess = 'permeability'
+    if fine_properties.verify_name_in_data_names(tag_preprocess) and update_permfield is False:
+        return
 
-    nodes = fine_properties['nodes']
-    nodes_centroids = fine_properties['nodes_centroids']
-    edges = fine_properties['edges']
-    edges_centroids = fine_properties.edges_centroids
+    k1 = 1.0
+    k2 = 1e-3
+    k3 = 1e3
 
-    xmin, ymin = nodes_centroids.min(axis=0)
-    xmax, ymax = nodes_centroids.max(axis=0)
+    faces_in_cross = fine_properties['physical_quad_2']
+    faces = fine_properties['faces']
 
-    center = np.array([xmax/2, ymax/2])
-    R = 0.2
-
-    delta = fine_properties.edges_dim.min()/10
-
-    dists = np.linalg.norm(nodes_centroids - center, axis=1)
-    nodes_internal_boundary = nodes[
-        dists <= R + delta
-    ]
-
-    data_to_update.update({'nodes_internal_boundary': nodes_internal_boundary})
-
+    permeability = np.zeros((faces.shape[0], 2, 2))
+    permeability[:] = get_perm_diag(k1)
+    if typek == typeks[0]:
+        permeability[faces_in_cross] = permeability[faces_in_cross]*k2
+    else:
+        permeability[faces_in_cross] = permeability[faces_in_cross]*k3
     
-
-    inflow = edges[edges_centroids[:, 0] < xmin + delta]
-    outflow = edges[edges_centroids[:, 0] > xmax - delta]
-
-    walls = np.concatenate([
-        edges[edges_centroids[:, 1] < ymin + delta],
-        edges[edges_centroids[:, 1] > ymax - delta]
-    ])
-
-    data_to_update.update({
-        'Inflow': inflow,
-        'Outflow': outflow,
-        'Walls': walls
+    fine_properties.insert_or_update_data({
+        tag_preprocess: permeability
     })
 
-    fine_properties.insert_or_update_data(data_to_update)
+    if export_permfield:
+        mesh_data = MeshData(mesh_path=fine_mesh_path)
+        mesh_data.create_tag('permeability')
+        mesh_data.insert_tag_data(
+            'permeability',
+            fine_properties['permeability'][:, 1, 1],
+            elements_type='faces'
+        )
+        mesh_data.export_all_elements_type_to_vtk('permfield', element_type='faces')
 
 def set_boundary_conditions(fine_properties: MeshProperty) -> BoundaryConditions:
     
     bc = BoundaryConditions()
 
-    k = 1
-
-    nodes = fine_properties['nodes']
     nodes_centroids = fine_properties['nodes_centroids']
-    edges = fine_properties['edges']
-    edges_centroids = fine_properties.edges_centroids
+    faces = fine_properties['faces']
+    faces_centroids = fine_properties['faces_centroids']
 
     xmin, ymin = nodes_centroids.min(axis=0)
     xmax, ymax = nodes_centroids.max(axis=0)
 
-    R = 0.2*k
+    c_p1 = np.array([xmin, ymax])
+    c_p0 = np.array([xmax, ymin])
 
-    delta = fine_properties.edges_dim.min()/10
+    dists = np.linalg.norm(faces_centroids - c_p1, axis=1)
+    face_p1 = faces[dists <= dists.min()][0]
+    dists[:] = np.linalg.norm(faces_centroids - c_p0, axis=1)
+    face_p0 = faces[dists <= dists.min()][0]
+    faces_pressure = np.array([face_p1, face_p0])
+    pressure_presc = np.array([1.0, 0.0])
 
-    center = np.array([xmax/2, ymax/2])
+    bc.set_boundary('dirichlet_volumes', faces_pressure, pressure_presc)
+    bc.set_boundary('dirichlet_nodes', np.array([]), np.array([]))
 
-    nodes_p1 = nodes[nodes_centroids[:,0] < xmin + delta]
-    nodes_p0 = nodes[nodes_centroids[:,0] > xmax - delta]
-
-    dist_nodes = np.linalg.norm(
-        nodes_centroids - center,
-        axis=1
-    )
-
-    nodes_p05 = nodes[dist_nodes < R + delta]
-
-    edges_ymax = edges[edges_centroids[:, 1] > ymax - delta]
-    edges_ymin = edges[edges_centroids[:, 1] < ymin + delta]
-
-    bc_nodes = np.concatenate([nodes_p1, nodes_p0, nodes_p05])
-    nodes_values = np.concatenate([
-        np.repeat(1.0, nodes_p1.shape[0]),
-        np.repeat(0.0, nodes_p0.shape[0]),
-        np.repeat(0.5, nodes_p05.shape[0])
-    ])
-
-    bc.set_boundary('dirichlet_nodes', bc_nodes, nodes_values)
-
-    walls_edges = np.unique(np.concatenate([edges_ymax, edges_ymin]))
+    walls_edges = fine_properties['edges'][fine_properties['bool_boundary_edges']]
 
     edges_values = np.repeat(0.0, walls_edges.shape[0])
     bc.set_boundary('neumann_edges', walls_edges, edges_values)
-
-    # bc.set_boundary('dirichlet_volumes', np.array([]), np.array([]))
-    # bc.set_boundary('neumann_volumes', np.array([]), np.array([]))
+    bc.set_boundary('neumann_volumes', np.array([]), np.array([]))
 
     fine_properties.insert_or_update_data({
         'neumann_edges': bc['neumann_edges']['id'],
         'neumann_edges_value': bc['neumann_edges']['value']
     })
+    
+    bc.update_zero_bcs()
+
+    return bc
+
+def set_boundary_conditions_2(fine_properties: MeshProperty):
+    bc = BoundaryConditions()
+
+    nodes_centroids = fine_properties['nodes_centroids']
+    faces = fine_properties['faces']
+    faces_centroids = fine_properties['faces_centroids']
+
+    xmin, ymin = nodes_centroids.min(axis=0)
+    xmax, ymax = nodes_centroids.max(axis=0)
+
+    # c_p1 = np.array([xmin, ymin])
+    # c_p0 = np.array([xmax, ymax])
+
+    c_p1 = np.array([xmin, ymax])
+    c_p0 = np.array([xmax, ymin])
+
+    dists = np.linalg.norm(faces_centroids - c_p1, axis=1)
+    face_p1 = faces[dists <= dists.min()][0]
+    dists[:] = np.linalg.norm(faces_centroids - c_p0, axis=1)
+    face_p0 = faces[dists <= dists.min()][0]
+    
+    faces_pressure = np.array([face_p0])
+    pressure_presc = np.array([1.0])
+
+    faces_neumann = np.array([face_p1])
+    neummann_presc_faces = np.array([2.0])
+
+    # areas = fine_properties['areas']
+    # edges_dim = fine_properties.edges_dim
+    # area_face_p1 = areas[face_p1]
+
+    # import pdb; pdb.set_trace()
+
+    bc.set_boundary('dirichlet_volumes', faces_pressure, pressure_presc)
+
+    bc.set_boundary('neumann_volumes', faces_neumann, neummann_presc_faces)
+
+    walls_edges = fine_properties['edges'][fine_properties['bool_boundary_edges']]
+
+    edges_values = np.repeat(0.0, walls_edges.shape[0])
+    bc.set_boundary('neumann_edges', walls_edges, edges_values)
+
+    fine_properties.insert_or_update_data({
+        'neumann_edges': bc['neumann_edges']['id'],
+        'neumann_edges_value': bc['neumann_edges']['value']
+    })
+
+    bc.set_boundary('water_saturation_volumes', np.array([face_p1]), np.array([1.0]))
+    bc.set_boundary('water_saturation_edges', np.array([]), np.array([]))
+
+    bc.set_boundary('injectors', np.array([face_p1]), np.array([True]))
+    bc.set_boundary('producers', np.array([face_p0]), np.array([True]))
 
     bc.update_zero_bcs()
 
@@ -336,12 +378,12 @@ def func1(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation):
     transm = lsds.mount_transmissibility_matrix_without_bc(**fine_mesh_properties.get_all_data())
     return transm
 
-def set_monotone_transm(save_monotone_transm, transm: dict, w, matrix_path, monotone_transm_name, epsilon=0.001):
+def set_monotone_transm(save_monotone_transm, transm: dict, w, matrix_path, monotone_transm_name):
     ams_prolongation = Unstructured2DAmsOperator()
     if save_monotone_transm is True:
         monotone_transm = ams_prolongation.get_monotone_matrix(
             transm['transmissibility_without_bc'],
-            epsilon=epsilon,
+            epsilon=0.001,
             w=w
         )
         
@@ -429,13 +471,9 @@ def get_op(
                 )
 
                 OP_AMS = update_global_op_from_amsu(interaction_regions, OP_AMS)
-        else:
-            raise NameError
         
         utils_old.save_matrix(matrix_path, op_name, OP_AMS)
         # export_op(fine_mesh_path, OP_AMS, op_name)
-        
-        
     else:
        OP_AMS = utils_old.load_matrix(matrix_path, op_name)
     
@@ -506,307 +544,62 @@ def define_new_fine_levels_v2(
     # dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
     return faces_of_nodes_presc
 
-def get_data_type_and_header_for_results():
+def define_new_fine_levels_v3(
+        fine_mesh_properties: MeshProperty,
+        bc: BoundaryConditions
+) -> np.ndarray:
     
-    header = np.array([
-            'l2_error',
-            'l2_relative_error',
-            'max_abs_error',
-            'max_abs_relative_error',
-            'dual_type',
-            'number_fine_vols',
-            'number_coarse_vols',
-            'fine_levels_setup',
-            'error2',
-            'alpha_lim',
-            'beta_lim',
-            'etol',
-            'percent_nu_adm_vols',
-            'linf_percent',
-            'fine_mesh_name',
-            'coarse_mesh_name',
-            'perm_type'
-        ], dtype='<U30')
+    """
+    Volume primal todo na malha fina com algum volume da malha fina com pressao prescrita
+    """
+    faces = fine_mesh_properties['faces']
+    primal_id = fine_mesh_properties['primal_id_level1']
+    faces_pressure = bc['dirichlet_volumes']['id']
+
+    primal_ids_with_pressure_presc = np.unique(primal_id[faces_pressure])
+    fine_vols = faces[np.isin(primal_id, primal_ids_with_pressure_presc)]
+
+    return fine_vols
+
+def define_new_fine_levels_v4(
+        fine_mesh_properties: MeshProperty,
+        bc: BoundaryConditions
+) -> np.ndarray:
     
-    data_types = [np.float64, np.float64, np.float64, np.float64, np.int, np.int, np.int, np.int, np.float64, np.float64, np.float64, np.float64, np.float64, np.float64, 'O', 'O', 'O']
+    """
+    Volume dual todo na malha fina com algum volume da malha fina com pressao prescrita
+    """
+    faces = fine_mesh_properties['faces']
+    primal_id = fine_mesh_properties['primal_id_level1']
+    faces_pressure = bc['dirichlet_volumes']['id']
 
-    my_types = dict()
-    for i in range(header.shape[0]):
-        my_types.update({header[i]: data_types[i]})
+    faces_neumann = bc['neumann_volumes']['id']
+
+    dual_volumes = fine_mesh_properties['dual_volumes_level1']
     
-    return header, data_types, my_types
-
-def test_column_value(df: pd.DataFrame, column_name, value):
-    pass
-
-    delta = 1e-8
-    values = df[column_name].values
-    test_value = np.absolute(values - value)
-    test = test_value < delta
-    return test
-
-
-def test_column_name(df: pd.DataFrame, column_name, name):
     
-    test = df[column_name].str.contains(name)
-    return test
-
-
-
-
-def exists_simulation(
-        etol: float,
-        alpha_lim: float,
-        beta_lim: float,
-        finescale_name: str,
-        coarse_scale_name: str,
-        permtype: str,
-        dual_type: str,
-        fine_levels_setup: int,
-        run_simulation: bool
-):
-    file_path = os.path.join(defpaths.flying, 'sim_results.csv')
-    if os.path.exists(file_path):
-        pass
-    else:
-        return 
-
-    header, data_types, my_types = get_data_type_and_header_for_results()
+    boundary_faces = np.concatenate([faces_pressure, faces_neumann])
+    dual_in_boundary = []
+    for dual in dual_volumes:
+        if np.any(np.isin(dual, boundary_faces)):
+            dual_in_boundary.append(dual)
     
-    df = pd.read_csv(file_path, dtype=my_types)
-    
-    columns_to_test = np.array([
-            'etol',
-            'alpha_lim',
-            'beta_lim',
-            'dual_type',
-            'fine_levels_setup',
-            'fine_mesh_name',
-            'coarse_mesh_name',
-            'perm_type'
-            ], dtype='<U30')
-    
-    number_columns = columns_to_test[0:5]
-    str_columns = columns_to_test[5:]
-    local_dict = {
-        'etol': etol,
-        'alpha_lim': alpha_lim,
-        'beta_lim': beta_lim,
-        'dual_type': dual_type,
-        'fine_levels_setup': fine_levels_setup,
-        'fine_mesh_name': finescale_name,
-        'coarse_mesh_name': coarse_scale_name,
-        'perm_type': permtype
-    }
-
-    my_tests = []
-    for name in number_columns:
-        my_tests.append(test_column_value(df, name, local_dict[name]))
-    
-    for name in str_columns:
-        my_tests.append(test_column_name(df, name, local_dict[name]))
-    
-    my_tests = np.array(my_tests, dtype=bool)
-
-    resp = np.all(my_tests, axis=0)
-    resp = np.any(resp)
-
-    if resp == True:
-        if run_simulation is False:
-            raise RuntimeError('Simulacao ja foi rodada')
-        else:
-            pass
-
-def f_error(p_ref, p_approx):
-    return p_ref - p_approx
-
-def f_error_abs(p_ref, p_approx):
-    error = f_error(p_ref, p_approx)
-    return np.absolute(error)
-
-def f_relative_error(p_ref: np.ndarray, p_approx: np.ndarray):
-    error = f_error(p_ref, p_approx)
-    relative_error = np.zeros(p_ref.shape[0])
-    test = p_ref < 1e-9
-    test[:] = ~test
-    relative_error[test] = error[test]/p_ref[test]
-    return relative_error
-
-def f_relative_error_abs(p_ref, p_approx):
-    relative_error = f_relative_error(p_ref, p_approx)
-    return np.absolute(relative_error)
-
-def f_err2(p_ref, p_approx):
-    error = f_error(p_ref, p_approx)
-    err2 = np.sqrt(np.dot(error, error)/np.dot(p_ref, p_ref))
-    return err2
-
-def f_linf_error(p_ref, p_approx):
-    error_abs = f_error_abs(p_ref, p_approx)
-    return error_abs.max()
-
-def f_l2_error(p_ref, p_approx):
-    error = f_error(p_ref, p_approx)
-    return np.linalg.norm(error)
-
-def f_linf_percent(p_ref, p_approx):
-    error_percent = f_relative_error_abs(p_ref, p_approx)*100
-    return error_percent.max()
-
-def f_l2_relative_error(p_ref, p_approx):
-    relative_error = f_relative_error(p_ref, p_approx)
-    return np.linalg.norm(relative_error)
-
-def f_l2_error_paper_artur(p_ref, p_approx):
-    return f_err2(p_ref, p_approx)
-
-def f_l2_error_percent_paper_artur(p_ref, p_approx):
-    err2 = f_err2(p_ref, p_approx)
-    value = err2*100
-    print(f'L2 percent: {value} \n')
-    return value
-
-def f_linf_percent_paper_artur(p_ref, p_approx):
-    error_abs = f_error_abs(p_ref, p_approx)
-    value = error_abs.max()/p_ref.max()*100
-    print(f'Linf percent: {value} \n')
-    return value
-
-
-
-def calculate_errors(p_ref: np.ndarray, p_approx: np.ndarray):
-    error = f_error(p_ref, p_approx)
-    error_abs = f_error_abs(p_ref, p_approx)
-    test = p_ref == 0
-    test = ~test
-    relative_error_abs = np.zeros(p_ref.shape[0])
-    relative_error_abs[test] = np.absolute(error[test]/p_ref[test])
-
-    error_percent = relative_error_abs*100
-
-    linf_error = error_abs.max()
-    linf_relative_error = relative_error_abs.max()
-    linf_percent = error_percent.max()
-
-    error2 = error*error
-    pressure2 = p_ref*p_ref
-    err2 = np.sqrt(error2.sum()/pressure2.sum())
-
-    l2 = np.linalg.norm(error)
-
-    return linf_error, linf_percent, err2, l2, error_abs, relative_error_abs
-
-
-
-
-
+    dual_in_boundary = np.unique(np.concatenate(dual_in_boundary))
+    return dual_in_boundary
 
 
     
-
-
-def write_results(
-        l2_error, 
-        l2_relative_error, 
-        max_abs_error, 
-        max_abs_relative_error,
-        dual_type,
-        fine_mesh_name,
-        coarse_mesh_name,
-        number_fine_vols,
-        number_coarse_vols,
-        perm_type,
-        fine_levels_setup,
-        error2,
-        alpha_lim,
-        beta_lim,
-        etol,
-        percent_nuadm_vols,
-        linf_percent
-    ):
-
-    new_data = np.array([
-        l2_error,
-        l2_relative_error,
-        max_abs_error,
-        max_abs_relative_error,
-        dual_type,
-        fine_mesh_name,
-        coarse_mesh_name,
-        number_fine_vols,
-        number_coarse_vols,
-        perm_type,
-        error2,
-        alpha_lim,
-        beta_lim,
-        etol,
-        percent_nuadm_vols,
-        linf_percent
-    ], dtype='O')
-
-    file_path = os.path.join(defpaths.flying, 'sim_results.csv')
-    
-    header, data_types, my_types = get_data_type_and_header_for_results()
-
-    if os.path.exists(file_path):
-        pass
-    else:
-        first_line = np.array([np.array([-10], dtype=t) for t in data_types], dtype='O').T
-        df = pd.DataFrame(first_line, columns=header)
-        for i in range(header.shape[0]):
-            df[header[i]] = df[header[i]].astype(data_types[i])
-        df.to_csv(file_path, index=False)
-        
-    df = pd.read_csv(file_path, dtype=my_types)
-
-    new_df = {
-        'l2_error': l2_error,
-        'l2_relative_error': l2_relative_error,
-        'max_abs_error': max_abs_error,
-        'max_abs_relative_error': max_abs_relative_error,
-        'dual_type': dual_type,
-        'fine_mesh_name': fine_mesh_name,
-        'coarse_mesh_name': coarse_mesh_name,
-        'number_fine_vols': number_fine_vols,
-        'number_coarse_vols': number_coarse_vols,
-        'perm_type': perm_type,
-        'fine_levels_setup': fine_levels_setup,
-        'error2': error2,
-        'alpha_lim': alpha_lim,
-        'beta_lim': beta_lim,
-        'etol': etol,
-        'percent_nu_adm_vols': percent_nuadm_vols,
-        'linf_percent': linf_percent
-    }
-
-    columns_to_test = np.array([
-            'etol',
-            'alpha_lim',
-            'beta_lim',
-            'dual_type',
-            'fine_levels_setup',
-            'fine_mesh_name',
-            'coarse_mesh_name',
-            'perm_type'
-            ], dtype='<U30')
-    subset_to_drop = columns_to_test
-    
-    df.loc[len(df)] = new_df
-    df.reset_index(drop=True, inplace=True)
-    df.drop_duplicates(subset=subset_to_drop, inplace=True)
-    df.to_csv(file_path, index=False)
-
-
-
-
-
-
 
 
 
 
 
 def run4():
+
+    ## sem nada, refinando pelo alpha e beta
+    ## alpha = 0.1, beta =3.0
+    ## barreira
+    ## coarse 1
     matrix_path = 'matrices.h5'
     fine_transm_without_bc_name = 'fine_transm_without_bc'
     save_fine_transm_without_bc = True
@@ -814,31 +607,46 @@ def run4():
     save_fine_transmissibility = True
     save_op = True
     w = 0
-    epsilon = -1
-    etol = epsilon
     monotone_transm_name = 'monotone_transm_w_0'
     fine_transmissibility_name = 'fine_transmissibility'
     op_toget = 'AMS-U'
     op_name = 'AMS_U_w_0_dual2'
     level_str = defnames.level_str(1)
-    alpha_lim_finescale = 0.5
-    beta_lim = 3
+    alpha_lim_finescale = 0.1
+    beta_lim = 3.0
+    # alpha_lim_finescale = 1000
+    # beta_lim = 1000
     export_adm_levels_file = True
-    bool_export_primal_id = True
-    bool_export_dual_id = True
+
+    # bool_export_primal_id = True
+    # bool_export_dual_id = True
+
+    bool_export_primal_id = False
+    bool_export_dual_id = False
+
+    refine_by_delta_grad_bool = False
+    max_value_delta_grad = 4.0
+
+    refine_by_estimator1_bool = False
+    max_value_estimator1 = 1e-7
+
     my_dual_type = 1
-    perm_type = 'barrier'
     # perm_type = 'channel'
+    perm_type = 'barrier'
     update_nodes_weights = True
     export_permfield = True
     update_permfield = True
-    fine_level_setup = 1
-    update_coarse_struct = True
-    run_simulation_repeated = False
+    fine_level_setup = 4
+    etol = -1
+    update_coarse_struct = False
+    # update_coarse_struct = False
+    run_simulation_repeated = True
+    check_write_results = False
 
     lsds = LsdsFluxCalculation()
     algo_monotone = AlgorithimicMonotone()
     enhanced = Enhanced()
+
 
     fp, cp, fine_mesh_path, coarse_mesh_path = get_properties()
 
@@ -856,16 +664,19 @@ def run4():
 
     mesh_data = MeshData(mesh_path=coarse_mesh_path)
     mesh_data.export_all_elements_type_to_vtk('background_coarse_mesh', 'faces')
-    define_faces_in_losangle(fp)
     set_permeability(fine_mesh_path, fp, typek=perm_type, export_permfield=export_permfield, update_permfield=update_permfield)
+    
     create_primal_ids(fp, cp, update=bool_export_primal_id)
     export_primal_ids(fine_mesh_path, fp, coarse_mesh_path, export=bool_export_primal_id)
     create_dual_ids(fp, cp, update=bool_export_dual_id, dual_type=my_dual_type)
     export_dual_ids(fine_mesh_path, fp, export=bool_export_dual_id)
 
     # set_permeability(fp, typek=perm_type, export_permfield=export_permfield)
-    bc = set_boundary_conditions(fp)
+    bc = set_boundary_conditions_2(fp)
     set_weights_nodes(fp, update=update_nodes_weights)
+    # fp.backup_data('nodes_weights', 'nodes_weights_gls')
+
+
     coarse_struct = define_coarse_structure(fp, lsds, level=1, update=update_coarse_struct)
     intersect_edges = []
     for cs in coarse_struct:
@@ -887,6 +698,29 @@ def run4():
     #     'xi_params': fp['xi_params_ds']
     # })
 
+    # get_lpew2_weights(fp, update=True)
+
+    # w_lpew2 = fp['nodes_weights']
+    # w_gls = fp['nodes_weights_gls']
+
+    # for node in fp['nodes']:
+    #     t1 = w_lpew2['node_id'] == node
+    #     t2 = w_gls['node_id'] == node
+
+    #     w1 = w_lpew2[t1]
+    #     w2 = w_gls[t2]
+
+    #     print('Peso LPEW2:')
+    #     print(w1)
+    #     print()
+    #     print('Peso GLS:')
+    #     print(w2)
+    #     print()
+    #     import pdb; pdb.set_trace()
+
+        
+
+
     transm = set_fine_transmissibility_without_bc(
         save_fine_transm_without_bc,
         matrix_path,
@@ -898,11 +732,9 @@ def run4():
         transm,
         w,
         matrix_path,
-        monotone_transm_name,
-        epsilon=epsilon
+        monotone_transm_name
     )
-    # monotone_transm = enhanced.get_enhanced_matrix(transm['transmissibility_without_bc'])
-    
+
     resp = set_fine_transmissibility(
         save_fine_transmissibility,
         fp,
@@ -911,6 +743,9 @@ def run4():
         fine_transmissibility_name
     )
 
+    # monotone_transm = enhanced.get_enhanced_matrix(transm['transmissibility_without_bc'])
+    # monotone_transm = enhanced.get_enhanced_matrix(resp['transmissibility'])
+    
     OR_AMS = get_OR_AMS(fp)
     OP_AMS = get_op(
         save_op,
@@ -938,12 +773,9 @@ def run4():
     #             dual_faces=fine_mesh_properties['faces'][fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]==defnames.dual_ids('face_id')],
     #             coarse_ids=fine_mesh_properties[defnames.get_primal_id_name_by_level(1)][fine_mesh_properties[defnames.vertices_selected + level_str]],
     #             OR_fv=OR_AMS,
-    #             etol=0.01,
+    #             etol=etol,
     #             maxit=1000                
     #         )
-    
-
-    
     
     ########################################
     # from packs.multiscale.unstructured.operators.prolongation.amsu import AmsU
@@ -991,6 +823,10 @@ def run4():
         dual_in_boundary = define_new_fine_levels_v1(fp, bc)
     elif fine_level_setup == 2:
         dual_in_boundary = define_new_fine_levels_v2(fp, bc)
+    elif fine_level_setup == 3:
+        dual_in_boundary = define_new_fine_levels_v3(fp, bc)
+    elif fine_level_setup == 4:
+        dual_in_boundary = define_new_fine_levels_v4(fp, bc)
     else:
         raise ValueError
         
@@ -1016,9 +852,16 @@ def run4():
         fp['adjacencies'][fp.boundary_edges, 0]
     ])
     fine_faces_flux = np.bincount(v2, weights=v1)
-    fine_faces_flux = np.absolute(fine_faces_flux)
+    # fine_faces_flux = np.absolute(fine_faces_flux)
 
-
+    all_flux = fine_faces_flux*fp['areas']
+    all_flux_mod = np.absolute(all_flux)
+    test = all_flux_mod > 1e-10
+    # print(all_flux[test])
+    # print(fp['areas'].sum())
+    # import pdb; pdb.set_trace()
+    
+    
     fine_levels = np.full(len(fp['faces']), -1)
     if dual_in_boundary.shape[0] > 0:
         fine_levels[dual_in_boundary] = 0
@@ -1028,6 +871,7 @@ def run4():
         OR_AMS,
         OP_AMS,
         transm['transmissibility_without_bc'],
+        fp[defnames.get_primal_id_name_by_level(1)],
         alpha_lim=alpha_lim_finescale
     )
 
@@ -1052,20 +896,6 @@ def run4():
 
     fine_levels[fine_levels==-1] = 1
     finescale_ids = fine_mesh_properties['faces'][fine_levels==0]
-
-    if export_adm_levels_file is True:
-        export_adm_levels(fine_mesh_path, fine_levels)
-        # flying_mesh_path = _create_flying_mesh(fine_mesh_path)
-        test = fine_levels == 0
-        if test.sum() > 0:
-            print_adm_interfaces_2d(
-                fine_mesh_properties,
-                fine_mesh_path,
-                fine_levels,
-                'adm_edges'
-            )
-        else:
-            print("Nao tem volumes na malha fina \n")
     
     LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
         finescale_ids,
@@ -1104,6 +934,79 @@ def run4():
     Q_adm = OR_adm*resp['source']
     P_adm = spsolve(T_adm.tocsc(), Q_adm)
     P_prol = OP_adm*P_adm
+
+    if refine_by_delta_grad_bool is True:
+        
+        fine_faces_by_grad = refine_by_gradient_v0(
+            fp, 
+            P_prol, 
+            max_grad=max_value_delta_grad
+        )
+        # fine_faces_by_grad = nu_adm_funcs.get_finescale_vols(
+        #     fp['faces'][fine_levels==0],
+        #     fine_faces_by_grad,
+        #     beta_ind,
+        #     beta_groups
+        # )
+        fp.insert_or_update_data({'fine_faces_by_grad': fine_faces_by_grad})
+
+        if fine_faces_by_grad.shape[0] > 0:
+            fine_levels[fine_faces_by_grad] = 0
+        finescale_ids = fp['faces'][fine_levels==0]
+
+    if refine_by_estimator1_bool is True:
+
+        fine_faces_by_estimator1 = refine_by_estimator1(
+            fp,
+            lsds,
+            bc,
+            P_prol,
+            max_value=max_value_estimator1
+        )
+
+        if fine_faces_by_estimator1.shape[0] > 0:
+            fine_levels[fine_faces_by_estimator1] = 0
+        finescale_ids = fp['faces'][fine_levels==0]
+
+    if refine_by_delta_grad_bool is True or refine_by_estimator1_bool is True:
+
+        LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
+            finescale_ids,
+            fine_levels,
+            fine_mesh_properties['faces'],
+            fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
+            fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
+        )
+
+        OP_adm, OR_adm = nu_adm_funcs.organize(
+            fine_levels,
+            sp.find(OP_AMS)[0:3],
+            fine_mesh_properties['faces'],
+            fine_mesh_properties[defnames.get_primal_id_name_by_level(1)],
+            LEVEL_ID_1,
+            ADM_COARSE_ID_LEVEL_1,
+            fine_mesh_properties[defnames.get_dual_id_name_by_level(1)]
+        )
+
+        T_adm = OR_adm*(resp['transmissibility']*OP_adm)
+        Q_adm = OR_adm*resp['source']
+        P_adm = spsolve(T_adm.tocsc(), Q_adm)
+        P_prol = OP_adm*P_adm
+    
+    if export_adm_levels_file is True:
+        export_adm_levels(fine_mesh_path, fine_levels)
+        # flying_mesh_path = _create_flying_mesh(fine_mesh_path)
+        test = fine_levels == 0
+        if test.sum() > 0:
+            print_adm_interfaces_2d(
+                fine_mesh_properties,
+                fine_mesh_path,
+                fine_levels,
+                'adm_edges'
+            )
+        else:
+            print("Nao tem volumes na malha fina \n")
+
 
     selected_pressure = P_prol
 
@@ -1147,25 +1050,28 @@ def run4():
     )
     faces_flux = np.absolute(faces_flux)
 
-
-
     error = np.absolute(pressure - P_prol)
-    relative_error = (error/pressure)
-    l2_norm_error = np.linalg.norm(error)
     linf_error = error.max()
+    test = pressure == 0
+    ttest = ~test
+    relative_error = np.zeros(error.shape[0])
+    relative_error[ttest] = (error[ttest]/pressure[ttest])
+    l2_norm_error = np.linalg.norm(error)
     l2_norm_relative_error = np.linalg.norm(relative_error)
+    linf_error_percent = f_linf_percent_paper_artur(pressure, P_prol)
 
-    error2 = error*error
-    pressure2 = pressure*pressure
-    err2 = np.sqrt(error2.sum()/pressure2.sum())
+    # error2 = error*error
+    # pressure2 = pressure*pressure
+    # err2 = np.sqrt(error2.sum()/pressure2.sum())
+
+    err2 = f_l2_error_paper_artur(pressure, P_prol)
+    err2_percent = f_l2_error_percent_paper_artur(pressure, P_prol)
 
     n_faces_f = fp.faces.shape[0]
     n_faces_nuadm = T_adm.shape[0]
     percent_nuadm_vols = (n_faces_nuadm/n_faces_f)*100
     n_faces_coarse = cp.faces.shape[0]
 
-    linf_error_percent = f_linf_percent(pressure, P_prol)
-    
     print('######################')
     print(f'Linf: {linf_error}')
     print(f'L2 error: {l2_norm_error}')
@@ -1173,6 +1079,7 @@ def run4():
     print(f'Number of NU-ADM vols: {n_faces_nuadm}')
     print(f'Percent NU-ADM vols: {percent_nuadm_vols}')
     print(f'Error 2: {err2}')
+    print(f'linf_relative_error_percent: {linf_error_percent}')
     print('######################')
     
     mesh_data = MeshData(mesh_path=fine_mesh_path)
@@ -1194,6 +1101,14 @@ def run4():
     mesh_data.create_tag('fine_faces_flux')
     mesh_data.insert_tag_data('fine_faces_flux', fine_faces_flux, elements_type='faces')
 
+    path_matlab_vec = os.path.join('packs', 'matlab_codes', 'results', 'resp.mat')
+    mesh_data.create_tag('show_volumes')
+    vec_to_show = np.zeros(fp['faces'].shape[0])
+    vec_loaded = sio.loadmat(path_matlab_vec)
+    to_show = vec_loaded['vec_elem_show'].flatten()
+    testt = to_show == 1
+    vec_to_show[testt] = 1
+    mesh_data.insert_tag_data('show_volumes', vec_to_show, elements_type='faces')
 
     perror2 = np.zeros(pressure.shape[0])
     for cstruct in coarse_struct:
@@ -1218,34 +1133,46 @@ def run4():
 
     mesh_data.insert_tag_data('coarse_face_flux', cf2, elements_type='faces')
 
-
-    # export_adm_name = 'adm_solution_w_' + str(w) + '_' + op_toget + "_NU-ADM"
-    export_adm_name = 'TEST_ADM'
-
+    export_adm_name = 'adm_solution_w_' + str(w) + '_' + op_toget + "_NU-ADM"
   
     mesh_data.export_all_elements_type_to_vtk(export_adm_name, element_type='faces')
-    
-    write_results(
-        l2_error=l2_norm_error,
-        l2_relative_error=l2_norm_relative_error,
-        max_abs_error=error.max(),
-        max_abs_relative_error=relative_error.max(),
-        dual_type=my_dual_type,
-        fine_mesh_name=fp['mesh_name'][0],
-        coarse_mesh_name=cp['mesh_name'][0],
-        number_fine_vols=fp['faces'].shape[0],
-        number_coarse_vols=cp['faces'].shape[0],
-        perm_type=perm_type,
-        fine_levels_setup=fine_level_setup,
-        error2=err2,
-        alpha_lim=alpha_lim_finescale,
-        beta_lim=beta_lim,
-        etol=etol,
-        percent_nuadm_vols=percent_nuadm_vols,
-        linf_percent=linf_error_percent
-    )
+
+    if check_write_results is True:
+        write_results(
+            l2_error=l2_norm_error,
+            l2_relative_error=l2_norm_relative_error,
+            max_abs_error=error.max(),
+            max_abs_relative_error=relative_error.max(),
+            dual_type=my_dual_type,
+            fine_mesh_name=fp['mesh_name'][0],
+            coarse_mesh_name=cp['mesh_name'][0],
+            number_fine_vols=fp['faces'].shape[0],
+            number_coarse_vols=cp['faces'].shape[0],
+            perm_type=perm_type,
+            fine_levels_setup=fine_level_setup,
+            error2=err2,
+            alpha_lim=alpha_lim_finescale,
+            beta_lim=beta_lim,
+            etol=etol,
+            percent_nuadm_vols=percent_nuadm_vols,
+            linf_percent=linf_error_percent
+        )
 
     import pdb; pdb.set_trace()
+
+    # write_results(
+    #     l2_error=l2_norm_error,
+    #     l2_relative_error=l2_norm_relative_error,
+    #     max_abs_error=error.max(),
+    #     max_abs_relative_error=relative_error.max(),
+    #     dual_type=my_dual_type,
+    #     fine_mesh_name=fp['mesh_name'][0],
+    #     coarse_mesh_name=cp['mesh_name'][0],
+    #     number_fine_vols=fp['faces'].shape[0],
+    #     number_coarse_vols=cp['faces'].shape[0],
+    #     perm_type=perm_type,
+    #     fine_levels_setup=fine_level_setup
+    # )
     # print('###############################################')
     # print(f' Max abs error {error.max()}')
     # print(f' Max relative error {relative_error.max()}')

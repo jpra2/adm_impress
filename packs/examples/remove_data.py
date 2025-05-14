@@ -69,3 +69,8 @@ def run_delete_all():
     run_data_mesh()
     run_results()
     delete_dual_infos()
+
+def maitain_only_data_mesh():
+    run_flying()
+    run_results()
+    delete_dual_infos()
