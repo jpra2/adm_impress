@@ -469,7 +469,30 @@ class MeshProperty:
     @property
     def edges(self):
         return self['edges']
+    
+    @property
+    def bedges_without_bedges_to_remove(self):
+        edges_to_remove = self.remove_bedges
+        
+        if edges_to_remove.shape[0] == 0:
+            return self.boundary_edges
+        else:
+            my_edges = np.setdiff1d(self.boundary_edges, edges_to_remove)
+            return my_edges
+        
+    @property
+    def remove_bedges(self):
+        try:
+            edges_to_remove = self['remove_bedges']
+        except KeyError:
+            edges_to_remove = np.array([])
+        
+        return edges_to_remove
+        
 
+
+        
+        
 
 
 

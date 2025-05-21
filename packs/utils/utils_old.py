@@ -284,3 +284,20 @@ def spai(A, m):
         M = M + alpha * G
         
     return M
+
+def is_point_inside_circle(point_x, point_y, circle_center_x, circle_center_y, radius):
+    """
+    Checks if a point is inside a circle.
+
+    Args:
+        point_x: x-coordinate of the point.
+        point_y: y-coordinate of the point.
+        circle_center_x: x-coordinate of the circle's center.
+        circle_center_y: y-coordinate of the circle's center.
+        radius: Radius of the circle.
+
+    Returns:
+        True if the point is inside the circle, False otherwise.
+    """
+    distance_squared = (point_x - circle_center_x)**2 + (point_y - circle_center_y)**2
+    return distance_squared <= radius**2

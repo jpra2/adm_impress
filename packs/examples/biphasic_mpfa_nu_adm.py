@@ -247,7 +247,7 @@ def get_op_amsu(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation, O
 #     fp.export_data()
 
 
-def refine_by_gradient_v0(fp: MeshProperty, pressure: np.ndarray, max_grad: float=0.6, refine=True):
+def refine_by_gradient_v0(fp: MeshProperty, pressure: np.ndarray, max_grad: float=2828, refine=True):
     # refine = False
     ## limite para refinar considerando os primais 0.5
     if refine is True: 
@@ -288,7 +288,8 @@ def refine_by_estimator1(
         lsds: LsdsFluxCalculation,
         bc: BoundaryConditions,
         pressure: np.ndarray,
-        max_value: float=230.0
+        # max_value: float=700
+        max_value: float=1200
 ):
 
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
@@ -362,7 +363,7 @@ def initial_loop(
 ):
     
     refine_by_grad_bool = False
-    refine_by_estimator1_bool = True   
+    refine_by_estimator1_bool = True 
 
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
@@ -412,6 +413,7 @@ def initial_loop(
 
     
     OR = get_OR_AMS(fp)
+    
     if op_name == defnames.list_op_toget[1]:
         OP = get_OP_matrix(fp)
         fine_transm_without_bc = lsds.mount_transmissibility_matrix_without_bc(**fp.get_all_data())
@@ -625,7 +627,6 @@ def initial_loop(
         P_adm = spsolve(T_adm.tocsc(), Q_adm)
         P_prol = OP_adm*P_adm
     
-
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,
         P_prol,
@@ -751,6 +752,7 @@ def initial_loop(
     intitial_fine_faces = fp['faces'][fine_levels==0]
     # intitial_fine_faces = initial_fine_volumes
     fp.insert_or_update_data({'initial_fine_faces': intitial_fine_faces})
+    fp.insert_or_update_data({'nuadm_vols', np.array([T_adm.shape[0]])})
 
     return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux
 
@@ -1019,6 +1021,8 @@ def while_loop(
         dt
     )
 
+    fp.insert_or_update_data({'nuadm_vols', np.array([T_adm.shape[0]])})
+
     return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux
 
 def update_data(
@@ -1030,7 +1034,8 @@ def update_data(
         pressure: np.ndarray,
         saturation: np.ndarray,
         water_flux: float,
-        oil_flux: float
+        oil_flux: float,
+        fp: MeshProperty
 ):
     
     all_loops = simulation_data['all_loops']
@@ -1050,6 +1055,9 @@ def update_data(
 
     all_oil_flux = simulation_data[simulation_data.my_data_names[7]]
     all_oil_flux = np.append(all_oil_flux, [oil_flux])
+
+    all_nu_adm_vols = simulation_data['nuadm_vols']
+    all_nu_adm_vols = np.append(all_nu_adm_vols, fp['nuadm_vols'])
     
     simulation_data.insert_or_update_data({
         simulation_data.my_data_names[0]: all_loops,
@@ -1059,7 +1067,8 @@ def update_data(
         simulation_data.my_data_names[4] + str(loop): pressure,
         simulation_data.my_data_names[5] + str(loop): saturation,
         simulation_data.my_data_names[6]: all_water_flux,
-        simulation_data.my_data_names[7]: all_oil_flux
+        simulation_data.my_data_names[7]: all_oil_flux,
+        'nuadm_vols': all_nu_adm_vols
     })
 
     simulation_data.export_data()

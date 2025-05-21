@@ -21,8 +21,8 @@ import matplotlib.pyplot as plt
 
 def get_properties():
 
-    fine_mesh_properties_name = 'finescale3_layers'
-    fine_mesh_path = defpaths.fine3_layers
+    fine_mesh_properties_name = 'finescale4_layers'
+    fine_mesh_path = defpaths.fine4_layers
 
     fine_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name)
 
@@ -41,7 +41,7 @@ def set_boundary_conditions(fine_properties: MeshProperty):
     faces_p0 = faces_of_nodes[node_p0[0]]
 
     faces_pressure = faces_p0
-    pressure_presc = 0*np.array([1.0, 1.0])
+    pressure_presc = 0*np.ones(faces_pressure.shape[0])
 
     faces_neumann = faces_q0
     areas_faces_neumann = fine_properties['areas'][faces_neumann]
@@ -61,7 +61,7 @@ def set_boundary_conditions(fine_properties: MeshProperty):
         'neumann_edges_value': bc['neumann_edges']['value']
     })
 
-    bc.set_boundary('water_saturation_volumes', faces_neumann, np.array([1.0, 1.0]))
+    bc.set_boundary('water_saturation_volumes', faces_neumann, np.ones(faces_neumann.shape[0]))
     initial_saturation[faces_neumann] = 1.0
 
     bc.set_boundary('injectors', faces_neumann, np.array([True]))
@@ -101,9 +101,15 @@ def set_permeability_layers(fine_mesh_path, fine_properties: MeshProperty, expor
     if fine_properties.verify_name_in_data_names(tag_preprocess) and update_permfield is False:
         return
     
-    faces_k1 = np.concatenate([fine_properties['physical_triangle_1'], fine_properties['physical_triangle_4']])
-    faces_k2 = fine_properties['physical_triangle_2']
-    faces_k3 = fine_properties['physical_triangle_3']
+
+    try:
+        faces_k1 = np.concatenate([fine_properties['physical_triangle_1'], fine_properties['physical_triangle_4']])
+        faces_k2 = fine_properties['physical_triangle_2']
+        faces_k3 = fine_properties['physical_triangle_3']
+    except KeyError:
+        faces_k1 = np.concatenate([fine_properties['physical_quad_1'], fine_properties['physical_quad_4']])
+        faces_k2 = fine_properties['physical_quad_2']
+        faces_k3 = fine_properties['physical_quad_3']
 
     faces = fine_properties['faces']
 
@@ -317,8 +323,8 @@ def run5():
     max_vpi = 1.3
     loop = 0
     max_loop = np.inf
-    load = True
-    loop_intervals = 1
+    load = False
+    loop_intervals = 10
     cfl = 0.9
 
     cumulative_oil = 0.0
@@ -328,7 +334,7 @@ def run5():
     relative_perm = BrooksAndCorey(Sor=0.0, Swc=0.0, debug=True)
     biphasic_mobility = BiphasicMobility(mio=4)
     lsds = LsdsFluxCalculation()
-    simulation_data = SimulationData('biphasic_layer_finescale')
+    simulation_data = SimulationData('biphasic_layer_finescale4')
 
     fp, fine_mesh_path = get_properties()
     bc = set_boundary_conditions(fp)

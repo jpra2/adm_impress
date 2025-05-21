@@ -5,7 +5,7 @@ Ly = 1.0;
 h = 0.1;
 hx = 0.1;
 hy = 0.1;
-cl1 = 0.018;
+cl1 = 0.015;
 
 Point(1) = {0, 0, 0, cl1};
 Point(2) = {0.5, 0, 0, cl1};
@@ -40,10 +40,10 @@ Plane Surface(2) = {2};
 Plane Surface(3) = {3};
 Plane Surface(4) = {4};
 
-//Transfinite Curve {1, 8, 4, 5} = 4 + 1 Using Progression 1;
-//Transfinite Curve {9, 11} = 8 + 1 Using Progression 1;
-//Transfinite Curve {10} = 12 + 1 Using Progression 1;
-//Transfinite Curve {2, 3, 6, 7} = 7 + 1 Using Progression 1;
+//Transfinite Curve {1, 8, 4, 5} = 32 + 1 Using Progression 1;
+//Transfinite Curve {9, 11} = 45 + 1 Using Progression 1;
+//Transfinite Curve {10} = 85 + 1 Using Progression 1;
+//Transfinite Curve {2, 3, 6, 7} = 32 + 1 Using Progression 1;
 //Transfinite Curve {4} = 3 + 1 Using Progression 1;
 //Transfinite Surface {6};
 //Recombine Surface {1};

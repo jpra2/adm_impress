@@ -21,8 +21,8 @@ import matplotlib.pyplot as plt
 
 def get_properties():
 
-    fine_mesh_properties_name = 'finescale3_layers'
-    fine_mesh_path = defpaths.fine3_layers
+    fine_mesh_properties_name = 'finescale2_het'
+    fine_mesh_path = defpaths.het_fine2_mesh
 
     fine_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name)
 
@@ -33,9 +33,20 @@ def set_boundary_conditions(fine_properties: MeshProperty):
 
     initial_saturation = np.zeros(fine_properties['faces'].shape[0])
     faces_of_nodes = fine_properties['faces_of_nodes']
+    nodes_centroids = fine_properties['nodes_centroids']
+    nodes = fine_properties['nodes']
 
-    node_q0 = fine_properties['physical_vertex_201']
-    node_p0 = fine_properties['physical_vertex_202']
+    xmin, ymin = nodes_centroids.min(axis=0)
+    xmax, ymax = nodes_centroids.max(axis=0)
+
+    c_q0 = np.array([xmin, ymin])
+    c_p0 = np.array([xmax, ymax])
+
+    dists1 = np.linalg.norm(nodes_centroids - c_q0, axis=1)
+    dists2 = np.linalg.norm(nodes_centroids - c_p0, axis=1)
+
+    node_q0 = nodes[dists1 <= dists1.min()]
+    node_p0 = nodes[dists2 <= dists2.min()]
 
     faces_q0 = faces_of_nodes[node_q0[0]]
     faces_p0 = faces_of_nodes[node_p0[0]]
@@ -79,38 +90,23 @@ def get_R(theta):
     ])
     return R
 
-def set_permeability_layers(fine_mesh_path, fine_properties: MeshProperty, export_permfield=True, update_permfield=True, **kwargs):
+def set_permeability(fine_mesh_path, fine_properties: MeshProperty, export_permfield=True, update_permfield=True, **kwargs):
 
-    k = np.array([
-        np.array([1000, 0]),
-        np.array([0, 10])
-    ])
+    x_points = fine_properties['faces_centroids'][:, 0]
+    y_points = fine_properties['faces_centroids'][:, 1]
+    faces = fine_properties['faces']
 
-    theta1 = np.pi/4
-    theta2 = 0
-    theta3 = np.pi/2
-
-    R = get_R(theta1)
-    k1 = np.matmul(np.matmul(R.T, k), R)
-    R = get_R(theta2)
-    k2 = np.matmul(np.matmul(R.T, k), R)
-    R = get_R(theta3)
-    k3 = np.matmul(np.matmul(R.T, k), R)
+    factor = 2*np.cos(6*np.pi*x_points)*np.cos(6*np.pi*y_points)
+    # perm = np.exp(factor)
+    perm = np.power(5, factor)
 
     tag_preprocess = 'permeability'
     if fine_properties.verify_name_in_data_names(tag_preprocess) and update_permfield is False:
         return
-    
-    faces_k1 = np.concatenate([fine_properties['physical_triangle_1'], fine_properties['physical_triangle_4']])
-    faces_k2 = fine_properties['physical_triangle_2']
-    faces_k3 = fine_properties['physical_triangle_3']
-
-    faces = fine_properties['faces']
 
     permeability = np.zeros((faces.shape[0], 2, 2))
-    permeability[faces_k1] = k1
-    permeability[faces_k2] = k2
-    permeability[faces_k3] = k3
+    permeability[:, 0, 0] = perm
+    permeability[:, 1, 1] = perm
     
     fine_properties.insert_or_update_data({
         tag_preprocess: permeability
@@ -149,7 +145,7 @@ def initial_funcs(
         fine_mesh_path: str
 ):
     
-    set_permeability_layers(fine_mesh_path, fp, export_permfield=True, update_permfield=True)
+    set_permeability(fine_mesh_path, fp, export_permfield=True, update_permfield=True)
     set_weights_nodes(fp, update=True)
 
     if fp.verify_name_in_data_names('nodes_org'):
@@ -317,18 +313,18 @@ def run5():
     max_vpi = 1.3
     loop = 0
     max_loop = np.inf
-    load = True
-    loop_intervals = 1
+    load = False
+    loop_intervals = 5
     cfl = 0.9
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
     vpi = 0.0
 
-    relative_perm = BrooksAndCorey(Sor=0.0, Swc=0.0, debug=True)
+    relative_perm = BrooksAndCorey(Sor=0.0, Swc=0.0)
     biphasic_mobility = BiphasicMobility(mio=4)
     lsds = LsdsFluxCalculation()
-    simulation_data = SimulationData('biphasic_layer_finescale')
+    simulation_data = SimulationData('biphasic_het_finescale')
 
     fp, fine_mesh_path = get_properties()
     bc = set_boundary_conditions(fp)
@@ -369,6 +365,8 @@ def run5():
         loop,
         cfl
     )
+
+    import pdb; pdb.set_trace()
 
     while vpi < max_vpi and loop < max_loop:
         

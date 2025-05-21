@@ -710,9 +710,68 @@ def load_coarse_structure(level, primal_ids):
     return resp
 
 
+def update_fine_faces_out(
+        faces_level0,
+        faces_level1, 
+        edges_level1, 
+        adjacencies_level1, 
+        bool_boundary_edges_level1,
+        faces_of_faces_level0,
+        fine_primal_id
+):
+    
+    boundary_edges_level1 = edges_level1[bool_boundary_edges_level1]
+
+    for coarse_bedge in boundary_edges_level1:
+        coarse_face = adjacencies_level1[coarse_bedge, 0]
+
+        fine_faces_in_coarse_face = faces_level0[
+            fine_primal_id == coarse_face
+        ]
+
+        faces_adjs = np.unique(np.concatenate(
+            faces_of_faces_level0[fine_faces_in_coarse_face]
+        ))
+
+        primal_id_faces_adjs = fine_primal_id[faces_adjs]
+        test1 = np.isin(primal_id_faces_adjs, faces_level1)
+        test1 = ~test1
+
+        faces_out = faces_adjs[test1]
+        n_faces_out = faces_out.shape[0]
+
+        while n_faces_out > 0:
+            fine_primal_id[faces_out] = coarse_face
+            fine_faces_in_coarse_face = faces_level0[
+                fine_primal_id == coarse_face
+            ]
+            faces_adjs = np.unique(np.concatenate(
+                faces_of_faces_level0[fine_faces_in_coarse_face]
+            ))
+            primal_id_faces_adjs = fine_primal_id[faces_adjs]
+            test1 = np.isin(primal_id_faces_adjs, faces_level1)
+            test1 = ~test1
+
+            faces_out = faces_adjs[test1]
+            n_faces_out = faces_out.shape[0]
 
 
-def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_level1, nodes_centroids_level1, nodes_of_faces_level1, adjacencies_level0, faces_of_faces_level0, faces_centroids_level1, faces_of_faces_level1, level:int, edges_ids_level0, bool_boundary_edges_level0, edges_centroids_level0):
+        
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_level1, nodes_centroids_level1, nodes_of_faces_level1, adjacencies_level0, faces_of_faces_level0, faces_centroids_level1, faces_of_faces_level1, level:int, edges_ids_level0, bool_boundary_edges_level0, edges_centroids_level0, adjacencies_level1, edges_ids_level1, bool_boundary_edges_level1):
     """Insert the 'primal_fine_ids' tag in mesh_properties_level0
 
     Args:
@@ -754,6 +813,16 @@ def create_coarse_volumes(faces_id_level0, faces_centroids_level0, faces_ids_lev
         # )
 
         fine_primal_ids[fine_faces_in_coarse_face] = coarse_face
+    
+    update_fine_faces_out(
+        faces_id_level0,
+        faces_ids_level1,
+        edges_ids_level1,
+        adjacencies_level1,
+        bool_boundary_edges_level1,
+        faces_of_faces_level0,
+        fine_primal_ids
+    )
     
     test = fine_primal_ids == -1
 

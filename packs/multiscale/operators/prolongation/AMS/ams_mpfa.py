@@ -3,6 +3,7 @@ import time
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse import linalg
+from scipy import linalg as linalgsp
 
 class AMSMpfa(AMSTpfa):
 
@@ -112,3 +113,42 @@ class AMSMpfa(AMSTpfa):
         As = self.get_as(T_wire)
         OP = self.get_OP_AMS_MPFA_by_AS(As)
         return OP
+
+    def get_Aee_inv_from_op_amsu(self, OP_AMSU: sp.csc_matrix, transmissibility: sp.csc_matrix):
+        ni = self.wirebasket_numbers[0]
+        nf = self.wirebasket_numbers[1]
+        ne = self.wirebasket_numbers[2]
+        nv = self.wirebasket_numbers[3]
+
+        nni = self.ns_sum[0]
+        nnf = self.ns_sum[1]
+        nne = self.ns_sum[2]
+        nnv = self.ns_sum[3]
+
+        T_wire = self.get_Twire(transmissibility)
+        As = self.get_as(T_wire)
+
+        Aev: sp.csc_matrix = As['Aev']
+        R, Q = linalgsp.rq(Aev.todense())
+        AevT = R.dot(Q).dot(Q.T).dot(R.T)
+        print(np.linalg.det(AevT))
+
+        Q, R = linalgsp.qr(Aev.todense())
+        Aevt2 = Q.dot(R).dot(R.T).dot(Q.T)
+        print(np.linalg.det(Aevt2))
+
+
+
+
+
+        OP_mod = self.G*OP_AMSU
+        Pev = OP_mod[nnf:nne]
+
+        AevT = Aev.copy().transpose()
+        M = Aev*AevT
+        M_inv = linalg.spsolve(M, np.eye(M.shape[0]))
+
+
+
+        import pdb; pdb.set_trace()
+        pass

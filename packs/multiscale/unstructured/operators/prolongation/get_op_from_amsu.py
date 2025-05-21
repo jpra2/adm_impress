@@ -1,5 +1,6 @@
 from packs.multiscale.unstructured.operators.prolongation.dual_interaction_region import DualInteractionRegion
 from packs.multiscale.unstructured.operators.prolongation.amsu import AmsU
+from packs.utils import utils_old
 
 from typing import Sequence
 import scipy.sparse as sp
@@ -47,8 +48,14 @@ def update_global_op_from_amsu(list_dual_interaction_region: Sequence[DualIntera
         )
 
         OP_AMSU[dual_i.region, dual_i.coarse_id] = local_op_faces
+    
+    op = sp.find(OP_AMSU)
+    test = np.absolute(op[2]) < 1e-14
+    OP_AMSU[op[0][test], op[1][test]] = 0
+    OP_AMSU = OP_AMSU.tocsc()
+    OP_AMSU.eliminate_zeros()
 
-    return OP_AMSU.tocsc()
+    return OP_AMSU
 
 def update_edges_solution(OP_AMSU: sp.csc_matrix) -> sp.lil_matrix:
     OP_AMSU.eliminate_zeros()

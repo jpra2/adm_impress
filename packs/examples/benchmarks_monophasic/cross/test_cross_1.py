@@ -270,7 +270,10 @@ def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties
             level=1,
             edges_ids_level0=fine_mesh_properties['edges'],
             bool_boundary_edges_level0=fine_mesh_properties['bool_boundary_edges'],
-            edges_centroids_level0=fine_mesh_properties.edges_centroids
+            edges_centroids_level0=fine_mesh_properties.edges_centroids,
+            adjacencies_level1=coarse_mesh_properties['adjacencies'],
+            edges_ids_level1=coarse_mesh_properties['edges'],
+            bool_boundary_edges_level1=coarse_mesh_properties['bool_boundary_edges']
         )
 
         fine_mesh_properties.insert_or_update_data(

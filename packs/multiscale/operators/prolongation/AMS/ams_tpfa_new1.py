@@ -213,7 +213,7 @@ class AMSTpfa:
 
         return pcorr
 
-    def get_Twire(self, T):
+    def get_Twire(self, T) -> sp.csc_matrix:
         T_wire = self.G*T*self.GT
         return T_wire
 

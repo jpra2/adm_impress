@@ -6,6 +6,7 @@ data_mesh = os.path.join(flying, 'data_mesh_property')
 data_simulation = data_mesh
 results = 'results'
 mesh = 'mesh'
+data_folder = 'data'
 mpfad_mesh_folder = 'mpfad_mesh_tests'
 lpew2_mesh_folder = 'lpew2_mesh_test'
 unstructured_coarse_test_mesh_folder = 'uns_coarse_test'
@@ -84,6 +85,21 @@ coarse1_layers = os.path.join(layers_folder, 'coarse_test.msh')
 fine1_layers = os.path.join(layers_folder, 'fine1_layers.msh')
 coarse3_layers = os.path.join(layers_folder, 'coarse3.msh')
 fine3_layers = os.path.join(layers_folder, 'fine3_layers.msh')
+coarse4_layers = os.path.join(layers_folder, 'coarse4.msh')
+fine4_layers = os.path.join(layers_folder, 'fine4.msh')
+coarse5_layers = os.path.join(layers_folder, 'coarse5.msh')
+fine5_layers = os.path.join(layers_folder, 'fine5.msh')
+
+ameba_folder = os.path.join(unstructured_coarse_test_mesh_folder, 'ameba')
+ameba_fine1 = os.path.join(ameba_folder, 'amebaquad1.msh')
+ameba_fine2 = os.path.join(ameba_folder, 'amebafine2.msh')
+ameba_fine2_v4 = os.path.join(ameba_folder, 'amebafine2_v4.msh')
+ameba_coarse2 = os.path.join(ameba_folder, 'coarse2_2_ameba.msh')
+ameba_fine3 = os.path.join(ameba_folder, 'amebafine3.msh')
+ameba_fine4 = os.path.join(ameba_folder, 'amebafine4.msh')
+ameba_coarse4f = os.path.join(ameba_folder, 'coarse4f_ameba.msh')
+ameba_fine5 = os.path.join(ameba_folder, 'amebafine5.msh')
+
 
 biphasic_folder = 'bifasico'
 barreira_mesh = os.path.join(biphasic_folder, '5spotN2f.msh')
@@ -100,3 +116,5 @@ het_coarse2_mesh = os.path.join(biphasic_folder, 'het_coarse2.msh')
 symetric_finescale = os.path.join(biphasic_folder, 'symetricf.msh')
 symetric_finescale_tri = os.path.join(biphasic_folder, 'symetricf_tri.msh')
 symetric_coarse = os.path.join(biphasic_folder, 'symetric_coarse.msh')
+
+points_chueh_artur_path = os.path.join(data_folder, 'points_chueh_artur.mat')

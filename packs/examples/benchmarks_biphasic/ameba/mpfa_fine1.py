@@ -18,11 +18,12 @@ import numpy as np
 from typing import Tuple
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
+from packs.utils.permfields import random_permeability_chueh
 
 def get_properties():
 
-    fine_mesh_properties_name = 'finescale3_layers'
-    fine_mesh_path = defpaths.fine3_layers
+    fine_mesh_properties_name = 'finescale1_ameba'
+    fine_mesh_path = defpaths.ameba_fine1
 
     fine_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name)
 
@@ -33,19 +34,44 @@ def set_boundary_conditions(fine_properties: MeshProperty):
 
     initial_saturation = np.zeros(fine_properties['faces'].shape[0])
     faces_of_nodes = fine_properties['faces_of_nodes']
+    nodes_centroids = fine_properties['nodes_centroids']
 
-    node_q0 = fine_properties['physical_vertex_201']
-    node_p0 = fine_properties['physical_vertex_202']
+    nodes_presc = fine_properties['physical_vertex_201']
+    centroids_nodes_presc = nodes_centroids[nodes_presc]
 
-    faces_q0 = faces_of_nodes[node_q0[0]]
-    faces_p0 = faces_of_nodes[node_p0[0]]
+    x_node1 = 0.3
+    x_node2 = 0.9
+    x_node3 = 1.7
 
-    faces_pressure = faces_p0
-    pressure_presc = 0*np.array([1.0, 1.0])
+    dists = np.absolute(centroids_nodes_presc[:, 0] - x_node1) 
 
-    faces_neumann = faces_q0
-    areas_faces_neumann = fine_properties['areas'][faces_neumann]
-    neummann_presc_faces = 1.0*areas_faces_neumann/areas_faces_neumann.sum()
+    node1 = nodes_presc[dists <= dists.min()]
+
+    dists[:] = np.absolute(centroids_nodes_presc[:, 0] - x_node2)
+    node2 = nodes_presc[dists <= dists.min()]
+
+    dists[:] = np.absolute(centroids_nodes_presc[:, 0] - x_node3)
+    node3 = nodes_presc[dists <= dists.min()]
+
+    node_p0 = node2
+    nodes_q01 = np.concatenate([node1, node3])
+
+    faces_node_p0 = faces_of_nodes[node_p0[0]]
+
+    faces_nodes_q01 = faces_of_nodes[node1[0]]   
+    faces_nodes_q02 = faces_of_nodes[node3[0]]   
+
+    faces_pressure = faces_node_p0
+    pressure_presc = 0*np.ones(faces_pressure.shape[0])
+
+    areas_faces_q01 = fine_properties['areas'][faces_nodes_q01]
+    neummann_presc_faces_q01 = 1.0*areas_faces_q01/areas_faces_q01.sum()
+
+    areas_faces_q02 = fine_properties['areas'][faces_nodes_q02]
+    neummann_presc_faces_q02 = 1.0*areas_faces_q02/areas_faces_q02.sum()
+
+    faces_neumann = np.concatenate([faces_nodes_q01, faces_nodes_q02])
+    neummann_presc_faces = np.concatenate([neummann_presc_faces_q01, neummann_presc_faces_q02])
 
     bc.set_boundary('dirichlet_volumes', faces_pressure, pressure_presc)
 
@@ -61,7 +87,7 @@ def set_boundary_conditions(fine_properties: MeshProperty):
         'neumann_edges_value': bc['neumann_edges']['value']
     })
 
-    bc.set_boundary('water_saturation_volumes', faces_neumann, np.array([1.0, 1.0]))
+    bc.set_boundary('water_saturation_volumes', faces_neumann, np.ones(faces_neumann.shape[0]))
     initial_saturation[faces_neumann] = 1.0
 
     bc.set_boundary('injectors', faces_neumann, np.array([True]))
@@ -79,38 +105,24 @@ def get_R(theta):
     ])
     return R
 
-def set_permeability_layers(fine_mesh_path, fine_properties: MeshProperty, export_permfield=True, update_permfield=True, **kwargs):
+def set_permeability(fine_mesh_path, fine_properties: MeshProperty, export_permfield=True, update_permfield=True, **kwargs):
 
-    k = np.array([
-        np.array([1000, 0]),
-        np.array([0, 10])
-    ])
-
-    theta1 = np.pi/4
-    theta2 = 0
-    theta3 = np.pi/2
-
-    R = get_R(theta1)
-    k1 = np.matmul(np.matmul(R.T, k), R)
-    R = get_R(theta2)
-    k2 = np.matmul(np.matmul(R.T, k), R)
-    R = get_R(theta3)
-    k3 = np.matmul(np.matmul(R.T, k), R)
 
     tag_preprocess = 'permeability'
     if fine_properties.verify_name_in_data_names(tag_preprocess) and update_permfield is False:
         return
-    
-    faces_k1 = np.concatenate([fine_properties['physical_triangle_1'], fine_properties['physical_triangle_4']])
-    faces_k2 = fine_properties['physical_triangle_2']
-    faces_k3 = fine_properties['physical_triangle_3']
 
     faces = fine_properties['faces']
+    faces_centroids = fine_properties['faces_centroids']
+    N = 40
+    state = 15
+
 
     permeability = np.zeros((faces.shape[0], 2, 2))
-    permeability[faces_k1] = k1
-    permeability[faces_k2] = k2
-    permeability[faces_k3] = k3
+    perm = random_permeability_chueh(faces_centroids, N, state)
+
+    permeability[:, 0, 0] = perm
+    permeability[:, 1, 1] = perm
     
     fine_properties.insert_or_update_data({
         tag_preprocess: permeability
@@ -149,7 +161,7 @@ def initial_funcs(
         fine_mesh_path: str
 ):
     
-    set_permeability_layers(fine_mesh_path, fp, export_permfield=True, update_permfield=True)
+    set_permeability(fine_mesh_path, fp, export_permfield=True, update_permfield=True)
     set_weights_nodes(fp, update=True)
 
     if fp.verify_name_in_data_names('nodes_org'):
@@ -317,7 +329,7 @@ def run5():
     max_vpi = 1.3
     loop = 0
     max_loop = np.inf
-    load = True
+    load = False
     loop_intervals = 1
     cfl = 0.9
 
@@ -328,7 +340,7 @@ def run5():
     relative_perm = BrooksAndCorey(Sor=0.0, Swc=0.0, debug=True)
     biphasic_mobility = BiphasicMobility(mio=4)
     lsds = LsdsFluxCalculation()
-    simulation_data = SimulationData('biphasic_layer_finescale')
+    simulation_data = SimulationData('biphasic_layer_finescale4')
 
     fp, fine_mesh_path = get_properties()
     bc = set_boundary_conditions(fp)
@@ -369,6 +381,8 @@ def run5():
         loop,
         cfl
     )
+
+    import pdb; pdb.set_trace()
 
     while vpi < max_vpi and loop < max_loop:
         

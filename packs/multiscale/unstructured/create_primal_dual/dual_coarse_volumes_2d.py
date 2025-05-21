@@ -1,5 +1,5 @@
-from packs.manager.meshmanager import MeshProperty
-from packs import defnames
+from packs.manager import MeshProperty, MeshData
+from packs import defnames, defpaths
 import numpy as np
 from packs.utils.utils_old import get_local_shortest_path_for_create_dual_edges
 
@@ -342,7 +342,8 @@ def create_dual_edges_v1(
         fine_faces_of_faces: np.ndarray,
         coarse_boundary_edges: np.ndarray,
         fine_boundary_edges: np.ndarray,
-        dual_id: np.ndarray
+        dual_id: np.ndarray,
+        fine_boundary_edges_to_remove: np.ndarray
     ):
 
     """
@@ -357,6 +358,7 @@ def create_dual_edges_v1(
 
         coarse_edge_centroid = coarse_edges_centroids[coarse_edge]
         coarse_face_adj = coarse_adjacencies[coarse_edge, 0]
+        
         vertice = fine_faces_id[
             (dual_id == defnames.dual_ids('vertice_id')) &
             (primal_id == coarse_face_adj)
@@ -365,6 +367,9 @@ def create_dual_edges_v1(
         boundary_fine_edges_in_coarse_face = fine_boundary_edges[
             (primal_id[fine_adjacencies[fine_boundary_edges, 0]]==coarse_face_adj)
         ]
+        test_bedges_remove = np.isin(boundary_fine_edges_in_coarse_face, fine_boundary_edges_to_remove)
+        test_bedges_remove = ~test_bedges_remove
+        boundary_fine_edges_in_coarse_face = boundary_fine_edges_in_coarse_face[test_bedges_remove]
         dists = np.linalg.norm(
             fine_edges_centroids[boundary_fine_edges_in_coarse_face] - coarse_edge_centroid,
             axis=1
@@ -399,6 +404,13 @@ def create_dual_edges_v1(
 
         dual_id[selected_face_to_dual_edge] = defnames.dual_ids('edge_id')
         fine_dual_edge_to_coarse_edge.update({selected_face_to_dual_edge: coarse_edge})
+    
+    # meshdata = MeshData(mesh_path=defpaths.ameba_fine2)
+    # meshdata.create_tag(tag_name='dual_id', data_type='int')
+    # meshdata.insert_tag_data('dual_id', dual_id, elements_type='faces')
+    # meshdata.export_all_elements_type_to_vtk('test_dual', 'faces')
+
+    # import pdb; pdb.set_trace()
 
     # second: loop in internal_edges
     bool_coarse_boundary_edges = np.isin(coarse_edges, coarse_boundary_edges)
@@ -995,7 +1007,8 @@ def create_dual(fine_mesh_properties: MeshProperty, coarse_mesh_properties: Mesh
             fine_faces_of_faces=fine_mesh_properties.faces_of_faces,
             coarse_boundary_edges=coarse_mesh_properties.boundary_edges,
             fine_boundary_edges=fine_mesh_properties.boundary_edges,
-            dual_id=dual_id
+            dual_id=dual_id,
+            fine_boundary_edges_to_remove=fine_mesh_properties.remove_bedges
         )
 
     elif dual_type == 2:

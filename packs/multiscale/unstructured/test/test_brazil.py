@@ -26,7 +26,7 @@ from packs.multiscale.unstructured.operators.precond.algorithimic_monotone impor
 from packs.multiscale.unstructured.operators.precond.enhanced import Enhanced
 from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_flux, DiamondFluxCalculation
 from packs.multiscale.unstructured.operators.prolongation.msrsb_klevtsov import MsRSB
-
+from packs.multiscale.operators.prolongation.AMS.ams_mpfa import AMSMpfa
 
 import os
 from shapely import geometry
@@ -228,7 +228,10 @@ def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties
             level=1,
             edges_ids_level0=fine_mesh_properties['edges'],
             bool_boundary_edges_level0=fine_mesh_properties['bool_boundary_edges'],
-            edges_centroids_level0=fine_mesh_properties.edges_centroids
+            edges_centroids_level0=fine_mesh_properties.edges_centroids,
+            adjacencies_level1=coarse_mesh_properties['adjacencies'],
+            edges_ids_level1=coarse_mesh_properties['edges'],
+            bool_boundary_edges_level1=coarse_mesh_properties['bool_boundary_edges']
         )
 
         fine_mesh_properties.insert_or_update_data(
@@ -242,6 +245,7 @@ def export_primal_ids(fine_mesh_path, fine_mesh_properties: MeshProperty, coarse
         pass
     else:
         return
+    
     
     key1 = defnames.get_primal_id_name_by_level(1)
     primal_id = fine_mesh_properties[key1]
@@ -824,16 +828,16 @@ def run4():
     alpha_lim_finescale = 0.5
     beta_lim = 3
     export_adm_levels_file = True
-    bool_export_primal_id = True
-    bool_export_dual_id = True
+    bool_export_primal_id = False
+    bool_export_dual_id = False
     my_dual_type = 1
     perm_type = 'barrier'
     # perm_type = 'channel'
-    update_nodes_weights = True
+    update_nodes_weights = False
     export_permfield = True
     update_permfield = True
     fine_level_setup = 1
-    update_coarse_struct = True
+    update_coarse_struct = False
     run_simulation_repeated = False
 
     lsds = LsdsFluxCalculation()
@@ -923,6 +927,15 @@ def run4():
         resp,
         level_str
     )
+
+    ams_mpfa = AMSMpfa(
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        fp[defnames.get_dual_id_name_by_level(1)]
+    )
+
+    
+    Aee_inv = ams_mpfa.get_Aee_inv_from_op_amsu(OP_AMS, monotone_transm)
 
     fine_mesh_properties = fp
 

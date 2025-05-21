@@ -28,6 +28,7 @@ class DualInteractionRegion:
         self.initial_cc = initial_cc
         self.local_diagonal_term = global_diagonal_term[region]
         self.local_transmissibility = self.get_local_transmissibility(region, global_transmissibility, np.zeros(global_diagonal_term.shape[0]))
+        self.local_source_term = np.zeros(region.shape[0])
         self.preprocess_data()
 
     def get_local_transmissibility(self, local_ids, global_transmissibility, diagonal_term):
@@ -39,6 +40,10 @@ class DualInteractionRegion:
         self.local_boundary = np.array([self.local_map[self.region == i][0] for i in self.boundary])
         self.local_initial_cc = np.array([self.local_map[self.region == i][0] for i in self.initial_cc])
         self.local_vertice = self.local_map[self.region == self.vertice][0]
+    
+    def update_local_source_term(self, source_term):
+        self.local_source_term[:] = source_term[self.region]
+
 
 
 def create_dual_interaction_regions(
@@ -50,15 +55,15 @@ def create_dual_interaction_regions(
         list_initial_cc,
         global_transmissibility,
         global_diagonal_term,
-        dual_id
+        dual_id,
+        **kwargs
 
     ) -> Sequence[DualInteractionRegion]:
     
     n = len(list_regions)
     all_dual_interaction = []
     for i in range(n):
-        all_dual_interaction.append(
-            DualInteractionRegion(
+        dual_interaction_region = DualInteractionRegion(
                 list_regions[i],
                 list_vertices[i],
                 list_coarse_id[i],
@@ -69,6 +74,8 @@ def create_dual_interaction_regions(
                 global_diagonal_term,
                 dual_id
             )
+        all_dual_interaction.append(
+            dual_interaction_region
         )
     
     return all_dual_interaction

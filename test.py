@@ -70,7 +70,7 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 # from packs.mpfa_methods.weight_interpolation.test.test_gls_edges_weights import run
 # run()
 
-# # run_delete_all()
+# run_delete_all()
 # from packs.multiscale.unstructured.test.test_brazil import run4
 # run4()
 
@@ -126,6 +126,7 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 # run6()
 
 # maitain_only_data_mesh()
+# run_delete_all()
 # from packs.examples.benchmarks_biphasic.barreira.biphasic_mpfa_barreira_ms import run6
 # run6()
 
@@ -190,7 +191,7 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 # from packs.examples.benchmarks_biphasic.layers.mpfa_coarse3_layers_ms import run6
 # run6()
 
-# run_delete_all()
+# maitain_only_data_mesh()
 # from packs.examples.benchmarks_monophasic.cross.test_cross_1 import run4
 # run4()
 
@@ -220,11 +221,55 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 
 
 # maitain_only_data_mesh()
-from packs.examples.benchmarks_biphasic.het.coarse1 import run6
-run6()
+# from packs.examples.benchmarks_biphasic.het.coarse1 import run6
+# run6()
 
 # from packs.examples.benchmarks_biphasic.het.write_geo_file import run
 # run()
+
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.layers.mpfa_fine4 import run5
+# run5()
+
+# maitain_only_data_mesh()
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.layers.mpfa_coarse4_ms import run6
+# run6()
+
+# maitain_only_data_mesh()
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.layers.mpfa_coarse5_ms import run6
+# run6()
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.ameba.mpfa_fine1 import run5
+# run5()
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.ameba.mpfa_fine3 import run5
+# run5()
+
+# run_delete_all()
+# maitain_only_data_mesh()
+# from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse3 import run6
+# run6()
+
+# run_delete_all()
+# from packs.examples.benchmarks_monophasic.ameba.ameba1 import run4
+# run4()
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.ameba.mpfa_fine4 import run5
+# run5()
+
+# maitain_only_data_mesh()
+# from packs.examples.benchmarks_biphasic.ameba.mpfa_fine5 import run5
+# run5()
+
+maitain_only_data_mesh()
+from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4 import run6
+run6()
 
 
 
