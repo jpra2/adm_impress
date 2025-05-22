@@ -11,6 +11,13 @@ class SimulationData(SuperArrayManager):
     def class_path(self):
         return os.path.join(defpaths.data_simulation, self.class_name() + '_' +  self.name[0] + '.npz')
 
+    @property
+    def label(self):
+        try: 
+            return self['label'][0]
+        except KeyError:
+            return ''
+
 
 class PrimalCoarseData(SuperArrayManager):
     my_data_names = [

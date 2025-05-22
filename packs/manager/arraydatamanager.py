@@ -180,7 +180,7 @@ class SuperArrayManager:
         if self.exists():
             pass
         else:
-            raise FileExistsError
+            raise FileExistsError(f'Not exists {self.class_path}')
     
     def keys(self):
         return self.__dict__.keys()

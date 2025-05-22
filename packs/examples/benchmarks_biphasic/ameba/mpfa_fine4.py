@@ -349,7 +349,8 @@ def run5():
     relative_perm = BrooksAndCorey(Sor=0.0, Swc=0.0, debug=True)
     biphasic_mobility = BiphasicMobility(mio=4)
     lsds = LsdsFluxCalculation()
-    simulation_data = SimulationData('biphasic_layer_finescale4')
+    simulation_data = SimulationData('biphasic_ameba_finescale4')
+    simulation_data.insert_or_update_data({'label': np.array(['finescale4'])})
 
     fp, fine_mesh_path = get_properties()
     bc = set_boundary_conditions(fp)

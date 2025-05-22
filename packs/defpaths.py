@@ -4,6 +4,8 @@ import pandas as pd
 flying = 'flying'
 data_mesh = os.path.join(flying, 'data_mesh_property')
 data_simulation = data_mesh
+
+plots_folder = os.path.join(flying, 'plots')
 results = 'results'
 mesh = 'mesh'
 data_folder = 'data'

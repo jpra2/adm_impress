@@ -50,11 +50,11 @@ import matplotlib.pyplot as plt
 from typing import Sequence
 
 def get_properties_coarse():
-    coarse_mesh_properties_name = 'coarse4_ameba'
-    coarse_mesh_path = defpaths.ameba_coarse2
+    # coarse_mesh_properties_name = 'coarse4_ameba'
+    # coarse_mesh_path = defpaths.ameba_coarse2
 
-    # coarse_mesh_properties_name = 'coarse4f_ameba'
-    # coarse_mesh_path = defpaths.ameba_coarse4f
+    coarse_mesh_properties_name = 'coarse4f_ameba'
+    coarse_mesh_path = defpaths.ameba_coarse4f
 
     coarse_properties = preprocess_mesh(coarse_mesh_path, coarse_mesh_properties_name)
 
@@ -293,9 +293,8 @@ def run6():
     biphasic_mobility = BiphasicMobility(mio=4)
     lsds = LsdsFluxCalculation()
     # simulation_data = SimulationData('biphasic_layers_coarse4')
-    simulation_data = SimulationData('biphasic_ameba_coarse4')
-    simulation_data.insert_or_update_data({'label': np.array(['coarse4'])})
-
+    simulation_data = SimulationData('biphasic_ameba_coarse4f')
+    simulation_data.insert_or_update_data({'label': np.array(['coarse4f'])})
     
     fp, fine_mesh_path = get_properties_finescale()
     cp, coarse_mesh_path = get_properties_coarse()

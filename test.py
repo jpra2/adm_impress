@@ -267,9 +267,12 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 # from packs.examples.benchmarks_biphasic.ameba.mpfa_fine5 import run5
 # run5()
 
-maitain_only_data_mesh()
-from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4 import run6
-run6()
+# maitain_only_data_mesh()
+# from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4 import run6
+# run6()
+
+from packs.utils.plot_graph_from_simulation_data import plot_graphs
+plot_graphs()
 
 
 
