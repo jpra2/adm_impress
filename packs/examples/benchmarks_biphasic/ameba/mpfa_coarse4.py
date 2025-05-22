@@ -134,7 +134,7 @@ def load_or_update_initial_loop(
             'all_cumulative_oil': np.array([0.0]),
             'all_cumulative_water': np.array([0.0]),
             'pressure_' + str(loop): pressure,
-            'saturation_' + str(loop): saturation,
+            'saturation_' + str(loop): newS,
             'water_flux': np.array([water_flux]),
             'oil_flux': np.array([oil_flux]),
             'nuadm_vols': np.array([fp['nuadm_vols']])
