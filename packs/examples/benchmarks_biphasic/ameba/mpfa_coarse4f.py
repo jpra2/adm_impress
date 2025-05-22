@@ -180,7 +180,7 @@ def run6():
     # beta_lim = 2
 
     alpha_lim_finescale = 1e3
-    beta_lim = 1e3
+    beta_lim = 1e3 
 
     dt = 0.00005
     max_vpi = 1.3

@@ -136,7 +136,8 @@ def load_or_update_initial_loop(
             'pressure_' + str(loop): pressure,
             'saturation_' + str(loop): saturation,
             'water_flux': np.array([water_flux]),
-            'oil_flux': np.array([oil_flux])
+            'oil_flux': np.array([oil_flux]),
+            'nuadm_vols': np.array([fp['nuadm_vols']])
         })
         saturation_plot[:] = saturation
         saturation[:] = newS
