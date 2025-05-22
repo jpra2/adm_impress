@@ -164,13 +164,13 @@ def run6():
     op_name = 'AMS-U'
     debug = False
 
-    update_primal_mesh = True
-    update_dual_mesh = True
-    update_coarse_struct = True
+    # update_primal_mesh = True
+    # update_dual_mesh = True
+    # update_coarse_struct = True
 
-    # update_primal_mesh = False
-    # update_dual_mesh = False
-    # update_coarse_struct = False
+    update_primal_mesh = False
+    update_dual_mesh = False
+    update_coarse_struct = False
 
 
     my_dual_type = 1
@@ -194,7 +194,7 @@ def run6():
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
     max_value_grad = 1e6
-    max_value_estimator1 = 1200
+    max_value_estimator1 = 2000
 
     cumulative_oil = 0.0
     cumulative_water = 0.0

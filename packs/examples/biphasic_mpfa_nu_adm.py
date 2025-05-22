@@ -757,7 +757,7 @@ def initial_loop(
     intitial_fine_faces = fp['faces'][fine_levels==0]
     # intitial_fine_faces = initial_fine_volumes
     fp.insert_or_update_data({'initial_fine_faces': intitial_fine_faces})
-    fp.insert_or_update_data({'nuadm_vols', np.array([T_adm.shape[0]])})
+    fp.insert_or_update_data({'nuadm_vols': np.array([T_adm.shape[0]])})
 
     return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux
 

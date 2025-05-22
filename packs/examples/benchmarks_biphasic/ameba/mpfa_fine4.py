@@ -18,7 +18,7 @@ import numpy as np
 from typing import Tuple
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
-from packs.utils.permfields import chueh_perm_artur_paper, random_permeability_chueh
+from packs.utils.permfields import chueh_perm_artur_paper, random_permeability_chueh, random_permeability_chueh_v2
 from packs.utils.utils_old import is_point_inside_circle
 
 def get_properties():
@@ -136,7 +136,8 @@ def set_permeability(fine_mesh_path, fine_properties: MeshProperty, export_permf
 
 
     permeability = np.zeros((faces.shape[0], 2, 2))
-    perm = random_permeability_chueh(faces_centroids, N, state, aditional_ids)
+    # perm = random_permeability_chueh(faces_centroids, N, state, aditional_ids)
+    perm = random_permeability_chueh_v2(faces_centroids, N, state, aditional_ids)
     # perm = chueh_perm_artur_paper(faces_centroids)
 
     permeability[:, 0, 0] = perm
