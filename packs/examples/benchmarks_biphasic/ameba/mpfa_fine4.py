@@ -102,7 +102,7 @@ def get_R(theta):
     ])
     return R
 
-def set_permeability(fine_mesh_path, fine_properties: MeshProperty, export_permfield=True, update_permfield=True, **kwargs):
+def set_permeability(fine_mesh_path, fine_properties: MeshProperty, simulation_data: SimulationData, export_permfield=True, update_permfield=True, **kwargs):
 
 
     tag_preprocess = 'permeability'
@@ -173,14 +173,16 @@ def set_permeability(fine_mesh_path, fine_properties: MeshProperty, export_permf
             fine_properties['permeability'][:, 1, 1],
             elements_type='faces'
         )
-        mesh_data.export_all_elements_type_to_vtk('permfield', element_type='faces')
+        name_export = os.path.join(simulation_data.name, 'permfield')
+        mesh_data.export_all_elements_type_to_vtk(name_export, element_type='faces')
 
 def initial_funcs(
         fp: MeshProperty,
-        fine_mesh_path: str
+        fine_mesh_path: str,
+        simulation_data: SimulationData
 ):
     
-    set_permeability(fine_mesh_path, fp, export_permfield=True, update_permfield=True)
+    set_permeability(fine_mesh_path, fp, simulation_data, export_permfield=True, update_permfield=True)
     set_weights_nodes(fp, update=True)
 
     if fp.verify_name_in_data_names('nodes_org'):
@@ -199,6 +201,19 @@ def initial_funcs(
 
     fp.backup_data('xi_params', 'xi_params_backup')
     fp.export_data()
+
+def create_path_mesh_data(simulation_data: SimulationData):
+    sim_name = simulation_data.name
+    path_mesh_data = os.path.join(defpaths.results, sim_name)
+    simulation_data.insert_or_update_data({'sim_path': np.array([path_mesh_data])})
+    if os.path.exists(path_mesh_data):
+        pass
+    else:
+        os.makedirs(path_mesh_data)
+
+
+
+
 
 def load_or_update_initial_loop(
         load: bool, 
@@ -222,9 +237,12 @@ def load_or_update_initial_loop(
         loop: int,
         cfl
     ):
+
+    
     
     if load is False:
-        initial_funcs(fp, fine_mesh_path)
+        initial_funcs(fp, fine_mesh_path, simulation_data)
+        path_mesh_data = simulation_data.name
         pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux, water_flux, oil_flux = initial_loop(
             relative_perm,
             biphasic_mobility,
@@ -244,7 +262,8 @@ def load_or_update_initial_loop(
         mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
         mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
         mesh_data.insert_tag_data('saturation', saturation, 'faces')
-        mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
+        name_export = os.path.join(path_mesh_data, 'pressure_faces_' + str(loop))
+        mesh_data.export_all_elements_type_to_vtk(name_export, 'faces')
         saturation[:] = newS
         simulation_data.insert_or_update_data({
             'all_loops': np.array([0]),
@@ -257,6 +276,8 @@ def load_or_update_initial_loop(
             'oil_flux': np.array([oil_flux])
         })
         saturation[:] = newS
+        fp.export_data()
+        simulation_data.export_data()
     elif load is True:
         # import pdb; pdb.set_trace()
         simulation_data.load_data()
@@ -291,6 +312,8 @@ def update_while_loop(
         cfl: float,
         **kwargs
 ):
+    
+    path_mesh_data = simulation_data.name
     
     for i in range(loop_intervals):
         loop += 1
@@ -337,7 +360,8 @@ def update_while_loop(
     mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
     mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
     mesh_data.insert_tag_data('saturation', saturation_plot, 'faces')
-    mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
+    name_export = os.path.join(path_mesh_data, 'pressure_faces_' + str(loop))
+    mesh_data.export_all_elements_type_to_vtk(name_export, 'faces')
 
     return loop, cumulative_oil, cumulative_water, vpi
 
@@ -361,6 +385,7 @@ def run5():
     lsds = LsdsFluxCalculation()
     simulation_data = SimulationData('biphasic_ameba_finescale4')
     simulation_data.insert_or_update_data({'label': np.array(['finescale4'])})
+    create_path_mesh_data(simulation_data)
 
     fp, fine_mesh_path = get_properties()
     bc = set_boundary_conditions(fp)

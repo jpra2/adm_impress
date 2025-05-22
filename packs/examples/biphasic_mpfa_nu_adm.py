@@ -1026,7 +1026,7 @@ def while_loop(
         dt
     )
 
-    fp.insert_or_update_data({'nuadm_vols', np.array([T_adm.shape[0]])})
+    fp.insert_or_update_data({'nuadm_vols': np.array([T_adm.shape[0]])})
 
     return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux
 

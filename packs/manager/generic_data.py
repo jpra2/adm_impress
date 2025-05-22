@@ -9,7 +9,7 @@ class SimulationData(SuperArrayManager):
 
     @property
     def class_path(self):
-        return os.path.join(defpaths.data_simulation, self.class_name() + '_' +  self.name[0] + '.npz')
+        return os.path.join(defpaths.data_simulation, self.class_name() + '_' +  self.name + '.npz')
 
     @property
     def label(self):
@@ -17,6 +17,10 @@ class SimulationData(SuperArrayManager):
             return self['label'][0]
         except KeyError:
             return ''
+    
+    @property
+    def name(self):
+        return self['name'].copy()[0]
 
 
 class PrimalCoarseData(SuperArrayManager):

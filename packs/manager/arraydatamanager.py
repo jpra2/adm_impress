@@ -121,7 +121,8 @@ class SuperArrayManager:
         self.verify_if_exists()
         
         manager = ArrayDataManager(self.class_path)
-        self.insert_data(manager.get_data_from_load(), load=True)
+        # self.insert_data(manager.get_data_from_load(), load=True)
+        self.insert_or_update_data(manager.get_data_from_load())
 
     def __getitem__(self, key):
         return self.__dict__[key]

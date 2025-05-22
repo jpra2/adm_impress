@@ -19,7 +19,8 @@ from packs.examples.same_functions import (
 from packs.examples.benchmarks_biphasic.ameba.mpfa_fine4 import (
     get_properties as get_properties_finescale,
     set_boundary_conditions,
-    initial_funcs
+    initial_funcs,
+    create_path_mesh_data
 )
 
 from packs.examples.biphasic_mpfa_nu_adm import (
@@ -96,7 +97,8 @@ def load_or_update_initial_loop(
 ):
     
     if load is False:
-        initial_funcs(fp, fine_mesh_path)
+        initial_funcs(fp, fine_mesh_path, simulation_data)
+        path_mesh_data = simulation_data.name
         pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux = initial_loop(
             relative_perm,
             biphasic_mobility,
@@ -127,7 +129,8 @@ def load_or_update_initial_loop(
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
         mesh_data.insert_tag_data('saturation', saturation, 'faces')
         mesh_data.insert_tag_data('faces_flux', np.absolute(faces_flux), 'faces')
-        mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
+        name_export = os.path.join(path_mesh_data, 'pressure_faces_' + str(loop))
+        mesh_data.export_all_elements_type_to_vtk(name_export, 'faces')
         simulation_data.insert_or_update_data({
             'all_loops': np.array([0]),
             'all_vpi': np.array([0.0]),
@@ -142,7 +145,7 @@ def load_or_update_initial_loop(
         saturation_plot[:] = saturation
         saturation[:] = newS
 
-        adm_interfaces_name = 'adm_edges_' + str(loop)
+        adm_interfaces_name = os.path.join(path_mesh_data, 'adm_edges_' + str(loop))
         print_adm_interfaces_2d(
             fp,
             fine_mesh_path,
@@ -150,6 +153,7 @@ def load_or_update_initial_loop(
             adm_interfaces_name
         )
         fp.export_data()
+        simulation_data.export_data()
     else:
         # import pdb; pdb.set_trace()
         simulation_data.load_data()
@@ -195,6 +199,8 @@ def update_while_loop_ms(
         coarse_struct,
         fine_mesh_path
 ):
+    
+    path_mesh_data = simulation_data.name
     
     for i in range(loop_intervals):
         loop += 1
@@ -246,7 +252,7 @@ def update_while_loop_ms(
         fp
     )
 
-    adm_interfaces_name = 'adm_edges_' + str(loop)
+    adm_interfaces_name = os.path.join(path_mesh_data, 'adm_edges_' + str(loop))
     print_adm_interfaces_2d(
         fp,
         fine_mesh_path,
@@ -260,7 +266,8 @@ def update_while_loop_ms(
     mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
     mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
     mesh_data.insert_tag_data('saturation', saturation_plot, 'faces')
-    mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
+    name_export = os.path.join(path_mesh_data, 'pressure_faces_' + str(loop))
+    mesh_data.export_all_elements_type_to_vtk(name_export, 'faces')
 
     return loop, cumulative_oil, cumulative_water, vpi
 
@@ -312,6 +319,7 @@ def run6():
     # simulation_data = SimulationData('biphasic_layers_coarse4')
     simulation_data = SimulationData('biphasic_ameba_coarse4')
     simulation_data.insert_or_update_data({'label': np.array(['coarse4'])})
+    create_path_mesh_data(simulation_data)
 
     
     fp, fine_mesh_path = get_properties_finescale()
