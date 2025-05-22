@@ -113,10 +113,18 @@ def set_permeability(fine_mesh_path, fine_properties: MeshProperty, export_permf
     faces_centroids = fine_properties['faces_centroids']
     # N = 150
     # state = 15
-    N = 130
-    state = 92
+    # N = 130
+    # state = 92
+
+    N = 30
+    # state = 95
+    state = 97
+
+
     aditional_points = np.array([
-        [0.6, 0.3]
+        [0.6, 0.3],
+        [1.1, 0.5],
+        [0.75, 0.3]
     ])
 
     aditional_ids = []
@@ -129,6 +137,7 @@ def set_permeability(fine_mesh_path, fine_properties: MeshProperty, export_permf
 
     permeability = np.zeros((faces.shape[0], 2, 2))
     perm = random_permeability_chueh(faces_centroids, N, state, aditional_ids)
+    # perm = chueh_perm_artur_paper(faces_centroids)
 
     permeability[:, 0, 0] = perm
     permeability[:, 1, 1] = perm

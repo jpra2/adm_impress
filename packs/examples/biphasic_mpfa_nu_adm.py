@@ -359,11 +359,15 @@ def initial_loop(
         beta_lim,
         etol_msrsb,
         maxit_msrsb,
-        cfl: float
+        cfl: float,
+        refine_by_grad_bool: bool,
+        refine_by_estimator1_bool: bool,
+        max_value_grad: float,
+        max_value_estimator1: float
 ):
     
-    refine_by_grad_bool = False
-    refine_by_estimator1_bool = True 
+    # refine_by_grad_bool = False
+    # refine_by_estimator1_bool = True 
 
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
@@ -521,7 +525,7 @@ def initial_loop(
     ## refine by delta grad
     if refine_by_grad_bool is True:
         
-        fine_faces_by_grad = refine_by_gradient_v0(fp, P_prol)
+        fine_faces_by_grad = refine_by_gradient_v0(fp, P_prol, max_grad=max_value_grad)
         fine_faces_by_grad = nu_adm_funcs.get_finescale_vols(
             fp['faces'][fine_levels==0],
             fine_faces_by_grad,
@@ -593,7 +597,8 @@ def initial_loop(
             fp,
             lsds,
             bc,
-            P_prol
+            P_prol,
+            max_value=max_value_estimator1
         )
 
         if fine_faces_by_estimator1.shape[0] > 0:

@@ -88,7 +88,11 @@ def load_or_update_initial_loop(
         saturation_plot: np.ndarray,
         etol_msrsb,
         maxit_msrsb,
-        cfl
+        cfl,
+        refine_by_grad_bool,
+        refine_by_estimator1_bool,
+        max_value_grad,
+        max_value_estimator1
 ):
     
     if load is False:
@@ -113,7 +117,11 @@ def load_or_update_initial_loop(
             beta_lim,
             etol_msrsb,
             maxit_msrsb,
-            cfl
+            cfl,
+            refine_by_grad_bool,
+            refine_by_estimator1_bool,
+            max_value_grad,
+            max_value_estimator1
         )
 
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
@@ -140,6 +148,7 @@ def load_or_update_initial_loop(
             fine_levels,
             adm_interfaces_name
         )
+        fp.export_data()
     else:
         # import pdb; pdb.set_trace()
         simulation_data.load_data()
@@ -244,6 +253,8 @@ def update_while_loop_ms(
         adm_interfaces_name
     )
 
+    fp.export_data()
+
     mesh_data.insert_tag_data('pressure', pressure, 'faces')
     mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
     mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
@@ -273,8 +284,8 @@ def run6():
     # alpha_lim_finescale = 0.1
     # beta_lim = 2
 
-    alpha_lim_finescale = 1e3
-    beta_lim = 1e3
+    alpha_lim_finescale = 1e6
+    beta_lim = 1e6
 
     dt = 0.00005
     max_vpi = 1.3
@@ -284,6 +295,11 @@ def run6():
     loop_intervals = 10
     etol_msrsb = 0.01
     maxit_msrsb = 1000
+
+    refine_by_grad_bool = False
+    refine_by_estimator1_bool = True
+    max_value_grad = 1e6
+    max_value_estimator1 = 1200
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
@@ -351,7 +367,11 @@ def run6():
         saturation_plot,
         etol_msrsb,
         maxit_msrsb,
-        cfl
+        cfl,
+        refine_by_grad_bool,
+        refine_by_estimator1_bool,
+        max_value_grad,
+        max_value_estimator1
     )
 
     import pdb; pdb.set_trace()
