@@ -119,8 +119,109 @@ def plot_cum_oil(finescale_sim: SimulationData, nuadm_sims: Sequence[SimulationD
     path_fig = os.path.join(defpaths.plots_folder, figname)
     fig.savefig(path_fig)
     
+def plot_wor(finescale_sim: SimulationData,  nuadm_sims: Sequence[SimulationData], figname: str):
+    x_label = 'vpi'
+    y_label = 'WOR'
+    plt.clf()
+    fig = plt.figure()
+    ax = fig.add_subplot()
+
+    """
+    malha fina : continuo
+    nuadm: dotted
+    marcador distingue as simulacoes nuadm
+    """
+    markers = get_markers()
+    linestyle_nuadm = get_linestyle_str()[1]
+    basic_colors_str = basic_colors()
+    basic_colors_str.remove('k')
+    n_nuadmsims = len(nuadm_sims)
+    markers_size = np.arange(7, 7+n_nuadmsims)
+
+    nplus = 2
+    for i in range(1, markers_size.shape[0]):
+        markers_size[i] += nplus
     
+    markers_size = markers_size[::-1]
+
     
+    for i, sim in enumerate(nuadm_sims):
+        water_flux = sim['water_flux']
+        oil_flux = sim['oil_flux']
+        wor = water_flux/oil_flux
+        vpi = sim['all_vpi']
+        color = basic_colors_str[i]
+        ax.plot(
+            vpi, 
+            wor, 
+            label=sim.label, 
+            marker=markers[i],
+            markersize=markers_size[i], 
+            linestyle=linestyle_nuadm,
+            color=color)
+    
+    ax.plot(
+        finescale_sim['all_vpi'],
+        finescale_sim['water_flux']/finescale_sim['oil_flux'],
+        label='finescale',
+        color='k'
+    )
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.legend(handlelength=5)
+
+    path_fig = os.path.join(defpaths.plots_folder, figname)
+    fig.savefig(path_fig)
+
+def plot_nuadm_percent(finescale_sim: SimulationData,  nuadm_sims: Sequence[SimulationData], figname: str):
+    x_label = 'vpi'
+    y_label = '%NUADM VOLUMES'
+    plt.clf()
+    fig = plt.figure()
+    ax = fig.add_subplot()
+
+    """
+    malha fina : continuo
+    nuadm: dotted
+    marcador distingue as simulacoes nuadm
+    """
+    markers = get_markers()
+    linestyle_nuadm = get_linestyle_str()[1]
+    basic_colors_str = basic_colors()
+    basic_colors_str.remove('k')
+    n_nuadmsims = len(nuadm_sims)
+    markers_size = np.arange(7, 7+n_nuadmsims)
+
+    nplus = 2
+    for i in range(1, markers_size.shape[0]):
+        markers_size[i] += nplus
+    
+    markers_size = markers_size[::-1]
+
+    pressure0_finescale = finescale_sim['pressure_0']
+    nfinevolumes = pressure0_finescale.shape[0]
+
+    
+    for i, sim in enumerate(nuadm_sims):
+        nuadm_volumes = 100*sim['nuadm_vols']/nfinevolumes
+        vpi = sim['all_vpi']
+        color = basic_colors_str[i]
+        ax.plot(
+            vpi, 
+            nuadm_volumes, 
+            label=sim.label, 
+            marker=markers[i],
+            markersize=markers_size[i], 
+            linestyle=linestyle_nuadm,
+            color=color)
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.legend(handlelength=5)
+
+    path_fig = os.path.join(defpaths.plots_folder, figname)
+    fig.savefig(path_fig)
 
 
     
@@ -139,10 +240,12 @@ def plot_cum_oil(finescale_sim: SimulationData, nuadm_sims: Sequence[SimulationD
 
 def plot_graphs():
 
-    finescale_sim = SimulationData('biphasic_layer_finescale4')
+    # finescale_sim = SimulationData('biphasic_ameba_finescale4')
+    finescale_sim = SimulationData('biphasic_het1_finescale')
     finescale_sim.load_data()
 
-    nuadm_sims_str = ['biphasic_layers_coarse4', 'biphasic_ameba_coarse4f']
+    # nuadm_sims_str = ['biphasic_ameba_coarse4']
+    nuadm_sims_str = ['biphasic_het_coarse1_1']
     nuadm_sims = []
     for i, name in enumerate(nuadm_sims_str):
         data_sim = SimulationData(name)
@@ -153,7 +256,9 @@ def plot_graphs():
             data_sim.insert_or_update_data({'label': np.array(['nuadm'+str(i)])})
         nuadm_sims.append(data_sim)
     
-    plot_cum_oil(finescale_sim, nuadm_sims, 'cum_oil_ameba.svg')
+    plot_cum_oil(finescale_sim, nuadm_sims, 'cum_oil_het.svg')
+    plot_wor(finescale_sim, nuadm_sims, 'wor_het.svg')
+    plot_nuadm_percent(finescale_sim, nuadm_sims, 'nuadm_percent_het.svg')
     
     import pdb; pdb.set_trace()
 
