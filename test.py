@@ -216,8 +216,11 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 
 # run_delete_all()
 # maitain_only_data_mesh()
-# from packs.examples.benchmarks_biphasic.het.fine1 import run5
-# run5()
+from packs.examples.benchmarks_biphasic.het.fine1 import run5
+run5()
+
+# from packs.utils.install_packages import run
+# run()
 
 
 # maitain_only_data_mesh()
@@ -268,9 +271,9 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 # from packs.examples.benchmarks_biphasic.ameba.mpfa_fine5 import run5
 # run5()
 
-maitain_only_data_mesh()
-from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4 import run6
-run6()
+# maitain_only_data_mesh()
+# from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4 import run6
+# run6()
 
 # maitain_only_data_mesh()
 # from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4f import run6

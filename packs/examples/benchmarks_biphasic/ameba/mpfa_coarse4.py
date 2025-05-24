@@ -20,7 +20,8 @@ from packs.examples.benchmarks_biphasic.ameba.mpfa_fine4 import (
     get_properties as get_properties_finescale,
     set_boundary_conditions,
     initial_funcs,
-    create_path_mesh_data
+    create_path_mesh_data,
+    set_permeability
 )
 
 from packs.examples.biphasic_mpfa_nu_adm import (
@@ -323,6 +324,7 @@ def run6():
 
     
     fp, fine_mesh_path = get_properties_finescale()
+    set_permeability(fine_mesh_path, fp, simulation_data)
     cp, coarse_mesh_path = get_properties_coarse()
     nodes_org = fp.get_internal_nodes_org_from_faces_of_nodes_object()
     fp.insert_or_update_data(nodes_org)

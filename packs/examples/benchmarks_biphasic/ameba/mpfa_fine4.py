@@ -182,7 +182,7 @@ def initial_funcs(
         simulation_data: SimulationData
 ):
     
-    set_permeability(fine_mesh_path, fp, simulation_data, export_permfield=True, update_permfield=True)
+    # set_permeability(fine_mesh_path, fp, simulation_data, export_permfield=True, update_permfield=True)
     set_weights_nodes(fp, update=True)
 
     if fp.verify_name_in_data_names('nodes_org'):
@@ -388,6 +388,7 @@ def run5():
     create_path_mesh_data(simulation_data)
 
     fp, fine_mesh_path = get_properties()
+    set_permeability(fine_mesh_path, fp, simulation_data)
     bc = set_boundary_conditions(fp)
 
     porosity = np.repeat(0.2, len(fp['faces']))
