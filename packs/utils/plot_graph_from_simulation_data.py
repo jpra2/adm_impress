@@ -224,7 +224,25 @@ def plot_nuadm_percent(finescale_sim: SimulationData,  nuadm_sims: Sequence[Simu
     fig.savefig(path_fig)
 
 
-    
+def chueh_test():
+
+    x = np.linspace(0, 1, 800)
+    y = 0.5 + 0.1*np.sin(10*x)
+    y2 = y + 0.12
+    y3 = y - 0.12
+
+    plt.clf()
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.plot(x, y)
+    ax.plot(x, y2)
+    ax.plot(x, y3)
+    fig_path = os.path.join(defpaths.plots_folder, 'chueh_1.svg')
+    fig.savefig(fig_path)
+
+
+
+
 
 
 

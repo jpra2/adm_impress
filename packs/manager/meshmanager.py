@@ -89,6 +89,7 @@ class MeshInit:
         self.all_nodes = self.mb.get_entities_by_dimension(0, 0)
         self.all_faces = self.mb.get_entities_by_dimension(0, 2)
 
+
         # bfaces = self.mb.get_entities_by_type_and_tag(self.root_set, types.MBTRI)
         
         # type_moab = self.mb.type_from_handle(self.root_set)
@@ -108,6 +109,21 @@ class MeshInit:
         self.mtu.construct_aentities(self.all_nodes)
         
         self.all_edges = self.mb.get_entities_by_dimension(0, 1)
+
+        # select_nodes = self.test_nodes_out_2d()
+        # self.all_nodes = np.array(self.all_nodes[select_nodes])
+
+
+    def test_nodes_out_2d(self):
+        ntotalnodes = len(self.all_nodes)
+        new_nodes_bool = np.full(ntotalnodes, True, bool)
+
+        for i, node in enumerate(self.all_nodes):
+            faces_node = self.mtu.get_bridge_adjacencies(node, 0, 2)
+            if len(faces_node) == 0:
+                new_nodes_bool[i] = False
+        
+        return new_nodes_bool
     
 
 

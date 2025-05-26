@@ -198,6 +198,16 @@ def chueh_perm_artur_paper(elements_centroids: np.ndarray):
     
      return perm
      
+def chueh_1(elements_centroids: np.ndarray):
+     xpoints = elements_centroids[:, 0]
+     ypoints = elements_centroids[:, 1]
+
+     v1 = (ypoints -0.5 - 0.1*np.sin(10*xpoints))/0.1
+     v2 = -1*np.power(v1, 2)
+     v3 = np.exp(v2)
+     v3[v3 < 0.01] = 0.01
+
+     return v3
 
 
 

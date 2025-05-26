@@ -4,9 +4,11 @@ from packs.biphasic.relative_perm.brooks_and_corey import BrooksAndCorey
 
 import numpy as np
 from typing import Tuple
+import time
 
 
 def calculate_mean(volumes: np.ndarray, mobility: np.ndarray) -> float:
+    # import pdb; pdb.set_trace()
     return (volumes.dot(mobility))/volumes.sum()
 
 def nodes_mobility(total_mobility: np.ndarray, volumes: np.ndarray, nodes_elements_adjacencies: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

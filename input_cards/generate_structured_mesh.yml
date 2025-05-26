@@ -3,10 +3,10 @@
 starting_point: [0.0, 0.0, 0.0]
 
 # tamanho de cada bloco da malha fina
-block_size: [20, 10, 0]
+block_size: [24.384, 24.384, 0]
 
 # tamanho total da malha
-block_number: [60, 220, 0]
+block_number: [25, 25, 0]
 
 dimension: 2
 
@@ -15,7 +15,7 @@ dimension: 2
 
 # nome da malha para salvar
 #mesh_name: '54x216x1_L_37_unit.h5m'
-mesh_name: 'coarse5.msh'
+mesh_name: '25x25_2d.h5m'
 
 # nonuniform_mesh:
 #   x_points: [0, 17, 34, 50, 66, 83, 100]

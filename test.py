@@ -216,8 +216,8 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 
 # run_delete_all()
 # maitain_only_data_mesh()
-from packs.examples.benchmarks_biphasic.het.fine1 import run5
-run5()
+# from packs.examples.benchmarks_biphasic.het.fine1 import run5
+# run5()
 
 # from packs.utils.install_packages import run
 # run()
@@ -281,6 +281,21 @@ run5()
 
 # from packs.utils.plot_graph_from_simulation_data import plot_graphs
 # plot_graphs()
+
+# run_delete_all()
+# maitain_only_data_mesh()
+# from packs.examples.benchmarks_biphasic.sin_chueh.fine1 import run5
+# run5()
+
+# run_delete_all()
+# from packs.examples.benchmarks_biphasic.sin_chueh.coarse1 import run6
+# run6()
+
+# from packs.utils.plot_graph_from_simulation_data import chueh_test
+# chueh_test()
+
+from packs.examples.benchmarks_biphasic.sin_chueh.generate_points import chueh_sin_geo_coarse, chueh_sin_geo_coarse2, chueh_sin_geo_coarse3
+chueh_sin_geo_coarse3()
 
 
 
