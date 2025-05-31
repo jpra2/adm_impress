@@ -105,9 +105,9 @@ class MUSCL:
         return Phi
 
     def get_extrapolated_compositions(self, fprop, Phi, dNk_face_neig):
-        #Phi[abs(dNk_face_neig)<1e-30] = 0
+        Phi[abs(dNk_face_neig)<1e-30] = 0
         Nk_face = self.Nk[:,ctes.v0] + Phi / 2 * dNk_face_neig
-        Nk_face[(Nk_face<0)*(abs(Nk_face)<1e-30)] = 0
+        #Nk_face[(Nk_face<0)*(abs(Nk_face)<1e-30)] = 0
         if any(Nk_face.flatten()<0): import pdb; pdb.set_trace()
         z_face = Nk_face[0:ctes.Nc] / np.sum(Nk_face[0:ctes.Nc], axis = 0)
         return Nk_face, z_face
@@ -184,5 +184,5 @@ class MUSCL:
 
         if any(np.isnan(Fk_vols_total).flatten()): import pdb; pdb.set_trace()
         #Fk_vols_total[:ctes.Nc][fprop.z==0] = 0
-        #if any(Fk_vols_total[:ctes.Nc][fprop.z==0]<0): import pdb; pdb.set_trace()
+        if any(Fk_vols_total[:ctes.Nc][fprop.z==0]<0): import pdb; pdb.set_trace()
         return alpha_wv, Fk_vols_total

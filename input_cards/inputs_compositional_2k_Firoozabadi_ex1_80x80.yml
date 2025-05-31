@@ -6,6 +6,9 @@ compositional: True
 hidrocarbon_components: True
 compressible_fluid: True
 water_component: false
+water_miscible: false
+mesh_type: 'structured'
+mesh_dim: '3D' #2D or 3D
 use_vpi: false
 
 ###############################

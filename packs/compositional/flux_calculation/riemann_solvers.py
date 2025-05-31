@@ -67,9 +67,10 @@ class RiemannSolvers:
             alpha_5[:,ponteiro,:], eigvec_m = self.wave_velocity_LLF(M, fprop, Nk_face,
                                 P_face, ftotal, ponteiro)
 
-        alpha_LR, alpha_m, eigvec_m = self.LRM_wave_velocity(M, fprop, Nk_face,
-                                P_face, ftotal, ponteiro)
-        alpha_5 = np.concatenate((alpha_LR,alpha_m[...,np.newaxis]),axis=-1)
+        #alpha_LR, alpha_m, eigvec_m = self.LRM_wave_velocity(M, fprop, Nk_face,
+        #                        P_face, ftotal, ponteiro)
+        #import pdb; pdb.set_trace()
+        #alpha_5 = np.concatenate((alpha_LR,alpha_m[...,np.newaxis]),axis=-1)
 
         #alpha_5[:,~ponteiro] = 0
         #alpha_5[dNk_small] = 0
@@ -246,6 +247,9 @@ class RiemannSolvers:
                 #self.reshape_constant_property(fprop.rho_j[0,0:2,:], ponteiro, v)
                 Csi_j_face[0,0,:] = np.tile(fprop.Csi_j[0,0,self.v0[ponteiro,0]], v)
                 Csi_j_face[0,1,:] = np.tile(fprop.Csi_j[0,1,self.v0[ponteiro,0]], v)
+                xkj_face[:,0,:] = np.tile(fprop.xkj[:,0,self.v0[ponteiro,0]], v)
+                xkj_face[:,1,:] = np.tile(fprop.xkj[:,1,self.v0[ponteiro,0]], v)
+
                 #self.reshape_constant_property(fprop.Csi_j[0,0:2,:], ponteiro, v)
         else: L_face = []; V_face = []
 
@@ -258,7 +262,7 @@ class RiemannSolvers:
                 Sw_face, Csi_j_face[0,-1,...], rho_j_face[0,-1,...] = \
                 PropertiesCalc().update_water_saturation(fprop, Nk_face[-1,...],
                 P_face, Vp_face, Csi_W0_face)
-
+                
             else:
                 # se não movel, prop constante (no varia com P)
                 Sw_face = np.tile(fprop.Sw[self.v0[ponteiro,0]], v)
@@ -267,6 +271,10 @@ class RiemannSolvers:
                 #self.reshape_constant_property(fprop.rho_j[0,-1], ponteiro, v)
                 Csi_j_face[0,-1] = np.tile(fprop.Csi_j[0,-1,self.v0[ponteiro,0]], v)
                 #self.reshape_constant_property(fprop.Csi_j[0,-1], ponteiro, v)
+
+            xkj_face[-1,0,:] = np.tile(fprop.xkj[-1,0,self.v0[ponteiro,0]], v)
+            xkj_face[-1,1,:] = np.tile(fprop.xkj[-1,1,self.v0[ponteiro,0]], v)
+            xkj_face[:,2,:] = np.tile(fprop.xkj[:,2,self.v0[ponteiro,0]], v)
         else:
             Sw_face = np.tile(fprop.Sw[self.v0[ponteiro,0]],v)
 
@@ -295,6 +303,7 @@ class RiemannSolvers:
         Fj = f.update_Fj_internal_faces(ftotal, rho_j, mobilities, Pcap_reshaped,
             z_reshaped, np.tile(self.pretransmissibility[ponteiro],v))
         Fk = f.update_Fk_internal_faces(xkj, Csi_j, Fj)
+        if any(np.isnan(Fk).flatten()): import pdb;pdb.set_trace()
         return Fk
 
     def Fk_and_rho_from_Nk(self, fprop, M, Nk, P_face, Vp_face, ftotal, ponteiro):
@@ -324,6 +333,7 @@ class RiemannSolvers:
         Fk_faces = self.Fk_from_Nk(fprop, M, Nks, P_faces, Vp_face, ft_Nks, np.ones_like(ftotal[0], dtype=bool))
         Fk_faceL, Fk_faceR = np.hsplit(Fk_faces, 2)
         Fk_face = np.concatenate((Fk_faceL[:,:,np.newaxis], Fk_faceR[:,:,np.newaxis]), axis=-1)
+        #import pdb; pdb.set_trace()
         return Fk_face
 
     def medium_wave_velocity(self, M, fprop, Nk_face, P_face, ftotal, ponteiro):

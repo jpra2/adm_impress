@@ -390,9 +390,9 @@ class Wells(DataManager):
         self._loaded = True
 
     def run(self):
-        self.create_tags()
+        #self.create_tags()
         self.get_wells()
-        self.set_infos()
+        #self.set_infos()
         # self.get_facs_nn()
         # self.correct_wells()
         self.loaded()

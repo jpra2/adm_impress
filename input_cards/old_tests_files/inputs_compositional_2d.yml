@@ -1,11 +1,12 @@
 #Oil injection in oil reservoir 2-D with 1 oil component
 mesh_name: 25x25x1.msh
-name_save_file: 'results_2d_injection_25_case_IMPEC'
+name_save_file: 'results_2d_injection_case_4_Li_IMPEC_MUSCL'
 
-n_test: 0
+mesh_type: 'structured'
+mesh_dim: '3D' #2D or 3D
 compositional: True
 hidrocarbon_components: True
-compressible_fluid: True
+compressible_oil: True
 water_component: True
 water_miscible: False
 use_vpi: False
@@ -26,7 +27,7 @@ monophasic_data:
   gama: 10000.0
   mi: 1.0
 
-# Case 3 of Li M.Sc. Thesis with case studies
+# Case 4 of Li M.Sc. Thesis with case studies
 compositional_data:
   #  Pensar em um jeito de reorganizar isso
   CFL: 0.5
@@ -35,7 +36,10 @@ compositional_data:
     IMPSAT: false
 
   MUSCL:
-    set: false
+    set: true
+    minmod: false
+    VanAlbada1: False
+    VanLeer: true
 
   FR:
     set: false
@@ -48,11 +52,11 @@ compositional_data:
     DW: false
     
   time_integration:
-    Euler: true
-    RK3: false
+    Euler: false
+    RK3: true
 
   vpis_para_gravar_vtk: [0.0038]
-  time_to_save: [100000, 500000, 1000000, 5000000, 10000000, 15000000, 20000000, 30000000, 31536000.]
+  time_to_save: [31536000.]
   maximum_time: 31536000.
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
@@ -132,7 +136,7 @@ Permeability:
 Pressure:
   r1:
     type: all
-    value: 13.78951458E6 #confirmar
+    value: 13.78951458E6 
 
 Temperature:
   r1:

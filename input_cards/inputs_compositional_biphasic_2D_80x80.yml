@@ -1,14 +1,17 @@
 #Buckley Leverett's horizontal case
-mesh_name: 80x80_BL.msh
-name_save_file: 'results_Buckley_Leverett_case_2D_80x80_IMPEC_FOU'
+mesh_name: 80x80_BL_2D.msh #80x80_BL_2D.msh  
+name_save_file: 'results_Buckley_Leverett_case_80x80_2D_IMPEC_FOU'
 
+mesh_type: 'structured'
+mesh_dim: '2D' #2D or 3D
+z_2D: 0.03048 #only answer if it is a 2D mesh. It's the mesh deepness.
 compositional: True
 hidrocarbon_components: True
 compressible_oil: True
 water_component: True
 water_miscible: False
 use_vpi: False
-mesh_type: 'structured'
+
 
 ###############################
 ## Multilevel infos
@@ -49,6 +52,9 @@ compositional_data:
 
   MUSCL:
     set: false
+    minmod: false
+    VanAlbada1: False
+    VanLeer: false
 
   FR:
     set: false
@@ -81,10 +87,10 @@ compositional_data:
 
   time_data:
     deltaPlim: 7
-    deltaNlim: 1
-    deltaSlim: 0.2
+    deltaNlim: 2
+    deltaSlim: 0.5
     deltaVlim: 1
-    delta_t_ini: 0.05
+    delta_t_ini: 0.1
     delta_tmax: 8640
     delta_tmin: 0.001
     #2.765

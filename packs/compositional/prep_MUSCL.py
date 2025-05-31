@@ -3,10 +3,8 @@ import scipy.sparse as sp
 import numpy as np
 
 
-
 def get_neiboring_properties_to_reconstruction(M):
-    neig_vols = M.volumes.bridge_adjacencies(M.volumes.all,2,3)
-
+    
     #Não sei se isso vai funcionar para malhas não estruturadas
     #trocar o v0 por in_vols_pairs
     lines = np.array([ctes.v0[:, 0], ctes.v0[:, 1], ctes.v0[:, 0], ctes.v0[:, 1]]).flatten()
@@ -21,13 +19,12 @@ def get_neiboring_properties_to_reconstruction(M):
     pos_neig = M.data['centroid_volumes'].T[:,np.newaxis,:] * allneig_and_vol[np.newaxis,:,:]
 
     pos = pos_neig.transpose(0,2,1)
-
     ds = pos_neig - pos
     ds_norm = np.linalg.norm(ds, axis=0)
     versor_ds = np.empty(ds.shape)
     versor_ds[:,ds_norm==0] = 0
     versor_ds[:,ds_norm!=0] = ds[:,ds_norm!=0] / ds_norm[ds_norm!=0]
-
+    #import pdb; pdb.set_trace()
     ds_vols = ds * versor_ds
     ds_vols = ds_vols.sum(axis = 2)
 
@@ -41,7 +38,9 @@ def get_neiboring_properties_to_reconstruction(M):
 
 def identify_contour_faces(all_neig):
     contour_neig = np.min(all_neig)
-    vols_contour = np.argwhere(all_neig==contour_neig).flatten()
+    vols_contour = np.argwhere(all_neig==contour_neig).flatten() #if the expression below works, this one can be deleted
+    #vols_contour = np.argwhere(all_neig<np.max(all_neig)).flatten()
+    
     faces_contour = []
 
     vols_vec = -np.ones((ctes.n_volumes,2),dtype=int)
@@ -55,6 +54,7 @@ def identify_contour_faces(all_neig):
         faces_contour.extend(f0.tolist())
         faces_contour.extend(f1.tolist())
     faces_contour = np.array(faces_contour)
+    #import pdb; pdb.set_trace()
     return faces_contour
 
 def run(M):

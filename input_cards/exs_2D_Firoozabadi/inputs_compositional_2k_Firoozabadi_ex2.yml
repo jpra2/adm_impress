@@ -1,6 +1,9 @@
 #2-phase problem with 2 components - hotei and firoozabadi
-mesh_name: 40x40x1_Firoozabadi_ex2.msh
 name_save_file: 'results_Firoo_2k_ex2_IMPEC_FOU'
+
+mesh_name: 40x40x1_Firoozabadi_ex2.msh
+mesh_type: 'structured'
+mesh_dim: '3D' #2D or 3D
 
 compositional: True
 hidrocarbon_components: True
@@ -34,7 +37,11 @@ compositional_data:
     IMPSAT: false
 
   MUSCL:
-    set: false
+    set: true
+    minmod: false
+    VanAlbada1: False
+    VanLeer: true
+
 
   FR:
     set: false
@@ -47,8 +54,8 @@ compositional_data:
     DW: false
 
   time_integration:
-    Euler: true
-    RK3: false
+    Euler: false
+    RK3: true
 
   vpis_para_gravar_vtk: [0.58]
   time_to_save: [7568640]

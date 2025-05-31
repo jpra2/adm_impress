@@ -17,18 +17,17 @@ class PreprocessUnfied(Preprocess0):
         faces = M.faces.all
         n_faces = len(faces)
         areas = M.faces.area(faces)
-        edges_nodes = M.edges.bridge_adjacencies(M.edges.all,1,0)
+        edges_nodes = M.edges.bridge_adjacencies(M.edges.all,1,0) #see this
 
         # Generalizando para faces triangulares e quadrilateras
         faces_edges = M.faces.bridge_adjacencies(faces, 2, 1)
-
+        
         try:
             faces_quadr = (faces_edges.shape[1]==4)
             if data_loaded['mesh_type']=='unstructured': return False
             else: return (faces_edges.shape[1]==4)
         except:
             return False
-
 
     def set_faces_normals(self, M):
         """ get faces normals """
@@ -43,7 +42,6 @@ class PreprocessUnfied(Preprocess0):
         faces_edges = M.faces.bridge_adjacencies(faces, 2, 1)
         #t1 = time.time()
         #print(t1-t0)
-        #import pdb; pdb.set_trace()
         faces_quadr = np.zeros_like(faces,dtype=bool)
         list_faces_edges = faces_edges.tolist()
         max_n_edges_per_face = max(map(len,list_faces_edges))
@@ -54,7 +52,7 @@ class PreprocessUnfied(Preprocess0):
             faces_edges[i,0:stop] = element
             faces_quadr[i] = (len(element)==4)
             i+=1
-
+        
         nodes_coord = M.nodes.center(M.nodes.all)
         edges_vectors = abs(nodes_coord[edges_nodes[:,1]]-nodes_coord[edges_nodes[:,0]])
         faces_vectors = edges_vectors[faces_edges]
@@ -133,20 +131,109 @@ class PreprocessUnfied(Preprocess0):
         internal_faces_contour_IDs = M.faces.internal[internal_faces_contour]
         M.data['internal_faces_contour'] = internal_faces_contour
         M.data['vols_contour'] = vols_contour
+    
+    def set_pretransmissibility_2D(self, M):
+        areas = M.faces.areas
+        #areas=np.ones_like(areas)
+        k_harm_faces = M.data['k_harm']
+        dist_cent = M.data['dist_cent'].copy()
+        # dist_cent = np.ones_like(dist_cent)
+        pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
+        M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
+        import pdb; pdb.set_trace()
+    
+    def set_area_hex_structured_uniform_2D(self, M):
+        def get_area(ind, normals, nodes_faces, coord_nodes):
+            if len(np.where(normals[:,ind] == 1)[0]) == 0:
+                indice = np.where(normals[:,ind]!=0)[0][0]
+            else: indice = np.where(normals[:,ind] == 1)[0][0]
 
+            nos = nodes_faces[indice]
+            normas = []
+            vetores = []
+            maior = 0
+            ind_maior = 0
+            for i in range(3):
+                v = coord_nodes[nos[0]] - coord_nodes[nos[i+1]]
+                vetores.append(v)
+                normas.append(np.linalg.norm(v))
+                if normas[i] > maior:
+                    maior = normas[i]
+                    ind_maior = i
+
+            del normas[ind_maior]
+            del vetores[ind_maior]
+
+            area = normas[0] * normas[1]
+            vetores = np.absolute(np.array(vetores))
+            normas = np.array(normas)
+            return area, vetores, normas
+
+        unis = np.array([np.array([1,0,0]), np.array([0,1,0]), np.array([0,0,1])])
+        faces = M.faces.all
+        n_faces = len(faces)
+        normals = np.absolute(M.faces.normal[:])
+        nodes_faces = M.faces.bridge_adjacencies(faces, 2, 0)
+        coord_nodes = M.nodes.center(M.nodes.all)
+        areas = []
+        hs = np.zeros(3)
+        
+        area_xy = M.volumes.areas[0]
+        hs[0] = np.sqrt(area_xy)
+        hs[1] = np.sqrt(area_xy)
+        hs[2] = data_loaded['z_2D']
+
+        areas = np.array([area_xy,area_xy,hs[0]*hs[2]])
+        all_areas = np.dot(normals**2, areas)
+        dist_cent = np.dot(normals, hs)
+
+        v = np.ones([3,1])
+        dd = np.argwhere(np.round(normals@v, 1)!=1)
+        if len(dd)>0:
+            inclined_faces_normals = normals[dd.ravel()]
+            xz_face = np.argwhere(inclined_faces_normals[:,1]==0).ravel()
+            xz_face_angle = inclined_faces_normals[xz_face][0,2]/inclined_faces_normals[xz_face][0,0]
+            theta = np.arctan(xz_face_angle)
+        else: theta = pi/2
+
+        volume = hs[0]*hs[1]*hs[2]*np.sin(theta)
+        n_volumes = M.data.len_entities[direc.entities_lv0[3]]
+
+        dd = np.zeros([n_volumes, 3])
+        for i in range(3):
+            dd[:, i] = np.repeat(hs[i], n_volumes)
+        
+        M.data[M.data.variables_impress['area']] = all_areas
+        M.data[M.data.variables_impress['dist_cent']] = dist_cent
+        M.data[M.data.variables_impress['volume']] = np.repeat(volume, n_volumes)
+        M.data[M.data.variables_impress['NODES']] = coord_nodes
+        M.data[M.data.variables_impress['hs']] = dd
+        M.data['faces_nodes'] = nodes_faces
+        M.data['faces_normals'] = normals
+        
     def run(self, M):
         self.update_centroids_and_unormal(M)
         self.set_permeability_and_phi(M)
-        self.get_internal_faces_contour(M)
+        #self.get_internal_faces_contour(M)
 
         #ajeitar isso para funcionar sem o if talvez
+        
         if self.check_struct(M):
-            self.set_area_hex_structured(M)
-            self.set_k_harm_hex_structured(M)
+            if data_loaded['mesh_dim']=='2D':
+                self.set_area_hex_structured_uniform_2D(M)
+            else: 
+                self.set_area_hex_structured(M)
+            self.set_k_harm_hex_structured(M)           
             self.set_pretransmissibility(M)
             self.set_transmissibility_monophasic(M)
             self.initial_gama(M)
-        else: self.set_area_unstruct(M)
+            
+        #self.set_area_unstruct(M)
+        #self.set_pretransmissibility(M)
+        #self.initial_gama(M)
+
+
+        #else: self.set_area_unstruct(M)
 
         #self.set_pretransmissibility(M)
         #self.set_transmissibility_monophasic(M)

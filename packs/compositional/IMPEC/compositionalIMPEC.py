@@ -68,7 +68,7 @@ class CompositionalFVM:
         #fprop.Nk[(fprop.Nk<0)*(abs(fprop.Nk)<1e-300)] = 0
         #if fprop.P[0]<fprop.P[1]: import pdb; pdb.set_trace()
         #fprop.Nk[abs(fprop.Nk)<1e-300] = abs(fprop.Nk[abs(fprop.Nk)<1e-300])
-        #if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
+        if any(fprop.Nk.flatten()<0): import pdb; pdb.set_trace()
         #if any(fprop.Sw>1): import pdb; pdb.set_trace()
         #fprop.Nk[fprop.Nk<0] = 1e-30
         #if any(Ft_internal[0]<0): import pdb; pdb.set_trace()

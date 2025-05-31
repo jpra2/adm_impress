@@ -2,7 +2,8 @@
 # mesh_name: 12x1x1_b.msh
 # mesh_name: 27x1x1.h5m
 mesh_name: 27x27x1.h5m
-# mesh_name: 12x1x1.h5m
+mesh_type: 'structured'
+mesh_dim: '3D' #2D or 3D
 name_save_file: 'results_Buckley_Leverett_caset'
 
 compositional: True

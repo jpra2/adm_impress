@@ -15,7 +15,6 @@ class TPFASolver:
         Pnew = self.update_pressure(T, D)
         Ft_internal_faces = self.update_total_flux_internal_faces(M, fprop, Pnew)
         self.update_flux_wells(fprop, Pnew, wells, delta_t)
-        #import pdb; pdb.set_trace()
         return Pnew, Ft_internal_faces, self.q
 
     def dVt_derivatives(self, dVjdNk, dVjdP):
@@ -98,6 +97,7 @@ class TPFASolver:
     def well_term(self, wells):
         self.q = np.zeros([ctes.n_components, ctes.n_volumes])
         well_term = np.zeros(ctes.n_volumes)
+        
         if len(wells['ws_q']) > 0:
             self.q[:,wells['ws_q']] =  wells['values_q'] #mol/s
             well_term[wells['ws_q']] = np.sum(self.dVtk[:,wells['ws_q']] *

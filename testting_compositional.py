@@ -25,7 +25,7 @@ convert = data_loaded['convert_english_to_SI']
 
 t = time.time()
 sim = run_simulation(name_current, name_all)
-M, data_impress, wells, fprop, load = sim.initialize(load, convert, mesh)
+M, wells, fprop, load, data_impress = sim.initialize(load, convert, mesh)
 
 # import pdb; pdb.set_trace()
 

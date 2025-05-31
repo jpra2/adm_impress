@@ -48,10 +48,9 @@ class Flux:
         ''' Function to compute component molar flux balance through the control \
         volume interfaces '''
         cx = np.arange(ctes.n_components)
-
         Fk_internal_faces *= ctes.N_sign
-        lines = np.array([np.repeat(cx,len(ctes.in_vols_pairs[:,0])), np.repeat(cx,len(ctes.in_vols_pairs[:,1]))]).astype(int).flatten()
-        cols = np.array([np.tile(ctes.in_vols_pairs[:,0],ctes.n_components), np.tile(ctes.in_vols_pairs[:,1], ctes.n_components)]).flatten()
+        lines = np.array([np.repeat(cx,len(ctes.v0[:,0])), np.repeat(cx,len(ctes.v0[:,1]))]).astype(int).flatten()
+        cols = np.array([np.tile(ctes.v0[:,0],ctes.n_components), np.tile(ctes.v0[:,1], ctes.n_components)]).flatten()
         data = np.array([-Fk_internal_faces, Fk_internal_faces]).flatten()
         Fk_vols_total = sp.csc_matrix((data, (lines, cols)), shape = (ctes.n_components, ctes.n_volumes)).toarray()
 

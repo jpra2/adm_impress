@@ -81,8 +81,7 @@ class FirstOrder:
         wave_velocity[abs(Nk_face[...,1] - Nk_face[...,0])>e] = wave_velocity_RH[abs(Nk_face[...,1] - Nk_face[...,0])>e]
         #import pdb; pdb.set_trace()
 
-        #wave_velocity = Fk_vols_total/self.Nk #np.max(abs(wave_velocity),axis=0)
-        #wave_velocity = Fk_vols_total/self.Nk #np.max(abs(wave_velocity),axis=0)
+        #wave_velocity = Fk_vols_total/self.Nk #np.max(abs(wave_velocity),axis=0) #uncomment for BL
 
 
         #burger

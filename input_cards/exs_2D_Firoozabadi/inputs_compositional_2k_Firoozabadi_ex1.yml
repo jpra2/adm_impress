@@ -1,6 +1,8 @@
 #2-phase problem with 2 components - hotei and firoozabadi
 mesh_name: 40x40x1_Firoozabadi_ex1.msh
-name_save_file: 'results_Hoteit_Firoo_2k_ex1_IMPEC_MUSCL_vpi'
+mesh_type: 'structured'
+mesh_dim: '3D' #2D or 3D
+name_save_file: 'results_Hoteit_Firoo_2k_ex1_IMPEC_FOU'
 
 compositional: True
 hidrocarbon_components: True
@@ -32,9 +34,12 @@ compositional_data:
 
   solver:
     IMPSAT: false
-
+  
   MUSCL:
-    set: true
+    set: false
+    minmod: false
+    VanAlbada1: False
+    VanLeer: false
 
   FR:
     set: false
@@ -45,6 +50,11 @@ compositional_data:
     LLF: false
     MDW: false
     DW: false
+  
+  
+  time_integration:
+    Euler: true
+    RK3: false
 
   vpis_para_gravar_vtk: [0.58]
   time_to_save: [21772800]
@@ -63,12 +73,12 @@ compositional_data:
 
   time_data:
     deltaPlim: 68.9476
-    deltaNlim: 2
+    deltaNlim: 2 #2
     deltaSlim: .55
-    deltaVlim: 0.001
-    delta_t_ini: 86.4
-    delta_tmax: 4320
-    delta_tmin: 8.64
+    deltaVlim: 0.005 #0.001
+    delta_t_ini: 864 #86.4
+    delta_tmax: 86400 #4320
+    delta_tmin: 0.864
 
   water_data:
     mi_W: 1e-3
@@ -143,7 +153,7 @@ Wells:
     injection_condition: surface
     prescription: Q
     value: 0.0004918981481481481 #m3/s
-    ksi_total: 41.69170794 #densidade molar
+    #ksi_total: 41.69170794 #densidade molar
     value_type: volumetric
 
   P2:

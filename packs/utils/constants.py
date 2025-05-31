@@ -31,9 +31,9 @@ def init(M, wells):
     global time_integration
     global hyperbolic_method
 
-
+    
     P_SC = 101325
-    T_SC = 288.706
+    T_SC = 293.15
     if data_loaded['water_miscible']:
         EOS_class = getattr(equation_of_state_teste, data_loaded['compositional_data']['equation_of_state'])
     else: EOS_class = getattr(equation_of_state, data_loaded['compositional_data']['equation_of_state'])
@@ -89,6 +89,10 @@ def init(M, wells):
     v00 = M.faces.bridge_adjacencies(M.faces.internal,2,3)
     c_int = M.faces.center(M.faces.internal)
     c_vols = M.volumes.center(M.volumes.all)
+
+    internal_faces = M.faces.internal
+    n_internal_faces = len(v00[:,0])
+    
     try:
         pos = (c_int[:,np.newaxis,:] - c_vols[v00]).sum(axis=2)
         v0 = np.copy(v00)
@@ -96,20 +100,29 @@ def init(M, wells):
         v0[:,1] = v00[pos<0]
     except:
         v0 = v00
+    
+    if data_loaded['mesh_dim']=='3D':
+        in_vols_pairs, Ns_int_faces, N_sign = correct_ctev0(M)
+        
+    else:
+        in_vols_pairs = M.faces.bridge_adjacencies(internal_faces, 2, 3)
+        internal_volumes_centers_flat = c_vols[in_vols_pairs.flatten()]
+        internal_volumes_centers = internal_volumes_centers_flat.reshape((n_internal_faces, 2, 3))
+        LJ = c_int - internal_volumes_centers[:,0]
+        N_sign = np.sign(np.einsum("ij,ij->i", LJ, M.faces.internal_faces_unitary_normal))
 
-    in_vols_pairs, Ns_int_faces, N_sign = correct_ctev0(M)
-
+    #v0 = in_vols_pairs #NEW LINE ADDED IN 26_01_2025
     porosity = M.data['poro']
-    Vbulk = M.data['volume']
-    internal_faces = M.faces.internal
-    n_internal_faces = len(v0[:,0])
+    Vbulk = M.volumes.volume(M.volumes.all)
     g = 9.80665
     # g = 0.0
     z = -M.data['centroid_volumes'][:,2]
-    vols_index = M.volumes.all
-    vols_no_wells = np.setdiff1d(vols_index,wells['all_wells'])
     pretransmissibility_faces = M.data[M.data.variables_impress['pretransmissibility']]
     pretransmissibility_internal_faces = pretransmissibility_faces[M.faces.internal]#[100]*np.ones(len(self.internal_faces))
+   
+    vols_index = M.volumes.all
+    vols_no_wells = np.setdiff1d(vols_index,wells['all_wells'])
+     
     ds_faces_axis = M.data['centroid_volumes'][v0[:,1],:] -  M.data['centroid_volumes'][v0[:,0],:]
     ds_faces = ds_faces_axis.sum(axis=-1)
 
@@ -166,22 +179,22 @@ def component_properties():
     else: Cw = 0
     n_components = Nc + 1 * load_w * (1-miscible_w)
 
-
 def correct_ctev0(M):
+    'Only works for mesh with equal element shapes'
 
 
     internal_faces = M.faces.internal[:]
 
     # Retrieve the points that form the components of the normal vectors.
-    internal_faces_nodes = M.data['faces_nodes']
+    internal_faces_nodes = M.faces._connectivities(M.faces.internal)
 
     I_idx = internal_faces_nodes[:, 0]
     J_idx = internal_faces_nodes[:, 1]
     K_idx = internal_faces_nodes[:, 2]
-
-    I = M.nodes.coords[I_idx]
-    J = M.nodes.coords[J_idx]
-    K = M.nodes.coords[K_idx]
+    
+    I = M.nodes.coords(M.nodes.all)[I_idx]
+    J = M.nodes.coords(M.nodes.all)[J_idx]
+    K = M.nodes.coords(M.nodes.all)[K_idx]
     #I[...,-1] = abs(I[...,-1])
     #J[...,-1] = abs(J[...,-1])
     #K[...,-1] = abs(K[...,-1])
@@ -216,8 +229,9 @@ def correct_ctev0(M):
     Ns = M.data['faces_normals']
     #Ns_norm = np.linalg.norm(Ns, axis=1)
     #Ns /= Ns_norm[:,np.newaxis]
-
-    LJ = M.faces.center(M.faces.internal) -internal_volumes_centers[:, 0]
+    #import pdb; pdb.set_trace()
+                
+    LJ = M.faces.center(M.faces.internal) - internal_volumes_centers[:, 0]
     N_sign = np.sign(np.einsum("ij,ij->i", LJ, Ns[internal_faces]))
     (in_vols_pairs[N_sign < 0, 0],
      in_vols_pairs[N_sign < 0, 1]) = (in_vols_pairs[N_sign < 0, 1],

@@ -16,7 +16,8 @@ def compute_flux(M, fprop, wells, ft_internal, P_old, Nk_old, Pot_hid, \
     entrada das funcoes de run()"
 
     if ctes.MUSCL['set']:
-        from .MUSCL import MUSCL
+        if data_loaded['mesh_type'] == 'unstructured': from .MUSCL_u import MUSCL_u as MUSCL
+        else: from .MUSCL import MUSCL
         wave_velocity, Fk_vols_total = MUSCL().run(M, fprop, wells, P_old, \
             Nk_old, ft_internal, Pot_hid) #trocar ordem da saida
     elif ctes.FR:

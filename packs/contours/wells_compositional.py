@@ -39,7 +39,10 @@ class WellsCompositional(Wells):
 
                 p0 = well['p0']
                 p1 = well['p1']
+                if p0[2] != 2*centroids[0,2]: p0[2] = 2*centroids[0,2]; p1[2] = 0
+                
                 limites = np.array([p0, p1])
+                
                 vols = get_box(centroids, limites)
                 nv = len(vols)
                 if tipo == 'Injector':

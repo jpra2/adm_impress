@@ -23,6 +23,7 @@ class Data(DataManager):
         '''
         fine_scale_mesh_obj: objeto multiscalemeshMS
         '''
+        
         data_name = data_name + '_' + only_mesh_name + '.npz'
         super().__init__(data_name, load=load)
 
