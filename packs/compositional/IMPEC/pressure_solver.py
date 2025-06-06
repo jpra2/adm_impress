@@ -90,14 +90,13 @@ class TPFASolver:
         volume_discrepancy_term = fprop.Vp - fprop.Vt
         #volume_discrepancy_term[:,] = 1e-20
         if np.max(abs(volume_discrepancy_term)) > 5e-4:
-            #import pdb; pdb.set_trace()
             print('hit: ', np.max(abs(volume_discrepancy_term)))
         return volume_discrepancy_term
 
     def well_term(self, wells):
         self.q = np.zeros([ctes.n_components, ctes.n_volumes])
         well_term = np.zeros(ctes.n_volumes)
-        
+
         if len(wells['ws_q']) > 0:
             self.q[:,wells['ws_q']] =  wells['values_q'] #mol/s
             well_term[wells['ws_q']] = np.sum(self.dVtk[:,wells['ws_q']] *

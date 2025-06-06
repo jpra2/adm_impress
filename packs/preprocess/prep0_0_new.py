@@ -16,12 +16,12 @@ class PreprocessUnfied(Preprocess0):
     def check_struct(self, M):
         faces = M.faces.all
         n_faces = len(faces)
-        areas = M.faces.area(faces)
-        edges_nodes = M.edges.bridge_adjacencies(M.edges.all,1,0) #see this
+        #areas = M.faces.area(faces)
+        #edges_nodes = M.edges.bridge_adjacencies(M.edges.all,1,0) #see this
 
         # Generalizando para faces triangulares e quadrilateras
         faces_edges = M.faces.bridge_adjacencies(faces, 2, 1)
-        
+
         try:
             faces_quadr = (faces_edges.shape[1]==4)
             if data_loaded['mesh_type']=='unstructured': return False
@@ -52,7 +52,7 @@ class PreprocessUnfied(Preprocess0):
             faces_edges[i,0:stop] = element
             faces_quadr[i] = (len(element)==4)
             i+=1
-        
+
         nodes_coord = M.nodes.center(M.nodes.all)
         edges_vectors = abs(nodes_coord[edges_nodes[:,1]]-nodes_coord[edges_nodes[:,0]])
         faces_vectors = edges_vectors[faces_edges]
@@ -117,7 +117,6 @@ class PreprocessUnfied(Preprocess0):
         #M.data[M.data.variables_impress['hs']] = faces_hs
         #t1 = time.time()
         #print(t1-t0)
-        #import pdb; pdb.set_trace()
 
     def get_internal_faces_contour(self,M):
         vols_neig_internal_faces = M.faces.bridge_adjacencies(M.faces.internal,2,3)
@@ -131,17 +130,15 @@ class PreprocessUnfied(Preprocess0):
         internal_faces_contour_IDs = M.faces.internal[internal_faces_contour]
         M.data['internal_faces_contour'] = internal_faces_contour
         M.data['vols_contour'] = vols_contour
-    
+
     def set_pretransmissibility_2D(self, M):
         areas = M.faces.areas
         #areas=np.ones_like(areas)
         k_harm_faces = M.data['k_harm']
         dist_cent = M.data['dist_cent'].copy()
         # dist_cent = np.ones_like(dist_cent)
-        pretransmissibility_faces = (areas*k_harm_faces)/dist_cent
-        M.data[M.data.variables_impress['pretransmissibility']] = pretransmissibility_faces
-        import pdb; pdb.set_trace()
-    
+        M.data[M.data.variables_impress['pretransmissibility']] = (areas*k_harm_faces)/dist_cent
+
     def set_area_hex_structured_uniform_2D(self, M):
         def get_area(ind, normals, nodes_faces, coord_nodes):
             if len(np.where(normals[:,ind] == 1)[0]) == 0:
@@ -173,17 +170,17 @@ class PreprocessUnfied(Preprocess0):
         faces = M.faces.all
         n_faces = len(faces)
         normals = np.absolute(M.faces.normal[:])
-        nodes_faces = M.faces.bridge_adjacencies(faces, 2, 0)
+        #nodes_faces = M.faces.bridge_adjacencies(faces, 2, 0)
         coord_nodes = M.nodes.center(M.nodes.all)
         areas = []
         hs = np.zeros(3)
-        
+
         area_xy = M.volumes.areas[0]
         hs[0] = np.sqrt(area_xy)
         hs[1] = np.sqrt(area_xy)
         hs[2] = data_loaded['z_2D']
-
-        areas = np.array([area_xy,area_xy,hs[0]*hs[2]])
+        #import pdb; pdb.set_trace()
+        areas = np.array([hs[0]*hs[2],hs[0]*hs[2],area_xy])
         all_areas = np.dot(normals**2, areas)
         dist_cent = np.dot(normals, hs)
 
@@ -202,32 +199,31 @@ class PreprocessUnfied(Preprocess0):
         dd = np.zeros([n_volumes, 3])
         for i in range(3):
             dd[:, i] = np.repeat(hs[i], n_volumes)
-        
+
         M.data[M.data.variables_impress['area']] = all_areas
         M.data[M.data.variables_impress['dist_cent']] = dist_cent
         M.data[M.data.variables_impress['volume']] = np.repeat(volume, n_volumes)
         M.data[M.data.variables_impress['NODES']] = coord_nodes
         M.data[M.data.variables_impress['hs']] = dd
-        M.data['faces_nodes'] = nodes_faces
-        M.data['faces_normals'] = normals
-        
+        M.faces.attribute_area(all_areas)
+        #M.data['faces_nodes'] = nodes_faces
+        #M.data['faces_normals'] = normals
+
     def run(self, M):
         self.update_centroids_and_unormal(M)
         self.set_permeability_and_phi(M)
         #self.get_internal_faces_contour(M)
-
         #ajeitar isso para funcionar sem o if talvez
-        
         if self.check_struct(M):
             if data_loaded['mesh_dim']=='2D':
                 self.set_area_hex_structured_uniform_2D(M)
-            else: 
+            else:
                 self.set_area_hex_structured(M)
-            self.set_k_harm_hex_structured(M)           
+            self.set_k_harm_hex_structured(M)
             self.set_pretransmissibility(M)
             self.set_transmissibility_monophasic(M)
             self.initial_gama(M)
-            
+
         #self.set_area_unstruct(M)
         #self.set_pretransmissibility(M)
         #self.initial_gama(M)

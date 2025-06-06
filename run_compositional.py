@@ -81,7 +81,7 @@ class run_simulation:
         if (wells['ws_p']!=wells['ws_inj']):
             wells['inj_p_term'] = []
         #q_wells = wells['ws_inj']#[wells['inj_cond']=='reservoir']
-        
+
         if ~ctes.miscible_w: z=z[0:ctes.Nc]
         if ctes.load_k and any(z.flatten()>0):
             if any(wells['inj_cond']=='reservoir'):
@@ -95,7 +95,7 @@ class run_simulation:
             L, V, A, xkj_ws, Csi_j_ws, rho_j_ws =  \
                 p_well.run_init(P, z, ksi_W = fprop.Csi_W[wells['ws_inj']], \
                 rho_W = fprop.rho_W[wells['ws_inj']])
-            
+
         else:
             L=np.zeros_like(wells['ws_inj']); V=np.copy(L)
             A = np.ones_like(wells['ws_inj'])
@@ -129,9 +129,14 @@ class run_simulation:
             #rever esse Csi_L*L + Csi_V*V
             wells['values_q'] = (Csi_j_ws[:,1] * V + Csi_j_ws[:,0] * L +\
                 Csi_j_ws[:,ctes.n_phases-1]*A) * self.q_vol
-            wells['values_q_vol'] = self.q_vol #change to res condition problavy - evaluate, same formula in update well inj cond
-        #import pdb; pdb.set_trace()
-        
+
+            #Update wells q_vol to reservoir condition:
+            p_well = StabilityCheck(fprop.P[wells['ws_q']], fprop.T)
+            L, V, A, xkj_ws, Csi_j_ws, rho_j_ws =  \
+                p_well.run_init(P, z, ksi_W = fprop.Csi_W[wells['ws_inj']], \
+                rho_W = fprop.rho_W[wells['ws_inj']])
+            wells['values_q_vol'] = wells['values_q']/(Csi_j_ws[:,1] * V + Csi_j_ws[:,0] * L +\
+                Csi_j_ws[:,ctes.n_phases-1]*A)
 
     def get_initial_properties(self, M, wells):
         ''' get initial fluid - oil, gas and water data and calculate initial \
@@ -163,7 +168,6 @@ class run_simulation:
                 ksi_W = fprop.Csi_W[wells['ws_prod']], rho_W = fprop.rho_W[wells['ws_prod']])
 
         else: fprop.xkj = []; fprop.L = []; fprop.V = []; wells['inj_term'] = []
-
         '----------------------- Calculate fluid properties -------------------'
 
         self.p1.run_outside_loop(M, fprop, wells)
@@ -175,12 +179,12 @@ class run_simulation:
 
         t0 = time.time()
         t_obj = delta_time(fprop) #get wanted properties in t=n
-        
+
         '---- Get pressure field and new time step (if the past time step does \
         not obey the CFL condition) -------------------------------------------'
 
         self.delta_t = CompositionalFVM()(M, wells, fprop, self.delta_t, self.t)
-        
+
         self.t += self.delta_t
         '----------------- Perform Phase stability test and flash -------------'
         if ctes.load_k and ctes.compressible_k:
@@ -196,13 +200,11 @@ class run_simulation:
                 fprop.rho_W = fprop.Csi_j[0,-1,:]
 
         self.update_well_inj_rate(fprop, wells)
-        
-        
 
         '----------------------- Update fluid properties ----------------------'
         self.p1.run_inside_loop(M, fprop)
 
-
+        #import pdb; pdb.set_trace()
         '-------------------- Advance in time and save results ----------------'
         self.oil_production_rate_SC_t, self.gas_production_rate_SC_t = \
             self.prod_rate_RCorSC(fprop, wells, ctes.P_SC)
@@ -215,7 +217,7 @@ class run_simulation:
         t1 = time.time()
         dt = t1 - t0
         self.sim_time += dt
-        
+
         if self.use_vpi:
             if np.round(self.vpi,2) in self.vpi_save:
                 self.update_current_compositional_results(M, wells, fprop) #ver quem vou salvar
@@ -225,7 +227,7 @@ class run_simulation:
 
         self.delta_t = t_obj.update_delta_t(self.delta_t, fprop, wells, ctes.load_k, self.loop)#get delta_t with properties in t=n and t=n+1
         if len(wells['ws_prod'])>0: self.update_production()
-        
+
 
     '''def update_well_inj_rate(self, fprop, wells):
         # Update wells injection rate if injection condition is the reservoir one
@@ -256,9 +258,9 @@ class run_simulation:
             else:
                 wells['values_q'][:,wells['inj_cond']=='reservoir'] = (fprop.Csi_j[:,-1,wells['inj_cond']=='reservoir']) * self.q_vol
         #else:'''
-    
+
     def update_well_inj_rate(self, fprop, wells):
-        # Update wells injection rate if injection condition is the reservoir one
+        # Update wells injection rate as the reservoir pressure changes
         #ws_inj_reservoir = wells['inj_cond']=='reservoir'
         if not self.p2.constant_K:
             # look for injection wells with prescribed pressure
@@ -287,8 +289,9 @@ class run_simulation:
                 #wells['values_q_vol'][:,wells['inj_cond']=='reservoir'] = self.q_vol
             else:
                 wells['values_q'][:,wells['inj_cond']=='reservoir'] = (fprop.Csi_j[:,-1,wells['ws_inj'][wells['inj_cond']=='reservoir']]) * self.q_vol
-                
+
         #else:
+        #import pdb; pdb.set_trace()
 
 
     def prod_rate_RCorSC(self, fprop, wells, P):
@@ -363,7 +366,7 @@ class run_simulation:
         if ctes.FR: Nk = fprop.Nk_SP;
 
         else: Nk = fprop.Nk
-
+        import pdb; pdb.set_trace()
         self.current_compositional_results = np.array([self.loop, self.vpi, self.sim_time,
             self.t, fprop.P, fprop.Sw, fprop.So, fprop.Sg, self.oil_production_RC,
             self.gas_production_RC, self.oil_production_SC, self.gas_production_SC,

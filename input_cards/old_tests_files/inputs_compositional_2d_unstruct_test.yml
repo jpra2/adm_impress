@@ -1,9 +1,9 @@
 #Oil injection in oil reservoir 2-D with 1 oil component
-mesh_name: 25x25x1.msh
-name_save_file: 'results_2d_injection_case_4_Li_IMPEC_FOU' 
+mesh_name: 25x25_2d.msh
+name_save_file: 'results_2d_injection_case_4_Li_IMPEC_MUSCL'
 
 mesh_type: 'structured' #testting MUSCL u
-mesh_dim: '3D' #2D or 3D
+mesh_dim: '2D' #2D or 3D
 z_2D: 0.3048
 compositional: True
 hidrocarbon_components: True
@@ -37,10 +37,10 @@ compositional_data:
     IMPSAT: false
 
   MUSCL:
-    set: false
+    set: true
     minmod: false
     VanAlbada1: False
-    VanLeer: false
+    VanLeer: true
 
   FR:
     set: false
@@ -51,10 +51,10 @@ compositional_data:
     LLF: false
     MDW: false
     DW: false
-    
+
   time_integration:
-    Euler: true
-    RK3: false
+    Euler: false
+    RK3: true
 
   vpis_para_gravar_vtk: [0.0038]
   time_to_save: [31536000.]
@@ -74,9 +74,9 @@ compositional_data:
   time_data:
     deltaPlim: 68.9476
     deltaNlim: 10
-    deltaSlim: 1
-    deltaVlim: 10
-    delta_t_ini: 1000
+    deltaSlim: 0.5
+    deltaVlim: 0.01
+    delta_t_ini: 100
     delta_tmax: 70000
     delta_tmin: 0.0001
 
@@ -137,7 +137,7 @@ Permeability:
 Pressure:
   r1:
     type: all
-    value: 13.78951458E6 
+    value: 13.78951458E6
 
 Temperature:
   r1:
@@ -153,7 +153,7 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: 2.720252624e-8
+    value: 2.720252624e-6
     z: [1., 0.]
     ksi_total: 4587.37164401
     value_type: volumetric

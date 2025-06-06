@@ -42,7 +42,7 @@ Wells:
     prescription: Q
     type: Injector
     type_region: box
-    value: 2.720252624e-08
+    value: 2.720252624e-06
     value_type: volumetric
     z:
     - 1.0
@@ -57,9 +57,9 @@ compositional_data:
     set: false
   MUSCL:
     VanAlbada1: false
-    VanLeer: false
+    VanLeer: true
     minmod: false
-    set: false
+    set: true
   Pf: 13.78951458E6
   RiemannSolver:
     DW: false
@@ -111,14 +111,14 @@ compositional_data:
   time_data:
     deltaNlim: 10
     deltaPlim: 68.9476
-    deltaSlim: 1
-    deltaVlim: 10
-    delta_t_ini: 1000
+    deltaSlim: 0.5
+    deltaVlim: 0.01
+    delta_t_ini: 100
     delta_tmax: 70000
     delta_tmin: 0.0001
   time_integration:
-    Euler: true
-    RK3: false
+    Euler: false
+    RK3: true
   time_to_save:
   - 31536000.0
   vpis_para_gravar_vtk:
@@ -138,14 +138,14 @@ hidrocarbon_components: true
 load_data: true
 load_multilevel_data: false
 load_operators: false
-mesh_dim: 3D
-mesh_name: 25x25x1.msh
+mesh_dim: 2D
+mesh_name: 25x25_2d.msh
 mesh_type: structured
 monophasic_data:
   gama: 10000.0
   mi: 1.0
 multilevel_data: false
-name_save_file: results_2d_injection_case_4_Li_IMPEC_FOU
+name_save_file: results_2d_injection_case_4_Li_IMPEC_MUSCL
 read_permeability: false
 set_permeability: true
 set_porosity: true

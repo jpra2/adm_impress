@@ -1,10 +1,10 @@
 #Buckley Leverett's horizontal case
-mesh_name: 80x80_BL_2D.msh #80x80_BL_2D.msh  
+mesh_name: 80x80_BL_2D.msh #80x80_BL_2D.msh
 name_save_file: 'results_Buckley_Leverett_case_80x80_2D_IMPEC_FOU'
 
 mesh_type: 'structured'
 mesh_dim: '2D' #2D or 3D
-z_2D: 0.03048 #only answer if it is a 2D mesh. It's the mesh deepness.
+z_2D: 0.3048 #only answer if it is a 2D mesh. It's the mesh deepness.
 compositional: True
 hidrocarbon_components: True
 compressible_oil: True
@@ -71,8 +71,8 @@ compositional_data:
     RK3: false
 
   vpis_para_gravar_vtk: [0.20]
-  time_to_save: [13284]
-  maximum_time: 13284
+  time_to_save: [31536000]
+  maximum_time: 31536000
   phase_viscosity: LorenzBrayClark
   relative_permeability: BrooksAndCorey
   capillary_pressure: Chang
@@ -86,8 +86,8 @@ compositional_data:
   Epc: 2
 
   time_data:
-    deltaPlim: 7
-    deltaNlim: 2
+    deltaPlim: 50
+    deltaNlim: 10
     deltaSlim: 0.5
     deltaVlim: 1
     delta_t_ini: 0.1

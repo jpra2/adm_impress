@@ -31,7 +31,6 @@ def init(M, wells):
     global time_integration
     global hyperbolic_method
 
-    
     P_SC = 101325
     T_SC = 293.15
     if data_loaded['water_miscible']:
@@ -92,18 +91,18 @@ def init(M, wells):
 
     internal_faces = M.faces.internal
     n_internal_faces = len(v00[:,0])
-    
-    try:
+    v0 = v00
+    '''try:
         pos = (c_int[:,np.newaxis,:] - c_vols[v00]).sum(axis=2)
         v0 = np.copy(v00)
         v0[:,0] = v00[pos>=0]
         v0[:,1] = v00[pos<0]
     except:
-        v0 = v00
-    
+        v0 = v00'''
+
     if data_loaded['mesh_dim']=='3D':
         in_vols_pairs, Ns_int_faces, N_sign = correct_ctev0(M)
-        
+
     else:
         in_vols_pairs = M.faces.bridge_adjacencies(internal_faces, 2, 3)
         internal_volumes_centers_flat = c_vols[in_vols_pairs.flatten()]
@@ -116,13 +115,14 @@ def init(M, wells):
     Vbulk = M.volumes.volume(M.volumes.all)
     g = 9.80665
     # g = 0.0
-    z = -M.data['centroid_volumes'][:,2]
+
+    z = M.data['centroid_volumes'][:,2]
     pretransmissibility_faces = M.data[M.data.variables_impress['pretransmissibility']]
     pretransmissibility_internal_faces = pretransmissibility_faces[M.faces.internal]#[100]*np.ones(len(self.internal_faces))
-   
+
     vols_index = M.volumes.all
     vols_no_wells = np.setdiff1d(vols_index,wells['all_wells'])
-     
+
     ds_faces_axis = M.data['centroid_volumes'][v0[:,1],:] -  M.data['centroid_volumes'][v0[:,0],:]
     ds_faces = ds_faces_axis.sum(axis=-1)
 
@@ -191,7 +191,7 @@ def correct_ctev0(M):
     I_idx = internal_faces_nodes[:, 0]
     J_idx = internal_faces_nodes[:, 1]
     K_idx = internal_faces_nodes[:, 2]
-    
+
     I = M.nodes.coords(M.nodes.all)[I_idx]
     J = M.nodes.coords(M.nodes.all)[J_idx]
     K = M.nodes.coords(M.nodes.all)[K_idx]
@@ -230,7 +230,7 @@ def correct_ctev0(M):
     #Ns_norm = np.linalg.norm(Ns, axis=1)
     #Ns /= Ns_norm[:,np.newaxis]
     #import pdb; pdb.set_trace()
-                
+
     LJ = M.faces.center(M.faces.internal) - internal_volumes_centers[:, 0]
     N_sign = np.sign(np.einsum("ij,ij->i", LJ, Ns[internal_faces]))
     (in_vols_pairs[N_sign < 0, 0],

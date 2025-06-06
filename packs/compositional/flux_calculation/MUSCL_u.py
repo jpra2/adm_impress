@@ -34,7 +34,7 @@ class MUSCL_u(MUSCL):
         #Phi[:,:,1] = -1
 
         Nk_face, z_face = self.get_extrapolated_compositions(fprop, Phi, dNk_face_neig)
-        
+
         #G = self.update_gravity_term() # for now, it has no gravity
         alpha, Fk_vols_total = self.update_flux(M, wells, fprop, Nk_face,
             ftot, Pot_hid)
@@ -42,15 +42,15 @@ class MUSCL_u(MUSCL):
         #import pdb; pdb.set_trace()
 
         return alpha, Fk_vols_total
-    
-    
+
+
     def volume_gradient_reconstruction(self, M, fprop, wells):
         Nk_neig =  self.Nk[:,np.newaxis,:] * ctes_MUSCL.allneig_and_vol[np.newaxis,:,:]
         Nk = Nk_neig.transpose(0,2,1)
 
         dNk = Nk_neig - Nk #b vector
         #import pdb; pdb.set_trace()
-        
+
         x_neig = M.volumes.center(M.volumes.all).T[:,np.newaxis,:] * ctes_MUSCL.allneig_and_vol[np.newaxis,:]
         x = x_neig.transpose(0,2,1)
         dx = x_neig - x
@@ -65,6 +65,11 @@ class MUSCL_u(MUSCL):
         dNkdx = np.zeros((ctes.n_components,ctes.n_volumes, ctes.n_volumes))
         dNkdy = np.zeros((ctes.n_components,ctes.n_volumes, ctes.n_volumes))
         'think how to vectorize this... its going to take a while...'
+        #tem uma ferramenta do pytorch pra isso, mas eu preciso que as matrizes tenham o mesmo tamanho
+
+        import torch
+        A_x = np.zeros((2,2,len(M.volumes.internal)))
+        A_y = np.zeros((2,2,ctes.n_volumes))
         for i in range(ctes.n_volumes):
             Y_mtrx = np.diag(w_pond[i][w_pond[i]>0])
             U = U1[:,i]
@@ -72,7 +77,24 @@ class MUSCL_u(MUSCL):
             dNk_v0 = dNk[:,i]
             b_vec = dNk_v0[:,w_pond[i]>0]
             a = Y_mtrx @ b_vec.T
-            
+
+            'Orthogonal decomposition'
+            import pdb; pdb.set_trace()
+            A_x[:,:,i] = Y_mtrx*U_vec[:,0]
+            A_y[:,:,i] = Y_mtrx*U_vec[:,1]
+
+        Q_x, R_x = torch.linalg.qr(A_x)
+        Q_y, R_y = torch.linalg.qr(A_y)
+        import pdb; pdb.set_trace()
+        
+        for i in range(ctes.n_volumes):
+            Y_mtrx = np.diag(w_pond[i][w_pond[i]>0])
+            U = U1[:,i]
+            U_vec = U[:,w_pond[i]>0].T
+            dNk_v0 = dNk[:,i]
+            b_vec = dNk_v0[:,w_pond[i]>0]
+            a = Y_mtrx @ b_vec.T
+
             'Orthogonal decomposition'
             A_x = Y_mtrx*U_vec[:,0]
             A_y = Y_mtrx*U_vec[:,1]
@@ -80,7 +102,7 @@ class MUSCL_u(MUSCL):
             #t0_code = time.time()
             A_x_M = QR_decomp.Matrix(n_row=len(A_x[:,0]), n_col=len(A_x[0,:]), two_d_array=A_x.tolist())
             A_y_M = QR_decomp.Matrix(n_row=len(A_y[:,0]), n_col=len(A_y[0,:]), two_d_array=A_y.tolist())
-            
+
             Q_x, R_x = QR_decomp.QR_GS(A_x_M)
             Q_y, R_y = QR_decomp.QR_GS(A_y_M)
             R_x = np.array(R_x.values); Q_x = np.array(Q_x.values)
@@ -94,7 +116,7 @@ class MUSCL_u(MUSCL):
             dNkdx[:,i,w_pond[i]>0] = ((np.linalg.inv(R_x)@(Q_x.T))@a).T # para os vizinhos de 1 CV
             dNkdy[:,i,w_pond[i]>0] = ((np.linalg.inv(R_y)@(Q_y.T))@a).T # para os vizinhos de 1 CV
 
-        
+
         #zero in the contour volumes
         dNkdx[:,(w_pond>0).sum(axis=1)<4] = 0 #dNkds_vols[:,ctes_MUSCL.all_neig_by_axes==1]
         dNkdy[:,(w_pond>0).sum(axis=1)<4] = 0

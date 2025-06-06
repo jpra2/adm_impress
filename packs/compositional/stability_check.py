@@ -101,8 +101,9 @@ class StabilityCheck:
         Pv = Pv[:,np.newaxis] * np.ones_like(self.z)
         self.x = self.z
         self.y = self.z
-        if len(Pv[self.z==1]>1): Pv_base = Pv[self.z==1][0]
-        else: Pv_base = Pv[self.z==1]
+        Pv_base = Pv[self.z==1]
+        #if len(Pv[self.z==1]>1): Pv_base = Pv[self.z==1][0]
+        #else: Pv_base = Pv[self.z==1]
         self.L[self.P > Pv_base] = 1
         self.L[self.P < Pv_base] = 0.
 
@@ -147,6 +148,7 @@ class StabilityCheck:
         lj[0,1,:] = self.V[ponteiro_flash]
         xij[:,0,:] = self.x[:,ponteiro_flash]
         xij[:,1,:] = self.y[:,ponteiro_flash]
+        
         if any(ponteiro_flash):
             lnphiy = self.EOS.lnphi(self.y[:,ponteiro_flash], P_new[ponteiro_flash], self.ph_V[ponteiro_flash])
             lnphix = self.EOS.lnphi(self.x[:,ponteiro_flash], P_new[ponteiro_flash], self.ph_L[ponteiro_flash])

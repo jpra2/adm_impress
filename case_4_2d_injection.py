@@ -60,7 +60,7 @@ P *= 6894.757/1e6
 for  arq in arquivos:
     if  arq.startswith(name):
 
-      
+
 
         datas = np.load('flying/results_2d_injection_case_4_Li_IMPEC_FOU_452.npy', allow_pickle=True)
 
@@ -70,8 +70,8 @@ for  arq in arquivos:
             from packs.utils.utils_old import get_box
             centroids = data[13]
 
-            p0 = [0,292.608,-0.3048] #[0,243.84,-0.3048]
-            p1 = [609.6,316.992,0.0] #[609.6,268.224,0.0]
+            p0 = [0,243.84,-0.3048] #[0,243.84,-0.3048]
+            p1 = [609.6,268.224,0.0] #[609.6,268.224,0.0]
             import pdb; pdb.set_trace()
             ind_ans = get_box(centroids,np.array([p0,p1]))
             cent_ind = centroids[ind_ans]
@@ -139,11 +139,13 @@ for  arq in arquivos:
         plt.rcParams['figure.dpi'] = 300
         plt.rcParams['savefig.dpi'] = 300
         import pdb; pdb.set_trace()
-            
+
         plt.rcParams.update({'font.size': sizeletter})
         plt.figure(1)
         #plt.title('t = 365 dias')
-        plt.plot(x4*0.3048, pressure_FOU, 'yo', x4*0.3048, pressure_MUSCL, 'g',x4*0.3048, pressure_MUSCLu, 'r', x*0.3048, P, 'k', mfc='none', markersize=5)
+        #plt.plot(x4*0.3048, pressure_FOU, 'yo', x4*0.3048, pressure_MUSCL, 'g',x4*0.3048, pressure_MUSCLu, 'r', x*0.3048, P, 'k', mfc='none', markersize=5)
+        plt.plot(x4*0.3048, pressure_FOU, 'yo', x4*0.3048, pressure_MUSCL, 'gs', x*0.3048, P, 'k', mfc='none', markersize=5)
+        #plt.plot(x4*0.3048, pressure_FOU, 'yo', x*0.3048, P, 'k', mfc='none', markersize=5)
         plt.legend(('IMPEC FOU-2025', 'IMPEC MUSCL-2025', 'IMPEC MUSCLu-2025', 'Solução Analítica'), prop={'size': sizeletter-1})
         #plt.figure(2)
         #plt.plot( x4, pressure4, 'g', x, P, 'y')

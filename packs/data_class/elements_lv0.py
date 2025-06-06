@@ -14,7 +14,6 @@ class ElementsLv0(DataManager):
         self.mesh = M
         if not load:
             self.run()
-
         self._loaded = True
 
     def load_elements_from_mesh(self):
@@ -24,7 +23,7 @@ class ElementsLv0(DataManager):
         self._data['nodes'] = self.mesh.nodes.all
         self._data['internal_faces'] = self.mesh.faces.internal
         self._data['boundary_faces'] = np.setdiff1d(self['faces'], self['internal_faces'])
-        self._data['neig_faces'] = self.mesh.faces.bridge_adjacencies(self['faces'], 2, 3)
+        self._data['neig_faces'] = self.mesh.faces.bridge_adjacencies(self.mesh.faces.all, 2, 3)
         self._data['neig_internal_faces'] = self.mesh.faces.bridge_adjacencies(self['internal_faces'], 2, 3)
         self._data['neig_boundary_faces'] = self.mesh.faces.bridge_adjacencies(self['boundary_faces'], 2, 3).flatten()
         # self._data['all_volumes'] = self.mesh.core.all_volumes

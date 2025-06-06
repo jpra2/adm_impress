@@ -19,11 +19,10 @@ class CompositionalFVM:
         '''if ctes.n_points>1:
             self.get_faces_properties_weighted_average(fprop, G)
         else: self.get_faces_properties_upwind(fprop, G)'''
-        self.get_faces_properties_weighted_average(fprop, G)
+        #self.get_faces_properties_weighted_average(fprop, G)
         #self.get_faces_properties_harmonic_average(fprop, G)
-        #self.get_faces_properties_upwind(fprop, G)
+        self.get_faces_properties_upwind(fprop, G)
         self.get_phase_densities_internal_faces(fprop, G)
-
 
         r = 0.8 # enter the while loop
 
@@ -40,7 +39,6 @@ class CompositionalFVM:
                 fprop, P_old, delta_t)
 
             if any(fprop.P<0): import pdb; pdb.set_trace()
-
             fprop.qk_prod = fprop.qk_molar[:,wells['ws_prod']]
             #if fprop.qk_prod.sum()==0: import pdb; pdb.set_trace()
 

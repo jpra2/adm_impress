@@ -21,7 +21,7 @@ def set_permeability_and_phi_spe10(M):
     nz = 85
 
     # centroids = M.data.centroids[direc.entities_lv0[3]]
-    
+
     centroids = M.volumes.center(M.volumes.all)
 
     # ijk0 = np.array([centroids[:, 0]//20.0, centroids[:, 1]//10.0, centroids[:, 2]//2.0])
@@ -125,7 +125,7 @@ class Preprocess0:
         dd = np.zeros([n_volumes, 3])
         for i in range(3):
             dd[:, i] = np.repeat(hs[i], n_volumes)
-        
+
         M.data[M.data.variables_impress['area']] = all_areas
         M.data[M.data.variables_impress['dist_cent']] = dist_cent
         M.data[M.data.variables_impress['volume']] = np.repeat(volume, n_volumes)
@@ -323,8 +323,8 @@ class Preprocess0:
         # hi=np.ones_like(hi)
 
         k_harm_faces[internal_faces] = hi.sum(axis=1)/(hi[:, 0]/ks0 + hi[:, 1]/ks1)
-        import pdb; pdb.set_trace()
-        
+        #import pdb; pdb.set_trace()
+
         u_normal_b_faces = u_normal[boundary_faces]
         nb = len(boundary_faces)
         ks0 = ks[vols_viz_boundary_faces]
@@ -351,7 +351,7 @@ class Preprocess0:
         M.data['centroid_nodes'] = M.nodes.center(M.nodes.all)
         M.data['u_normal'] = np.absolute(M.faces.normal[:])
         M.data['NODES'] = M.data['centroid_nodes'].copy()
-        
+
 
     def set_pretransmissibility(self, M):
         areas = M.data['area'].copy()
