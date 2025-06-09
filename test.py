@@ -191,6 +191,7 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 # from packs.examples.benchmarks_biphasic.layers.mpfa_coarse3_layers_ms import run6
 # run6()
 
+# run_delete_all()
 # maitain_only_data_mesh()
 # from packs.examples.benchmarks_monophasic.cross.test_cross_1 import run4
 # run4()
@@ -294,8 +295,11 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 # from packs.utils.plot_graph_from_simulation_data import chueh_test
 # chueh_test()
 
-from packs.examples.benchmarks_biphasic.sin_chueh.generate_points import chueh_sin_geo_coarse, chueh_sin_geo_coarse2, chueh_sin_geo_coarse3
-chueh_sin_geo_coarse3()
+from packs.utils.plot_colormap import run
+run()
+
+# from packs.examples.benchmarks_biphasic.sin_chueh.generate_points import chueh_sin_geo_coarse, chueh_sin_geo_coarse2, chueh_sin_geo_coarse3
+# chueh_sin_geo_coarse3()
 
 
 
