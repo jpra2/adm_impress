@@ -613,8 +613,8 @@ def run4():
     level_str = defnames.level_str(1)
     # alpha_lim_finescale = 0.1
     # beta_lim = 3.0
-    alpha_lim_finescale = 1000
-    beta_lim = 1000
+    alpha_lim_finescale = 1e4
+    beta_lim = 1e4
     export_adm_levels_file = True
 
     # bool_export_primal_id = True
@@ -626,18 +626,18 @@ def run4():
     refine_by_delta_grad_bool = False
     max_value_delta_grad = 4.0
 
-    refine_by_estimator1_bool = True
-    max_value_estimator1 = 1e-7
+    refine_by_estimator1_bool = False
+    max_value_estimator1 = 1000000
 
     my_dual_type = 1
-    # perm_type = 'channel'
-    perm_type = 'barrier'
+    perm_type = 'channel'
+    # perm_type = 'barrier'
     update_nodes_weights = True
     export_permfield = True
     update_permfield = True
     fine_level_setup = 4
     etol = -1
-    update_coarse_struct = False
+    update_coarse_struct = True
     # update_coarse_struct = False
     run_simulation_repeated = True
     check_write_results = False

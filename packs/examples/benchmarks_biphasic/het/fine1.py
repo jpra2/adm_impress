@@ -96,6 +96,24 @@ def get_R(theta):
     ])
     return R
 
+def rescale(values: np.ndarray):
+    # min_resc = 0.01
+    # max_resc = 2.702
+    min_resc = 0.01
+    max_resc = 10
+    min_value = values.min()
+    max_value = values.max()
+    
+    old_min = min_value
+    old_max = max_value
+    new_max = max_resc
+    new_min = min_resc
+    old_value = values
+    
+    
+    new_value = ( (old_value - old_min) / (old_max - old_min) ) * (new_max - new_min) + new_min
+    return new_value
+
 def set_permeability(fine_mesh_path, fine_properties: MeshProperty, simulation_data: SimulationData, export_permfield=True, update_permfield=True, **kwargs):
 
     x_points = fine_properties['faces_centroids'][:, 0]
@@ -105,6 +123,10 @@ def set_permeability(fine_mesh_path, fine_properties: MeshProperty, simulation_d
     factor = 2*np.cos(6*np.pi*x_points)*np.cos(6*np.pi*y_points)
     # perm = np.exp(factor)
     perm = np.power(5, factor)
+    # perm = np.power(2e-1, factor)
+    # perm = rescale(perm)
+    # perm = np.exp(perm)
+    # perm = np.exp(factor)
 
     tag_preprocess = 'permeability'
     if fine_properties.verify_name_in_data_names(tag_preprocess) and update_permfield is False:
@@ -152,12 +174,13 @@ def set_permeability(fine_mesh_path, fine_properties: MeshProperty, simulation_d
 def run5():
 
     dt = 0.00005
-    max_vpi = 1.3
+    max_vpi = 0.25
     loop = 0
     max_loop = np.inf
     load = True
-    loop_intervals = 5
+    loop_intervals = 10
     cfl = 0.9
+    vpis_to_plot = np.linspace(0, 0.25, 26)[1:]
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
@@ -208,7 +231,8 @@ def run5():
         mesh_data,
         simulation_data,
         loop,
-        cfl
+        cfl,
+        vpis_to_plot
     )
 
     import pdb; pdb.set_trace()
@@ -234,7 +258,8 @@ def run5():
             saturation_plot,
             simulation_data,
             mesh_data,
-            cfl
+            cfl,
+            vpis_to_plot
         )
 
     import pdb; pdb.set_trace()

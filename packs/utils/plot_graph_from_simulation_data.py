@@ -259,8 +259,11 @@ def chueh_test():
 def plot_graphs():
 
     # finescale_sim = SimulationData('biphasic_ameba_finescale4')
-    finescale_sim = SimulationData('biphasic_het1_finescale')
+    # finescale_sim = SimulationData('biphasic_het1_finescale')
+    finescale_sim = SimulationData('biphasic_het_coarse1')
     finescale_sim.load_data()
+    fs = finescale_sim
+    import pdb; pdb.set_trace()
 
     # nuadm_sims_str = ['biphasic_ameba_coarse4']
     nuadm_sims_str = ['biphasic_het_coarse1_1']

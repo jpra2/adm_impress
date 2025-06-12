@@ -372,9 +372,6 @@ def _update_fine_flux_aux(
 
     return local_edges_flux[bool_internal_edges], global_edges[bool_internal_edges]
     
-
-
-
 def export_op(mesh_path, OP_AMS, op_name):
 
     # flying_mesh_path = _create_flying_mesh(mesh_path)
@@ -437,11 +434,6 @@ def define_fine_ids_from_saturation_internal_nodes_org(internal_nodes_org: np.nd
     all_faces = np.unique(np.concatenate(all_faces))
 
     return all_faces
-
-
-
-
-
 
 def get_intersect_edges(coarse_struct, fine_properties):
     fp = fine_properties
@@ -554,3 +546,115 @@ def set_permeability_barreira_for_simulation(fine_properties: MeshProperty, **kw
     fine_properties.insert_or_update_data({
         tag_preprocess: permeability
     })
+
+def calculate_data_from_dt(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float):
+    total_volume_injected = faces_flux[injectors].sum()*dt
+    water_flux = (faces_flux[producers]*fw_faces[producers]).sum()
+    total_volume_water_produced = water_flux*dt
+    fo_faces = 1-fw_faces
+    oil_flux = (faces_flux[producers]*fo_faces[producers]).sum()
+    total_volume_oil_produced = oil_flux*dt
+
+    vpi += total_volume_injected/total_area_reservoir
+    cum_oil += total_volume_oil_produced
+    cum_water += total_volume_water_produced
+    
+    return vpi, cum_oil, cum_water, water_flux, oil_flux
+
+def calculate_data_from_vpi(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float, new_vpi:float):
+    max_delta = 1e-9
+    
+    # total_volume_injected = faces_flux[injectors].sum()*dt
+    # dvpi = total_volume_injected/total_volume_injected
+    
+    dvpi = new_vpi - vpi
+    dt = dvpi*total_area_reservoir/faces_flux[injectors].sum()
+    total_volume_injected = faces_flux[injectors].sum()*dt
+    
+    water_flux = (faces_flux[producers]*fw_faces[producers]).sum()
+    total_volume_water_produced = water_flux*dt
+    fo_faces = 1-fw_faces
+    oil_flux = (faces_flux[producers]*fo_faces[producers]).sum()
+    total_volume_oil_produced = oil_flux*dt
+
+    vpi += total_volume_injected/total_area_reservoir
+    cum_oil += total_volume_oil_produced
+    cum_water += total_volume_water_produced
+    
+    test = (new_vpi - vpi) <= max_delta
+    if test == True:
+        pass
+    else:
+        raise ValueError 
+    
+    return vpi, cum_oil, cum_water, water_flux, oil_flux, dt
+
+def update_simulation_data(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float, vpis_to_plot=[]) -> None:
+    delta_max = 1e-9
+    old_vpi = vpi
+    old_cum_oil = cum_oil
+    old_cum_water = cum_water
+    plot_vpi = False
+    
+    # total_volume_injected = faces_flux[injectors].sum()*dt
+    # water_flux = (faces_flux[producers]*fw_faces[producers]).sum()
+    # total_volume_water_produced = water_flux*dt
+    # fo_faces = 1-fw_faces
+    # oil_flux = (faces_flux[producers]*fo_faces[producers]).sum()
+    # total_volume_oil_produced = oil_flux*dt
+
+    # vpi += total_volume_injected/total_area_reservoir
+    # cum_oil += total_volume_oil_produced
+    # cum_water += total_volume_water_produced
+    
+    vpi, cum_oil, cum_water, water_flux, oil_flux = calculate_data_from_dt(
+        faces_flux,
+        injectors,
+        producers,
+        old_vpi,
+        old_cum_oil,
+        old_cum_water,
+        fw_faces,
+        total_area_reservoir,
+        dt
+    )
+    
+    
+    n1 = len(vpis_to_plot)
+    if n1 > 0:
+        calculate = True
+        ids_vpis_to_plot = np.arange(n1)
+        max_id = max(ids_vpis_to_plot)
+        max_vpis_to_plot = max(vpis_to_plot)
+        
+        err1 = vpis_to_plot - old_vpi
+        test1 = np.absolute(err1) <= delta_max
+        if np.any(test1):
+            id_target = ids_vpis_to_plot[test1] + 1
+            if id_target > max_id:
+                calculate = False
+        elif old_vpi >= max_vpis_to_plot-delta_max:
+            calculate = False
+        else:
+            test2 = vpis_to_plot > old_vpi
+            id_target = ids_vpis_to_plot[test2][0]
+        
+        if calculate == True:
+            vpi_target = vpis_to_plot[id_target]
+            if vpi > vpi_target:
+                vpi, cum_oil, cum_water, water_flux, oil_flux, dt = calculate_data_from_vpi(
+                    faces_flux,
+                    injectors,
+                    producers,
+                    old_vpi,
+                    old_cum_oil,
+                    old_cum_water,
+                    fw_faces,
+                    total_area_reservoir,
+                    dt,
+                    vpi_target
+                )
+                plot_vpi = True
+ 
+
+    return vpi, cum_oil, cum_water, water_flux, oil_flux, dt, plot_vpi

@@ -235,7 +235,8 @@ def load_or_update_initial_loop(
         mesh_data: MeshData,
         simulation_data: SimulationData,
         loop: int,
-        cfl
+        cfl,
+        vpis_to_plot: np.ndarray
     ):
 
     
@@ -256,7 +257,8 @@ def load_or_update_initial_loop(
             vpi,
             cumulative_oil,
             cumulative_water,
-            cfl
+            cfl,
+            vpis_to_plot
         )
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
         mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
@@ -310,6 +312,7 @@ def update_while_loop(
         simulation_data: SimulationData,
         mesh_data: MeshData,
         cfl: float,
+        vpis_to_plot: np.ndarray,
         **kwargs
 ):
     
@@ -317,7 +320,7 @@ def update_while_loop(
     
     for i in range(loop_intervals):
         loop += 1
-        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux, dt, water_flux, oil_flux = while_loop(
+        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux, dt, water_flux, oil_flux, plot_vpi = while_loop(
             relative_perm,
             biphasic_mobility,
             saturation,
@@ -329,7 +332,8 @@ def update_while_loop(
             cumulative_oil,
             cumulative_water,
             total_area_reservoir,
-            cfl=cfl
+            cfl=cfl,
+            vpis_to_plot=vpis_to_plot
         )
         saturation_plot[:] = saturation
         saturation[:] = newS
@@ -343,6 +347,9 @@ def update_while_loop(
         print(f'Dt: {dt}')
         print('##########################')
         print()
+        
+        if plot_vpi == True:
+            break
     
     update_data(
         simulation_data,
@@ -369,12 +376,13 @@ def update_while_loop(
 def run5():
 
     dt = 0.00005
-    max_vpi = 1.3
+    max_vpi = 0.242
     loop = 0
     max_loop = np.inf
-    load = False
-    loop_intervals = 5
+    load = True
+    loop_intervals = 20
     cfl = 0.9
+    vpis_to_plot = np.linspace(0, 0.24, 25)[1:]
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
@@ -425,12 +433,11 @@ def run5():
         mesh_data,
         simulation_data,
         loop,
-        cfl
+        cfl,
+        vpis_to_plot
     )
 
-    import pdb; pdb.set_trace()
-
-    while vpi < max_vpi and loop < max_loop:
+    while vpi <= max_vpi and loop <= max_loop:
         
         loop, cumulative_oil, cumulative_water, vpi = update_while_loop(
             loop_intervals,
@@ -451,7 +458,8 @@ def run5():
             saturation_plot,
             simulation_data,
             mesh_data,
-            cfl
+            cfl,
+            vpis_to_plot
         )
 
     import pdb; pdb.set_trace()

@@ -94,7 +94,8 @@ def load_or_update_initial_loop(
         refine_by_grad_bool,
         refine_by_estimator1_bool,
         max_value_grad,
-        max_value_estimator1
+        max_value_estimator1,
+        vpis_to_plot: np.ndarray
 ):
     
     if load is False:
@@ -124,7 +125,8 @@ def load_or_update_initial_loop(
             refine_by_grad_bool,
             refine_by_estimator1_bool,
             max_value_grad,
-            max_value_estimator1
+            max_value_estimator1,
+            vpis_to_plot
         )
 
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
@@ -198,14 +200,15 @@ def update_while_loop_ms(
         OP,
         OR,
         coarse_struct,
-        fine_mesh_path
+        fine_mesh_path,
+        vpis_to_plot: np.ndarray
 ):
     
     path_mesh_data = simulation_data.name
     
     for i in range(loop_intervals):
         loop += 1
-        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux = while_loop(
+        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux, plot_vpi = while_loop(
             relative_perm,
             biphasic_mobility,
             saturation,
@@ -225,7 +228,8 @@ def update_while_loop_ms(
             OP,
             OR,
             coarse_struct,
-            cfl
+            cfl,
+            vpis_to_plot
         )
         saturation_plot[:] = saturation
         saturation[:] = newS
@@ -239,6 +243,9 @@ def update_while_loop_ms(
         print(f'Dt: {dt}')
         print('##########################')
         print()
+        
+        if plot_vpi == True:
+            break
     
     update_data(
         simulation_data,
@@ -297,13 +304,14 @@ def run6():
     beta_lim = 1e6
 
     dt = 0.00005
-    max_vpi = 1.3
+    max_vpi = 0.242
     loop = 0
     max_loop = np.inf
     load = False
     loop_intervals = 10
     etol_msrsb = 0.01
     maxit_msrsb = 1000
+    vpis_to_plot = np.linspace(0, 0.24, 25)[1:]
 
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
@@ -382,7 +390,8 @@ def run6():
         refine_by_grad_bool,
         refine_by_estimator1_bool,
         max_value_grad,
-        max_value_estimator1
+        max_value_estimator1,
+        vpis_to_plot
     )
 
     import pdb; pdb.set_trace()
@@ -417,7 +426,8 @@ def run6():
             OP,
             OR,
             coarse_struct,
-            fine_mesh_path
+            fine_mesh_path,
+            vpis_to_plot
         )
 
     

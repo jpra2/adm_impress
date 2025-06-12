@@ -11,6 +11,9 @@ from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_
 
 from packs.mpfa_methods.weight_interpolation.lpew import get_lpew2_weights
 from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_flux
+from packs.examples.same_functions import(
+    update_simulation_data
+)
 
 import os
 import numpy as np
@@ -207,19 +210,19 @@ def update_saturation_dep0(water_faces_flux, areas, dt, porosity, saturation):
     newS = saturation + ds
     return newS
 
-def update_simulation_data(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float) -> None:
-    total_volume_injected = faces_flux[injectors].sum()*dt
-    water_flux = (faces_flux[producers]*fw_faces[producers]).sum()
-    total_volume_water_produced = water_flux*dt
-    fo_faces = 1-fw_faces
-    oil_flux = (faces_flux[producers]*fo_faces[producers]).sum()
-    total_volume_oil_produced = oil_flux*dt
+# def update_simulation_data(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float) -> None:
+#     total_volume_injected = faces_flux[injectors].sum()*dt
+#     water_flux = (faces_flux[producers]*fw_faces[producers]).sum()
+#     total_volume_water_produced = water_flux*dt
+#     fo_faces = 1-fw_faces
+#     oil_flux = (faces_flux[producers]*fo_faces[producers]).sum()
+#     total_volume_oil_produced = oil_flux*dt
 
-    vpi += total_volume_injected/total_area_reservoir
-    cum_oil += total_volume_oil_produced
-    cum_water += total_volume_water_produced
+#     vpi += total_volume_injected/total_area_reservoir
+#     cum_oil += total_volume_oil_produced
+#     cum_water += total_volume_water_produced
 
-    return vpi, cum_oil, cum_water, water_flux, oil_flux
+#     return vpi, cum_oil, cum_water, water_flux, oil_flux
 
 def set_fine_transmissibility_biphasic(fine_mesh_properties: MeshProperty, bc: BoundaryConditions, lsds: LsdsFluxCalculation):
     resp = lsds.mount_transmissibility_matrix(
@@ -254,7 +257,8 @@ def initial_loop(
         vpi: float,
         cumulative_oil: float,
         cumulative_water: float,
-        cfl: float
+        cfl: float,
+        vpis_to_plot: np.ndarray
 ):
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
@@ -408,7 +412,7 @@ def initial_loop(
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     relative_perm._test_saturations(newS)
 
-    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux = update_simulation_data(
+    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux, dt, plot_vpi = update_simulation_data(
         faces_flux,
         bc['injectors']['id'],
         bc['producers']['id'],
@@ -417,8 +421,10 @@ def initial_loop(
         cumulative_water,
         fw_faces,
         total_area_reservoir,
-        dt
+        dt,
+        vpis_to_plot
     )
+    newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     
     return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux, water_flux, oil_flux
 
@@ -435,7 +441,7 @@ def update_saturation(water_faces_flux, areas, dt, porosity, saturation, relativ
         dt = ratio*dt
         ds = dt*water_faces_flux/(porosity*areas)
         newS[:] = saturation + ds
-        verify = relative_perm.is_saturations_max_bound(newS)
+        verify = relative_perm.is_saturations_max_bound(newS)   
     
     return newS, dt
 
@@ -512,7 +518,8 @@ def while_loop(
         cumulative_oil: float,
         cumulative_water: float,
         total_area_reservoir: float,
-        cfl: float=1.0,
+        cfl: float,
+        vpis_to_plot: np.ndarray,
         **kwargs
 ):
     
@@ -642,7 +649,8 @@ def while_loop(
 
 
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
-    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux = update_simulation_data(
+
+    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux, dt, plot_vpi = update_simulation_data(
         faces_flux,
         bc['injectors']['id'],
         bc['producers']['id'],
@@ -651,10 +659,12 @@ def while_loop(
         cumulative_water,
         fw_faces,
         total_area_reservoir,
-        dt
+        dt,
+        vpis_to_plot
     )
+    newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
 
-    return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux, dt, water_flux, oil_flux
+    return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux, dt, water_flux, oil_flux, plot_vpi
 
 def update_data(
         simulation_data: SimulationData,

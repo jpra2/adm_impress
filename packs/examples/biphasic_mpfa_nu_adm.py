@@ -15,7 +15,8 @@ from packs.examples.same_functions import (
     set_fine_transmissibility_biphasic,
     update_fine_flux,
     define_fine_ids_from_saturation,
-    define_fine_ids_from_saturation_internal_nodes_org
+    define_fine_ids_from_saturation_internal_nodes_org,
+    update_simulation_data
 )
 from packs.examples.biphasic_mpfa import initial_funcs, set_boundary_conditions, update_saturation, calculate_dt
 from packs.examples.diss_test1 import define_new_fine_levels_v1
@@ -194,19 +195,7 @@ def calculate_dt_v1_ms(faces_centroids: np.ndarray, adjacencies: np.ndarray, boo
     return dt
     
 
-def update_simulation_data(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float) -> None:
-    total_volume_injected = faces_flux[injectors].sum()*dt
-    water_flux = (faces_flux[producers]*fw_faces[producers]).sum()
-    total_volume_water_produced = water_flux*dt
-    fo_faces = 1-fw_faces
-    oil_flux = (faces_flux[producers]*fo_faces[producers]).sum()
-    total_volume_oil_produced = oil_flux*dt
 
-    vpi += total_volume_injected/total_area_reservoir
-    cum_oil += total_volume_oil_produced
-    cum_water += total_volume_water_produced
-
-    return vpi, cum_oil, cum_water, water_flux, oil_flux
 
 def get_OP_matrix(fine_mesh_properties: MeshProperty):
     primal_ids = fine_mesh_properties[defnames.get_primal_id_name_by_level(1)]
@@ -363,7 +352,8 @@ def initial_loop(
         refine_by_grad_bool: bool,
         refine_by_estimator1_bool: bool,
         max_value_grad: float,
-        max_value_estimator1: float
+        max_value_estimator1: float,
+        vpis_to_plot: np.ndarray
 ):
     
     # refine_by_grad_bool = False
@@ -742,7 +732,7 @@ def initial_loop(
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     relative_perm._test_saturations(newS)
 
-    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux = update_simulation_data(
+    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux, dt, plot_vpi = update_simulation_data(
         faces_flux,
         bc['injectors']['id'],
         bc['producers']['id'],
@@ -753,6 +743,7 @@ def initial_loop(
         total_area_reservoir,
         dt
     )
+    newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
 
     intitial_fine_faces = fp['faces'][fine_levels==0]
     # intitial_fine_faces = initial_fine_volumes
@@ -781,7 +772,8 @@ def while_loop(
         OP: sp.csc_matrix,
         OR: sp.csc_matrix,
         coarse_struct: Sequence[PrimalCoarseData],
-        cfl: float
+        cfl: float,
+        vpis_to_plot: np.ndarray
 ):
     
     krw_faces, kro_faces = relative_perm.calculate(saturation)
@@ -1014,7 +1006,7 @@ def while_loop(
     )
 
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
-    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux = update_simulation_data(
+    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux, dt, plot_vpi = update_simulation_data(
         faces_flux,
         bc['injectors']['id'],
         bc['producers']['id'],
@@ -1023,12 +1015,15 @@ def while_loop(
         cumulative_water,
         fw_faces,
         total_area_reservoir,
-        dt
+        dt,
+        vpis_to_plot=vpis_to_plot
     )
+    newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
+    
 
     fp.insert_or_update_data({'nuadm_vols': np.array([T_adm.shape[0]])})
 
-    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux
+    return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux, plot_vpi
 
 def update_data(
         simulation_data: SimulationData,
@@ -1291,7 +1286,7 @@ def run():
     while vpi < max_vpi and loop < max_loop:
         for i in range(loop_intervals):
             loop += 1
-            pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux = while_loop(
+            pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux, plot_vpi = while_loop(
                 relative_perm,
                 biphasic_mobility,
                 saturation,
@@ -1325,6 +1320,9 @@ def run():
             print(f'Dt: {dt}')
             print('##########################')
             print()
+            
+            if plot_vpi == True:
+                break
         
         update_data(
             simulation_data,

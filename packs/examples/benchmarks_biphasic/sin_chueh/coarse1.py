@@ -98,6 +98,7 @@ def run6():
     loop_intervals = 10
     etol_msrsb = 0.01
     maxit_msrsb = 1000
+    vpis_to_plot = []
 
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
@@ -176,7 +177,8 @@ def run6():
         refine_by_grad_bool,
         refine_by_estimator1_bool,
         max_value_grad,
-        max_value_estimator1
+        max_value_estimator1,
+        vpis_to_plot
     )
 
     import pdb; pdb.set_trace()
@@ -211,7 +213,8 @@ def run6():
             OP,
             OR,
             coarse_struct,
-            fine_mesh_path
+            fine_mesh_path,
+            vpis_to_plot
         )
 
     

@@ -178,6 +178,7 @@ def run5():
     load = False
     loop_intervals = 5
     cfl = 0.9
+    vpis_to_plot = []
 
     max_cum_water = 0.1
 
@@ -230,7 +231,8 @@ def run5():
         mesh_data,
         simulation_data,
         loop,
-        cfl
+        cfl,
+        vpis_to_plot
     )
 
     while vpi < max_vpi and loop < max_loop and cumulative_water < max_cum_water:
@@ -254,7 +256,8 @@ def run5():
             saturation_plot,
             simulation_data,
             mesh_data,
-            cfl
+            cfl,
+            vpis_to_plot
         )
 
     import pdb; pdb.set_trace()
