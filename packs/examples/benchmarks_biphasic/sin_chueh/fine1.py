@@ -58,6 +58,8 @@ def set_boundary_conditions(fine_properties: MeshProperty):
 
     bc.set_boundary('dirichlet_nodes', nodes_pressure, nodes_pressure_value)
     bc.set_boundary('water_saturation_edges', pl_in, np.repeat(1.0, len(pl_in)))
+    bc.set_boundary('edges_injector', pl_in, np.full(len(pl_in), True, bool))
+    bc.set_boundary('edges_producer', pl_out, np.full(len(pl_in), True, bool))
 
     walls_edges = pl_wall
     edges_values = np.repeat(0.0, walls_edges.shape[0])
@@ -95,6 +97,8 @@ def set_boundary_conditions_linear(fine_properties: MeshProperty):
 
     bc.set_boundary('dirichlet_nodes', nodes_pressure, nodes_pressure_value)
     bc.set_boundary('water_saturation_edges', pl_in, np.repeat(1.0, len(pl_in)))
+    bc.set_boundary('edges_injector', pl_in, np.full(len(pl_in), True, bool))
+    bc.set_boundary('edges_producer', pl_out, np.full(len(pl_in), True, bool))
 
     walls_edges = pl_wall
     edges_values = np.repeat(0.0, walls_edges.shape[0])
@@ -176,7 +180,7 @@ def run5():
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 5
+    loop_intervals = 1
     cfl = 0.9
     vpis_to_plot = []
 
@@ -234,6 +238,8 @@ def run5():
         cfl,
         vpis_to_plot
     )
+    
+    import pdb; pdb.set_trace()
 
     while vpi < max_vpi and loop < max_loop and cumulative_water < max_cum_water:
         

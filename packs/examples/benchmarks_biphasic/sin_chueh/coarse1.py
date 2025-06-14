@@ -72,13 +72,13 @@ def run6():
     op_name = 'AMS-U'
     debug = False
 
-    # update_primal_mesh = True
-    # update_dual_mesh = True
-    # update_coarse_struct = True
+    update_primal_mesh = True
+    update_dual_mesh = True
+    update_coarse_struct = True
 
-    update_primal_mesh = False
-    update_dual_mesh = False
-    update_coarse_struct = False
+    # update_primal_mesh = False
+    # update_dual_mesh = False
+    # update_coarse_struct = False
 
 
     my_dual_type = 1
@@ -95,7 +95,7 @@ def run6():
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 10
+    loop_intervals = 1
     etol_msrsb = 0.01
     maxit_msrsb = 1000
     vpis_to_plot = []

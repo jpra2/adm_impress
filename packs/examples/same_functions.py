@@ -547,12 +547,19 @@ def set_permeability_barreira_for_simulation(fine_properties: MeshProperty, **kw
         tag_preprocess: permeability
     })
 
-def calculate_data_from_dt(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float):
-    total_volume_injected = faces_flux[injectors].sum()*dt
-    water_flux = (faces_flux[producers]*fw_faces[producers]).sum()
+def calculate_data_from_dt(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float, edges_flux: np.ndarray, bc: BoundaryConditions, fw_edges: np.ndarray):
+    edges_injector = bc['edges_injector']['id']
+    edges_producer = bc['edges_producer']['id']
+    
+    total_flux_injected = faces_flux[injectors].sum() + -1*edges_flux[edges_injector].sum()
+    
+    total_volume_injected = total_flux_injected*dt
+    
+    water_flux = (faces_flux[producers]*fw_faces[producers]).sum() + (-1*edges_flux[edges_producer]*fw_edges[edges_producer]).sum() 
     total_volume_water_produced = water_flux*dt
     fo_faces = 1-fw_faces
-    oil_flux = (faces_flux[producers]*fo_faces[producers]).sum()
+    fo_edges = 1-fw_edges
+    oil_flux = (faces_flux[producers]*fo_faces[producers]).sum() + (-1*edges_flux[edges_producer]*fo_edges[edges_producer]).sum()
     total_volume_oil_produced = oil_flux*dt
 
     vpi += total_volume_injected/total_area_reservoir
@@ -561,20 +568,26 @@ def calculate_data_from_dt(faces_flux: np.ndarray, injectors: np.ndarray, produc
     
     return vpi, cum_oil, cum_water, water_flux, oil_flux
 
-def calculate_data_from_vpi(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float, new_vpi:float):
+def calculate_data_from_vpi(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float, new_vpi:float, edges_flux: np.ndarray, bc: BoundaryConditions, fw_edges: np.ndarray):
     max_delta = 1e-9
+    edges_injector = bc['edges_injector']['id']
+    edges_producer = bc['edges_producer']['id']
     
     # total_volume_injected = faces_flux[injectors].sum()*dt
+    total_flux_injected = faces_flux[injectors].sum() + -1*edges_flux[edges_injector].sum()
     # dvpi = total_volume_injected/total_volume_injected
     
     dvpi = new_vpi - vpi
-    dt = dvpi*total_area_reservoir/faces_flux[injectors].sum()
-    total_volume_injected = faces_flux[injectors].sum()*dt
+    dt = dvpi*total_area_reservoir/total_flux_injected
+    # total_volume_injected = faces_flux[injectors].sum()*dt  
+    total_volume_injected = total_flux_injected*dt
     
-    water_flux = (faces_flux[producers]*fw_faces[producers]).sum()
+    
+    water_flux = (faces_flux[producers]*fw_faces[producers]).sum() + (-1*edges_flux[edges_producer]*fw_edges[edges_producer]).sum() 
     total_volume_water_produced = water_flux*dt
     fo_faces = 1-fw_faces
-    oil_flux = (faces_flux[producers]*fo_faces[producers]).sum()
+    fo_edges = 1-fw_edges
+    oil_flux = (faces_flux[producers]*fo_faces[producers]).sum() + (-1*edges_flux[edges_producer]*fo_edges[edges_producer]).sum()
     total_volume_oil_produced = oil_flux*dt
 
     vpi += total_volume_injected/total_area_reservoir
@@ -589,7 +602,22 @@ def calculate_data_from_vpi(faces_flux: np.ndarray, injectors: np.ndarray, produ
     
     return vpi, cum_oil, cum_water, water_flux, oil_flux, dt
 
-def update_simulation_data(faces_flux: np.ndarray, injectors: np.ndarray, producers: np.ndarray, vpi: list, cum_oil: list, cum_water: list, fw_faces: np.ndarray, total_area_reservoir: float, dt: float, vpis_to_plot=[]) -> None:
+def update_simulation_data(
+    faces_flux: np.ndarray, 
+    injectors: np.ndarray, 
+    producers: np.ndarray, 
+    vpi: list, 
+    cum_oil: list, 
+    cum_water: list, 
+    fw_faces: np.ndarray, 
+    total_area_reservoir: float, 
+    dt: float, 
+    vpis_to_plot,
+    edges_flux: np.ndarray, 
+    bc: BoundaryConditions,
+    fw_edges: np.ndarray
+) -> None:
+    
     delta_max = 1e-9
     old_vpi = vpi
     old_cum_oil = cum_oil
@@ -616,7 +644,10 @@ def update_simulation_data(faces_flux: np.ndarray, injectors: np.ndarray, produc
         old_cum_water,
         fw_faces,
         total_area_reservoir,
-        dt
+        dt,
+        edges_flux,
+        bc,
+        fw_edges
     )
     
     
@@ -652,7 +683,10 @@ def update_simulation_data(faces_flux: np.ndarray, injectors: np.ndarray, produc
                     fw_faces,
                     total_area_reservoir,
                     dt,
-                    vpi_target
+                    vpi_target,
+                    edges_flux,
+                    bc,
+                    fw_edges
                 )
                 plot_vpi = True
  

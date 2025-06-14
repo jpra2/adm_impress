@@ -422,7 +422,10 @@ def initial_loop(
         fw_faces,
         total_area_reservoir,
         dt,
-        vpis_to_plot
+        vpis_to_plot,
+        edges_flux,
+        bc,
+        fw_edges
     )
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     
@@ -660,7 +663,10 @@ def while_loop(
         fw_faces,
         total_area_reservoir,
         dt,
-        vpis_to_plot
+        vpis_to_plot,
+        edges_flux,
+        bc,
+        fw_edges
     )
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
 

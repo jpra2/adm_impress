@@ -379,7 +379,7 @@ def run5():
     max_vpi = 0.242
     loop = 0
     max_loop = np.inf
-    load = True
+    load = False
     loop_intervals = 20
     cfl = 0.9
     vpis_to_plot = np.linspace(0, 0.24, 25)[1:]
