@@ -91,14 +91,14 @@ def run6():
     beta_lim = 1e6
 
     dt = 0.00005
-    max_vpi = 1.3
+    max_vpi = 0.3
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 1
+    loop_intervals = 20
     etol_msrsb = 0.01
     maxit_msrsb = 1000
-    vpis_to_plot = []
+    vpis_to_plot = np.linspace(0, 0.1155, 16)[1:]
 
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
@@ -180,8 +180,6 @@ def run6():
         max_value_estimator1,
         vpis_to_plot
     )
-
-    import pdb; pdb.set_trace()
 
     while vpi < max_vpi and loop < max_loop:
 

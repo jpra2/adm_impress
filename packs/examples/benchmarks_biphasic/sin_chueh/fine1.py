@@ -176,13 +176,13 @@ def set_permeability(fine_mesh_path, fine_properties: MeshProperty, simulation_d
 def run5():
 
     dt = 0.00005
-    max_vpi = 1.3
+    max_vpi = 0.3
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 1
+    loop_intervals = 20
     cfl = 0.9
-    vpis_to_plot = []
+    vpis_to_plot = np.linspace(0, 0.1155, 16)[1:]
 
     max_cum_water = 0.1
 
@@ -238,8 +238,6 @@ def run5():
         cfl,
         vpis_to_plot
     )
-    
-    import pdb; pdb.set_trace()
 
     while vpi < max_vpi and loop < max_loop and cumulative_water < max_cum_water:
         
