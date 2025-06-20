@@ -13,6 +13,10 @@ from packs.multiscale.unstructured.test.test_brazil import (
     f_l2_error_percent_paper_artur
 )
 
+from packs.examples.same_functions import (
+    load_ps_results
+)
+
 
 def get_markers() -> list:
     # markers = {'': 'nothing', '*': 'star', '+': 'plus', ',': 'pixel', '.': 'point', '1': 'tri_down', '2': 'tri_up', '3': 'tri_left', '4': 'tri_right', '8': 'octagon', '<': 'triangle_left', '>': 'triangle_right', 'D': 'diamond', 'H': 'hexagon2', 'P': 'plus_filled', 'X': 'x_filled', '^': 'triangle_up', '_': 'hline', 'd': 'thin_diamond', 'h': 'hexagon1', 'none': 'nothing', 'o': 'circle', 'p': 'pentagon', 's': 'square', 'v': 'triangle_down', 'x': 'x', '|': 'vline', 0: 'tickleft', 1: 'tickright', 10: 'caretupbase', 11: 'caretdownbase', 2: 'tickup', 3: 'tickdown', 4: 'caretleft', 5: 'caretright', 6: 'caretup', 7: 'caretdown', 8: 'caretleftbase', 9: 'caretrightbase'}
@@ -314,22 +318,23 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
         loop_fs = finescale_sim['all_loops'][test_fs][0]
         loop_nuadm = nuadm_sim['all_loops'][test_nuadm][0]
         
-        key_pressure_fs = pres_str + str(loop_fs)
-        key_pressure_nuadm = pres_str + str(loop_nuadm)
+        # key_pressure_fs = pres_str + str(loop_fs)
+        # key_pressure_nuadm = pres_str + str(loop_nuadm)
         
-        key_sat_fs = sat_str + str(loop_fs)
-        key_sat_nuadm = sat_str + str(loop_nuadm)
+        # key_sat_fs = sat_str + str(loop_fs)
+        # key_sat_nuadm = sat_str + str(loop_nuadm)
         
-        pressure_fs = finescale_sim[key_pressure_fs]
-        pressure_nuadm = nuadm_sim[key_pressure_nuadm]
+        # pressure_fs = finescale_sim[key_pressure_fs]
+        # pressure_nuadm = nuadm_sim[key_pressure_nuadm]
         
-        saturation_fs = finescale_sim[key_sat_fs]
-        saturation_nuadm = nuadm_sim[key_sat_nuadm]
+        pressure_fs, saturation_fs = load_ps_results(loop_fs, defpaths.pressure_results, defpaths.saturation_results)
+        pressure_nuadm, saturation_nuadm = load_ps_results(loop_nuadm, defpaths.pressure_results_ms, defpaths.saturation_results_ms)
+        
+        # saturation_fs = finescale_sim[key_sat_fs]
+        # saturation_nuadm = nuadm_sim[key_sat_nuadm]
         
         linf_pressure = f_linf_percent_paper_artur(pressure_fs, pressure_nuadm)/100
         err2_pressure = f_l2_error_paper_artur(pressure_fs, pressure_nuadm)
-        
-        import pdb; pdb.set_trace()
         
         linf_sat = f_linf_percent_paper_artur(saturation_fs, saturation_nuadm)/100
         err2_sat = f_l2_error_paper_artur(saturation_fs, saturation_nuadm)

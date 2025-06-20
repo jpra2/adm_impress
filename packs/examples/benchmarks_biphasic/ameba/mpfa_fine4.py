@@ -394,7 +394,7 @@ def run5():
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 1
+    loop_intervals = 20
     cfl = 0.9
     vpis_to_plot = np.linspace(0, 0.6, 31)[1:]
 
