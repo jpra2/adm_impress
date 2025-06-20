@@ -13,7 +13,10 @@ from packs.examples.same_functions import (
     update_xi_params,
     set_fine_transmissibility_biphasic,
     update_fine_flux,
-    define_fine_ids_from_saturation
+    define_fine_ids_from_saturation,
+    create_folders_pressure_results,
+    export_ps_results,
+    load_ps_results
 )
 
 from packs.examples.benchmarks_biphasic.ameba.mpfa_fine4 import (
@@ -98,7 +101,13 @@ def load_or_update_initial_loop(
         vpis_to_plot: np.ndarray
 ):
     
+    
+    
     if load is False:
+        create_folders_pressure_results(
+            defpaths.pressure_results_ms,
+            defpaths.saturation_results_ms
+        )
         initial_funcs(fp, fine_mesh_path, simulation_data)
         path_mesh_data = simulation_data.name
         pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux = initial_loop(
@@ -128,6 +137,8 @@ def load_or_update_initial_loop(
             max_value_estimator1,
             vpis_to_plot
         )
+        
+        export_ps_results(loop, pressure, saturation, defpaths.pressure_results_ms, defpaths.saturation_results_ms)
 
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
         mesh_data.insert_tag_data('saturation', saturation, 'faces')
@@ -139,8 +150,8 @@ def load_or_update_initial_loop(
             'all_vpi': np.array([0.0]),
             'all_cumulative_oil': np.array([0.0]),
             'all_cumulative_water': np.array([0.0]),
-            'pressure_' + str(loop): pressure,
-            'saturation_' + str(loop): newS,
+            # 'pressure_' + str(loop): pressure,
+            # 'saturation_' + str(loop): newS,
             'water_flux': np.array([water_flux]),
             'oil_flux': np.array([oil_flux]),
             'nuadm_vols': np.array([fp['nuadm_vols']])
@@ -164,8 +175,10 @@ def load_or_update_initial_loop(
         vpi = simulation_data['all_vpi'][-1]
         cumulative_oil = simulation_data['all_cumulative_oil'][-1]
         cumulative_water = simulation_data['all_cumulative_water'][-1]
-        saturation[:] = simulation_data['saturation_' + str(loop)]
-        pressure[:] = simulation_data['pressure_' + str(loop)]
+        # saturation[:] = simulation_data['saturation_' + str(loop)]
+        # pressure[:] = simulation_data['pressure_' + str(loop)]
+        pressure[:], saturation[:] = load_ps_results(loop, defpaths.pressure_results_ms, defpaths.saturation_results_ms)
+        
         coarse_struct = define_coarse_structure(fp, lsds, level=1, update=False)
         OP = utils_old.load_matrix(matrices_path, op_name)
         OR = get_OR_AMS(fp)
@@ -247,6 +260,8 @@ def update_while_loop_ms(
         if plot_vpi == True:
             break
     
+    export_ps_results(loop, pressure, saturation, defpaths.pressure_results_ms, defpaths.saturation_results_ms)
+    
     update_data(
         simulation_data,
         vpi,
@@ -304,14 +319,14 @@ def run6():
     beta_lim = 1e6
 
     dt = 0.00005
-    max_vpi = 0.242
+    max_vpi = 0.6
     loop = 0
     max_loop = np.inf
     load = True
-    loop_intervals = 10
+    loop_intervals = 1
     etol_msrsb = 0.01
     maxit_msrsb = 1000
-    vpis_to_plot = np.linspace(0, 0.24, 25)[1:]
+    vpis_to_plot = np.linspace(0, 0.6, 31)[1:]
 
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
@@ -393,7 +408,7 @@ def run6():
         max_value_estimator1,
         vpis_to_plot
     )
-
+    
     import pdb; pdb.set_trace()
 
     while vpi < max_vpi and loop < max_loop:

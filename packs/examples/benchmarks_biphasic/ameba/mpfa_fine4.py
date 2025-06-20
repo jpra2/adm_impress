@@ -13,6 +13,12 @@ from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_
 
 from packs.examples.biphasic_mpfa import initial_loop, while_loop, update_data
 
+from packs.examples.same_functions import (
+    create_folders_pressure_results,
+    export_ps_results,
+    load_ps_results
+)
+
 import os
 import numpy as np
 from typing import Tuple
@@ -20,6 +26,8 @@ from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 from packs.utils.permfields import chueh_perm_artur_paper, random_permeability_chueh, random_permeability_chueh_v2
 from packs.utils.utils_old import is_point_inside_circle
+
+import shutil
 
 def get_properties():
 
@@ -212,9 +220,6 @@ def create_path_mesh_data(simulation_data: SimulationData):
         os.makedirs(path_mesh_data)
 
 
-
-
-
 def load_or_update_initial_loop(
         load: bool, 
         fp: MeshProperty, 
@@ -238,10 +243,13 @@ def load_or_update_initial_loop(
         cfl,
         vpis_to_plot: np.ndarray
     ):
-
     
     
     if load is False:
+        create_folders_pressure_results(
+            defpaths.pressure_results,
+            defpaths.saturation_results
+        )
         initial_funcs(fp, fine_mesh_path, simulation_data)
         path_mesh_data = simulation_data.name
         pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, water_faces_flux, water_flux, oil_flux = initial_loop(
@@ -260,6 +268,8 @@ def load_or_update_initial_loop(
             cfl,
             vpis_to_plot
         )
+        export_ps_results(loop, pressure, saturation, defpaths.pressure_results, defpaths.saturation_results)
+        
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
         mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
         mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
@@ -272,8 +282,8 @@ def load_or_update_initial_loop(
             'all_vpi': np.array([0.0]),
             'all_cumulative_oil': np.array([0.0]),
             'all_cumulative_water': np.array([0.0]),
-            'pressure_' + str(loop): pressure,
-            'saturation_' + str(loop): newS,
+            # 'pressure_' + str(loop): pressure,
+            # 'saturation_' + str(loop): newS,
             'water_flux': np.array([water_flux]),
             'oil_flux': np.array([oil_flux])
         })
@@ -287,8 +297,10 @@ def load_or_update_initial_loop(
         vpi = simulation_data['all_vpi'][-1]
         cumulative_oil = simulation_data['all_cumulative_oil'][-1]
         cumulative_water = simulation_data['all_cumulative_water'][-1]
-        saturation[:] = simulation_data['saturation_' + str(loop)]
-        pressure[:] = simulation_data['pressure_' + str(loop)]
+        pressure[:], saturation[:] = load_ps_results(loop, defpaths.pressure_results, defpaths.saturation_results)
+        
+        # saturation[:] = simulation_data['saturation_' + str(loop)]
+        # pressure[:] = simulation_data['pressure_' + str(loop)]
     
     return loop, cumulative_oil, cumulative_water, vpi
 
@@ -351,6 +363,8 @@ def update_while_loop(
         if plot_vpi == True:
             break
     
+    export_ps_results(loop, pressure, saturation, defpaths.pressure_results, defpaths.saturation_results)
+    
     update_data(
         simulation_data,
         vpi,
@@ -376,13 +390,13 @@ def update_while_loop(
 def run5():
 
     dt = 0.00005
-    max_vpi = 0.242
+    max_vpi = 0.6
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 20
+    loop_intervals = 1
     cfl = 0.9
-    vpis_to_plot = np.linspace(0, 0.24, 25)[1:]
+    vpis_to_plot = np.linspace(0, 0.6, 31)[1:]
 
     cumulative_oil = 0.0
     cumulative_water = 0.0

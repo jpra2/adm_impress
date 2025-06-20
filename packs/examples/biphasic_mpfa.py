@@ -707,8 +707,8 @@ def update_data(
         simulation_data.my_data_names[1]: all_vpi,
         simulation_data.my_data_names[2]: all_cum_oil,
         simulation_data.my_data_names[3]: all_cum_wat,
-        simulation_data.my_data_names[4] + str(loop): pressure,
-        simulation_data.my_data_names[5] + str(loop): saturation,
+        # simulation_data.my_data_names[4] + str(loop): pressure,
+        # simulation_data.my_data_names[5] + str(loop): saturation,
         simulation_data.my_data_names[6]: all_water_flux,
         simulation_data.my_data_names[7]: all_oil_flux
     })

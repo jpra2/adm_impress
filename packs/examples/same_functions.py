@@ -11,6 +11,8 @@ from typing import Sequence
 from shapely import geometry
 from scipy.sparse.linalg import spsolve
 import scipy.sparse as sp
+import os
+import shutil
 
 
 def get_perm_diag(value):
@@ -692,3 +694,33 @@ def update_simulation_data(
  
 
     return vpi, cum_oil, cum_water, water_flux, oil_flux, dt, plot_vpi
+
+def create_folders_pressure_results(pressure_folder, saturation_folder):
+    
+    try:
+        os.makedirs(pressure_folder)
+        os.makedirs(saturation_folder)
+    except FileExistsError:
+        shutil.rmtree(pressure_folder)
+        shutil.rmtree(saturation_folder)
+        os.makedirs(pressure_folder)
+        os.makedirs(saturation_folder)
+    
+
+def export_ps_results(loop, pressure, saturation, pressure_folder, saturation_folder):
+    ext = '.npy'
+    p_str = os.path.join(pressure_folder, 'pressure_' + str(loop) + ext)
+    sat_str = os.path.join(saturation_folder, 'saturation_' + str(loop) + ext)
+    
+    np.save(p_str, pressure)
+    np.save(sat_str, saturation)
+
+def load_ps_results(loop,  pressure_folder, saturation_folder):
+    ext = '.npy'
+    p_str = os.path.join(pressure_folder, 'pressure_' + str(loop) + ext)
+    sat_str = os.path.join(saturation_folder, 'saturation_' + str(loop) + ext)
+    
+    pressure = np.load(p_str)
+    saturation = np.load(sat_str)
+    
+    return pressure, saturation
