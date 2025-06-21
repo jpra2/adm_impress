@@ -182,7 +182,7 @@ def run5():
     load = False
     loop_intervals = 20
     cfl = 0.9
-    vpis_to_plot = np.linspace(0, 0.1155, 16)[1:]
+    vpis_to_plot = np.concatenate([np.linspace(0, 0.1, 11)[1:10], np.linspace(0.1, 0.4, 16)]) 
 
     max_cum_water = 0.1
 

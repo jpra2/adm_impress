@@ -98,7 +98,7 @@ def run6():
     loop_intervals = 20
     etol_msrsb = 0.01
     maxit_msrsb = 1000
-    vpis_to_plot = np.linspace(0, 0.1155, 16)[1:]
+    vpis_to_plot = np.concatenate([np.linspace(0, 0.1, 11)[1:10], np.linspace(0.1, 0.4, 16)])
 
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True

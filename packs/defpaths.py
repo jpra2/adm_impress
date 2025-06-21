@@ -7,11 +7,20 @@ data_simulation = data_mesh
 
 plots_folder = os.path.join(flying, 'plots')
 results = 'results'
-pressure_results = os.path.join(results, 'pressure')
-saturation_results = os.path.join(results, 'saturation')
+pressure_results = os.path.join(results, 'pressure_ameba')
+saturation_results = os.path.join(results, 'saturation_ameba')
+pressure_results_ms = os.path.join(results, 'pressure_ameba_ms')
+saturation_results_ms = os.path.join(results, 'saturation_ameba_ms')
 
-pressure_results_ms = os.path.join(results, 'pressure_ms')
-saturation_results_ms = os.path.join(results, 'saturation_ms')
+# pressure_results = os.path.join(results, 'pressure_sin')
+# saturation_results = os.path.join(results, 'saturation_sin')
+# pressure_results_ms = os.path.join(results, 'pressure_sin_ms')
+# saturation_results_ms = os.path.join(results, 'saturation_sin_ms')
+
+# pressure_results = os.path.join(results, 'pressure_het')
+# saturation_results = os.path.join(results, 'saturation_het')
+# pressure_results_ms = os.path.join(results, 'pressure_het_ms')
+# saturation_results_ms = os.path.join(results, 'saturation_het_ms')
 
 mesh = 'mesh'
 data_folder = 'data'
