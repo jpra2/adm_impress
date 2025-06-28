@@ -87,19 +87,19 @@ def run6():
     beta_lim = 1e3
 
     dt = 0.00005
-    max_vpi = 0.25
+    max_vpi = 0.51
     loop = 0
     max_loop = np.inf
     load = False
     loop_intervals = 10
     etol_msrsb = 0.01
     maxit_msrsb = 1000
-    vpis_to_plot = np.linspace(0, 0.25, 26)[1:]
+    vpis_to_plot = np.linspace(0, 0.5, 51)[1:]
     
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
     max_value_grad = 1e6
-    max_value_estimator1 = 120
+    max_value_estimator1 = 700
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
