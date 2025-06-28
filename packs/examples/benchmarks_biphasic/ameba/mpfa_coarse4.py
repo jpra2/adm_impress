@@ -8,12 +8,7 @@ from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_
 from packs.examples.diss_test1 import define_new_fine_levels_v1
 
 from packs.examples.same_functions import (
-    define_faces_in_losangle, 
     define_coarse_structure,
-    update_xi_params,
-    set_fine_transmissibility_biphasic,
-    update_fine_flux,
-    define_fine_ids_from_saturation,
     create_folders_pressure_results,
     export_ps_results,
     load_ps_results
@@ -33,7 +28,7 @@ from packs.examples.biphasic_mpfa_nu_adm import (
     update_data
 )
 
-from packs.multiscale.unstructured.test.test_uns_ams_prolongation import export_adm_levels
+
 from packs.utils.multiscale_methods import print_adm_interfaces_2d
 
 from packs.multiscale.unstructured.test.test_brazil import create_primal_ids, create_dual_ids, export_primal_ids, export_dual_ids
@@ -98,7 +93,9 @@ def load_or_update_initial_loop(
         refine_by_estimator1_bool,
         max_value_grad,
         max_value_estimator1,
-        vpis_to_plot: np.ndarray
+        vpis_to_plot: np.ndarray,
+        iterative_ms,
+        tol_iterative,
 ):
     
     
@@ -135,7 +132,10 @@ def load_or_update_initial_loop(
             refine_by_estimator1_bool,
             max_value_grad,
             max_value_estimator1,
-            vpis_to_plot
+            vpis_to_plot,
+            iterative_ms,
+            tol_iterative,
+            pressure
         )
         
         export_ps_results(loop, pressure, saturation, defpaths.pressure_results_ms, defpaths.saturation_results_ms)
@@ -154,7 +154,9 @@ def load_or_update_initial_loop(
             # 'saturation_' + str(loop): newS,
             'water_flux': np.array([water_flux]),
             'oil_flux': np.array([oil_flux]),
-            'nuadm_vols': np.array([fp['nuadm_vols']])
+            'nuadm_vols': np.array([fp['nuadm_vols']]),
+            'all_it': np.array(fp['it']),
+            'all_err': np.array(fp['err'])
         })
         saturation_plot[:] = saturation
         saturation[:] = newS
@@ -214,7 +216,9 @@ def update_while_loop_ms(
         OR,
         coarse_struct,
         fine_mesh_path,
-        vpis_to_plot: np.ndarray
+        vpis_to_plot: np.ndarray,
+        iterative_ms: bool,
+        tol_iterative: float
 ):
     
     path_mesh_data = simulation_data.name
@@ -242,7 +246,10 @@ def update_while_loop_ms(
             OR,
             coarse_struct,
             cfl,
-            vpis_to_plot
+            vpis_to_plot,
+            iterative_ms,
+            tol_iterative,
+            pressure
         )
         saturation_plot[:] = saturation
         saturation[:] = newS
@@ -256,6 +263,12 @@ def update_while_loop_ms(
         print(f'Dt: {dt}')
         print('##########################')
         print()
+        
+        if fp['it'][0] > simulation_data['all_it'].max():
+            plot_vpi = True
+        
+        if np.absolute(simulation_data[simulation_data.my_data_names[3]]).sum() <= 1e-14 and abs(cumulative_water) > 1e-14:
+            plot_vpi = True
         
         if plot_vpi == True:
             break
@@ -300,13 +313,13 @@ def run6():
     op_name = 'AMS-U'
     debug = False
 
-    update_primal_mesh = True
-    update_dual_mesh = True
-    update_coarse_struct = True
+    # update_primal_mesh = True
+    # update_dual_mesh = True
+    # update_coarse_struct = True
 
-    # update_primal_mesh = False
-    # update_dual_mesh = False
-    # update_coarse_struct = False
+    update_primal_mesh = False
+    update_dual_mesh = False
+    update_coarse_struct = False
 
 
     my_dual_type = 1
@@ -322,11 +335,13 @@ def run6():
     max_vpi = 0.6
     loop = 0
     max_loop = np.inf
-    load = False
-    loop_intervals = 20
+    load = True
+    loop_intervals = 1
     etol_msrsb = 0.01
     maxit_msrsb = 1000
     vpis_to_plot = np.linspace(0, 0.6, 31)[1:]
+    iterative_ms = True
+    tol_iterative = 1e-6
 
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
@@ -406,7 +421,9 @@ def run6():
         refine_by_estimator1_bool,
         max_value_grad,
         max_value_estimator1,
-        vpis_to_plot
+        vpis_to_plot,
+        iterative_ms,
+        tol_iterative
     )
     
     import pdb; pdb.set_trace()
@@ -442,7 +459,9 @@ def run6():
             OR,
             coarse_struct,
             fine_mesh_path,
-            vpis_to_plot
+            vpis_to_plot,
+            iterative_ms,
+            tol_iterative
         )
 
     

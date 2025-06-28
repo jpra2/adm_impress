@@ -79,19 +79,21 @@ def ms_solve_it(
 def iterative_ms_ilu0_bicgstab(
     A: sp.csc_matrix,
     b: np.ndarray,
+    p0: np.ndarray,
     OP: sp.csc_matrix,
     OR: sp.csc_matrix,
     epsilon=1e-13,
-    maxit=100
+    maxit=1000
 ):
        
     rn = b.copy()
     rn2 = rn.copy()
-    pn = b.copy()
+    pn = p0.copy()
     dp1 = b.copy()
     dp2 = b.copy()
     
-    R = OR
+    R = OP.transpose()
+    # R = OR
     # R_ADM = OR_ADM
     
     ilu0 = spilu(A)
@@ -100,12 +102,12 @@ def iterative_ms_ilu0_bicgstab(
     
     LU = splu((R*(A*OP)).tocsc())
     
-    pn[:] = OP*LU.solve(R*b)
+    # pn[:] = OP*LU.solve(R*b)
     rn[:] = b - A*pn
     
     err = 1e5
     
-    it = 1
+    it = 0
 
     # ##############################
     # ### metodo iterativo artur
@@ -134,16 +136,24 @@ def iterative_ms_ilu0_bicgstab(
     
     ########################################
     ## metodo iterativo Filipe
-    while err > epsilon and it < maxit:
+    while err > epsilon and it <= maxit:
         dp1[:] = OP*LU.solve(R*rn)
         rn2[:] = rn - A*dp1
-        dp2[:], exitcode = bicgstab(A, rn2, M=M, tol=epsilon)
+        dp2[:], exitcode = bicgstab(A, rn2, M=M, tol=1e-15, maxiter=1)
         pn[:] += dp1 + dp2
         rn[:] = b - A*pn
         err = np.linalg.norm(rn)
         # print(f'err: {err} \n')
         it += 1
+    R = OR
+    LU = splu((R*(A*OP)).tocsc())    
+    dp1[:] =  OP*LU.solve(R*rn)
+    pn[:] = pn + dp1
     #######################################
+    
+    if it > maxit:
+        raise RuntimeError(f'it:{it} extrapolate maxit:{maxit}')
+    
     
     return pn, it, err
     

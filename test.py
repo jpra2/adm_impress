@@ -238,8 +238,8 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 
 # maitain_only_data_mesh()
 # run_delete_all()
-# from packs.examples.benchmarks_biphasic.layers.mpfa_coarse4_ms import run6
-# run6()
+from packs.examples.benchmarks_biphasic.layers.mpfa_coarse4_ms import run6
+run6()
 
 # maitain_only_data_mesh()
 # run_delete_all()
@@ -265,8 +265,8 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 
 # run_delete_all()
 # maitain_only_data_mesh()
-from packs.examples.benchmarks_biphasic.ameba.mpfa_fine4 import run5
-run5()
+# from packs.examples.benchmarks_biphasic.ameba.mpfa_fine4 import run5
+# run5()
 
 # maitain_only_data_mesh()
 # from packs.examples.benchmarks_biphasic.ameba.mpfa_fine5 import run5

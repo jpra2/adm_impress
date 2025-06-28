@@ -258,7 +258,7 @@ def initial_loop(
         cumulative_oil: float,
         cumulative_water: float,
         cfl: float,
-        vpis_to_plot: np.ndarray
+        vpis_to_plot=[]
 ):
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
@@ -522,7 +522,7 @@ def while_loop(
         cumulative_water: float,
         total_area_reservoir: float,
         cfl: float,
-        vpis_to_plot: np.ndarray,
+        vpis_to_plot=[],
         **kwargs
 ):
     

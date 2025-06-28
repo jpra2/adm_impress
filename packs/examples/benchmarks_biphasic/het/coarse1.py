@@ -28,12 +28,6 @@ from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4 import (
     create_path_mesh_data
 )
 
-from packs.examples.biphasic_mpfa_nu_adm import (
-    initial_loop,
-    while_loop,
-    update_data
-)
-
 from packs.multiscale.unstructured.test.test_uns_ams_prolongation import export_adm_levels
 from packs.utils.multiscale_methods import print_adm_interfaces_2d
 

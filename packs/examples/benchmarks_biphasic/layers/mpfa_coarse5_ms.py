@@ -16,10 +16,16 @@ from packs.examples.same_functions import (
     define_fine_ids_from_saturation
 )
 
-from packs.examples.benchmarks_biphasic.layers.mpfa_fine5 import (
+from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4 import (
+    update_while_loop_ms,
+    load_or_update_initial_loop,
+    create_path_mesh_data
+)
+
+from packs.examples.benchmarks_biphasic.layers.mpfa_fine4 import (
     get_properties as get_properties_finescale,
     set_boundary_conditions,
-    initial_funcs
+    set_permeability_layers as set_permeability
 )
 
 from packs.examples.biphasic_mpfa_nu_adm import (
@@ -57,196 +63,6 @@ def get_properties_coarse():
 
     return coarse_properties, coarse_mesh_path
 
-def load_or_update_initial_loop(
-        load: bool, 
-        fp: MeshProperty, 
-        fine_mesh_path: str,
-        pressure: np.ndarray,
-        newS: np.ndarray,
-        vpi: float,
-        cumulative_oil: float,
-        cumulative_water: float,
-        relative_perm: BrooksAndCorey,
-        biphasic_mobility: BiphasicMobility,
-        saturation: np.ndarray,
-        bc: BoundaryConditions,
-        lsds: LsdsFluxCalculation,
-        dt: float,
-        porosity: np.ndarray,
-        total_area_reservoir: float,
-        mesh_data: MeshData,
-        simulation_data: SimulationData,
-        loop: int,
-        matrices_path: str,
-        op_name: str,
-        initial_fine_vols: np.ndarray,
-        alpha_lim_finescale: float,
-        beta_lim: float,
-        saturation_plot: np.ndarray,
-        etol_msrsb,
-        maxit_msrsb,
-        cfl
-):
-    
-    if load is False:
-        initial_funcs(fp, fine_mesh_path)
-        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux = initial_loop(
-            relative_perm,
-            biphasic_mobility,
-            saturation,
-            fp,
-            bc,
-            lsds,
-            dt,
-            porosity,
-            total_area_reservoir,
-            vpi,
-            cumulative_oil,
-            cumulative_water,
-            matrices_path,
-            op_name,
-            initial_fine_vols,
-            alpha_lim_finescale,
-            beta_lim,
-            etol_msrsb,
-            maxit_msrsb,
-            cfl
-        )
-
-        mesh_data.insert_tag_data('pressure', pressure, 'faces')
-        mesh_data.insert_tag_data('saturation', saturation, 'faces')
-        mesh_data.insert_tag_data('faces_flux', np.absolute(faces_flux), 'faces')
-        mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
-        simulation_data.insert_or_update_data({
-            'all_loops': np.array([0]),
-            'all_vpi': np.array([0.0]),
-            'all_cumulative_oil': np.array([0.0]),
-            'all_cumulative_water': np.array([0.0]),
-            'pressure_' + str(loop): pressure,
-            'saturation_' + str(loop): saturation,
-            'water_flux': np.array([water_flux]),
-            'oil_flux': np.array([oil_flux])
-        })
-        saturation_plot[:] = saturation
-        saturation[:] = newS
-
-        adm_interfaces_name = 'adm_edges_' + str(loop)
-        print_adm_interfaces_2d(
-            fp,
-            fine_mesh_path,
-            fine_levels,
-            adm_interfaces_name
-        )
-    else:
-        # import pdb; pdb.set_trace()
-        simulation_data.load_data()
-        loop = simulation_data['all_loops'][-1]
-        vpi = simulation_data['all_vpi'][-1]
-        cumulative_oil = simulation_data['all_cumulative_oil'][-1]
-        cumulative_water = simulation_data['all_cumulative_water'][-1]
-        saturation[:] = simulation_data['saturation_' + str(loop)]
-        pressure[:] = simulation_data['pressure_' + str(loop)]
-        coarse_struct = define_coarse_structure(fp, lsds, level=1, update=False)
-        OP = utils_old.load_matrix(matrices_path, op_name)
-        OR = get_OR_AMS(fp)
-    
-    return loop, cumulative_oil, cumulative_water, vpi, OP, OR, coarse_struct
-
-def update_while_loop_ms(
-        loop_intervals: int,
-        loop: int,
-        pressure: np.ndarray,
-        newS: np.ndarray,
-        vpi: float,
-        cumulative_oil: float,
-        cumulative_water: float,
-        relative_perm,
-        biphasic_mobility,
-        saturation: np.ndarray,
-        fp: MeshProperty,
-        bc: BoundaryConditions,
-        lsds: LsdsFluxCalculation,
-        porosity: np.ndarray,
-        total_area_reservoir: float,
-        saturation_plot: np.ndarray,
-        simulation_data: SimulationData,
-        mesh_data: MeshData,
-        cfl: float,
-        matrices_path,
-        op_name,
-        initial_fine_vols,
-        alpha_lim_finescale,
-        beta_lim,
-        OP,
-        OR,
-        coarse_struct,
-        fine_mesh_path
-):
-    
-    for i in range(loop_intervals):
-        loop += 1
-        pressure[:], newS[:], vpi, cumulative_oil, cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux = while_loop(
-            relative_perm,
-            biphasic_mobility,
-            saturation,
-            fp,
-            bc,
-            lsds,
-            porosity,
-            vpi,
-            cumulative_oil,
-            cumulative_water,
-            total_area_reservoir,
-            matrices_path,
-            op_name,
-            initial_fine_vols,
-            alpha_lim_finescale,
-            beta_lim,
-            OP,
-            OR,
-            coarse_struct,
-            cfl
-        )
-        saturation_plot[:] = saturation
-        saturation[:] = newS
-        
-        print()
-        print('##########################')
-        print(f'VPI: {vpi}')
-        print(f'Cum oil: {cumulative_oil}')
-        print(f'Cum water: {cumulative_water}')
-        print(f'Loop: {loop}')
-        print(f'Dt: {dt}')
-        print('##########################')
-        print()
-    
-    update_data(
-        simulation_data,
-        vpi,
-        cumulative_oil,
-        cumulative_water,
-        loop,
-        pressure,
-        saturation,
-        water_flux,
-        oil_flux
-    )
-
-    adm_interfaces_name = 'adm_edges_' + str(loop)
-    print_adm_interfaces_2d(
-        fp,
-        fine_mesh_path,
-        fine_levels,
-        adm_interfaces_name
-    )
-
-    mesh_data.insert_tag_data('pressure', pressure, 'faces')
-    mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
-    mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
-    mesh_data.insert_tag_data('saturation', saturation_plot, 'faces')
-    mesh_data.export_all_elements_type_to_vtk('pressure_faces_' + str(loop), 'faces')
-
-    return loop, cumulative_oil, cumulative_water, vpi
 
 
 def run6():
@@ -254,13 +70,13 @@ def run6():
     op_name = 'AMS-U'
     debug = False
 
-    # update_primal_mesh = True
-    # update_dual_mesh = True
-    # update_coarse_struct = True
+    update_primal_mesh = True
+    update_dual_mesh = True
+    update_coarse_struct = True
 
-    update_primal_mesh = False
-    update_dual_mesh = False
-    update_coarse_struct = False
+    # update_primal_mesh = False
+    # update_dual_mesh = False
+    # update_coarse_struct = False
 
 
     my_dual_type = 1
@@ -280,6 +96,12 @@ def run6():
     loop_intervals = 10
     etol_msrsb = 0.01
     maxit_msrsb = 1000
+    vpis_to_plot=[]
+    
+    refine_by_grad_bool = False
+    refine_by_estimator1_bool = False
+    max_value_grad = 1e6
+    max_value_estimator1 = 120
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
@@ -289,9 +111,12 @@ def run6():
     biphasic_mobility = BiphasicMobility(mio=4)
     lsds = LsdsFluxCalculation()
     simulation_data = SimulationData('biphasic_layers_coarse4')
+    simulation_data.insert_or_update_data({'label': np.array(['coarse4'])})
+    create_path_mesh_data(simulation_data)
     
     fp, fine_mesh_path = get_properties_finescale()
     cp, coarse_mesh_path = get_properties_coarse()
+    set_permeability(fine_mesh_path, fp, simulation_data) 
     nodes_org = fp.get_internal_nodes_org_from_faces_of_nodes_object()
     fp.insert_or_update_data(nodes_org)
     bc = set_boundary_conditions(fp)
@@ -344,9 +169,14 @@ def run6():
         saturation_plot,
         etol_msrsb,
         maxit_msrsb,
-        cfl
+        cfl,
+        refine_by_grad_bool,
+        refine_by_estimator1_bool,
+        max_value_grad,
+        max_value_estimator1,
+        vpis_to_plot
     )
-
+    
     import pdb; pdb.set_trace()
 
     while vpi < max_vpi and loop < max_loop:
@@ -379,7 +209,8 @@ def run6():
             OP,
             OR,
             coarse_struct,
-            fine_mesh_path
+            fine_mesh_path,
+            vpis_to_plot
         )
 
     

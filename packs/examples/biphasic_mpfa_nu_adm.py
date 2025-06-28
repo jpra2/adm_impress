@@ -44,6 +44,10 @@ from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 from typing import Sequence
 
+# ### iterative ms classic
+from packs.multiscale.ms_solvers.iterative_solver import iterative_ms_ilu0_bicgstab
+
+
 # def get_properties():
 #     rel_path = os.path.join(
 #         defpaths.unstructured_coarse_test_mesh_folder,
@@ -353,8 +357,15 @@ def initial_loop(
         refine_by_estimator1_bool: bool,
         max_value_grad: float,
         max_value_estimator1: float,
-        vpis_to_plot: np.ndarray
+        vpis_to_plot: np.ndarray,
+        iterative_ms: bool,
+        tol_iterative: float,
+        p0: np.ndarray
 ):
+    
+    it = -1
+    err = -1
+    
     
     # refine_by_grad_bool = False
     # refine_by_estimator1_bool = True 
@@ -622,6 +633,17 @@ def initial_loop(
         P_adm = spsolve(T_adm.tocsc(), Q_adm)
         P_prol = OP_adm*P_adm
     
+    if iterative_ms:
+        P_prol[:], it, err = iterative_ms_ilu0_bicgstab(
+            resp['transmissibility'],
+            resp['source'],
+            p0,
+            # P_prol,
+            OP_adm,
+            OR_adm,
+            epsilon=tol_iterative
+        )
+    
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,
         P_prol,
@@ -667,8 +689,6 @@ def initial_loop(
         fp['adjacencies'],
         fp['bool_boundary_edges']
     )
-
-    # pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
 
     # edges_flux2 = lsds.get_edges_flux(
     #     bc,
@@ -752,7 +772,13 @@ def initial_loop(
     intitial_fine_faces = fp['faces'][fine_levels==0]
     # intitial_fine_faces = initial_fine_volumes
     fp.insert_or_update_data({'initial_fine_faces': intitial_fine_faces})
-    fp.insert_or_update_data({'nuadm_vols': np.array([T_adm.shape[0]])})
+    fp.insert_or_update_data(
+        {   
+            'nuadm_vols': np.array([T_adm.shape[0]]),
+            'it': np.array([it]),
+            'err': np.array([err])
+        }
+    )
 
     return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux
 
@@ -777,8 +803,14 @@ def while_loop(
         OR: sp.csc_matrix,
         coarse_struct: Sequence[PrimalCoarseData],
         cfl: float,
-        vpis_to_plot: np.ndarray
+        vpis_to_plot: np.ndarray,
+        iterative_ms: bool,
+        tol_iterative: float,
+        p0: np.ndarray,
 ):
+    
+    it = -1
+    err = -1
     
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
@@ -886,11 +918,25 @@ def while_loop(
         ADM_COARSE_ID_LEVEL_1,
         fp[defnames.get_dual_id_name_by_level(1)]
     )
-
-    T_adm = OR_adm*(resp['transmissibility']*OP_adm)
-    Q_adm = OR_adm*resp['source']
-    P_adm = spsolve(T_adm.tocsc(), Q_adm)
-    P_prol = OP_adm*P_adm
+    
+    if iterative_ms:
+        P_prol, it, err = iterative_ms_ilu0_bicgstab(
+            resp['transmissibility'],
+            resp['source'],
+            p0,
+            # P_prol,
+            OP_adm,
+            OR_adm,
+            epsilon=tol_iterative
+        )
+    
+    else:
+        T_adm = OR_adm*(resp['transmissibility']*OP_adm)
+        Q_adm = OR_adm*resp['source']
+        P_adm = spsolve(T_adm.tocsc(), Q_adm)
+        P_prol = OP_adm*P_adm
+    
+    
 
     # pmin = P_prol.min()
     # pmax = P_prol.max()
@@ -1027,8 +1073,13 @@ def while_loop(
     )
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     
-
-    fp.insert_or_update_data({'nuadm_vols': np.array([T_adm.shape[0]])})
+    fp.insert_or_update_data(
+        {
+            'nuadm_vols': np.array([OP_adm.shape[0]]),
+            'it': np.array([it]),
+            'err': np.array([err])
+        }
+    )
 
     return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, fine_levels, water_faces_flux, dt, water_flux, oil_flux, plot_vpi
 
@@ -1066,6 +1117,12 @@ def update_data(
     all_nu_adm_vols = simulation_data['nuadm_vols']
     all_nu_adm_vols = np.append(all_nu_adm_vols, fp['nuadm_vols'])
     
+    all_it = simulation_data['all_it']
+    all_it = np.append(all_it, fp['it'])
+    
+    all_err = simulation_data['all_err']
+    all_err = np.append(all_err, fp['err'])
+    
     simulation_data.insert_or_update_data({
         simulation_data.my_data_names[0]: all_loops,
         simulation_data.my_data_names[1]: all_vpi,
@@ -1075,7 +1132,9 @@ def update_data(
         # simulation_data.my_data_names[5] + str(loop): saturation,
         simulation_data.my_data_names[6]: all_water_flux,
         simulation_data.my_data_names[7]: all_oil_flux,
-        'nuadm_vols': all_nu_adm_vols
+        'nuadm_vols': all_nu_adm_vols,
+        'all_it': all_it,
+        'all_err': all_err
     })
 
     simulation_data.export_data()
