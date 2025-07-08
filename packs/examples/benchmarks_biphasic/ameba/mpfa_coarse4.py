@@ -267,7 +267,7 @@ def update_while_loop_ms(
         if fp['it'][0] > simulation_data['all_it'].max():
             plot_vpi = True
         
-        if np.absolute(simulation_data[simulation_data.my_data_names[3]]).sum() <= 1e-14 and abs(cumulative_water) > 1e-14:
+        if np.absolute(simulation_data[simulation_data.my_data_names[3]]).sum() <= 1e-12 and abs(cumulative_water) > 1e-12:
             plot_vpi = True
         
         if plot_vpi == True:

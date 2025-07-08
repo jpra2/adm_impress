@@ -437,7 +437,48 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
     import pdb; pdb.set_trace()
         
         
-        
+def plot_err_layers():
+    err = np.load('err.npy')
+    it = np.load('it.npy')
+    
+    err2 = np.load('err2.npy')
+    it2 = np.load('it2.npy')
+    
+    markers = get_markers()
+    linestyles = get_linestyle_str()
+    basic_colors_str = basic_colors()
+    # basic_colors_str.remove('k')
+    # n_nuadmsims = len(nuadm_sims)
+    
+    plt.clf()
+    plt.rcParams['text.usetex'] = True
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    
+    ax.plot(
+        it,
+        err,
+        label='AMS-U', 
+        marker=markers[1], 
+        color='k'
+    )
+    ax.plot(
+        it2,
+        err2,
+        label='NU-ADM', 
+        marker=markers[1], 
+        color='red'
+    )    
+    ax.set_yscale('log')
+    ax.set_ylim(1e-13, 10)
+    
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel(r'$||\bf{r}||_{2}$')
+    ax.legend(handlelength=5)
+    path_fig = os.path.join(defpaths.plots_folder, 'layers_conv.png')
+    fig.savefig(path_fig, dpi=500)
+    
+    
         
         
         
@@ -487,10 +528,12 @@ def plot_graphs():
     
     
     
-    plot_cum_oil(finescale_sim, nuadm_sims, 'cum_oil_ameba_new.png')
-    plot_wor(finescale_sim, nuadm_sims, 'wor_ameba_new.png')
-    plot_nuadm_percent(finescale_sim, nuadm_sims, 'nuadm_percent_ameba_new.png')
-    plot_errors(vpis_to_plot, finescale_sim, nuadm_sims[0])
+    # plot_cum_oil(finescale_sim, nuadm_sims, 'cum_oil_ameba_new.png')
+    # plot_wor(finescale_sim, nuadm_sims, 'wor_ameba_new.png')
+    # plot_nuadm_percent(finescale_sim, nuadm_sims, 'nuadm_percent_ameba_new.png')
+    # plot_errors(vpis_to_plot, finescale_sim, nuadm_sims[0])
+    
+    plot_err_layers()
     
     import pdb; pdb.set_trace()
 

@@ -281,8 +281,9 @@ run6()
 # from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4f import run6
 # run6()
 
-# from packs.utils.plot_graph_from_simulation_data import plot_graphs
-# plot_graphs()
+# from packs.utils.plot_graph_from_simulation_data import plot_graphs, plot_err_layers
+# # plot_graphs()
+# plot_err_layers()
 
 # run_delete_all()
 # maitain_only_data_mesh()

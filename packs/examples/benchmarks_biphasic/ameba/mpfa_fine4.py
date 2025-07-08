@@ -360,6 +360,9 @@ def update_while_loop(
         print('##########################')
         print()
         
+        if np.absolute(simulation_data[simulation_data.my_data_names[3]]).sum() <= 1e-12 and abs(cumulative_water) > 1e-12:
+            plot_vpi = True
+        
         if plot_vpi == True:
             break
     

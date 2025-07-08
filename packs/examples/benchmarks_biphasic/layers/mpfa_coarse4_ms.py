@@ -87,7 +87,7 @@ def run6():
     beta_lim = 1e4
 
     dt = 0.00005
-    max_vpi = 0.51
+    max_vpi = 0.505
     loop = 0
     max_loop = np.inf
     load = False
@@ -101,11 +101,27 @@ def run6():
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
     max_value_grad = 1e6
-    max_value_estimator1 = 1e-5
+    max_value_estimator1 = 1e-4
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
     vpi = 0.0
+    
+    '''
+    nf = 12974
+    AMSU:
+    169 volumes na grossa
+    plinf = 1.1391393958394954e-12
+    pl2 = 1.1203494328532643e-12
+    it = 375
+    
+    NUADM
+    plinf = 1.5550335585334431e-12
+    pl2 = 1.7175881886506336e-12
+    it = 11
+    %% = 12%
+    '''
+     
 
     relative_perm = BrooksAndCorey(Sor=0.0, Swc=0.0)
     biphasic_mobility = BiphasicMobility(mio=4)
@@ -178,6 +194,8 @@ def run6():
         iterative_ms,
         tol_iterative
     )
+    
+    import pdb; pdb.set_trace()
     
     
 

@@ -85,6 +85,8 @@ def iterative_ms_ilu0_bicgstab(
     epsilon=1e-13,
     maxit=1000
 ):
+    
+    # errs = []
        
     rn = b.copy()
     rn2 = rn.copy()
@@ -92,8 +94,8 @@ def iterative_ms_ilu0_bicgstab(
     dp1 = b.copy()
     dp2 = b.copy()
     
-    R = OP.transpose()
-    # R = OR
+    # R = OP.transpose()
+    R = OR
     # R_ADM = OR_ADM
     
     ilu0 = spilu(A)
@@ -104,10 +106,11 @@ def iterative_ms_ilu0_bicgstab(
     
     # pn[:] = OP*LU.solve(R*b)
     rn[:] = b - A*pn
+    # errs.append(np.linalg.norm(rn))
     
-    err = 1e5
+    err = np.linalg.norm(rn)
     
-    it = 0
+    it = 1
 
     # ##############################
     # ### metodo iterativo artur
@@ -143,21 +146,104 @@ def iterative_ms_ilu0_bicgstab(
         pn[:] += dp1 + dp2
         rn[:] = b - A*pn
         err = np.linalg.norm(rn)
+        # errs.append(err)
+        # err = rn.max()
         # print(f'err: {err} \n')
         it += 1
-    R = OR
-    LU = splu((R*(A*OP)).tocsc())    
-    dp1[:] =  OP*LU.solve(R*rn)
-    pn[:] = pn + dp1
+    # R = OR
+    # LU = splu((R*(A*OP)).tocsc())    
+    # dp1[:] =  OP*LU.solve(R*rn)
+    # pn[:] = pn + dp1
     #######################################
+    
+    # if it > maxit:
+    #     raise RuntimeError(f'it:{it} extrapolate maxit:{maxit}')
+    
+    
+    return pn, it, err
+    # return pn, np.arange(it), np.array(errs)
+    
+
+def iterative_ms_ilu0_bicgstab_fv_amsu(
+    A: sp.csc_matrix,
+    b: np.ndarray,
+    p0: np.ndarray,
+    OP: sp.csc_matrix,
+    OR: sp.csc_matrix,
+    epsilon=1e-13,
+    maxit=1000
+):
+       
+    rn = b.copy()
+    rn2 = rn.copy()
+    pn = p0.copy()
+    dp1 = b.copy()
+    dp2 = b.copy()
+    
+    # R = OP.transpose()
+    R = OR
+    # R_ADM = OR_ADM
+    
+    ilu0 = spilu(A)
+    Mx = lambda x: ilu0.solve(x)
+    M = LinearOperator(A.shape, Mx)
+    
+    LU = splu((R*(A*OP)).tocsc())
+    
+    # pn[:] = OP*LU.solve(R*b)
+    rn[:] = b - A*pn
+    
+    err = 1e5
+    
+    it = 0
+
+    # ##############################
+    ### metodo iterativo artur
+    while err > epsilon and it < maxit:
+        dp1[:], exitcode = bicgstab(A, rn, M=M, tol=epsilon, maxiter=1)
+        rn2[:] = rn - A*dp1
+        # rc[:] = LU.solve(rn2)
+        # dp2[:] = OP*rc
+        dp2[:] = OP*LU.solve(R*rn2)
+        
+        pn[:] += dp1 + dp2
+        rn[:] = b - A*pn
+        err = np.linalg.norm(rn)
+        it += 1
+        
+        # if err2 > err:
+        #     import pdb; pdb.set_trace()
+        # else:
+        #     err = err2
+    
+    dp1[:], exitcode = bicgstab(A, rn, M=M, tol=epsilon, maxiter=1)
+    pn[:] += dp1
+    # rn[:] = b - A*pn
+    # err = rn.max()
+    # #########################################
+    
+    ########################################
+    ## metodo iterativo Filipe
+    # while err > epsilon and it <= maxit:
+    #     dp1[:] = OP*LU.solve(R*rn)
+    #     rn2[:] = rn - A*dp1
+    #     dp2[:], exitcode = bicgstab(A, rn2, M=M, tol=1e-15, maxiter=1)
+    #     pn[:] += dp1 + dp2
+    #     rn[:] = b - A*pn
+    #     err = np.linalg.norm(rn)
+    #     # print(f'err: {err} \n')
+    #     it += 1
+    # R = OR
+    # LU = splu((R*(A*OP)).tocsc())    
+    # dp1[:] =  OP*LU.solve(R*rn)
+    # pn[:] = pn + dp1
+    # #######################################
     
     if it > maxit:
         raise RuntimeError(f'it:{it} extrapolate maxit:{maxit}')
     
     
     return pn, it, err
-    
-        
         
     
     

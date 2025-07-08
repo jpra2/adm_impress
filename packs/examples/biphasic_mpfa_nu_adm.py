@@ -45,8 +45,14 @@ import matplotlib.pyplot as plt
 from typing import Sequence
 
 # ### iterative ms classic
-from packs.multiscale.ms_solvers.iterative_solver import iterative_ms_ilu0_bicgstab
+from packs.multiscale.ms_solvers.iterative_solver import iterative_ms_ilu0_bicgstab, iterative_ms_ilu0_bicgstab_fv_amsu
 
+from packs.multiscale.unstructured.test.test_brazil import (
+    f_linf_percent, 
+    f_l2_error_paper_artur, 
+    f_linf_percent_paper_artur, 
+    f_l2_error_percent_paper_artur
+)
 
 # def get_properties():
 #     rel_path = os.path.join(
@@ -639,10 +645,33 @@ def initial_loop(
             resp['source'],
             p0,
             # P_prol,
-            OP_adm,
-            OR_adm,
+            OP,
+            OR,
             epsilon=tol_iterative
         )
+        
+    # P_prol2, it2, err2 = iterative_ms_ilu0_bicgstab(
+    #         resp['transmissibility'],
+    #         resp['source'],
+    #         p0,
+    #         # P_prol,
+    #         OP_adm,
+    #         OR_adm,
+    #         epsilon=1e-12
+    #     )
+    
+    # np.save('it.npy', it)
+    # np.save('it2.npy', it2)
+    # np.save('err.npy', err)
+    # np.save('err2.npy', err2)
+    
+    # pressure = spsolve(resp['transmissibility'], resp['source'])
+    
+    # plinf = f_linf_percent_paper_artur(pressure, P_prol)/100
+    # pl2 = f_l2_error_paper_artur(pressure, P_prol)
+    
+    # plinf2 = f_linf_percent_paper_artur(pressure, P_prol2)/100
+    # pl22 = f_l2_error_paper_artur(pressure, P_prol2)
     
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,
@@ -1075,7 +1104,7 @@ def while_loop(
     
     fp.insert_or_update_data(
         {
-            'nuadm_vols': np.array([OP_adm.shape[0]]),
+            'nuadm_vols': np.array([OP_adm.shape[1]]),
             'it': np.array([it]),
             'err': np.array([err])
         }

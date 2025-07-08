@@ -161,11 +161,11 @@ def set_permeability_layers(fine_mesh_path, fine_properties: MeshProperty, expor
 def run5():
 
     dt = 0.00005
-    max_vpi = 0.51
+    max_vpi = 0.505
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 10
+    loop_intervals = 5
     cfl = 0.9
 
     cumulative_oil = 0.0
