@@ -645,8 +645,8 @@ def initial_loop(
             resp['source'],
             p0,
             # P_prol,
-            OP,
-            OR,
+            OP_adm,
+            OR_adm,
             epsilon=tol_iterative
         )
         
