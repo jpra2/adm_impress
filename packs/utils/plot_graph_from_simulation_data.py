@@ -452,6 +452,9 @@ def plot_err_layers():
     
     plt.clf()
     plt.rcParams['text.usetex'] = True
+    plt.rcParams['legend.fontsize'] = 16
+    plt.rcParams['axes.labelsize'] = 16
+    plt.rcParams["font.family"] = "Times New Roman"
     fig = plt.figure()
     ax = fig.add_subplot()
     
@@ -465,14 +468,14 @@ def plot_err_layers():
     ax.plot(
         it2,
         err2,
-        label='NU-ADM', 
+        label='NU-ADM-U', 
         marker=markers[1], 
         color='red'
     )    
     ax.set_yscale('log')
     ax.set_ylim(1e-13, 10)
     
-    ax.set_xlabel('Iteration')
+    ax.set_xlabel('Number of iterations')
     ax.set_ylabel(r'$||\bf{r}||_{2}$')
     ax.legend(handlelength=5)
     path_fig = os.path.join(defpaths.plots_folder, 'layers_conv.png')

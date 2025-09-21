@@ -29,7 +29,7 @@ class MeshInit:
         self.data = dict()
         self.mesh_name = mesh_name
 
-    def _init_mesh(self):
+    def _init_mesh(self):         
         mb = core.Core()
         scd = ScdInterface(mb)
         mtu = topo_util.MeshTopoUtil(mb)
@@ -759,7 +759,7 @@ class CreateMeshProperties(MeshInit):
         
         self.mb.write_file(os.path.join(defpaths.mesh, self.mesh_name) + '.msh')
           
-    def create_3d_mesh_data(self):
+    def create_3d_mesh_data(self) -> MeshProperty:
         self.init_mesh()
         self.init_3d_mesh_entities()
         self.create_3d_initial_array_properties()
@@ -769,7 +769,7 @@ class CreateMeshProperties(MeshInit):
         mesh_property.export_data()
         return mesh_property
         
-    def create_2d_mesh_data(self):
+    def create_2d_mesh_data(self) -> MeshProperty:
         self.init_mesh()
         self.init_2d_mesh_entities()
         self.create_2d_initial_array_properties()

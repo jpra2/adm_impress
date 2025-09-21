@@ -313,13 +313,13 @@ def run6():
     op_name = 'AMS-U'
     debug = False
 
-    # update_primal_mesh = True
-    # update_dual_mesh = True
-    # update_coarse_struct = True
+    update_primal_mesh = True
+    update_dual_mesh = True
+    update_coarse_struct = True
 
-    update_primal_mesh = False
-    update_dual_mesh = False
-    update_coarse_struct = False
+    # update_primal_mesh = False
+    # update_dual_mesh = False
+    # update_coarse_struct = False
 
 
     my_dual_type = 1
@@ -340,12 +340,12 @@ def run6():
     etol_msrsb = 0.01
     maxit_msrsb = 1000
     vpis_to_plot = np.linspace(0, 0.6, 31)[1:]
-    iterative_ms = True
+    iterative_ms = False
     tol_iterative = 1e-6
 
-    refine_by_grad_bool = False
-    refine_by_estimator1_bool = True
-    max_value_grad = 1e6
+    refine_by_grad_bool = True
+    refine_by_estimator1_bool = False
+    max_value_grad = 100
     max_value_estimator1 = 1200
 
     cumulative_oil = 0.0

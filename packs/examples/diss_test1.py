@@ -199,7 +199,10 @@ def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties
             level=1,
             edges_ids_level0=fine_mesh_properties['edges'],
             bool_boundary_edges_level0=fine_mesh_properties['bool_boundary_edges'],
-            edges_centroids_level0=fine_mesh_properties.edges_centroids
+            edges_centroids_level0=fine_mesh_properties.edges_centroids,
+            adjacencies_level1=coarse_mesh_properties['adjacencies'],
+            edges_ids_level1=coarse_mesh_properties['edges'],
+            bool_boundary_edges_level1=coarse_mesh_properties['bool_boundary_edges']
         )
 
         fine_mesh_properties.insert_or_update_data(
@@ -553,7 +556,60 @@ def write_results(
     df.to_csv(file_path, index=False)
 
     
-
+def print_adm_mesh_for_paper(
+    fine_mesh_properties: MeshProperty,
+    fine_mesh_path: str
+):
+    
+    fp = fine_mesh_properties
+    
+    faces_centroids = fp['faces_centroids']
+    faces = fp['faces']
+    primal_id = fp[defnames.get_primal_id_name_by_level(1)]
+    dual_volumes = fp[defnames.get_dual_volumes_name_by_level(1)]
+    fine_levels = np.full(len(fp['faces']), -1)
+    
+    dists = np.linalg.norm(faces_centroids - np.array([0, 0]), axis=1)
+    face1 = faces[dists <= dists.min()][0]
+    
+    dists = np.linalg.norm(faces_centroids - np.array([100, 100]), axis=1)
+    face2 = faces[dists <= dists.min()][0]
+    
+    faces_to_plot = np.array([face1, face2])
+    
+    # primal_ids_to_plot = []
+    # for face in faces_to_plot:
+    #     primal_id_face = primal_id[face]
+    #     fine_ids_in_primal = faces[primal_id==primal_id_face]
+    #     primal_ids_to_plot.append(fine_ids_in_primal)
+    
+    # primal_ids_to_plot = np.unique(np.concatenate(primal_ids_to_plot)) 
+    # fine_levels[primal_ids_to_plot] = 0
+    
+    dual_volumes_to_plot = []
+    for dual_volume in dual_volumes:
+        inters = np.intersect1d(faces_to_plot, dual_volume)
+        if inters.shape[0] > 0:
+            dual_volumes_to_plot.append(dual_volume)
+    
+    dual_volumes_to_plot = np.unique(np.concatenate(dual_volumes_to_plot))
+    fine_levels[dual_volumes_to_plot] = 0
+    
+    
+    fine_levels[fine_levels==-1] = 1
+    
+    print_adm_interfaces_2d(
+        fine_mesh_properties,
+        fine_mesh_path,
+        fine_levels,
+        'adm_edges_paper_dual'
+    )
+        
+    
+    
+    
+    
+    
 
 
 
@@ -598,6 +654,9 @@ def run4():
     export_primal_ids(fine_mesh_path, fp, coarse_mesh_path, export=bool_export_primal_id)
     create_dual_ids(fp, cp, update=bool_export_dual_id, dual_type=my_dual_type)
     export_dual_ids(fine_mesh_path, fp, export=bool_export_dual_id)
+    print_adm_mesh_for_paper(fp, fine_mesh_path)
+    
+    import pdb; pdb.set_trace()
 
     # set_permeability(fp, typek=perm_type, export_permfield=export_permfield)
     bc = set_boundary_conditions(fp)

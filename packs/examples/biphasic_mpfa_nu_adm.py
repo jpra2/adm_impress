@@ -323,6 +323,16 @@ def refine_by_estimator1(
 
     estimator_internal_edges = estimator1[internal_edges]
     adj_internal_edges = adjacencies[internal_edges]
+    
+    # ########
+    # max_value_estimator_internal_edges = estimator_internal_edges.max()
+    # normalized_estimator = estimator_internal_edges/max_value_estimator_internal_edges
+    # max_norm_estimator = normalized_estimator.max()
+    # test2 = estimator_internal_edges >= max_value
+    # new_param_test = normalized_estimator[test2]
+    # print(new_param_test.min())
+    # import pdb; pdb.set_trace()
+    # ###################################
 
     test = estimator_internal_edges >= max_value
     faces_to_refine = np.unique(adj_internal_edges[test].flatten())

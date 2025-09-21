@@ -473,6 +473,7 @@ def create_dual_edges_v1(
         fine_edges_centroids - fine_faces_centroids[fine_adjacencies[:, 1]],
         axis=1
     )
+    # dists[:] = 1
     dists[fine_adjacencies==-1] = np.inf
 
     set_fine_edges = set(list(fine_dual_edge_to_coarse_edge.keys()))

@@ -728,7 +728,7 @@ def update_fine_faces_out(
         fine_faces_in_coarse_face = faces_level0[
             fine_primal_id == coarse_face
         ]
-
+        
         faces_adjs = np.unique(np.concatenate(
             faces_of_faces_level0[fine_faces_in_coarse_face]
         ))

@@ -270,7 +270,10 @@ def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties
             level=1,
             edges_ids_level0=fine_mesh_properties['edges'],
             bool_boundary_edges_level0=fine_mesh_properties['bool_boundary_edges'],
-            edges_centroids_level0=fine_mesh_properties.edges_centroids
+            edges_centroids_level0=fine_mesh_properties.edges_centroids,
+            adjacencies_level1=coarse_mesh_properties['adjacencies'],
+            edges_ids_level1=coarse_mesh_properties['edges'],
+            bool_boundary_edges_level1=coarse_mesh_properties['bool_boundary_edges']
         )
 
         fine_mesh_properties.insert_or_update_data(
@@ -621,8 +624,8 @@ def run4():
     # bool_export_primal_id = True
     # bool_export_dual_id = True
 
-    bool_export_primal_id = False
-    bool_export_dual_id = False
+    bool_export_primal_id = True
+    bool_export_dual_id = True
 
     refine_by_delta_grad_bool = False
     max_value_delta_grad = 4.0
@@ -638,7 +641,7 @@ def run4():
     update_permfield = True
     fine_level_setup = 4
     etol = -1
-    update_coarse_struct = False
+    update_coarse_struct = True
     # update_coarse_struct = False
     run_simulation_repeated = True
     check_write_results = False
