@@ -522,8 +522,11 @@ class LsdsFluxCalculation:
         )
 
         boundary_weights = np.zeros((len(edges), 4))
+        boundary_values_for_k_gradient_a = np.zeros((bool_boundary_edges.sum(), 4))
+        boundary_values_for_k_gradient_b = np.zeros((bool_boundary_edges.sum(), 4))
 
-        for edge in edges[bool_boundary_edges]:
+
+        for i, edge in enumerate(edges[bool_boundary_edges]):
             xy_k_sigma_edge = xy_k_sigma[edge]
             edge_nodes = nodes_of_edges[edge]
             faces_adj = adjacencies[edge]
@@ -542,8 +545,23 @@ class LsdsFluxCalculation:
             mi_B = (1/S_k_sigma_2)*np.dot(xy_k_sigma_edge, np.array([ak[1], -ak[0]]))
 
             boundary_weights[edge,:] = [mi_k, 0, mi_A, mi_B]
+
+            ak_k = 1/S_k_sigma_2*(-ab[1])
+            ak_a = 1/S_k_sigma_2*(-bk[1])
+            ak_b = 1/S_k_sigma_2*(ak[1])
+
+            bk_k = 1/S_k_sigma_2*(ab[0])
+            bk_a = 1/S_k_sigma_2*(bk[0])
+            bk_b = 1/S_k_sigma_2*(-ak[0])
+
+            boundary_values_for_k_gradient_a[i, :] = [ak_k, 0, ak_a, ak_b]
+            boundary_values_for_k_gradient_b[i, :] = [bk_k, 0, bk_a, bk_b]
+
+
+
+
         
-        return boundary_weights
+        return boundary_weights, boundary_values_for_k_gradient_a, boundary_values_for_k_gradient_b
 
     def get_all_edges_flux_params(
             self,
@@ -595,9 +613,9 @@ class LsdsFluxCalculation:
             unitary_normal_edges,
             permeability,
             edges_dim
-        )
+        ) 
 
-        boundary_edges_params = self.get_boundary_edges_flux_params(
+        boundary_edges_params, boundary_values_for_k_gradient_a, boundary_values_for_k_gradient_b = self.get_boundary_edges_flux_params(
             edges,
             edges_dim,
             unitary_normal_edges,
@@ -614,7 +632,9 @@ class LsdsFluxCalculation:
         resp = {
             'xi_params': internal_edges_params,
             'matrix_for_gradient': matrix_for_gradient,
-            'Gkl': Gkl
+            'Gkl': Gkl,
+            'boundary_values_for_k_gradient_a': boundary_values_for_k_gradient_a,
+            'boundary_values_for_k_gradient_b': boundary_values_for_k_gradient_b
         }
 
         return resp
@@ -1683,15 +1703,6 @@ class LsdsFluxCalculation:
         return resp
 
 
-        
-
-
-        
-
-
-
-
-
     def get_nodes_pressures(
         self,
         boundary_conditions: BoundaryConditions,
@@ -1720,9 +1731,6 @@ class LsdsFluxCalculation:
         nodes_pressures[ids_node_press] = values
 
         return nodes_pressures
-
-
-
 
     def get_edges_flux(
         self,
@@ -1845,6 +1853,86 @@ class LsdsFluxCalculation:
         return faces_flux
         
     def get_gradient_faces_dif(
+            self, 
+            matrix_for_gradient, 
+            faces_pressure, 
+            nodes_pressure, 
+            nodes_of_edges, 
+            adjacencies, 
+            internal_edges,
+            Gkl,
+            **kwargs
+    ):
+
+        # gradient_T = np.zeros((adjacencies.shape[0], 2, 2))
+        dif_gradient = np.zeros((adjacencies.shape[0], 2))
+
+        for i, edge in enumerate(internal_edges):
+            K = adjacencies[edge, 0]
+            L = adjacencies[edge, 1]
+            B_node = nodes_of_edges[edge, 0]
+            A_node = nodes_of_edges[edge, 1]
+            local_matrix = matrix_for_gradient[edge]
+            local_Gkl = Gkl[edge]
+
+            pressures = np.array([
+                faces_pressure[K], 
+                faces_pressure[L], 
+                nodes_pressure[A_node], 
+                nodes_pressure[B_node]
+            ])
+
+            gK = local_matrix.dot(pressures)
+            gL = local_Gkl.dot(gK)
+            dif_gradient[edge] = gK - gL
+            # gradient_T[edge] = [gK, gL]
+        
+        dif_gradient = np.linalg.norm(dif_gradient, axis=1)
+
+        return dif_gradient
+    
+    def get_gradient_faces_from_gradient_average_diamond(
+            self, 
+            matrix_for_gradient, 
+            faces_pressure, 
+            nodes_pressure, 
+            nodes_of_edges, 
+            adjacencies, 
+            internal_edges,
+            Gkl,
+            boundary_values_for_k_gradient_a,
+            boundary_values_for_k_gradient_b,
+            **kwargs
+    ):
+
+        # gradient_T = np.zeros((adjacencies.shape[0], 2, 2))
+        dif_gradient = np.zeros((adjacencies.shape[0], 2))
+
+        for i, edge in enumerate(internal_edges):
+            K = adjacencies[edge, 0]
+            L = adjacencies[edge, 1]
+            B_node = nodes_of_edges[edge, 0]
+            A_node = nodes_of_edges[edge, 1]
+            local_matrix = matrix_for_gradient[edge]
+            local_Gkl = Gkl[edge]
+
+            pressures = np.array([
+                faces_pressure[K], 
+                faces_pressure[L], 
+                nodes_pressure[A_node], 
+                nodes_pressure[B_node]
+            ])
+
+            gK = local_matrix.dot(pressures)
+            gL = local_Gkl.dot(gK)
+            dif_gradient[edge] = gK - gL
+            # gradient_T[edge] = [gK, gL]
+        
+        dif_gradient = np.linalg.norm(dif_gradient, axis=1)
+
+        return dif_gradient
+
+    def calculate_volume_gradient_from_average(
             self, 
             matrix_for_gradient, 
             faces_pressure, 
