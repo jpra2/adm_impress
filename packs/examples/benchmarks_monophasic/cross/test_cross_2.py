@@ -624,14 +624,14 @@ def run4():
     # bool_export_primal_id = True
     # bool_export_dual_id = True
 
-    bool_export_primal_id = True
-    bool_export_dual_id = True
+    bool_export_primal_id = False
+    bool_export_dual_id = False
 
-    refine_by_delta_grad_bool = False
-    max_value_delta_grad = 4.0
+    refine_by_delta_grad_bool = True
+    max_value_delta_grad = 5.0
 
-    refine_by_estimator1_bool = True
-    max_value_estimator1 = 10
+    refine_by_estimator1_bool = False
+    max_value_estimator1 = 0.95
 
     my_dual_type = 1
     # perm_type = 'channel'
@@ -641,7 +641,7 @@ def run4():
     update_permfield = True
     fine_level_setup = 4
     etol = -1
-    update_coarse_struct = True
+    update_coarse_struct = False
     # update_coarse_struct = False
     run_simulation_repeated = True
     check_write_results = False

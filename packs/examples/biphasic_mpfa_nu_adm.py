@@ -246,7 +246,7 @@ def get_op_amsu(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation, O
 #     fp.export_data()
 
 
-def refine_by_gradient_v0(fp: MeshProperty, pressure: np.ndarray, max_grad: float=2828, refine=True):
+def refine_by_gradient_v0(fp: MeshProperty, pressure: np.ndarray, max_grad: float=0.1, refine=True):
     # refine = False
     ## limite para refinar considerando os primais 0.5
     if refine is True: 
@@ -282,6 +282,42 @@ def refine_by_pressure_lim(fp: MeshProperty, pressure: np.ndarray, min_pressure=
 
     return all_faces
 
+def refine_by_estimator1_delta_pressure(
+        fp: MeshProperty,
+        lsds: LsdsFluxCalculation,
+        bc: BoundaryConditions,
+        pressure: np.ndarray,
+        # max_value: float=700
+        max_value: float=1200,
+        delta_lim = 0.01
+):
+    
+    """Estimador baseado no delta de pressao
+
+    Returns:
+        _type_: _description_
+    """
+    
+    pressures_inj = pressure[bc['injectors']['id']]
+    pressures_prod = pressure[bc['producers']['id']]
+    all_pressures = np.concatenate([pressures_inj, pressures_prod])
+    
+    
+    pmax = all_pressures.max()
+    pmin = all_pressures.min()
+    deltamax = pmax - pmin
+    iadjacencies = fp['adjacencies'][fp.internal_edges]
+    
+    delta_p_iadjacencies = np.absolute(pressure[iadjacencies[:, 1]] - pressure[iadjacencies[:, 0]])/deltamax
+    test = delta_p_iadjacencies >= delta_lim
+    
+    faces_selected = np.unique(iadjacencies[test].flatten())
+    return faces_selected
+    
+    
+    
+    
+
 def refine_by_estimator1(
         fp: MeshProperty,
         lsds: LsdsFluxCalculation,
@@ -290,6 +326,22 @@ def refine_by_estimator1(
         # max_value: float=700
         max_value: float=1200
 ):
+    """Estimaodr baseado no delta do grad
+
+    Args:
+        fp (MeshProperty): _description_
+        lsds (LsdsFluxCalculation): _description_
+        bc (BoundaryConditions): _description_
+        pressure (np.ndarray): _description_
+        max_value (float, optional): _description_. Defaults to 1200.
+
+    Returns:
+        _type_: _description_
+    """
+    
+    injectors = bc['injectors']['id']
+    producers = bc['producers']['id']
+    wells = np.concatenate([injectors, producers])
 
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,
@@ -311,9 +363,9 @@ def refine_by_estimator1(
         fp['Gkl']
     )
 
-    estimator1 = lsds.get_estimator_1(
+    estimator1 = lsds.get_estimator_1_dkl(
         gradient_faces_dif,
-        fp.edges_dim,
+        fp.dkl,
         fp.internal_edges
     )
 
@@ -324,17 +376,25 @@ def refine_by_estimator1(
     estimator_internal_edges = estimator1[internal_edges]
     adj_internal_edges = adjacencies[internal_edges]
     
+    indicator1 = np.isin(adj_internal_edges[:, 0], wells)
+    indicator2 = np.isin(adj_internal_edges[:, 1], wells)
+    indicator = indicator1 | indicator2
+    
     # ########
-    # max_value_estimator_internal_edges = estimator_internal_edges.max()
-    # normalized_estimator = estimator_internal_edges/max_value_estimator_internal_edges
+    # max_value_estimator_internal_edges = estimator_internal_edges[indicator].max()
+    max_value_estimator_internal_edges = estimator_internal_edges.max()
+    print(f'Value Estimator: {max_value_estimator_internal_edges}')
+    # max_value_estimator_internal_edges = estimator_internal_edges[indicator].min()
+    # import pdb; pdb.set_trace()
+    normalized_estimator = estimator_internal_edges/max_value_estimator_internal_edges
     # max_norm_estimator = normalized_estimator.max()
     # test2 = estimator_internal_edges >= max_value
+    test2 = normalized_estimator >= max_value
     # new_param_test = normalized_estimator[test2]
-    # print(new_param_test.min())
-    # import pdb; pdb.set_trace()
     # ###################################
 
-    test = estimator_internal_edges >= max_value
+    # test = estimator_internal_edges >= max_value
+    test = test2
     faces_to_refine = np.unique(adj_internal_edges[test].flatten())
     faces_to_refine = np.unique(np.concatenate(faces_of_faces_by_nodes[faces_to_refine]))
     faces_selected = faces_to_refine

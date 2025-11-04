@@ -86,6 +86,16 @@ class MpfaPreprocess:
             m3 = np.mean(h_dist[bedges, 0])
             m_hdist = np.mean([m1, m2, m3])
             mesh_properties.insert_data({'m_hdist': np.array([m_hdist])})
+            
+            adj = mesh_properties['adjacencies']
+            fce = mesh_properties['faces_centroids']
+            ece = mesh_properties.edges_centroids
+            
+            dkl = fce[adj[:, 1]] - fce[adj[:, 0]]
+            dkl[bedges] = fce[adj[bedges, 0]] - ece[bedges]
+            dkl = np.linalg.norm(dkl, axis=1)
+            mesh_properties.insert_or_update_data({'dkl': dkl})
+            
             mesh_properties.export_data()
 
     def create_properties_if_not_exists(self, mesh_name, mesh_properties_name):

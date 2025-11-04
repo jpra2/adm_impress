@@ -1971,10 +1971,18 @@ class LsdsFluxCalculation:
 
         return dif_gradient
 
-    def get_estimator_1(self, dif_gradient, edges_dim, internal_edges):
+    def get_estimator_1_edge_dim(self, dif_gradient, edges_dim, internal_edges):
         ### estimator 1 (gk - gl)/edge_dim
         estim1 = np.zeros(edges_dim.shape[0])
         estim1[internal_edges] = dif_gradient[internal_edges]/edges_dim[internal_edges]
+        return estim1
+    
+    def get_estimator_1_dkl(self, dif_gradient, centroids_distance, internal_edges, percent=0.9):
+        ### estimator 1 (gk - gl)/d_kl
+        edges_dim = centroids_distance
+        estim1 = np.zeros(edges_dim.shape[0])
+        estim1[internal_edges] = np.absolute(dif_gradient[internal_edges])/edges_dim[internal_edges]
+        
         return estim1
 
 

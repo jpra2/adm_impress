@@ -196,7 +196,7 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 # from packs.examples.benchmarks_monophasic.cross.test_cross_1 import run4
 # run4()
 
-
+# run_delete_all()
 # from packs.examples.benchmarks_monophasic.cross.test_cross_2 import run4
 # run4()
 
@@ -238,8 +238,8 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 
 # maitain_only_data_mesh()
 # run_delete_all()
-# from packs.examples.benchmarks_biphasic.layers.mpfa_coarse4_ms import run6
-# run6()
+from packs.examples.benchmarks_biphasic.layers.mpfa_coarse4_ms import run6
+run6()
 
 # maitain_only_data_mesh()
 # run_delete_all()
@@ -274,8 +274,8 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 
 # maitain_only_data_mesh()
 # # run_delete_all()
-from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4 import run6
-run6()
+# from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4 import run6
+# run6()
 
 # maitain_only_data_mesh()
 # from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4f import run6
@@ -307,8 +307,8 @@ run6()
 # from packs.examples.benchmarks_monophasic.brazil.test_brazil_1 import run4
 # run4()
 
-from packs.examples.mesh_test import run
-run()
+# from packs.examples.mesh_test import run
+# run()
 
 
 
