@@ -214,7 +214,7 @@ def update_while_loop_ms(
         beta_lim,
         OP,
         OR,
-        coarse_struct,
+        coarse_struct: Sequence[PrimalCoarseData],
         fine_mesh_path,
         vpis_to_plot: np.ndarray,
         iterative_ms: bool,
@@ -297,6 +297,8 @@ def update_while_loop_ms(
     )
 
     fp.export_data()
+    # for cs in coarse_struct:
+    #     cs.export_data()
 
     mesh_data.insert_tag_data('pressure', pressure, 'faces')
     mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
@@ -313,12 +315,12 @@ def run6():
     op_name = 'AMS-U'
     debug = False
 
-    update_primal_mesh = True
-    update_dual_mesh = True
+    # update_primal_mesh = True
+    # update_dual_mesh = True
     update_coarse_struct = True
 
-    # update_primal_mesh = False
-    # update_dual_mesh = False
+    update_primal_mesh = False
+    update_dual_mesh = False
     # update_coarse_struct = False
 
 
@@ -335,7 +337,7 @@ def run6():
     max_vpi = 0.6
     loop = 0
     max_loop = np.inf
-    load = True
+    load = False
     loop_intervals = 1
     etol_msrsb = 0.01
     maxit_msrsb = 1000
@@ -343,10 +345,10 @@ def run6():
     iterative_ms = False
     tol_iterative = 1e-6
 
-    refine_by_grad_bool = True
-    refine_by_estimator1_bool = False
+    refine_by_grad_bool = False
+    refine_by_estimator1_bool = True
     max_value_grad = 100
-    max_value_estimator1 = 1200
+    max_value_estimator1 = 1e-12
 
     cumulative_oil = 0.0
     cumulative_water = 0.0

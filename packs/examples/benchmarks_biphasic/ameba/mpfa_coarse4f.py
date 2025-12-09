@@ -194,7 +194,7 @@ def run6():
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
     max_value_grad = 1e6
-    max_value_estimator1 = 2000
+    max_value_estimator1 = 1e-12
 
     cumulative_oil = 0.0
     cumulative_water = 0.0

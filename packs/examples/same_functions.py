@@ -13,6 +13,8 @@ from scipy.sparse.linalg import spsolve
 import scipy.sparse as sp
 import os
 import shutil
+import copy
+from functools import reduce
 
 
 def get_perm_diag(value):
@@ -155,7 +157,8 @@ def update_fine_flux(
         global_bc: BoundaryConditions,
         global_nodes_of_edges: np.ndarray,
         edges_dim: np.ndarray,
-        fine_ids: np.ndarray
+        fine_ids: np.ndarray,
+        saturation: np.ndarray
     ):
 
     global_dirichlet_nodes = global_bc['dirichlet_nodes']['id']
@@ -172,10 +175,57 @@ def update_fine_flux(
             global_nodes_of_edges,
             edges_dim,
             global_dirichlet_nodes,
-            fine_ids
+            fine_ids,
+            saturation
         )
 
         edges_flux[edges_update] = local_edges_flux
+
+def get_local_nodes_to_calculate(local_boundary_edges_flux, saturation, cstruct: PrimalCoarseData):
+    
+    bool_boundary_edges = cstruct['bool_boundary_edges']
+    test_faces = np.isin(cstruct['faces'], cstruct['adjacencies'][bool_boundary_edges, 0])
+    local_boundary_faces = cstruct['faces'][test_faces]
+    global_boundary_faces = cstruct['map_faces'][test_faces]
+    
+    boundary_edges_flux = local_boundary_edges_flux
+    saturation_local_boundary_faces = saturation[global_boundary_faces]
+    
+    local_saturation_test = cstruct['local_saturation_test']
+    local_boundary_edge_flux_test = cstruct['local_boundary_edge_flux_for_test']
+    
+    if np.all(local_saturation_test == True): ## se for primeiro loop
+        cstruct.insert_or_update_data({
+            'local_boundary_edge_flux_for_test': copy.deepcopy(boundary_edges_flux),
+            'local_saturation_test': copy.deepcopy(saturation_local_boundary_faces)
+        })
+        nodes_to_calculate = cstruct['nodes_to_calculate'] ## mantem todos os nos do contorno do primal
+    else:
+        delta_sat = np.absolute(local_saturation_test - saturation_local_boundary_faces)
+        test_sat = delta_sat >= cstruct['max_delta_sat']
+        if test_sat.sum() > 0:
+            local_saturation_test[test_sat] = saturation_local_boundary_faces[test_sat]
+            cstruct.insert_or_update_data({
+                'local_saturation_test': local_saturation_test
+            })
+        
+        delta_flux_percent = cstruct['percent_var_flux']*np.absolute(local_boundary_edge_flux_test)
+        delta_flux = np.absolute(local_boundary_edge_flux_test - boundary_edges_flux)
+        test_max_flux = delta_flux >= delta_flux_percent
+        if test_max_flux.sum() > 0:
+            local_boundary_edge_flux_test[test_max_flux] = boundary_edges_flux[test_max_flux]
+            cstruct.insert_or_update_data({
+                'local_boundary_edge_flux_for_test': local_boundary_edge_flux_test
+            })
+        
+        test_edges_to_update_nodes = test_sat | test_max_flux
+        if test_edges_to_update_nodes.sum() > 0:
+            nodes_of_boundary_edges = cstruct['nodes_of_edges'][ bool_boundary_edges]
+            nodes_to_calculate = nodes_of_boundary_edges[test_edges_to_update_nodes]
+        else:
+            nodes_to_calculate = np.array([])
+        
+    return nodes_to_calculate
 
 def _update_fine_flux_aux(
         cstruct: PrimalCoarseData,
@@ -188,7 +238,8 @@ def _update_fine_flux_aux(
         global_nodes_of_edges: np.ndarray,
         edges_dim: np.ndarray,
         global_dirichlet_nodes: np.ndarray,
-        fine_ids: np.ndarray
+        fine_ids: np.ndarray,
+        saturation: np.ndarray
 ):
     
     global_edges = cstruct['map_edges']
@@ -292,6 +343,15 @@ def _update_fine_flux_aux(
         'neumann_edges_value': bc['neumann_edges']['value'],
         'edges_multiplier': edges_multiplier,
     })
+    
+    
+    # nodes_to_calculate = get_local_nodes_to_calculate(
+    #     local_flux_presc,
+    #     saturation,
+    #     cstruct  
+    # )
+    
+    # cstruct.insert_or_update_data({'nodes_to_calculate': nodes_to_calculate})
     
     boundary_nodes_weights = set_weights_nodes_cstruct(cstruct)
     local_nodes_weights = cstruct['nodes_weights_internal'].copy()

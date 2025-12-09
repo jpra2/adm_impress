@@ -35,7 +35,8 @@ class PrimalCoarseData(SuperArrayManager):
         'neumann_edges_value', 'dirichlet_nodes', 'edges_multiplier',
         'dual_id', 'edges_flux', 'pressure', 'edges_dim', 'xi_params', 
         'xi_params_backup', 'nodes_weight_select', 'nodes_of_edges', 
-        'other_side_flux'
+        'other_side_flux', 'local_boundary_edge_flux_for_test', 'local_saturation_test',
+        'max_delta_sat', 'percent_var_flux'
     ]
 
     def get_local_nodes_weights(self, global_nodes_weight, map_from_nodes, map_to_nodes, map_from_faces, map_to_faces, local_bool_boundary_nodes):

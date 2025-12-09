@@ -376,14 +376,14 @@ def refine_by_estimator1(
     estimator_internal_edges = estimator1[internal_edges]
     adj_internal_edges = adjacencies[internal_edges]
     
-    indicator1 = np.isin(adj_internal_edges[:, 0], wells)
-    indicator2 = np.isin(adj_internal_edges[:, 1], wells)
-    indicator = indicator1 | indicator2
+    # indicator1 = np.isin(adj_internal_edges[:, 0], wells)
+    # indicator2 = np.isin(adj_internal_edges[:, 1], wells)
+    # indicator = indicator1 | indicator2
     
     # ########
     # max_value_estimator_internal_edges = estimator_internal_edges[indicator].max()
     max_value_estimator_internal_edges = estimator_internal_edges.max()
-    print(f'Value Estimator: {max_value_estimator_internal_edges}')
+    # print(f'Value Estimator: {max_value_estimator_internal_edges}')
     # max_value_estimator_internal_edges = estimator_internal_edges[indicator].min()
     # import pdb; pdb.set_trace()
     normalized_estimator = estimator_internal_edges/max_value_estimator_internal_edges
@@ -780,7 +780,8 @@ def initial_loop(
         bc,
         fp['nodes_of_edges'],
         fp.edges_dim,
-        finescale_ids
+        finescale_ids,
+        saturation
     )
 
     faces_flux = lsds.get_faces_flux(
@@ -1097,7 +1098,8 @@ def while_loop(
         bc,
         fp['nodes_of_edges'],
         fp.edges_dim,
-        finescale_ids
+        finescale_ids,
+        saturation
     )
 
     faces_flux = lsds.get_faces_flux(

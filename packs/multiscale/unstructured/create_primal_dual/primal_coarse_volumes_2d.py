@@ -627,7 +627,10 @@ def aux_get_coarse_structure(
                 continue
             aux = local_faces[faces_in==local_adjacencies[i,j]]
             local_adjacencies[i,j] = aux
-
+    
+    local_boundary_edge_flux_test = np.full(local_bool_boundary_edges.sum(), True, dtype=bool)
+    local_saturation_test = np.full(local_bool_boundary_edges.sum(), True, dtype=bool)
+    
     local_nodes_weight, test3 = coarse_data.get_local_nodes_weights(
         nodes_weight,
         nodes_in,
@@ -640,6 +643,9 @@ def aux_get_coarse_structure(
     coarse_id = np.array([cid])
 
     nodes_to_calculate = local_nodes[local_bool_intersect_nodes | local_bool_boundary_nodes]
+    
+    max_delta_sat = np.array([0.1])
+    percent_var_flux = np.array([0.1])
 
     local_xi_params = lsds.get_all_edges_flux_params(
         faces_centroids_level0[faces_in],
@@ -689,6 +695,10 @@ def aux_get_coarse_structure(
         coarse_data.my_data_names[31]: test3,
         coarse_data.my_data_names[32]: local_nodes_of_edges,
         coarse_data.my_data_names[33]: other_side_flux,
+        coarse_data.my_data_names[34]: local_boundary_edge_flux_test,
+        coarse_data.my_data_names[35]: local_saturation_test,
+        coarse_data.my_data_names[36]: max_delta_sat,
+        coarse_data.my_data_names[37]: percent_var_flux
     })
 
     coarse_data.export_data()
