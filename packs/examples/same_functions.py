@@ -345,22 +345,18 @@ def _update_fine_flux_aux(
     })
     
     
-    # nodes_to_calculate = get_local_nodes_to_calculate(
-    #     local_flux_presc,
-    #     saturation,
-    #     cstruct  
-    # )
+    nodes_to_calculate = get_local_nodes_to_calculate(
+        local_flux_presc,
+        saturation,
+        cstruct  
+    )
     
-    # cstruct.insert_or_update_data({'nodes_to_calculate': nodes_to_calculate})
+    cstruct.insert_or_update_data({'nodes_to_calculate': nodes_to_calculate})
+    boundary_nodes_weights_all = set_weights_nodes_cstruct(cstruct)
+    cstruct.update_all_nodes_weights(nodes_to_calculate, boundary_nodes_weights_all)
     
-    boundary_nodes_weights = set_weights_nodes_cstruct(cstruct)
-    local_nodes_weights = cstruct['nodes_weights_internal'].copy()
-    local_nodes_weights = np.hstack([local_nodes_weights, boundary_nodes_weights['nodes_weights']])
-
     cstruct.insert_or_update_data({
         'xi_params': update_xi_params(cstruct['xi_params_backup'], total_mobility_edges[global_edges]),
-        'nodes_weights': local_nodes_weights,
-        'neumann_weights': boundary_nodes_weights['neumann_weights']
     })
 
     # lt = set_fine_transmissibility_biphasic(cstruct, bc, lsds, only_internal_nodes=True)

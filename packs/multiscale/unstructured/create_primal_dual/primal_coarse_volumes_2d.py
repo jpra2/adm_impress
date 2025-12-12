@@ -698,7 +698,9 @@ def aux_get_coarse_structure(
         coarse_data.my_data_names[34]: local_boundary_edge_flux_test,
         coarse_data.my_data_names[35]: local_saturation_test,
         coarse_data.my_data_names[36]: max_delta_sat,
-        coarse_data.my_data_names[37]: percent_var_flux
+        coarse_data.my_data_names[37]: percent_var_flux,
+        coarse_data.my_data_names[38]: np.array([]),
+        coarse_data.my_data_names[39]: np.array([]),
     })
 
     coarse_data.export_data()
