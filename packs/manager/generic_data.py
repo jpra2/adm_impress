@@ -57,7 +57,7 @@ class PrimalCoarseData(SuperArrayManager):
         return local_nodes_weight.copy(), test3
     
     def update_all_nodes_weights(self, nodes_to_calculate, boundary_nodes_weights_all):
-        import pdb; pdb.set_trace()
+        
         local_nodes_weights = self['nodes_weights_internal'].copy()
     
         if np.all(np.isin(self['nodes'][self['bool_boundary_nodes']], nodes_to_calculate)):
@@ -73,14 +73,14 @@ class PrimalCoarseData(SuperArrayManager):
             nodes_to_maintain_bool = ~nodes_to_modify_bool
             new_bnodes_weight = bnodes_weight[nodes_to_maintain_bool]
             
-            local_bnodes_weights = np.hstack(new_bnodes_weight, boundary_nodes_weights_all['nodes_weights'])
+            local_bnodes_weights = np.hstack([new_bnodes_weight, boundary_nodes_weights_all['nodes_weights']])
             
             neumann_weights = self['neumann_weights']
             nodes_to_modify_bool_neumann = np.isin(neumann_weights['node_id'], nodes_to_calculate)
             nodes_to_maintain_bool_neumann = ~nodes_to_modify_bool_neumann
             new_neumann_weights = neumann_weights[nodes_to_maintain_bool_neumann]
             
-            local_neumann_weights = np.hstack(new_neumann_weights, boundary_nodes_weights_all['neumann_weights'])
+            local_neumann_weights = np.hstack([new_neumann_weights, boundary_nodes_weights_all['neumann_weights']])
             
             self.insert_or_update_data({
                 'boundary_nodes_weights': local_bnodes_weights,

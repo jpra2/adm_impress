@@ -169,6 +169,8 @@ def load_or_update_initial_loop(
             adm_interfaces_name
         )
         fp.export_data()
+        for cs in coarse_struct:
+            cs.export_data()
         simulation_data.export_data()
     else:
         # import pdb; pdb.set_trace()
@@ -297,8 +299,8 @@ def update_while_loop_ms(
     )
 
     fp.export_data()
-    # for cs in coarse_struct:
-    #     cs.export_data()
+    for cs in coarse_struct:
+        cs.export_data()
 
     mesh_data.insert_tag_data('pressure', pressure, 'faces')
     mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
@@ -317,11 +319,11 @@ def run6():
 
     # update_primal_mesh = True
     # update_dual_mesh = True
-    update_coarse_struct = True
+    # update_coarse_struct = True
 
     update_primal_mesh = False
     update_dual_mesh = False
-    # update_coarse_struct = False
+    update_coarse_struct = False
 
 
     my_dual_type = 1
@@ -337,7 +339,7 @@ def run6():
     max_vpi = 0.6
     loop = 0
     max_loop = np.inf
-    load = False
+    load = True
     loop_intervals = 1
     etol_msrsb = 0.01
     maxit_msrsb = 1000
@@ -427,8 +429,8 @@ def run6():
         iterative_ms,
         tol_iterative
     )
-    
-    import pdb; pdb.set_trace()
+
+    print(f'LOOP: {loop} \n')
 
     while vpi < max_vpi and loop < max_loop:
 
@@ -465,6 +467,8 @@ def run6():
             iterative_ms,
             tol_iterative
         )
+
+        print(f'LOOP: {loop} \n')
 
     
 

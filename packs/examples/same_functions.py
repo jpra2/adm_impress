@@ -194,7 +194,8 @@ def get_local_nodes_to_calculate(local_boundary_edges_flux, saturation, cstruct:
     local_saturation_test = cstruct['local_saturation_test']
     local_boundary_edge_flux_test = cstruct['local_boundary_edge_flux_for_test']
     
-    if np.all(local_saturation_test == True): ## se for primeiro loop
+    if np.all(local_saturation_test == True): 
+        ## se for primeiro loop
         cstruct.insert_or_update_data({
             'local_boundary_edge_flux_for_test': copy.deepcopy(boundary_edges_flux),
             'local_saturation_test': copy.deepcopy(saturation_local_boundary_faces)
@@ -218,14 +219,14 @@ def get_local_nodes_to_calculate(local_boundary_edges_flux, saturation, cstruct:
                 'local_boundary_edge_flux_for_test': local_boundary_edge_flux_test
             })
         
-        test_edges_to_update_nodes = test_sat | test_max_flux
+        test_edges_to_update_nodes = np.isin(cstruct['adjacencies'][bool_boundary_edges, 0], local_boundary_faces[test_sat]) | test_max_flux
         if test_edges_to_update_nodes.sum() > 0:
-            nodes_of_boundary_edges = cstruct['nodes_of_edges'][ bool_boundary_edges]
-            nodes_to_calculate = nodes_of_boundary_edges[test_edges_to_update_nodes]
+            nodes_of_boundary_edges = cstruct['nodes_of_edges'][bool_boundary_edges]
+            nodes_to_calculate = np.unique(nodes_of_boundary_edges[test_edges_to_update_nodes].flatten())
         else:
             nodes_to_calculate = np.array([])
         
-    return nodes_to_calculate
+    return nodes_to_calculate.astype(np.int64)
 
 def _update_fine_flux_aux(
         cstruct: PrimalCoarseData,
@@ -381,7 +382,7 @@ def _update_fine_flux_aux(
         bc,
         local_pressure,
         cstruct['xi_params'],
-        local_nodes_weights,
+        cstruct['nodes_weights'],
         cstruct['nodes_of_edges'],
         cstruct['adjacencies'],
         cstruct['neumann_weights']
