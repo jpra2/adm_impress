@@ -631,7 +631,7 @@ def aux_get_coarse_structure(
     local_boundary_edge_flux_test = np.full(local_bool_boundary_edges.sum(), True, dtype=bool)
     local_saturation_test = np.full(local_bool_boundary_edges.sum(), True, dtype=bool)
     
-    local_nodes_weight, test3 = coarse_data.get_local_nodes_weights(
+    local_nodes_weight, test3 = coarse_data.get_local_nodes_weights_explicit(
         nodes_weight,
         nodes_in,
         local_nodes,

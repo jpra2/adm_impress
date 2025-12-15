@@ -39,7 +39,12 @@ class PrimalCoarseData(SuperArrayManager):
         'max_delta_sat', 'percent_var_flux', 'boundary_nodes_weights', 'neumann_weights'
     ]
 
-    def get_local_nodes_weights(self, global_nodes_weight, map_from_nodes, map_to_nodes, map_from_faces, map_to_faces, local_bool_boundary_nodes):
+    def get_local_nodes_weights(self, global_nodes_weight, map_from_nodes, map_to_nodes, map_from_faces, map_to_faces, local_bool_boundary_nodes, global_nodes_to_calculate):
+        
+        if np.any(np.isin(map_from_nodes, global_nodes_to_calculate)):
+            pass
+        else:
+            return 
         nodes_weight = global_nodes_weight
         test1 = np.isin(nodes_weight['node_id'], map_from_nodes)
         test2 =  np.isin(nodes_weight['face_id'], map_from_faces)
@@ -54,7 +59,26 @@ class PrimalCoarseData(SuperArrayManager):
         test4 = ~test4
         local_nodes_weight = local_nodes_weight[test4]
         
-        return local_nodes_weight.copy(), test3
+        self.insert_or_update_data({
+            self.my_data_names[9]: local_nodes_weight
+        })
+    
+    def get_local_nodes_weights_explicit(self, global_nodes_weight, map_from_nodes, map_to_nodes, map_from_faces, map_to_faces, local_bool_boundary_nodes):
+        nodes_weight = global_nodes_weight
+        test1 = np.isin(nodes_weight['node_id'], map_from_nodes)
+        test2 =  np.isin(nodes_weight['face_id'], map_from_faces)
+        test3 = test1 & test2
+
+        local_nodes_weight = nodes_weight[test3]
+
+        local_nodes_weight['node_id'][:] = remap_values(map_from_nodes, map_to_nodes, local_nodes_weight['node_id'])
+        local_nodes_weight['face_id'][:] = remap_values(map_from_faces, map_to_faces, local_nodes_weight['face_id'])
+
+        test4 = np.isin(local_nodes_weight['node_id'], map_to_nodes[local_bool_boundary_nodes])
+        test4 = ~test4
+        local_nodes_weight = local_nodes_weight[test4]
+        
+        return local_nodes_weight, test3
     
     def update_all_nodes_weights(self, nodes_to_calculate, boundary_nodes_weights_all):
         

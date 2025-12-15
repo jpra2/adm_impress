@@ -25,7 +25,7 @@ from typing import Tuple
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 from packs.utils.permfields import chueh_perm_artur_paper, random_permeability_chueh, random_permeability_chueh_v2
-from packs.utils.utils_old import is_point_inside_circle
+from packs.utils.utils_old import is_point_inside_circle, time_func
 
 import shutil
 

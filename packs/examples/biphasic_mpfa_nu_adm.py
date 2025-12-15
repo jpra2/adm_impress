@@ -13,12 +13,13 @@ from packs.examples.same_functions import (
     define_coarse_structure,
     update_xi_params,
     set_fine_transmissibility_biphasic,
+    set_fine_transmissibility_biphasic_local,
     update_fine_flux,
     define_fine_ids_from_saturation,
     define_fine_ids_from_saturation_internal_nodes_org,
     update_simulation_data
 )
-from packs.examples.biphasic_mpfa import initial_funcs, set_boundary_conditions, update_saturation, calculate_dt
+from packs.examples.biphasic_mpfa import initial_funcs, set_boundary_conditions, update_saturation, calculate_dt, update_weight_new_function
 from packs.examples.diss_test1 import define_new_fine_levels_v1
 
 from packs.multiscale.unstructured.test.test_uns_ams_prolongation import export_adm_levels
@@ -882,6 +883,7 @@ def initial_loop(
 
     return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux
 
+
 def while_loop(
         relative_perm: BrooksAndCorey,
         biphasic_mobility: BiphasicMobility,
@@ -935,21 +937,21 @@ def while_loop(
         'xi_params': update_xi_params(fp['xi_params_backup'], total_mobility_edges)
     })
 
-    weights = get_gls_nodes_weights(**fp)
-    fp.insert_or_update_data(weights)
+    # weights = get_gls_nodes_weights(**fp)
+    # fp.insert_or_update_data(weights)
+    
+    update_weight_new_function(fp, saturation)
 
     for coarse_data in coarse_struct:
-        local_nodes_weight, test3 = coarse_data.get_local_nodes_weights(
-            weights['nodes_weights'],
+        coarse_data.get_local_nodes_weights(
+            fp['nodes_weights'],
             coarse_data['map_nodes'],
             coarse_data['nodes'],
             coarse_data['map_faces'],
             coarse_data['faces'],
-            coarse_data['bool_boundary_nodes']
+            coarse_data['bool_boundary_nodes'],
+            fp['nodes_to_calculate']
         )
-        coarse_data.insert_or_update_data({
-            coarse_data.my_data_names[9]: local_nodes_weight
-        })
 
     resp = set_fine_transmissibility_biphasic(
         fp,
@@ -1088,6 +1090,8 @@ def while_loop(
         fp['neumann_weights']
     )
 
+    
+    
     update_fine_flux(
         coarse_struct,
         edges_flux,

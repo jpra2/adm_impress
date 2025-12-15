@@ -5,6 +5,7 @@ from packs.multiscale.unstructured.create_primal_dual.primal_coarse_volumes_2d i
 from packs import defnames
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 from packs.multiscale.unstructured.operators.prolongation.ams import Unstructured2DAmsOperator
+from packs.utils import utils_old
 
 import numpy as np
 from typing import Sequence
@@ -146,6 +147,16 @@ def set_fine_transmissibility_biphasic(fine_mesh_properties: MeshProperty, bc: B
         only_internal_nodes=only_internal_nodes
     )
     return resp
+
+
+def set_fine_transmissibility_biphasic_local(fine_mesh_properties: MeshProperty, bc: BoundaryConditions, lsds: LsdsFluxCalculation, only_internal_nodes=False):
+    resp = lsds.mount_transmissibility_matrix(
+        bc,
+        **fine_mesh_properties.get_all_data(),
+        only_internal_nodes=only_internal_nodes
+    )
+    return resp
+
 
 def update_fine_flux(
         coarse_struct: Sequence[PrimalCoarseData],
@@ -295,9 +306,9 @@ def _update_fine_flux_aux(
     # bc.set_boundary('neumann_volumes', np.array([]), np.array([]))
     # bc.set_boundary('neumann_edges', np.array([]), np.array([]))
 
-    if with_nodes_pressure is True:
-        pass
-    elif global_dirichlet_faces.shape[0] > 0:
+    # if with_nodes_pressure is True:
+    #     pass
+    if global_dirichlet_faces.shape[0] > 0:
         all_values = global_bc['dirichlet_volumes']['value']
         all_gids =  global_bc['dirichlet_volumes']['id']
         values = []
@@ -361,7 +372,7 @@ def _update_fine_flux_aux(
     })
 
     # lt = set_fine_transmissibility_biphasic(cstruct, bc, lsds, only_internal_nodes=True)
-    lt = set_fine_transmissibility_biphasic(cstruct, bc, lsds)
+    lt = set_fine_transmissibility_biphasic_local(cstruct, bc, lsds)
 
     # #### segunda modificação
     # local_edges_presc_neumann = neumann_edges[test4]

@@ -339,7 +339,7 @@ def run6():
     max_vpi = 0.6
     loop = 0
     max_loop = np.inf
-    load = True
+    load = False
     loop_intervals = 1
     etol_msrsb = 0.01
     maxit_msrsb = 1000

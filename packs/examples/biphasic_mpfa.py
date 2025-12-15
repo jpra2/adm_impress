@@ -14,6 +14,7 @@ from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_
 from packs.examples.same_functions import(
     update_simulation_data
 )
+from packs.utils import utils_old
 
 import os
 import numpy as np
@@ -21,6 +22,7 @@ from typing import Tuple
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 import pint
+
 
 
 def get_properties() -> Tuple[MeshProperty, str]:
@@ -477,7 +479,7 @@ def define_nodes_for_weight_from_delta_sat(fp: MeshProperty, saturation: np.ndar
         fp.insert_or_update_data({'sat_for_weight': sat_for_weight})
     else:
         my_nodes = np.array([])
-        fp.insert_or_update_data({'nodes_to_calculate': my_nodes})
+    fp.insert_or_update_data({'nodes_to_calculate': my_nodes})
 
 
 def update_weight_new_function(fp: MeshProperty, saturation: np.ndarray, delta_sat_for_weight=0.1, **kwargs):
@@ -508,7 +510,7 @@ def update_weight_new_function(fp: MeshProperty, saturation: np.ndarray, delta_s
 
 
 
-
+@utils_old.time_func
 def while_loop(
         relative_perm: BrooksAndCorey,
         biphasic_mobility: BiphasicMobility,

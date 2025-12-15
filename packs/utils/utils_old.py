@@ -6,10 +6,14 @@ import h5sparse
 import os
 
 from packs import defpaths
+from packs.manager import configsim
 
 from scipy.sparse import identity
 from scipy.sparse import diags
 from scipy.sparse.linalg import onenormest
+from rich import print as rprint
+from functools import wraps
+import time
 
 
 def get_box_dep0(all_centroids, limites):
@@ -301,3 +305,26 @@ def is_point_inside_circle(point_x, point_y, circle_center_x, circle_center_y, r
     """
     distance_squared = (point_x - circle_center_x)**2 + (point_y - circle_center_y)**2
     return distance_squared <= radius**2
+
+def time_func(func, export_time: bool=False):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        rprint(f"Function {func.__name__} took {elapsed_time:.6f} seconds.")
+        if export_time == True:
+            funcname = kwargs.get('funcname', configsim.DEFAULT)
+            file_time = kwargs.get('file_times', configsim.DEFAULT)
+            if funcname == configsim.DEFAULT:
+                pass
+            else:
+                file_path = configsim.gdata.file_to_export_times(file_time)
+                if file_path.exists():
+                    configsim.gdata.load_times_from_file(file_path)
+                    
+                configsim.gdata.time_funcs.update({funcname: elapsed_time})
+                configsim.gdata.export_times(file_path)
+        return result
+    return wrapper
