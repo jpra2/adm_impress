@@ -408,7 +408,7 @@ def refine_by_estimator1(
 
 
 
-
+@utils_old.time_func
 def initial_loop(
         relative_perm: BrooksAndCorey,
         biphasic_mobility: BiphasicMobility,
@@ -437,7 +437,8 @@ def initial_loop(
         vpis_to_plot: np.ndarray,
         iterative_ms: bool,
         tol_iterative: float,
-        p0: np.ndarray
+        p0: np.ndarray,
+        **kwargs
 ):
     
     it = -1
@@ -883,7 +884,7 @@ def initial_loop(
 
     return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux
 
-
+@utils_old.time_func_cum(export_time=True)
 def while_loop(
         relative_perm: BrooksAndCorey,
         biphasic_mobility: BiphasicMobility,
@@ -909,6 +910,7 @@ def while_loop(
         iterative_ms: bool,
         tol_iterative: float,
         p0: np.ndarray,
+        **kwargs
 ):
     
     it = -1

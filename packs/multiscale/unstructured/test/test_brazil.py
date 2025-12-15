@@ -202,7 +202,8 @@ def set_weights_nodes(fine_properties: MeshProperty, update=True):
 
         fine_properties.export_data()
 
-def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty, update=True):
+@utils_old.time_func
+def create_primal_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty, update=True, **kwargs):
     create = False
     
     key1 = defnames.get_primal_id_name_by_level(1)
@@ -270,7 +271,8 @@ def export_primal_ids(fine_mesh_path, fine_mesh_properties: MeshProperty, coarse
     coarse_mesh_data = MeshData(mesh_path=coarse_mesh_path)
     coarse_mesh_data.export_all_elements_type_to_vtk('background_coarse_mesh', element_type='faces')
 
-def create_dual_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty, update=True, dual_type=1):
+@utils_old.time_func
+def create_dual_ids(fine_mesh_properties: MeshProperty, coarse_mesh_properties: MeshProperty, update=True, dual_type=1, **kwargs):
     create = False
     key1 = defnames.get_dual_id_name_by_level(1)
 

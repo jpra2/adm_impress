@@ -95,13 +95,22 @@ class GlobalData:
                 raise ValueError("The file extension must be .yaml or .yml")
         
     def load_times_from_file(self, path: str) -> dict:
-        if Path(path).is_file():
-            with open(path, 'r') as file:
+        file_path = self.file_to_export_times(path)
+        if file_path.is_file():
+            with open(file_path, 'r') as file:
                 self.time_funcs = yaml.safe_load(file)
     
     def export_times(self, path: str):
-         with open(path, 'w') as file:
-                yaml.dump(self.time_funcs, file, default_flow_style=False)
+        file_path = self.file_to_export_times(path)
+        with open(file_path, 'w') as file:
+            yaml.dump(self.time_funcs, file, default_flow_style=False)
                
-
+    def update_cumulative_times(self, funcname: str, path: str=''):
+        
+        elapsed_time = self.time_funcs.get(funcname, 0)
+        time2 = self.time_funcs.get(funcname + '_cum', 0)
+        self.time_funcs.update({funcname + '_cum': elapsed_time + time2})
+        self.time_funcs.update({funcname: 0})
+        self.export_times(path)
+    
 gdata = GlobalData()

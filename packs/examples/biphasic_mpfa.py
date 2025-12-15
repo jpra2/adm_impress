@@ -510,7 +510,7 @@ def update_weight_new_function(fp: MeshProperty, saturation: np.ndarray, delta_s
 
 
 
-@utils_old.time_func
+
 def while_loop(
         relative_perm: BrooksAndCorey,
         biphasic_mobility: BiphasicMobility,

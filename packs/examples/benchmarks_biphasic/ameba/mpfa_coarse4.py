@@ -2,7 +2,7 @@ from packs.biphasic.relative_perm.brooks_and_corey import BrooksAndCorey
 from packs.biphasic.mobility import BiphasicMobility
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
 from packs import defpaths, defnames
-from packs.manager import MeshProperty, MeshData, BoundaryConditions, SimulationData
+from packs.manager import MeshProperty, MeshData, BoundaryConditions, SimulationData, configsim
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 from packs.examples.diss_test1 import define_new_fine_levels_v1
@@ -96,6 +96,7 @@ def load_or_update_initial_loop(
         vpis_to_plot: np.ndarray,
         iterative_ms,
         tol_iterative,
+        **kwargs
 ):
     
     
@@ -135,7 +136,8 @@ def load_or_update_initial_loop(
             vpis_to_plot,
             iterative_ms,
             tol_iterative,
-            pressure
+            pressure,
+            **kwargs
         )
         
         export_ps_results(loop, pressure, saturation, defpaths.pressure_results_ms, defpaths.saturation_results_ms)
@@ -172,6 +174,11 @@ def load_or_update_initial_loop(
         for cs in coarse_struct:
             cs.export_data()
         simulation_data.export_data()
+        
+        configsim.gdata.load_times_from_file(kwargs.get('file_times', ''))
+        configsim.gdata.time_funcs.update({'while_loop': 0})
+        configsim.gdata.time_funcs.update({'while_loop_cum': 0})
+        configsim.gdata.export_times(kwargs.get('file_times', ''))
     else:
         # import pdb; pdb.set_trace()
         simulation_data.load_data()
@@ -186,6 +193,11 @@ def load_or_update_initial_loop(
         coarse_struct = define_coarse_structure(fp, lsds, level=1, update=False)
         OP = utils_old.load_matrix(matrices_path, op_name)
         OR = get_OR_AMS(fp)
+        
+        configsim.gdata.load_times_from_file(kwargs.get('file_times', ''))
+        configsim.gdata.time_funcs.update({'while_loop': 0})
+        configsim.gdata.export_times(kwargs.get('file_times', ''))
+        
     
     return loop, cumulative_oil, cumulative_water, vpi, OP, OR, coarse_struct
 
@@ -220,7 +232,8 @@ def update_while_loop_ms(
         fine_mesh_path,
         vpis_to_plot: np.ndarray,
         iterative_ms: bool,
-        tol_iterative: float
+        tol_iterative: float,
+        **kwargs
 ):
     
     path_mesh_data = simulation_data.name
@@ -251,7 +264,8 @@ def update_while_loop_ms(
             vpis_to_plot,
             iterative_ms,
             tol_iterative,
-            pressure
+            pressure,
+            **kwargs
         )
         saturation_plot[:] = saturation
         saturation[:] = newS
@@ -301,6 +315,8 @@ def update_while_loop_ms(
     fp.export_data()
     for cs in coarse_struct:
         cs.export_data()
+    
+    configsim.gdata.update_cumulative_times('while_loop', kwargs.get('file_times', ''))
 
     mesh_data.insert_tag_data('pressure', pressure, 'faces')
     mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
@@ -317,14 +333,13 @@ def run6():
     op_name = 'AMS-U'
     debug = False
 
-    # update_primal_mesh = True
-    # update_dual_mesh = True
-    # update_coarse_struct = True
+    update_primal_mesh = True
+    update_dual_mesh = True
+    update_coarse_struct = True
 
-    update_primal_mesh = False
-    update_dual_mesh = False
-    update_coarse_struct = False
-
+    # update_primal_mesh = False
+    # update_dual_mesh = False
+    # update_coarse_struct = False
 
     my_dual_type = 1
     cfl = 0.9
@@ -340,7 +355,7 @@ def run6():
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 1
+    loop_intervals = 10
     etol_msrsb = 0.01
     maxit_msrsb = 1000
     vpis_to_plot = np.linspace(0, 0.6, 31)[1:]
@@ -351,6 +366,12 @@ def run6():
     refine_by_estimator1_bool = True
     max_value_grad = 100
     max_value_estimator1 = 1e-12
+    
+    gdict = {
+        'funcname': '',
+        'file_times': 'functions_times_ameba_coarse.yaml',
+        'load_simulation': load
+    }
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
@@ -371,9 +392,11 @@ def run6():
     nodes_org = fp.get_internal_nodes_org_from_faces_of_nodes_object()
     fp.insert_or_update_data(nodes_org)
     bc = set_boundary_conditions(fp)
-    create_primal_ids(fp, cp, update=update_primal_mesh)
+    gdict.update({'funcname': 'create_primal_ids'})
+    create_primal_ids(fp, cp, update=update_primal_mesh,**gdict)
     export_primal_ids(fine_mesh_path, fp, coarse_mesh_path, export=update_primal_mesh)
-    create_dual_ids(fp, cp, update=update_dual_mesh, dual_type=my_dual_type)
+    gdict.update({'funcname': 'create_dual_ids'})
+    create_dual_ids(fp, cp, update=update_dual_mesh, dual_type=my_dual_type,**gdict)
     export_dual_ids(fine_mesh_path, fp, export=update_dual_mesh)
 
     porosity = np.repeat(0.2, len(fp['faces']))
@@ -391,6 +414,8 @@ def run6():
     mesh_data.create_tag('saturation')
 
     initial_fine_vols = define_new_fine_levels_v1(fp, bc)
+    
+    gdict.update({'funcname': 'initial_loop'})
 
     loop, cumulative_oil, cumulative_water, vpi, OP, OR, coarse_struct = load_or_update_initial_loop(
         load, 
@@ -427,11 +452,13 @@ def run6():
         max_value_estimator1,
         vpis_to_plot,
         iterative_ms,
-        tol_iterative
+        tol_iterative,
+        **gdict
     )
 
     print(f'LOOP: {loop} \n')
 
+    gdict.update({'funcname': 'while_loop', 'funcname_cum': 'while_loop_cum'})
     while vpi < max_vpi and loop < max_loop:
 
         loop, cumulative_oil, cumulative_water, vpi = update_while_loop_ms(
@@ -465,7 +492,8 @@ def run6():
             fine_mesh_path,
             vpis_to_plot,
             iterative_ms,
-            tol_iterative
+            tol_iterative,
+            **gdict
         )
 
         print(f'LOOP: {loop} \n')
