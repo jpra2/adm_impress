@@ -246,6 +246,7 @@ def initial_funcs(
     fp.backup_data('xi_params', 'xi_params_backup')
     fp.export_data()
 
+@utils_old.time_func
 def initial_loop(
         relative_perm: BrooksAndCorey,
         biphasic_mobility: BiphasicMobility,
@@ -260,7 +261,8 @@ def initial_loop(
         cumulative_oil: float,
         cumulative_water: float,
         cfl: float,
-        vpis_to_plot=[]
+        vpis_to_plot=[],
+        **kwargs
 ):
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
@@ -510,7 +512,7 @@ def update_weight_new_function(fp: MeshProperty, saturation: np.ndarray, delta_s
 
 
 
-
+@utils_old.time_func_cum(export_time=True)
 def while_loop(
         relative_perm: BrooksAndCorey,
         biphasic_mobility: BiphasicMobility,

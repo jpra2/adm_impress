@@ -3,7 +3,7 @@ from packs.biphasic.mobility import BiphasicMobility
 from packs.biphasic.unstructured.mobility_mesh_elements import direct_edges_mobility
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
 from packs import defpaths
-from packs.manager import MeshProperty, MeshData, BoundaryConditions, SimulationData
+from packs.manager import MeshProperty, MeshData, BoundaryConditions, SimulationData, configsim
 from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set_fine_transmissibility
 # from packs.multiscale.unstructured.test.test_brazil import define_faces_in_losangle, set_permeability
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
@@ -241,7 +241,8 @@ def load_or_update_initial_loop(
         simulation_data: SimulationData,
         loop: int,
         cfl,
-        vpis_to_plot: np.ndarray
+        vpis_to_plot: np.ndarray,
+        **kwargs
     ):
     
     
@@ -266,7 +267,8 @@ def load_or_update_initial_loop(
             cumulative_oil,
             cumulative_water,
             cfl,
-            vpis_to_plot
+            vpis_to_plot,
+            **kwargs
         )
         export_ps_results(loop, pressure, saturation, defpaths.pressure_results, defpaths.saturation_results)
         
@@ -290,6 +292,12 @@ def load_or_update_initial_loop(
         saturation[:] = newS
         fp.export_data()
         simulation_data.export_data()
+        
+        configsim.gdata.load_times_from_file(kwargs.get('file_times', ''))
+        configsim.gdata.time_funcs.update({'while_loop': 0})
+        configsim.gdata.time_funcs.update({'while_loop_cum': 0})
+        configsim.gdata.export_times(kwargs.get('file_times', ''))
+        
     elif load is True:
         # import pdb; pdb.set_trace()
         simulation_data.load_data()
@@ -301,6 +309,10 @@ def load_or_update_initial_loop(
         
         # saturation[:] = simulation_data['saturation_' + str(loop)]
         # pressure[:] = simulation_data['pressure_' + str(loop)]
+        
+        configsim.gdata.load_times_from_file(kwargs.get('file_times', ''))
+        configsim.gdata.time_funcs.update({'while_loop': 0})
+        configsim.gdata.export_times(kwargs.get('file_times', ''))
     
     return loop, cumulative_oil, cumulative_water, vpi
 
@@ -345,7 +357,8 @@ def update_while_loop(
             cumulative_water,
             total_area_reservoir,
             cfl=cfl,
-            vpis_to_plot=vpis_to_plot
+            vpis_to_plot=vpis_to_plot,
+            **kwargs
         )
         saturation_plot[:] = saturation
         saturation[:] = newS
@@ -380,6 +393,8 @@ def update_while_loop(
         oil_flux
     )
     
+    configsim.gdata.update_cumulative_times('while_loop', kwargs.get('file_times', ''))
+    
     mesh_data.insert_tag_data('pressure', pressure, 'faces')
     mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
     mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
@@ -397,9 +412,15 @@ def run5():
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 20
+    loop_intervals = 10
     cfl = 0.9
     vpis_to_plot = np.linspace(0, 0.6, 31)[1:]
+    
+    gdict = {
+        'funcname': '',
+        'file_times': 'functions_times_ameba_fine.yaml',
+        'load_simulation': load
+    }
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
@@ -430,6 +451,7 @@ def run5():
     mesh_data.create_tag('water_faces_flux')
     mesh_data.create_tag('saturation')
 
+    gdict.update({'funcname': 'initial_loop'})
     loop, cumulative_oil, cumulative_water, vpi = load_or_update_initial_loop(
         load,
         fp,
@@ -451,9 +473,11 @@ def run5():
         simulation_data,
         loop,
         cfl,
-        vpis_to_plot
+        vpis_to_plot,
+        **gdict
     )
 
+    gdict.update({'funcname': 'while_loop', 'funcname_cum': 'while_loop_cum'})
     while vpi <= max_vpi and loop <= max_loop:
         
         loop, cumulative_oil, cumulative_water, vpi = update_while_loop(
@@ -476,7 +500,8 @@ def run5():
             simulation_data,
             mesh_data,
             cfl,
-            vpis_to_plot
+            vpis_to_plot,
+            **gdict
         )
 
     import pdb; pdb.set_trace()
