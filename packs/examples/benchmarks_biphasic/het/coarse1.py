@@ -95,11 +95,19 @@ def run6():
     etol_msrsb = 0.01
     maxit_msrsb = 1000
     vpis_to_plot = np.linspace(0, 0.5, 51)[1:]
+    iterative_ms = False
+    tol_iterative = 1e-6
     
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
     max_value_grad = 1e6
-    max_value_estimator1 = 700
+    max_value_estimator1 = 1e-12
+    
+    gdict = {
+        'funcname': '',
+        'file_times': 'functions_times_het_coarse.yaml',
+        'load_simulation': load
+    }
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
@@ -118,8 +126,10 @@ def run6():
     nodes_org = fp.get_internal_nodes_org_from_faces_of_nodes_object()
     fp.insert_or_update_data(nodes_org)
     bc = set_boundary_conditions(fp)
+    gdict.update({'funcname': 'create_primal_ids'})
     create_primal_ids(fp, cp, update=update_primal_mesh)
     export_primal_ids(fine_mesh_path, fp, coarse_mesh_path, export=update_primal_mesh)
+    gdict.update({'funcname': 'create_dual_ids'})
     create_dual_ids(fp, cp, update=update_dual_mesh, dual_type=my_dual_type)
     export_dual_ids(fine_mesh_path, fp, export=update_dual_mesh)
 
@@ -138,7 +148,8 @@ def run6():
     mesh_data.create_tag('saturation')
 
     initial_fine_vols = define_new_fine_levels_v1(fp, bc)
-
+    
+    gdict.update({'funcname': 'initial_loop'})
     loop, cumulative_oil, cumulative_water, vpi, OP, OR, coarse_struct = load_or_update_initial_loop(
         load, 
         fp, 
@@ -172,10 +183,15 @@ def run6():
         refine_by_estimator1_bool,
         max_value_grad,
         max_value_estimator1,
-        vpis_to_plot
+        vpis_to_plot,
+        iterative_ms,
+        tol_iterative,
+        **gdict
     )
     
-    import pdb; pdb.set_trace()
+    print(f'LOOP: {loop} \n')
+
+    gdict.update({'funcname': 'while_loop', 'funcname_cum': 'while_loop_cum'})
 
     while vpi < max_vpi and loop < max_loop:
 
@@ -208,8 +224,13 @@ def run6():
             OR,
             coarse_struct,
             fine_mesh_path,
-            vpis_to_plot
+            vpis_to_plot,
+            iterative_ms,
+            tol_iterative,
+            **gdict
         )
+        
+        print(f'LOOP: {loop} \n')
 
     
 

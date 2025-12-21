@@ -214,6 +214,8 @@ def plot_nuadm_percent(finescale_sim: SimulationData,  nuadm_sims: Sequence[Simu
     basic_colors_str.remove('k')
     n_nuadmsims = len(nuadm_sims)
     markers_size = np.arange(7, 7+n_nuadmsims)
+    
+    pressure_fs_0, saturation_fs_0 = load_ps_results(0, defpaths.pressure_results, defpaths.saturation_results)
 
     nplus = 2
     for i in range(1, markers_size.shape[0]):
@@ -221,7 +223,7 @@ def plot_nuadm_percent(finescale_sim: SimulationData,  nuadm_sims: Sequence[Simu
     
     markers_size = markers_size[::-1]
 
-    pressure0_finescale = finescale_sim['pressure_0']
+    pressure0_finescale = pressure_fs_0
     nfinevolumes = pressure0_finescale.shape[0]
 
     
@@ -288,13 +290,15 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
     cs = nuadm_sim
 
 
-    # vpi_test = 0.04
-    # vpi_test = 0.12
-    # vpi_test = 0.24
+    # vpi_test = 0.07
+    # # vpi_test = 0.12
+    # # vpi_test = 0.24
     # test1 = np.absolute(all_vpi_nuadm - vpi_test) <= max_delta
     # test2 = np.absolute(all_vpis_finescale - vpi_test) <= max_delta
     # loop_test = all_loops_coarse[test1]
     # loop_finescale = all_loops_finescale[test2]
+    # print(loop_test, loop_finescale)
+    # import pdb; pdb.set_trace()
     
     # # loop_t = 981
     # # vpi = all_vpi_nuadm[all_loops_coarse==loop_t]
@@ -344,6 +348,28 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
         
         sat_linf.append(linf_sat)
         sat_l2.append(err2_sat)
+        
+    # max_linf_pressure = linf_pressure.max()
+    # max_l2_pressure = err2_pressure.max()
+    
+    # vpi_max_linf_pressure = vpis_to_plot[np.argmax(np.array(pressure_linf))]
+    # vpi_max_l2_pressure = vpis_to_plot[np.argmax(np.array(pressure_l2))]
+    # print(vpi_max_linf_pressure, max_linf_pressure)
+    # print(vpi_max_l2_pressure, max_l2_pressure)
+    # import pdb; pdb.set_trace()
+    
+    
+    # vpi = 0.28
+    # dvpi_nuadm = all_vpi_nuadm - vpi
+    # dvpi_fs = all_vpis_finescale - vpi
+    # test_nuadm = np.abs(dvpi_nuadm) <= max_delta
+    # test_fs = np.abs(dvpi_fs) <= max_delta
+    # loop_nuadm = all_loops_coarse[test_nuadm][0]
+    # loop_fs = all_loops_finescale[test_fs][0]
+    # print('At PVI = ', vpi)
+    # print('  NU-ADM loop: ', loop_nuadm, '\n')
+    # print('  Finescale loop: ', loop_fs, '\n')
+    # import pdb; pdb.set_trace()
     
     pressure_linf = np.array(pressure_linf)
     pressure_l2 = np.array(pressure_l2)

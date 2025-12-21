@@ -17,15 +17,15 @@ results = 'results'
 # pressure_results_ms = os.path.join(results, 'pressure_sin_ms')
 # saturation_results_ms = os.path.join(results, 'saturation_sin_ms')
 
-# pressure_results = os.path.join(results, 'pressure_het')
-# saturation_results = os.path.join(results, 'saturation_het')
-# pressure_results_ms = os.path.join(results, 'pressure_het_ms')
-# saturation_results_ms = os.path.join(results, 'saturation_het_ms')
+pressure_results = os.path.join(results, 'pressure_het')
+saturation_results = os.path.join(results, 'saturation_het')
+pressure_results_ms = os.path.join(results, 'pressure_het_ms')
+saturation_results_ms = os.path.join(results, 'saturation_het_ms')
 
-pressure_results = os.path.join(results, 'pressure_layers')
-saturation_results = os.path.join(results, 'saturation_layers')
-pressure_results_ms = os.path.join(results, 'pressure_layers_ms')
-saturation_results_ms = os.path.join(results, 'saturation_layers_ms')
+# pressure_results = os.path.join(results, 'pressure_layers')
+# saturation_results = os.path.join(results, 'saturation_layers')
+# pressure_results_ms = os.path.join(results, 'pressure_layers_ms')
+# saturation_results_ms = os.path.join(results, 'saturation_layers_ms')
 # pressure_results_ms = os.path.join(results, 'pressure_layers_ms_amsu')
 # saturation_results_ms = os.path.join(results, 'saturation_layers_ms_amsu')
 
