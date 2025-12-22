@@ -127,10 +127,10 @@ def run6():
     fp.insert_or_update_data(nodes_org)
     bc = set_boundary_conditions(fp)
     gdict.update({'funcname': 'create_primal_ids'})
-    create_primal_ids(fp, cp, update=update_primal_mesh)
+    create_primal_ids(fp, cp, update=update_primal_mesh, **gdict)
     export_primal_ids(fine_mesh_path, fp, coarse_mesh_path, export=update_primal_mesh)
     gdict.update({'funcname': 'create_dual_ids'})
-    create_dual_ids(fp, cp, update=update_dual_mesh, dual_type=my_dual_type)
+    create_dual_ids(fp, cp, update=update_dual_mesh, dual_type=my_dual_type, **gdict)
     export_dual_ids(fine_mesh_path, fp, export=update_dual_mesh)
 
     porosity = np.repeat(0.2, len(fp['faces']))

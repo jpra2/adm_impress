@@ -184,7 +184,7 @@ def run5():
     
     gdict = {
         'funcname': '',
-        'file_times': 'functions_times_ameba_fine.yaml',
+        'file_times': 'functions_times_het_fine.yaml',
         'load_simulation': load
     }
 
@@ -269,20 +269,10 @@ def run5():
             **gdict
         )
 
-    import pdb; pdb.set_trace()
-
 
     # nodes_org, faces_of_nodes_org, n_nodes_org = fp.get_internal_nodes_org_from_faces_of_nodes_object()
 
 
 
-
-
-
-    import pdb; pdb.set_trace()
-
-
-
-
-    pass
+    # import pdb; pdb.set_trace()
 
