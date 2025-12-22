@@ -242,6 +242,8 @@ def run5():
         vpis_to_plot,
         **gdict
     )
+    
+    gdict.update({'funcname': 'while_loop', 'funcname_cum': 'while_loop_cum'})
 
     while vpi < max_vpi and loop < max_loop:
         
