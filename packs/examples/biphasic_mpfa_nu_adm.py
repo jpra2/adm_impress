@@ -396,8 +396,11 @@ def refine_by_estimator1(
 
     # test = estimator_internal_edges >= max_value
     test = test2
-    faces_to_refine = np.unique(adj_internal_edges[test].flatten())
-    faces_to_refine = np.unique(np.concatenate(faces_of_faces_by_nodes[faces_to_refine]))
+    # faces_to_refine = np.unique(adj_internal_edges[test].flatten())
+    # faces_to_refine = np.unique(np.concatenate(faces_of_faces_by_nodes[faces_to_refine]))
+    nodes_selected = np.unique(np.concatenate(fp['nodes_of_edges'][internal_edges[test]]))
+    faces_to_refine = np.unique(np.concatenate(fp['faces_of_nodes'][nodes_selected]))
+
     faces_selected = faces_to_refine
     # primal_id_selected = np.unique(primal_id[faces_selected])
     # test1 = np.isin(primal_id, primal_id_selected)
@@ -722,20 +725,20 @@ def initial_loop(
             epsilon=tol_iterative
         )
         
-    # P_prol2, it2, err2 = iterative_ms_ilu0_bicgstab(
-    #         resp['transmissibility'],
-    #         resp['source'],
-    #         p0,
-    #         # P_prol,
-    #         OP_adm,
-    #         OR_adm,
-    #         epsilon=1e-12
-    #     )
-    
-    # np.save('it.npy', it)
-    # np.save('it2.npy', it2)
-    # np.save('err.npy', err)
-    # np.save('err2.npy', err2)
+        P_prol2, it2, err2 = iterative_ms_ilu0_bicgstab(
+                resp['transmissibility'],
+                resp['source'],
+                p0,
+                # P_prol,
+                OP,
+                OR,
+                epsilon=1e-12
+            )
+        
+        np.save('it_nuadm.npy', it)
+        np.save('it2.npy', it2)
+        np.save('err_nuadm.npy', err)
+        np.save('err2.npy', err2)
     
     # pressure = spsolve(resp['transmissibility'], resp['source'])
     

@@ -105,7 +105,7 @@ def run6():
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
     max_value_grad = 1e6
-    max_value_estimator1 = 1e-12
+    max_value_estimator1 = 1e-2
     
     gdict = {
         'funcname': '',
@@ -197,6 +197,7 @@ def run6():
     )
     
     print(f'LOOP: {loop} \n')
+    import pdb; pdb.set_trace()
 
     gdict.update({'funcname': 'while_loop', 'funcname_cum': 'while_loop_cum'})
 

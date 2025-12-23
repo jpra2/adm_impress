@@ -95,11 +95,13 @@ def run6():
     etol_msrsb = 0.01
     maxit_msrsb = 1000
     vpis_to_plot = np.linspace(0, 0.5, 51)[1:]
+    iterative_ms = False
+    tol_iterative = 1e-6
     
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
     max_value_grad = 1e6
-    max_value_estimator1 = 700
+    max_value_estimator1 = 1e-1
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
@@ -172,7 +174,9 @@ def run6():
         refine_by_estimator1_bool,
         max_value_grad,
         max_value_estimator1,
-        vpis_to_plot
+        vpis_to_plot,
+        iterative_ms,
+        tol_iterative
     )
     
     import pdb; pdb.set_trace()
@@ -208,7 +212,9 @@ def run6():
             OR,
             coarse_struct,
             fine_mesh_path,
-            vpis_to_plot
+            vpis_to_plot,
+            iterative_ms,
+            tol_iterative
         )
 
     

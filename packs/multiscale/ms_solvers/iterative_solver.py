@@ -86,7 +86,7 @@ def iterative_ms_ilu0_bicgstab(
     maxit=1000
 ):
     
-    # errs = []
+    errs = []
        
     rn = b.copy()
     rn2 = rn.copy()
@@ -106,7 +106,7 @@ def iterative_ms_ilu0_bicgstab(
     
     # pn[:] = OP*LU.solve(R*b)
     rn[:] = b - A*pn
-    # errs.append(np.linalg.norm(rn))
+    errs.append(np.linalg.norm(rn))
     
     err = np.linalg.norm(rn)
     
@@ -146,7 +146,7 @@ def iterative_ms_ilu0_bicgstab(
         pn[:] += dp1 + dp2
         rn[:] = b - A*pn
         err = np.linalg.norm(rn)
-        # errs.append(err)
+        errs.append(err)
         # err = rn.max()
         # print(f'err: {err} \n')
         it += 1
@@ -160,8 +160,8 @@ def iterative_ms_ilu0_bicgstab(
     #     raise RuntimeError(f'it:{it} extrapolate maxit:{maxit}')
     
     
-    return pn, it, err
-    # return pn, np.arange(it), np.array(errs)
+    # return pn, it, err
+    return pn, np.arange(it), np.array(errs)
     
 
 def iterative_ms_ilu0_bicgstab_fv_amsu(

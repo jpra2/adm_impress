@@ -440,8 +440,8 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
         
         
 def plot_err_layers():
-    err = np.load('err.npy')
-    it = np.load('it.npy')
+    err = np.load('err_nuadm.npy')
+    it = np.load('it_nuadm.npy')
     
     err2 = np.load('err2.npy')
     it2 = np.load('it2.npy')
@@ -463,14 +463,14 @@ def plot_err_layers():
     ax.plot(
         it,
         err,
-        label='AMS-U', 
+        label='NU-ADM-U', 
         marker=markers[1], 
         color='k'
     )
     ax.plot(
         it2,
         err2,
-        label='NU-ADM-U', 
+        label='AMS-U', 
         marker=markers[1], 
         color='red'
     )    
@@ -538,9 +538,9 @@ def plot_graphs():
     # plot_cum_oil(finescale_sim, nuadm_sims, 'cum_oil_ameba_new.png')
     # plot_wor(finescale_sim, nuadm_sims, 'wor_ameba_new.png')
     # plot_nuadm_percent(finescale_sim, nuadm_sims, 'nuadm_percent_ameba_new.png')
-    plot_errors(vpis_to_plot, finescale_sim, nuadm_sims[0])
+    # plot_errors(vpis_to_plot, finescale_sim, nuadm_sims[0])
     
-    # plot_err_layers()
+    plot_err_layers()
     
     import pdb; pdb.set_trace()
 

@@ -197,8 +197,8 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 # run4()
 
 # run_delete_all()
-from packs.examples.benchmarks_monophasic.cross.test_cross_2 import run4
-run4()
+# from packs.examples.benchmarks_monophasic.cross.test_cross_2 import run4
+# run4()
 
 # from packs.examples.benchmarks_monophasic.cross.test_cross_3 import run4
 # run4()
@@ -292,8 +292,8 @@ run4()
 # run5()
 
 # run_delete_all()
-# from packs.examples.benchmarks_biphasic.sin_chueh.coarse1 import run6
-# run6()
+from packs.examples.benchmarks_biphasic.sin_chueh.coarse1 import run6
+run6()
 
 # from packs.utils.plot_graph_from_simulation_data import chueh_test
 # chueh_test()
