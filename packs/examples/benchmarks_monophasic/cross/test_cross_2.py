@@ -621,17 +621,17 @@ def run4():
     # beta_lim = 1000
     export_adm_levels_file = True
 
-    # bool_export_primal_id = True
-    # bool_export_dual_id = True
+    bool_export_primal_id = True
+    bool_export_dual_id = True
 
-    bool_export_primal_id = False
-    bool_export_dual_id = False
+    # bool_export_primal_id = False
+    # bool_export_dual_id = False
 
-    refine_by_delta_grad_bool = True
+    refine_by_delta_grad_bool = False
     max_value_delta_grad = 5.0
 
-    refine_by_estimator1_bool = False
-    max_value_estimator1 = 0.95
+    refine_by_estimator1_bool = True
+    max_value_estimator1 = 1e-12
 
     my_dual_type = 1
     # perm_type = 'channel'
@@ -641,7 +641,7 @@ def run4():
     update_permfield = True
     fine_level_setup = 4
     etol = -1
-    update_coarse_struct = False
+    update_coarse_struct = True
     # update_coarse_struct = False
     run_simulation_repeated = True
     check_write_results = False
@@ -1032,7 +1032,7 @@ def run4():
     cff = coarse_face_flux
 
     total_mobility_edges = np.repeat(1.0, fp['edges'].shape[0])
-
+    saturation = np.zeros(fp['faces'].shape[0])
     update_fine_flux(
         coarse_struct,
         edges_flux,
@@ -1043,7 +1043,8 @@ def run4():
         bc,
         fp['nodes_of_edges'],
         fp.edges_dim,
-        finescale_ids
+        finescale_ids,
+        saturation
     )
 
     faces_flux = lsds.get_faces_flux(

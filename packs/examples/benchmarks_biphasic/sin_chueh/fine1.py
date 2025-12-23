@@ -183,8 +183,14 @@ def run5():
     loop_intervals = 20
     cfl = 0.9
     vpis_to_plot = np.concatenate([np.linspace(0, 0.1, 11)[1:10], np.linspace(0.1, 0.4, 16)]) 
+    
+    gdict = {
+        'funcname': '',
+        'file_times': 'functions_times_sin_fine.yaml',
+        'load_simulation': load
+    }
 
-    max_cum_water = 0.1
+    # max_cum_water = 0.1
 
     cumulative_oil = 0.0
     cumulative_water = 0.0
@@ -215,6 +221,7 @@ def run5():
     mesh_data.create_tag('water_faces_flux')
     mesh_data.create_tag('saturation')
 
+    gdict.update({'funcname': 'initial_loop'})
     loop, cumulative_oil, cumulative_water, vpi = load_or_update_initial_loop(
         load,
         fp,
@@ -236,10 +243,13 @@ def run5():
         simulation_data,
         loop,
         cfl,
-        vpis_to_plot
+        vpis_to_plot,
+        **gdict
     )
 
-    while vpi < max_vpi and loop < max_loop and cumulative_water < max_cum_water:
+    gdict.update({'funcname': 'while_loop', 'funcname_cum': 'while_loop_cum'})
+    # while vpi < max_vpi and loop < max_loop and cumulative_water < max_cum_water:
+    while vpi < max_vpi and loop < max_loop:
         
         loop, cumulative_oil, cumulative_water, vpi = update_while_loop(
             loop_intervals,
@@ -261,7 +271,8 @@ def run5():
             simulation_data,
             mesh_data,
             cfl,
-            vpis_to_plot
+            vpis_to_plot,
+            **gdict
         )
 
     import pdb; pdb.set_trace()

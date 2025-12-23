@@ -214,8 +214,6 @@ def plot_nuadm_percent(finescale_sim: SimulationData,  nuadm_sims: Sequence[Simu
     basic_colors_str.remove('k')
     n_nuadmsims = len(nuadm_sims)
     markers_size = np.arange(7, 7+n_nuadmsims)
-    
-    pressure_fs_0, saturation_fs_0 = load_ps_results(0, defpaths.pressure_results, defpaths.saturation_results)
 
     nplus = 2
     for i in range(1, markers_size.shape[0]):
@@ -223,7 +221,7 @@ def plot_nuadm_percent(finescale_sim: SimulationData,  nuadm_sims: Sequence[Simu
     
     markers_size = markers_size[::-1]
 
-    pressure0_finescale = pressure_fs_0
+    pressure0_finescale = finescale_sim['pressure_0']
     nfinevolumes = pressure0_finescale.shape[0]
 
     
@@ -290,15 +288,15 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
     cs = nuadm_sim
 
 
-    # vpi_test = 0.07
-    # # vpi_test = 0.12
-    # # vpi_test = 0.24
-    # test1 = np.absolute(all_vpi_nuadm - vpi_test) <= max_delta
-    # test2 = np.absolute(all_vpis_finescale - vpi_test) <= max_delta
-    # loop_test = all_loops_coarse[test1]
-    # loop_finescale = all_loops_finescale[test2]
-    # print(loop_test, loop_finescale)
-    # import pdb; pdb.set_trace()
+    vpi_test = 0.04
+    # vpi_test = 0.12
+    # vpi_test = 0.24
+    test1 = np.absolute(all_vpi_nuadm - vpi_test) <= max_delta
+    test2 = np.absolute(all_vpis_finescale - vpi_test) <= max_delta
+    loop_test = all_loops_coarse[test1]
+    loop_finescale = all_loops_finescale[test2]
+    print(loop_test, loop_finescale)
+    
     
     # # loop_t = 981
     # # vpi = all_vpi_nuadm[all_loops_coarse==loop_t]
@@ -348,28 +346,6 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
         
         sat_linf.append(linf_sat)
         sat_l2.append(err2_sat)
-        
-    # max_linf_pressure = linf_pressure.max()
-    # max_l2_pressure = err2_pressure.max()
-    
-    # vpi_max_linf_pressure = vpis_to_plot[np.argmax(np.array(pressure_linf))]
-    # vpi_max_l2_pressure = vpis_to_plot[np.argmax(np.array(pressure_l2))]
-    # print(vpi_max_linf_pressure, max_linf_pressure)
-    # print(vpi_max_l2_pressure, max_l2_pressure)
-    # import pdb; pdb.set_trace()
-    
-    
-    # vpi = 0.28
-    # dvpi_nuadm = all_vpi_nuadm - vpi
-    # dvpi_fs = all_vpis_finescale - vpi
-    # test_nuadm = np.abs(dvpi_nuadm) <= max_delta
-    # test_fs = np.abs(dvpi_fs) <= max_delta
-    # loop_nuadm = all_loops_coarse[test_nuadm][0]
-    # loop_fs = all_loops_finescale[test_fs][0]
-    # print('At PVI = ', vpi)
-    # print('  NU-ADM loop: ', loop_nuadm, '\n')
-    # print('  Finescale loop: ', loop_fs, '\n')
-    # import pdb; pdb.set_trace()
     
     pressure_linf = np.array(pressure_linf)
     pressure_l2 = np.array(pressure_l2)
@@ -396,7 +372,7 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
     ax = fig.add_subplot()
     
     ax.plot(
-        vpis_to_plot[0:marki],
+        vpis_to_plot[0:marki+1],
         pressure_linf,
         label=r'$||p||_{\infty}$', 
         marker=markers[0],
@@ -404,7 +380,7 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
         color='k'
     )
     ax.plot(
-        vpis_to_plot[0:marki],
+        vpis_to_plot[0:marki+1],
         pressure_l2,
         label=r'$||p||_{2}$', 
         marker=markers[1],
@@ -429,7 +405,7 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
     ax = fig.add_subplot()
     
     ax.plot(
-        vpis_to_plot[1:marki],
+        vpis_to_plot[1:marki+1],
         sat_linf,
         label=r'$||S_{w}||_{\infty}$', 
         marker=markers[0],
@@ -437,7 +413,7 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
         color='k'
     )
     ax.plot(
-        vpis_to_plot[1:marki],
+        vpis_to_plot[1:marki+1],
         sat_l2,
         label=r'$||S_{w}||_{2}$', 
         marker=markers[1],
@@ -532,19 +508,21 @@ def plot_err_layers():
 
 def plot_graphs():
 
-    finescale_sim = SimulationData('biphasic_ameba_finescale4')
+    # finescale_sim = SimulationData('biphasic_ameba_finescale4')
     # finescale_sim = SimulationData('biphasic_het1_finescale')
     # finescale_sim = SimulationData('biphasic_het_coarse1')
-    # finescale_sim = SimulationData('biphasic_sin_chueh_fine1')
+    finescale_sim = SimulationData('biphasic_sin_chueh_fine1')
     finescale_sim.load_data()
     fs = finescale_sim
     # vpis_to_plot = np.linspace(0, 0.24, 25)
     # vpis_to_plot = np.linspace(0, 0.1155, 16)
-    vpis_to_plot = np.linspace(0, 0.6, 31)
+    # vpis_to_plot = np.linspace(0, 0.6, 31)
+    vpis_to_plot = np.concatenate([np.linspace(0, 0.1, 11)[0:10], np.linspace(0.1, 0.4, 16)])
+    vpis_to_plot = vpis_to_plot[vpis_to_plot <= 0.3]
 
-    nuadm_sims_str = ['biphasic_ameba_coarse4']
+    # nuadm_sims_str = ['biphasic_ameba_coarse4']
     # nuadm_sims_str = ['biphasic_het_coarse1_1']
-    # nuadm_sims_str = ['biphasic_sin1_coarse2']
+    nuadm_sims_str = ['biphasic_sin1_coarse2']
     nuadm_sims = []
     for i, name in enumerate(nuadm_sims_str):
         data_sim = SimulationData(name)
@@ -560,9 +538,9 @@ def plot_graphs():
     # plot_cum_oil(finescale_sim, nuadm_sims, 'cum_oil_ameba_new.png')
     # plot_wor(finescale_sim, nuadm_sims, 'wor_ameba_new.png')
     # plot_nuadm_percent(finescale_sim, nuadm_sims, 'nuadm_percent_ameba_new.png')
-    # plot_errors(vpis_to_plot, finescale_sim, nuadm_sims[0])
+    plot_errors(vpis_to_plot, finescale_sim, nuadm_sims[0])
     
-    plot_err_layers()
+    # plot_err_layers()
     
     import pdb; pdb.set_trace()
 

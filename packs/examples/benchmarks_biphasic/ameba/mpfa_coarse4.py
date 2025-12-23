@@ -355,7 +355,7 @@ def run6():
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 10
+    loop_intervals = 50
     etol_msrsb = 0.01
     maxit_msrsb = 1000
     vpis_to_plot = np.linspace(0, 0.6, 31)[1:]
