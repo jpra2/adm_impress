@@ -432,11 +432,6 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
     path_fig = os.path.join(defpaths.plots_folder, 'saturation_error_biphasic.png')
     fig.savefig(path_fig, dpi=500)
     
-    
-    
-    
-        
-    import pdb; pdb.set_trace()
         
         
 def plot_err_layers():
@@ -508,10 +503,10 @@ def plot_err_layers():
 
 def plot_graphs():
 
-    finescale_sim = SimulationData('biphasic_ameba_finescale4')
+    # finescale_sim = SimulationData('biphasic_ameba_finescale4')
     # finescale_sim = SimulationData('biphasic_het1_finescale')
     # finescale_sim = SimulationData('biphasic_het_coarse1')
-    # finescale_sim = SimulationData('biphasic_sin_chueh_fine1')
+    finescale_sim = SimulationData('biphasic_sin_chueh_fine1')
     finescale_sim.load_data()
     fs = finescale_sim
     # vpis_to_plot = np.linspace(0, 0.24, 25)
@@ -520,9 +515,9 @@ def plot_graphs():
     # vpis_to_plot = np.concatenate([np.linspace(0, 0.1, 11)[0:10], np.linspace(0.1, 0.4, 16)])
     # vpis_to_plot = vpis_to_plot[vpis_to_plot <= 0.3]
 
-    nuadm_sims_str = ['biphasic_ameba_coarse4']
+    # nuadm_sims_str = ['biphasic_ameba_coarse4']
     # nuadm_sims_str = ['biphasic_het_coarse1_1']
-    # nuadm_sims_str = ['biphasic_sin1_coarse2']
+    nuadm_sims_str = ['biphasic_sin1_coarse2']
     nuadm_sims = []
     for i, name in enumerate(nuadm_sims_str):
         data_sim = SimulationData(name)
@@ -541,11 +536,4 @@ def plot_graphs():
     plot_errors(vpis_to_plot, finescale_sim, nuadm_sims[0])
     
     # plot_err_layers()
-    
-    import pdb; pdb.set_trace()
 
-
-
-
-
-    pass

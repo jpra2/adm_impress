@@ -197,7 +197,6 @@ def run6():
     )
     
     print(f'LOOP: {loop} \n')
-    import pdb; pdb.set_trace()
 
     gdict.update({'funcname': 'while_loop', 'funcname_cum': 'while_loop_cum'})
 
@@ -237,12 +236,6 @@ def run6():
             tol_iterative,
             **gdict
         )
-
-    
-
-
-
-    import pdb; pdb.set_trace()
 
 
 
