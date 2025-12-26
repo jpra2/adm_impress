@@ -365,7 +365,7 @@ def run6():
     refine_by_grad_bool = False
     refine_by_estimator1_bool = True
     max_value_grad = 100
-    max_value_estimator1 = 1e-2
+    max_value_estimator1 =0.04
     
     gdict = {
         'funcname': '',
@@ -455,8 +455,6 @@ def run6():
         tol_iterative,
         **gdict
     )
-    
-    import pdb; pdb.set_trace()
 
     print(f'LOOP: {loop} \n')
 
@@ -499,12 +497,4 @@ def run6():
         )
 
         print(f'LOOP: {loop} \n')
-
-    
-
-
-
-    import pdb; pdb.set_trace()
-
-
 

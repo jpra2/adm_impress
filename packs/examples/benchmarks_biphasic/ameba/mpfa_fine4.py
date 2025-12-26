@@ -504,20 +504,6 @@ def run5():
             **gdict
         )
 
-    import pdb; pdb.set_trace()
-
 
     # nodes_org, faces_of_nodes_org, n_nodes_org = fp.get_internal_nodes_org_from_faces_of_nodes_object()
-
-
-
-
-
-
-    import pdb; pdb.set_trace()
-
-
-
-
-    pass
 

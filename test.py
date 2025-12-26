@@ -266,8 +266,8 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 
 # run_delete_all()
 # maitain_only_data_mesh()
-# from packs.examples.benchmarks_biphasic.ameba.mpfa_fine4 import run5
-# run5()
+from packs.examples.benchmarks_biphasic.ameba.mpfa_fine4 import run5
+run5()
 
 # maitain_only_data_mesh()
 # from packs.examples.benchmarks_biphasic.ameba.mpfa_fine5 import run5
@@ -275,15 +275,15 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 
 # maitain_only_data_mesh()
 # # # run_delete_all()
-# from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4 import run6
-# run6()
+from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4 import run6
+run6()
 
 # maitain_only_data_mesh()
 # from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4f import run6
 # run6()
 
-# from packs.utils.plot_graph_from_simulation_data import plot_graphs, plot_err_layers
-# plot_graphs()
+from packs.utils.plot_graph_from_simulation_data import plot_graphs, plot_err_layers
+plot_graphs()
 # plot_err_layers()
 
 # run_delete_all()
@@ -292,8 +292,8 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 # run5()
 
 # run_delete_all()
-from packs.examples.benchmarks_biphasic.sin_chueh.coarse1 import run6
-run6()
+# from packs.examples.benchmarks_biphasic.sin_chueh.coarse1 import run6
+# run6()
 
 # from packs.utils.plot_graph_from_simulation_data import chueh_test
 # chueh_test()

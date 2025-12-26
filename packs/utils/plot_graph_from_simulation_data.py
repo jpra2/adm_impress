@@ -288,14 +288,14 @@ def plot_errors(vpis_to_plot, finescale_sim, nuadm_sim):
     cs = nuadm_sim
 
 
-    vpi_test = 0.04
-    # vpi_test = 0.12
-    # vpi_test = 0.24
-    test1 = np.absolute(all_vpi_nuadm - vpi_test) <= max_delta
-    test2 = np.absolute(all_vpis_finescale - vpi_test) <= max_delta
-    loop_test = all_loops_coarse[test1]
-    loop_finescale = all_loops_finescale[test2]
-    print(loop_test, loop_finescale)
+    # vpi_test = 0.04
+    # # vpi_test = 0.12
+    # # vpi_test = 0.24
+    # test1 = np.absolute(all_vpi_nuadm - vpi_test) <= max_delta
+    # test2 = np.absolute(all_vpis_finescale - vpi_test) <= max_delta
+    # loop_test = all_loops_coarse[test1]
+    # loop_finescale = all_loops_finescale[test2]
+    # print(loop_test, loop_finescale)
     
     
     # # loop_t = 981
@@ -508,21 +508,21 @@ def plot_err_layers():
 
 def plot_graphs():
 
-    # finescale_sim = SimulationData('biphasic_ameba_finescale4')
+    finescale_sim = SimulationData('biphasic_ameba_finescale4')
     # finescale_sim = SimulationData('biphasic_het1_finescale')
     # finescale_sim = SimulationData('biphasic_het_coarse1')
-    finescale_sim = SimulationData('biphasic_sin_chueh_fine1')
+    # finescale_sim = SimulationData('biphasic_sin_chueh_fine1')
     finescale_sim.load_data()
     fs = finescale_sim
     # vpis_to_plot = np.linspace(0, 0.24, 25)
     # vpis_to_plot = np.linspace(0, 0.1155, 16)
-    # vpis_to_plot = np.linspace(0, 0.6, 31)
-    vpis_to_plot = np.concatenate([np.linspace(0, 0.1, 11)[0:10], np.linspace(0.1, 0.4, 16)])
-    vpis_to_plot = vpis_to_plot[vpis_to_plot <= 0.3]
+    vpis_to_plot = np.linspace(0, 0.6, 31)
+    # vpis_to_plot = np.concatenate([np.linspace(0, 0.1, 11)[0:10], np.linspace(0.1, 0.4, 16)])
+    # vpis_to_plot = vpis_to_plot[vpis_to_plot <= 0.3]
 
-    # nuadm_sims_str = ['biphasic_ameba_coarse4']
+    nuadm_sims_str = ['biphasic_ameba_coarse4']
     # nuadm_sims_str = ['biphasic_het_coarse1_1']
-    nuadm_sims_str = ['biphasic_sin1_coarse2']
+    # nuadm_sims_str = ['biphasic_sin1_coarse2']
     nuadm_sims = []
     for i, name in enumerate(nuadm_sims_str):
         data_sim = SimulationData(name)
@@ -535,12 +535,12 @@ def plot_graphs():
     
     
     
-    # plot_cum_oil(finescale_sim, nuadm_sims, 'cum_oil_ameba_new.png')
-    # plot_wor(finescale_sim, nuadm_sims, 'wor_ameba_new.png')
-    # plot_nuadm_percent(finescale_sim, nuadm_sims, 'nuadm_percent_ameba_new.png')
-    # plot_errors(vpis_to_plot, finescale_sim, nuadm_sims[0])
+    plot_cum_oil(finescale_sim, nuadm_sims, 'cum_oil.png')
+    plot_wor(finescale_sim, nuadm_sims, 'wor.png')
+    plot_nuadm_percent(finescale_sim, nuadm_sims, 'nuadm_percent.png')
+    plot_errors(vpis_to_plot, finescale_sim, nuadm_sims[0])
     
-    plot_err_layers()
+    # plot_err_layers()
     
     import pdb; pdb.set_trace()
 
