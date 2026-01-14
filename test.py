@@ -9,7 +9,7 @@
 # from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import test_weights
 # test_weights()
 
-from packs.examples.remove_data import run_delete_all, run_results, maitain_only_data_mesh
+# from packs.examples.remove_data import run_delete_all, run_results, maitain_only_data_mesh
 
 # from packs.mpfa_methods.flux_calculation.test.test_flux_lsds_method import test_lsds_flux
 # test_lsds_flux()
@@ -284,12 +284,12 @@ from packs.examples.remove_data import run_delete_all, run_results, maitain_only
 
 # run_delete_all()
 # maitain_only_data_mesh()
-from packs.examples.benchmarks_biphasic.sin_chueh.fine1 import run5
-run5()
+# from packs.examples.benchmarks_biphasic.sin_chueh.fine1 import run5
+# run5()
 
 # run_delete_all()
-from packs.examples.benchmarks_biphasic.sin_chueh.coarse1 import run6
-run6()
+# from packs.examples.benchmarks_biphasic.sin_chueh.coarse1 import run6
+# run6()
 
 # from packs.utils.plot_graph_from_simulation_data import chueh_test
 # chueh_test()
@@ -307,7 +307,12 @@ run6()
 # from packs.examples.mesh_test import run
 # run()
 
-from packs.utils.plot_graph_from_simulation_data import plot_graphs, plot_err_layers
-plot_graphs()
+# from packs.utils.plot_graph_from_simulation_data import plot_graphs, plot_err_layers
+# plot_graphs()
 # plot_err_layers()
+from packs.mpfa_methods.seq_method.seq import run
+run()
+
+# from packs.mpfa_methods.seq_method.seq_2 import run2
+# run2()
 
