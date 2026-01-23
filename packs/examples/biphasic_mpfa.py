@@ -433,6 +433,9 @@ def initial_loop(
     )
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     
+    fp.insert_or_update_data({'dt0': np.array([dt])})
+    fp.insert_or_update_data({'edges_flux0': edges_flux})
+    
     return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux, water_flux, oil_flux
 
 def update_saturation(water_faces_flux, areas, dt, porosity, saturation, relative_perm: BrooksAndCorey, ratio=0.5):
@@ -673,8 +676,155 @@ def while_loop(
         fw_edges
     )
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
+    
+    fp.insert_or_update_data({'dt1': np.array([dt])})
+    fp.insert_or_update_data({'edges_flux1': edges_flux})
 
     return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux, dt, water_flux, oil_flux, plot_vpi
+
+
+def update_pressure_only(
+        relative_perm: BrooksAndCorey,
+        biphasic_mobility: BiphasicMobility,
+        saturation: np.ndarray,
+        fp: MeshProperty,
+        bc: BoundaryConditions,
+        lsds: LsdsFluxCalculation,
+        **kwargs
+):
+    krw_faces, kro_faces = relative_perm.calculate(saturation)
+    mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
+    total_mobility_faces = biphasic_mobility.get_total_mobility(mobw_faces, mobo_faces)
+    # fp.insert_or_update_data({'faces_multiplier': total_mobility_faces})
+    fw_faces = biphasic_mobility.get_fw(mobw_faces, mobo_faces)
+
+    total_mobility_edges = direct_edges_mobility(
+        total_mobility_faces,
+        fp['areas'],
+        fp['faces_of_nodes'],
+        fp['nodes_of_edges'],
+        bc,
+        biphasic_mobility,
+        relative_perm
+    )
+
+    fp.insert_or_update_data({
+        'edges_multiplier': total_mobility_edges
+    })
+
+    fp.insert_or_update_data({
+        'xi_params': update_xi_params(fp['xi_params_backup'], total_mobility_edges)
+    })
+
+
+    # weights = get_gls_nodes_weights(**fp)
+    # fp.insert_or_update_data(weights)
+
+    update_weight_new_function(fp, saturation)
+
+
+    # get_lpew2_weights(fp, update=True)
+
+    resp = set_fine_transmissibility_biphasic(
+        fp,
+        bc,
+        lsds
+    )
+
+    pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+
+    edges_flux = lsds.get_edges_flux(
+        bc,
+        pressure,
+        fp['xi_params'],
+        fp['nodes_weights'],
+        fp['nodes_of_edges'],
+        fp['adjacencies'],
+        fp['neumann_weights']
+    )
+    
+    return pressure, edges_flux, fw_faces
+
+
+def update_saturation_only(edges_flux: np.ndarray,
+                           relative_perm: BrooksAndCorey,
+                           biphasic_mobility: BiphasicMobility,
+                           saturation: np.ndarray,
+                           fp: MeshProperty,
+                           bc: BoundaryConditions,
+                           lsds: LsdsFluxCalculation,
+                           porosity: np.ndarray,
+                           total_area_reservoir: float,
+                           vpi: float,
+                           cumulative_oil: float,
+                           cumulative_water: float,
+                           dt: float,
+                           vpis_to_plot=[]):
+    
+    krw_faces, kro_faces = relative_perm.calculate(saturation)
+    mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
+    total_mobility_faces = biphasic_mobility.get_total_mobility(mobw_faces, mobo_faces)
+    # fp.insert_or_update_data({'faces_multiplier': total_mobility_faces})
+    fw_faces = biphasic_mobility.get_fw(mobw_faces, mobo_faces)
+    
+    edges_saturation = edges_flux.copy()
+    edges_saturation[:] = biphasic_mobility.update_edges_saturation_foum(
+        saturation,
+        edges_flux,
+        fp['adjacencies'],
+        bc,
+        edges_saturation,
+        fp['bool_boundary_edges']
+    )
+
+    krw_edges, kro_edges = relative_perm.calculate(edges_saturation)
+    mobw_edges, mobo_edges = biphasic_mobility.calculate(krw_edges, kro_edges)
+    fw_edges = biphasic_mobility.get_fw(mobw_edges, mobo_edges)
+
+    water_edges_flux = -fw_edges*edges_flux
+
+    water_faces_flux = lsds.get_faces_flux(
+        water_edges_flux,
+        fp['adjacencies'],
+        fp['bool_boundary_edges']
+    )
+    
+    faces_flux = lsds.get_faces_flux(
+        edges_flux,
+        fp['adjacencies'],
+        fp['bool_boundary_edges']
+    )
+
+    update_water_faces_flux(
+        water_faces_flux,
+        bc,
+        faces_flux,
+        relative_perm,
+        biphasic_mobility,
+        fw_faces
+    )
+
+    newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
+
+    new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux, dt, plot_vpi = update_simulation_data(
+        faces_flux,
+        bc['injectors']['id'],
+        bc['producers']['id'],
+        vpi,
+        cumulative_oil,
+        cumulative_water,
+        fw_faces,
+        total_area_reservoir,
+        dt,
+        vpis_to_plot,
+        edges_flux,
+        bc,
+        fw_edges
+    )
+    newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
+    
+    return newS, dt, plot_vpi, new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux
+
 
 def update_data(
         simulation_data: SimulationData,
