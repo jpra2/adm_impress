@@ -823,7 +823,7 @@ def update_saturation_only(edges_flux: np.ndarray,
     )
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     
-    return newS, dt, plot_vpi, new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux
+    return newS, dt, plot_vpi, new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux, faces_flux, water_faces_flux
 
 
 def update_data(

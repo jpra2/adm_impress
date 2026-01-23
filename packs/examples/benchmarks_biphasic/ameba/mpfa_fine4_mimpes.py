@@ -523,7 +523,7 @@ def run5():
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 50
+    loop_intervals = 10
     cfl = 0.9
     vpis_to_plot = np.linspace(0, 0.6, 31)[1:]
     dvtol = 1e-5
@@ -617,7 +617,7 @@ def run5():
             **gdict
         )
     
-    import pdb; pdb.set_trace()
+    path_mesh_data = simulation_data.name
     
     while vpi <= max_vpi and loop <= max_loop:
         for i in range(loop_intervals):
@@ -634,7 +634,7 @@ def run5():
             dt_total = 0
             
             for j in range(saturation_intervals):
-                saturation[:], dt, plot_vpi, vpi, cumulative_oil, cumulative_water, water_flux, oil_flux = update_saturation_only(
+                saturation[:], dt, plot_vpi, vpi, cumulative_oil, cumulative_water, water_flux, oil_flux, faces_flux, water_faces_flux = update_saturation_only(
                     edges_flux,
                     relative_perm,
                     biphasic_mobility,
@@ -651,10 +651,20 @@ def run5():
                     vpis_to_plot=vpis_to_plot
                 )
                 dt_total += dt
+                print(f"{j} / {saturation_intervals}")
+                print(f"Loop: {loop}")
+                print(f"Dt: {dt_total} / Dt_total: {dtnew}")
                 
                 if plot_vpi == True:
                     break
             loop += 1
+            
+            fp.insert_or_update_data({
+                'dt1': dtnew,
+                'edges_flux0': fp['edges_flux1'].copy(),
+                'edges_flux1': edges_flux
+            })
+            
             if plot_vpi == True:
                 break
         
@@ -672,12 +682,12 @@ def run5():
             oil_flux
         )
         
-        configsim.gdata.update_cumulative_times('while_loop', kwargs.get('file_times', ''))
+        configsim.gdata.update_cumulative_times('while_loop', gdict.get('file_times', ''))
         
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
         mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
         mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
-        mesh_data.insert_tag_data('saturation', saturation_plot, 'faces')
+        mesh_data.insert_tag_data('saturation', saturation, 'faces')
         name_export = os.path.join(path_mesh_data, 'pressure_faces_' + str(loop))
         mesh_data.export_all_elements_type_to_vtk(name_export, 'faces')
         
