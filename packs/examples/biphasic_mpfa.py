@@ -433,7 +433,7 @@ def initial_loop(
     )
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
     
-    fp.insert_or_update_data({'dt0': np.array([dt])})
+    fp.insert_or_update_data({'dt1': np.array([dt])})
     fp.insert_or_update_data({'edges_flux0': edges_flux})
     
     return pressure, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, water_faces_flux, water_flux, oil_flux

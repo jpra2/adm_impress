@@ -593,35 +593,35 @@ def run5():
     )
     
     gdict.update({'funcname': 'while_loop', 'funcname_cum': 'while_loop_cum'})
-    loop, cumulative_oil, cumulative_water, vpi = update_while_loop_l1(
-            loop_intervals,
-            loop,
-            pressure,
-            newS,
-            vpi,
-            cumulative_oil,
-            cumulative_water,
-            relative_perm,
-            biphasic_mobility,
-            saturation,
-            fp,
-            bc,
-            lsds,
-            porosity,
-            total_area_reservoir,
-            saturation_plot,
-            simulation_data,
-            mesh_data,
-            cfl,
-            vpis_to_plot,
-            **gdict
-        )
+    # loop, cumulative_oil, cumulative_water, vpi = update_while_loop_l1(
+    #         loop_intervals,
+    #         loop,
+    #         pressure,
+    #         newS,
+    #         vpi,
+    #         cumulative_oil,
+    #         cumulative_water,
+    #         relative_perm,
+    #         biphasic_mobility,
+    #         saturation,
+    #         fp,
+    #         bc,
+    #         lsds,
+    #         porosity,
+    #         total_area_reservoir,
+    #         saturation_plot,
+    #         simulation_data,
+    #         mesh_data,
+    #         cfl,
+    #         vpis_to_plot,
+    #         **gdict
+    #     )
     
     path_mesh_data = simulation_data.name
     
     while vpi <= max_vpi and loop <= max_loop:
         for i in range(loop_intervals):
-            dtnew = calculate_time_step_mimpes(fp, lsds, dvtol, Rdtmax, Rdtmin)
+            
             pressure, edges_flux, fw_faces = update_pressure_only(
                 relative_perm,
                 biphasic_mobility,
@@ -630,6 +630,13 @@ def run5():
                 bc,
                 lsds
             )
+            
+            fp.insert_or_update_data({
+                'edges_flux1': edges_flux
+            })
+            
+            dtnew = calculate_time_step_mimpes(fp, lsds, dvtol, Rdtmax, Rdtmin)
+            
             dt_sat = dtnew/saturation_intervals
             dt_total = 0
             
@@ -661,8 +668,7 @@ def run5():
             
             fp.insert_or_update_data({
                 'dt1': dtnew,
-                'edges_flux0': fp['edges_flux1'].copy(),
-                'edges_flux1': edges_flux
+                'edges_flux0': fp['edges_flux1'].copy()
             })
             
             if plot_vpi == True:
