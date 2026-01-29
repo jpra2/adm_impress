@@ -501,20 +501,29 @@ def calculate_time_step_mimpes(fp: MeshProperty, lsds: LsdsFluxCalculation, dvto
     edges_flux1 = fp['edges_flux1']
     difference_v = (edges_flux0 - edges_flux1)/fp.edges_dim
     
-    faces_flux = lsds.get_faces_flux(
-        difference_v,
-        fp['adjacencies'],
-        fp['bool_boundary_edges']
-    )
+    # faces_flux = lsds.get_faces_flux(
+    #     difference_v,
+    #     fp['adjacencies'],
+    #     fp['bool_boundary_edges']
+    # )
     
-    deltavn = np.sqrt(np.dot(faces_flux, faces_flux))
-    
+    deltavn = np.linalg.norm(difference_v)    
     ratio  = min([(max([dvtol/deltavn, Rdtmin])), Rdtmax])
+    # print(f'Ratio dt: {ratio}')
+    # print()
     
     dtnew = ratio*dt1
     return dtnew
     
-
+def set_dvtol(fp: MeshProperty, porosity: np.ndarray, bc: BoundaryConditions) -> float:
+    faces_neumann = bc['neumann_volumes']['id']
+    neumann_values = bc['neumann_volumes']['value']
+    areas_neumann = fp['areas'][faces_neumann]
+    porosity_neumann = porosity[faces_neumann]
+    dvtol = (porosity_neumann*neumann_values/areas_neumann).min()*(1/len(faces_neumann))
+    
+    return dvtol
+    
 
 def run5():
 
@@ -523,11 +532,11 @@ def run5():
     loop = 0
     max_loop = np.inf
     load = False
-    loop_intervals = 10
+    loop_intervals = 1
     cfl = 0.9
-    vpis_to_plot = np.linspace(0, 0.6, 31)[1:]
-    dvtol = 1e-5
-    Rdtmax = 1.25
+    vpis_to_plot = np.linspace(0, 0.6, 301)[1:]
+    # dvtol = 1e-5
+    Rdtmax = 1.3
     Rdtmin = 0.75
     saturation_intervals = 10
     
@@ -553,6 +562,9 @@ def run5():
     bc = set_boundary_conditions(fp)
 
     porosity = np.repeat(0.2, len(fp['faces']))
+    
+    dvtol = set_dvtol(fp, porosity, bc) 
+    
     total_area_reservoir = porosity.dot(fp['areas'])
     saturation: np.ndarray = bc['initial_saturation']['value'].copy() 
     fp.insert_or_update_data({'sat_for_weight': saturation.copy()})
@@ -565,6 +577,12 @@ def run5():
     mesh_data.create_tag('faces_flux')
     mesh_data.create_tag('water_faces_flux')
     mesh_data.create_tag('saturation')
+    
+    pressures_update = []
+    sat_update = []
+    vpi_update = []
+    l2_error_flux = []
+    linf_error_flux = []
 
     gdict.update({'funcname': 'initial_loop'})
     loop, cumulative_oil, cumulative_water, vpi = load_or_update_initial_loop(
@@ -620,6 +638,8 @@ def run5():
     path_mesh_data = simulation_data.name
     
     while vpi <= max_vpi and loop <= max_loop:
+        p_updates = 0
+        s_updates = 0
         for i in range(loop_intervals):
             
             pressure, edges_flux, fw_faces = update_pressure_only(
@@ -630,17 +650,16 @@ def run5():
                 bc,
                 lsds
             )
+            p_updates += 1
             
             fp.insert_or_update_data({
                 'edges_flux1': edges_flux
             })
             
             dtnew = calculate_time_step_mimpes(fp, lsds, dvtol, Rdtmax, Rdtmin)
-            
-            dt_sat = dtnew/saturation_intervals
             dt_total = 0
-            
-            for j in range(saturation_intervals):
+            while dt_total < dtnew:
+                dtmax = dtnew - dt_total            
                 saturation[:], dt, plot_vpi, vpi, cumulative_oil, cumulative_water, water_flux, oil_flux, faces_flux, water_faces_flux = update_saturation_only(
                     edges_flux,
                     relative_perm,
@@ -654,26 +673,54 @@ def run5():
                     vpi,
                     cumulative_oil,
                     cumulative_water,
-                    dt_sat,
+                    dtmax,
+                    cfl,
                     vpis_to_plot=vpis_to_plot
                 )
+                s_updates += 1
                 dt_total += dt
-                print(f"{j} / {saturation_intervals}")
                 print(f"Loop: {loop}")
                 print(f"Dt: {dt_total} / Dt_total: {dtnew}")
-                
+                print(f"VPI: {vpi}")
+                loop += 1
                 if plot_vpi == True:
-                    break
-            loop += 1
-            
+                    export_ps_results(loop, pressure, saturation, defpaths.pressure_results, defpaths.saturation_results)
+    
+                    update_data(
+                        simulation_data,
+                        vpi,
+                        cumulative_oil,
+                        cumulative_water,
+                        loop,
+                        pressure,
+                        saturation,
+                        water_flux,
+                        oil_flux
+                    )
+                    
+                    # configsim.gdata.update_cumulative_times('while_loop', gdict.get('file_times', ''))
+                    
+                    mesh_data.insert_tag_data('pressure', pressure, 'faces')
+                    mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
+                    mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
+                    mesh_data.insert_tag_data('saturation', saturation, 'faces')
+                    name_export = os.path.join(path_mesh_data, 'pressure_faces_' + str(loop))
+                    mesh_data.export_all_elements_type_to_vtk(name_export, 'faces')
+                    
+                    
             fp.insert_or_update_data({
                 'dt1': dtnew,
                 'edges_flux0': fp['edges_flux1'].copy()
             })
-            
-            if plot_vpi == True:
-                break
         
+        pressures_update.append(p_updates)
+        sat_update.append(s_updates)
+        vpi_update.append(vpi[0])
+        faces_flux[bc['neumann_volumes']['id']] = 0.0
+        faces_flux[bc['dirichlet_volumes']['id']] = 0.0
+        l2_error_flux.append(np.linalg.norm(faces_flux))
+        linf_error_flux.append(np.absolute(faces_flux).max())
+
         export_ps_results(loop, pressure, saturation, defpaths.pressure_results, defpaths.saturation_results)
     
         update_data(
@@ -688,7 +735,7 @@ def run5():
             oil_flux
         )
         
-        configsim.gdata.update_cumulative_times('while_loop', gdict.get('file_times', ''))
+        # configsim.gdata.update_cumulative_times('while_loop', gdict.get('file_times', ''))
         
         mesh_data.insert_tag_data('pressure', pressure, 'faces')
         mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
@@ -696,10 +743,46 @@ def run5():
         mesh_data.insert_tag_data('saturation', saturation, 'faces')
         name_export = os.path.join(path_mesh_data, 'pressure_faces_' + str(loop))
         mesh_data.export_all_elements_type_to_vtk(name_export, 'faces')
+    
+    
+    vpi_update = np.array(vpi_update)
+    pressures_update = np.array(pressures_update)
+    sat_update = np.array(sat_update)
+    ratio_updates = sat_update/pressures_update
+    plt.clf()
+    fig = plt.figure()
+    ax1 = fig.add_subplot()
+    # ax1.plot(
+    #     vpi_update,
+    #     pressures_update,
+    #     marker='o',
+    #     label='Pressure updates',
+    #     color='black'
+    # )
+    # ax1.plot(
+    #     vpi_update,
+    #     sat_update,
+    #     marker='s',
+    #     label='Saturation updates',
+    #     color='red'
+    # )
+    ax1.plot(
+        vpi_update,
+        ratio_updates,
+        marker='^',
+        label='Updates Ratio',
+        color='blue'
+    )
+    
+    ax1.set_yscale('log')
+    ax1.set_xlabel('PVI')
+    ax1.set_ylabel('Saturation Update/Pressure Update')
+    
+    fig.savefig('pressure_saturation_updates_ameba_fine4.png', dpi=500)
+    
+    
         
-        
-        
-        import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
         
         
         

@@ -631,10 +631,19 @@ def calculate_data_from_dt(faces_flux: np.ndarray, injectors: np.ndarray, produc
     fo_edges = 1-fw_edges
     oil_flux = (faces_flux[producers]*fo_faces[producers]).sum() + (-1*edges_flux[edges_producer]*fo_edges[edges_producer]).sum()
     total_volume_oil_produced = oil_flux*dt
+    
+    old_vpi = vpi
+    
+    dvpi = total_volume_injected/total_area_reservoir
 
-    vpi += total_volume_injected/total_area_reservoir
+    # vpi += total_volume_injected/total_area_reservoir
+    vpi = dvpi + old_vpi
     cum_oil += total_volume_oil_produced
     cum_water += total_volume_water_produced
+    
+    max_delta = 1e-9
+    if vpi - old_vpi <= max_delta:
+        import pdb; pdb.set_trace()
     
     return vpi, cum_oil, cum_water, water_flux, oil_flux
 
@@ -720,6 +729,9 @@ def update_simulation_data(
         fw_edges
     )
     
+    dvpi = vpi - old_vpi
+    if dvpi <= delta_max:
+        import pdb; pdb.set_trace() 
     
     n1 = len(vpis_to_plot)
     if n1 > 0:

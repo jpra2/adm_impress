@@ -884,6 +884,9 @@ def initial_loop(
             'err': np.array([err])
         }
     )
+    
+    fp.insert_or_update_data({'dt1': np.array([dt])})
+    fp.insert_or_update_data({'edges_flux0': edges_flux})
 
     return P_prol, newS, new_vpi, new_cumulative_oil, new_cumulative_water, faces_flux, coarse_struct, OP, OR, fine_levels, water_flux, oil_flux
 
@@ -1336,6 +1339,182 @@ def refine_from_permeability_value_v2(fp: MeshProperty):
 def refine_from_permeability_value(fp: MeshProperty):
     return np.array([])
 
+
+def update_pressure_only_ms(
+        relative_perm: BrooksAndCorey,
+        biphasic_mobility: BiphasicMobility,
+        saturation: np.ndarray,
+        fp: MeshProperty,
+        bc: BoundaryConditions,
+        lsds: LsdsFluxCalculation,
+        initial_fine_volumes: np.ndarray,
+        alpha_lim_finescale: float,
+        beta_lim: float,
+        OP: sp.csc_matrix,
+        OR: sp.csc_matrix,
+        coarse_struct: Sequence[PrimalCoarseData],
+        iterative_ms: bool,
+        tol_iterative: float,
+        p0: np.ndarray,
+        **kwargs
+):
+    
+    it = -1
+    err = -1
+    
+    krw_faces, kro_faces = relative_perm.calculate(saturation)
+    mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
+    total_mobility_faces = biphasic_mobility.get_total_mobility(mobw_faces, mobo_faces)
+    fw_faces = biphasic_mobility.get_fw(mobw_faces, mobo_faces)
+
+    total_mobility_edges = direct_edges_mobility(
+        total_mobility_faces,
+        fp['areas'],
+        fp['faces_of_nodes'],
+        fp['nodes_of_edges'],
+        bc,
+        biphasic_mobility,
+        relative_perm
+    )
+
+    fp.insert_or_update_data({
+        'edges_multiplier': total_mobility_edges
+    })
+
+    fp.insert_or_update_data({
+        'xi_params': update_xi_params(fp['xi_params_backup'], total_mobility_edges)
+    })
+
+    # weights = get_gls_nodes_weights(**fp)
+    # fp.insert_or_update_data(weights)
+    
+    update_weight_new_function(fp, saturation)
+
+    for coarse_data in coarse_struct:
+        coarse_data.get_local_nodes_weights(
+            fp['nodes_weights'],
+            coarse_data['map_nodes'],
+            coarse_data['nodes'],
+            coarse_data['map_faces'],
+            coarse_data['faces'],
+            coarse_data['bool_boundary_nodes'],
+            fp['nodes_to_calculate']
+        )
+
+    resp = set_fine_transmissibility_biphasic(
+        fp,
+        bc,
+        lsds
+    )
+
+    fine_levels = np.full(fp['faces'].shape[0], -1)
+    fine_levels[initial_fine_volumes] = 0
+    fine_levels[fp['initial_fine_faces']] = 0
+    # fine_ids_from_saturation = define_fine_ids_from_saturation(saturation, fp['adjacencies'], fp.internal_edges)
+    fine_ids_from_saturation = define_fine_ids_from_saturation_internal_nodes_org(fp['internal_nodes_org'], fp['internal_faces_of_nodes_org'], saturation)
+
+    fine_levels[fine_ids_from_saturation] = 0
+
+    # fine_ids_from_perm = refine_from_permeability_value(fp)
+    # if fine_ids_from_perm.shape[0] > 0:
+    #     fine_levels[fine_ids_from_perm] = 0
+
+    fine_ids_from_alpha = fine_level_from_alpha.define_fine_levels_from_alpha(
+        OR,
+        OP,
+        resp['transmissibility'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        alpha_lim=alpha_lim_finescale
+    )
+
+    fine_levels[fine_ids_from_alpha] = 0
+
+    beta_groups, beta_ind, betas = nu_adm_funcs.get_beta_groups(
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        sp.find(OP)[0:3],
+        fp['adjacencies'][fp.internal_edges],
+        beta_lim=beta_lim
+    )
+
+    finescale_faces = nu_adm_funcs.get_finescale_vols(
+        fp['faces'][fine_levels==0],
+        fine_ids_from_alpha,
+        beta_ind,
+        beta_groups
+    )
+
+    finescale_faces = finescale_faces.astype(np.int)
+
+    fine_levels[finescale_faces] = 0
+    fine_levels[fine_levels==-1] = 1
+
+    finescale_ids = fp['faces'][fine_levels==0]
+
+    LEVEL_ID_1, ADM_COARSE_ID_LEVEL_1 = nu_adm_funcs.set_adm_mesh_non_nested(
+        finescale_ids,
+        fine_levels,
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        fp[defnames.get_dual_id_name_by_level(1)]
+    )
+
+    OP_adm, OR_adm = nu_adm_funcs.organize(
+        fine_levels,
+        sp.find(OP)[0:3],
+        fp['faces'],
+        fp[defnames.get_primal_id_name_by_level(1)],
+        LEVEL_ID_1,
+        ADM_COARSE_ID_LEVEL_1,
+        fp[defnames.get_dual_id_name_by_level(1)]
+    )
+    
+    if iterative_ms:
+        P_prol, it, err = iterative_ms_ilu0_bicgstab(
+            resp['transmissibility'],
+            resp['source'],
+            p0,
+            # P_prol,
+            OP_adm,
+            OR_adm,
+            epsilon=tol_iterative
+        )
+    
+    else:
+        T_adm = OR_adm*(resp['transmissibility']*OP_adm)
+        Q_adm = OR_adm*resp['source']
+        P_adm = spsolve(T_adm.tocsc(), Q_adm)
+        P_prol = OP_adm*P_adm
+
+    edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
+        bc,
+        P_prol,
+        fp['xi_params'],
+        fp['nodes_weights'],
+        fp['nodes_of_edges'],
+        fp['adjacencies'],
+        fp['neumann_weights']
+    )
+
+    update_fine_flux(
+        coarse_struct,
+        edges_flux,
+        P_prol,
+        total_mobility_edges,
+        lsds,
+        nodes_pressure,
+        bc,
+        fp['nodes_of_edges'],
+        fp.edges_dim,
+        finescale_ids,
+        saturation
+    )
+    
+    fp.insert_or_update_data({
+        'fine_levels': fine_levels
+    })
+    
+    return P_prol, edges_flux
 
 
 def run():

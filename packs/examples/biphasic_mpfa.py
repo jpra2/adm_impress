@@ -746,20 +746,23 @@ def update_pressure_only(
     return pressure, edges_flux, fw_faces
 
 
-def update_saturation_only(edges_flux: np.ndarray,
-                           relative_perm: BrooksAndCorey,
-                           biphasic_mobility: BiphasicMobility,
-                           saturation: np.ndarray,
-                           fp: MeshProperty,
-                           bc: BoundaryConditions,
-                           lsds: LsdsFluxCalculation,
-                           porosity: np.ndarray,
-                           total_area_reservoir: float,
-                           vpi: float,
-                           cumulative_oil: float,
-                           cumulative_water: float,
-                           dt: float,
-                           vpis_to_plot=[]):
+def update_saturation_only(
+    edges_flux: np.ndarray,
+    relative_perm: BrooksAndCorey,
+    biphasic_mobility: BiphasicMobility,
+    saturation: np.ndarray,
+    fp: MeshProperty,
+    bc: BoundaryConditions,
+    lsds: LsdsFluxCalculation,
+    porosity: np.ndarray,
+    total_area_reservoir: float,
+    vpi: float,
+    cumulative_oil: float,
+    cumulative_water: float,
+    dtmax: float,
+    cfl: float,
+    vpis_to_plot=[]
+):
     
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
@@ -803,7 +806,27 @@ def update_saturation_only(edges_flux: np.ndarray,
         biphasic_mobility,
         fw_faces
     )
-
+    
+    dt = calculate_dt(
+        fp['faces_centroids'],
+        fp['adjacencies'],
+        fp['bool_boundary_edges'],
+        edges_flux,
+        fp.edges_dim,
+        fw_faces,
+        saturation,
+        porosity,
+        fp['areas'],
+        faces_flux,
+        fp.dist_centroids,
+        fw_edges,
+        edges_saturation,
+        cfl=cfl
+    )
+    
+    if dt > dtmax:
+        dt = dtmax
+        
     newS, dt = update_saturation(water_faces_flux, fp['areas'], dt, porosity, saturation, relative_perm)
 
     new_vpi, new_cumulative_oil, new_cumulative_water, water_flux, oil_flux, dt, plot_vpi = update_simulation_data(
