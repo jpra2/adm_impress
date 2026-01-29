@@ -659,7 +659,8 @@ def run5():
             dtnew = calculate_time_step_mimpes(fp, lsds, dvtol, Rdtmax, Rdtmin)
             dt_total = 0
             while dt_total < dtnew:
-                dtmax = dtnew - dt_total            
+                dtmax = dtnew - dt_total 
+                saturation_plot[:] = saturation           
                 saturation[:], dt, plot_vpi, vpi, cumulative_oil, cumulative_water, water_flux, oil_flux, faces_flux, water_faces_flux = update_saturation_only(
                     edges_flux,
                     relative_perm,
@@ -703,7 +704,7 @@ def run5():
                     mesh_data.insert_tag_data('pressure', pressure, 'faces')
                     mesh_data.insert_tag_data('faces_flux', faces_flux, 'faces')
                     mesh_data.insert_tag_data('water_faces_flux', water_faces_flux, 'faces')
-                    mesh_data.insert_tag_data('saturation', saturation, 'faces')
+                    mesh_data.insert_tag_data('saturation', saturation_plot, 'faces')
                     name_export = os.path.join(path_mesh_data, 'pressure_faces_' + str(loop))
                     mesh_data.export_all_elements_type_to_vtk(name_export, 'faces')
                     
