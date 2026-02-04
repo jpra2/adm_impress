@@ -8,6 +8,7 @@ from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set
 # from packs.multiscale.unstructured.test.test_brazil import define_faces_in_losangle, set_permeability
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
+from packs.manager.predef_names import TimeProfile
 
 from packs.mpfa_methods.weight_interpolation.lpew import get_lpew2_weights
 from packs.mpfa_methods.flux_calculation.diamond_method import get_xi_params_ds_flux
@@ -22,6 +23,7 @@ from typing import Tuple
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 import pint
+import time
 
 
 
@@ -731,7 +733,10 @@ def update_pressure_only(
         lsds
     )
 
+    t0 = time.perf_counter()
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])
+    t1 = time.perf_counter()
+    TimeProfile.dt_solution_fs = t1 - t0
 
     edges_flux = lsds.get_edges_flux(
         bc,

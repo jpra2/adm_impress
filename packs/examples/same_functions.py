@@ -6,6 +6,7 @@ from packs import defnames
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 from packs.multiscale.unstructured.operators.prolongation.ams import Unstructured2DAmsOperator
 from packs.utils import utils_old
+from packs.manager.predef_names import TimeProfile
 
 import numpy as np
 from typing import Sequence
@@ -16,6 +17,7 @@ import os
 import shutil
 import copy
 from functools import reduce
+import time
 
 
 def get_perm_diag(value):
@@ -356,7 +358,7 @@ def _update_fine_flux_aux(
         'edges_multiplier': edges_multiplier,
     })
     
-    
+    t0 = time.perf_counter()
     nodes_to_calculate = get_local_nodes_to_calculate(
         local_flux_presc,
         saturation,
@@ -366,6 +368,8 @@ def _update_fine_flux_aux(
     cstruct.insert_or_update_data({'nodes_to_calculate': nodes_to_calculate})
     boundary_nodes_weights_all = set_weights_nodes_cstruct(cstruct)
     cstruct.update_all_nodes_weights(nodes_to_calculate, boundary_nodes_weights_all)
+    t1 = time.perf_counter()
+    TimeProfile.dt_update_boundary_nodes_weights_neumann += t1 - t0
     
     cstruct.insert_or_update_data({
         'xi_params': update_xi_params(cstruct['xi_params_backup'], total_mobility_edges[global_edges]),

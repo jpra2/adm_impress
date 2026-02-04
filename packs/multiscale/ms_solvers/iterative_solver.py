@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse.linalg import gmres, cg, bicgstab, spilu, splu, LinearOperator, spsolve
+import ilupp
 from packs.solvers.solvers_scipy.solver_sp import SolverSp
 
 def ms_solve_it(
@@ -98,9 +99,11 @@ def iterative_ms_ilu0_bicgstab(
     R = OR
     # R_ADM = OR_ADM
     
-    ilu0 = spilu(A)
-    Mx = lambda x: ilu0.solve(x)
-    M = LinearOperator(A.shape, Mx)
+    # ilu0 = spilu(A)
+    # Mx = lambda x: ilu0.solve(x)
+    # M = LinearOperator(A.shape, Mx)
+    
+    M = ilupp.ILU0Preconditioner(A)
     
     LU = splu((R*(A*OP)).tocsc())
     

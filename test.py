@@ -269,11 +269,11 @@
 # from packs.examples.benchmarks_biphasic.ameba.mpfa_fine4 import run5
 # run5()
 
-# from packs.examples.benchmarks_biphasic.ameba.mpfa_fine4_mimpes import run5
-# run5()
+from packs.examples.benchmarks_biphasic.ameba.mpfa_fine4_mimpes import run5
+run5()
 
-from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4_mimpes import run6
-run6()
+# from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4_mimpes import run6
+# run6()
 
 # maitain_only_data_mesh()
 # from packs.examples.benchmarks_biphasic.ameba.mpfa_fine5 import run5

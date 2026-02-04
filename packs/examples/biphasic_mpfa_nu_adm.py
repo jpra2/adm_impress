@@ -4,6 +4,7 @@ from packs.biphasic.unstructured.mobility_mesh_elements import direct_edges_mobi
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
 from packs import defpaths, defnames
 from packs.manager import MeshProperty, MeshData, BoundaryConditions, SimulationData
+from packs.manager.predef_names import TimeProfile
 from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set_fine_transmissibility, get_properties
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
@@ -44,6 +45,7 @@ import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 from typing import Sequence
+import time
 
 # ### iterative ms classic
 from packs.multiscale.ms_solvers.iterative_solver import iterative_ms_ilu0_bicgstab, iterative_ms_ilu0_bicgstab_fv_amsu
@@ -1387,9 +1389,12 @@ def update_pressure_only_ms(
 
     # weights = get_gls_nodes_weights(**fp)
     # fp.insert_or_update_data(weights)
-    
+    t0 = time.perf_counter()
     update_weight_new_function(fp, saturation)
+    t1 = time.perf_counter()
+    TimeProfile.dt_weight_finescale = t1 - t0
 
+    t0 = time.perf_counter()
     for coarse_data in coarse_struct:
         coarse_data.get_local_nodes_weights(
             fp['nodes_weights'],
@@ -1400,13 +1405,19 @@ def update_pressure_only_ms(
             coarse_data['bool_boundary_nodes'],
             fp['nodes_to_calculate']
         )
+    t1 = time.perf_counter()
+    TimeProfile.dt_update_coarse_weight = t1 - t0
 
+    t0 = time.perf_counter()
     resp = set_fine_transmissibility_biphasic(
         fp,
         bc,
         lsds
     )
+    t1 = time.perf_counter()
+    TimeProfile.dt_set_finescale_problem = t1 - t0
 
+    t0 = time.perf_counter()
     fine_levels = np.full(fp['faces'].shape[0], -1)
     fine_levels[initial_fine_volumes] = 0
     fine_levels[fp['initial_fine_faces']] = 0
@@ -1468,7 +1479,10 @@ def update_pressure_only_ms(
         ADM_COARSE_ID_LEVEL_1,
         fp[defnames.get_dual_id_name_by_level(1)]
     )
+    t1 = time.perf_counter()
+    TimeProfile.dt_set_adm_mesh = t1 - t0
     
+    t0 = time.perf_counter()
     if iterative_ms:
         P_prol, it, err = iterative_ms_ilu0_bicgstab(
             resp['transmissibility'],
@@ -1485,6 +1499,8 @@ def update_pressure_only_ms(
         Q_adm = OR_adm*resp['source']
         P_adm = spsolve(T_adm.tocsc(), Q_adm)
         P_prol = OP_adm*P_adm
+    t1 = time.perf_counter()
+    TimeProfile.dt_solution_ms = t1 - t0
 
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,
@@ -1495,7 +1511,10 @@ def update_pressure_only_ms(
         fp['adjacencies'],
         fp['neumann_weights']
     )
-
+    
+    fp.insert_or_update_data({'dt_update_boundary_nodes_weights_neumann': np.array([0])})
+    
+    t0 = time.perf_counter()
     update_fine_flux(
         coarse_struct,
         edges_flux,
@@ -1509,6 +1528,8 @@ def update_pressure_only_ms(
         finescale_ids,
         saturation
     )
+    t1 = time.perf_counter()
+    TimeProfile.dt_neumann = t1-t0
     
     fp.insert_or_update_data({
         'fine_levels': fine_levels

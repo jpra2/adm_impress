@@ -53,6 +53,7 @@ from packs.utils import utils_old
 from packs.adm.non_uniform import fine_level_from_alpha
 from packs.fim_nu_adm.packs.processor import nu_adm_funcs
 from packs.manager.generic_data import PrimalCoarseData
+from packs.manager.predef_names import TimeProfile
 
 
 import os
@@ -62,6 +63,7 @@ import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 from typing import Sequence
+import time
 
 def get_properties_coarse():
     coarse_mesh_properties_name = 'coarse4_ameba'
@@ -479,14 +481,16 @@ def run6():
         tol_iterative,
         **gdict
     )
+    
+    TimeProfile.n_coarses = len(coarse_struct)
 
     print(f'LOOP: {loop} \n')
     loop += 1
-
     gdict.update({'funcname': 'while_loop', 'funcname_cum': 'while_loop_cum'})
     while vpi < max_vpi and loop < max_loop:
         p_updates = 0
         s_updates = 0
+        t0 = time.perf_counter()
         pressure[:], edges_flux = update_pressure_only_ms(
             relative_perm,
             biphasic_mobility,
@@ -505,6 +509,11 @@ def run6():
             pressure,
             **gdict
         )
+        t1 = time.perf_counter()
+        TimeProfile.dt_total_pressure_update = t1 - t0
+        TimeProfile.update_data()
+        TimeProfile.show_data()
+        
         p_updates += 1
         
         fp.insert_or_update_data({
@@ -592,4 +601,3 @@ def run6():
     
     import pdb; pdb.set_trace()
         
-

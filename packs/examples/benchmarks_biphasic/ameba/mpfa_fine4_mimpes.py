@@ -25,6 +25,8 @@ from packs.examples.same_functions import (
     load_ps_results
 )
 
+from packs.manager.predef_names import TimeProfile
+
 import os
 import numpy as np
 from typing import Tuple
@@ -34,6 +36,8 @@ from packs.utils.permfields import chueh_perm_artur_paper, random_permeability_c
 from packs.utils.utils_old import is_point_inside_circle, time_func
 
 import shutil
+import time
+
 
 def get_properties():
 
@@ -641,7 +645,7 @@ def run5():
         p_updates = 0
         s_updates = 0
         for i in range(loop_intervals):
-            
+            t0 = time.perf_counter()
             pressure, edges_flux, fw_faces = update_pressure_only(
                 relative_perm,
                 biphasic_mobility,
@@ -650,6 +654,10 @@ def run5():
                 bc,
                 lsds
             )
+            t1 = time.perf_counter()
+            TimeProfile.dt_total_pressure_update = t1 - t0
+            TimeProfile.show_data()
+            import pdb; pdb.set_trace()
             p_updates += 1
             
             fp.insert_or_update_data({
