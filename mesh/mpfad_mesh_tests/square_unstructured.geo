@@ -1,7 +1,7 @@
-Lx = 1;
-Ly = 1;
+Lx = 100;
+Ly = 100;
 h1 = 0.1;
-h = 0.1;
+h = 0.3;
 Point(1) = {0, 0, 0, h};
 Point(2) = {Lx, 0, 0, h};
 Point(3) = {Lx, Ly, 0, h};
@@ -12,4 +12,8 @@ Line(3) = {3, 4};
 Line(4) = {4, 1};
 Line Loop(5) = {1, 2, 3, 4};
 Plane Surface(6) = {5};
+Physical Point(201) = {1};
+Physical Point(202) = {3};
+Physical Curve(203) = {4};
+Physical Curve(204) = {2};
 

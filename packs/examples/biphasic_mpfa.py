@@ -727,11 +727,14 @@ def update_pressure_only(
 
     # get_lpew2_weights(fp, update=True)
 
+    t0 = time.perf_counter()
     resp = set_fine_transmissibility_biphasic(
         fp,
         bc,
         lsds
     )
+    t1 = time.perf_counter()
+    TimeProfile.dt_set_finescale_problem = t1 - t0
 
     t0 = time.perf_counter()
     pressure = spsolve(resp['transmissibility'].tocsc(), resp['source'])

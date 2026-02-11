@@ -414,6 +414,12 @@ class MeshProperty:
         return resp
 
     def get_internal_nodes_org_from_faces_of_nodes_object(self):
+        if self.verify_name_in_data_names('internal_nodes_org'):
+            return {
+                'internal_nodes_org': self['internal_nodes_org'],
+                'internal_faces_of_nodes_org': self['internal_faces_of_nodes_org'],
+                'internal_n_nodes': self['internal_n_nodes']
+            }   
         n_faces_of_nodes = self['n_faces_of_nodes']
         internal_nodes = self.internal_nodes
         faces_of_nodes = self['faces_of_nodes']

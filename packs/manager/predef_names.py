@@ -4,6 +4,7 @@ import numpy as np
 class TimeProfile:
     dt_update_boundary_nodes_weights_neumann = 0
     dt_update_boundary_nodes_weights_neumann_mean = 0
+    dt_set_local_neumann_problem = 0.0
     dt_weight_finescale = 0.0
     dt_update_coarse_weight = 0.0
     dt_update_coarse_weight_mean = 0.0
@@ -32,28 +33,13 @@ class TimeProfile:
     def export_data_dict(cls):
         
         exclude_names = np.array(['__module__', 'update_data', 'export_data_dict', '__dict__',
-                         '__weakref__', '__doc__', 'show_data'])
+                         '__weakref__', '__doc__', 'show_data', 'reset_data'])
         all_names = np.array(list(cls.__dict__.keys()))
         my_names = np.setdiff1d(all_names, exclude_names)
         
         data = dict()
         for key in my_names:
             data.update({key: cls.__dict__[key]})
-        
-        # data = dict(
-        #     dt_update_boundary_nodes_weights_neumann = cls.dt_update_boundary_nodes_weights_neumann,
-        #     dt_update_boundary_nodes_weights_neumann_mean = cls.dt_update_boundary_nodes_weights_neumann_mean,
-        #     dt_weight_finescale = cls.dt_weight_finescale,
-        #     dt_update_coarse_weight = cls.dt_update_coarse_weight,
-        #     dt_update_coarse_weight_mean = cls.dt_update_coarse_weight_mean,
-        #     percent_weight_update_in_neumann = cls.percent_weight_update_in_neumann,
-        #     dt_solution_ms = cls.dt_solution_ms,
-        #     dt_neumann = cls.dt_neumann,
-        #     n_coarses = cls.n_coarses,
-        #     n_pressure_updates = cls.n_pressure_updates,
-        #     dt_total_pressure_update = cls.dt_total_pressure_update,
-        #     percent_neumann_in_total_pressure = cls.percent_neumann_in_total_pressure
-        # )
         
         return data
     
@@ -62,6 +48,13 @@ class TimeProfile:
         data = cls.export_data_dict()
         for key in data.keys():
             print(f"{key}: {data[key]}")
+    
+    @classmethod
+    def reset_data(cls):
+        cls.dt_update_boundary_nodes_weights_neumann = 0.0
+        cls.dt_set_local_neumann_problem = 0.0
+        
+        
         
         
         

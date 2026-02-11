@@ -146,3 +146,8 @@ symetric_finescale_tri = os.path.join(biphasic_folder, 'symetricf_tri.msh')
 symetric_coarse = os.path.join(biphasic_folder, 'symetric_coarse.msh')
 
 points_chueh_artur_path = os.path.join(data_folder, 'points_chueh_artur.mat')
+
+ftest1 = 'malha_teste_1.msh'
+ftest1_v4 = 'malha_teste_1_v4.msh'
+ctest1_1 = 'malha_teste_1_coarse_1.msh'
+ctest1_2 = 'malha_teste_1_coarse_2.msh'

@@ -18,6 +18,7 @@ import shutil
 import copy
 from functools import reduce
 import time
+import timeit
 
 
 def get_perm_diag(value):
@@ -375,8 +376,11 @@ def _update_fine_flux_aux(
         'xi_params': update_xi_params(cstruct['xi_params_backup'], total_mobility_edges[global_edges]),
     })
 
+    t0 = time.perf_counter()
     # lt = set_fine_transmissibility_biphasic(cstruct, bc, lsds, only_internal_nodes=True)
     lt = set_fine_transmissibility_biphasic_local(cstruct, bc, lsds)
+    t1 = time.perf_counter()
+    TimeProfile.dt_set_local_neumann_problem += t1 - t0
 
     # #### segunda modificação
     # local_edges_presc_neumann = neumann_edges[test4]
