@@ -1364,6 +1364,7 @@ def update_pressure_only_ms(
     it = -1
     err = -1
     
+    t0 = time.perf_counter()
     krw_faces, kro_faces = relative_perm.calculate(saturation)
     mobw_faces, mobo_faces = biphasic_mobility.calculate(krw_faces, kro_faces)
     total_mobility_faces = biphasic_mobility.get_total_mobility(mobw_faces, mobo_faces)
@@ -1386,6 +1387,8 @@ def update_pressure_only_ms(
     fp.insert_or_update_data({
         'xi_params': update_xi_params(fp['xi_params_backup'], total_mobility_edges)
     })
+    t1 = time.perf_counter()
+    TimeProfile.dt_update_mobility = t1 - t0
 
     # weights = get_gls_nodes_weights(**fp)
     # fp.insert_or_update_data(weights)
@@ -1502,6 +1505,7 @@ def update_pressure_only_ms(
     t1 = time.perf_counter()
     TimeProfile.dt_solution_ms = t1 - t0
 
+    t0 = time.perf_counter()
     edges_flux, nodes_pressure = lsds.get_edges_flux_and_nodes_pressure(
         bc,
         P_prol,
@@ -1514,7 +1518,6 @@ def update_pressure_only_ms(
     
     fp.insert_or_update_data({'dt_update_boundary_nodes_weights_neumann': np.array([0])})
     
-    t0 = time.perf_counter()
     update_fine_flux(
         coarse_struct,
         edges_flux,

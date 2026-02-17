@@ -256,7 +256,7 @@ def _update_fine_flux_aux(
         fine_ids: np.ndarray,
         saturation: np.ndarray
 ):
-    
+    t0 = time.perf_counter()
     global_edges = cstruct['map_edges']
     bool_boundary_edges = cstruct['bool_boundary_edges']
     # local_flux_presc = edges_flux[global_edges[bool_boundary_edges]]/(edges_dim[global_edges[bool_boundary_edges]])
@@ -358,6 +358,8 @@ def _update_fine_flux_aux(
         'neumann_edges_value': bc['neumann_edges']['value'],
         'edges_multiplier': edges_multiplier,
     })
+    t1 = time.perf_counter()
+    TimeProfile.dt_neumann_preprocess += t1 - t0
     
     t0 = time.perf_counter()
     nodes_to_calculate = get_local_nodes_to_calculate(
@@ -395,6 +397,7 @@ def _update_fine_flux_aux(
     # lt['transmissibility'].eliminate_zeros()
     # ##################
 
+    t0 = time.perf_counter()
     local_pressure = spsolve(lt['transmissibility'], lt['source'])
     
     local_edges_flux = lsds.get_edges_flux(
@@ -406,6 +409,8 @@ def _update_fine_flux_aux(
         cstruct['adjacencies'],
         cstruct['neumann_weights']
     )
+    t1 = time.perf_counter()
+    TimeProfile.dt_local_flux_update += t1 - t0
 
 
     # biedges = ~bool_boundary_edges
