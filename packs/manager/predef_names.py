@@ -1,6 +1,7 @@
 import copy
 import numpy as np
-import yaml
+import os
+import pandas as pd
 
 class TimeProfile:
     dt_update_boundary_nodes_weights_neumann = 0
@@ -12,7 +13,7 @@ class TimeProfile:
     percent_weight_update_in_neumann = 0.0
     dt_solution_ms = 0.0
     dt_neumann = 0.0
-    n_coarses = 0.0
+    n_coarses = 0
     n_pressure_updates = 0.0
     dt_total_pressure_update = 0.0
     percent_neumann_in_total_pressure = 0.0
@@ -22,6 +23,7 @@ class TimeProfile:
     dt_update_mobility = 0.0
     dt_local_flux_update = 0.0
     dt_neumann_preprocess = 0.0
+    config_sim = ''
     
     
     @classmethod
@@ -37,7 +39,8 @@ class TimeProfile:
     def export_data_dict(cls):
         
         exclude_names = np.array(['__module__', 'update_data', 'export_data_dict', '__dict__',
-                         '__weakref__', '__doc__', 'show_data', 'reset_data', 'export_to_data'])
+                         '__weakref__', '__doc__', 'show_data', 'reset_data', 'export_to_data',
+                         'create_df_if_not_exists', 'create_empty_df'])
         all_names = np.array(list(cls.__dict__.keys()))
         my_names = np.setdiff1d(all_names, exclude_names)
         
@@ -51,7 +54,7 @@ class TimeProfile:
     def show_data(cls):
         data = cls.export_data_dict()
         for key in data.keys():
-            print(f"{key}: {data[key]}")
+            print(f"{key}: {data[key]}")            
     
     @classmethod
     def reset_data(cls):
@@ -61,10 +64,32 @@ class TimeProfile:
         cls.dt_neumann_preprocess = 0.0
     
     @classmethod
-    def export_to_data(cls, filename_export_times:str, **kwargs):
+    def create_empty_df(cls):
         data = cls.export_data_dict()
-        with open(filename, 'w') as f:
-            yaml.dump(data, f)
+        df = pd.DataFrame([data])
+        return df
+        
+    
+    @classmethod
+    def create_df_if_not_exists(cls, filename_export_times:str, **kwargs):
+        test = os.path.exists(filename_export_times)
+        if test==True:
+            # df = pd.read_csv(filename_export_times)
+            pass
+        else:
+            df = cls.create_empty_df()
+            df.to_csv(filename_export_times, index=False)
+    
+    @classmethod
+    def export_to_data(cls, filename_export_times:str, **kwargs):
+        cls.create_df_if_not_exists(filename_export_times)
+        data = cls.export_data_dict()
+        df = pd.DataFrame([data])
+        df.to_csv(filename_export_times, mode='a', header=not os.path.exists(filename_export_times), index=False)
+        
+        
+        
+        
         
         
         

@@ -187,7 +187,8 @@ def run5():
     gdict = {
         'funcname': '',
         'file_times': 'functions_times_ftest1.yaml',
-        'load_simulation': load
+        'load_simulation': load,
+        'filename_export_times': os.path.join(defpaths.flying, 'pressure_times.csv')
     }
 
     cumulative_oil = 0.0
@@ -200,6 +201,8 @@ def run5():
     simulation_data = SimulationData('ftest1')
     simulation_data.insert_or_update_data({'label': np.array(['ftest1'])})
     create_path_mesh_data(simulation_data)
+    TimeProfile.config_sim = simulation_data['label'][0]
+    TimeProfile.n_coarses = 1.0
 
     fp, fine_mesh_path = get_properties()
     set_permeability(fine_mesh_path, fp, simulation_data, export_permfield=False)
@@ -296,7 +299,14 @@ def run5():
             )
             t1 = time.perf_counter()
             TimeProfile.dt_total_pressure_update = t1 - t0
+            # TimeProfile.update_data()
             TimeProfile.show_data()
+            
+            if loop > 1:
+                TimeProfile.export_to_data(**gdict)
+                import pdb; pdb.set_trace()
+            
+            TimeProfile.reset_data()
             # import pdb; pdb.set_trace()
             p_updates += 1
             

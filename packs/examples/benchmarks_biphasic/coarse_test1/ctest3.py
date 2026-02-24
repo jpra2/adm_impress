@@ -71,8 +71,8 @@ from typing import Sequence
 import time
 
 def get_properties_coarse():
-    coarse_mesh_properties_name = 'ctest1_2'
-    coarse_mesh_path = defpaths.ctest1_2
+    coarse_mesh_properties_name = 'ctest1_3'
+    coarse_mesh_path = defpaths.ctest1_3
 
     # coarse_mesh_properties_name = 'coarse4f_ameba'
     # coarse_mesh_path = defpaths.ameba_coarse4f
@@ -126,7 +126,7 @@ def run6():
     
     gdict = {
         'funcname': '',
-        'file_times': 'functions_times_ctest1_2.yaml',
+        'file_times': 'functions_times_ctest1_3.yaml',
         'load_simulation': load,
         'filename_export_times': os.path.join(defpaths.flying, 'pressure_times.csv')
     }
@@ -139,8 +139,8 @@ def run6():
     biphasic_mobility = BiphasicMobility(mio=4)
     lsds = LsdsFluxCalculation()
     # simulation_data = SimulationData('biphasic_layers_coarse4')
-    simulation_data = SimulationData('bipdf = pd.DataFrame([data])hasic_ctest1_2')
-    simulation_data.insert_or_update_data({'label': np.array(['ctest1_2'])})
+    simulation_data = SimulationData('biphasic_ctest1_3')
+    simulation_data.insert_or_update_data({'label': np.array(['ctest1_3'])})
     create_path_mesh_data(simulation_data)
     TimeProfile.config_sim = simulation_data['label'][0]
 

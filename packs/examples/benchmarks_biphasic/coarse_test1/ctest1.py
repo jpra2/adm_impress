@@ -128,7 +128,7 @@ def run6():
         'funcname': '',
         'file_times': 'functions_times_ctest1_1.yaml',
         'load_simulation': load,
-        'filename_export_times': os.path.join(defpaths.flying, 'pressure_times_ctest1_1.yaml')
+        'filename_export_times': os.path.join(defpaths.flying, 'pressure_times.csv')
     }
 
     cumulative_oil = 0.0
@@ -142,6 +142,7 @@ def run6():
     simulation_data = SimulationData('biphasic_ctest1_1')
     simulation_data.insert_or_update_data({'label': np.array(['ctest1_1'])})
     create_path_mesh_data(simulation_data)
+    TimeProfile.config_sim = simulation_data['label'][0]
 
     
     fp, fine_mesh_path = get_properties_finescale()
@@ -252,8 +253,9 @@ def run6():
         TimeProfile.dt_total_pressure_update = t1 - t0
         TimeProfile.update_data()
         TimeProfile.show_data()
-        TimeProfile.export_to_data(**gdict)
-        import pdb; pdb.set_trace()
+        if loop > 1:
+            TimeProfile.export_to_data(**gdict)
+            import pdb; pdb.set_trace()
         TimeProfile.reset_data()
         
         p_updates += 1
