@@ -14,6 +14,9 @@ from scipy.sparse.linalg import onenormest
 from rich import print as rprint
 from functools import wraps
 import time
+import anndata as ad
+import copy
+from pathlib import Path
 
 
 def get_box_dep0(all_centroids, limites):
@@ -357,3 +360,41 @@ def time_func_cum(export_time: bool=False):
             return result
         return wrapper
     return decorator
+
+def test_primal_id(primal_id: np.ndarray):
+    pr=primal_id.copy()
+    cids = np.unique(primal_id)
+    aux=np.arange(len(cids))
+    dif = aux[cids != aux]    
+    for i in dif:
+        pr[pr==cids[i]]=i
+    
+    return pr 
+
+def _get_h5ad_path(path):
+    ext = defpaths.ext_h5ad
+    if path.endswith(ext):
+        path2 = path
+    else:
+        path2 = path + ext
+    return path2
+
+def _get_matrix_path(path):
+    path2 = _get_h5ad_path(path)
+        
+    matrix_path = str(path2)
+    return matrix_path
+
+def save_ann_matrix(path: str, matrix: sp.csc_matrix):
+    matrix_path = _get_matrix_path(path)
+    if os.path.exists(matrix_path):
+        os.remove(matrix_path)
+    
+    adata = ad.AnnData(X=matrix)
+    adata.write_h5ad(matrix_path)
+    rprint(f'[green on white]Matrix saved at {matrix_path}[green on white] \n')
+
+def load_ann_matrix(path) -> sp.csc_matrix:
+    matrix_path = _get_matrix_path(path)
+    adata = ad.read_h5ad(matrix_path)
+    return copy.deepcopy(adata.X)

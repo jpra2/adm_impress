@@ -66,5 +66,7 @@ def dual_ids(name:str):
 def level_str(level):
     return '_level' + str(level)
 
+DEFAULT_TAG = 'tag'
+
 
 

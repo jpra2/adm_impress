@@ -377,6 +377,21 @@ def set_fine_transmissibility_without_bc(save_fine_transm_without_bc, matrix_pat
     
     return transm
 
+def set_fine_transmissibility_without_bc_v2(fine_mesh_properties: MeshProperty) -> dict:
+    transm = dict()
+    
+    """Cria a matriz de transmissibilidade sem salvar
+
+    Returns:
+        transm: matriz de transmissibilidade sem as condices de contorno
+    """
+    
+    lsds = LsdsFluxCalculation()
+    transm.update(func1(fine_mesh_properties, lsds))
+        
+    
+    return transm
+
 def func1(fine_mesh_properties: MeshProperty, lsds: LsdsFluxCalculation):
     transm = lsds.mount_transmissibility_matrix_without_bc(**fine_mesh_properties.get_all_data())
     return transm
@@ -433,6 +448,12 @@ def set_fine_transmissibility(save_fine_transmissibility, fine_mesh_properties: 
             }
         )
     
+    return resp
+
+def set_fine_transmissibility_v2(fine_mesh_properties: MeshProperty, bc: BoundaryConditions):
+    resp = dict()
+    lsds = LsdsFluxCalculation()
+    resp.update(func2(lsds, bc, fine_mesh_properties))    
     return resp
 
 def get_OR_AMS(fine_mesh_properties: MeshProperty):

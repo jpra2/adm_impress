@@ -79,7 +79,8 @@ def load_su_mesh_paths():
     su_meshs = names_df[names_df.str.contains(mesh_test_su_mpfa)].values
     su_meshs = [os.path.join(mpfad_mesh_folder, mesh_path) for mesh_path in su_meshs]
     return su_meshs
-    
+
+ext_h5ad = '.h5ad'
     
     
 mpfad_test_mesh = '2d_unstructured.msh'
@@ -157,3 +158,8 @@ ctest1_5 = 'malha_teste_1_coarse_5.msh'
 
 ftest3 = 'malha_teste_3.msh'
 ftest3_v4 = 'malha_teste_3_v4.msh'
+
+logs = 'logs'
+operator_logs = 'operator_logs'
+DEFAULT_LOG_PATH = os.path.join(remove_folder, logs)
+DEFAULT_OPERATOR_LOG_PATH = os.path.join(DEFAULT_LOG_PATH, operator_logs)
