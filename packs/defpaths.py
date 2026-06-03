@@ -154,3 +154,6 @@ ctest1_2 = 'malha_teste_1_coarse_2.msh'
 ctest1_3 = 'malha_teste_1_coarse_3.msh'
 ctest1_4 = 'malha_teste_1_coarse_4.msh'
 ctest1_5 = 'malha_teste_1_coarse_5.msh'
+
+ftest3 = 'malha_teste_3.msh'
+ftest3_v4 = 'malha_teste_3_v4.msh'

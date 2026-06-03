@@ -275,8 +275,11 @@
 # from packs.examples.benchmarks_biphasic.ameba.mpfa_coarse4_mimpes import run6
 # run6()
 
-from packs.examples.benchmarks_biphasic.coarse_test1.ftest1 import run5
-run5()
+# from packs.examples.benchmarks_biphasic.coarse_test1.ftest1 import run5
+# run5()
+
+# from packs.examples.benchmarks_biphasic.coarse_test3.ftest3 import run5
+# run5()
 
 # from packs.examples.benchmarks_biphasic.coarse_test1.ctest1 import run6
 # run6()
@@ -337,3 +340,5 @@ run5()
 # from packs.mpfa_methods.seq_method.seq_2 import run2
 # run2()
 
+from packs.examples.benchmarks_monophasic.spe10.spe1 import run4
+run4()  
