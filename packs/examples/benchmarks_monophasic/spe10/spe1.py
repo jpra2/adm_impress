@@ -133,6 +133,8 @@ def run4(layer=1, nCr=30):
         maxit=op_max_it
     )
     
+    save_data(T_bc, b_bc, OP, OR, layer)
+    
     
     
     
