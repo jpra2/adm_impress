@@ -11,12 +11,33 @@ import os
 import numpy as np
 import anndata as ad
 import scipy.sparse as sp
+import shutil
 
-def save_data(T_bc, b_bc, OP, OR, layer):
-    rel_path = os.path.join(defpaths.remove_folder, f'layer_{layer}')
+def load_data(layer, nCr):
+    rel_path = os.path.join(defpaths.remove_folder, f'layer_{layer}_Cr{nCr}')
+    
+    T_bc = sp.load_npz(os.path.join(rel_path, 'T_bc.npz'))
+    b = np.load(os.path.join(rel_path, 'b.npy'))
+    OP = sp.load_npz(os.path.join(rel_path, 'OP.npz'))
+    OR = sp.load_npz(os.path.join(rel_path, 'OR.npz'))
+    resp = {
+        'T': T_bc,
+        'b': b,
+        'OP': OP,
+        'OR': OR
+    }
+    return resp
+    
+    
+
+def save_data(T_bc, b_bc, OP, OR, layer, nCr):
+    rel_path = os.path.join(defpaths.remove_folder, f'layer_{layer}_Cr{nCr}')
+    if os.path.exists(rel_path):
+        shutil.rmtree(rel_path)
+        
     os.makedirs(rel_path, exist_ok=True)
     sp.save_npz(os.path.join(rel_path, 'T_bc.npz'), T_bc)
-    np.save(os.path.join(rel_path, 'b.npz'), b_bc)
+    np.save(os.path.join(rel_path, 'b.npy'), b_bc)
     sp.save_npz(os.path.join(rel_path, 'OP.npz'), OP)
     sp.save_npz(os.path.join(rel_path, 'OR.npz'), OR)
 
@@ -97,7 +118,7 @@ def get_properties():
     return fine_properties, fine_mesh_path
 
 
-def run4(layer=1, nCr=30):
+def run4(layer=36, nCr=30):
     
     disjointed = False
     n_levels_adj = 3
@@ -133,7 +154,7 @@ def run4(layer=1, nCr=30):
         maxit=op_max_it
     )
     
-    save_data(T_bc, b_bc, OP, OR, layer)
+    save_data(T_bc, b_bc, OP, OR, layer, nCr)
     
     
     
@@ -141,9 +162,6 @@ def run4(layer=1, nCr=30):
     
     
     
-    
-    
-    import pdb; pdb.set_trace()
     
     #  OR1, OP1 = get_OP_and_OR_v3(
     #     'OP1',
@@ -162,10 +180,6 @@ def run4(layer=1, nCr=30):
     
     
     
-    
-    
-    
-    import pdb; pdb.set_trace()
     
     
     
