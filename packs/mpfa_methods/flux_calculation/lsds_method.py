@@ -1551,9 +1551,9 @@ class LsdsFluxCalculation:
         T = T.tocsc()
         T.eliminate_zeros()
         
-        l2 = np.concatenate([adjacencies[bool_boundary_edges, 0], adjacencies[biedges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1]])
-        c2 = np.concatenate([ adjacencies[bool_boundary_edges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
-        d2 = np.concatenate([   xi_params[bool_boundary_edges, 0],   xi_params[biedges, 0],   xi_params[biedges, 1],  -xi_params[biedges, 1],  -xi_params[biedges, 0]])
+        l2 = np.concatenate([adjacencies[biedges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1]])
+        c2 = np.concatenate([adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
+        d2 = np.concatenate([xi_params[biedges, 0],   xi_params[biedges, 1],  -xi_params[biedges, 1],  -xi_params[biedges, 0]])
         T_tpfa = sp.csc_matrix((d2,(l2,c2)), shape=(faces.shape[0],faces.shape[0]))
         
         return {'transmissibility_without_bc': T,

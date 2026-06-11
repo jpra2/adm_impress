@@ -1111,7 +1111,7 @@ def get_modified_matrix(A: sp.csc_matrix) -> sp.csc_matrix:
 
 
 
-def define_strong_coupled(A: sp.csc_matrix, eps: float=0.05) -> sp.csc_matrix:
+def define_strong_coupled(A: sp.csc_matrix, eps: float=0.05, **kwargs) -> sp.csc_matrix:
     
     diagA = A.diagonal()
 
@@ -1238,8 +1238,9 @@ def get_msrsb_prolongation_operator(primal_id: np.ndarray, support_regions: np.n
     
     return OP, count_it
 
-def get_msrsb_prolongation_operator_v3(ind_support: np.ndarray, ptr_support: np.ndarray, A: sp.csr_matrix, OP0: sp.csc_matrix, op_name: str='', op_logs_path: str='', tol_op: float=0.05, maxit: int=10, omega: float=2/3, debug: bool=False, **kwargs) -> Tuple[sp.csc_matrix, int]:
+def get_msrsb_prolongation_operator_v3(ind_support: np.ndarray, ptr_support: np.ndarray, A: sp.csr_matrix, OP0: sp.csc_matrix, op_name: str='', op_logs_path: str='', tol_op: float=0.05, op_maxit: int=10, omega: float=2/3, debug: bool=False, **kwargs) -> Tuple[sp.csc_matrix, int]:
     
+    maxit = op_maxit
     count_it = 0
     Ematrix = _get_Ematrix(A, omega)
     emax = 1e4

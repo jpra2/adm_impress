@@ -46,6 +46,7 @@ impress_new/
 impress(copia)/
 .idea/
 venv/
+.venv/
 env/
 *__pycache__/
 *_0_0.yml

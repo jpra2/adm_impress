@@ -117,13 +117,47 @@ def get_properties():
 
     return fine_properties, fine_mesh_path
 
+def get_params():
+    return {
+        'eps': 0.001,
+        'n_levels_adj': 3,
+        'tol_op': 0.05,
+        'op_max_it': 10
+    }
 
-def run4(layer=36, nCr=30):
+def identify_filtered_interfaces(T_filtered: sp.csc_matrix, adjacencies: np.ndarray):
+        
+    Tdata = sp.find(T_filtered)
+    
+    interfaces = np.full(adjacencies.shape[0], False, dtype=bool)
+    
+    
+    lines_f = Tdata[0]
+    cols_f = Tdata[1]
+    
+    for i, j in lines_f, cols_f:
+        test1 = (adjacencies[:, 0] == i) & (adjacencies[:, 1] == j)
+        test2 = (adjacencies[:, 0] == j) & (adjacencies[:, 1] == i)
+        test = test1 | test2
+        interfaces [:] = interfaces | test
+    
+    
+    interfaces[:] = ~interfaces
+    
+    filtered_interfaces = np.arange(interfaces.shape[0])[interfaces]
+    
+    return filtered_interfaces
+    
+        
+        
+    
+    
+
+def run4(layer=36, nCr=81):
     
     disjointed = False
     n_levels_adj = 3
-    op_tolerance = 0.05
-    op_max_it = 10
+    my_params = get_params()
 
     fp, fine_mesh_path = get_properties()
     set_permeability(fp, layer=layer)
@@ -140,9 +174,9 @@ def run4(layer=36, nCr=30):
     b_bc = resp['source']
     
     nparts = int(T.shape[0]/nCr)
+    
     primal = cms.create_partition(T, nparts, disjointed=disjointed, nvols_mean=nCr)
     all_regions = cms.create_support_region_and_boundary_v3(T, primal, n_levels_adj=n_levels_adj, ext='_1')
-    
     
     OR = cms.get_OR_finite_volume(primal)
     OP, op_iterations, emax = cms.get_msrsb_prolongation_operator_v3(
@@ -150,11 +184,31 @@ def run4(layer=36, nCr=30):
         all_regions['ptr_support'],
         T_for_OP,
         OR.transpose(copy=True),
-        tol_op=op_tolerance,
-        maxit=op_max_it
+        **my_params
     )
     
-    save_data(T_bc, b_bc, OP, OR, layer, nCr)
+    T_strong = cms.define_strong_coupled(T)
+    primal_strong = cms.create_partition(T_strong, nparts=nparts, disjointed=True, nvols_mean=nCr)
+    all_regions_strong = cms.create_support_region_and_boundary_v3(T_strong, primal_strong, n_levels_adj=n_levels_adj, ext='_1')
+    
+    
+    
+    mesh_data = MeshData(dim=2, mesh_path=fine_mesh_path)
+    mesh_data.create_tag('permx')
+    mesh_data.insert_tag_data('permx', fp['permeability'][:,0,0], elements_type='faces')
+    
+    filtered_interfaces = identify_filtered_interfaces(T_strong, fp['adjacencies'])
+    
+    mesh_data.export_all_elements_type_to_vtk('spe_perms', element_type='faces')
+    mesh_data.export_only_the_elements('filtered_interfaces', element_type='edges', elements_array=filtered_interfaces)
+    
+    
+    
+    
+    
+    # save_data(T_bc, b_bc, OP, OR, layer, nCr)
+    
+    
     
     
     

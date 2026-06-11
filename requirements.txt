@@ -6,7 +6,7 @@ chardet==3.0.4
 colorlog==6.6.0
 configobj==5.0.6
 Cython==0.29.32
-dbus-python==1.2.16
+# dbus-python==1.2.16
 decorator==5.1.1
 executing==0.10.0
 h5py==3.11.0
@@ -32,12 +32,12 @@ ptyprocess==0.7.0
 pure-eval==0.2.2
 py==1.11.0
 pygments==2.19.1
-PyGObject==3.36.0
-pymoab==5.1.1
+# PyGObject==3.36.0
+# pymoab==5.1.1
 pyparsing==3.0.9
 pytest==7.1.2
 pytest-runner==6.0.0
-python-apt==2.0.0+ubuntu0.20.4.7
+# python-apt==2.0.0+ubuntu0.20.4.7
 python-dateutil==2.9.0.post0
 pytz==2025.2
 PyYAML==5.3.1
