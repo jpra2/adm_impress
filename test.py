@@ -341,12 +341,13 @@
 # run2()
 
 from packs.examples.benchmarks_monophasic.spe10.spe1 import run4, load_data
-ncr_list = [30, 40, 50, 60, 70, 80, 125]
-layers = [1, 36, 37, 85]
+# ncr_list = [30, 40, 50, 60, 70, 80, 125]
+ncr_list = [81]
+layers = [36, 37, 85]
 
 for layer in layers:
     for nCr in ncr_list:
-        # run4(layer=layer, nCr=nCr)
-        data = load_data(layer=layer, nCr=nCr)
-        print(data)
+        run4(layer=layer, nCr=nCr)
+        # data = load_data(layer=layer, nCr=nCr)
+        # print(data)
         import pdb; pdb.set_trace()

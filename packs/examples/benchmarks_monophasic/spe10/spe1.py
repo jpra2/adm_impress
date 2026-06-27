@@ -6,11 +6,13 @@ from packs.examples.benchmarks_monophasic.cross.test_cross_2 import set_weights_
 from packs.multiscale.msrsb import create_msrsb_structure as cms
 from packs import defpaths
 from packs.multiscale.transmissibility_correction.algorithimic_monotone import AlgorithimicMonotone
+from packs.utils.multiscale_methods import print_fine_interfaces_coarse_mesh_2d
 
 import os
 import numpy as np
 import anndata as ad
 import scipy.sparse as sp
+from scipy.sparse.linalg import spsolve, factorized
 import shutil
 
 def load_data(layer, nCr):
@@ -119,7 +121,7 @@ def get_properties():
 
 def get_params():
     return {
-        'eps': 0.001,
+        'eps': 5e-3,
         'n_levels_adj': 3,
         'tol_op': 0.05,
         'op_max_it': 10
@@ -134,8 +136,12 @@ def identify_filtered_interfaces(T_filtered: sp.csc_matrix, adjacencies: np.ndar
     
     lines_f = Tdata[0]
     cols_f = Tdata[1]
+    v1 = lines_f == cols_f
+    v2 = ~v1
+    lines_f = lines_f[v2]
+    cols_f = cols_f[v2]
     
-    for i, j in lines_f, cols_f:
+    for i, j in zip(lines_f, cols_f):
         test1 = (adjacencies[:, 0] == i) & (adjacencies[:, 1] == j)
         test2 = (adjacencies[:, 0] == j) & (adjacencies[:, 1] == i)
         test = test1 | test2
@@ -150,6 +156,67 @@ def identify_filtered_interfaces(T_filtered: sp.csc_matrix, adjacencies: np.ndar
     
         
         
+def mount_kmatrix(fp: MeshProperty):
+    
+    
+    
+    adjacencies = fp['adjacencies']
+    internal_edges = fp.internal_edges
+    permeability = fp['permeability']
+    unitary_normal = fp['unitary_normal_edges']
+    faces_centroids = fp['faces_centroids']
+    edges_centroids = fp.edges_centroids
+    area = fp['areas']
+    edges_dim = fp.edges_dim
+    faces = fp['faces']
+    
+    
+    n_internal = unitary_normal[internal_edges]
+
+    adj_internal = adjacencies[internal_edges]
+    elems_L = adj_internal[:, 0]  # Elementos à esquerda
+    elems_R = adj_internal[:, 1]  # Elementos à direita
+
+    # --- 2. Extrair a submatriz K_2x2 para os elementos vizinhos ---
+    # Fatiamos os eixos de K para pegar apenas as dimensões x e y (:2, :2)
+    K_L = permeability[elems_L, :2, :2]  
+    K_R = permeability[elems_R, :2, :2]  
+    
+    # --- 3. Executar a operação n^T * K * n vetorizada ---
+    # kn_L e kn_R terão dimensão (len(nii),) contendo o escalar de cada face interna
+    kn_L = np.einsum('id,ide,ie->i', n_internal, K_L, n_internal)
+    kn_R = np.einsum('id,ide,ie->i', n_internal, K_R, n_internal)
+    
+    # --- 1. Dados geométricos das faces internas (Filtrados por nii) ---
+    # Substitua pelas variáveis reais da sua malha:
+    d_L = np.linalg.norm(faces_centroids[adjacencies[internal_edges, 0]] - edges_centroids[internal_edges], axis=1)          # Dimensão: (len(nii),) - Distância centro_L -> face
+    d_R = np.linalg.norm(faces_centroids[adjacencies[internal_edges, 0]] - edges_centroids[internal_edges], axis=1)         # Dimensão: (len(nii),) - Distância centro_R -> face
+    area_f = edges_dim[internal_edges]    # Dimensão: (len(nii),) - Comprimento/Área da face
+    
+    mu = 1.0
+    
+    numerador_k = d_L + d_R
+    denominador_k = (d_L / kn_L) + (d_R / kn_R)
+    k_interface = numerador_k / denominador_k
+    # k_interface = k_interface * area_f
+    # k_interface = k_interface / (d_L + d_R)
+    # transmissibilidade = (k_interface * area_f) / (mu * (d_L + d_R))
+    
+    biedges = internal_edges
+    
+    l2 = np.concatenate([adjacencies[biedges, 0], adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1]])
+    c2 = np.concatenate([adjacencies[biedges, 0], adjacencies[biedges, 1], adjacencies[biedges, 1], adjacencies[biedges, 0]])
+    d2 = np.concatenate([k_interface,   -k_interface,  k_interface,  -k_interface])
+    T_tpfa = sp.csc_matrix((d2,(l2,c2)), shape=(faces.shape[0],faces.shape[0]))
+    
+    return {'T_matrix': T_tpfa}
+    
+    
+
+    
+    
+    
+    
     
     
 
@@ -164,8 +231,22 @@ def run4(layer=36, nCr=81):
     bc = set_boundary_conditions(fp)
     set_weights_nodes(fp, update=False)
     transm = set_fine_transmissibility_without_bc_v2(fp)
-    T = transm['T_tpfa']
+    T: sp.csc_matrix = transm['T_tpfa']
+    
     T_complete = transm['transmissibility_without_bc']
+    
+    resp5 = mount_kmatrix(fp)
+    T_matrix = resp5['T_matrix']
+    
+    T2 = T.copy()
+    T2.data[:] = 1.0
+    
+    T3: sp.csc_matrix = T2.multiply(T_complete)
+    T3.setdiag(0)
+    soma = np.array(T3.sum(axis=1)).flatten()
+    T3.setdiag(-soma)    
+    
+    
     ag = AlgorithimicMonotone()
     T_for_OP = ag.get_monotone_matrix(T_complete)
     
@@ -187,13 +268,71 @@ def run4(layer=36, nCr=81):
         **my_params
     )
     
-    T_strong = cms.define_strong_coupled(T)
+    
+    
+    T_strong = cms.define_strong_coupled(T_matrix, **my_params)
     primal_strong = cms.create_partition(T_strong, nparts=nparts, disjointed=True, nvols_mean=nCr)
     all_regions_strong = cms.create_support_region_and_boundary_v3(T_strong, primal_strong, n_levels_adj=n_levels_adj, ext='_1')
+    fp.insert_or_update_data({'primal_id_level1': primal_strong})
+    
+    
+    print_fine_interfaces_coarse_mesh_2d(
+        fp,
+        fine_mesh_path,
+        1,
+        'edges_primal_intarfaces'
+    )
+    
+    import pdb; pdb.set_trace()
+    
+    OR_strong = cms.get_OR_finite_volume(primal_strong)
+    OP_strong = OR_strong.transpose(copy=True)
+    Msupport = sp.csr_matrix((np.repeat(1.0, all_regions_strong['ind_support'].shape[0]), all_regions_strong['ind_support'], all_regions_strong['ptr_support']), shape=OP_strong.transpose().shape).transpose()
+    
+    n = T_strong.shape[0]
+    diag1 = T_strong.diagonal()
+    D1 = sp.spdiags(1/diag1, 0, n, n).tocsc()
+    
+    diag2 = T_for_OP.diagonal()
+    D2 = sp.spdiags(1/diag2, 0, n, n).tocsc()
+    
+    alpha = 0
+    omega = 2/3
+    for i in range(8):
+        if i > 5:
+            alpha = 0.7
+            
+        new_OP = OP_strong - omega*((1-alpha)*(D1*T_strong) + alpha*(D2*T_for_OP))*OP_strong
+        new_OP = Msupport.multiply(new_OP)
+        soma = np.array(new_OP.sum(axis=1)).flatten()
+        soma[:] = 1/soma
+        new_OP.data *= soma[new_OP.indices]
+        emax = np.absolute((OP_strong - new_OP).data).max()
+        print(i)
+        print(emax)
+        OP_strong = new_OP
+    
+    xf = spsolve(T_bc, b_bc)
+    
+    LU1 = factorized(OR @ T_bc @ OP)
+    x1_app = OP @ LU1(OR @ b_bc)
+    
+    LU2 = factorized(OR_strong @ T_bc @ OP_strong)
+    x2_app = OP_strong @ LU2(OR_strong @ b_bc)
+    
+    error1 = np.abs(xf - x1_app)
+    error2 = np.abs(xf - x2_app)
+    
+    l2_error1 = np.linalg.norm(error1)
+    l2_error2 = np.linalg.norm(error2)
+    
+    import pdb; pdb.set_trace()
     
     
     
-    mesh_data = MeshData(dim=2, mesh_path=fine_mesh_path)
+    
+        
+    mesh_data = MeshData(dim=3, mesh_path=fine_mesh_path)
     mesh_data.create_tag('permx')
     mesh_data.insert_tag_data('permx', fp['permeability'][:,0,0], elements_type='faces')
     
@@ -201,6 +340,7 @@ def run4(layer=36, nCr=81):
     
     mesh_data.export_all_elements_type_to_vtk('spe_perms', element_type='faces')
     mesh_data.export_only_the_elements('filtered_interfaces', element_type='edges', elements_array=filtered_interfaces)
+    
     
     
     
