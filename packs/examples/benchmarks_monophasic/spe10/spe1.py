@@ -1,7 +1,8 @@
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
 from packs import defpaths
 from packs.examples.benchmarks_monophasic.spe10.others import set_permeability
-from packs.manager import MeshData, MeshProperty, BoundaryConditions
+# from packs.manager import MeshData, MeshProperty, BoundaryConditions
+from packs.manager import MeshProperty, BoundaryConditions
 from packs.examples.benchmarks_monophasic.cross.test_cross_2 import set_weights_nodes, set_fine_transmissibility_without_bc_v2, set_fine_transmissibility_v2
 from packs.multiscale.msrsb import create_msrsb_structure as cms
 from packs import defpaths
@@ -107,7 +108,7 @@ def set_boundary_conditions(fine_properties: MeshProperty):
 def plot_perm_layer(fp: MeshProperty, fine_mesh_path: str):
     
     permx = fp['permeability'][:,0,0]
-    
+    from packs.manager.mesh_data import MeshData
     mesh_data = MeshData(mesh_path=fine_mesh_path)
     mesh_data.create_tag('permx')
     mesh_data.insert_tag_data('permx', permx, 'faces')
@@ -305,26 +306,55 @@ def run4(layer=36, nCr=81):
         OR_strong.transpose(copy=True),
         **my_params
     )
+    
+    norm_b_bc = np.linalg.norm(b_bc)
 
     definitions = {
         'A': T_bc,
         'b': b_bc,
         'restart': 30,
         'tol': 1e-8,
-        'x0': np.zeros_like(b_bc)
+        'x0': np.zeros_like(b_bc),
+        'maxiter': int(1e3)
     }
+    
+    xref = spsolve(T_bc, b_bc)
+        
 
-    finescale_smoother = mcl.Ilu0Precond(T_bc)
+    finescale_smoother = mcl.Ilu0Precond(definitions['A'])
+    # finescale_smoother_ilu1 = mcl.Ilu1Precond(definitions['A'])
+    
+    residuals_fs = []
+    definitions.update({
+        'M': finescale_smoother,
+        'residuals': residuals_fs
+    })
+    method = 'Finescale Ilu0'
+    
+    def callback_func(xk):
+        residuo = definitions.get('residuals')
+        it = len(residuo)
+        res = residuo[-1]
+        print(f"Method: {method}, Iteracao: {it}, Residuo: {res:.2f}")
+    
+    t1 = time.perf_counter()
+    x3, info = fgmres(**definitions, callback=callback_func)
+    dt3 = time.perf_counter() - t1
+    
+    
 
-    residual_op = []
+    residual_op = []    
     precond = mcl.MultiScaleSmoother(T_bc, OP, OP.transpose(copy=True), finescale_smoother)
     definitions.update({
         'M': precond,
         'residuals': residual_op
     })
+    method = 'MsRSB Method'
     t1 = time.perf_counter()
-    x1, info = fgmres(**definitions)
+    x1, info = fgmres(**definitions, callback=callback_func)
     dt1 = time.perf_counter() - t1
+    
+    
 
     residual_op_strong = []
     precond = mcl.MultiScaleSmoother(T_bc, OP_strong, OP_strong.transpose(copy=True), finescale_smoother)
@@ -332,8 +362,9 @@ def run4(layer=36, nCr=81):
         'M': precond,
         'residuals': residual_op_strong
     })
+    method = 'f-MsRSB Method'
     t1 = time.perf_counter()
-    x2, info = fgmres(**definitions)
+    x2, info = fgmres(**definitions, callback=callback_func)
     dt2 = time.perf_counter() - t1
 
     print(f"""
@@ -345,6 +376,10 @@ def run4(layer=36, nCr=81):
         Iteracoes:
             OP: {len(residual_op)}
             OP_strong: {len(residual_op_strong)}
+            
+        Residuo:
+            OP: {residual_op[-1]:.2f}
+            OP_strong: {residual_op_strong[-1]:.2f}
     """)
 
     import ipdb; ipdb.set_trace()
@@ -397,7 +432,7 @@ def run4(layer=36, nCr=81):
     
     
     
-        
+    from packs.manager.mesh_data import MeshData
     mesh_data = MeshData(dim=3, mesh_path=fine_mesh_path)
     mesh_data.create_tag('permx')
     mesh_data.insert_tag_data('permx', fp['permeability'][:,0,0], elements_type='faces')
@@ -559,7 +594,7 @@ def run5(layer=36, nCr=81):
     
     
     
-        
+    from packs.manager.mesh_data import MeshData
     mesh_data = MeshData(dim=3, mesh_path=fine_mesh_path)
     mesh_data.create_tag('permx')
     mesh_data.insert_tag_data('permx', fp['permeability'][:,0,0], elements_type='faces')
