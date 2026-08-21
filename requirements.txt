@@ -21,7 +21,7 @@ mdurl==0.1.2
 meshio==5.3.5
 numpy==1.23.1
 packaging==21.3
-pandas==2.0.3
+# pandas==2.0.3
 parso==0.7.1
 pexpect==4.8.0
 pickleshare==0.7.5

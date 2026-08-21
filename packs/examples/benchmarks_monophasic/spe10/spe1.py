@@ -7,6 +7,7 @@ from packs.multiscale.msrsb import create_msrsb_structure as cms
 from packs import defpaths
 from packs.multiscale.transmissibility_correction.algorithimic_monotone import AlgorithimicMonotone
 from packs.utils.multiscale_methods import print_fine_interfaces_coarse_mesh_2d
+from packs.multiscale.preconditioner import multilevel_class as mcl
 
 import os
 import numpy as np
@@ -14,6 +15,8 @@ import anndata as ad
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve, factorized
 import shutil
+from pyamg.krylov import fgmres
+import time
 
 def load_data(layer, nCr):
     rel_path = os.path.join(defpaths.remove_folder, f'layer_{layer}_Cr{nCr}')
@@ -124,7 +127,10 @@ def get_params():
         'eps': 5e-3,
         'n_levels_adj': 3,
         'tol_op': 0.05,
-        'op_max_it': 10
+        'op_max_it': 10,
+        'maxiter': int(1e4),
+        'tol': 1e-8,
+        'restart': 100
     }
 
 def identify_filtered_interfaces(T_filtered: sp.csc_matrix, adjacencies: np.ndarray):
@@ -235,7 +241,8 @@ def run4(layer=36, nCr=81):
     
     T_complete = transm['transmissibility_without_bc']
     
-    resp5 = mount_kmatrix(fp)
+    ## interfaces with n^t K n
+    resp5 = mount_kmatrix(fp) 
     T_matrix = resp5['T_matrix']
     
     T2 = T.copy()
@@ -275,13 +282,13 @@ def run4(layer=36, nCr=81):
     all_regions_strong = cms.create_support_region_and_boundary_v3(T_strong, primal_strong, n_levels_adj=n_levels_adj, ext='_1')
     fp.insert_or_update_data({'primal_id_level1': primal_strong})
     
-    
-    print_fine_interfaces_coarse_mesh_2d(
-        fp,
-        fine_mesh_path,
-        1,
-        'edges_primal_intarfaces'
-    )
+    ## plotar interfaces da primal
+    # print_fine_interfaces_coarse_mesh_2d(
+    #     fp,
+    #     fine_mesh_path,
+    #     1,
+    #     'edges_primal_intarfaces'
+    # )
     
     import pdb; pdb.set_trace()
     
@@ -326,6 +333,8 @@ def run4(layer=36, nCr=81):
     l2_error1 = np.linalg.norm(error1)
     l2_error2 = np.linalg.norm(error2)
     
+    
+    
     import pdb; pdb.set_trace()
     
     
@@ -368,7 +377,140 @@ def run4(layer=36, nCr=81):
     #     my_params['op_iterations_path'],
     #     my_params['operator_times_path']
     # ) 
+
+def run5(layer=36, nCr=81):
     
+    disjointed = False
+    n_levels_adj = 3
+    my_params = get_params()
+
+    fp, fine_mesh_path = get_properties()
+    set_permeability(fp, layer=layer)
+    bc = set_boundary_conditions(fp)
+    set_weights_nodes(fp, update=False)
+    transm = set_fine_transmissibility_without_bc_v2(fp)
+    T: sp.csc_matrix = transm['T_tpfa']
+    
+    T_complete = transm['transmissibility_without_bc']
+    
+    
+    ag = AlgorithimicMonotone()
+    T_for_OP = ag.get_monotone_matrix(T_complete)
+    
+    resp = set_fine_transmissibility_v2(fp, bc)
+    T_bc = resp['transmissibility']
+    b_bc = resp['source']
+    
+    nparts = int(T.shape[0]/nCr)
+    
+    ## primal criada com adjacencia tpfa
+    primal = cms.create_partition(T, nparts)
+    all_regions = cms.create_support_region_and_boundary_v3(T_complete, primal, n_levels_adj=n_levels_adj, ext='_1')
+    fp.insert_or_update_data({'primal_id_level1': primal})
+    
+    OR = cms.get_OR_finite_volume(primal)
+    OP, op_iterations, emax = cms.get_msrsb_prolongation_operator_v3(
+        all_regions['ind_support'],
+        all_regions['ptr_support'],
+        T_for_OP,
+        OR.transpose(copy=True),
+        **my_params
+    )
+    
+    
+    # # plotar interfaces da primal
+    # print_fine_interfaces_coarse_mesh_2d(
+    #     fp,
+    #     fine_mesh_path,
+    #     1,
+    #     'edges_primal_MsRSB'
+    # )
+    
+    
+    
+    T_strong = cms.define_strong_coupled(T_complete, **my_params)
+    primal_strong = cms.create_partition(T_strong, nparts=nparts, disjointed=True, nvols_mean=nCr)
+    all_regions_strong = cms.create_support_region_and_boundary_v3(T_strong, primal_strong, n_levels_adj=n_levels_adj, ext='_1')
+    fp.insert_or_update_data({'primal_id_level1': primal_strong})
+    
+    # # plotar interfaces da primal
+    # print_fine_interfaces_coarse_mesh_2d(
+    #     fp,
+    #     fine_mesh_path,
+    #     1,
+    #     'edges_primal_f-MsRSB'
+    # )
+    
+    
+    OR_strong = cms.get_OR_finite_volume(primal_strong)
+    OP_s, op_iterations_s, emax_s = cms.get_msrsb_prolongation_operator_v3(
+        all_regions_strong['ind_support'],
+        all_regions_strong['ptr_support'],
+        T_strong,
+        OR_strong.transpose(copy=True),
+        **my_params
+    )
+    
+    xf = spsolve(T_bc, b_bc)
+    
+    M_MsRSB = mcl.MultiScaleIlu0Smoother(T_bc, OP, OP.transpose(copy=True))
+    M_fMsRSB = mcl.MultiScaleIlu0Smoother(T_bc, OP_s, OP_s.transpose(copy=True))
+    
+    r_MsRSB = []
+    r_fMsRSB = []
+    
+    def meu_callback_Ms(rk):
+        itM = len(r_MsRSB)
+        msg = f"Norma do residuo: {r_MsRSB[-1]:.2e}, Iteracao: {itM}"
+        print(msg)
+        
+    def meu_callback_fMs(rk):
+        itfM = len(r_fMsRSB)
+        msg = f"Norma do residuo: {r_fMsRSB[-1]:.2e}, Iteracao: {itfM}"
+        print(msg)
+    
+    
+    
+    t1 = time.perf_counter()
+    x_fMsRSB, exitcode = fgmres(T_bc, b_bc, residuals=r_fMsRSB, M=M_fMsRSB, maxiter=my_params['maxiter'], restart=my_params['restart'], tol=my_params['tol'], callback=meu_callback_fMs)
+    dt_fMsRSB = time.perf_counter() - t1
+    
+    t1 = time.perf_counter()
+    x_MsRSB, exitcode = fgmres(T_bc, b_bc, residuals=r_MsRSB, M=M_MsRSB, maxiter=my_params['maxiter'], restart=my_params['restart'], tol=my_params['tol'], callback=meu_callback_Ms)
+    dt_MsRSB = time.perf_counter() - t1
+    
+    
+    print(f'MsRSB: {dt_MsRSB}')
+    print(f'f-MsRSB: {dt_fMsRSB}')
+    
+    print(f'error MsRSB: {np.linalg.norm(xf - x_MsRSB)}')
+    print(f'error f-MsRSB: {np.linalg.norm(xf - x_fMsRSB)}')
+    
+    print(f'Len res MsRSB: {len(r_MsRSB)}')
+    print(f'Len res fMsRSB: {len(r_fMsRSB)}')
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    import pdb; pdb.set_trace()
+    
+    
+    
+    
+        
+    mesh_data = MeshData(dim=3, mesh_path=fine_mesh_path)
+    mesh_data.create_tag('permx')
+    mesh_data.insert_tag_data('permx', fp['permeability'][:,0,0], elements_type='faces')
+    
+    filtered_interfaces = identify_filtered_interfaces(T_strong, fp['adjacencies'])
+    
+    mesh_data.export_all_elements_type_to_vtk('spe_perms', element_type='faces')
+    mesh_data.export_only_the_elements('filtered_interfaces', element_type='edges', elements_array=filtered_interfaces)   
     
     
     
