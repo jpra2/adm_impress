@@ -30,7 +30,9 @@ dependencies = [
     { name = "h5py" },
     { name = "h5sparse" },
     { name = "idna" },
+    { name = "ilupp" },
     { name = "iniconfig" },
+    { name = "ipdb" },
     { name = "ipython" },
     { name = "jedi" },
     { name = "markdown-it-py" },
@@ -88,7 +90,9 @@ requires-dist = [
     { name = "h5py", specifier = "==3.11.0" },
     { name = "h5sparse", specifier = "==0.1.0" },
     { name = "idna", specifier = "==2.8" },
+    { name = "ilupp", specifier = ">=1.0.2" },
     { name = "iniconfig", specifier = "==1.1.1" },
+    { name = "ipdb", specifier = ">=0.13.13" },
     { name = "ipython", specifier = "==8.4.0" },
     { name = "jedi", specifier = "==0.17.2" },
     { name = "markdown-it-py", specifier = "==3.0.0" },
@@ -282,7 +286,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -346,12 +350,36 @@ wheels = [
 ]
 
 [[package]]
+name = "ilupp"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/27/9e/6e5c8dc9c3c2635cbf08e8e0c97c9346a9784d234eb35812a62f2411c776/ilupp-1.0.2.tar.gz", hash = "sha256:55c683410ba27ac6376928aad87bac3743090a5662cd1bcb5b0e764ae99d5bf3", size = 155418, upload-time = "2021-04-01T14:31:28.711Z" }
+
+[[package]]
 name = "iniconfig"
 version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/23/a2/97899f6bd0e873fed3a7e67ae8d3a08b21799430fb4da15cfedf10d6e2c2/iniconfig-1.1.1.tar.gz", hash = "sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32", size = 8104, upload-time = "2020-10-14T10:20:18.572Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9b/dd/b3c12c6d707058fa947864b67f0c4e0c39ef8610988d7baea9578f3c48f3/iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3", size = 4990, upload-time = "2020-10-16T17:37:23.05Z" },
+]
+
+[[package]]
+name = "ipdb"
+version = "0.13.13"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "decorator" },
+    { name = "ipython" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3d/1b/7e07e7b752017f7693a0f4d41c13e5ca29ce8cbcfdcc1fd6c4ad8c0a27a0/ipdb-0.13.13.tar.gz", hash = "sha256:e3ac6018ef05126d442af680aad863006ec19d02290561ac88b8b1c0b0cfc726", size = 17042, upload-time = "2023-03-09T15:40:57.487Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0c/4c/b075da0092003d9a55cf2ecc1cae9384a1ca4f650d51b00fc59875fe76f6/ipdb-0.13.13-py3-none-any.whl", hash = "sha256:45529994741c4ab6d2388bfa5d7b725c2cf7fe9deffabdb8a6113aa5ed449ed4", size = 12130, upload-time = "2023-03-09T15:40:55.021Z" },
 ]
 
 [[package]]

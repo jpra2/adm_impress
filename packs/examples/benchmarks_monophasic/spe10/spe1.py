@@ -6,6 +6,7 @@ from packs.examples.benchmarks_monophasic.cross.test_cross_2 import set_weights_
 from packs.multiscale.msrsb import create_msrsb_structure as cms
 from packs import defpaths
 from packs.multiscale.transmissibility_correction.algorithimic_monotone import AlgorithimicMonotone
+from packs.multiscale.transmissibility_correction.enhanced import Enhanced
 from packs.utils.multiscale_methods import print_fine_interfaces_coarse_mesh_2d
 from packs.multiscale.preconditioner import multilevel_class as mcl
 
@@ -254,8 +255,11 @@ def run4(layer=36, nCr=81):
     T3.setdiag(-soma)    
     
     
-    ag = AlgorithimicMonotone()
-    T_for_OP = ag.get_monotone_matrix(T_complete)
+    # ag = AlgorithimicMonotone()
+    # T_for_OP = ag.get_monotone_matrix(T_complete)
+
+    enhanced = Enhanced()
+    T_for_OP = enhanced.get_enhanced_matrix(T_complete)
     
     resp = set_fine_transmissibility_v2(fp, bc)
     T_bc = resp['transmissibility']
@@ -263,8 +267,8 @@ def run4(layer=36, nCr=81):
     
     nparts = int(T.shape[0]/nCr)
     
-    primal = cms.create_partition(T, nparts, disjointed=disjointed, nvols_mean=nCr)
-    all_regions = cms.create_support_region_and_boundary_v3(T, primal, n_levels_adj=n_levels_adj, ext='_1')
+    primal = cms.create_partition(T_matrix, nparts, disjointed=disjointed, nvols_mean=nCr)
+    all_regions = cms.create_support_region_and_boundary_v3(T_matrix, primal, n_levels_adj=n_levels_adj, ext='_1')
     
     OR = cms.get_OR_finite_volume(primal)
     OP, op_iterations, emax = cms.get_msrsb_prolongation_operator_v3(
@@ -274,7 +278,6 @@ def run4(layer=36, nCr=81):
         OR.transpose(copy=True),
         **my_params
     )
-    
     
     
     T_strong = cms.define_strong_coupled(T_matrix, **my_params)
@@ -290,11 +293,65 @@ def run4(layer=36, nCr=81):
     #     'edges_primal_intarfaces'
     # )
     
-    import pdb; pdb.set_trace()
-    
     OR_strong = cms.get_OR_finite_volume(primal_strong)
     OP_strong = OR_strong.transpose(copy=True)
     Msupport = sp.csr_matrix((np.repeat(1.0, all_regions_strong['ind_support'].shape[0]), all_regions_strong['ind_support'], all_regions_strong['ptr_support']), shape=OP_strong.transpose().shape).transpose()
+
+    OR_strong = cms.get_OR_finite_volume(primal_strong)
+    OP_strong, op_iterations, emax = cms.get_msrsb_prolongation_operator_v3(
+        all_regions_strong['ind_support'],
+        all_regions_strong['ptr_support'],
+        T_for_OP,
+        OR_strong.transpose(copy=True),
+        **my_params
+    )
+
+    definitions = {
+        'A': T_bc,
+        'b': b_bc,
+        'restart': 30,
+        'tol': 1e-8,
+        'x0': np.zeros_like(b_bc)
+    }
+
+    finescale_smoother = mcl.Ilu0Precond(T_bc)
+
+    residual_op = []
+    precond = mcl.MultiScaleSmoother(T_bc, OP, OP.transpose(copy=True), finescale_smoother)
+    definitions.update({
+        'M': precond,
+        'residuals': residual_op
+    })
+    t1 = time.perf_counter()
+    x1, info = fgmres(**definitions)
+    dt1 = time.perf_counter() - t1
+
+    residual_op_strong = []
+    precond = mcl.MultiScaleSmoother(T_bc, OP_strong, OP_strong.transpose(copy=True), finescale_smoother)
+    definitions.update({
+        'M': precond,
+        'residuals': residual_op_strong
+    })
+    t1 = time.perf_counter()
+    x2, info = fgmres(**definitions)
+    dt2 = time.perf_counter() - t1
+
+    print(f"""
+        Comparacao OP e OP_strong:
+        Tempo:
+            OP: {dt1:.2f}
+            OP_strong: {dt2:.2f}
+
+        Iteracoes:
+            OP: {len(residual_op)}
+            OP_strong: {len(residual_op_strong)}
+    """)
+
+    import ipdb; ipdb.set_trace()
+
+
+
+
     
     n = T_strong.shape[0]
     diag1 = T_strong.diagonal()
@@ -390,7 +447,7 @@ def run5(layer=36, nCr=81):
     set_weights_nodes(fp, update=False)
     transm = set_fine_transmissibility_without_bc_v2(fp)
     T: sp.csc_matrix = transm['T_tpfa']
-    
+
     T_complete = transm['transmissibility_without_bc']
     
     

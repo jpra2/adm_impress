@@ -1,31 +1,45 @@
 import pyamg
 import numpy as np
-from pyvista import Line
 from scipy.sparse.linalg import LinearOperator, factorized, spsolve_triangular
 import scipy.sparse as sp
 import ilupp
 import pyamg
 from pyamg.multilevel import multilevel_solver, MultilevelSolver
 import copy
+# from petsc4py import PETSc
 
-from packs.multiscale.transmissibility_correction.algorithimic_monotone import AlgorithimicMonotone
-
+# from packs.multiscale.algorithimic_monotone import AlgorithimicMonotone
 
 class Ilu0Precond(LinearOperator):
     def __init__(self, A: sp.csc_matrix, **kwargs):
         ilu = ilupp.ILU0Preconditioner(A)
         self.L = copy.deepcopy(ilu.factors()[0])
         self.U = copy.deepcopy(ilu.factors()[1])
+        self.L0 = copy.deepcopy(self.L)
+        
+        
 
     def aapply(self, v: np.ndarray):
+        
         y = spsolve_triangular(self.L, v, lower=True)
         x = spsolve_triangular(self.U, y, lower=False)
+        # print('*' * 10)
+        # print("FGMRES -> preconditioner")
+        # print("v.shape =", v.shape)
+        # print("v.ndim  =", v.ndim)
+        # print("y.shape =", y.shape)
+        # print("y.ndim  =", y.ndim)
+        # print("x.shape =", x.shape)
+        # print("x.ndim  =", x.ndim)
+        # print('*' * 10)
         return x
-
+    
     def _matvec(self, v: np.ndarray):
-        y = spsolve_triangular(self.L, v, lower=True)
-        x = spsolve_triangular(self.U, y, lower=False)
-        return x
+        return self.aapply(v)
+    
+    def apply(self, v: np.ndarray):
+        return self._matvec(v)
+    
     
     def get_copy(self):
         return copy.deepcopy(self)
@@ -43,8 +57,11 @@ class Ilu1Precond(Ilu0Precond):
         nnz_por_linha = A.nnz // A.shape[0]
         ilu = ilupp.ILUTPreconditioner(A, fill_in=int(nnz_por_linha*1.5), threshold=threshold)
         # ilu = ilupp.ILUTPreconditioner(A, fill_in=2, threshold=threshold)
-        self.L = ilu.factors()[0]
-        self.U = ilu.factors()[1]
+        self.L = copy.deepcopy(ilu.factors()[0])
+        self.U = copy.deepcopy(ilu.factors()[1])
+        self.L0 = copy.deepcopy(self.L)
+        
+        
 
 class MultiScaleIlu0Smoother2OP(LinearOperator):
     def __init__(self, A0, P1, R1, P2, R2, npre=0, npost=1, **kwargs):
@@ -725,6 +742,8 @@ class MultiscaleSolverPyamg2levels(LinearOperator):
 
 class MultiscaleIlu0SmootherAlgorithmic(MultiScaleIlu0Smoother):
      def __init__(self, A0, P1, R1, npre=0, npost=1, zeta=0.0001, weight=1.0):
+        
+        from packs.multiscale.algorithimic_monotone import AlgorithimicMonotone
         self.A0 = A0
         self.shape = A0.shape
         self.dtype = A0.dtype
@@ -749,6 +768,7 @@ class MultiscaleIlu0SmootherAlgorithmic(MultiScaleIlu0Smoother):
         
 class MultiscaleIlu1SmootherAlgorithmic(MultiScaleIlu0Smoother):
      def __init__(self, A0, P1, R1, npre=0, npost=1, zeta=0.0001, weight=1.0, threshold=1e-16, ilu_factor=1.5):
+        from packs.multiscale.algorithimic_monotone import AlgorithimicMonotone
         self.A0 = A0
         self.shape = A0.shape
         self.dtype = A0.dtype
@@ -982,6 +1002,10 @@ class MultiScaleSmoother2OP(LinearOperator):
         self.d1 = np.zeros(R1.shape[0])
         self.d2 = np.zeros(R2.shape[0])
         self.fs_smoother = finescale_smoother
+        
+        self.solver1 = MultiScaleSmoother(A0, P1, R1, finescale_smoother)
+        self.solver2 = MultiScaleSmoother(A0, P2, R2, finescale_smoother)
+        
         self.count = 0
         
         
@@ -1023,12 +1047,22 @@ class MultiScaleSmoother2OP(LinearOperator):
         # print(f'Count: {self.count}')
         # self.count += 1
         
-        return self.x.copy()        
+        return self.x.copy() 
+    
+    def _matvec_v3(self, b):
+        self.x[:] = 0
+        self.r[:] = b
+        
+        self.x[:] = self.x + self.solver1(self.r)
+        self.r[:] = b - self.A0 @ self.x
+        self.x[:] = self.x + self.solver2(self.r)
+        
+        return self.x.copy()
         
     
     def _matvec(self, b):
-        self._matvec_v2(b)
-        # self._matvec_v3(b)
+        return self._matvec_v2(b)
+        # return self._matvec_v3(b)
         
 class MultiscaleSmoother2Levels(LinearOperator):
     def __init__(self, A0, P_lv1, R_lv1, P_lv2, R_lv2, finescale_smoother: LinearOperator, lv1_smoother: LinearOperator, npre=1, npost=1, **kwargs):
