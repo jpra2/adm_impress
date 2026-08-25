@@ -4,7 +4,8 @@ from packs.preprocess.create_mesh_properties_from_meshiowrapper import create_me
 from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d import create_dual
 # from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d_v2 import create_dual
 from packs import defnames, defpaths
-from packs.manager import MeshProperty, MeshData, BoundaryConditions
+from packs.manager import MeshProperty, BoundaryConditions
+from packs.manager.mesh_data import MeshData
 from packs.multiscale.unstructured.operators.prolongation.ams import Unstructured2DAmsOperator
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights

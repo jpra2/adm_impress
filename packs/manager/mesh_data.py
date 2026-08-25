@@ -1,5 +1,5 @@
 from packs.manager.meshmanager import MeshInit
-from pymoab import core, types, rng, topo_util
+
 from packs.errors.err import TagNameExistsError, ElementTypeNotInMeshError, DimensionError, MoabTypeNotFoundError
 import packs.defpaths as defpaths
 import os
@@ -27,6 +27,8 @@ class MeshData(MeshInit):
             raise DimensionError('Dimension must be 2 or 3')
     
     def create_tag(self, tag_name, data_size=1, data_type='float'):
+        
+        from pymoab import core, types, rng, topo_util
         
         self.test_name_in_tags(tag_name)
         
@@ -119,6 +121,8 @@ class MeshData(MeshInit):
         self.mb.write_file(name, [meshset])
     
     def get_data_type(self, data_type):
+        
+        from pymoab import core, types, rng, topo_util
         
         if data_type == 'float':
             moab_type = types.MB_TYPE_DOUBLE

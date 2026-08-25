@@ -1,6 +1,7 @@
 from packs import defpaths
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
-from packs.manager import MeshProperty, MeshData, BoundaryConditions
+from packs.manager import MeshProperty, BoundaryConditions
+from packs.manager.mesh_data import MeshData
 from packs.mpfa_methods.weight_interpolation.gls_weight_2d import get_gls_nodes_weights
 from packs.multiscale.unstructured.create_primal_dual.primal_coarse_volumes_2d import create_coarse_volumes
 from packs.multiscale.unstructured.create_primal_dual.dual_coarse_volumes_2d import create_dual

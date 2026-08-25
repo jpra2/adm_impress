@@ -1,4 +1,5 @@
-from packs.manager import MeshProperty, MeshData
+from packs.manager import MeshProperty
+from packs.manager.mesh_data import MeshData
 from packs import defnames, defpaths
 import numpy as np
 from packs.utils.utils_old import get_local_shortest_path_for_create_dual_edges

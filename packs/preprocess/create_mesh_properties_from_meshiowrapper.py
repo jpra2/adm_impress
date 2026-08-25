@@ -1,20 +1,21 @@
 from packs.manager.meshio_wrapper import MeshioWrapper
-from pymoab import core, types, rng, topo_util
 from packs.manager.meshmanager import MeshProperty
 import numpy as np
 from packs import defpaths
 import os
 from packs.utils.test_functions import test_mesh_path
 
-def _create_vertices(points: np.ndarray, mb: core.Core) -> np.ndarray:
+def _create_vertices(points: np.ndarray, mb) -> np.ndarray:
     verts = mb.create_vertices(points.flatten())
     return verts
 
-def _create_triangles(verts: np.ndarray, triangle_points: np.ndarray, mb: core.Core):
+def _create_triangles(verts: np.ndarray, triangle_points: np.ndarray, mb):
+    from pymoab import types
     alltriangles = [verts[i] for i in triangle_points]
     triangles_moab = mb.create_elements(types.MBTRI, alltriangles)
 
 def _create_flying_mesh(mesh_path):
+    from pymoab import core, types, rng, topo_util
     meshio_data = MeshioWrapper(mesh_path)
     flying_mesh_path = os.path.join(
         defpaths.remove_folder,

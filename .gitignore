@@ -53,6 +53,8 @@ env/
 *_0_0.py
 
 remove/
+results/
+LIXO/
 
 
 *gmsh
@@ -60,3 +62,4 @@ remove/
 
 .spyproject/
 .conda/
+.vscode/

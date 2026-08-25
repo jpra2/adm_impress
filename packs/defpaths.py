@@ -2,8 +2,7 @@ import os
 import pandas as pd
 
 flying = 'flying'
-data_mesh = os.path.join(flying, 'data_mesh_property')
-data_simulation = data_mesh
+
 
 plots_folder = os.path.join(flying, 'plots')
 results = 'results'
@@ -36,6 +35,8 @@ lpew2_mesh_folder = 'lpew2_mesh_test'
 unstructured_coarse_test_mesh_folder = 'uns_coarse_test'
 
 remove_folder = 'remove'
+data_mesh = os.path.join(remove_folder, 'data_mesh_property')
+data_simulation = data_mesh
 
 def load_mpfad_meshs_by_name(mesh_name: str, folder: str) -> pd.DataFrame:
     file_names = os.listdir(folder)

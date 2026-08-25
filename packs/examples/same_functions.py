@@ -1,4 +1,5 @@
-from packs.manager import MeshProperty, MeshData, BoundaryConditions
+from packs.manager import MeshProperty, BoundaryConditions
+from packs.manager.mesh_data import MeshData
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
 from packs.manager.generic_data import PrimalCoarseData
 from packs.multiscale.unstructured.create_primal_dual.primal_coarse_volumes_2d import get_coarse_structure, load_coarse_structure

@@ -1,12 +1,13 @@
 import yaml
 import os
 import numpy as np
-from pymoab import core, types, rng, topo_util
+
 
 
 class createNonUniformMesh:
 
     def __init__(self):
+        from pymoab import core, types, rng, topo_util
         self.mb = core.Core()
         self.root_set = self.mb.get_root_set()
         self.mtu = topo_util.MeshTopoUtil(self.mb)
@@ -37,6 +38,7 @@ class createNonUniformMesh:
         return hexa
 
     def create_elements(self, verts, npoints):
+        from pymoab import types
         nblocks = npoints-1
         hexas = [self._create_hexa(i, j, k, verts, nblocks) for i in range(nblocks[0]) for j in range(nblocks[1]) for k in range(nblocks[2])]
         self.mb.create_elements(types.MBHEX, hexas)

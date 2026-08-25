@@ -3,7 +3,8 @@ from packs.biphasic.mobility import BiphasicMobility
 from packs.biphasic.unstructured.mobility_mesh_elements import direct_edges_mobility
 from packs.mpfa_methods.mesh_preprocess import MpfaPreprocess, preprocess_mesh
 from packs import defpaths, defnames
-from packs.manager import MeshProperty, MeshData, BoundaryConditions, SimulationData
+from packs.manager import MeshProperty, BoundaryConditions, SimulationData
+from packs.manager.mesh_data import MeshData
 from packs.manager.predef_names import TimeProfile
 from packs.multiscale.unstructured.test.test_cross import set_weights_nodes, set_fine_transmissibility, get_properties
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation

@@ -1,4 +1,4 @@
-from packs.manager.meshmanager import MeshProperty
+from packs.manager.meshmanager2 import MeshProperty
 from packs.utils import calculate_face_properties
 from packs.mpfa_methods.weight_interpolation.test.test_gls_weights import create_properties_if_not_exists
 import numpy as np

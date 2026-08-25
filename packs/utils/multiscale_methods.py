@@ -1,5 +1,6 @@
 import numpy as np
-from packs.manager import MeshData, MeshProperty
+from packs.manager import MeshProperty
+from packs.manager.mesh_data import MeshData
 from packs.defnames import get_primal_id_name_by_level
 
 def get_interfaces_edges(

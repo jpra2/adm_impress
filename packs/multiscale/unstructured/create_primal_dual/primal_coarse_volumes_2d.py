@@ -1,5 +1,6 @@
 # from packs.manager.meshmanager import MeshProperty
-from packs.manager import MeshProperty, MeshData
+from packs.manager import MeshProperty
+from packs.manager.mesh_data import MeshData
 from packs.utils.calculate_face_properties import sort_radial_sweep
 from packs.manager.generic_data import PrimalCoarseData
 from packs.mpfa_methods.flux_calculation.lsds_method import LsdsFluxCalculation
