@@ -1158,9 +1158,10 @@ def define_strong_coupled(A: sp.csc_matrix, eps: float=0.05, **kwargs) -> sp.csc
     A2.setdiag(-soma)   
     return A2
 
-def define_strong_coupled_v2(A: sp.csc_matrix, eps: float=0.05) -> sp.csc_matrix:
+def define_strong_coupled_v2(A: sp.csc_matrix, eps: float=0.05, **kwargs) -> sp.csc_matrix:
     
-    diagA = A.diagonal()
+    diagA = np.abs(A.diagonal())
+    soma0 = np.array(A.sum(axis=1)).flatten()
     A2 = A.tocsr(copy=True)
     A2.setdiag(0)
     A2.eliminate_zeros()
@@ -1172,13 +1173,185 @@ def define_strong_coupled_v2(A: sp.csc_matrix, eps: float=0.05) -> sp.csc_matrix
     M = sp.csr_matrix((is_strong, (row, col)), shape=A.shape, dtype=bool)
     M = M + M.transpose()
     M.data[:] = 1.0
-    A_filtered = M.multiply(A2)
-    soma = A_filtered.sum(axis=1).toarray().flatten()
+    # A_filtered = M.multiply(A2)
+    A3: sp.csr_matrix = A.copy()
+    A3.setdiag(0)
+    A3.eliminate_zeros()
+    A_filtered = M.multiply(A3)
+    soma = -np.array(A_filtered.sum(axis=1)).flatten() + soma0
     soma[soma == 0] = -1.0
     A_filtered.setdiag(-soma)
     
     return A_filtered
 
+def define_strong_coupled_v3(A: sp.csc_matrix, theta: float=0.25, **kwargs) -> sp.csc_matrix:
+    
+    """Novo filtro determinando a matriz com cada strong conection na face
+        e pegando o maior valor na linha
+    """
+    diagA = np.abs(A.diagonal())
+    soma0 = np.array(A.sum(axis=1)).flatten()
+    
+    A2 = A.tocsr(copy=True)
+    A2.setdiag(0)
+    A2.eliminate_zeros()
+    A2.data[:] = np.absolute(A2.data)
+    
+    row, col = A2.nonzero()
+    A2.data = A2.data/(np.sqrt(diagA[row]*diagA[col]))
+    
+    rowmax = A2.max(axis=1).toarray().flatten()
+    is_strong = A2.data >= (theta * rowmax[row])
+    
+    M = sp.csr_matrix((is_strong, (row, col)), shape=A.shape, dtype=bool)
+    M = M + M.transpose()
+    M.data[:] = 1.0
+    # A_filtered = M.multiply(A2)
+    A3: sp.csr_matrix = A.copy()
+    A3.setdiag(0)
+    A3.eliminate_zeros()
+    A_filtered = M.multiply(A3)
+    soma = -np.array(A_filtered.sum(axis=1)).flatten() + soma0
+    soma[soma == 0] = -1.0
+    A_filtered.setdiag(-soma)
+    
+    return A_filtered
+
+
+
+def compute_directional_strength_matrix(A, epsilon=1e-10, gamma=0.9):
+    """
+    Implementa o algoritmo de manter as conexoes pelo valor acumulado por linha
+    
+    Parâmetros:
+    A : scipy.sparse matrix
+        Matriz esparsa de transmissibilidade (coeficientes a_ij).
+    epsilon : float
+        Pequeno valor para evitar divisão por zero no passo 2.
+    gamma : float
+        Limiar para o filtro acumulativo (0 < gamma <= 1). Ex: 0.9 mantém 90% da "massa" dos pesos.
+        
+    Retorna:
+    S_filtered : scipy.sparse.csr_matrix
+        Matriz de strong connections simetrizada e filtrada.
+    """
+    # Garantir formato CSR para acesso eficiente por linhas
+    A = sp.csr_matrix(A)
+    n_rows, n_cols = A.shape
+    
+    # ---------------------------------------------------------
+    # 1. Obter o stencil MPFA (elementos não nulos)
+    # ---------------------------------------------------------
+    rows, cols = A.nonzero()
+    
+    # Filtrar diagonal (j != i), pois o algoritmo define N_i com j != i
+    off_diag_mask = rows != cols
+    r = rows[off_diag_mask]
+    c = cols[off_diag_mask]
+    
+    # Valores absolutos dos coeficientes
+    abs_A_ij = np.abs(A.data[off_diag_mask])
+    abs_diag = np.abs(A.diagonal())
+    
+    # ---------------------------------------------------------
+    # 2. Calcular os pesos b_ij
+    # ---------------------------------------------------------
+    # b_ij = |a_ij| / (sqrt(|a_ii| * |a_jj|) + epsilon)
+    denom = np.sqrt(abs_diag[r] * abs_diag[c]) + epsilon
+    b_ij = abs_A_ij / denom
+    
+    # Criar matriz esparsa B apenas com os off-diagonais (pesos)
+    B = sp.csr_matrix((b_ij, (r, c)), shape=(n_rows, n_cols))
+    
+    # ---------------------------------------------------------
+    # 3. Determinar o maior peso m_i
+    # ---------------------------------------------------------
+    # Max por linha. B.max(axis=1) retorna matriz coluna, convertemos para array 1D
+    m_i = np.array(B.max(axis=1)).flatten()
+    
+    # Evitar divisão por zero se uma linha tiver apenas zeros (célula isolada)
+    m_i[m_i == 0] = 1.0 
+    
+    # ---------------------------------------------------------
+    # 4. Calcular a força dirigida s_{i->j}
+    # ---------------------------------------------------------
+    # s_{i->j} = b_ij / m_i
+    # Multiplicamos B pela inversa da diagonal de m_i
+    D_inv = sp.diags(1.0 / m_i)
+    S_directed = D_inv @ B 
+    
+    # ---------------------------------------------------------
+    # 5. Fazer a simetrização S_ij = max[s_{i->j}, s_{j->i}]
+    # ---------------------------------------------------------
+    S_sym = S_directed.maximum(S_directed.T)
+    
+    # ---------------------------------------------------------
+    # 6. Aplicar o filtro acumulativo
+    # ---------------------------------------------------------
+    # "Mantenha os maiores b_ij até atingir sum(b_mantidos)/sum(b_total) >= gamma"
+    # Usamos B (pesos originais) para decidir o corte, e aplicamos a máscara em S_sym.
+    
+    S_sym_csr = S_sym.tocsr()
+    
+    S_filtered_data = []
+    S_filtered_indices = []
+    S_filtered_indptr = [0]
+    
+    for i in range(n_rows):
+        # Dados da linha i na matriz de pesos B
+        start_b = B.indptr[i]
+        end_b = B.indptr[i+1]
+        
+        b_vals = B.data[start_b:end_b]
+        b_cols = B.indices[start_b:end_b]
+        
+        if len(b_vals) == 0:
+            S_filtered_indptr.append(len(S_filtered_data))
+            continue
+            
+        # Ordenar b_vals em ordem decrescente para pegar os maiores primeiro
+        sort_idx = np.argsort(b_vals)[::-1]
+        sorted_vals = b_vals[sort_idx]
+        sorted_cols = b_cols[sort_idx]
+        
+        total_sum = np.sum(sorted_vals)
+        if total_sum == 0:
+            S_filtered_indptr.append(len(S_filtered_data))
+            continue
+            
+        cumsum = np.cumsum(sorted_vals)
+        threshold = gamma * total_sum
+        
+        # Encontrar quantos elementos manter para atingir o threshold
+        # searchsorted retorna o índice onde threshold seria inserido.
+        # Queremos manter os elementos até que a soma acumulada >= threshold.
+        keep_count = np.searchsorted(cumsum, threshold, side='right') + 1
+        keep_count = min(keep_count, len(sorted_cols)) # Garantir que não estoure o array
+        
+        cols_to_keep = set(sorted_cols[:keep_count])
+        
+        # Filtrar a matriz simetrizada S_sym para a linha i
+        start_s = S_sym_csr.indptr[i]
+        end_s = S_sym_csr.indptr[i+1]
+        
+        s_vals = S_sym_csr.data[start_s:end_s]
+        s_cols = S_sym_csr.indices[start_s:end_s]
+        
+        # Manter apenas as colunas que foram selecionadas pelo filtro de B
+        # (Nota: geralmente não filtramos a diagonal se ela existir em S, mas S vem de off-diag)
+        mask = np.array([c_idx in cols_to_keep for c_idx in s_cols])
+        
+        S_filtered_data.extend(s_vals[mask])
+        S_filtered_indices.extend(s_cols[mask])
+        S_filtered_indptr.append(len(S_filtered_data))
+        
+    S_filtered = sp.csr_matrix((S_filtered_data, S_filtered_indices, S_filtered_indptr), shape=(n_rows, n_cols))
+    
+    return S_filtered
+
+
+
+    
 
 @time_func
 def get_msrsb_prolongation_operator(primal_id: np.ndarray, support_regions: np.ndarray, boundary_regions: np.ndarray, A: sp.csc_matrix, OP0: sp.csc_matrix, tol_op: float=0.05, maxit: int=1000, omega: float=2/3, debug: bool=False, **kwargs) -> Tuple[sp.csc_matrix, int]:
@@ -1365,7 +1538,14 @@ def evolution_filter(A: sp.csr_matrix, epsilon=2.0, k=2) -> sp.csr_matrix:
     return A_filtrada
     
     
-    
+def get_S_matrix(A: sp.csc_matrix,**kwargs) -> sp.csc_matrix:
+    S = copy.deepcopy(A)
+    S.setdiag(0)
+    soma = np.array(S.sum(axis=1)).flatten()
+    soma[soma == 0] = -1
+    S.setdiag(-soma)
+    S.eliminate_zeros()
+    return S
     
     
     
