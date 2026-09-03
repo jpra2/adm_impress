@@ -658,9 +658,9 @@ def run5():
     f2 = identify_filtered_interfaces(T_strong2, fp['adjacencies'])
     f3 = identify_filtered_interfaces(T_strong3, fp['adjacencies'])
     
-    # plot_filtered_interfaces(fine_mesh_path, fp, T_strong1, ext='_default_strong')
-    # plot_filtered_interfaces(fine_mesh_path, fp, T_strong2, ext='_max_row')
-    # plot_filtered_interfaces(fine_mesh_path, fp, T_strong3, ext='_accum')
+    plot_filtered_interfaces(fine_mesh_path, fp, T_strong1, ext='_default_strong')
+    plot_filtered_interfaces(fine_mesh_path, fp, T_strong2, ext='_max_row')
+    plot_filtered_interfaces(fine_mesh_path, fp, T_strong3, ext='_accum')
     
     # ## edge na interface
     # test_edge(3, 2.5, fp, T_complete, debug=True)
@@ -675,7 +675,7 @@ def run5():
     
     
     new_mesh_name = Path(defpaths.mesh) / 'perturbed_mesh_10x10.msh'
-    perturbar_nos_internos_2d(fine_mesh_path, str(new_mesh_name))
+    # perturbar_nos_internos_2d(fine_mesh_path, str(new_mesh_name))
     mesh_properties_pert_name = 'quadrado_estruturado10x10_pert'
     fp_pert = preprocess_mesh(str(new_mesh_name), mesh_properties_pert_name)
     fp_pert.insert_or_update_data({
@@ -694,9 +694,19 @@ def run5():
     T_strong2_pert = cms.define_strong_coupled_v3(T_complete_pert, **my_params)
     T_strong3_pert = cms.compute_strength_matrix_symetric(T_complete_pert, **my_params)
     
-    f1_pert = identify_filtered_interfaces(T_strong1_pert, fp_pert['adjacencies'])
-    f2_pert = identify_filtered_interfaces(T_strong2_pert, fp_pert['adjacencies'])
-    f3_pert = identify_filtered_interfaces(T_strong3_pert, fp_pert['adjacencies'])
+    # f1_pert = identify_filtered_interfaces(T_strong1_pert, fp_pert['adjacencies'])
+    # f2_pert = identify_filtered_interfaces(T_strong2_pert, fp_pert['adjacencies'])
+    # f3_pert = identify_filtered_interfaces(T_strong3_pert, fp_pert['adjacencies'])
+
+    plot_filtered_interfaces(new_mesh_name, fp_pert, T_strong1_pert, ext='_pert_default_strong')
+    plot_filtered_interfaces(new_mesh_name, fp_pert, T_strong2_pert, ext='_pert_max_row')
+    plot_filtered_interfaces(new_mesh_name, fp_pert, T_strong3_pert, ext='_pert_accum')
+
+
+
+
+
+
     
     
     

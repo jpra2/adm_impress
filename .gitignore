@@ -13,6 +13,7 @@
 *.c
 *.cpp
 *.log
+*.gz
 
 # *.msh
 # !cube_unstructured.msh
