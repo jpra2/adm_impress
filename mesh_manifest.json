@@ -1,0 +1,66 @@
+{
+    "manifest_version": 1,
+
+    "meshes": {
+
+        "spe_v1_ft.h5m": {
+            "description": "malha do spe10 completo com dimensoes em pes (original)",
+            "filename": "spe_v1_ft.h5m",
+            "archive": "spe_v1_ft.tar.gz",
+            "backend": "google_drive",
+            "file_id": "1XNZs5mycdNHuBh1oXlw6ivuHRL8zfnjq",
+            "mesh_sha256": "baf529f99b05444f51770abd665bbd0d3afbcaff29d69f7cf88a3cfccf074e8e",
+            "archive_sha256": "5041897ec53abd6d600cdc80a1645ad15c80f0b85678e245172b8cdf5549498d"
+        },
+        "test_case2.h5m": {
+            "description": "malha de teste do caso da barreira no meio do dominio (f-MsRSB)",
+            "filename": "test_case2.h5m",
+            "archive": "test_case2.tar.gz",
+            "backend": "google_drive",
+            "file_id": "1Ys1rClnw0zt_6oLMFe8tB0cqEuObixcw",
+            "mesh_sha256": "0a69dc3332ec13ef2aa8b1233f331e1f50383681966535b678ffef302cab239a",
+            "archive_sha256": "876dbc093d7131f6d0f619bfaedd566dfe16d213b4c14285e09df96595d73129"
+        },
+        "layer_spe10_perturbada.msh": {
+            "description": "malha de teste para o metodo mpfa em malhas nao estruturadas",
+            "filename": "layer_spe10_perturbada.msh",
+            "archive": "layer_spe10_perturbada.tar.gz",
+            "backend": "google_drive",
+            "file_id": "157CTA68_y2UK46k-kOUxTV_5CvUPuwcG",
+            "mesh_sha256": "a91c22ed7b9697608016a371b04ae760f5db9e25489e27feea8c5ff8db5f3f15",
+            "archive_sha256": "ca344b77fcd116561885f4e5c2056984875b9c64c1ab39b3806c3b1f7ee374b7"
+        },
+         "quadrado_estruturado10x10.msh": {
+            "description": "",
+            "filename": "quadrado_estruturado10x10.msh",
+            "archive": "quadrado_estruturado10x10.tar.gz",
+            "backend": "google_drive",
+            "file_id": "1jMP21_XG6GQhuKvqR21FFmW9OyNY7mu5",
+            "mesh_sha256": "a10de1978ef7cd24af5b9645f7908277cbf5fce55f28f3370bd3d7a3af79f4bd",
+            "archive_sha256": "e9244fc0652692a06f2ad2ca755772e87c9af93a91532ba5b69d592a4b71ae0d"
+        },
+        "perturbed_mesh_10x10.msh": {
+            "description": "",
+            "filename": "perturbed_mesh_10x10.msh",
+            "archive": "perturbed_mesh_10x10.tar.gz",
+            "backend": "google_drive",
+            "file_id": "1JHBJPKmE4dF4QPHy3Oo5_VVyaNbas7-1",
+            "mesh_sha256": "18ffa48cb1311507b3b389dbc3dd410db4333d2fc1717fc91eaabbbb982263ed",
+            "archive_sha256": "74686d820e9103925b5706e7df83c25f1956448b4504cae90317eca31fa33d18"
+        }
+
+    },
+
+    "mesh_property": {
+
+        "mesh_property_spe10.npz": {
+            "description": "mesh property do spe10 completo com dimensoes em pes",
+            "filename": "mesh_property_spe10.npz",
+            "archive": "mesh_property_spe10.tar.gz",
+            "backend": "google_drive",
+            "file_id": "1BEQ5Znn9SXZd40rEC3DrSFa2tzUncPCk",
+            "mesh_sha256": "50faa11785b56422ba4ceada7ecd6e1dd7b6a53b99252651d61b1f168991661f",
+            "archive_sha256": "515ff172880d1d1ec403b15f42ecfb2e710dbe2105404c5719df5aa18f7dc375"
+        }
+    }
+}
