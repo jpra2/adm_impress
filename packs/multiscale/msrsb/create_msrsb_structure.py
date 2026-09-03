@@ -1219,7 +1219,7 @@ def define_strong_coupled_v3(A: sp.csc_matrix, theta: float=0.25, **kwargs) -> s
 
 
 
-def compute_directional_strength_matrix(A, epsilon=1e-10, gamma=0.9):
+def compute_strength_matrix_symetric(A, epsilon=1e-10, gamma=0.9, **kwargs):
     """
     Implementa o algoritmo de manter as conexoes pelo valor acumulado por linha
     
@@ -1267,7 +1267,7 @@ def compute_directional_strength_matrix(A, epsilon=1e-10, gamma=0.9):
     # 3. Determinar o maior peso m_i
     # ---------------------------------------------------------
     # Max por linha. B.max(axis=1) retorna matriz coluna, convertemos para array 1D
-    m_i = np.array(B.max(axis=1)).flatten()
+    m_i = B.max(axis=1).toarray().flatten()
     
     # Evitar divisão por zero se uma linha tiver apenas zeros (célula isolada)
     m_i[m_i == 0] = 1.0 
@@ -1277,6 +1277,7 @@ def compute_directional_strength_matrix(A, epsilon=1e-10, gamma=0.9):
     # ---------------------------------------------------------
     # s_{i->j} = b_ij / m_i
     # Multiplicamos B pela inversa da diagonal de m_i
+    # import ipdb; ipdb.set_trace()
     D_inv = sp.diags(1.0 / m_i)
     S_directed = D_inv @ B 
     
@@ -1346,8 +1347,20 @@ def compute_directional_strength_matrix(A, epsilon=1e-10, gamma=0.9):
         S_filtered_indptr.append(len(S_filtered_data))
         
     S_filtered = sp.csr_matrix((S_filtered_data, S_filtered_indices, S_filtered_indptr), shape=(n_rows, n_cols))
+    mask_S_filtered: sp.csr_matrix = S_filtered.copy()
+    mask_S_filtered.data[:] = 1.0
     
-    return S_filtered
+    soma0 = np.array(A.sum(axis=1)).flatten()
+    A3: sp.csr_matrix = A.copy()
+    A3.setdiag(0)
+    A3.eliminate_zeros()
+    
+    A_filtered = mask_S_filtered.multiply(A3)
+    soma = -np.array(A_filtered.sum(axis=1)).flatten()
+    A_filtered.setdiag(soma + soma0)
+    
+    # return S_filtered
+    return A_filtered
 
 
 

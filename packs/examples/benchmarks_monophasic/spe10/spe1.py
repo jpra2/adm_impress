@@ -379,6 +379,28 @@ def run4(layer=36, nCr=81):
         **my_params
     )
     
+    M5_strong = cms.compute_strength_matrix_symetric(T_complete, **my_params)
+    M5_strong_mask = M5_strong.copy()
+    M5_strong_mask.data[:] = 1
+    M5_strong_mask = TPFA_mask.multiply(M5_strong_mask)
+    
+    primal_strong_M5 = cms.create_partition(M5_strong_mask, nparts=nparts, disjointed=True, nvols_mean=nCr)
+    all_regions_strong_M5 = cms.create_support_region_and_boundary_v3(M5_strong_mask, primal_strong_M5, n_levels_adj=n_levels_adj, ext='_1')
+    
+    OR_strong_M5 = cms.get_OR_finite_volume(primal_strong_M5)
+    OP_strong_M5 = OR_strong_M5.transpose(copy=True)
+    Msupport_M5 = sp.csr_matrix((np.repeat(1.0, all_regions_strong_M5['ind_support'].shape[0]), all_regions_strong_M5['ind_support'], all_regions_strong_M5['ptr_support']), shape=OP_strong_M5.transpose().shape).transpose()
+    
+    S_M5 = cms.get_S_matrix(M5_strong)
+    
+    OP_strong_M5, op_iterations, emax = cms.get_msrsb_prolongation_operator_v3(
+        all_regions_strong_M5['ind_support'],
+        all_regions_strong_M5['ptr_support'],
+        S_M5,
+        OR_strong_M5.transpose(copy=True),
+        **my_params
+    )
+    
     
     
     norm_b_bc = np.linalg.norm(b_bc)
@@ -474,6 +496,17 @@ def run4(layer=36, nCr=81):
     xM4, info = fgmres(**definitions, callback=callback_func)
     dtM4 = time.perf_counter() - t1
     
+    residual_op_M5 = []    
+    precond = mcl.MultiScaleSmoother(T_bc, OP_strong_M5, OP_strong_M5.transpose(copy=True), finescale_smoother)
+    definitions.update({
+        'M': precond,
+        'residuals': residual_op_M5
+    })
+    method = 'MsRSB Method_M5'
+    t1 = time.perf_counter()
+    xM5, info = fgmres(**definitions, callback=callback_func)
+    dtM5 = time.perf_counter() - t1
+    
     print('#'*30)
     print(f"""
           OP1: MsRSB tradicional com o metodo enhanced
@@ -481,6 +514,7 @@ def run4(layer=36, nCr=81):
           OP_M2: f-MsRSB tradicional
           OP_M3: usando o peso do f-MsRSB calculado em cada face
           OP_M4: Enhanced + f-MsRSB tradicional
+          OP_M5: f-MsRSB usando o acumulado dos pesos (teste)
     """)
     print('#'*30)
 
@@ -493,6 +527,7 @@ def run4(layer=36, nCr=81):
             OP_M2: {dtM2:.2f}
             OP_M3: {dtM3:.2f}
             OP_M4: {dtM4:.2f}
+            OP_M5: {dtM5:.2f}
 
         Iteracoes:
             OP: {len(residual_op)}
@@ -500,6 +535,7 @@ def run4(layer=36, nCr=81):
             OP_M2: {len(residual_op_M2)}
             OP_M3: {len(residual_op_M3)}
             OP_M4: {len(residual_op_M4)}
+            OP_M5: {len(residual_op_M5)}
             
         Residuo:
             OP: {residual_op[-1]:.2f}
@@ -507,6 +543,7 @@ def run4(layer=36, nCr=81):
             OP_M2: {residual_op_M2[-1]:.2f}
             OP_M3: {residual_op_M3[-1]:.2f}
             OP_M4: {residual_op_M4[-1]:.2f}
+            OP_M5: {residual_op_M5[-1]:.2f}
     """)
     print('#'*30)
     
@@ -515,6 +552,7 @@ def run4(layer=36, nCr=81):
     xapp3, err3, err3l2, res3 = get_app_solution(T_bc, b_bc, OP_strong_M2, OP_strong_M2.transpose(copy=True), xref)
     xapp4, err4, err4l2, res4 = get_app_solution(T_bc, b_bc, OP_strong_M3, OP_strong_M3.transpose(copy=True), xref)
     xapp5, err5, err5l2, res5 = get_app_solution(T_bc, b_bc, OP_strong_M4, OP_strong_M4.transpose(copy=True), xref)
+    xapp6, err6, err6l2, res6 = get_app_solution(T_bc, b_bc, OP_strong_M5, OP_strong_M5.transpose(copy=True), xref)
     
     print('#'*30)
     print(f"""
@@ -525,6 +563,7 @@ def run4(layer=36, nCr=81):
                 OP_M2: {np.abs(err3).max():.2f}
                 OP_M3: {np.abs(err4).max():.2f}
                 OP_M4: {np.abs(err5).max():.2f}
+                OP_M5: {np.abs(err6).max():.2f}
     
             2 norm:
                 OP: {err1l2:.2f}
@@ -532,6 +571,7 @@ def run4(layer=36, nCr=81):
                 OP_M2: {err3l2:.2f}
                 OP_M3: {err4l2:.2f}
                 OP_M4: {err5l2:.2f}
+                OP_M5: {err6l2:.2f}
                 
             Residuo:
                 OP: {res1:.2f}
@@ -539,6 +579,7 @@ def run4(layer=36, nCr=81):
                 OP_M2: {res3:.2f}
                 OP_M3: {res4:.2f}
                 OP_M4: {res5:.2f}
+                OP_M5: {res6:.2f}
         """)
     print('#'*30)
     
@@ -775,7 +816,9 @@ def run5(layer=36, nCr=81):
     mesh_data.export_only_the_elements('filtered_interfaces', element_type='edges', elements_array=filtered_interfaces)   
     
     
-    
+# teste1: malha 15x15 com a barreira nas 5 camadas do meio
+# teste2: spe10 camada 16
+# objetivo: filtrar as mesmas faces do f-MsRSB
     
     
     
