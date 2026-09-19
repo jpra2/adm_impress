@@ -2,11 +2,19 @@
 // 1. Definição da Geometria (Retângulo 6x6)
 // ==========================================
 
+Lx = 1200;
+Ly = 2200;
+
+dx = 20;
+dy = 10;
+
+nx = 60;
+ny = 220;
 
 Point(1) = {0, 0, 0, 1.0};
-Point(2) = {10, 0, 0, 1.0};
-Point(3) = {10, 10, 0, 1.0};
-Point(4) = {0, 10, 0, 1.0};
+Point(2) = {Lx, 0, 0, 1.0};
+Point(3) = {Lx, Ly, 0, 1.0};
+Point(4) = {0, Ly, 0, 1.0};
 
 Line(1) = {1, 2}; // Base
 Line(2) = {2, 3}; // Direita
@@ -22,8 +30,8 @@ Surface(1) = {1};
 // Regra de ouro: Para ter N elementos, você precisa de N+1 nós.
 // Como queremos 6 quadrados de tamanho 1, precisamos de 7 pontos por linha.
 
-Transfinite Line {1, 3} = 11; // 7 nós nas linhas horizontais (X)
-Transfinite Line {2, 4} = 11; // 7 nós nas linhas verticais (Y)
+Transfinite Line {1, 3} = nx + 1; // 7 nós nas linhas horizontais (X)
+Transfinite Line {2, 4} = ny + 1; // 7 nós nas linhas verticais (Y)
 
 // Aplica a interpolação estruturada na superfície
 Transfinite Surface {1};

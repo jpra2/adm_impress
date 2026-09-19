@@ -6,6 +6,7 @@ from packs.manager.meshmanager2 import MeshProperty
 from packs.multiscale.msrsb import create_msrsb_structure as cms
 from packs.examples.benchmarks_monophasic.spe10.spe1 import identify_filtered_interfaces
 from packs.manager.meshmanager2 import MeshProperty
+from packs.utils import utils_old
 
 import os
 import numpy as np
@@ -248,7 +249,17 @@ def get_properties():
 
     return fine_properties, fine_mesh_path
 
-def plot_filtered_interfaces(mesh_path, fp: MeshProperty, T_strong: sp.csr_matrix, ext=''):
+def get_properties_perturbed():
+    
+    fine_mesh_path = os.path.join('mesh', 'perturbed_mesh_10x10.msh')
+    fine_mesh_properties_name = 'perturbed_mesh_10x10' 
+    fine_mesh_path_v4 = fine_mesh_path
+
+    fine_properties = preprocess_mesh(fine_mesh_path, fine_mesh_properties_name, mesh_name_v4=fine_mesh_path_v4)
+
+    return fine_properties, fine_mesh_path
+
+def plot_filtered_interfaces(mesh_path, fp: MeshProperty, T_strong: sp.csr_matrix, ext='', pert=False, debug=False):
     from packs.manager.mesh_data import MeshData
     mesh_data = MeshData(dim=2, mesh_path=mesh_path)
     mesh_data.create_tag('permx')
@@ -259,10 +270,17 @@ def plot_filtered_interfaces(mesh_path, fp: MeshProperty, T_strong: sp.csr_matri
     filtered_interfaces = identify_filtered_interfaces(T_strong, fp['adjacencies'])
     filtered_interfaces = np.setdiff1d(filtered_interfaces, fp.boundary_edges)
     
-    mesh_data.export_all_elements_type_to_vtk('spe_perms', element_type='faces')
+    if debug==True:
+        kl = fp.adjacencies[filtered_interfaces]
+        v1 = len(filtered_interfaces)
+        import ipdb; ipdb.set_trace()
+    
+    if pert==True:
+        mesh_data.export_all_elements_type_to_vtk('spe_perms_pert', element_type='faces')
+    else:
+        mesh_data.export_all_elements_type_to_vtk('spe_perms', element_type='faces')
     mesh_data.export_only_the_elements('filtered_interfaces'+ext, element_type='edges', elements_array=filtered_interfaces)   
     
-
 
 def test_edge(x, y, fp: MeshProperty, T_withoutbc, debug=False):
     edges_centroids = fp.edges_centroids
@@ -304,6 +322,165 @@ def test_edge(x, y, fp: MeshProperty, T_withoutbc, debug=False):
         print('#'*30)
         print(kl)
         import ipdb; ipdb.set_trace()
+
+def test_face(limites, fp: MeshProperty, debug=False):
+    
+    
+    
+    edges_of_faces = fp['edges_of_faces']
+    faces_centroids = fp['faces_centroids'].copy()
+    faces = fp.faces
+    n_faces = len(faces)
+    n_nodes = len(fp.nodes)
+    faces_centroids = np.column_stack((faces_centroids, np.zeros(n_faces)))
+    nodes_of_edges = fp['nodes_of_edges']
+    permeability = fp['permeability']
+    
+    all_faces = []
+    for lim in limites:
+        
+        t1 = faces_centroids[:, 0] > lim[0,0] - 1e-10
+        t2 = faces_centroids[:, 0] < lim[1,0] + 1e-10
+        t3 = t1 & t2
+        t4 = faces_centroids[:, 1] > lim[0, 1] - 1e-10
+        t5 = faces_centroids[:, 1] < lim[1, 1] + 1e-10
+        t6 = t4 & t5
+        t7 = t3 & t6
+        face = faces[t7]    
+        if len(face) > 1 or len(face) == 0:
+            import ipdb; ipdb.set_trace()
+        all_faces.append(face[0])
+    all_faces = np.array(all_faces)
+    
+    edges_faces = np.unique(np.concatenate(edges_of_faces[all_faces]))
+    
+    # edges_face = edges_of_faces[face[0]]
+    
+    nodes_weight = fp.nodes_weights
+    xi_params = fp.xi_params
+    
+    lines_volume = []
+    data_volume = []
+    cols_volume = []
+    
+    for edge in edges_faces:
+        nodes_edge = nodes_of_edges[edge]
+        xi_params_edge = xi_params[edge]
+        adjs_edge = fp['adjacencies'][edge]
+        
+        A_xi_params = xi_params_edge[2]
+        B_xi_params = xi_params_edge[3]
+        
+        A_node = nodes_edge[0]
+        B_node = nodes_edge[1]
+        
+        weights_A = nodes_weight[nodes_weight['node_id'] == A_node]
+        weights_B = nodes_weight[nodes_weight['node_id'] == B_node]
+        
+        pesos_A = weights_A['weight']
+        pesos_B = weights_B['weight']
+        
+        faces_A = weights_A['face_id']
+        faces_B = weights_B['face_id']
+        
+        
+        local_col = np.concatenate([adjs_edge, faces_A, faces_B])
+        local_data = np.concatenate([xi_params_edge[0:2], pesos_A*A_xi_params, pesos_B*B_xi_params])
+        
+        K_face = np.repeat(adjs_edge[0], len(local_col))
+        L_face = np.repeat(adjs_edge[1], len(local_col))
+        
+        lines_volume.append(K_face)
+        cols_volume.append(local_col)
+        data_volume.append(local_data)
+        lines_volume.append(L_face)
+        cols_volume.append(local_col)
+        data_volume.append(-local_data) 
+        
+        
+    data_volume = np.concatenate(data_volume)
+    lines_volume = np.concatenate(lines_volume)
+    cols_volume = np.concatenate(cols_volume)
+    
+    A = sp.csr_matrix((data_volume, (lines_volume, cols_volume)), shape=(n_faces, n_faces))
+    
+    nodes_centroids = fp['nodes_centroids'].copy()
+    nodes_centroids2 = np.column_stack([nodes_centroids, np.ones(n_nodes)])
+    
+    un = fp['unitary_normal_edges']
+    
+    edge = 140
+    B_node = 69
+    A_node = 68
+    K = 32
+    L = 42
+    
+    SK = np.array([
+        nodes_centroids2[A_node],
+        nodes_centroids2[B_node],
+        np.concatenate([un[edge].dot(permeability[K]), [0]])       
+    ])
+    
+    SL = np.array([
+        nodes_centroids2[A_node],
+        nodes_centroids2[B_node],
+        np.concatenate([un[edge].dot(permeability[L]), [0]])
+    ])
+    
+    SL_inv = np.linalg.inv(SL)
+    
+    SKL = SL_inv @ SK
+    
+    xL = faces_centroids[L].copy()
+    xL[-1] = 1
+    xL_ = xL @ SKL
+    
+    fK = faces_centroids[K].copy()
+    fL = faces_centroids[L].copy()
+    fK[-1] = 1
+    fL[-1] = 1
+    
+    
+    M = np.array([
+        fK,
+        xL_,
+        nodes_centroids2[A_node],
+        nodes_centroids2[B_node]
+    ])
+    
+    Q, R = np.linalg.qr(M)
+    MM = np.linalg.inv(R).dot(Q.T)
+    
+    I_23 = np.eye(3)[0:2]
+    
+    edge_dim = fp.edges_dim[edge]
+    xyksigma = -edge_dim*np.dot(un[edge], permeability[K])
+    
+    params = xyksigma.dot(I_23).dot(MM)
+    
+    
+    
+        
+        
+        
+        
+        
+        
+            
+            
+        
+    
+    
+    # node_weight_A = nodes_weight[nodes_weight['node_id'] == nodes_selected_edge[0]]
+    # node_weight_B = nodes_weight[nodes_weight['node_id'] == nodes_selected_edge[1]]
+    
+    import ipdb; ipdb.set_trace()
+    
+        
+    
+    
+    
+    
 
 def get_params():
     return {
@@ -639,7 +816,8 @@ def run5():
     
     my_params = get_params()
 
-    fp, fine_mesh_path = get_properties()
+    # fp, fine_mesh_path = get_properties()
+    fp, fine_mesh_path = get_properties_perturbed()
     set_permeability_bar(fp)
     bc = set_boundary_conditions(fp)
     set_weights_nodes(fp)
@@ -658,9 +836,9 @@ def run5():
     f2 = identify_filtered_interfaces(T_strong2, fp['adjacencies'])
     f3 = identify_filtered_interfaces(T_strong3, fp['adjacencies'])
     
-    plot_filtered_interfaces(fine_mesh_path, fp, T_strong1, ext='_default_strong')
-    plot_filtered_interfaces(fine_mesh_path, fp, T_strong2, ext='_max_row')
-    plot_filtered_interfaces(fine_mesh_path, fp, T_strong3, ext='_accum')
+    # plot_filtered_interfaces(fine_mesh_path, fp, T_strong1, ext='_default_strong')
+    # plot_filtered_interfaces(fine_mesh_path, fp, T_strong2, ext='_max_row')
+    # plot_filtered_interfaces(fine_mesh_path, fp, T_strong3, ext='_accum')
     
     # ## edge na interface
     # test_edge(3, 2.5, fp, T_complete, debug=True)
@@ -669,13 +847,36 @@ def run5():
     # ## edge na regiao x < media
     # test_edge(2, 2.5, fp, T_complete, debug=True)
     
+    lim1 = np.array([
+        [3, 2, -1],
+        [4, 3, 1]
+    ]) # face na interface esquerda do limite esquerdo
+    
+    lim2 = np.array([
+        [4, 2, 0],
+        [5, 3, 0]
+    ]) # face na interface direita do limite esquerdo
+    
+    lim3 = np.array([
+        [2, 2, 0],
+        [3, 3, 0]
+    ]) # face do lado esquerdo do limite esquerdo
+    
+    limites = [lim1, lim2, lim3]
+        
+        
+    
+    test_face(limites, fp)
+    
+    import ipdb; ipdb.set_trace()
     
     
     
     
     
-    new_mesh_name = Path(defpaths.mesh) / 'perturbed_mesh_10x10.msh'
-    # perturbar_nos_internos_2d(fine_mesh_path, str(new_mesh_name))
+    
+    new_mesh_name = str(Path(defpaths.mesh) / 'perturbed_mesh_10x10.msh')
+    perturbar_nos_internos_2d(fine_mesh_path, str(new_mesh_name))
     mesh_properties_pert_name = 'quadrado_estruturado10x10_pert'
     fp_pert = preprocess_mesh(str(new_mesh_name), mesh_properties_pert_name)
     fp_pert.insert_or_update_data({
@@ -698,9 +899,9 @@ def run5():
     # f2_pert = identify_filtered_interfaces(T_strong2_pert, fp_pert['adjacencies'])
     # f3_pert = identify_filtered_interfaces(T_strong3_pert, fp_pert['adjacencies'])
 
-    plot_filtered_interfaces(new_mesh_name, fp_pert, T_strong1_pert, ext='_pert_default_strong')
-    plot_filtered_interfaces(new_mesh_name, fp_pert, T_strong2_pert, ext='_pert_max_row')
-    plot_filtered_interfaces(new_mesh_name, fp_pert, T_strong3_pert, ext='_pert_accum')
+    plot_filtered_interfaces(new_mesh_name, fp_pert, T_strong1_pert, ext='_pert_default_strong', pert=True)
+    plot_filtered_interfaces(new_mesh_name, fp_pert, T_strong2_pert, ext='_pert_max_row', pert=True)
+    plot_filtered_interfaces(new_mesh_name, fp_pert, T_strong3_pert, ext='_pert_accum', pert=True)
 
 
 
